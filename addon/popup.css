@@ -117,7 +117,7 @@ button.button:active, a[href]:active {
     font: inherit;
     width: 100%;
     background-color: white;
-    color: #16325c;
+    color: #A09F9C;
     border: 1px solid #d8dde6;
     border-radius: 0 .25rem .25rem .25rem;
     transition: border .1s linear,background-color .1s linear;
@@ -130,7 +130,7 @@ button.button:active, a[href]:active {
 .all-data-input:active, .all-data-input:focus {
     outline: 0;
     border-color: #1589ee;
-    background-color: #fff;
+    background-color: #101112;
     box-shadow: 0 0 3px #0070D2;
 }
 .all-data-box-inner {
@@ -182,7 +182,7 @@ button.button:active, a[href]:active {
 .autocomplete-item {
     display: block;
     padding: .25rem .5rem;
-    color: #16325c;
+    color: #A09F9C;
     line-height: 1.5;
     cursor: pointer;
 }

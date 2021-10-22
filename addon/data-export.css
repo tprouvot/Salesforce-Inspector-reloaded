@@ -37,7 +37,7 @@
 html, body, #root, [data-reactroot] {
   height: 100%;
   line-height: 1.5;
-  color: #16325c;
+  color: #A09F9C;
 }
 [data-reactroot] {
   display: flex;
@@ -55,7 +55,7 @@ body {
   background-position: 0px 48px;
 }
 #user-info {
-  background: #f7f9fb;
+  background: #191B1D;
   height: 48px;
   display: flex;
   align-items: center;
@@ -69,13 +69,13 @@ body {
   font-size: 1em;
 }
 .sf-link {
-  background-color: rgb(6, 28, 63);
+  background-color: #404040;
   border-radius: 3px;
   line-height: 1.8em;
   text-decoration: none;
   display: inline-block;
   padding: 2px;
-  color: white;
+  color: #428fdc;
   padding-right: 1em;
 }
 .sf-link svg {
@@ -87,7 +87,7 @@ body {
   float: left;
   background-color: #ef7ead;
   border-radius: 2px;
-  fill: white;
+  fill: #428fdc;
 }
 textarea {
   display: block;
@@ -97,14 +97,14 @@ textarea {
   font-size: 0.9rem;
   padding: 8px 10px;
   border-radius: 0.25rem;
-  border: 1px solid #DDDBDA;
+  border: 1px solid #1B1D1E;
 }
 textarea[hidden] {
   display: none;
 }
 .help-text {
-  background: #fff;
-  border: 1px solid #DDDBDA;
+  background: #101112;
+  border: 1px solid #1B1D1E;
   padding: 0 15px;
   border-radius: 0.25rem;
   margin-top: 10px;
@@ -135,21 +135,21 @@ textarea[hidden] {
 #result-table {
   overflow: auto;
   flex: 1 1 0;
-  background-color: #fff;
-  border-top: 1px solid #DDDBDA;
+  background-color: #101112;
+  border-top: 1px solid #1B1D1E;
 }
 .area {
-  background-color: #F8F8F8;
+  background-color: #191B1D;
   padding: 8px 12px;
   border-radius: 5px;
-  border: 1px solid #DDDBDA;
+  border: 1px solid #1B1D1E;
   margin: 12px 12px 0 12px;
 }
 h1 {
   font-size: 1rem;
   margin: 0px;
   display: inline;
-  color: #080707;
+  color: #A09F9C;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -166,6 +166,13 @@ h1 {
 }
 .query-options label {
   margin-right: 10px;
+}
+button, select{
+  background-color: #428fdc;
+}
+input, textarea{
+  background-color: #1F1F1F;
+  color:#fafafa;
 }
 .area input[type="radio"], .area input[type="checkbox"] {
   margin: 0 2px 0 0;
@@ -186,7 +193,7 @@ select, input[type=search],input[type=save] {
   width: 12rem;
   font-family: inherit;
   padding: 5px 13px;
-  border: 1px solid #DDDBDA;
+  border: 1px solid #1B1D1E;
   height: 32px;
   position: relative;
   border-radius: 0.25rem;
@@ -237,32 +244,32 @@ button:focus {
 }
 button:disabled,
 input:disabled {
-  color: #dddbda;
+  color: #1B1D1E;
   cursor: default;
 }
 button:disabled:hover,
 input:disabled:hover {
-  background-color: #fff;
-  color: #dddbda;
+  background-color: #101112;
+  color: #1B1D1E;
 }
 .highlighted {
   background-color: rgb(0, 112, 210);
   border-color: rgb(0, 112, 210);
-  color: #fff;
+  color: #101112;
 }
 .highlighted:hover,
 .highlighted:active {
   background-color: rgb(0, 95, 178);
-  color: #fff;
+  color: #101112;
 }
 .highlighted:disabled {
   background-color: #c9c7c5;
   border-color: #c9c7c5;
-  color: #fff;
+  color: #101112;
 }
 .highlighted:disabled:hover {
   background-color: #c9c7c5;
-  color: #fff;
+  color: #101112;
 }
 option[value="null"][disabled] {
   display: none;
@@ -271,7 +278,7 @@ textarea[readonly] {
   outline: none;
   border-radius: 0;
   border: none;
-  border-top: 1px solid #DDDBDA;
+  border-top: 1px solid #1B1D1E;
 }
 #help-btn {
   margin-left: auto;
@@ -317,7 +324,7 @@ textarea[readonly] {
   color: #a12b2b;
 }
 .char-btn {
-  color: white;
+  color: #428fdc;
   text-decoration: none;
   background-color: gray;
   display: inline-block;
@@ -357,13 +364,13 @@ textarea[readonly] {
   margin-right: 10px;
 }
 button, .button {
-  border: 1px solid #DDDBDA;
+  border: 1px solid #1B1D1E;
   height: 32px;
   display: inline-block;
   text-decoration: none;
-  background-color: white;
+  background-color: #428fdc;
   padding: 0 16px;
-  color: #0070d2;
+  color: #fafafa;
   cursor: pointer;
   outline: none;
   position: relative;
@@ -422,7 +429,7 @@ button.toggle .button-icon {
   flex-wrap: wrap;
 }
 .autocomplete-results a {
-  border: 1px solid #DDDBDA;
+  border: 1px solid #1B1D1E;
   border-radius: 0.25rem;
   padding: 0px 4px;
   text-decoration: none;
@@ -450,7 +457,7 @@ button.toggle .button-icon {
 }
 .relationshipName .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/relate.svg');
-  background-color: #0070d2;
+  background-color: #fafafa;
 }
 .object .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/sobject.svg');

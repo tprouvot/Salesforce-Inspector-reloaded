@@ -45,8 +45,8 @@ html {
   font-family: "Salesforce Sans",Arial,sans-serif;
   font-size: 100%;
   line-height: 1.5;
-  background: #fff;
-  color: #16325c;
+  background: #101112;
+  color: #A09F9C;
 }
 body {
   font-family: "Salesforce Sans",Arial,sans-serif;
@@ -70,7 +70,7 @@ a:active, a:hover {
 }
 .sf-link, .sf-link:active, .sf-link:focus, .sf-link:hover {
   margin-right: 1em;
-  background-color: rgb(6, 28, 63);
+  background-color: #404040;
   border-radius: 3px;
   line-height: 1.8em;
   text-decoration: none;
@@ -168,10 +168,10 @@ th {
   width: 1.25rem;
   height: 1.25rem;
   line-height: 1;
-  background-color: #fff;
+  background-color: #101112;
   vertical-align: middle;
   color: #706e6b;
-  border: 1px solid #dddbda;
+  border: 1px solid #1B1D1E;
   transition: border .15s linear;
   position: relative;
   display: inline-block;
@@ -220,7 +220,7 @@ th[tabindex] {
   position: relative;
   margin: 10% auto;
   border-radius: 10px;
-  background: #fff;
+  background: #101112;
 }
 #fieldDetailsView > div.container > div.mainContent {
   overflow: auto;
@@ -255,8 +255,8 @@ th[tabindex] {
 .filter-input {
   width: 20em;
   padding: 0 3rem;
-  background-color: #fff;
-  color: #16325c;
+  background-color: #101112;
+  color: #A09F9C;
   border: 1px solid #d8dde6;
   border-radius: .25rem;
   transition: border .1s linear,background-color .1s linear;
@@ -267,7 +267,7 @@ th[tabindex] {
 .filter-input:active, .filter-input:focus {
   outline: 0;
   border-color: #1589ee;
-  background-color: #fff;
+  background-color: #101112;
   box-shadow: 0 0 3px #0070D2;
 }
 .filter-icon {
@@ -317,7 +317,7 @@ th[tabindex] {
   top: -15px;
 }
 .object-bar {
-  background: #f7f9fb;
+  background: #191B1D;
   width: 100%;
   display: flex;
   align-items: center;
@@ -344,7 +344,7 @@ th[tabindex] {
   background-color: #0070d2;
 }
 .object-tab.active-tab a {
-  color: #16325c;
+  color: #A09F9C;
 }
 .object-tab * {
   vertical-align: middle;
@@ -382,7 +382,7 @@ th[tabindex] {
   position: relative;
 }
 .button {
-  background-color: #fff;
+  background-color: #101112;
   color: #0070d2;
   text-decoration: none;
   padding: 0 1rem;
@@ -398,8 +398,8 @@ th[tabindex] {
 }
 .button[disabled] {
   cursor: default;
-  color: #dddbda;
-  background-color: #fff;
+  color: #1B1D1E;
+  background-color: #101112;
 }
 .object-actions {
   position: relative;
@@ -431,31 +431,31 @@ th[tabindex] {
 .button-brand {
   background-color: #0070d2;
   border-color: #0070d2;
-  color: #fff;
+  color: #101112;
 }
 .button-brand:focus:not([disabled]), .button-brand:hover:not([disabled]) {
   background-color: #005fb2;
   border-color: #005fb2;
-  color: #fff;
+  color: #101112;
 }
 .button-brand:active:not([disabled]) {
   background-color: #005fb2;
   border-color: #005fb2;
-  color: #fff;
+  color: #101112;
 }
 .button-destructive {
   background-color: #c23934;
   border-color: #c23934;
-  color: #fff;
+  color: #101112;
 }
 .button-destructive:focus:not([disabled]), .button-destructive:hover:not([disabled]) {
   background-color: #a61a14;
-  color: #fff;
+  color: #101112;
 }
 .button-destructive:active:not([disabled]) {
   background-color: #870500;
   border-color: #870500;
-  color: #fff;
+  color: #101112;
 }
 .column-button-outer {
   position: relative;
@@ -476,7 +476,7 @@ th[tabindex] {
   border-radius: .25rem;
   padding: .25rem 0;
   font-size: .75rem;
-  background: #fff;
+  background: #101112;
   box-shadow: 0 2px 3px 0 rgba(0,0,0,.16);
   margin-top: .5rem;
 }

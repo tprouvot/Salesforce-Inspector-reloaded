@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "eslint": "^6.3.0",
-    "fs-extra": "2.0.0",
+    "fs-extra": "^2.0.0",
     "replace-in-file": "2.2.2",
     "zip-dir": "1.0.2"
   }

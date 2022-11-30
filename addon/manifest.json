@@ -18,6 +18,7 @@
       "matches": [
         "https://*.salesforce.com/*",
         "https://*.visual.force.com/*",
+        "https://*.vf.force.com/*",
         "https://*.lightning.force.com/*",
         "https://*.cloudforce.com/*",
         "https://*.visualforce.com/*"

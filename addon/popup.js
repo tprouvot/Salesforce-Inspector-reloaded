@@ -135,6 +135,7 @@ class App extends React.PureComponent {
             // Advanded features should be put below this line, and the layout adjusted so they are below the fold
             h("a", { ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "button" }, h("u", {}, "D"), "ownload Metadata"),
             h("a", { ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "button" }, "E", h("u", {}, "x"), "plore API"),
+            h("a", { ref: "generateToken", href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=3MVG9t0sl2P.pByoBbfCdlcNG._MMlvbPX3AWtwusR.mYXa9kqmFAoqSMGFCzB15NolQvuZUokFQnKHdrkU5Y&redirect_uri=chrome-extension://fcmoglpkegmpmenokkgkbkjbdhdgneab/token-retrieve.html`, target: linkTarget, className: "button" }, h("u", {}, "G"), "enerate Connected App Token"),
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
             inLightning && isInSetup && h("a", { ref: "homeBtn", href: `https://${sfHost}/lightning/page/home`, title: "You can choose if you want to open in a new tab or not", target: linkTarget, className: "button" }, "Salesforce ", h("u", {}, "H"), "ome"),
             inLightning && !isInSetup && h("a", { ref: "homeBtn", href: `https://${sfHost}/lightning/setup/SetupOneHome/home?setupApp=all`, title: "You can choose if you want to open in a new tab or not", target: linkTarget, className: "button" }, "Setup ", h("u", {}, "H"), "ome"),

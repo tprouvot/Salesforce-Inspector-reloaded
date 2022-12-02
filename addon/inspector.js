@@ -6,7 +6,20 @@ export let sfConn = {
       chrome.runtime.sendMessage({ message: "getSession", sfHost }, resolve));
     if (message) {
       this.instanceHostname = message.hostname;
-      this.sessionId = message.key;
+      //this.sessionId = message.key;
+      let url = new URL(window.location.href);
+      let access = url.hash.split("&").get(0);
+      console.log(access);
+
+      let c = url.searchParams.get("access_token");
+      this.sessionId = c;
+      if (c) {
+        localStorage.setItem(sfHost + "_access_token", c);
+      } else {
+        let data = localStorage.getItem(sfHost + "_access_token");
+        console.log(c);
+        this.sessionId = data;
+      }
     }
   },
 
@@ -119,6 +132,7 @@ export let sfConn = {
   async soap(wsdl, method, args, { headers } = {}) {
     if (!this.instanceHostname || !this.sessionId) {
       throw new Error("Session not found");
+
     }
 
     let xhr = new XMLHttpRequest();

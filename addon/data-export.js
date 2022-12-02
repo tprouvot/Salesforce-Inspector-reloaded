@@ -779,6 +779,12 @@ class Model {
     }
     vm.spinFor(batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query), { progressHandler: vm.exportProgress }))
       .catch(error => {
+        let url = new URL(window.location.href);
+        let c = url.searchParams.get("access_token");
+        console.log(c);
+
+
+
         console.error(error);
         vm.isWorking = false;
         vm.exportStatus = "Error";

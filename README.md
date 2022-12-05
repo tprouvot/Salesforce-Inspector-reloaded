@@ -38,7 +38,7 @@ To validate the accuracy of this description, inspect the source code, monitor t
 Use Salesforce Inspector with a Connected App
 -----
 If you enabled "API client whitelisting", Sf Inspector may not work anymore.
-To address the need of securing the extension usage, you can use a auth flow to get an access token linked to a connected app.
+To secure the extension usage, you can use a auth flow to get an access token linked to a connected app.
 
 1. Create a connected app.
 2. Set permissions and callback url. (chrome-extension://chromeExtensionId/data-export.html?host=mysandboxHost&)

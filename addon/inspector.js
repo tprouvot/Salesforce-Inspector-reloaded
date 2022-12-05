@@ -2,24 +2,25 @@ export let apiVersion = "56.0";
 export let sfConn = {
 
   async getSession(sfHost) {
+    let paramKey = "access_token";
     let message = await new Promise(resolve =>
       chrome.runtime.sendMessage({ message: "getSession", sfHost }, resolve));
     if (message) {
-      this.instanceHostname = message.hostname;
-      //this.sessionId = message.key;
-      let url = new URL(window.location.href);
-      let access = url.hash.split("&").get(0);
-      console.log(access);
+      if (window.location.href.includes(paramKey)) {
+        let url = new URL(window.location.href);
+        let access = url.hash.split("&")[0].split(paramKey + "=")[1];
+        access = decodeURI(access);
 
-      let c = url.searchParams.get("access_token");
-      this.sessionId = c;
-      if (c) {
-        localStorage.setItem(sfHost + "_access_token", c);
-      } else {
-        let data = localStorage.getItem(sfHost + "_access_token");
-        console.log(c);
+        if (access) {
+          this.sessionId = access;
+          localStorage.setItem(sfHost + "_" + paramKey, access);
+        }
+      } else if (localStorage.getItem(sfHost + "_" + paramKey) === null) {
+        let data = localStorage.getItem(sfHost + "_" + paramKey);
         this.sessionId = data;
       }
+      this.instanceHostname = message.hostname;
+      this.sessionId = message.key;
     }
   },
 

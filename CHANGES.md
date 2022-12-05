@@ -1,3 +1,10 @@
+Version 1.14
+===========
+
+General
+-------
+* Implement Auth2 flow to generate access token for connected App
+
 Version 1.13
 ===========
 

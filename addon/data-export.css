@@ -182,7 +182,7 @@ h1 {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
-select, input[type=search],input[type=save] {
+select, input[type=search],input[type=save],input[type=default] {
   width: 12rem;
   font-family: inherit;
   padding: 5px 13px;

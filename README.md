@@ -42,6 +42,7 @@ To address the need of securing the extension usage, you can use a auth flow to 
 
 1. Create a connected app.
 2. Set permissions and callback url. (chrome-extension://chromeExtensionId/data-export.html?host=mysandboxHost&)
+3. Get client Id and set it in the settings
 
 <img alt="Connected App" src="./docs/screenshots/connectedApp.png" height="100">
 

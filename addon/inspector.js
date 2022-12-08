@@ -6,6 +6,8 @@ export let sfConn = {
     let message = await new Promise(resolve =>
       chrome.runtime.sendMessage({ message: "getSession", sfHost }, resolve));
     if (message) {
+      this.instanceHostname = message.hostname;
+      this.sessionId = message.key;
       if (window.location.href.includes(paramKey)) {
         let url = new URL(window.location.href);
         let access = url.hash.split("&")[0].split(paramKey + "=")[1];
@@ -19,8 +21,6 @@ export let sfConn = {
         let data = localStorage.getItem(sfHost + "_" + paramKey);
         this.sessionId = data;
       }
-      this.instanceHostname = message.hostname;
-      this.sessionId = message.key;
     }
   },
 

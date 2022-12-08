@@ -460,7 +460,7 @@ class Model {
     let xmlName = /^[a-zA-Z_][a-zA-Z0-9_]*$/; // A (subset of a) valid XML name
     let columnVm = {
       columnIndex: index,
-      columnValue: column,
+      columnValue: column.trim(),
       columnOriginalValue: column,
       columnIgnore() { return columnVm.columnValue.startsWith("_"); },
       columnSkip() {

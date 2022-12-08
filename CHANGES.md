@@ -10,6 +10,7 @@ Version 1.13
 
 General
 -------
+* Automatically remove spaces from column name in import
 * Update to Salesforce API v 56.0 (Winter '23)
 * Add "Skip all unknown fields" to import page
 * Add User Id to pop-up

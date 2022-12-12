@@ -21,6 +21,12 @@ export let sfConn = {
         let data = localStorage.getItem(sfHost + "_" + paramKey);
         this.sessionId = data;
       }
+      let isSandbox = "isSandbox";
+      if (localStorage.getItem(sfHost + "_" + isSandbox) == null) {
+        sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox+FROM+Organization").then(res => {
+          localStorage.setItem(sfHost + "_" + isSandbox, res.records[0].IsSandbox);
+        });
+      }
     }
   },
 

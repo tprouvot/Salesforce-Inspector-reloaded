@@ -34,7 +34,10 @@ class Model {
       Succeeded: true,
       Failed: true
     };
-
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
+      //change background color for production
+      document.body.classList.add("prod");
+    }
     this.importTableResult = null;
     this.updateResult(null);
 

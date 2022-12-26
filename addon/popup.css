@@ -296,3 +296,6 @@ ul.small-tabs li:hover {
   vertical-align: middle;
   opacity: 70%;
 }
+.hide{
+    display:none;
+}

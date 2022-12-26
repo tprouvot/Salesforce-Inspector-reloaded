@@ -535,3 +535,6 @@ button.toggle .button-icon {
   top: 0;
   z-index: 2;
 }
+.showDiff{
+  background-color: #eff1f5;
+}

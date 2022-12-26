@@ -905,6 +905,7 @@ class App extends React.Component {
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetClientId = this.onSetClientId.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
+    this.onCompareRecords = this.onCompareRecords.bind(this);
   }
   onQueryAllChange(e) {
     let { model } = this.props;
@@ -1026,6 +1027,39 @@ class App extends React.Component {
   onStopExport() {
     let { model } = this.props;
     model.stopExport();
+    model.didUpdate();
+  }
+  onCompareRecords() {
+    let { model } = this.props;
+    let diff = [];
+    //highlight differences between two records
+    if (model.exportedData && model.exportedData.records.length === 2) {
+      let obj1 = model.exportedData.records[0];
+      let obj2 = model.exportedData.records[1];
+
+      Object.keys(obj1).forEach(key => {
+        if (obj1[key] !== obj2[key]) {
+          diff.push(key);
+        }
+      });
+      let table = document.getElementById("result-table").firstChild.firstChild;
+      let header = table.firstChild;
+      let columnsDiffIndex = [];
+
+      //get diff columns index
+      for (let i = 0; i < header.children.length; i++) {
+        if (diff.includes(header.children[i].innerText)) {
+          columnsDiffIndex.push(i);
+        }
+      }
+
+      //highlight second row columns
+      for (let i = 0; i < table.children[2].children.length; i++) {
+        if (columnsDiffIndex.includes(i)) {
+          table.children[2].children[i].classList.add("showDiff");
+        }
+      }
+    }
     model.didUpdate();
   }
   componentDidMount() {
@@ -1195,6 +1229,7 @@ class App extends React.Component {
           h("span", { className: "result-status flex-right" },
             h("span", {}, model.exportStatus),
             h("button", { className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport }, "Stop"),
+            h("button", { className: "button", disabled: model.exportedData == null || model.exportedData?.records?.length != 2, onClick: this.onCompareRecords }, "Show differences"),
           )
         ),
         h("textarea", { id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null }),

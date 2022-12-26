@@ -3,6 +3,7 @@ Version 1.14
 
 General
 -------
+* [Feature to compare data between 2 records](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/27)
 * [Switch background color on import page to alert users that it's a production environnement](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/20)
 * Implement Auth2 flow to generate access token for connected App
 

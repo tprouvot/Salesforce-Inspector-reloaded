@@ -1029,8 +1029,9 @@ class App extends React.Component {
     model.stopExport();
     model.didUpdate();
   }
-  onCompareRecords() {
+  onCompareRecords(e) {
     let { model } = this.props;
+    e.target.disabled = true;
     let diff = [];
     //highlight differences between two records
     if (model.exportedData && model.exportedData.records.length === 2) {
@@ -1052,13 +1053,27 @@ class App extends React.Component {
           columnsDiffIndex.push(i);
         }
       }
-
-      //highlight second row columns
-      for (let i = 0; i < table.children[2].children.length; i++) {
-        if (columnsDiffIndex.includes(i)) {
-          table.children[2].children[i].classList.add("showDiff");
+      /*
+            //highlight second row columns
+            for (let i = 0; i < table.children[2].children.length; i++) {
+              if (columnsDiffIndex.includes(i)) {
+                table.children[2].children[i].classList.add("showDiff");
+              }
+            }
+            */
+      //remove all identical datas
+      let elts = [];
+      for (let i = 0; i < table.children.length; i++) {
+        for (let j = 0; j < table.children[i].children.length; j++) {
+          if (!columnsDiffIndex.includes(j)) {
+            elts.push(table.children[i].children[j]);
+          }
         }
       }
+      //remove identical columns and cells
+      elts.forEach(element => {
+        element.remove();
+      });
     }
     model.didUpdate();
   }

@@ -13,11 +13,13 @@
   },
   "minimum_chrome_version": "61",
   "permissions": [
+    "cookies"
+  ],
+  "host_permissions": [
     "https://*.salesforce.com/*",
     "https://*.force.com/*",
     "https://*.cloudforce.com/*",
-    "https://*.visualforce.com/*",
-    "cookies"
+    "https://*.visualforce.com/*"
   ],
   "content_scripts": [
     {
@@ -41,19 +43,26 @@
     }
   ],
   "background": {
-    "scripts": [
-      "background.js"
-    ]
+    "service_worker": "background.js",
+    "type": "module"
   },
   "web_accessible_resources": [
-    "popup.html",
-    "data-export.html",
-    "data-import.html",
-    "inspect.html",
-    "metadata-retrieve.html",
-    "explore-api.html",
-    "limits.html"
+    {
+      "resources": [
+        "popup.html",
+        "data-export.html",
+        "data-import.html",
+        "inspect.html",
+        "metadata-retrieve.html",
+        "explore-api.html",
+        "limits.html"
+      ],
+      "matches": [
+        "https://*/*"
+      ],
+      "extension_ids": []
+    }
   ],
   "incognito": "replaced-at-build",
-  "manifest_version": 2
+  "manifest_version": 3
 }

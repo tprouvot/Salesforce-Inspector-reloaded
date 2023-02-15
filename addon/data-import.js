@@ -142,7 +142,7 @@ class Model {
 
   skipAllUnknownFields() {
     for (let column of this.importData.importTable.header) {
-      if (column.columnUnknownField()) {
+      if (column.columnUnknownField() || column.columnError()) {
         column.columnSkip();
       }
     }

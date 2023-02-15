@@ -8,7 +8,7 @@
 // location.host.endsWith("visualforce.com") = Visualforce page
 if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox") || location.host.endsWith("visualforce.com")) {
   // We are in a Salesforce org
-  chrome.runtime.sendMessage({message: "getSfHost", url: location.href}, sfHost => {
+  chrome.runtime.sendMessage({ message: "getSfHost", url: location.href }, sfHost => {
     if (sfHost) {
       initButton(sfHost, false);
     }
@@ -42,7 +42,7 @@ function initButton(sfHost, inInspector) {
       }
     });
 
-    let popupSrc = chrome.extension.getURL("popup.html");
+    let popupSrc = chrome.runtime.getURL("popup.html");
     let popupEl = document.createElement("iframe");
     popupEl.className = "insext-popup";
     popupEl.src = popupSrc;
@@ -71,7 +71,7 @@ function initButton(sfHost, inInspector) {
     });
     rootEl.appendChild(popupEl);
     function openPopup() {
-      popupEl.contentWindow.postMessage({insextUpdateRecordId: true, locationHref: location.href}, "*");
+      popupEl.contentWindow.postMessage({ insextUpdateRecordId: true, locationHref: location.href }, "*");
       rootEl.classList.add("insext-active");
       // These event listeners are only enabled when the popup is active to avoid interfering with Salesforce when not using the inspector
       addEventListener("click", outsidePopupClick);

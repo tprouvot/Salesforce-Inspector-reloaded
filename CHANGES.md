@@ -3,6 +3,7 @@ Version 1.14
 
 General
 -------
+* Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3
 * [Switch background color on import page to alert users that it's a production environnement](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/20)
 * Implement Auth2 flow to generate access token for connected App
 

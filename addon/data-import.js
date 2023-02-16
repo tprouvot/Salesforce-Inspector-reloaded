@@ -125,7 +125,10 @@ class Model {
     let header = data.shift().map((c, index) => this.makeColumn(c, index));
     this.updateResult(null); // Two updates, the first clears state from the scrolltable
     this.updateResult({ header, data });
-    this.importType = this.getSObject(data);
+    let obj = this.getSObject(data);
+    if (obj) {
+      this.importType = obj;
+    }
   }
 
   copyOptions() {

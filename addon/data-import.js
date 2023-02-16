@@ -97,7 +97,6 @@ class Model {
     try {
       data = csvParse(text, separator);
     } catch (e) {
-      /* console.log(e); */
       this.dataError = "Error: " + e.message;
       this.updateResult(null);
       return;
@@ -126,6 +125,10 @@ class Model {
     let header = data.shift().map((c, index) => this.makeColumn(c, index));
     this.updateResult(null); // Two updates, the first clears state from the scrolltable
     this.updateResult({ header, data });
+    let obj = this.getSObject(data);
+    if (obj) {
+      this.importType = obj;
+    }
   }
 
   copyOptions() {
@@ -456,6 +459,14 @@ class Model {
     // Note: caller will call this.executeBatch() if needed
     this.importData = { importTable, counts, taggedRows };
     this.updateImportTableResult();
+  }
+
+  getSObject(data) {
+    if (data[0][0].startsWith("[") && data[0][0].endsWith("]")) {
+      let obj = data[0][0].substr(1, data[0][0].length - 2);
+      return obj;
+    }
+    return "";
   }
 
   makeColumn(column, index) {

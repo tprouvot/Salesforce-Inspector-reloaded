@@ -42,7 +42,9 @@ To secure the extension usage, you can use a auth flow to get an access token li
 
 1. Create a connected app.
 2. Set permissions and callback url. (chrome-extension://chromeExtensionId/data-export.html?host=mysandboxHost&)
-3. Get client Id and save it in the export page
+> **Warning**
+> Don't forget to replace "chromeExtensionId" and "mysandboxHost" with you current extension id and org domain
+3. Get Consumer Key and save it in the export page
 
 <img alt="Connected App" src="./docs/screenshots/connectedApp.png" height="300">
 <img alt="Client Id" src="./docs/screenshots/clientId.png" height="100">

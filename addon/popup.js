@@ -532,13 +532,14 @@ class AllDataBoxSObject extends React.PureComponent {
     if (selectedValue && selectedValue.recordId && selectedValue.sobject && selectedValue.sobject.availableApis && selectedValue.sobject.availableApis.includes("regularApi")) {
       //optimistically assume the object has certain attribues. If some are not present, no recordIdDetails are displayed
       //TODO: Better handle objects with no recordtypes. Currently the optimistic approach results in no record details being displayed for ids for objects without record types.
-      let query = "select Id, LastModifiedBy.Alias, CreatedBy.Alias, RecordType.DeveloperName, CreatedDate, LastModifiedDate from " + selectedValue.sobject.name + " where id='" + selectedValue.recordId + "'";
+      let query = "select Id, LastModifiedBy.Alias, CreatedBy.Alias, RecordType.DeveloperName, RecordType.Id, CreatedDate, LastModifiedDate from " + selectedValue.sobject.name + " where id='" + selectedValue.recordId + "'";
       sfConn.rest("/services/data/v" + apiVersion + "/query?q=" + encodeURIComponent(query), { logErrors: false }).then(res => {
         for (let record of res.records) {
           let lastModifiedDate = new Date(record.LastModifiedDate);
           let createdDate = new Date(record.CreatedDate);
           this.setState({
             recordIdDetails: {
+              "recordTypeId": (record.RecordType) ? record.RecordType.Id : "-",
               "recordTypeName": (record.RecordType) ? record.RecordType.DeveloperName : "-",
               "createdBy": record.CreatedBy.Alias,
               "lastModifiedBy": record.LastModifiedBy.Alias,
@@ -856,6 +857,9 @@ class AllDataSelection extends React.PureComponent {
    * Optimistically generate lightning setup uri for the provided object api name.
    */
   getObjectSetupLink(sobjectName) {
+    return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
+  }
+  getObjectFieldsSetupLink(sobjectName) {
     return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
   }
   render() {
@@ -879,6 +883,12 @@ class AllDataSelection extends React.PureComponent {
                 )
               ),
               h("tr", {},
+                h("th", {}, "Fields:"),
+                h("td", {},
+                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name), target: linkTarget }, "List")
+                )
+              ),
+              h("tr", {},
                 h("th", {}, "Label:"),
                 h("td", {}, selectedValue.sobject.label)
               ),
@@ -891,7 +901,7 @@ class AllDataSelection extends React.PureComponent {
               ))),
 
 
-          h(AllDataRecordDetails, { recordIdDetails, className: "top-space" }),
+          h(AllDataRecordDetails, { sfHost, selectedValue, recordIdDetails, className: "top-space" }),
         ),
         h(ShowDetailsButton, { ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId }),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
@@ -916,15 +926,27 @@ class AllDataSelection extends React.PureComponent {
 }
 
 class AllDataRecordDetails extends React.PureComponent {
+
+  getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
+    return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
+
+  }
+  getRecordTypesLink(sfHost, sobjectName) {
+    return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
+  }
   render() {
-    let { recordIdDetails, className } = this.props;
+    let { sfHost, recordIdDetails, className, selectedValue } = this.props;
     if (recordIdDetails) {
       return (
         h("table", { className },
           h("tbody", {},
             h("tr", {},
-              h("th", {}, "RecType:"),
-              h("td", {}, recordIdDetails.recordTypeName)
+              h("th", {},
+                h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name), target: "" }, "RecType:")
+              ),
+              h("td", {},
+                h("a", { href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: "" }, recordIdDetails.recordTypeName)
+              )
             ),
             h("tr", {},
               h("th", {}, "Created:"),

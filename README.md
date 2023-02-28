@@ -47,7 +47,7 @@ To secure the extension usage, you can use a auth flow to get an access token li
 3. Get Consumer Key and save it in the export page
 
 <img alt="Connected App" src="./docs/screenshots/connectedApp.png" height="300">
-<img alt="Client Id" src="./docs/screenshots/clientId.png" height="100">
+<img alt="Client Id" src="./docs/screenshots/clientId.png">
 <img alt="Generate Token" src="./docs/screenshots/generateAccessToken.png" height="300">
 
 Installation

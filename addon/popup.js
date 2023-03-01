@@ -711,9 +711,17 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/lightning/setup/EnhancedProfiles/page?address=%2F" + profileId;
   }
 
-  render() {
-    let { user, linkTarget } = this.props;
+  getShowAllDataLink(userId) {
+    let { sfHost } = this.props;
+    let args = new URLSearchParams();
+    args.set("host", sfHost);
+    args.set("objectType", "User");
+    args.set("recordId", userId);
+    return "inspect.html?" + args;
+  }
 
+  render() {
+    let { user, linkTarget, sfHost } = this.props;
     return (
       h("div", { className: "all-data-box-inner" },
         h("div", { className: "all-data-box-data" },
@@ -732,7 +740,8 @@ class UserDetails extends React.PureComponent {
               ),
               h("tr", {},
                 h("th", {}, "Id:"),
-                h("td", { className: "oneliner" }, user.Id)
+                h("td", { className: "oneliner" },
+                  h("a", { href: this.getShowAllDataLink(user.Id), target: linkTarget, title: "Show all data" }, user.Id))
               ),
               h("tr", {},
                 h("th", {}, "E-mail:"),

@@ -3,7 +3,7 @@ Version 1.14
 
 General
 -------
-* Add shortcuts links to (list of record types, current SObject RecordType and objet details) from popup  [feature 34](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/34)
+* Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup  [feature 34](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/34)
 * Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3
 * Auto detect SObject on import page when posting data which contain SObject header [feature 30](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/30)
 * Update to Salesforce API v 57.0 (Spring '23)

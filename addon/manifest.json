@@ -5,7 +5,7 @@
   "icons": {
     "128": "icon128.png"
   },
-  "minimum_chrome_version": "61",
+  "minimum_chrome_version": "88",
   "permissions": [
     "cookies",
     "storage"

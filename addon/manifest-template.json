@@ -11,7 +11,7 @@
       "strict_min_version": "60.0"
     }
   },
-  "minimum_chrome_version": "61",
+  "minimum_chrome_version": "88",
   "permissions": [
     "cookies",
     "storage"

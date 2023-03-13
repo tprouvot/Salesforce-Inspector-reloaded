@@ -871,6 +871,9 @@ class AllDataSelection extends React.PureComponent {
   getObjectFieldsSetupLink(sobjectName) {
     return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
   }
+  getObjectListLink(sobjectName) {
+    return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
+  }
   render() {
     let { sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails } = this.props;
     // Show buttons for the available APIs.
@@ -894,7 +897,13 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Fields:"),
                 h("td", {},
-                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name), target: linkTarget }, "List")
+                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name), target: linkTarget }, "Fields setup")
+                )
+              ),
+              h("tr", {},
+                h("th", {}, "List:"),
+                h("td", {},
+                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name), target: linkTarget }, "Object list")
                 )
               ),
               h("tr", {},

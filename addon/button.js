@@ -36,6 +36,7 @@ function initButton(sfHost, inInspector) {
 
 
   function addflowScrollability() {
+         const currentUrl = window.location.href;
           // Create a new checkbox element
           const overflowCheckbox = document.createElement('input');
           overflowCheckbox.type = 'checkbox';

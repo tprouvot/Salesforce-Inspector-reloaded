@@ -42,13 +42,18 @@ function initButton(sfHost, inInspector) {
           overflowCheckbox.type = 'checkbox';
           overflowCheckbox.id = 'overflow-checkbox';
           overflowCheckbox.checked = true;
-          overflowCheckbox.style = 'position: fixed;top: 10px; right: 78px;'
-    
+          
           // Create a new label element for the checkbox
           const overflowLabel = document.createElement('label');
           overflowLabel.textContent = 'Enable flow scrollability';
           overflowLabel.htmlFor = 'overflow-checkbox';
-          overflowLabel.style='position: fixed; top: 7px; right: 100px; color: white;'
+          if(currentUrl.includes('sandbox')){
+            overflowCheckbox.style = 'position: fixed;top: 10px; right: 78px;'
+            overflowLabel.style='position: fixed; top: 7px; right: 100px; color: white;'
+          }else{
+            overflowCheckbox.style = `position: fixed;top: 21px; right: 78px;`;
+            overflowLabel.style=`position: fixed; top: 15px; right: 100px;color: white;`;
+          }
     
           // Get a reference to the <head> element
           const head = document.head;

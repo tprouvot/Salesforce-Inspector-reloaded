@@ -43,8 +43,10 @@ function initButton(sfHost, inInspector) {
       const overflowCheckbox = document.createElement("input");
       overflowCheckbox.type = "checkbox";
       overflowCheckbox.id = "overflow-checkbox";
-      overflowCheckbox.checked = true;
-            
+      const checkboxState = localStorage.getItem('checkboxScrollState');
+      if (checkboxState) {
+        overflowCheckbox.checked = JSON.parse(checkboxState);
+      }            
       // Create a new label element for the checkbox
       const overflowLabel = document.createElement("label");
       overflowLabel.textContent = "Enable flow scrollability";
@@ -66,7 +68,8 @@ function initButton(sfHost, inInspector) {
       style.textContent = ".canvas {overflow : auto!important ; }";
       // Append the <style> element to the <head> element
       head.appendChild(style);
-  
+      // Check local storage for the checkbox state
+
       // Append the checkbox and label elements to the body of the document
       document.body.appendChild(overflowCheckbox);
       document.body.appendChild(overflowLabel);
@@ -74,6 +77,8 @@ function initButton(sfHost, inInspector) {
       // Listen for changes to the checkbox state
       overflowCheckbox.addEventListener('change', function() {
         // Check if the checkbox is currently checked
+        // Save the checkbox state to local storage
+        localStorage.setItem('checkboxScrollState', JSON.stringify(this.checked));
         if (this.checked) {
           // Set the overflow property to "auto"
           style.textContent = ".canvas {overflow : auto!important ; }";

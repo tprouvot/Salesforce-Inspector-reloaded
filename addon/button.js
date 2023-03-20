@@ -44,6 +44,7 @@ function initButton(sfHost, inInspector) {
       overflowCheckbox.type = "checkbox";
       overflowCheckbox.id = "overflow-checkbox";
       const checkboxState = localStorage.getItem('checkboxScrollState');
+      // Check local storage for the checkbox state
       if (checkboxState) {
         overflowCheckbox.checked = JSON.parse(checkboxState);
       }            
@@ -68,7 +69,6 @@ function initButton(sfHost, inInspector) {
       style.textContent = ".canvas {overflow : auto!important ; }";
       // Append the <style> element to the <head> element
       head.appendChild(style);
-      // Check local storage for the checkbox state
 
       // Append the checkbox and label elements to the body of the document
       document.body.appendChild(overflowCheckbox);

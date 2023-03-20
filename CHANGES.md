@@ -3,6 +3,7 @@ Version 1.14
 
 General
 -------
+* Fix links (object fields and object list) for custom metadata objects [issue 39](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/39)
 * Add shortcut link to object list from popup (idea by [Samuel Krissi](https://github.com/samuelkrissi) )
 * Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/34)
 * Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3

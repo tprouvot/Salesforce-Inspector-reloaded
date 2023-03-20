@@ -249,7 +249,7 @@ class AllDataBox extends React.PureComponent {
   loadSobjects() {
     let entityMap = new Map();
 
-    function addEntity({ name, label, keyPrefix }, api) {
+    function addEntity({ name, label, keyPrefix, durableId }, api) {
       label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
       let entity = entityMap.get(name);
       if (entity) {
@@ -265,6 +265,7 @@ class AllDataBox extends React.PureComponent {
           name,
           label,
           keyPrefix,
+          durableId,
           availableKeyPrefix: null,
         };
         entityMap.set(name, entity);
@@ -288,13 +289,14 @@ class AllDataBox extends React.PureComponent {
     }
 
     function getEntityDefinitions(bucket) {
-      let query = "select QualifiedApiName, Label, KeyPrefix from EntityDefinition" + bucket;
+      let query = "select QualifiedApiName, Label, KeyPrefix, DurableId from EntityDefinition" + bucket;
       return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query)).then(res => {
         for (let record of res.records) {
           addEntity({
             name: record.QualifiedApiName,
             label: record.Label,
-            keyPrefix: record.KeyPrefix
+            keyPrefix: record.KeyPrefix,
+            durableId: record.DurableId
           }, null);
         }
       }).catch(err => {
@@ -866,14 +868,29 @@ class AllDataSelection extends React.PureComponent {
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
    */
-  getObjectSetupLink(sobjectName) {
-    return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
+  getObjectSetupLink(sobjectName, durableId) {
+    if (sobjectName.endsWith("__mdt")) {
+      return this.getCustomMetadataLink(durableId);
+    } else {
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
+    }
   }
-  getObjectFieldsSetupLink(sobjectName) {
-    return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
+  getCustomMetadataLink(durableId) {
+    return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + durableId;
   }
-  getObjectListLink(sobjectName) {
-    return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
+  getObjectFieldsSetupLink(sobjectName, durableId) {
+    if (sobjectName.endsWith("__mdt")) {
+      return this.getCustomMetadataLink(durableId);
+    } else {
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
+    }
+  }
+  getObjectListLink(sobjectName, keyPrefix) {
+    if (sobjectName.endsWith("__mdt")) {
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + keyPrefix;
+    } else {
+      return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
+    }
   }
   render() {
     let { sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails } = this.props;
@@ -892,19 +909,19 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", { href: this.getObjectSetupLink(selectedValue.sobject.name), target: linkTarget }, selectedValue.sobject.name)
+                  h("a", { href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, selectedValue.sobject.name)
                 )
               ),
               h("tr", {},
                 h("th", {}, "Fields:"),
                 h("td", {},
-                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name), target: linkTarget }, "Fields setup")
+                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Fields setup")
                 )
               ),
               h("tr", {},
                 h("th", {}, "List:"),
                 h("td", {},
-                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name), target: linkTarget }, "Object list")
+                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix), target: linkTarget }, "Object list")
                 )
               ),
               h("tr", {},

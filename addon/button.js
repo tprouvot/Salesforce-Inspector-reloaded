@@ -16,7 +16,7 @@ if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox") |
 }
 
 function initButton(sfHost, inInspector) {
-  addflowScrollability();
+  addFlowScrollability();
   let rootEl = document.createElement("div");
   rootEl.id = "insext";
   let btn = document.createElement("div");
@@ -35,7 +35,7 @@ function initButton(sfHost, inInspector) {
   });
 
 
-  function addflowScrollability() {
+  function addFlowScrollability() {
     const currentUrl = window.location.href;
     // Check the current URL for the string "builder_platform_interaction"
     if (currentUrl.includes("builder_platform_interaction")) {
@@ -45,9 +45,7 @@ function initButton(sfHost, inInspector) {
       overflowCheckbox.id = "overflow-checkbox";
       const checkboxState = localStorage.getItem('checkboxScrollState');
       // Check local storage for the checkbox state
-      if (checkboxState) {
-        overflowCheckbox.checked = JSON.parse(checkboxState);
-      }            
+      checkboxState ? overflowCheckbox.checked = JSON.parse(checkboxState) : overflowCheckbox.checked = true;   
       // Create a new label element for the checkbox
       const overflowLabel = document.createElement("label");
       overflowLabel.textContent = "Enable flow scrollability";
@@ -59,37 +57,30 @@ function initButton(sfHost, inInspector) {
         overflowCheckbox.className = "checkboxScrollProd" ;
         overflowLabel.className = "labeCheckboxScrollProd";
       }
-  
       // Get a reference to the <head> element
       const head = document.head;
-  
       // Create a new <style> element
       const style = document.createElement("style");
       // Set the initial text content of the <style> element
       style.textContent = ".canvas {overflow : auto!important ; }";
       // Append the <style> element to the <head> element
       head.appendChild(style);
-
       // Append the checkbox and label elements to the body of the document
       document.body.appendChild(overflowCheckbox);
       document.body.appendChild(overflowLabel);
-  
+        // Set the overflow property to "auto"
+      overflowCheckbox.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
       // Listen for changes to the checkbox state
       overflowCheckbox.addEventListener('change', function() {
         // Check if the checkbox is currently checked
         // Save the checkbox state to local storage
         localStorage.setItem('checkboxScrollState', JSON.stringify(this.checked));
-        if (this.checked) {
-          // Set the overflow property to "auto"
-          style.textContent = ".canvas {overflow : auto!important ; }";
-        } else {
-          // Set the overflow property to "hidden"
-          style.textContent = ".canvas {overflow : hidden!important ; }";
-        }
+        // Set the overflow property to "auto"
+        this.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
       });
-
     }
   }
+
   function loadPopup() {
     btn.addEventListener("click", () => {
       if (!rootEl.classList.contains("insext-active")) {

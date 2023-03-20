@@ -1,7 +1,9 @@
 <img src="https://raw.githubusercontent.com/sorenkrabbe/Chrome-Salesforce-inspector/master/addon/icon128.png" align="right">
 
-Salesforce inspector
+Sf inspector reloaded
 ===========================
+Extension based on [Salesforce Inspector](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector) by Søren Krabbe.
+
 Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
 
 [![Test Status](https://travis-ci.org/tprouvot/Chrome-Salesforce-inspector.svg?branch=master)](https://travis-ci.org/tprouvot/Chrome-Salesforce-inspector)
@@ -37,18 +39,7 @@ To validate the accuracy of this description, inspect the source code, monitor t
 
 Use Salesforce Inspector with a Connected App
 -----
-If you enabled "API client whitelisting", Sf Inspector may not work anymore.
-To secure the extension usage, you can use a auth flow to get an access token linked to a connected app.
-
-1. Create a connected app.
-2. Set permissions and callback url. (chrome-extension://chromeExtensionId/data-export.html?host=mysandboxHost&)
-> **Warning**
-> Don't forget to replace "chromeExtensionId" and "mysandboxHost" with you current extension id and org domain
-3. Get Consumer Key and save it in the export page
-
-<img alt="Connected App" src="./docs/screenshots/connectedApp.png" height="300">
-<img alt="Client Id" src="./docs/screenshots/clientId.png">
-<img alt="Generate Token" src="./docs/screenshots/generateAccessToken.png" height="300">
+Follow steps described in [wiki](https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki/How-to#use-sf-inspector-with-a-connected-app)
 
 Installation
 -----

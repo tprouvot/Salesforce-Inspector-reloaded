@@ -71,7 +71,7 @@ function initButton(sfHost, inInspector) {
         // Set the overflow property to "auto"
       overflowCheckbox.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
       // Listen for changes to the checkbox state
-      overflowCheckbox.addEventListener('change', function() {
+      overflowCheckbox.addEventListener("change", function() {
         // Check if the checkbox is currently checked
         // Save the checkbox state to local storage
         localStorage.setItem("checkboxScrollState", JSON.stringify(this.checked));

@@ -116,8 +116,8 @@ Design Principles
 
 About
 -----
-By Søren Krabbe and Jesper Kristensen
+By Thomas Prouvot and forked from [Søren Krabbe and Jesper Kristensen](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector)
 
 License
 -----
-MIT
+[MIT](./blob/master/LICENSE)

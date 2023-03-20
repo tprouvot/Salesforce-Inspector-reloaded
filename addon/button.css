@@ -53,21 +53,25 @@
     position: fixed;
     top: 10px;
     right: 78px;
+    z-index: 100;
 }
 .checkboxScrollProd{
     position: fixed;
     top: 21px; 
     right: 78px;
+    z-index: 100;
 }
 .labelCheckboxScrollSandbox{
     position: fixed;
     top: 7px; 
     right: 100px; 
     color: white;
+    z-index: 100;
 }
 .labeCheckboxScrollProd{
     position: fixed;
     top: 15px;
     right: 100px;
     color: white;
+    z-index: 100;
 }

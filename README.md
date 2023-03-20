@@ -120,4 +120,4 @@ By Thomas Prouvot and forked from [Søren Krabbe and Jesper Kristensen](https://
 
 License
 -----
-[MIT](./blob/master/LICENSE)
+[MIT](./LICENSE)

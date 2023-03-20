@@ -43,7 +43,7 @@ function initButton(sfHost, inInspector) {
       const overflowCheckbox = document.createElement("input");
       overflowCheckbox.type = "checkbox";
       overflowCheckbox.id = "overflow-checkbox";
-      const checkboxState = localStorage.getItem('checkboxScrollState');
+      const checkboxState = localStorage.getItem("checkboxScrollState");
       // Check local storage for the checkbox state
       checkboxState ? overflowCheckbox.checked = JSON.parse(checkboxState) : overflowCheckbox.checked = true;   
       // Create a new label element for the checkbox
@@ -74,7 +74,7 @@ function initButton(sfHost, inInspector) {
       overflowCheckbox.addEventListener('change', function() {
         // Check if the checkbox is currently checked
         // Save the checkbox state to local storage
-        localStorage.setItem('checkboxScrollState', JSON.stringify(this.checked));
+        localStorage.setItem("checkboxScrollState", JSON.stringify(this.checked));
         // Set the overflow property to "auto"
         this.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
       });

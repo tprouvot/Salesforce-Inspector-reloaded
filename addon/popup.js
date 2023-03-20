@@ -150,7 +150,8 @@ class App extends React.PureComponent {
               " / " + apiVersion + ")",
             ),
             h("div", { className: "tip" }, "[ctrl+alt+i] to open"),
-            h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About")
+            h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About"),
+            h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki", target: linkTarget }, "Wiki")
           ),
         )
       )

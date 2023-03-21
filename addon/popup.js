@@ -876,7 +876,7 @@ class AllDataSelection extends React.PureComponent {
     }
   }
   getCustomMetadataLink(durableId) {
-    return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + durableId;
+    return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + durableId + "%3Fsetupid%3DCustomMetadata";
   }
   getObjectFieldsSetupLink(sobjectName, durableId) {
     if (sobjectName.endsWith("__mdt")) {

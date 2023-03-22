@@ -125,7 +125,7 @@ class App extends React.PureComponent {
                 `})
             )
           ),
-          "Sf Inspector"
+          "Salesforce Inspector"
         ),
         h("div", { className: "main" },
           h(AllDataBox, { ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl }),

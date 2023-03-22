@@ -1,6 +1,6 @@
 <img src="https://raw.githubusercontent.com/sorenkrabbe/Chrome-Salesforce-inspector/master/addon/icon128.png" align="right">
 
-Sf inspector reloaded
+Salesforce inspector reloaded
 ===========================
 Extension based on [Salesforce Inspector](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector) by Søren Krabbe.
 

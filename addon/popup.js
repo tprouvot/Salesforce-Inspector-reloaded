@@ -892,6 +892,9 @@ class AllDataSelection extends React.PureComponent {
       return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
     }
   }
+  getRecordTypesLink(sfHost, sobjectName) {
+    return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
+  }
   render() {
     let { sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails } = this.props;
     // Show buttons for the available APIs.
@@ -913,16 +916,12 @@ class AllDataSelection extends React.PureComponent {
                 )
               ),
               h("tr", {},
-                h("th", {}, "Fields:"),
+                h("th", {}, "Links:"),
                 h("td", {},
-                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Fields setup")
-                )
-              ),
-              h("tr", {},
-                h("th", {}, "List:"),
-                h("td", {},
-                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix), target: linkTarget }, "Object list")
-                )
+                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Fields / "),
+                  h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name), target: linkTarget }, "Record Types / "),
+                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix), target: linkTarget }, "Object List")
+                ),
               ),
               h("tr", {},
                 h("th", {}, "Label:"),
@@ -965,10 +964,6 @@ class AllDataRecordDetails extends React.PureComponent {
 
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
-
-  }
-  getRecordTypesLink(sfHost, sobjectName) {
-    return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
   }
   render() {
     let { sfHost, recordIdDetails, className, selectedValue } = this.props;
@@ -977,9 +972,7 @@ class AllDataRecordDetails extends React.PureComponent {
         h("table", { className },
           h("tbody", {},
             h("tr", {},
-              h("th", {},
-                h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name), target: "" }, "RecType:")
-              ),
+              h("th", {}, "RecType:"),
               h("td", {},
                 h("a", { href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: "" }, recordIdDetails.recordTypeName)
               )

@@ -916,13 +916,12 @@ class AllDataSelection extends React.PureComponent {
                 )
               ),
               h("tr", {},
-                h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Fields:")
-              ),
-              h("tr", {},
-                h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name), target: linkTarget }, "Record Types:")
-              ),
-              h("tr", {},
-                h("a", { href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix), target: linkTarget }, "Object List:")
+                h("th", {}, "Links:"),
+                h("td", {},
+                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Fields / "),
+                  h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name), target: linkTarget }, "Record Types / "),
+                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix), target: linkTarget }, "Object List")
+                ),
               ),
               h("tr", {},
                 h("th", {}, "Label:"),

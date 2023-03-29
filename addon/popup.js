@@ -163,7 +163,7 @@ class AllDataBox extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({ sobject: "sobject", users: "users" }); //Enum. Supported aspects
+    this.SearchAspectTypes = Object.freeze({ sobject: "sobject", users: "users", shortcuts: "shortcuts" }); //Enum. Supported aspects
 
     this.state = {
       activeSearchAspect: this.SearchAspectTypes.sobject,
@@ -196,6 +196,9 @@ class AllDataBox extends React.PureComponent {
           break;
         case this.SearchAspectTypes.users:
           this.ensureKnownUserContext();
+          break;
+        case this.SearchAspectTypes.shortcuts:
+          this.ensureKnownBrowserContext();
           break;
       }
     }
@@ -340,7 +343,8 @@ class AllDataBox extends React.PureComponent {
       h("div", { className: "all-data-box " + (this.isLoading() ? "loading " : "") },
         h("ul", { className: "small-tabs" },
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users")
+          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),
+          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : "" }, "Shortcuts")
         ),
 
         (activeSearchAspect == this.SearchAspectTypes.sobject)
@@ -348,6 +352,8 @@ class AllDataBox extends React.PureComponent {
           : (activeSearchAspect == this.SearchAspectTypes.users)
             ? h(AllDataBoxUsers, { ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); } }, "Users")
             : "AllData aspect " + activeSearchAspect + " not implemented"
+              ? h(AllDataBoxShortcut, { ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); } }, "Users")
+              : "AllData aspect " + activeSearchAspect + " not implemented"
       )
     );
   }
@@ -682,6 +688,150 @@ class AllDataBoxSObject extends React.PureComponent {
           ? h(AllDataSelection, { ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId })
           : h("div", { className: "all-data-box-inner empty" }, "No record to display")
       )
+    );
+  }
+}
+
+class AllDataBoxShortcut extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      selectedUser: null,
+      selectedUserId: null,
+    };
+    this.getMatches = this.getMatches.bind(this);
+    this.onDataSelect = this.onDataSelect.bind(this);
+  }
+
+  componentDidMount() {
+    let { contextUserId } = this.props;
+    this.onDataSelect({ Id: contextUserId });
+    this.refs.allDataSearch.refs.showAllDataInp.focus();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.contextUserId !== this.props.contextUserId) {
+      this.onDataSelect({ Id: this.props.contextUserId });
+    }
+  }
+
+  async getMatches(userQuery) {
+    let { setIsLoading } = this.props;
+    if (!userQuery) {
+      return [];
+    }
+
+    //TODO: Better search query. SOSL?
+    const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
+    const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
+    const queryFrom = "from User where (username like '%" + userQuery + "%' or name like '%" + userQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
+    const compositeQuery = {
+      "compositeRequest": [
+        {
+          "method": "GET",
+          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
+          "referenceId": "fullData"
+        }, {
+          "method": "GET",
+          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
+          "referenceId": "minimalData"
+        }
+      ]
+    };
+
+    try {
+      setIsLoading(true);
+      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", { method: "POST", body: compositeQuery });
+      let users = userSearchResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records;
+      return users;
+    } catch (err) {
+      console.error("Unable to query user details with: " + JSON.stringify(compositeQuery) + ".", err);
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+
+  }
+
+  async onDataSelect(userRecord) {
+    if (userRecord && userRecord.Id) {
+      await this.setState({ selectedUserId: userRecord.Id, selectedUser: null });
+      await this.querySelectedUserDetails();
+    }
+  }
+
+  async querySelectedUserDetails() {
+    let { selectedUserId } = this.state;
+    let { setIsLoading } = this.props;
+
+    if (!selectedUserId) {
+      return;
+    }
+    //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
+    const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name";
+    const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier";
+    const queryFrom = "from User where Id='" + selectedUserId + "' limit 1";
+    const compositeQuery = {
+      "compositeRequest": [
+        {
+          "method": "GET",
+          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
+          "referenceId": "fullData"
+        }, {
+          "method": "GET",
+          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
+          "referenceId": "minimalData"
+        }
+      ]
+    };
+
+    try {
+      setIsLoading(true);
+      //const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + selectedUserId); //Does not return profile details. Query call is therefore prefered
+      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", { method: "POST", body: compositeQuery });
+      let userDetail = userResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records[0];
+      await this.setState({ selectedUser: userDetail });
+    } catch (err) {
+      console.error("Unable to query user details with: " + JSON.stringify(compositeQuery) + ".", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  resultRender(matches, userQuery) {
+    return matches.map(value => ({
+      key: value.Id,
+      value,
+      element: [
+        h("div", { className: "autocomplete-item-main", key: "main" },
+          h(MarkSubstring, {
+            text: value.Name + " (" + value.Alias + ")",
+            start: value.Name.toLowerCase().indexOf(userQuery.toLowerCase()),
+            length: userQuery.length
+          })),
+        h("div", { className: "autocomplete-item-sub small", key: "sub" },
+          h("div", {}, (value.Profile) ? value.Profile.Name : ""),
+          h(MarkSubstring, {
+            text: (!value.IsActive) ? "⚠ " + value.Username : value.Username,
+            start: value.Username.toLowerCase().indexOf(userQuery.toLowerCase()),
+            length: userQuery.length
+          }))
+      ]
+    }));
+  }
+
+  render() {
+    let { selectedUser } = this.state;
+    let { sfHost, linkTarget, contextOrgId, contextUserId, contextPath } = this.props;
+
+    return (
+      h("div", { ref: "shortcutsBox", className: "users-box" },
+        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
+        h("div", { className: "all-data-box-inner" + (!selectedUser ? " empty" : "") },
+          selectedUser
+            ? h(UserDetails, { user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath })
+            : h("div", { className: "center" }, "No shortcut found")
+        ))
     );
   }
 }

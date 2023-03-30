@@ -1,6 +1,7 @@
 /* global React ReactDOM */
 import { sfConn, apiVersion } from "./inspector.js";
 import { getAllFieldSetupLinks } from "./setup-links.js";
+import { setupLinks } from './links.js';
 
 let h = React.createElement;
 
@@ -722,13 +723,9 @@ class AllDataBoxShortcut extends React.PureComponent {
     }
     try {
       setIsLoading(true);
-      let shortcuts = [
-        { label: "setup", section: "Home>Setup", link: "./setup" },
-        { label: "deployment status ", section: "Home>Setup>Deploy", link: "/lightning/setup/DeployStatus/home" },
-        { label: "deployment check ", section: "Home>Setup>DeployCheck", link: "/lightning/setup/DeployStatus/home" }
-      ];
 
-      let result = shortcuts.filter(item => item.label.toLowerCase().startsWith(shortcutSearch));
+      //let result = shortcuts.filter(item => item.label.toLowerCase().startsWith(shortcutSearch));
+      let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch));
       return result ? result : [];
     } catch (err) {
       console.error("Unable to find shortcut", err);
@@ -756,7 +753,7 @@ class AllDataBoxShortcut extends React.PureComponent {
             length: userQuery.length
           })),
         h("div", { className: "autocomplete-item-sub small", key: "sub" },
-          h("div", {}, value.section)
+          h("div", {}, value.link)
         )
       ]
     }));
@@ -768,7 +765,7 @@ class AllDataBoxShortcut extends React.PureComponent {
 
     return (
       h("div", { ref: "shortcutsBox", className: "users-box" },
-        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
+        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 100, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
         h("div", { className: "all-data-box-inner" + (!selectedUser ? " empty" : "") },
           selectedUser
             ? h(UserDetails, { user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath })

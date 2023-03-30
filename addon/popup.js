@@ -715,107 +715,49 @@ class AllDataBoxShortcut extends React.PureComponent {
     }
   }
 
-  async getMatches(userQuery) {
+  async getMatches(shortcutSearch) {
     let { setIsLoading } = this.props;
-    if (!userQuery) {
+    if (!shortcutSearch) {
       return [];
     }
-
-    //TODO: Better search query. SOSL?
-    const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
-    const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const queryFrom = "from User where (username like '%" + userQuery + "%' or name like '%" + userQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
-    const compositeQuery = {
-      "compositeRequest": [
-        {
-          "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
-          "referenceId": "fullData"
-        }, {
-          "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
-          "referenceId": "minimalData"
-        }
-      ]
-    };
-
     try {
       setIsLoading(true);
-      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", { method: "POST", body: compositeQuery });
-      let users = userSearchResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records;
-      return users;
+      let shortcuts = [
+        { label: "setup", section: "Home>Setup", link: "./setup" },
+        { label: "deployment status ", section: "Home>Setup>Deploy", link: "/lightning/setup/DeployStatus/home" },
+        { label: "deployment check ", section: "Home>Setup>DeployCheck", link: "/lightning/setup/DeployStatus/home" }
+      ];
+
+      let result = shortcuts.filter(item => item.label.toLowerCase().startsWith(shortcutSearch));
+      return result ? result : [];
     } catch (err) {
-      console.error("Unable to query user details with: " + JSON.stringify(compositeQuery) + ".", err);
+      console.error("Unable to find shortcut", err);
       return [];
     } finally {
       setIsLoading(false);
     }
-
   }
 
-  async onDataSelect(userRecord) {
-    if (userRecord && userRecord.Id) {
-      await this.setState({ selectedUserId: userRecord.Id, selectedUser: null });
-      await this.querySelectedUserDetails();
-    }
-  }
-
-  async querySelectedUserDetails() {
-    let { selectedUserId } = this.state;
-    let { setIsLoading } = this.props;
-
-    if (!selectedUserId) {
-      return;
-    }
-    //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
-    const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name";
-    const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier";
-    const queryFrom = "from User where Id='" + selectedUserId + "' limit 1";
-    const compositeQuery = {
-      "compositeRequest": [
-        {
-          "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
-          "referenceId": "fullData"
-        }, {
-          "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
-          "referenceId": "minimalData"
-        }
-      ]
-    };
-
-    try {
-      setIsLoading(true);
-      //const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + selectedUserId); //Does not return profile details. Query call is therefore prefered
-      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", { method: "POST", body: compositeQuery });
-      let userDetail = userResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records[0];
-      await this.setState({ selectedUser: userDetail });
-    } catch (err) {
-      console.error("Unable to query user details with: " + JSON.stringify(compositeQuery) + ".", err);
-    } finally {
-      setIsLoading(false);
-    }
+  async onDataSelect(shortcut) {
+    console.log(shortcut);
+    //let { sfHost } = this.props;
+    window.location.href = "https://" + sfHost + "/" + shortcut.link;
   }
 
   resultRender(matches, userQuery) {
     return matches.map(value => ({
-      key: value.Id,
+      key: value.label,
       value,
       element: [
         h("div", { className: "autocomplete-item-main", key: "main" },
           h(MarkSubstring, {
-            text: value.Name + " (" + value.Alias + ")",
-            start: value.Name.toLowerCase().indexOf(userQuery.toLowerCase()),
+            text: value.label,
+            start: value.label.toLowerCase().indexOf(userQuery.toLowerCase()),
             length: userQuery.length
           })),
         h("div", { className: "autocomplete-item-sub small", key: "sub" },
-          h("div", {}, (value.Profile) ? value.Profile.Name : ""),
-          h(MarkSubstring, {
-            text: (!value.IsActive) ? "⚠ " + value.Username : value.Username,
-            start: value.Username.toLowerCase().indexOf(userQuery.toLowerCase()),
-            length: userQuery.length
-          }))
+          h("div", {}, value.section)
+        )
       ]
     }));
   }

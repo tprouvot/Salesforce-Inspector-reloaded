@@ -11,6 +11,9 @@ General
 * Update to Salesforce API v 57.0 (Spring '23)
 * [Switch background color on import page to alert users that it's a production environnement](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/20)
 * Implement Auth2 flow to generate access token for connected App
+*  Add checkbox in flow builder to give the possibility to the user to scroll on the flow
+
+![image](https://user-images.githubusercontent.com/96471586/226161542-cbedec0a-8988-4559-9152-d067ea6f9cb6.png)
 
 Version 1.13
 ===========

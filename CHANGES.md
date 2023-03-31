@@ -1,3 +1,10 @@
+Version 1.15
+===========
+
+General
+-------
+* Add shortcut tab to access setup quick links [feature 42](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/42)
+
 Version 1.14
 ===========
 

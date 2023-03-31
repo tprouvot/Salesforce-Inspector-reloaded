@@ -703,13 +703,7 @@ class AllDataBoxShortcut extends React.PureComponent {
   componentDidMount() {
     this.refs.allDataSearch.refs.showAllDataInp.focus();
   }
-  /*
-      componentDidUpdate(prevProps) {
-        if (prevProps.contextUserId !== this.props.contextUserId) {
-          this.onDataSelect({ Id: this.props.contextUserId });
-        }
-      }
-    */
+
   async getMatches(shortcutSearch) {
     let { setIsLoading } = this.props;
     if (!shortcutSearch) {
@@ -719,7 +713,7 @@ class AllDataBoxShortcut extends React.PureComponent {
       setIsLoading(true);
 
       //let result = shortcuts.filter(item => item.label.toLowerCase().startsWith(shortcutSearch));
-      let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch));
+      let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch.toLowerCase()));
       return result ? result : [];
     } catch (err) {
       console.error("Unable to find shortcut", err);

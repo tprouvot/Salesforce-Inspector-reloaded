@@ -6,8 +6,6 @@ Extension based on [Salesforce Inspector](https://github.com/sorenkrabbe/Chrome-
 
 Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
 
-[![Test Status](https://travis-ci.org/tprouvot/Chrome-Salesforce-inspector.svg?branch=master)](https://travis-ci.org/tprouvot/Chrome-Salesforce-inspector)
-
 New Features / Fix
 -----
 [List of changes](CHANGES.md)

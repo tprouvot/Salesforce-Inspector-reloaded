@@ -1,7 +1,7 @@
 {
   "name": "Salesforce Inspector reloaded",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.14",
+  "version": "1.15",
   "icons": {
     "128": "icon128.png"
   },
@@ -32,7 +32,8 @@
       ],
       "js": [
         "button.js",
-        "inspect-inline.js"
+        "inspect-inline.js",
+        "links.js"
       ]
     }
   ],

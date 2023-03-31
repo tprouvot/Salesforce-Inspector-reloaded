@@ -1,6 +1,7 @@
 /* global React ReactDOM */
 import { sfConn, apiVersion } from "./inspector.js";
 import { getAllFieldSetupLinks } from "./setup-links.js";
+import { setupLinks } from "./links.js";
 
 let h = React.createElement;
 
@@ -74,6 +75,10 @@ class App extends React.PureComponent {
     if (e.key == "l") {
       e.preventDefault();
       this.refs.limitsBtn.click();
+    }
+    if (e.key == "d") {
+      e.preventDefault();
+      this.refs.metaRetrieveBtn.click();
     }
     if (e.key == "d") {
       e.preventDefault();
@@ -163,7 +168,7 @@ class AllDataBox extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({ sobject: "sobject", users: "users" }); //Enum. Supported aspects
+    this.SearchAspectTypes = Object.freeze({ sobject: "sobject", users: "users", shortcuts: "shortcuts" }); //Enum. Supported aspects
 
     this.state = {
       activeSearchAspect: this.SearchAspectTypes.sobject,
@@ -196,6 +201,9 @@ class AllDataBox extends React.PureComponent {
           break;
         case this.SearchAspectTypes.users:
           this.ensureKnownUserContext();
+          break;
+        case this.SearchAspectTypes.shortcuts:
+          this.ensureKnownBrowserContext();
           break;
       }
     }
@@ -340,7 +348,8 @@ class AllDataBox extends React.PureComponent {
       h("div", { className: "all-data-box " + (this.isLoading() ? "loading " : "") },
         h("ul", { className: "small-tabs" },
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users")
+          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),
+          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : "" }, "Shortcuts")
         ),
 
         (activeSearchAspect == this.SearchAspectTypes.sobject)
@@ -348,6 +357,8 @@ class AllDataBox extends React.PureComponent {
           : (activeSearchAspect == this.SearchAspectTypes.users)
             ? h(AllDataBoxUsers, { ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); } }, "Users")
             : "AllData aspect " + activeSearchAspect + " not implemented"
+              ? h(AllDataBoxShortcut, { ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); } }, "Users")
+              : "AllData aspect " + activeSearchAspect + " not implemented"
       )
     );
   }
@@ -682,6 +693,82 @@ class AllDataBoxSObject extends React.PureComponent {
           ? h(AllDataSelection, { ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId })
           : h("div", { className: "all-data-box-inner empty" }, "No record to display")
       )
+    );
+  }
+}
+
+class AllDataBoxShortcut extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      selectedUser: null,
+      selectedUserId: null,
+    };
+    this.getMatches = this.getMatches.bind(this);
+    this.onDataSelect = this.onDataSelect.bind(this);
+  }
+
+  componentDidMount() {
+    this.refs.allDataSearch.refs.showAllDataInp.focus();
+  }
+
+  async getMatches(shortcutSearch) {
+    let { setIsLoading } = this.props;
+    if (!shortcutSearch) {
+      return [];
+    }
+    try {
+      setIsLoading(true);
+
+      let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch.toLowerCase()));
+      return result ? result : [];
+    } catch (err) {
+      console.error("Unable to find shortcut", err);
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async onDataSelect(shortcut) {
+    let { sfHost } = this.props;
+    window.open("https://" + sfHost + shortcut.link);
+  }
+
+  resultRender(matches, userQuery) {
+    return matches.map(value => ({
+      key: value.label,
+      value,
+      element: [
+        h("div", { className: "autocomplete-item-main", key: "main" },
+          h(MarkSubstring, {
+            text: value.label,
+            start: value.label.toLowerCase().indexOf(userQuery.toLowerCase()),
+            length: userQuery.length
+          })),
+        h("div", { className: "autocomplete-item-sub small", key: "sub" },
+          h("div", {}, value.section),
+          h(MarkSubstring, {
+            text: value.link,
+            start: value.link.toLowerCase().indexOf(userQuery.toLowerCase()),
+            length: userQuery.length
+          }))
+      ]
+    }));
+  }
+
+  render() {
+    let { selectedUser } = this.state;
+    let { sfHost, linkTarget, contextOrgId, contextUserId, contextPath } = this.props;
+
+    return (
+      h("div", { ref: "shortcutsBox", className: "users-box" },
+        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 100, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
+        h("div", { className: "all-data-box-inner" + (!selectedUser ? " empty" : "") },
+          selectedUser
+            ? h(UserDetails, { user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath })
+            : h("div", { className: "center" }, "No shortcut found")
+        ))
     );
   }
 }

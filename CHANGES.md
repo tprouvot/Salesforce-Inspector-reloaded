@@ -10,7 +10,7 @@ Version 1.14
 
 General
 -------
-*  Add checkbox in flow builder to give the possibility to the user to scroll on the flow
+*  Add checkbox in flow builder to give the possibility to the user to scroll on the flow (by [Samuel Krissi](https://github.com/samuelkrissi) )
 
 ![image](https://user-images.githubusercontent.com/96471586/226161542-cbedec0a-8988-4559-9152-d067ea6f9cb6.png)
 

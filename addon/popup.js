@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import { sfConn, apiVersion } from "./inspector.js";
 import { getAllFieldSetupLinks } from "./setup-links.js";
-import { setupLinks } from './links.js';
+import { setupLinks } from "./links.js";
 
 let h = React.createElement;
 
@@ -75,10 +75,6 @@ class App extends React.PureComponent {
     if (e.key == "l") {
       e.preventDefault();
       this.refs.limitsBtn.click();
-    }
-    if (e.key == "d") {
-      e.preventDefault();
-      this.refs.metaRetrieveBtn.click();
     }
     if (e.key == "x") {
       e.preventDefault();
@@ -703,19 +699,19 @@ class AllDataBoxShortcut extends React.PureComponent {
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
   }
-
-  componentDidMount() {
-    let { contextUserId } = this.props;
-    this.onDataSelect({ Id: contextUserId });
-    this.refs.allDataSearch.refs.showAllDataInp.focus();
-  }
-
-  componentDidUpdate(prevProps) {
-    if (prevProps.contextUserId !== this.props.contextUserId) {
-      this.onDataSelect({ Id: this.props.contextUserId });
+  /*
+    componentDidMount() {
+      let { contextUserId } = this.props;
+      this.onDataSelect({ Id: contextUserId });
+      this.refs.allDataSearch.refs.showAllDataInp.focus();
     }
-  }
 
+    componentDidUpdate(prevProps) {
+      if (prevProps.contextUserId !== this.props.contextUserId) {
+        this.onDataSelect({ Id: this.props.contextUserId });
+      }
+    }
+  */
   async getMatches(shortcutSearch) {
     let { setIsLoading } = this.props;
     if (!shortcutSearch) {
@@ -736,15 +732,15 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   async onDataSelect(shortcut) {
-    console.log(shortcut);
-    //let { sfHost } = this.props;
-    window.location.href = "https://" + sfHost + "/" + shortcut.link;
+    let { sfHost } = this.props;
+    window.open("https://" + sfHost + "/" + shortcut.link);
   }
 
   resultRender(matches, userQuery) {
     return matches.map(value => ({
       key: value.label,
       value,
+      /*
       element: [
         h("div", { className: "autocomplete-item-main", key: "main" },
           h(MarkSubstring, {
@@ -753,8 +749,23 @@ class AllDataBoxShortcut extends React.PureComponent {
             length: userQuery.length
           })),
         h("div", { className: "autocomplete-item-sub small", key: "sub" },
-          h("div", {}, value.link)
+          h("div", {}, value.section)
         )
+      ]*/
+      element: [
+        h("div", { className: "autocomplete-item-main", key: "main" },
+          h(MarkSubstring, {
+            text: value.label,
+            start: value.label.toLowerCase().indexOf(userQuery.toLowerCase()),
+            length: userQuery.length
+          })),
+        h("div", { className: "autocomplete-item-sub small", key: "sub" },
+          h("div", {}, value.section),
+          h(MarkSubstring, {
+            text: value.link,
+            start: value.link.toLowerCase().indexOf(userQuery.toLowerCase()),
+            length: userQuery.length
+          }))
       ]
     }));
   }

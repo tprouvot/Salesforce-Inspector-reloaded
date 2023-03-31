@@ -712,7 +712,6 @@ class AllDataBoxShortcut extends React.PureComponent {
     try {
       setIsLoading(true);
 
-      //let result = shortcuts.filter(item => item.label.toLowerCase().startsWith(shortcutSearch));
       let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch.toLowerCase()));
       return result ? result : [];
     } catch (err) {
@@ -725,25 +724,13 @@ class AllDataBoxShortcut extends React.PureComponent {
 
   async onDataSelect(shortcut) {
     let { sfHost } = this.props;
-    window.open("https://" + sfHost + "/" + shortcut.link);
+    window.open("https://" + sfHost + shortcut.link);
   }
 
   resultRender(matches, userQuery) {
     return matches.map(value => ({
       key: value.label,
       value,
-      /*
-      element: [
-        h("div", { className: "autocomplete-item-main", key: "main" },
-          h(MarkSubstring, {
-            text: value.label,
-            start: value.label.toLowerCase().indexOf(userQuery.toLowerCase()),
-            length: userQuery.length
-          })),
-        h("div", { className: "autocomplete-item-sub small", key: "sub" },
-          h("div", {}, value.section)
-        )
-      ]*/
       element: [
         h("div", { className: "autocomplete-item-main", key: "main" },
           h(MarkSubstring, {

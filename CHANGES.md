@@ -10,6 +10,10 @@ Version 1.14
 
 General
 -------
+*  Add checkbox in flow builder to give the possibility to the user to scroll on the flow
+
+![image](https://user-images.githubusercontent.com/96471586/226161542-cbedec0a-8988-4559-9152-d067ea6f9cb6.png)
+
 * Fix links (object fields and object list) for custom metadata objects [issue 39](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/39)
 * Add shortcut link to object list from popup (idea by [Samuel Krissi](https://github.com/samuelkrissi) )
 * Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/34)
@@ -18,9 +22,6 @@ General
 * Update to Salesforce API v 57.0 (Spring '23)
 * [Switch background color on import page to alert users that it's a production environnement](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/20)
 * Implement Auth2 flow to generate access token for connected App
-*  Add checkbox in flow builder to give the possibility to the user to scroll on the flow
-
-![image](https://user-images.githubusercontent.com/96471586/226161542-cbedec0a-8988-4559-9152-d067ea6f9cb6.png)
 
 Version 1.13
 ===========

@@ -76,6 +76,14 @@ class App extends React.PureComponent {
       e.preventDefault();
       this.refs.limitsBtn.click();
     }
+    if (e.key == "d") {
+      e.preventDefault();
+      this.refs.metaRetrieveBtn.click();
+    }
+    if (e.key == "d") {
+      e.preventDefault();
+      this.refs.metaRetrieveBtn.click();
+    }
     if (e.key == "x") {
       e.preventDefault();
       this.refs.apiExploreBtn.click();

@@ -699,19 +699,17 @@ class AllDataBoxShortcut extends React.PureComponent {
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
   }
-  /*
-    componentDidMount() {
-      let { contextUserId } = this.props;
-      this.onDataSelect({ Id: contextUserId });
-      this.refs.allDataSearch.refs.showAllDataInp.focus();
-    }
 
-    componentDidUpdate(prevProps) {
-      if (prevProps.contextUserId !== this.props.contextUserId) {
-        this.onDataSelect({ Id: this.props.contextUserId });
+  componentDidMount() {
+    this.refs.allDataSearch.refs.showAllDataInp.focus();
+  }
+  /*
+      componentDidUpdate(prevProps) {
+        if (prevProps.contextUserId !== this.props.contextUserId) {
+          this.onDataSelect({ Id: this.props.contextUserId });
+        }
       }
-    }
-  */
+    */
   async getMatches(shortcutSearch) {
     let { setIsLoading } = this.props;
     if (!shortcutSearch) {

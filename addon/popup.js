@@ -796,6 +796,11 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1";
   }
 
+  getUserPsetLink(userId) {
+    let { sfHost } = this.props;
+    return "https://" + sfHost + "/lightning/setup/PermSets/page?address=%2Fudd%2FPermissionSet%2FassignPermissionSet.apexp%3FuserId%3D" + userId;
+  }
+
   getProfileLink(profileId) {
     let { sfHost } = this.props;
     return "https://" + sfHost + "/lightning/setup/EnhancedProfiles/page?address=%2F" + profileId;
@@ -861,7 +866,8 @@ class UserDetails extends React.PureComponent {
           )),
         h("div", { ref: "userButtons", className: "center" },
           this.doSupportLoginAs(user) ? h("a", { href: this.getLoginAsLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Try login as") : null,
-          h("a", { href: this.getUserDetailLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Details")
+          h("a", { href: this.getUserDetailLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Details"),
+          h("a", { href: this.getUserPsetLink(user.Id), target: linkTarget, className: "button button-secondary" }, "PSet")
         ))
     );
   }

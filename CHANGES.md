@@ -1,10 +1,16 @@
-Version 1.15
+Version 1.16
 ===========
 
 General
 -------
 * Add org instance in the popup and a link to Salesforce trust status website [feature 53](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/53) (by [Camille Guillory](https://github.com/CamilleGuillory) )
 * Fix saved query when it contains ":" [issue 55](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/55)
+
+Version 1.15
+===========
+
+General
+-------
 * Add "PSet" button to access user permission set assignment from User tab [feature 49](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/49)
 * Add shortcut tab to access setup quick links [feature 42](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/42)
 

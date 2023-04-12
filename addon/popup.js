@@ -102,16 +102,27 @@ class App extends React.PureComponent {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
   }
+  getOrgInstance(sfHost) {
+    let orgInstance = localStorage.getItem(sfHost + "_orgInstance");
+    if (orgInstance == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+InstanceName+FROM+Organization").then(res => {
+        orgInstance = res.records[0].InstanceName;
+        localStorage.setItem(sfHost + "_orgInstance", orgInstance);
+      });
+    }
+    return orgInstance;
+  }
   render() {
     let {
       sfHost,
       inDevConsole,
       inLightning,
       inInspector,
-      addonVersion,
+      addonVersion
     } = this.props;
     let { isInSetup, contextUrl } = this.state;
     let clientId = localStorage.getItem(sfHost + "_clientId");
+    let orgInstance = this.getOrgInstance(sfHost);
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkTarget = inDevConsole ? "_blank" : "_top";
@@ -150,9 +161,9 @@ class App extends React.PureComponent {
         h("div", { className: "footer" },
           h("div", { className: "meta" },
             h("div", { className: "version" },
-              "(",
               h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md" }, "v" + addonVersion),
-              " / " + apiVersion + ")",
+              " / " + apiVersion + " / ",
+              h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, target: linkTarget }, orgInstance),
             ),
             h("div", { className: "tip" }, "[ctrl+alt+i] to open"),
             h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About"),

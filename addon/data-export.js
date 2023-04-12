@@ -169,12 +169,13 @@ class Model {
     this.queryHistory.clear();
   }
   selectSavedEntry() {
+    let delimiter = ":";
     if (this.selectedSavedEntry != null) {
       let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(":")) {
-        let query = this.selectedSavedEntry.query.split(":");
+      if (this.selectedSavedEntry.query.includes(delimiter)) {
+        let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
-        queryStr = query[1];
+        queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
       } else {
         queryStr = this.selectedSavedEntry.query;
       }

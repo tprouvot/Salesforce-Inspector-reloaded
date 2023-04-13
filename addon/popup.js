@@ -40,10 +40,12 @@ class App extends React.PureComponent {
     super(props);
     this.state = {
       isInSetup: false,
-      contextUrl: null
+      contextUrl: null,
+      apiVersionInput: apiVersion
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
+    this.onChangeApi = this.onChangeApi.bind(this);
   }
   onContextUrlMessage(e) {
     if (e.source == parent && e.data.insextUpdateRecordId) {
@@ -95,7 +97,7 @@ class App extends React.PureComponent {
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
-    this.setState({ name: e.target.value });
+    this.setState({ apiVersionInput: e.target.value });
   }
   componentDidMount() {
     addEventListener("message", this.onContextUrlMessage);
@@ -124,7 +126,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let { isInSetup, contextUrl } = this.state;
+    let { isInSetup, contextUrl, apiVersionInput } = this.state;
     let clientId = localStorage.getItem(sfHost + "_clientId");
     let orgInstance = this.getOrgInstance(sfHost);
     let hostArg = new URLSearchParams();
@@ -174,7 +176,7 @@ class App extends React.PureComponent {
                 type: "number",
                 title: "Update api version",
                 onChange: this.onChangeApi,
-                value: apiVersion.split(".0")[0]
+                value: apiVersionInput.split(".0")[0]
               }),
             ),
             h("div", { className: "tip" }, "[ctrl+alt+i] to open"),

@@ -93,6 +93,10 @@ class App extends React.PureComponent {
     }
     //TODO: Add shortcut for "u to go to user aspect"
   }
+  onChangeApi(e) {
+    localStorage.setItem("apiVersion", e.target.value + ".0");
+    this.setState({ name: e.target.value });
+  }
   componentDidMount() {
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
@@ -161,9 +165,17 @@ class App extends React.PureComponent {
         h("div", { className: "footer" },
           h("div", { className: "meta" },
             h("div", { className: "version" },
-              h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md" }, "v" + addonVersion),
-              " / " + apiVersion + " / ",
-              h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, target: linkTarget }, orgInstance),
+              h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note" }, "v" + addonVersion),
+              " / ",
+              h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
+              " / ",
+              h("input", {
+                className: "api-input",
+                type: "number",
+                title: "Update api version",
+                onChange: this.onChangeApi,
+                value: apiVersion.split(".0")[0]
+              }),
             ),
             h("div", { className: "tip" }, "[ctrl+alt+i] to open"),
             h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About"),

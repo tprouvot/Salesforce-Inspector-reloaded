@@ -1,4 +1,4 @@
-export let apiVersion = "57.0";
+export let apiVersion = localStorage.getItem("apiVersion") == null ? "57.0" : localStorage.getItem("apiVersion");
 export let sfConn = {
 
   async getSession(sfHost) {

@@ -3,6 +3,7 @@ Version 1.16
 
 General
 -------
+* Allow users to update API Version [feature 58](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/58)
 * Add org instance in the popup and a link to Salesforce trust status website [feature 53](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/53) (by [Camille Guillory](https://github.com/CamilleGuillory) )
 * Fix saved query when it contains ":" [issue 55](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/55) (by [Victor Garcia](https://github.com/victorgz/) )
 

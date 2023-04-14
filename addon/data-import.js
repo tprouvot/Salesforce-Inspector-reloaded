@@ -410,7 +410,7 @@ class Model {
     let importedRecords = this.importData.counts.Queued + this.importData.counts.Processing;
     let skippedRecords = this.importData.counts.Succeeded + this.importData.counts.Failed;
     this.confirmPopup = {
-      text: importedRecords + " records will be actioned."
+      text: importedRecords + " records will be imported."
         + (skippedRecords > 0 ? " " + skippedRecords + " records will be skipped because they have __Status Succeeded or Failed." : "")
     };
   }

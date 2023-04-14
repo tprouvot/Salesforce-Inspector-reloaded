@@ -285,7 +285,7 @@ class Model {
       vm.queryInput.focus();
       //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
       let indexFrom = query.toLowerCase().indexOf("from");
-      if (suffix == ", " && query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",")) {
+      if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
         suffix = "";
       }
       vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
@@ -365,7 +365,7 @@ class Model {
       }
       vm.autocompleteResults = {
         sobjectName: "",
-        title: "Object suggestions:",
+        title: "Objects suggestions:",
         results: new Enumerable(globalDescribe.sobjects)
           .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
           .map(sobjectDescribe => ({ value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: "" }))
@@ -585,7 +585,7 @@ class Model {
             }
             vm.autocompleteResults = {
               sobjectName,
-              title: fieldNames + " value suggestions:",
+              title: fieldNames + " values suggestions:",
               results: new Enumerable(data.records)
                 .map(record => record[contextValueField.field.name])
                 .filter(value => value)
@@ -672,7 +672,7 @@ class Model {
         .sort(resultsSort);
       vm.autocompleteResults = {
         sobjectName,
-        title: fieldNames + (ar.length == 0 ? " values (Press Ctrl+Space to load value suggestions):" : " values:"),
+        title: fieldNames + (ar.length == 0 ? " values (Press Ctrl+Space to load suggestions):" : " values:"),
         results: ar
       };
       return;
@@ -693,7 +693,7 @@ class Model {
       }
       vm.autocompleteResults = {
         sobjectName,
-        title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " field suggestions:",
+        title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " fields suggestions:",
         results: contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
           .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))

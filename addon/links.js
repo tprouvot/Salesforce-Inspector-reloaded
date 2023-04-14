@@ -116,6 +116,24 @@ export let setupLinks = [
 	{ label: "Regenerate Previews", link: "/lightning/setup/RegeneratePreviews/home", section: "Platform Tools > Feature Settings > Salesforce Files", prod: false },
 	{ label: "Salesforce CRM Content", link: "/lightning/setup/SalesforceCRMContent/home", section: "Platform Tools > Feature Settings > Salesforce Files", prod: false },
 
+	//Platform Tools > Feature Settings > Sales
+	{ label: "Activity Settings", link: "/lightning/setup/HomeActivitiesSetupPage/home", section: "Platform Tools > Feature Settings > Sales", prod: false },
+	{ label: "Contact Roles on Contracts", link: "/lightning/setup/ContractContactRoles/home", section: "Platform Tools > Feature Settings > Sales", prod: false },
+	{ label: "Contact Roles on Opportunities", link: "/lightning/setup/OpportunityRoles/home", section: "Platform Tools > Feature Settings > Sales", prod: false },
+	{ label: "Contract Settings", link: "/lightning/setup/ContractSettings/home", section: "Platform Tools > Feature Settings > Sales", prod: false },
+	{ label: "Individual Settings", link: "/lightning/setup/IndividualSettings/home", section: "Platform Tools > Feature Settings > Sales", prod: false },
+	{ label: "LinkedIn Sales Navigator", link: "/lightning/setup/LinkedInSalesNavigatorPage/home", section: "Platform Tools > Feature Settings > Sales", prod: false },
+	{ label: "Notes Settings", link: "/lightning/setup/NotesSetupPage/home", section: "Platform Tools > Feature Settings > Sales", prod: false },
+	{ label: "Order Settings", link: "/lightning/setup/OrderSettings/home", section: "Platform Tools > Feature Settings > Sales", prod: false },
+	{ label: "Sales Processes", link: "/lightning/setup/OpportunityProcess/home", section: "Platform Tools > Feature Settings > Sales", prod: false },
+	{ label: "Social Accounts and Contacts Settings", link: "/lightning/setup/SocialProfileOrgSettings/home", section: "Platform Tools > Feature Settings > Sales", prod: false },
+	{ label: "Update Reminders", link: "/lightning/setup/OpportunityUpdateReminders/home", section: "Platform Tools > Feature Settings > Sales", prod: false },
+
+	//Platform Tools > Feature Settings > Sales > Account
+	{ label: "Account Settings", link: "/lightning/setup/AccountSettings/home", section: "Platform Tools > Feature Settings > Sales > Account", prod: false },
+	{ label: "Account Teams", link: "/lightning/setup/AccountTeamSelling/home", section: "Platform Tools > Feature Settings > Sales > Account", prod: false },
+	{ label: "Person Account", link: "/lightning/setup/PersonAccountSettings/home", section: "Platform Tools > Feature Settings > Sales > Account", prod: false },
+
 	//Platform Tools > Feature Settings > Service
 	{ label: "Case Assignment Rules", link: "/lightning/setup/CaseRules/home", section: "//Platform Tools > Feature Settings > Service", prod: false },
 	{ label: "Case Auto-Response Rules", link: "/lightning/setup/CaseResponses/home", section: "//Platform Tools > Feature Settings > Service", prod: false },

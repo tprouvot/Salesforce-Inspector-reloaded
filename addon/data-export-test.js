@@ -2,12 +2,12 @@
 
 export async function dataExportTest(test) {
   console.log("TEST data-export");
-  let {assertEquals, assertNotEquals, assert, loadPage, anonApex} = test;
+  let { assertEquals, assertNotEquals, assert, loadPage, anonApex } = test;
 
   localStorage.removeItem("insextQueryHistory");
   localStorage.removeItem("insextSavedQueryHistory");
 
-  let {model, sfConn} = await loadPage("data-export.html");
+  let { model, sfConn } = await loadPage("data-export.html");
   let vm = model;
   let queryInput = model.queryInput;
   function queryAutocompleteEvent() {
@@ -45,7 +45,7 @@ export async function dataExportTest(test) {
   await waitForSpinner();
 
   // Autocomplete object names
-  assertEquals("Objects:", vm.autocompleteResults.title);
+  assertEquals("Objects suggestions:", vm.autocompleteResults.title);
   let accountAutocompletes = getValues(vm.autocompleteResults.results);
   assert(accountAutocompletes.length > 1);
   assert(accountAutocompletes.includes("Account"));
@@ -63,27 +63,27 @@ export async function dataExportTest(test) {
   await waitForSpinner();
 
   // Autocomplete field name in SELECT, sould automatically update when describe call completes
-  assertEquals("Account fields:", vm.autocompleteResults.title);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
   assertEquals("Name", getValues(vm.autocompleteResults.results)[0]);
 
   // Select autocomplete value in SELECT
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
-  assertEquals("select Id, Name,  from Account", queryInput.value);
-  assertEquals("Account fields:", vm.autocompleteResults.title);
-  assertNotEquals("Name", getValues(vm.autocompleteResults.results)[0]);
+  assertEquals("select Id, Name from Account", queryInput.value);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
+  assertEquals("Name", getValues(vm.autocompleteResults.results)[0]);
 
   // Select multiple values in SELECT using Ctrl+Space
   setQuery("select Id, shipp", "", " from Account");
   assertEquals("select Id, shipp from Account", queryInput.value);
-  assertEquals("Account fields:", vm.autocompleteResults.title);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
   assertEquals(["ShippingAddress", "ShippingCity", "ShippingCountry", "ShippingGeocodeAccuracy", "ShippingLatitude", "ShippingLongitude", "ShippingPostalCode", "ShippingState", "ShippingStreet"], getValues(vm.autocompleteResults.results));
-  vm.queryAutocompleteHandler({ctrlSpace: true});
-  assertEquals("select Id, ShippingStreet, ShippingCity, ShippingState, ShippingPostalCode, ShippingCountry, ShippingLatitude, ShippingLongitude, ShippingGeocodeAccuracy, ShippingAddress,  from Account", queryInput.value);
+  vm.queryAutocompleteHandler({ ctrlSpace: true });
+  assertEquals("select Id, ShippingStreet, ShippingCity, ShippingState, ShippingPostalCode, ShippingCountry, ShippingLatitude, ShippingLongitude, ShippingGeocodeAccuracy, ShippingAddress from Account", queryInput.value);
 
   // Autocomplete relationship field in SELECT
   setQuery("select Id, OWNE", "", " from Account");
   assertEquals("select Id, OWNE from Account", queryInput.value);
-  assertEquals("Account fields:", vm.autocompleteResults.title);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
   assertEquals(["Owner.", "OwnerId", "Ownership"], getValues(vm.autocompleteResults.results));
   // Select relationship field in SELECT
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
@@ -93,32 +93,32 @@ export async function dataExportTest(test) {
 
   // Load User field describe
   await waitForSpinner();
-  assertEquals("User fields:", vm.autocompleteResults.title);
+  assertEquals("User fields suggestions:", vm.autocompleteResults.title);
 
   // Autocomplete related field in SELECT
   setQuery("select Id, OWNER.USERN", "", " from Account");
-  assertEquals("User fields:", vm.autocompleteResults.title);
+  assertEquals("User fields suggestions:", vm.autocompleteResults.title);
   assertEquals(["Username"], getValues(vm.autocompleteResults.results));
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
-  assertEquals("select Id, OWNER.Username,  from Account", queryInput.value);
+  assertEquals("select Id, OWNER.Username from Account", queryInput.value);
 
   // Autocomplete function
   setQuery("select Id, Count_di", "", " from Account");
-  assertEquals("Account fields:", vm.autocompleteResults.title);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
   assertEquals(["COUNT_DISTINCT"], getValues(vm.autocompleteResults.results));
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
   assertEquals("select Id, COUNT_DISTINCT( from Account", queryInput.value);
 
   // Autocomplete field in function
   setQuery("select Id, count(nam", "", " from Account");
-  assertEquals("Account fields:", vm.autocompleteResults.title);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
   assertEquals("Name", getValues(vm.autocompleteResults.results)[0]);
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
-  assertEquals("select Id, count(Name,  from Account", queryInput.value); // not ideal suffix
+  assertEquals("select Id, count(Name from Account", queryInput.value); // not ideal suffix
 
   // Autocomplete field in WHERE
   setQuery("select Id from Account where sic", "", "");
-  assertEquals("Account fields:", vm.autocompleteResults.title);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
   assertEquals(["Sic", "SicDesc"], getValues(vm.autocompleteResults.results));
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
   assertEquals("select Id from Account where Sic ", queryInput.value);
@@ -146,12 +146,12 @@ export async function dataExportTest(test) {
 
   // Autocomplete object
   setQuery("select Id from OpportunityLi", "", "");
-  assertEquals("Objects:", vm.autocompleteResults.title);
+  assertEquals("Objects suggestions:", vm.autocompleteResults.title);
   assertEquals(["OpportunityLineItem"], getValues(vm.autocompleteResults.results));
 
   // Autocomplete unknown object
   setQuery("select Id from UnknownObj", "", "");
-  assertEquals("Objects:", vm.autocompleteResults.title);
+  assertEquals("Objects suggestions:", vm.autocompleteResults.title);
   assertEquals([], getValues(vm.autocompleteResults.results));
 
   // Autocomplete no from
@@ -160,47 +160,47 @@ export async function dataExportTest(test) {
   assertEquals([], getValues(vm.autocompleteResults.results));
 
   // Autocomplete field name when cursor is just after the "from" keyword
-  setQuery("select Id, nam", "", "from Account");
-  assertEquals("Account fields:", vm.autocompleteResults.title);
+  setQuery("select Id, nam", "", " from Account");
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
   assertEquals("Name", getValues(vm.autocompleteResults.results)[0]);
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
-  assertEquals("select Id, Name, from Account", queryInput.value);
+  assertEquals("select Id, Name from Account", queryInput.value);
 
   // Autocomplete upper case
   setQuery("SELECT ID, NAM", "", " FROM ACCOUNT");
-  assertEquals("Account fields:", vm.autocompleteResults.title);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
   assertEquals("Name", getValues(vm.autocompleteResults.results)[0]);
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
-  assertEquals("SELECT ID, Name,  FROM ACCOUNT", queryInput.value);
+  assertEquals("SELECT ID, Name FROM ACCOUNT", queryInput.value);
 
   // Autocomplete with "from" substring before the from keyword
   setQuery("select Id, FieldFrom, FromField, nam", "", " from Account");
-  assertEquals("Account fields:", vm.autocompleteResults.title);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
   assertEquals("Name", getValues(vm.autocompleteResults.results)[0]);
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
-  assertEquals("select Id, FieldFrom, FromField, Name,  from Account", queryInput.value);
+  assertEquals("select Id, FieldFrom, FromField, Name from Account", queryInput.value);
 
   // Autocomplete field value
   setQuery("select Id from Account where owner.profile.name = admini", "", "");
   assertEquals("Loading Profile metadata...", vm.autocompleteResults.title);
   assertEquals([], getValues(vm.autocompleteResults.results));
   await waitForSpinner();
-  assertEquals("Profile.Name values (Press Ctrl+Space):", vm.autocompleteResults.title);
+  assertEquals("Profile.Name values (Press Ctrl+Space to load suggestions):", vm.autocompleteResults.title);
   assertEquals([], getValues(vm.autocompleteResults.results));
-  vm.queryAutocompleteHandler({ctrlSpace: true});
+  vm.queryAutocompleteHandler({ ctrlSpace: true });
   assertEquals("Loading Profile.Name values...", vm.autocompleteResults.title);
   assertEquals([], getValues(vm.autocompleteResults.results));
   await waitForSpinner();
-  assertEquals("Profile.Name values:", vm.autocompleteResults.title);
+  assertEquals("Profile.Name values suggestions:", vm.autocompleteResults.title);
   assertEquals(["'System Administrator'"], getValues(vm.autocompleteResults.results));
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
   assertEquals("select Id from Account where owner.profile.name = 'System Administrator' ", queryInput.value);
 
   // Autocomplete field value error
   setQuery("select Id from Account where Id = foo", "", ""); // LIKE query not supported by Id field
-  assertEquals("Account.Id values (Press Ctrl+Space):", vm.autocompleteResults.title);
+  assertEquals("Account.Id values (Press Ctrl+Space to load suggestions):", vm.autocompleteResults.title);
   assertEquals([], getValues(vm.autocompleteResults.results));
-  vm.queryAutocompleteHandler({ctrlSpace: true});
+  vm.queryAutocompleteHandler({ ctrlSpace: true });
   assertEquals("Loading Account.Id values...", vm.autocompleteResults.title);
   assertEquals([], getValues(vm.autocompleteResults.results));
   await waitForSpinner();
@@ -219,29 +219,29 @@ export async function dataExportTest(test) {
 
   // Autocomplete sort order
   setQuery("select Id", "", " from Account");
-  assertEquals("Account fields:", vm.autocompleteResults.title);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
   assertEquals("Id", getValues(vm.autocompleteResults.results)[0]);
 
   // Autocomplete before subquery
   setQuery("select Id from Opportunity where AccountId", "", " in (select AccountId from Asset where Price = null) and StageName = 'Closed Won'");
   await waitForSpinner();
-  assertEquals("Opportunity fields:", vm.autocompleteResults.title);
+  assertEquals("Opportunity fields suggestions:", vm.autocompleteResults.title);
 
   // Autocomplete in subquery
   setQuery("select Id from Opportunity where AccountId in (select AccountId from Asset where Price", "", " = null) and StageName = 'Closed Won'");
   await waitForSpinner();
-  assertEquals("Asset fields:", vm.autocompleteResults.title);
+  assertEquals("Asset fields suggestions:", vm.autocompleteResults.title);
 
   // Autocomplete after subquery
   setQuery("select Id from Opportunity where AccountId in (select AccountId from Asset where Price = null) and StageName", "", " = 'Closed Won'");
-  assertEquals("Opportunity fields:", vm.autocompleteResults.title);
+  assertEquals("Opportunity fields suggestions:", vm.autocompleteResults.title);
 
   // Autocomplete tooling API
   setQuery("select Id from LeadCon", "", "");
   vm.queryTooling = true;
   vm.queryAutocompleteHandler();
   await waitForSpinner();
-  assertEquals("Objects:", vm.autocompleteResults.title);
+  assertEquals("Objects suggestions:", vm.autocompleteResults.title);
   assertEquals(["LeadConfigSettings", "LeadConvertSettings"], getValues(vm.autocompleteResults.results));
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
   assertEquals("select Id from LeadConfigSettings ", queryInput.value);
@@ -280,14 +280,14 @@ export async function dataExportTest(test) {
   await waitForSpinner();
 
   assertEquals(false, vm.isWorking);
-  assertEquals("Exported 4 record(s).", vm.exportStatus);
+  assertEquals("Exported 4 record(s)", vm.exportStatus);
   assertEquals([
     ["_", "Name", "Checkbox__c", "Number__c"],
-    [{type: "Inspector_Test__c"}, "test1", false, 100.01],
-    [{type: "Inspector_Test__c"}, "test2", true, 200.02],
-    [{type: "Inspector_Test__c"}, "test3", false, 300.03],
-    [{type: "Inspector_Test__c"}, "test4", true, 400.04]
-  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? {type: cell.attributes.type} : cell)));
+    [{ type: "Inspector_Test__c" }, "test1", false, 100.01],
+    [{ type: "Inspector_Test__c" }, "test2", true, 200.02],
+    [{ type: "Inspector_Test__c" }, "test3", false, 300.03],
+    [{ type: "Inspector_Test__c" }, "test4", true, 400.04]
+  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? { type: cell.attributes.type } : cell)));
   assertEquals(null, vm.exportError);
   assertEquals([true, true, true, true, true], vm.exportedData.rowVisibilities);
   assertEquals([true, true, true, true], vm.exportedData.colVisibilities);
@@ -308,14 +308,14 @@ export async function dataExportTest(test) {
   // Filter results
   vm.setResultsFilter("TRU");
   assertEquals(false, vm.isWorking);
-  assertEquals("Exported 4 record(s).", vm.exportStatus);
+  assertEquals("Exported 4 record(s)", vm.exportStatus);
   assertEquals([
     ["_", "Name", "Checkbox__c", "Number__c"],
-    [{type: "Inspector_Test__c"}, "test1", false, 100.01],
-    [{type: "Inspector_Test__c"}, "test2", true, 200.02],
-    [{type: "Inspector_Test__c"}, "test3", false, 300.03],
-    [{type: "Inspector_Test__c"}, "test4", true, 400.04]
-  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? {type: cell.attributes.type} : cell)));
+    [{ type: "Inspector_Test__c" }, "test1", false, 100.01],
+    [{ type: "Inspector_Test__c" }, "test2", true, 200.02],
+    [{ type: "Inspector_Test__c" }, "test3", false, 300.03],
+    [{ type: "Inspector_Test__c" }, "test4", true, 400.04]
+  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? { type: cell.attributes.type } : cell)));
   assertEquals(null, vm.exportError);
   assertEquals([true, false, true, false, true], vm.exportedData.rowVisibilities);
   assertEquals([true, true, true, true], vm.exportedData.colVisibilities);
@@ -323,14 +323,14 @@ export async function dataExportTest(test) {
   // Clear filter
   vm.setResultsFilter("");
   assertEquals(false, vm.isWorking);
-  assertEquals("Exported 4 record(s).", vm.exportStatus);
+  assertEquals("Exported 4 record(s)", vm.exportStatus);
   assertEquals([
     ["_", "Name", "Checkbox__c", "Number__c"],
-    [{type: "Inspector_Test__c"}, "test1", false, 100.01],
-    [{type: "Inspector_Test__c"}, "test2", true, 200.02],
-    [{type: "Inspector_Test__c"}, "test3", false, 300.03],
-    [{type: "Inspector_Test__c"}, "test4", true, 400.04]
-  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? {type: cell.attributes.type} : cell)));
+    [{ type: "Inspector_Test__c" }, "test1", false, 100.01],
+    [{ type: "Inspector_Test__c" }, "test2", true, 200.02],
+    [{ type: "Inspector_Test__c" }, "test3", false, 300.03],
+    [{ type: "Inspector_Test__c" }, "test4", true, 400.04]
+  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? { type: cell.attributes.type } : cell)));
   assertEquals(null, vm.exportError);
   assertEquals([true, true, true, true, true], vm.exportedData.rowVisibilities);
   assertEquals([true, true, true, true], vm.exportedData.colVisibilities);
@@ -350,14 +350,14 @@ export async function dataExportTest(test) {
   await waitForSpinner();
 
   assertEquals(false, vm.isWorking);
-  assertEquals("Exported 4 record(s).", vm.exportStatus);
+  assertEquals("Exported 4 record(s)", vm.exportStatus);
   assertEquals([
     ["_", "Name", "Lookup__r", "Lookup__r.Name"],
-    [{type: "Inspector_Test__c"}, "test1", null, null],
-    [{type: "Inspector_Test__c"}, "test2", {type: "Inspector_Test__c"}, "test1"],
-    [{type: "Inspector_Test__c"}, "test3", null, null],
-    [{type: "Inspector_Test__c"}, "test4", {type: "Inspector_Test__c"}, "test3"]
-  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? {type: cell.attributes.type} : cell)));
+    [{ type: "Inspector_Test__c" }, "test1", null, null],
+    [{ type: "Inspector_Test__c" }, "test2", { type: "Inspector_Test__c" }, "test1"],
+    [{ type: "Inspector_Test__c" }, "test3", null, null],
+    [{ type: "Inspector_Test__c" }, "test4", { type: "Inspector_Test__c" }, "test3"]
+  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? { type: cell.attributes.type } : cell)));
   assertEquals(null, vm.exportError);
   assertEquals([true, true, true, true, true], vm.exportedData.rowVisibilities);
   assertEquals([true, true, true, true], vm.exportedData.colVisibilities);
@@ -460,7 +460,7 @@ export async function dataExportTest(test) {
   await waitForSpinner();
 
   assertEquals(false, vm.isWorking);
-  assertEquals("Exported 3000 record(s).", vm.exportStatus);
+  assertEquals("Exported 3000 record(s)", vm.exportStatus);
   assertEquals(3001, vm.exportedData.table.length);
   assertEquals(3001, vm.exportedData.rowVisibilities.length);
   assertEquals(2, vm.exportedData.colVisibilities.length);
@@ -521,12 +521,12 @@ export async function dataExportTest(test) {
 
   // Query history
   assertEquals([
-    {query: "select Name from ApexClass", useToolingApi: true},
-    {query: "select Id from Inspector_Test__c", useToolingApi: false},
-    {query: "select count() from Inspector_Test__c", useToolingApi: false},
-    {query: "select Id from Inspector_Test__c where name = 'no such name'", useToolingApi: false},
-    {query: "select Name, Lookup__r.Name from Inspector_Test__c order by Name", useToolingApi: false},
-    {query: "select Name, Checkbox__c, Number__c from Inspector_Test__c order by Name", useToolingApi: false}
+    { query: "select Name from ApexClass", useToolingApi: true },
+    { query: "select Id from Inspector_Test__c", useToolingApi: false },
+    { query: "select count() from Inspector_Test__c", useToolingApi: false },
+    { query: "select Id from Inspector_Test__c where name = 'no such name'", useToolingApi: false },
+    { query: "select Name, Lookup__r.Name from Inspector_Test__c order by Name", useToolingApi: false },
+    { query: "select Name, Checkbox__c, Number__c from Inspector_Test__c order by Name", useToolingApi: false }
   ], vm.queryHistory.list);
   vm.selectedHistoryEntry = vm.queryHistory.list[2];
   vm.selectHistoryEntry();
@@ -552,7 +552,7 @@ export async function dataExportTest(test) {
   assertEquals("Loading metadata...", vm.autocompleteResults.title);
   assertEquals(0, vm.autocompleteResults.results.length);
   await waitForSpinner();
-  assertEquals("Objects:", vm.autocompleteResults.title);
+  assertEquals("Objects suggestions:", vm.autocompleteResults.title);
 
   // Autocomplete load errors for object describe
   sfConn.rest = restError;
@@ -567,7 +567,7 @@ export async function dataExportTest(test) {
   assertEquals("Loading Account metadata...", vm.autocompleteResults.title);
   assertEquals(0, vm.autocompleteResults.results.length);
   await waitForSpinner();
-  assertEquals("Account fields:", vm.autocompleteResults.title);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
 
   // Autocomplete load errors for relationship object describe
   sfConn.rest = restError;

@@ -2,7 +2,7 @@
 
 export async function dataExportTest(test) {
   console.log("TEST data-export");
-  let { assertEquals, assertNotEquals, assert, loadPage, anonApex } = test;
+  let { assertEquals, assert, loadPage, anonApex } = test;
 
   localStorage.removeItem("insextQueryHistory");
   localStorage.removeItem("insextSavedQueryHistory");
@@ -582,6 +582,6 @@ export async function dataExportTest(test) {
   assertEquals("Loading Account metadata...", vm.autocompleteResults.title);
   assertEquals(0, vm.autocompleteResults.results.length);
   await waitForSpinner();
-  assertEquals("User fields:", vm.autocompleteResults.title);
+  assertEquals("User fields suggestions:", vm.autocompleteResults.title);
 
 }

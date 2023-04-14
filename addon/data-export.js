@@ -285,7 +285,7 @@ class Model {
       vm.queryInput.focus();
       //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
       let indexFrom = query.toLowerCase().indexOf("from");
-      if (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",")) {
+      if (suffix == ", " && query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",")) {
         suffix = "";
       }
       vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");

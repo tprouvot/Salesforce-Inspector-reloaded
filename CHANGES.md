@@ -1,3 +1,11 @@
+Version 1.17
+===========
+
+General
+-------
+* Update shortcut indication for mac users
+
+
 Version 1.16
 ===========
 

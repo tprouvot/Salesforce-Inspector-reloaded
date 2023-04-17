@@ -1,12 +1,33 @@
-export let apiVersion = "53.0";
+export let apiVersion = localStorage.getItem("apiVersion") == null ? "57.0" : localStorage.getItem("apiVersion");
 export let sfConn = {
 
   async getSession(sfHost) {
+    let paramKey = "access_token";
     let message = await new Promise(resolve =>
       chrome.runtime.sendMessage({ message: "getSession", sfHost }, resolve));
     if (message) {
       this.instanceHostname = message.hostname;
       this.sessionId = message.key;
+      if (window.location.href.includes(paramKey)) {
+        let url = new URL(window.location.href);
+        let access = url.hash.split("&")[0].split(paramKey + "=")[1];
+        access = decodeURI(access);
+
+        if (access) {
+          this.sessionId = access;
+          localStorage.setItem(sfHost + "_" + paramKey, access);
+        }
+      } else if (localStorage.getItem(sfHost + "_" + paramKey) != null) {
+        let data = localStorage.getItem(sfHost + "_" + paramKey);
+        this.sessionId = data;
+      }
+      let isSandbox = "isSandbox";
+      if (localStorage.getItem(sfHost + "_" + isSandbox) == null) {
+        sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+FROM+Organization").then(res => {
+          localStorage.setItem(sfHost + "_" + isSandbox, res.records[0].IsSandbox);
+          localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
+        });
+      }
     }
   },
 

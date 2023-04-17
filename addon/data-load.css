@@ -1,20 +1,25 @@
 #result-table table {
   border: none;
 }
+
 #result-table table tr td:first-child {
   border-left: none;
   padding-left: 8px;
 }
+
 #result-table table tr:hover>td {
   background-color: #F3F2F2;
 }
+
 .scrolltable-scrolled {
   position: relative;
 }
+
 .scrolltable-scrolled table {
   border-collapse: collapse;
   position: absolute;
 }
+
 .scrolltable-cell {
   border: 1px solid #1B1D1E;
   overflow: hidden;
@@ -23,6 +28,7 @@
   white-space: pre;
   box-sizing: border-box;
 }
+
 .scrolltable-cell.header {
   font-weight: 700;
   background-color: #1F1F1F;
@@ -33,28 +39,35 @@
   /* top: 0; */
   /* z-index: 1; */
 }
+
 .scrolltable-cell a {
-    color: #006dcc;
-    text-decoration: underline;
-    text-decoration-style: dotted;
+  color: #006dcc;
+  text-decoration: underline;
+  text-decoration-style: dotted;
 }
+
 #result-table table {
   border: none;
 }
+
 #result-table table tr td:first-child {
   border-left: none;
   padding-left: 8px;
 }
+
 #result-table table tr:hover>td {
   background-color: #F3F2F2;
 }
+
 .scrolltable-scrolled {
   position: relative;
 }
+
 .scrolltable-scrolled table {
   border-collapse: collapse;
   position: absolute;
 }
+
 .scrolltable-cell {
   border: 1px solid #1B1D1E;
   overflow: hidden;
@@ -63,6 +76,7 @@
   white-space: pre;
   box-sizing: border-box;
 }
+
 .scrolltable-cell.header {
   font-weight: 700;
   background-color: #1F1F1F;
@@ -73,11 +87,13 @@
   /* top: 0; */
   /* z-index: 1; */
 }
+
 .scrolltable-cell a {
-    color: #006dcc;
-    text-decoration: underline;
-    text-decoration-style: dotted;
+  color: #006dcc;
+  text-decoration: underline;
+  text-decoration-style: dotted;
 }
+
 .pop-menu {
   position: absolute;
   padding: 7px 0;
@@ -86,11 +102,13 @@
   border: 1px solid rgb(221, 219, 218);
   border-radius: 0.25rem;
 }
+
 .pop-menu.saveOptions {
   top: 0;
-  margin: 124px 25px 0 0;
+  margin: 102px 232px 0 0;
   z-index: 2;
 }
+
 .pop-menu a {
   display: block;
   text-decoration: none;
@@ -99,6 +117,7 @@
   display: flex;
   align-items: center;
 }
+
 .pop-menu a .icon {
   /* background-color: #706E6B; */
   display: inline-block;
@@ -106,18 +125,21 @@
   height: 1rem;
   margin-right: 8px;
 }
+
 .pop-menu a.view-salesforce .icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce1.svg');
   -webkit-mask-position: center;
 }
+
 .pop-menu a.view-inspector .icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce-inspector-logo.svg');
   -webkit-mask-position: center;
 }
+
 .pop-menu a.copy-id .icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
@@ -125,18 +147,23 @@
   -webkit-mask-position: center;
   background-color: #706E6B;
 }
+
 .pop-menu a.copy-id {
   cursor: pointer;
 }
-.pop-menu a.view-salesforce .icon{
+
+.pop-menu a.view-salesforce .icon {
   background-color: #009DDC;
 }
+
 .pop-menu a.view-inspector .icon {
   background-color: #D8BE5F;
 }
+
 .pop-menu a:hover {
   background-color: #F3F2F2;
 }
+
 .pop-menu a:active {
   background-color: #ECEBEA;
 }

@@ -22,7 +22,7 @@ class QueryHistory {
     }
     // A previous version stored just strings. Skip entries from that to avoid errors.
     history = history.filter(e => typeof e == "object");
-    this.sort(history);
+    this.sort(this.storageKey, history);
     return history;
   }
 
@@ -37,7 +37,7 @@ class QueryHistory {
       history.pop();
     }
     localStorage[this.storageKey] = JSON.stringify(history);
-    this.sort(history);
+    this.sort(this.storageKey, history);
   }
 
   remove(entry) {
@@ -47,7 +47,7 @@ class QueryHistory {
       history.splice(historyIndex, 1);
     }
     localStorage[this.storageKey] = JSON.stringify(history);
-    this.sort(history);
+    this.sort(this.storageKey, history);
   }
 
   clear() {
@@ -55,8 +55,11 @@ class QueryHistory {
     this.list = [];
   }
 
-  sort(history) {
-    history.sort((a, b) => (a.query > b.query) ? 1 : ((b.query > a.query) ? -1 : 0));
+  sort(storageKey, history) {
+    //sort only saved query not history
+    if (storageKey === "insextSavedQueryHistory") {
+      history.sort((a, b) => (a.query > b.query) ? 1 : ((b.query > a.query) ? -1 : 0));
+    }
     this.list = history;
   }
 }
@@ -95,6 +98,7 @@ class Model {
     this.autocompleteProgress = {};
     this.exportProgress = {};
     this.queryName = "";
+    this.clientId = localStorage.getItem(sfHost + "_clientId");
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -126,6 +130,9 @@ class Model {
   }
   setQueryName(value) {
     this.queryName = value;
+  }
+  setClientId(value) {
+    this.clientId = value;
   }
   setQueryInput(queryInput) {
     this.queryInput = queryInput;
@@ -162,12 +169,13 @@ class Model {
     this.queryHistory.clear();
   }
   selectSavedEntry() {
+    let delimiter = ":";
     if (this.selectedSavedEntry != null) {
       let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(":")) {
-        let query = this.selectedSavedEntry.query.split(":");
+      if (this.selectedSavedEntry.query.includes(delimiter)) {
+        let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
-        queryStr = query[1];
+        queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
       } else {
         queryStr = this.selectedSavedEntry.query;
       }
@@ -182,6 +190,9 @@ class Model {
   }
   addToHistory() {
     this.savedHistory.add({ query: this.getQueryToSave(), useToolingApi: this.queryTooling });
+  }
+  saveClientId() {
+    localStorage.setItem(this.sfHost + "_clientId", this.clientId);
   }
   removeFromHistory() {
     this.savedHistory.remove({ query: this.getQueryToSave(), useToolingApi: this.queryTooling });
@@ -274,7 +285,7 @@ class Model {
       vm.queryInput.focus();
       //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
       let indexFrom = query.toLowerCase().indexOf("from");
-      if (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",")) {
+      if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
         suffix = "";
       }
       vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
@@ -354,7 +365,7 @@ class Model {
       }
       vm.autocompleteResults = {
         sobjectName: "",
-        title: "Object suggestions:",
+        title: "Objects suggestions:",
         results: new Enumerable(globalDescribe.sobjects)
           .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
           .map(sobjectDescribe => ({ value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: "" }))
@@ -574,7 +585,7 @@ class Model {
             }
             vm.autocompleteResults = {
               sobjectName,
-              title: fieldNames + " value suggestions:",
+              title: fieldNames + " values suggestions:",
               results: new Enumerable(data.records)
                 .map(record => record[contextValueField.field.name])
                 .filter(value => value)
@@ -661,7 +672,7 @@ class Model {
         .sort(resultsSort);
       vm.autocompleteResults = {
         sobjectName,
-        title: fieldNames + (ar.length == 0 ? " values (Press Ctrl+Space to load value suggestions):" : " values:"),
+        title: fieldNames + (ar.length == 0 ? " values (Press Ctrl+Space to load suggestions):" : " values:"),
         results: ar
       };
       return;
@@ -682,7 +693,7 @@ class Model {
       }
       vm.autocompleteResults = {
         sobjectName,
-        title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " field suggestions:",
+        title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " fields suggestions:",
         results: contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
           .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -881,6 +892,7 @@ class App extends React.Component {
     this.onClearHistory = this.onClearHistory.bind(this);
     this.onSelectSavedEntry = this.onSelectSavedEntry.bind(this);
     this.onAddToHistory = this.onAddToHistory.bind(this);
+    this.onSaveClientId = this.onSaveClientId.bind(this);
     this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
@@ -892,6 +904,7 @@ class App extends React.Component {
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
+    this.onSetClientId = this.onSetClientId.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
   }
   onQueryAllChange(e) {
@@ -930,6 +943,12 @@ class App extends React.Component {
     e.preventDefault();
     let { model } = this.props;
     model.addToHistory();
+    model.didUpdate();
+  }
+  onSaveClientId(e) {
+    e.preventDefault();
+    let { model } = this.props;
+    model.saveClientId();
     model.didUpdate();
   }
   onRemoveFromHistory(e) {
@@ -998,6 +1017,11 @@ class App extends React.Component {
   onSetQueryName(e) {
     let { model } = this.props;
     model.setQueryName(e.target.value);
+    model.didUpdate();
+  }
+  onSetClientId(e) {
+    let { model } = this.props;
+    model.setClientId(e.target.value);
     model.didUpdate();
   }
   onStopExport() {
@@ -1093,9 +1117,9 @@ class App extends React.Component {
       ),
       h("div", { className: "area" },
         h("div", { className: "area-header" },
-          h("h1", {}, "Export Query")
         ),
         h("div", { className: "query-controls" },
+          h("h1", {}, "Export Query"),
           h("div", { className: "query-history-controls" },
             h("div", { className: "button-group" },
               h("select", { value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history" },
@@ -1116,18 +1140,20 @@ class App extends React.Component {
               h("input", { placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName }),
               h("button", { onClick: this.onAddToHistory, title: "Add query to saved history" }, "Save Query"),
               h("button", { className: model.expandSavedOptions ? "toggle contract" : "toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions }, h("div", { className: "button-toggle-icon" })),
+              h("input", { placeholder: "Consumer Key", type: "default", value: model.clientId, onInput: this.onSetClientId }),
+              h("button", { onClick: this.onSaveClientId, title: "Save Consumer Key" }, "Save"),
             ),
           ),
           h("div", { className: "query-options" },
             h("label", {},
               h("input", { type: "checkbox", checked: model.queryAll, onChange: this.onQueryAllChange, disabled: model.queryTooling }),
               " ",
-              h("span", {}, "Include deleted and archived records?")
+              h("span", {}, "Add deleted records?")
             ),
             h("label", { title: "With the tooling API you can query more metadata, but you cannot query regular data" },
               h("input", { type: "checkbox", checked: model.queryTooling, onChange: this.onQueryToolingChange, disabled: model.queryAll }),
               " ",
-              h("span", {}, "Use Tooling API?")
+              h("span", {}, "Tooling API?")
             ),
           ),
         ),

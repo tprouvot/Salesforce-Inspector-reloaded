@@ -8,4 +8,4 @@ npm-debug.log
 target/
 .idea/
 yarn.lock
-addon/manifest.json
+.history/

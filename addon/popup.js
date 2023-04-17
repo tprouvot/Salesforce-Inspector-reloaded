@@ -1,6 +1,7 @@
 /* global React ReactDOM */
 import { sfConn, apiVersion } from "./inspector.js";
 import { getAllFieldSetupLinks } from "./setup-links.js";
+import { setupLinks } from "./links.js";
 
 let h = React.createElement;
 
@@ -39,10 +40,12 @@ class App extends React.PureComponent {
     super(props);
     this.state = {
       isInSetup: false,
-      contextUrl: null
+      contextUrl: null,
+      apiVersionInput: apiVersion
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
+    this.onChangeApi = this.onChangeApi.bind(this);
   }
   onContextUrlMessage(e) {
     if (e.source == parent && e.data.insextUpdateRecordId) {
@@ -79,6 +82,10 @@ class App extends React.PureComponent {
       e.preventDefault();
       this.refs.metaRetrieveBtn.click();
     }
+    if (e.key == "d") {
+      e.preventDefault();
+      this.refs.metaRetrieveBtn.click();
+    }
     if (e.key == "x") {
       e.preventDefault();
       this.refs.apiExploreBtn.click();
@@ -87,6 +94,10 @@ class App extends React.PureComponent {
       this.refs.homeBtn.click();
     }
     //TODO: Add shortcut for "u to go to user aspect"
+  }
+  onChangeApi(e) {
+    localStorage.setItem("apiVersion", e.target.value + ".0");
+    this.setState({ apiVersionInput: e.target.value });
   }
   componentDidMount() {
     addEventListener("message", this.onContextUrlMessage);
@@ -97,15 +108,27 @@ class App extends React.PureComponent {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
   }
+  getOrgInstance(sfHost) {
+    let orgInstance = localStorage.getItem(sfHost + "_orgInstance");
+    if (orgInstance == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+InstanceName+FROM+Organization").then(res => {
+        orgInstance = res.records[0].InstanceName;
+        localStorage.setItem(sfHost + "_orgInstance", orgInstance);
+      });
+    }
+    return orgInstance;
+  }
   render() {
     let {
       sfHost,
       inDevConsole,
       inLightning,
       inInspector,
-      addonVersion,
+      addonVersion
     } = this.props;
-    let { isInSetup, contextUrl } = this.state;
+    let { isInSetup, contextUrl, apiVersionInput } = this.state;
+    let clientId = localStorage.getItem(sfHost + "_clientId");
+    let orgInstance = this.getOrgInstance(sfHost);
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkTarget = inDevConsole ? "_blank" : "_top";
@@ -124,7 +147,7 @@ class App extends React.PureComponent {
                 `})
             )
           ),
-          "Salesforce inspector"
+          "Salesforce Inspector"
         ),
         h("div", { className: "main" },
           h(AllDataBox, { ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl }),
@@ -135,6 +158,7 @@ class App extends React.PureComponent {
             // Advanded features should be put below this line, and the layout adjusted so they are below the fold
             h("a", { ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "button" }, h("u", {}, "D"), "ownload Metadata"),
             h("a", { ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "button" }, "E", h("u", {}, "x"), "plore API"),
+            h("a", { ref: "generateToken", href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=chrome-extension://" + chrome.runtime.id + "/data-export.html?host=" + sfHost + "%26", target: linkTarget, className: !clientId ? "button hide" : "button" }, h("u", {}, "G"), "enerate Connected App Token"),
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
             inLightning && isInSetup && h("a", { ref: "homeBtn", href: `https://${sfHost}/lightning/page/home`, title: "You can choose if you want to open in a new tab or not", target: linkTarget, className: "button" }, "Salesforce ", h("u", {}, "H"), "ome"),
             inLightning && !isInSetup && h("a", { ref: "homeBtn", href: `https://${sfHost}/lightning/setup/SetupOneHome/home?setupApp=all`, title: "You can choose if you want to open in a new tab or not", target: linkTarget, className: "button" }, "Setup ", h("u", {}, "H"), "ome"),
@@ -143,12 +167,21 @@ class App extends React.PureComponent {
         h("div", { className: "footer" },
           h("div", { className: "meta" },
             h("div", { className: "version" },
-              "(",
-              h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md" }, "v" + addonVersion),
-              " / " + apiVersion + ")",
+              h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note" }, "v" + addonVersion),
+              " / ",
+              h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
+              " / ",
+              h("input", {
+                className: "api-input",
+                type: "number",
+                title: "Update api version",
+                onChange: this.onChangeApi,
+                value: apiVersionInput.split(".0")[0]
+              }),
             ),
             h("div", { className: "tip" }, "[ctrl+alt+i] to open"),
-            h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About")
+            h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About"),
+            h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki", target: linkTarget }, "Wiki")
           ),
         )
       )
@@ -160,7 +193,7 @@ class AllDataBox extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({ sobject: "sobject", users: "users" }); //Enum. Supported aspects
+    this.SearchAspectTypes = Object.freeze({ sobject: "sobject", users: "users", shortcuts: "shortcuts" }); //Enum. Supported aspects
 
     this.state = {
       activeSearchAspect: this.SearchAspectTypes.sobject,
@@ -193,6 +226,9 @@ class AllDataBox extends React.PureComponent {
           break;
         case this.SearchAspectTypes.users:
           this.ensureKnownUserContext();
+          break;
+        case this.SearchAspectTypes.shortcuts:
+          this.ensureKnownBrowserContext();
           break;
       }
     }
@@ -246,7 +282,7 @@ class AllDataBox extends React.PureComponent {
   loadSobjects() {
     let entityMap = new Map();
 
-    function addEntity({ name, label, keyPrefix }, api) {
+    function addEntity({ name, label, keyPrefix, durableId }, api) {
       label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
       let entity = entityMap.get(name);
       if (entity) {
@@ -262,6 +298,7 @@ class AllDataBox extends React.PureComponent {
           name,
           label,
           keyPrefix,
+          durableId,
           availableKeyPrefix: null,
         };
         entityMap.set(name, entity);
@@ -285,13 +322,14 @@ class AllDataBox extends React.PureComponent {
     }
 
     function getEntityDefinitions(bucket) {
-      let query = "select QualifiedApiName, Label, KeyPrefix from EntityDefinition" + bucket;
+      let query = "select QualifiedApiName, Label, KeyPrefix, DurableId from EntityDefinition" + bucket;
       return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query)).then(res => {
         for (let record of res.records) {
           addEntity({
             name: record.QualifiedApiName,
             label: record.Label,
-            keyPrefix: record.KeyPrefix
+            keyPrefix: record.KeyPrefix,
+            durableId: record.DurableId
           }, null);
         }
       }).catch(err => {
@@ -335,7 +373,8 @@ class AllDataBox extends React.PureComponent {
       h("div", { className: "all-data-box " + (this.isLoading() ? "loading " : "") },
         h("ul", { className: "small-tabs" },
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users")
+          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),
+          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : "" }, "Shortcuts")
         ),
 
         (activeSearchAspect == this.SearchAspectTypes.sobject)
@@ -343,6 +382,8 @@ class AllDataBox extends React.PureComponent {
           : (activeSearchAspect == this.SearchAspectTypes.users)
             ? h(AllDataBoxUsers, { ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); } }, "Users")
             : "AllData aspect " + activeSearchAspect + " not implemented"
+              ? h(AllDataBoxShortcut, { ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); } }, "Users")
+              : "AllData aspect " + activeSearchAspect + " not implemented"
       )
     );
   }
@@ -380,7 +421,7 @@ class AllDataBoxUsers extends React.PureComponent {
     //TODO: Better search query. SOSL?
     const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
     const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const queryFrom = "from User where isactive=true and (username like '%" + userQuery + "%' or name like '%" + userQuery + "%') order by LastLoginDate limit 100";
+    const queryFrom = "from User where (username like '%" + userQuery + "%' or name like '%" + userQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
     const compositeQuery = {
       "compositeRequest": [
         {
@@ -530,13 +571,14 @@ class AllDataBoxSObject extends React.PureComponent {
     if (selectedValue && selectedValue.recordId && selectedValue.sobject && selectedValue.sobject.availableApis && selectedValue.sobject.availableApis.includes("regularApi")) {
       //optimistically assume the object has certain attribues. If some are not present, no recordIdDetails are displayed
       //TODO: Better handle objects with no recordtypes. Currently the optimistic approach results in no record details being displayed for ids for objects without record types.
-      let query = "select Id, LastModifiedBy.Alias, CreatedBy.Alias, RecordType.DeveloperName, CreatedDate, LastModifiedDate from " + selectedValue.sobject.name + " where id='" + selectedValue.recordId + "'";
+      let query = "select Id, LastModifiedBy.Alias, CreatedBy.Alias, RecordType.DeveloperName, RecordType.Id, CreatedDate, LastModifiedDate from " + selectedValue.sobject.name + " where id='" + selectedValue.recordId + "'";
       sfConn.rest("/services/data/v" + apiVersion + "/query?q=" + encodeURIComponent(query), { logErrors: false }).then(res => {
         for (let record of res.records) {
           let lastModifiedDate = new Date(record.LastModifiedDate);
           let createdDate = new Date(record.CreatedDate);
           this.setState({
             recordIdDetails: {
+              "recordTypeId": (record.RecordType) ? record.RecordType.Id : "-",
               "recordTypeName": (record.RecordType) ? record.RecordType.DeveloperName : "-",
               "createdBy": record.CreatedBy.Alias,
               "lastModifiedBy": record.LastModifiedBy.Alias,
@@ -680,6 +722,82 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 }
 
+class AllDataBoxShortcut extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      selectedUser: null,
+      selectedUserId: null,
+    };
+    this.getMatches = this.getMatches.bind(this);
+    this.onDataSelect = this.onDataSelect.bind(this);
+  }
+
+  componentDidMount() {
+    this.refs.allDataSearch.refs.showAllDataInp.focus();
+  }
+
+  async getMatches(shortcutSearch) {
+    let { setIsLoading } = this.props;
+    if (!shortcutSearch) {
+      return [];
+    }
+    try {
+      setIsLoading(true);
+
+      let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch.toLowerCase()));
+      return result ? result : [];
+    } catch (err) {
+      console.error("Unable to find shortcut", err);
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async onDataSelect(shortcut) {
+    let { sfHost } = this.props;
+    window.open("https://" + sfHost + shortcut.link);
+  }
+
+  resultRender(matches, userQuery) {
+    return matches.map(value => ({
+      key: value.label,
+      value,
+      element: [
+        h("div", { className: "autocomplete-item-main", key: "main" },
+          h(MarkSubstring, {
+            text: value.label,
+            start: value.label.toLowerCase().indexOf(userQuery.toLowerCase()),
+            length: userQuery.length
+          })),
+        h("div", { className: "autocomplete-item-sub small", key: "sub" },
+          h("div", {}, value.section),
+          h(MarkSubstring, {
+            text: value.link,
+            start: value.link.toLowerCase().indexOf(userQuery.toLowerCase()),
+            length: userQuery.length
+          }))
+      ]
+    }));
+  }
+
+  render() {
+    let { selectedUser } = this.state;
+    let { sfHost, linkTarget, contextOrgId, contextUserId, contextPath } = this.props;
+
+    return (
+      h("div", { ref: "shortcutsBox", className: "users-box" },
+        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 100, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
+        h("div", { className: "all-data-box-inner" + (!selectedUser ? " empty" : "") },
+          selectedUser
+            ? h(UserDetails, { user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath })
+            : h("div", { className: "center" }, "No shortcut found")
+        ))
+    );
+  }
+}
+
 class UserDetails extends React.PureComponent {
   doSupportLoginAs(user) {
     let { currentUserId } = this.props;
@@ -703,14 +821,27 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1";
   }
 
+  getUserPsetLink(userId) {
+    let { sfHost } = this.props;
+    return "https://" + sfHost + "/lightning/setup/PermSets/page?address=%2Fudd%2FPermissionSet%2FassignPermissionSet.apexp%3FuserId%3D" + userId;
+  }
+
   getProfileLink(profileId) {
     let { sfHost } = this.props;
     return "https://" + sfHost + "/lightning/setup/EnhancedProfiles/page?address=%2F" + profileId;
   }
 
-  render() {
-    let { user, linkTarget } = this.props;
+  getShowAllDataLink(userId) {
+    let { sfHost } = this.props;
+    let args = new URLSearchParams();
+    args.set("host", sfHost);
+    args.set("objectType", "User");
+    args.set("recordId", userId);
+    return "inspect.html?" + args;
+  }
 
+  render() {
+    let { user, linkTarget, sfHost } = this.props;
     return (
       h("div", { className: "all-data-box-inner" },
         h("div", { className: "all-data-box-data" },
@@ -726,6 +857,11 @@ class UserDetails extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Username:"),
                 h("td", { className: "oneliner" }, user.Username)
+              ),
+              h("tr", {},
+                h("th", {}, "Id:"),
+                h("td", { className: "oneliner" },
+                  h("a", { href: this.getShowAllDataLink(user.Id), target: linkTarget, title: "Show all data" }, user.Id))
               ),
               h("tr", {},
                 h("th", {}, "E-mail:"),
@@ -755,7 +891,8 @@ class UserDetails extends React.PureComponent {
           )),
         h("div", { ref: "userButtons", className: "center" },
           this.doSupportLoginAs(user) ? h("a", { href: this.getLoginAsLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Try login as") : null,
-          h("a", { href: this.getUserDetailLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Details")
+          h("a", { href: this.getUserDetailLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Details"),
+          h("a", { href: this.getUserPsetLink(user.Id), target: linkTarget, className: "button button-secondary" }, "PSet")
         ))
     );
   }
@@ -849,8 +986,32 @@ class AllDataSelection extends React.PureComponent {
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
    */
-  getObjectSetupLink(sobjectName) {
-    return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
+  getObjectSetupLink(sobjectName, durableId) {
+    if (sobjectName.endsWith("__mdt")) {
+      return this.getCustomMetadataLink(durableId);
+    } else {
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
+    }
+  }
+  getCustomMetadataLink(durableId) {
+    return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + durableId + "%3Fsetupid%3DCustomMetadata";
+  }
+  getObjectFieldsSetupLink(sobjectName, durableId) {
+    if (sobjectName.endsWith("__mdt")) {
+      return this.getCustomMetadataLink(durableId);
+    } else {
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
+    }
+  }
+  getObjectListLink(sobjectName, keyPrefix) {
+    if (sobjectName.endsWith("__mdt")) {
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + keyPrefix;
+    } else {
+      return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
+    }
+  }
+  getRecordTypesLink(sfHost, sobjectName) {
+    return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
   }
   render() {
     let { sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails } = this.props;
@@ -869,8 +1030,16 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", { href: this.getObjectSetupLink(selectedValue.sobject.name), target: linkTarget }, selectedValue.sobject.name)
+                  h("a", { href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, selectedValue.sobject.name)
                 )
+              ),
+              h("tr", {},
+                h("th", {}, "Links:"),
+                h("td", {},
+                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Fields / "),
+                  h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name), target: linkTarget }, "Record Types / "),
+                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix), target: linkTarget }, "Object List")
+                ),
               ),
               h("tr", {},
                 h("th", {}, "Label:"),
@@ -885,7 +1054,7 @@ class AllDataSelection extends React.PureComponent {
               ))),
 
 
-          h(AllDataRecordDetails, { recordIdDetails, className: "top-space" }),
+          h(AllDataRecordDetails, { sfHost, selectedValue, recordIdDetails, className: "top-space" }),
         ),
         h(ShowDetailsButton, { ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId }),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
@@ -910,15 +1079,21 @@ class AllDataSelection extends React.PureComponent {
 }
 
 class AllDataRecordDetails extends React.PureComponent {
+
+  getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
+    return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
+  }
   render() {
-    let { recordIdDetails, className } = this.props;
+    let { sfHost, recordIdDetails, className, selectedValue } = this.props;
     if (recordIdDetails) {
       return (
         h("table", { className },
           h("tbody", {},
             h("tr", {},
               h("th", {}, "RecType:"),
-              h("td", {}, recordIdDetails.recordTypeName)
+              h("td", {},
+                h("a", { href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: "" }, recordIdDetails.recordTypeName)
+              )
             ),
             h("tr", {},
               h("th", {}, "Created:"),

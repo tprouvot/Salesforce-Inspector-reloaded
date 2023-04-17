@@ -51,6 +51,10 @@ body {
   background-size: contain;
   background-position: 0px 48px;
 }
+.prod {
+  background-color: #e0a4b5;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png');
+}
 #root {
   display: flex;
   flex-grow: 1;

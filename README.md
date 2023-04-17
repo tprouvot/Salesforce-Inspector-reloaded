@@ -1,21 +1,14 @@
 <img src="https://raw.githubusercontent.com/sorenkrabbe/Chrome-Salesforce-inspector/master/addon/icon128.png" align="right">
 
-Salesforce inspector
+Salesforce inspector reloaded
 ===========================
-Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
+Extension based on [Salesforce Inspector](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector) by Søren Krabbe.
 
-[![Test Status](https://travis-ci.org/sorenkrabbe/Chrome-Salesforce-inspector.svg?branch=master)](https://travis-ci.org/sorenkrabbe/Chrome-Salesforce-inspector)
+Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
 
 New Features / Fix
 -----
-* Add label to saved query and sort list.
-* Remove extra comma when autocomplete query in data export, or select a field from suggested fields juste before 'FROM' keyword.
-<img alt="Inspector menu" src="https://raw.githubusercontent.com/tprouvot/Chrome-Salesforce-inspector/master/docs/screenshots/7_latest_comma.png" height="100">
-
-* Add "Copy Id" option when clicking on a Sobject field or Id in data export page.
-<img alt="Inspector menu" src="https://raw.githubusercontent.com/tprouvot/Chrome-Salesforce-inspector/master/docs/screenshots/8_copy_id.png" height="100">
-
-* Integrate UI updates from Garywoo's fork (https://github.com/Garywoo/Chrome-Salesforce-inspector).
+[List of changes](CHANGES.md)
 
 Features
 -----
@@ -41,6 +34,18 @@ The Inspector communicates via the official Salesforce webservice APIs on behalf
 All Salesforce API calls from the Inspector re-uses the access token/session used by the browser to access Salesforce. To acquire this access token the Salesforce Inspector requires permission to read browser cookie information for Salesforce domains.
 
 To validate the accuracy of this description, inspect the source code, monitor the network traffic in your browser or take my word.
+
+Use Salesforce Inspector with a Connected App
+-----
+Follow steps described in [wiki](https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki/How-to#use-sf-inspector-with-a-connected-app)
+
+Installation
+-----
+1. Download or clone the repo locally.
+2. Open `chrome://extensions/`.
+3. Enable `Developer mode`.
+4. Click `Load unpacked extension...`.
+5. Select the `addon` subdirectory of this repository.
 
 Troubleshooting
 -----
@@ -69,10 +74,12 @@ Development
 
 Unit tests
 -----
+
 1. Set up an org (e.g. a Developer Edition) and apply the following customizations:
-   1.a. Everything described in metadata in `test/org/`. Push to org with `sfdx force:mdapi:deploy --deploydir test/org -w 1000 -u [your-test-org-alias]`
-   1.b. Ensure _Allow users to relate a contact to multiple accounts_ is enabled (Setup→Account Settings)
-   1.c. Ensure the org has no _namespace prefix_ (Setup→Package Manager)
+    1. Everything described in metadata in `test/`. Push to org with `sfdx force:source:deploy -p test/ -u [your-test-org-alias]`
+    2. Ensure _Allow users to relate a contact to multiple accounts_ is enabled (Setup→Account Settings)
+    3. Ensure the org has no _namespace prefix_ (Setup→Package Manager)
+    4. Assign PermissionSet SfInspector
 2. Navigate to one of the extension pages and replace the file name with `test-framework.html`, for example `chrome-extension://example/test-framework.html?host=example.my.salesforce.com`.
 3. Wait until "Salesforce Inspector unit test finished successfully" is shown.
 4. If the test fails, open your browser's developer tools console to see error messages.
@@ -109,8 +116,8 @@ Design Principles
 
 About
 -----
-By Søren Krabbe and Jesper Kristensen
+By Thomas Prouvot and forked from [Søren Krabbe and Jesper Kristensen](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector)
 
 License
 -----
-MIT
+[MIT](./LICENSE)

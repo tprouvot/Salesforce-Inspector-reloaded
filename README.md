@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/sorenkrabbe/Chrome-Salesforce-inspector/master/addon/icon128.png" align="right">
+<img src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/releaseCandidate/addon/icon128.png?raw=true" align="right">
 
 Salesforce inspector reloaded
 ===========================
@@ -12,10 +12,10 @@ Release Note
 
 New Features
 -----
-* Allow users to update API Version [feature 58](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/58)
-* Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/42)
-* Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Chrome-Salesforce-inspector/issues/34)
-* Control access to Salesforce Inspector reloaded with profiles / permissions (Implement Auth2 flow to generate access token for connected App) [how to](https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki/How-to#use-sf-inspector-with-a-connected-app)
+* Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
+* Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)
+* Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34)
+* Control access to Salesforce Inspector reloaded with profiles / permissions (Implement Auth2 flow to generate access token for connected App) [how to](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
 * Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3 (extensions using manifest v2 will be removed from the store)
 * New UI for Export / Import
 
@@ -30,7 +30,7 @@ To validate the accuracy of this description, inspect the source code, monitor t
 
 Use Salesforce Inspector with a Connected App
 -----
-Follow steps described in [wiki](https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki/How-to#use-sf-inspector-with-a-connected-app)
+Follow steps described in [wiki](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
 
 Installation
 -----

@@ -125,9 +125,15 @@ class Model {
     let header = data.shift().map((c, index) => this.makeColumn(c, index));
     this.updateResult(null); // Two updates, the first clears state from the scrolltable
     this.updateResult({ header, data });
-    let obj = this.getSObject(data);
-    if (obj) {
-      this.importType = obj;
+
+    //automatically select the SObject if possible
+    let sobj = this.getSObject(data);
+    if (sobj) {
+      this.importType = sobj;
+    }
+    //automatically select update if header contains id
+    if (this.hasIdColumn(header)) {
+      this.importAction = "update";
     }
   }
 
@@ -467,6 +473,11 @@ class Model {
       return obj;
     }
     return "";
+  }
+
+  hasIdColumn(header) {
+    let hasId = header.find(column => column.columnValue.toLowerCase() === "id");
+    return hasId ? true : false;
   }
 
   makeColumn(column, index) {

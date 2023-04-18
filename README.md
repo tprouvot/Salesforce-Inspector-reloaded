@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/sorenkrabbe/Chrome-Salesforce-inspector/master/addon/icon128.png" align="right">
+<img src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/releaseCandidate/addon/icon128.png?raw=true" align="right">
 
 Salesforce inspector reloaded
 ===========================
@@ -6,25 +6,18 @@ Extension based on [Salesforce Inspector](https://github.com/sorenkrabbe/Chrome-
 
 Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
 
-New Features / Fix
+Release Note
 -----
 [List of changes](CHANGES.md)
 
-Features
+New Features
 -----
-* Quickly view field information directly from a record detail page, edit page or Visualforce page.
-* Quickly view and edit all data for a record, even data that is not on the page layout.
-* Perform quick one-off data exports and imports directly from within Salesforce. Data can be easily copied to and from Excel. No need to log in again when you are already logged in with your browser.
-* View current limits consumption
-* Simple access to user record details incl. simpler access to "login as". E.g. when hopping between test users.
-* And more...
-
-<img alt="Inspector menu" src="https://raw.githubusercontent.com/sorenkrabbe/Chrome-Salesforce-inspector/master/docs/screenshots/1.png" height="100">
-<img alt="Show field metadata" src="https://raw.githubusercontent.com/sorenkrabbe/Chrome-Salesforce-inspector/master/docs/screenshots/2.png" height="100">
-<img alt="Show all data for record" src="https://raw.githubusercontent.com/sorenkrabbe/Chrome-Salesforce-inspector/master/docs/screenshots/3.png" height="100">
-<img alt="Data exporter" src="https://raw.githubusercontent.com/sorenkrabbe/Chrome-Salesforce-inspector/master/docs/screenshots/4.png" height="100">
-<img alt="Data importer" src="https://raw.githubusercontent.com/sorenkrabbe/Chrome-Salesforce-inspector/master/docs/screenshots/5.png" height="100">
-<img alt="Monitor limits" src="https://raw.githubusercontent.com/sorenkrabbe/Chrome-Salesforce-inspector/master/docs/screenshots/6.png" height="100">
+* Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
+* Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)
+* Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34)
+* Control access to Salesforce Inspector reloaded with profiles / permissions (Implement Auth2 flow to generate access token for connected App) [how to](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
+* Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3 (extensions using manifest v2 will be removed from the store)
+* New UI for Export / Import
 
 Security and Privacy
 -----
@@ -37,15 +30,20 @@ To validate the accuracy of this description, inspect the source code, monitor t
 
 Use Salesforce Inspector with a Connected App
 -----
-Follow steps described in [wiki](https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki/How-to#use-sf-inspector-with-a-connected-app)
+Follow steps described in [wiki](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
 
 Installation
 -----
-1. Download or clone the repo locally.
-2. Open `chrome://extensions/`.
-3. Enable `Developer mode`.
-4. Click `Load unpacked extension...`.
-5. Select the `addon` subdirectory of this repository.
+From the Chrome Web Store : [Salesforce Inspector reloaded](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
+
+If you want to try it locally (to test the release candidate):
+
+1. Download or clone the repo.
+2. Checkout the releaseCandidate branch.
+3. Open `chrome://extensions/`.
+4. Enable `Developer mode`.
+5. Click `Load unpacked extension...`.
+6. Select the `addon` subdirectory of this repository.
 
 Troubleshooting
 -----

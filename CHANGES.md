@@ -11,10 +11,10 @@ Version 1.16
 
 General
 -------
-* Select "Update" action by default when the data paste in data-import page contains Id column [feature 60](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/60) (by Bilel Morsli)
+* Select "Update" action by default when the data paste in data-import page contains Id column [feature 60](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/60) (idea by Bilel Morsli)
 * Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
-* Add org instance in the popup and a link to Salesforce trust status website [feature 53](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/53) (by [Camille Guillory](https://github.com/CamilleGuillory) )
-* Fix saved query when it contains ":" [issue 55](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/55) (by [Victor Garcia](https://github.com/victorgz/) )
+* Add org instance in the popup and a link to Salesforce trust status website [feature 53](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/53) (idea by [Camille Guillory](https://github.com/CamilleGuillory) )
+* Fix saved query when it contains ":" [issue 55](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/55) (bug found by [Victor Garcia](https://github.com/victorgz/) )
 
 Version 1.15
 ===========

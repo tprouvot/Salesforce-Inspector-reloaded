@@ -383,3 +383,156 @@ ul.small-tabs li:hover {
 .hide {
     display: none;
 }
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #3C4043;
+    }
+
+    .footer {
+        background: #000000;
+        border-top: #d8dde6;
+    }
+
+    .header {
+        background: #000000;
+        color: white;
+    }
+
+    .header-icon {
+        background-color: #d8be5f;
+    }
+
+    .header-icon>svg {
+        fill: white;
+    }
+
+    a {
+        color: #d8dde6;
+    }
+
+    a[href] {
+        color: orange;
+    }
+
+    a[href]:focus,
+    a[href]:hover {
+        color: rgb(255, 200, 98);
+    }
+
+    a[href]:active {
+        color: rgb(255, 200, 98);
+    }
+
+    .button,
+    button.button.button[disabled],
+    .base-button {
+        border: #d8dde6;
+        background-color: #000000;
+        color: #d8dde6;
+    }
+
+    button.button,
+    a.button[href],
+    a.base-button[href] {
+        color: #c0c0c0;
+    }
+
+    button.button:hover,
+    a[href].button:hover,
+    .button:focus {
+        background-color: #1F1F1F;
+        color: #ffffff;
+    }
+
+    button.button:active,
+    a[href]:active {
+        background-color: #eef1f6;
+        color: #00396b;
+    }
+
+    .button:focus {
+        box-shadow: #ffffff;
+    }
+
+    .all-data-box {
+        border-bottom: #d8dde6;
+    }
+
+    .all-data-input {
+        background-color: #000000;
+        color: #ffffff;
+        border: transparent;
+    }
+
+    .all-data-input:active,
+    .all-data-input:focus {
+        border-color: #000000;
+        background-color: #000000;
+        box-shadow: transparent;
+    }
+
+    .all-data-box-inner {
+        color: #ffffff;
+    }
+
+    .input-with-dropdown svg {
+        fill: #54698d;
+    }
+
+    .autocomplete {
+        border: #d8dde6;
+        background-color: #000000;
+    }
+
+    .autocomplete-item {
+        color: #ffffff;
+    }
+
+    .autocomplete-item-sub {
+        color: #ffffff;
+    }
+
+    .autocomplete-item.selected {
+        background-color: #35363A;
+    }
+
+    @keyframes bg-load {
+        50% {
+            background-color: #000000;
+            color: #006B2D;
+        }
+    }
+
+    .meta .tip {
+        color: #999999;
+    }
+
+    ul.small-tabs li {
+        border: #3C4043;
+        color: #ffffff;
+        background-color: #292A2D;
+    }
+
+    ul.small-tabs li.active {
+        color: #ffffff;
+        background-color: #000000;
+    }
+
+    ul.small-tabs li:hover {
+        background-color: #000000;
+    }
+
+    .inactive {
+        color: #c0c0c0;
+    }
+
+    .all-data-input:active,
+    .all-data-input:focus {
+        box-shadow: none;
+    }
+
+    .autocomplete-item mark {
+        color: orange;
+    }
+}

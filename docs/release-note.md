@@ -34,12 +34,12 @@
 * Add "Skip all unknown fields" to import page
 * Add User Id to pop-up
 
-<img alt="Inspector menu" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/tree/master/docs/screenshots/add-user-id.png" height="200">
+<img alt="Add user" src="screenshots/add-user-id.png" height="200">
 
 * Support Enhanced Domain [issue #222](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector/issues/222) from [PR223](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector/pull/223)
 * [Add inactive users to search result](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/21)
 
-<img alt="Inspector menu" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/tree/master/docs/screenshots/issue21.png" height="200">
+<img alt="Inspector menu" src="./screenshots/issue21.png" height="200">
 
 * Update to Salesforce API v 55.0 (Summer '22)
 * Update to Salesforce API v 54.0 (Spring '22)
@@ -48,10 +48,10 @@
 * Add label to saved query and sort list.
 * Remove extra comma when autocomplete query in data export, or select a field from suggested fields just before 'FROM' keyword.
 
-<img alt="Inspector menu" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/tree/master/docs/screenshots/7_latest_comma.png" height="100">
+<img alt="Inspector menu" src="./screenshots/7_latest_comma.png" height="100">
 
 * Add "Copy Id" option when clicking on a SObject field or Id in data export page.
 
-<img alt="Inspector menu" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/tree/master/docs/screenshots/8_copy_id.png" height="200">
+<img alt="Inspector menu" src="./screenshots/8_copy_id.png" height="200">
 
 * Integrate UI updates from [Garywoo's fork](https://github.com/Garywoo/Chrome-Salesforce-inspector)

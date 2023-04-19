@@ -1,6 +1,8 @@
 site_name: Salesforce Inspector reloaded
 theme:
   name: material
+  logo: ./assets/images/icon128.png
+  favicon: ./assets/images/icon128.png
   features:
     - navigation.tabs
     - navigation.sections
@@ -17,14 +19,14 @@ theme:
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
-      primary: teal
-      accent: purple
+      primary: blue
+      accent: indigo
     - scheme: slate
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
-      primary: teal
-      accent: lime
+      primary: blue
+      accent: indigo
 
 extra:
   social:
@@ -51,4 +53,4 @@ markdown_extensions:
       emoji_generator: !!python/name:materialx.emoji.to_svg
 
 copyright: |
-  &copy; 2023 <a href="https://github.com/tprouvot"  target="_blank" rel="noopener">Thomas Prouvot</a>
+  &copy; 2023 <a href="https://github.com/tprouvot" target="_blank" rel="noopener">Thomas Prouvot</a>

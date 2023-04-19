@@ -822,7 +822,7 @@ class AllDataBoxShortcut extends React.PureComponent {
             className: "all-data-input top-space",
             ref: "showAllDataInp",
             placeholder: "Label",
-            onKeyDown: this.onFillShortcut,
+            onInput: this.onFillShortcut,
             //onFocus: this.onAllDataFocus,
             //onBlur: this.onAllDataBlur,
             //onKeyDown: this.onAllDataKeyDown,

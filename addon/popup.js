@@ -728,13 +728,37 @@ class AllDataBoxShortcut extends React.PureComponent {
     this.state = {
       selectedUser: null,
       selectedUserId: null,
+      newLinkLabel: "",
+      newLinkSection: "",
+      newLink: ""
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
+    this.onFillShortcut = this.onFillShortcut.bind(this);
+    this.onSaveShortcut = this.onSaveShortcut.bind(this);
+
   }
 
   componentDidMount() {
     this.refs.allDataSearch.refs.showAllDataInp.focus();
+  }
+
+  onFillShortcut(e) {
+    let val = e.target.value;
+    console.log(val);
+    this.setState({ newLinkLabel: e.target.value });
+  }
+
+  onSaveShortcut(e) {
+    let { newLinkLabel, newLinkSection, newLink } = this.state;
+    let propertyName = "customLinks";
+    let newLinkVar = { label: newLinkLabel, section: newLinkSection, link: newLink };
+
+    let customLinks = localStorage.getItem(propertyName);
+    //add new customLink
+    customLinks.push(newLinkVar);
+    localStorage.setItem(propertyName, customLinks);
+
   }
 
   async getMatches(shortcutSearch) {
@@ -783,7 +807,7 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   render() {
-    let { selectedUser } = this.state;
+    let { selectedUser, newLinkLabel, newLinkSection, newLink } = this.state;
     let { sfHost, linkTarget, contextOrgId, contextUserId, contextPath } = this.props;
 
     return (
@@ -793,6 +817,48 @@ class AllDataBoxShortcut extends React.PureComponent {
           selectedUser
             ? h(UserDetails, { user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath })
             : h("div", { className: "center" }, "No shortcut found")
+          ,
+          h("input", {
+            className: "all-data-input top-space",
+            ref: "showAllDataInp",
+            placeholder: "Label",
+            onKeyDown: this.onFillShortcut,
+            //onFocus: this.onAllDataFocus,
+            //onBlur: this.onAllDataBlur,
+            //onKeyDown: this.onAllDataKeyDown,
+            value: newLinkLabel
+          }),
+          h("input", {
+            className: "all-data-input top-space",
+            ref: "showAllDataInp",
+            placeholder: "Section",
+            onInput: this.onFillShortcut,
+            //onFocus: this.onAllDataFocus,
+            //onBlur: this.onAllDataBlur,
+            //onKeyDown: this.onAllDataKeyDown,
+            value: newLinkSection
+          }),
+          h("input", {
+            className: "all-data-input top-space",
+            ref: "showAllDataInp",
+            placeholder: "Link",
+            onInput: this.onFillShortcut,
+            //onFocus: this.onAllDataFocus,
+            //onBlur: this.onAllDataBlur,
+            //onKeyDown: this.onAllDataKeyDown,
+            value: newLink
+          }),
+          h("input", {
+            type: "button",
+            className: "button top-space",
+            ref: "showAllDataInp",
+            onClick: this.onSaveShortcut,
+            //onInput: this.onAllDataInput,
+            //onFocus: this.onAllDataFocus,
+            //onBlur: this.onAllDataBlur,
+            //onKeyDown: this.onAllDataKeyDown,
+            value: "Save"
+          })
         ))
     );
   }

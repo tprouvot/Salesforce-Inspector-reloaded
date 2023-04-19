@@ -9,3 +9,5 @@ target/
 .idea/
 yarn.lock
 .history/
+.sfdx
+venv/

@@ -1129,7 +1129,7 @@ class App extends React.Component {
               h("button", { onClick: this.onClearHistory, title: "Clear Query History" }, "Clear")
             ),
             h("div", { className: "pop-menu saveOptions", hidden: !model.expandSavedOptions },
-              h("a", { href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history" }, "Removed Saved Query"),
+              h("a", { href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history" }, "Remove Saved Query"),
               h("a", { href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history" }, "Clear Saved Queries")
             ),
             h("div", { className: "button-group" },

@@ -10,3 +10,4 @@ target/
 yarn.lock
 .history/
 .sfdx/
+venv/

@@ -726,8 +726,7 @@ class AllDataBoxShortcut extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
-      selectedUser: null,
-      selectedUserId: null,
+      selectedLink: null,
       newLinkLabel: "",
       newLinkSection: "",
       newLink: ""
@@ -744,21 +743,22 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   onFillShortcut(e) {
-    let val = e.target.value;
-    console.log(val);
-    this.setState({ newLinkLabel: e.target.value });
+    console.log(e.target);
+    this.setState({ [e.target.name]: e.target.value });
   }
 
   onSaveShortcut(e) {
-    let { newLinkLabel, newLinkSection, newLink } = this.state;
-    let propertyName = "customLinks";
-    let newLinkVar = { label: newLinkLabel, section: newLinkSection, link: newLink };
+    /*
+        let propertyName = "customLinks";
+        let newLinkVar = { label: newLinkLabel, section: newLinkSection, link: newLink };
 
-    let customLinks = localStorage.getItem(propertyName);
-    //add new customLink
-    customLinks.push(newLinkVar);
-    localStorage.setItem(propertyName, customLinks);
+        let customLinks = localStorage.getItem(propertyName);
+        //add new customLink
+        customLinks.push(newLinkVar);
+        localStorage.setItem(propertyName, customLinks);
 
+        this.setState({ newLinkLabel: e.target.value, newLinkSection: e.target.value, newLink: e.target.value });
+        */
   }
 
   async getMatches(shortcutSearch) {
@@ -807,30 +807,28 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   render() {
-    let { selectedUser, newLinkLabel, newLinkSection, newLink } = this.state;
-    let { sfHost, linkTarget, contextOrgId, contextUserId, contextPath } = this.props;
+    let { sfHost, linkTarget, contextPath } = this.props;
+    let { selectedLink, newLinkLabel, newLinkSection, newLink } = this.state;
 
     return (
       h("div", { ref: "shortcutsBox", className: "users-box" },
         h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 100, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
-        h("div", { className: "all-data-box-inner" + (!selectedUser ? " empty" : "") },
-          selectedUser
-            ? h(UserDetails, { user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath })
-            : h("div", { className: "center" }, "No shortcut found")
-          ,
+        h("div", { className: "all-data-box-inner" + (!selectedLink ? " empty" : "") },
+          selectedLink
+            ? h(UserDetails, { user: selectedLink, sfHost, linkTarget, contextPath })
+            : h("input", {
+              className: "all-data-input top-space",
+              name: "newLinkLabel",
+              placeholder: "Label",
+              onInput: this.onFillShortcut,
+              //onFocus: this.onAllDataFocus,
+              //onBlur: this.onAllDataBlur,
+              //onKeyDown: this.onAllDataKeyDown,
+              value: newLinkLabel
+            }),
           h("input", {
             className: "all-data-input top-space",
-            ref: "showAllDataInp",
-            placeholder: "Label",
-            onInput: this.onFillShortcut,
-            //onFocus: this.onAllDataFocus,
-            //onBlur: this.onAllDataBlur,
-            //onKeyDown: this.onAllDataKeyDown,
-            value: newLinkLabel
-          }),
-          h("input", {
-            className: "all-data-input top-space",
-            ref: "showAllDataInp",
+            name: "newLinkSection",
             placeholder: "Section",
             onInput: this.onFillShortcut,
             //onFocus: this.onAllDataFocus,
@@ -840,7 +838,7 @@ class AllDataBoxShortcut extends React.PureComponent {
           }),
           h("input", {
             className: "all-data-input top-space",
-            ref: "showAllDataInp",
+            name: "newLink",
             placeholder: "Link",
             onInput: this.onFillShortcut,
             //onFocus: this.onAllDataFocus,
@@ -851,7 +849,7 @@ class AllDataBoxShortcut extends React.PureComponent {
           h("input", {
             type: "button",
             className: "button top-space",
-            ref: "showAllDataInp",
+            ref: "saveLinkBtn",
             onClick: this.onSaveShortcut,
             //onInput: this.onAllDataInput,
             //onFocus: this.onAllDataFocus,

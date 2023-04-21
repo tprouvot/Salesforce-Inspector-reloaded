@@ -989,25 +989,33 @@ class App extends React.Component {
     model.toggleObjectActions();
     model.didUpdate();
   }
-  onDoUpdate() {
+  onDoUpdate(e) {
+    e.currentTarget.disabled = true;
     let { model } = this.props;
     model.doUpdate();
     model.didUpdate();
+    e.currentTarget.disabled = false;
   }
-  onDoDelete() {
+  onDoDelete(e) {
+    e.currentTarget.disabled = true;
     let { model } = this.props;
     model.doDelete();
     model.didUpdate();
+    e.currentTarget.disabled = false;
   }
-  onDoCreate() {
+  onDoCreate(e) {
+    e.currentTarget.disabled = true;
     let { model } = this.props;
     model.doCreate();
     model.didUpdate();
+    e.currentTarget.disabled = false;
   }
-  onDoSave() {
+  onDoSave(e) {
+    e.currentTarget.disabled = true;
     let { model } = this.props;
     model.doSave();
     model.didUpdate();
+    e.currentTarget.disabled = false;
   }
   onCancelEdit() {
     let { model } = this.props;
@@ -1134,6 +1142,7 @@ class App extends React.Component {
             onClick: this.onCancelEdit
           }, "Cancel"),
           h("button", {
+            name: "saveBtn",
             title:
               model.editMode == "update" ? "Save the values of this record"
                 : model.editMode == "delete" ? "Delete this record"

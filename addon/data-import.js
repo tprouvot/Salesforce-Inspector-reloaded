@@ -152,7 +152,7 @@ class Model {
       csv = json.map(function (row) {
         return fields.map(function (fieldName) {
           let value = row[fieldName];
-          if (value && typeof value === 'string') {
+          if (value && typeof value === "string") {
             return fieldName == "_" ? '"[' + sobject + ']"' : JSON.stringify(value)
           }
         }).join(",")

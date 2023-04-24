@@ -138,6 +138,7 @@ class Model {
     //automatically select update if header contains id
     if (this.hasIdColumn(header) && !this.importActionSelected) {
       this.importAction = "update";
+      this.importActionName = "Update";
     }
   }
 

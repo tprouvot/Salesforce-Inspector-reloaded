@@ -18,6 +18,7 @@ class Model {
     this.dataError = "";
     this.useToolingApi = false;
     this.dataFormat = "excel";
+    this.importActionSelected = false;
     this.importAction = "create";
     this.importActionName = "Insert";
     this.importType = "Account";
@@ -132,7 +133,7 @@ class Model {
       this.importType = sobj;
     }
     //automatically select update if header contains id
-    if (this.hasIdColumn(header)) {
+    if (this.hasIdColumn(header) && !this.importActionSelected) {
       this.importAction = "update";
     }
   }
@@ -723,6 +724,7 @@ class App extends React.Component {
     let { model } = this.props;
     model.importAction = e.target.value;
     model.importActionName = e.target.options[e.target.selectedIndex].text;
+    model.importActionSelected = true;
     model.didUpdate();
   }
   onImportTypeChange(e) {

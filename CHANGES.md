@@ -3,6 +3,7 @@ Version 1.17
 
 General
 -------
+* Fix auto update action on data import ([issue 73](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/73) )
 * Restore focus on suggested fields when pressing tab key in query editor ([issue 66](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/66) created by [Enrique Muñoz](https://github.com/emunoz-at-wiris))
 * Update shortcut indication for mac users
 

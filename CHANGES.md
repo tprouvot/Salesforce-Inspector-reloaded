@@ -3,6 +3,7 @@ Version 1.17
 
 General
 -------
+* Add a configuration option for links to open in a new tab ([feature 78](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/75) )
 * Import data as JSON ([feature 75](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/75) )
 * Fix auto update action on data import ([issue 73](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/73) )
 * Restore focus on suggested fields when pressing tab key in query editor ([issue 66](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/66) created by [Enrique Muñoz](https://github.com/emunoz-at-wiris))

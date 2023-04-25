@@ -131,7 +131,8 @@ class App extends React.PureComponent {
     let orgInstance = this.getOrgInstance(sfHost);
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
-    let linkTarget = inDevConsole ? "_blank" : "_top";
+    let linkInNewTab = localStorage.getItem("openLinksInNewTab");
+    let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
     return (
       h("div", {},
         h("div", { className: "header" },

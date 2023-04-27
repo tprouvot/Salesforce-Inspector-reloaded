@@ -179,7 +179,7 @@ class App extends React.PureComponent {
                 value: apiVersionInput.split(".0")[0]
               }),
             ),
-            h("div", { className: "tip" }, "[ctrl+alt+i] to open"),
+            h("div", { className: "tip" }, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open"),
             h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About"),
             h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki", target: linkTarget }, "Wiki")
           ),

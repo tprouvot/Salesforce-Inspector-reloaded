@@ -1,4 +1,4 @@
-<img src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/master/addon/icon128.png?raw=true" align="right">
+<img src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/releaseCandidate/addon/icon128.png?raw=true" align="right">
 
 Salesforce inspector reloaded
 ===========================

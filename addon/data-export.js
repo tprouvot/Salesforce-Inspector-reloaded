@@ -1129,7 +1129,7 @@ class App extends React.Component {
               h("button", { onClick: this.onClearHistory, title: "Clear Query History" }, "Clear")
             ),
             h("div", { className: "pop-menu saveOptions", hidden: !model.expandSavedOptions },
-              h("a", { href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history" }, "Removed Saved Query"),
+              h("a", { href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history" }, "Remove Saved Query"),
               h("a", { href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history" }, "Clear Saved Queries")
             ),
             h("div", { className: "button-group" },
@@ -1162,9 +1162,9 @@ class App extends React.Component {
           h("div", { className: "autocomplete-header" },
             h("span", {}, model.autocompleteResults.title),
             h("div", { className: "flex-right" },
-              h("button", { disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted" }, "Run Export"),
-              h("a", { className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object" }, model.autocompleteResults.sobjectName + " Field Info"),
-              h("button", { href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line" },
+              h("button", { tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted" }, "Run Export"),
+              h("a", { tabIndex: 2, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object" }, model.autocompleteResults.sobjectName + " Field Info"),
+              h("button", { tabIndex: 3, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line" },
                 h("div", { className: "button-icon" }),
                 h("div", { className: "button-toggle-icon" })
               )
@@ -1172,7 +1172,7 @@ class App extends React.Component {
           ),
           h("div", { className: "autocomplete-results" },
             model.autocompleteResults.results.map(r =>
-              h("div", { className: "autocomplete-result", key: r.value }, h("a", { title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + ' ' + r.dataType }, h("div", { className: "autocomplete-icon" }), r.value), " ")
+              h("div", { className: "autocomplete-result", key: r.value }, h("a", { tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + ' ' + r.dataType }, h("div", { className: "autocomplete-icon" }), r.value), " ")
             )
           ),
         ),

@@ -989,6 +989,8 @@ class AllDataSelection extends React.PureComponent {
   getObjectSetupLink(sobjectName, durableId) {
     if (sobjectName.endsWith("__mdt")) {
       return this.getCustomMetadataLink(durableId);
+    } else if (sobjectName.endsWith("__c")) {
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/Details/view";
     } else {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
     }
@@ -999,6 +1001,8 @@ class AllDataSelection extends React.PureComponent {
   getObjectFieldsSetupLink(sobjectName, durableId) {
     if (sobjectName.endsWith("__mdt")) {
       return this.getCustomMetadataLink(durableId);
+    } else if (sobjectName.endsWith("__c")) {
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/FieldsAndRelationships/view";
     } else {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
     }
@@ -1010,8 +1014,12 @@ class AllDataSelection extends React.PureComponent {
       return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
     }
   }
-  getRecordTypesLink(sfHost, sobjectName) {
-    return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
+  getRecordTypesLink(sfHost, sobjectName, durableId) {
+    if (sobjectName.endsWith("__c")) {
+      return "https://" + sfHost + "/lightning/setup/ObjectManager/" + durableId + "/RecordTypes/view";
+    } else {
+      return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
+    }
   }
   render() {
     let { sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails } = this.props;
@@ -1037,7 +1045,7 @@ class AllDataSelection extends React.PureComponent {
                 h("th", {}, "Links:"),
                 h("td", {},
                   h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Fields / "),
-                  h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name), target: linkTarget }, "Record Types / "),
+                  h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Record Types / "),
                   h("a", { href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix), target: linkTarget }, "Object List")
                 ),
               ),

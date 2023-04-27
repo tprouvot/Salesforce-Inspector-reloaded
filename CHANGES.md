@@ -1,3 +1,10 @@
+Version 1.17
+===========
+
+General
+-------
+* Fix links for custom object [PR80](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/80) (by [Mouloud Habchi](https://github.com/MD931) )
+
 Version 1.16
 ===========
 

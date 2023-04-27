@@ -991,7 +991,7 @@ class AllDataSelection extends React.PureComponent {
       return this.getCustomMetadataLink(durableId);
     } else if (sobjectName.endsWith("__c")) {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/Details/view";
-	} else {
+    } else {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
     }
   }
@@ -1015,11 +1015,11 @@ class AllDataSelection extends React.PureComponent {
     }
   }
   getRecordTypesLink(sfHost, sobjectName, durableId) {
-	if (sobjectName.endsWith("__c")) {
+    if (sobjectName.endsWith("__c")) {
       return "https://" + sfHost + "/lightning/setup/ObjectManager/" + durableId + "/RecordTypes/view";
     } else {
-	  return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
-	}
+      return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
+    }
   }
   render() {
     let { sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails } = this.props;

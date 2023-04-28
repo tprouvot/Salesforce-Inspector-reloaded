@@ -1,3 +1,10 @@
+Version 1.17
+===========
+
+General
+-------
+* Fix links for custom setting [PR81](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/81) (by [Mouloud Habchi](https://github.com/MD931) )
+
 Version 1.16
 ===========
 

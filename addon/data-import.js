@@ -18,6 +18,7 @@ class Model {
     this.dataError = "";
     this.useToolingApi = false;
     this.dataFormat = "excel";
+    this.importActionSelected = false;
     this.importAction = "create";
     this.importActionName = "Insert";
     this.importType = "Account";
@@ -85,12 +86,15 @@ class Model {
   }
 
   message() {
-    return this.dataFormat == "excel" ? "Paste Excel data here" : "Paste CSV data here";
+    return "Paste " + this.dataFormat.toUpperCase() + " data here";
   }
 
   setData(text) {
     if (this.isWorking()) {
       return;
+    }
+    if (this.dataFormat == "json") {
+      text = this.getDataFromJson(text);
     }
     let separator = this.dataFormat == "excel" ? "\t" : ",";
     let data;
@@ -132,9 +136,33 @@ class Model {
       this.importType = sobj;
     }
     //automatically select update if header contains id
-    if (this.hasIdColumn(header)) {
+    if (this.hasIdColumn(header) && !this.importActionSelected) {
       this.importAction = "update";
+      this.importActionName = "Update";
     }
+  }
+
+  getDataFromJson(json) {
+    json = JSON.parse(json);
+    let csv;
+    let fields = ["_"].concat(Object.keys(json[0]));
+    fields = fields.filter(field => field != "attributes");
+
+    let sobject = json[0]["attributes"]["type"];
+    if (sobject) {
+      csv = json.map(function (row) {
+        return fields.map(function (fieldName) {
+          let value = row[fieldName];
+          if (value && typeof value === "string") {
+            return fieldName == "_" ? '"[' + sobject + ']"' : JSON.stringify(value)
+          }
+        }).join(",")
+      })
+      fields = fields.map(str => '"' + str + '"');
+      csv.unshift(fields.join(","));
+      csv = csv.join("\r\n");
+    }
+    return csv;
   }
 
   copyOptions() {
@@ -723,6 +751,7 @@ class App extends React.Component {
     let { model } = this.props;
     model.importAction = e.target.value;
     model.importActionName = e.target.options[e.target.selectedIndex].text;
+    model.importActionSelected = true;
     model.didUpdate();
   }
   onImportTypeChange(e) {
@@ -913,7 +942,9 @@ class App extends React.Component {
               h("span", { className: "conf-label" }, "Format"),
               h("label", {}, h("input", { type: "radio", name: "data-input-format", value: "excel", checked: model.dataFormat == "excel", onChange: this.onDataFormatChange, disabled: model.isWorking() }), " ", h("span", {}, "Excel")),
               " ",
-              h("label", {}, h("input", { type: "radio", name: "data-input-format", value: "csv", checked: model.dataFormat == "csv", onChange: this.onDataFormatChange, disabled: model.isWorking() }), " ", h("span", {}, "CSV"))
+              h("label", {}, h("input", { type: "radio", name: "data-input-format", value: "csv", checked: model.dataFormat == "csv", onChange: this.onDataFormatChange, disabled: model.isWorking() }), " ", h("span", {}, "CSV")),
+              " ",
+              h("label", {}, h("input", { type: "radio", name: "data-input-format", value: "json", checked: model.dataFormat == "json", onChange: this.onDataFormatChange, disabled: model.isWorking() }), " ", h("span", {}, "JSON"))
             ),
             h("div", { className: "conf-line" },
               h("label", { className: "conf-input" },

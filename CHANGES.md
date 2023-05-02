@@ -8,6 +8,7 @@ General
 * Restore focus on suggested fields when pressing tab key in query editor ([issue 66](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/66) created by [Enrique Muñoz](https://github.com/emunoz-at-wiris))
 * Update shortcut indication for mac users
 * Fix links for custom object [PR80](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/80) (by [Mouloud Habchi](https://github.com/MD931) )
+* Fix links for custom setting [PR82](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/82) (by [Mouloud Habchi](https://github.com/MD931) )
 
 Version 1.16
 ===========

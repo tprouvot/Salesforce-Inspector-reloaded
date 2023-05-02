@@ -282,7 +282,7 @@ class AllDataBox extends React.PureComponent {
   loadSobjects() {
     let entityMap = new Map();
 
-    function addEntity({ name, label, keyPrefix, durableId }, api) {
+    function addEntity({ name, label, keyPrefix, durableId, isCustomSetting }, api) {
       label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
       let entity = entityMap.get(name);
       if (entity) {
@@ -299,6 +299,7 @@ class AllDataBox extends React.PureComponent {
           label,
           keyPrefix,
           durableId,
+          isCustomSetting,
           availableKeyPrefix: null,
         };
         entityMap.set(name, entity);
@@ -322,14 +323,15 @@ class AllDataBox extends React.PureComponent {
     }
 
     function getEntityDefinitions(bucket) {
-      let query = "select QualifiedApiName, Label, KeyPrefix, DurableId from EntityDefinition" + bucket;
+      let query = "select QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting from EntityDefinition" + bucket;
       return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query)).then(res => {
         for (let record of res.records) {
           addEntity({
             name: record.QualifiedApiName,
             label: record.Label,
             keyPrefix: record.KeyPrefix,
-            durableId: record.DurableId
+            durableId: record.DurableId,
+            isCustomSetting: record.IsCustomSetting
           }, null);
         }
       }).catch(err => {
@@ -986,9 +988,11 @@ class AllDataSelection extends React.PureComponent {
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
    */
-  getObjectSetupLink(sobjectName, durableId) {
+  getObjectSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
       return this.getCustomMetadataLink(durableId);
+    } else if (isCustomSetting) {
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
     } else if (sobjectName.endsWith("__c")) {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/Details/view";
     } else {
@@ -998,18 +1002,24 @@ class AllDataSelection extends React.PureComponent {
   getCustomMetadataLink(durableId) {
     return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + durableId + "%3Fsetupid%3DCustomMetadata";
   }
-  getObjectFieldsSetupLink(sobjectName, durableId) {
+  getObjectFieldsSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
       return this.getCustomMetadataLink(durableId);
+    } else if (isCustomSetting) {
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
+
     } else if (sobjectName.endsWith("__c")) {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/FieldsAndRelationships/view";
     } else {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
     }
   }
-  getObjectListLink(sobjectName, keyPrefix) {
+  getObjectListLink(sobjectName, keyPrefix, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
       return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + keyPrefix;
+    } else if (isCustomSetting) {
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2Fsetup%2Fui%2FlistCustomSettingsData.apexp?id=" + keyPrefix;
+
     } else {
       return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
     }
@@ -1038,15 +1048,15 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", { href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, selectedValue.sobject.name)
+                  h("a", { href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget }, selectedValue.sobject.name)
                 )
               ),
               h("tr", {},
                 h("th", {}, "Links:"),
                 h("td", {},
-                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Fields / "),
+                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget }, "Fields / "),
                   h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Record Types / "),
-                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix), target: linkTarget }, "Object List")
+                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget }, "Object List")
                 ),
               ),
               h("tr", {},

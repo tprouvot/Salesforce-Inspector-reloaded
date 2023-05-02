@@ -1005,8 +1005,9 @@ class AllDataSelection extends React.PureComponent {
   getObjectFieldsSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
       return this.getCustomMetadataLink(durableId);
-    } else if(isCustomSetting) {
-      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F"+ durableId +"?setupid=CustomSettings";
+    } else if (isCustomSetting) {
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
+
     } else if (sobjectName.endsWith("__c")) {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/FieldsAndRelationships/view";
     } else {

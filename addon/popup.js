@@ -1017,8 +1017,9 @@ class AllDataSelection extends React.PureComponent {
   getObjectListLink(sobjectName, keyPrefix, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
       return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + keyPrefix;
-    } else if(isCustomSetting) {
+    } else if (isCustomSetting) {
       return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2Fsetup%2Fui%2FlistCustomSettingsData.apexp?id=" + keyPrefix;
+
     } else {
       return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
     }

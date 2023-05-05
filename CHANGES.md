@@ -3,6 +3,7 @@ Version 1.17
 
 General
 -------
+* Show "Copy Id" from Inspect page ([feature 12](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/12) )
 * Add a configuration option for links to open in a new tab ([feature 78](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/78) )
 * Import data as JSON ([feature 75](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/75) )
 * Fix auto update action on data import ([issue 73](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/73) )

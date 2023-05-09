@@ -1328,8 +1328,8 @@ class FieldValueCell extends React.Component {
   onLinkClick(e) {
     if (e.target.className?.includes("copy-id")) {
       navigator.clipboard.writeText(e.target.id);
+      this.onRecordIdClick(e);
     }
-    this.onRecordIdClick(e);
   }
   render() {
     let { row, col } = this.props;

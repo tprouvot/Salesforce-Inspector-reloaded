@@ -1155,6 +1155,7 @@ class App extends React.Component {
                   : model.editMode == "create" ? "Save the values as a new record"
                     : null,
             className: "button " + (model.editMode == "delete" ? "button-destructive" : "button-brand"),
+            disabled: model.spinnerCount != 0 ? true : false,
             onClick: this.onDoSave
           }, model.editMode == "update" ? "Save"
             : model.editMode == "delete" ? "Confirm delete"

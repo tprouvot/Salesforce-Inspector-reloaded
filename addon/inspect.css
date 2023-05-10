@@ -480,8 +480,9 @@ th[tabindex] {
 
 .button[disabled] {
   cursor: default;
-  color: #dddbda;
-  background-color: #fff;
+  background-color: var(--slds-g-color-neutral-base-80, #c9c7c5);
+  border-color: var(--slds-g-color-neutral-base-80, #c9c7c5);
+  color: var(--slds-g-color-neutral-base-100, #fff);
 }
 
 .object-actions {

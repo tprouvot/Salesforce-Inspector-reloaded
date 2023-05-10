@@ -3,7 +3,7 @@ Version 1.17
 
 General
 -------
-* Update spinner on inspect page when loading or saving records ([feature 69](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/69) )
+* Update spinner on inspect page when loading or saving records and disable button ([feature 69](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/69) )
 * Add a configuration option for links to open in a new tab ([feature 78](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/78) )
 * Import data as JSON ([feature 75](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/75) )
 * Fix auto update action on data import ([issue 73](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/73) )

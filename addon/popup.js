@@ -168,7 +168,7 @@ class App extends React.PureComponent {
         h("div", { className: "footer" },
           h("div", { className: "meta" },
             h("div", { className: "version" },
-              h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note" }, "v" + addonVersion),
+              h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note", target: linkTarget }, "v" + addonVersion),
               " / ",
               h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
               " / ",

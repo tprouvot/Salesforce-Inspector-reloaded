@@ -773,6 +773,7 @@ class FieldRow extends TableRow {
       links = [];
     }
     links.push({ href: this.idLink(), text: "View in Salesforce" });
+    links.push({ href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue });
     this.recordIdPop = links;
   }
   showReferenceUrl(type) {
@@ -1314,6 +1315,7 @@ class FieldValueCell extends React.Component {
     this.onDataEditValueInput = this.onDataEditValueInput.bind(this);
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onRecordIdClick = this.onRecordIdClick.bind(this);
+    this.onLinkClick = this.onLinkClick.bind(this);
   }
   onTryEdit(e) {
     let { row } = this.props;
@@ -1339,6 +1341,12 @@ class FieldValueCell extends React.Component {
     row.toggleRecordIdPop();
     row.rowList.model.didUpdate();
   }
+  onLinkClick(e) {
+    if (e.target.className?.includes("copy-id")) {
+      navigator.clipboard.writeText(e.target.id);
+      this.onRecordIdClick(e);
+    }
+  }
   render() {
     let { row, col } = this.props;
     if (row.isEditing()) {
@@ -1350,7 +1358,7 @@ class FieldValueCell extends React.Component {
       return h("td", { className: col.className, onDoubleClick: this.onTryEdit },
         h("div", { className: "pop-menu-container" },
           h("div", { className: "value-text quick-select" }, h("a", { href: row.idLink() /*used to show visited color*/, onClick: this.onRecordIdClick }, row.dataStringValue())),
-          row.recordIdPop == null ? null : h("div", { className: "pop-menu" }, row.recordIdPop.map(link => h("a", { key: link.href, href: link.href }, link.text)))
+          row.recordIdPop == null ? null : h("div", { className: "pop-menu" }, row.recordIdPop.map(link => h("a", { key: link.href, href: link.href, className: link.className, id: link.id, onClick: this.onLinkClick }, link.text)))
         )
       );
     } else {

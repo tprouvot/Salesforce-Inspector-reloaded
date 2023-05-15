@@ -1,3 +1,8 @@
+Version 1.18
+===========
+
+General
+
 Version 1.17
 ===========
 

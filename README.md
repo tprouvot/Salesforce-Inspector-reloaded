@@ -1,3 +1,4 @@
+
 <img src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/master/addon/icon128.png?raw=true" align="right">
 
 Salesforce inspector reloaded
@@ -49,6 +50,18 @@ Troubleshooting
 -----
 * If Salesforce Inspector is not available after installation, the most likely issue is that your browser is not up to date. See [instructions for Google Chrome](https://productforums.google.com/forum/#!topic/chrome/YK1-o4KoSjc).
 * When you enable the My Domain feature in Salesforce, Salesforce Inspector may not work until you have restarted your browser (or until you have deleted the "sid" cookie for the old Salesforce domain by other means).
+
+
+Contributions
+-----
+
+Contributions are welcomed !
+
+To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
+This branch will be merge into master when the new version is published on web store.
+
+Linting : to assure indentation, formatting and best practices coherence, please install ESLint extension.
+
 
 Development
 -----

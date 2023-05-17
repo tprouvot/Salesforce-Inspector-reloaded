@@ -294,6 +294,7 @@ export async function dataExportTest(test) {
 
   // Copy Excel
   assertEquals(true, vm.canCopy());
+  vm.exportedData.updateVisibility();
   vm.copyAsExcel();
   assertEquals('"_"\t"Name"\t"Checkbox__c"\t"Number__c"\r\n"[Inspector_Test__c]"\t"test1"\t"false"\t"100.01"\r\n"[Inspector_Test__c]"\t"test2"\t"true"\t"200.02"\r\n"[Inspector_Test__c]"\t"test3"\t"false"\t"300.03"\r\n"[Inspector_Test__c]"\t"test4"\t"true"\t"400.04"', window.testClipboardValue);
 

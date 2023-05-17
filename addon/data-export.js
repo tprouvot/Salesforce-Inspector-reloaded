@@ -213,7 +213,7 @@ class Model {
     copyToClipboard(this.exportedData.csvSerialize(","));
   }
   copyAsJson() {
-    copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
+    copyToClipboard(JSON.stringify(this.exportedData.filteredRecords, null, "  "));
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -850,6 +850,7 @@ function RecordTable(vm) {
   let isVisible = (row, filter) => !filter || row.some(cell => cellToString(cell).toLowerCase().includes(filter.toLowerCase()));
   let rt = {
     records: [],
+    filteredRecords: [],
     table: [],
     rowVisibilities: [],
     colVisibilities: [true],
@@ -870,11 +871,22 @@ function RecordTable(vm) {
         discoverColumns(record, "", row);
       }
     },
-    csvSerialize: separator => rt.table.map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
+    csvSerialize: separator => rt.filteredRecords.map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
     updateVisibility() {
       let filter = vm.resultsFilter;
+      let previousFilterResult = rt.filteredRecords.length;
+      rt.filteredRecords = [];
       for (let r = 1/* always show header */; r < rt.table.length; r++) {
-        rt.rowVisibilities[r] = isVisible(rt.table[r], filter);
+        let visible = isVisible(rt.table[r], filter);
+        rt.rowVisibilities[r] = visible;
+        if (!filter || visible) {
+          rt.filteredRecords.push(rt.table[r]);
+        }
+      }
+      if (filter) {
+        vm.exportStatus = "Filtered " + rt.filteredRecords.length + " record(s).";
+      } else if (!filter && previousFilterResult != 0) {
+        vm.exportStatus = "Exported " + rt.table.length + " record(s).";
       }
     }
   };

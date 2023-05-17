@@ -2,6 +2,8 @@ Version 1.18
 ===========
 
 General
+-------
+* When coping filtered records from data export, only copy the filtered records and not all the results [feature 93](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/93) (idea by [LexerEP](https://github.com/LexerEP))
 
 Version 1.17
 ===========

@@ -1074,6 +1074,11 @@ class App extends React.Component {
               ]
             })
           ),
+          h("div", { className: "object-name" },
+            h("span", { className: "quick-select" }, model.objectName()),
+            " ",
+            model.recordHeading()
+          ),
           model.useTab != "all" ? null : h("div", { className: "filter-box" },
             h("svg", { className: "filter-icon" },
               h("use", { xlinkHref: "symbols.svg#search" })
@@ -1084,11 +1089,6 @@ class App extends React.Component {
                 h("use", { xlinkHref: "symbols.svg#clear" })
               )
             )
-          ),
-          h("h1", { className: "object-name" },
-            h("span", { className: "quick-select" }, model.objectName()),
-            " ",
-            model.recordHeading()
           ),
           h("span", { className: "object-actions" },
             model.editMode == null && model.recordData && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
@@ -1131,14 +1131,13 @@ class App extends React.Component {
             actionsColumn: { className: "field-actions", reactElement: FieldActionsCell },
             classNameForRow: row => (row.fieldIsCalculated() ? "fieldCalculated " : "") + (row.fieldIsHidden() ? "fieldHidden " : "")
           }) : null,
-          model.useTab == "all" ? h("hr", {}) : null,
           model.useTab == "all" || model.useTab == "childs" ? h(RowTable, {
             rowList: model.childRows,
             actionsColumn: { className: "child-actions", reactElement: ChildActionsCell },
             classNameForRow: () => ""
           }) : null
         ),
-        model.editMode != null && (model.useTab == "all" || model.useTab == "fields") ? h("span", { className: "edit-bar" },
+        model.editMode != null && (model.useTab == "all" || model.useTab == "fields") ? h("div", { className: "footer-edit-bar" }, h("span", { className: "edit-bar" },
           h("button", {
             title:
               model.editMode == "update" ? "Cancel editing this record"
@@ -1162,7 +1161,7 @@ class App extends React.Component {
             : model.editMode == "delete" ? "Confirm delete"
               : model.editMode == "create" ? "Save new"
                 : "???")
-        ) : null,
+        )) : null,
         model.detailsBox ? h(DetailsBox, { model }) : null
       )
     );
@@ -1232,13 +1231,13 @@ class RowTable extends React.Component {
           selectedColumns.map(col =>
             h(HeaderCell, { key: col.name, col, rowList })
           ),
-          h("th", { className: actionsColumn.className }, "")
+          h("th", { className: actionsColumn.className, tabIndex: 0 }, "")
         ),
         rowList.model.useTab != "all" ? h("tr", {},
           selectedColumns.map(col =>
             h(FilterCell, { key: col.name, col, rowList })
           ),
-          h("th", { className: actionsColumn.className })
+          h("th", { className: actionsColumn.className + " " + "th-filter-row"})
         ) : null
       ),
       h("tbody", {}, rowList.rows.map(row =>
@@ -1288,7 +1287,7 @@ class FilterCell extends React.Component {
   }
   render() {
     let { col } = this.props;
-    return h("th", { className: col.className },
+    return h("th", { className: col.className + " " + "th-filter-row" },
       h("input", {
         placeholder: "Filter",
         className: "column-filter-box",

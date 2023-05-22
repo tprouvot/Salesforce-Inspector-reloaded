@@ -60,11 +60,11 @@ class App extends React.PureComponent {
   onShortcutKey(e) {
     if (e.key == "m") {
       e.preventDefault();
-      this.refs.showAllDataBox.clickShowDetailsBtn();
+      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickShowDetailsBtn();
     }
     if (e.key == "a") {
       e.preventDefault();
-      this.refs.showAllDataBox.clickAllDataBtn();
+      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickAllDataBtn();
     }
     if (e.key == "e") {
       e.preventDefault();

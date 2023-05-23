@@ -135,7 +135,7 @@ class App extends React.PureComponent {
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
     return (
       h("div", {},
-        h("div", { className: "header-container"}, 
+        h("div", { className: "header-container slds-border_bottom"}, 
           h("div", { className: "header" },
             h("div", { className: "header-icon" },
               h("svg", { viewBox: "0 0 24 24" },
@@ -154,17 +154,56 @@ class App extends React.PureComponent {
         ),
         h("div", { className: "main" },
           h(AllDataBox, { ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl }),
-          h("div", { className: "global-box" },
-            h("a", { ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "button" }, "Data ", h("u", {}, "E"), "xport"),
-            h("a", { ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "button" }, "Data ", h("u", {}, "I"), "mport"),
-            h("a", { ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "button" }, "Org ", h("u", {}, "L"), "imits"),
+          h("div", { className: "slds-p-vertical_small slds-p-horizontal_x-small" },
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
+            ),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
+            ),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
+            ),
             // Advanded features should be put below this line, and the layout adjusted so they are below the fold
-            h("a", { ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "button" }, h("u", {}, "D"), "ownload Metadata"),
-            h("a", { ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "button" }, "E", h("u", {}, "x"), "plore API"),
-            h("a", { ref: "generateToken", href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=chrome-extension://" + chrome.runtime.id + "/data-export.html?host=" + sfHost + "%26", target: linkTarget, className: !clientId ? "button hide" : "button" }, h("u", {}, "G"), "enerate Connected App Token"),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
+            ),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "E", h("u", {}, "x"), "plore API") )
+            ),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a",
+                {
+                  ref: "generateToken",
+                  href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=chrome-extension://" + chrome.runtime.id + "/data-export.html?host=" + sfHost + "%26",
+                  target: linkTarget,
+                  className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
+                },
+                h("span", {}, h("u", {}, "G"), "enerate Connected App Token"))
+            ),
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
-            inLightning && isInSetup && h("a", { ref: "homeBtn", href: `https://${sfHost}/lightning/page/home`, title: "You can choose if you want to open in a new tab or not", target: linkTarget, className: "button" }, "Salesforce ", h("u", {}, "H"), "ome"),
-            inLightning && !isInSetup && h("a", { ref: "homeBtn", href: `https://${sfHost}/lightning/setup/SetupOneHome/home?setupApp=all`, title: "You can choose if you want to open in a new tab or not", target: linkTarget, className: "button" }, "Setup ", h("u", {}, "H"), "ome"),
+            inLightning && isInSetup && h("div", { className: "slds-m-bottom_xx-small" },
+              h("a",
+                {
+                  ref: "homeBtn",
+                  href: `https://${sfHost}/lightning/page/home`,
+                  title: "You can choose if you want to open in a new tab or not",
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral"
+                }, 
+                h("span", {}, "Salesforce ", h("u", {}, "H"), "ome"))
+            ),
+            inLightning && !isInSetup && h("div", { className: "slds-m-bottom_xx-small" },
+              h("a",
+                {
+                  ref: "homeBtn",
+                  href: `https://${sfHost}/lightning/setup/SetupOneHome/home?setupApp=all`,
+                  title: "You can choose if you want to open in a new tab or not",
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral"
+                }, 
+                h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
+            )
           )
         ),
         h("div", { className: "footer" },
@@ -375,7 +414,7 @@ class AllDataBox extends React.PureComponent {
     let { sfHost, showDetailsSupported, linkTarget } = this.props;
 
     return (
-      h("div", { className: "all-data-box " + (this.isLoading() ? "loading " : "") },
+      h("div", { className: "slds-p-around_small slds-border_bottom" + (this.isLoading() ? "loading " : "") },
         h("ul", { className: "small-tabs" },
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),
@@ -1087,7 +1126,7 @@ class AllDataSelection extends React.PureComponent {
             ref: index == 0 ? "showAllDataBtn" : null,
             href: this.getAllDataUrl(button == "toolingApi"),
             target: linkTarget,
-            className: "button"
+            className: "page-button slds-button slds-button_neutral"
           },
           index == 0 ? h("span", {}, "Show ", h("u", {}, "a"), "ll data") : "Show all data",
           button == "regularApi" ? ""

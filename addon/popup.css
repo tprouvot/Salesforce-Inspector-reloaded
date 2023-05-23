@@ -89,12 +89,10 @@ body,
 }
 
 .header-container {
-    background-color: #eeeeee;
     height: 40px;
     display: flex;
     align-items: center;
     padding: 0 12px;
-    border-bottom: 1px solid #d8dde6;
   }
 
 .header-icon {
@@ -143,72 +141,8 @@ input.api-input {
     background: transparent;
 }
 
-.button,
-button.button.button[disabled],
-.base-button {
+.page-button {
     width: 100%;
-    padding: 0 1rem;
-    text-align: center;
-    vertical-align: middle;
-    border: 1px solid #d8dde6;
-    background-color: white;
-    display: inline-block;
-    border-radius: .25rem;
-    line-height: 1.875rem;
-    text-decoration: none;
-    transition: color 50ms linear, background-color 50ms linear;
-    color: #d8dde6;
-    cursor: default;
-    margin-bottom: 4px;
-}
-
-.button:last-child,
-button.button.button[disabled]:last-child,
-.base-button:last-child {
-    margin-bottom: 0;
-}
-
-.base-button {
-    border: none;
-}
-
-button.button,
-a.button[href],
-a.base-button[href] {
-    color: #0070d2;
-    cursor: pointer;
-    font-family: unset;
-    font-size: unset;
-}
-
-button.button:hover,
-a[href].button:hover,
-.button:focus {
-    background-color: #f4f6f9;
-    color: #005fb2;
-    text-decoration: none;
-}
-
-button.button:active,
-a[href]:active {
-    background-color: #eef1f6;
-    color: #00396b;
-    text-decoration: none;
-}
-
-.button:focus {
-    outline: 0;
-    box-shadow: 0 0 3px #0070D2;
-    text-decoration: none;
-}
-
-.global-box {
-    padding: 10px 8px;
-}
-
-.all-data-box {
-    border-bottom: 1px solid #D8DDE6;
-    padding: 12px 8px;
 }
 
 .all-data-input {

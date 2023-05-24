@@ -72,12 +72,6 @@ body,
     overflow-y: scroll;
 }
 
-.footer {
-    padding: 12px 8px;
-    background-color: #eeeeee;
-    border-top: 1px solid #d8dde6;
-}
-
 .header-logo {
   background: #061c3f;
   padding: 2px 1em 2px 2px;

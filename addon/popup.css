@@ -1,3 +1,5 @@
+@import "styles/slds/slds.min.css";
+
 @font-face {
   font-family: 'Salesforce Sans';
   src: url(fonts/SalesforceSans-Light.woff2);
@@ -76,24 +78,15 @@ body,
     border-top: 1px solid #d8dde6;
 }
 
-.header {
-    background: #061c3f;
-    padding: 2px;
-    padding-right: 1em;
-    color: white;
-    display: flex;
-    align-items: center;
-    margin: 0 auto;
-    line-height: 1.8em;
-    border-radius: 3px;
+.header-logo {
+  background: #061c3f;
+  padding: 2px 1em 2px 2px;
+  color: white;
+  display: flex;
+  align-items: center;
+  margin: 0 auto;
+  border-radius: 3px;
 }
-
-.header-container {
-    height: 40px;
-    display: flex;
-    align-items: center;
-    padding: 0 12px;
-  }
 
 .header-icon {
     margin-right: 12px;
@@ -107,26 +100,6 @@ body,
     height: 24px;
     fill: white;
     vertical-align: middle;
-}
-
-a {
-    color: #d8dde6;
-}
-
-a[href] {
-    color: #0070d2;
-    text-decoration: none;
-    transition: color .1s linear;
-}
-
-a[href]:focus,
-a[href]:hover {
-    text-decoration: underline;
-    color: #005fb2;
-}
-
-a[href]:active {
-    color: #00396b;
 }
 
 button,
@@ -267,25 +240,10 @@ input.api-input {
     animation: bg-load 1s cubic-bezier(.5, .4, .5, .6) infinite;
 }
 
-.meta {
-    font-size: 12px;
-    text-align: right;
-    display: flex;
-    justify-content: space-between;
+.footer-small-text {
+    font-size: 0.55rem;
 }
 
-.meta .version {
-    float: left;
-    font-size: 0.8em;
-    margin-top: 0.2em;
-}
-
-.meta .tip {
-    text-align: center;
-    color: #999999;
-    font-size: 0.8em;
-    margin-top: 0.2em;
-}
 
 .all-data-box-data table {
     text-align: left;

@@ -135,10 +135,10 @@ class App extends React.PureComponent {
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
     return (
       h("div", {},
-        h("div", { className: "header-container slds-border_bottom"}, 
-          h("div", { className: "header" },
-            h("div", { className: "header-icon" },
-              h("svg", { viewBox: "0 0 24 24" },
+        h("div", { className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom"}, 
+          h("div", { className: "header-logo" },
+            h("div", { className: "header-icon slds-icon_container" },
+              h("svg", { className: "slds-icon", viewBox: "0 0 24 24" },
                 h("path", {
                   d: `
                   M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
@@ -206,25 +206,29 @@ class App extends React.PureComponent {
             )
           )
         ),
-        h("div", { className: "footer" },
-          h("div", { className: "meta" },
-            h("div", { className: "version" },
-              h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note", target: linkTarget }, "v" + addonVersion),
-              " / ",
-              h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
-              " / ",
-              h("input", {
-                className: "api-input",
-                type: "number",
-                title: "Update api version",
-                onChange: this.onChangeApi,
-                value: apiVersionInput.split(".0")[0]
-              }),
-            ),
-            h("div", { className: "tip" }, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open"),
-            h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About"),
-            h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki", target: linkTarget }, "Wiki")
+        h("div", { className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top" },
+          h("div", { className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small" },
+            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note", target: linkTarget }, "v" + addonVersion),
+            h("span", {}, " / "),
+            h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
+            h("span", {}, " / "),
+            h("input", {
+              className: "api-input",
+              type: "number",
+              title: "Update api version",
+              onChange: this.onChangeApi,
+              value: apiVersionInput.split(".0")[0]
+            })
           ),
+          h("div", { className: "slds-col slds-size_3-of-12 slds-text-align_left" }, 
+            h("span", { className: "footer-small-text" }, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+          ),
+          h("div", { className: "slds-col slds-size_2-of-12 slds-text-align_right" },
+            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About")
+          ),
+          h("div", { className: "slds-col slds-size_2-of-12 slds-text-align_right" },
+            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki", target: linkTarget }, "Wiki")
+          )
         )
       )
     );
@@ -934,9 +938,9 @@ class UserDetails extends React.PureComponent {
             )
           )),
         h("div", { ref: "userButtons", className: "center" },
-          this.doSupportLoginAs(user) ? h("a", { href: this.getLoginAsLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Try login as") : null,
-          h("a", { href: this.getUserDetailLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Details"),
-          h("a", { href: this.getUserPsetLink(user.Id), target: linkTarget, className: "button button-secondary" }, "PSet")
+          this.doSupportLoginAs(user) ? h("a", { href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral" }, "Try login as") : null,
+          h("a", { href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral" }, "Details"),
+          h("a", { href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral" }, "PSet")
         ))
     );
   }

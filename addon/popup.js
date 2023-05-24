@@ -154,16 +154,18 @@ class App extends React.PureComponent {
         ),
         h("div", { className: "main" },
           h(AllDataBox, { ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl }),
-          h("div", { className: "slds-p-vertical_small slds-p-horizontal_x-small" },
+          h("div", { className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom" },
             h("div", { className: "slds-m-bottom_xx-small" },
               h("a", { ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
             ),
             h("div", { className: "slds-m-bottom_xx-small" },
               h("a", { ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
             ),
-            h("div", { className: "slds-m-bottom_xx-small" },
+            h("div", {},
               h("a", { ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ),
+          ),
+          h("div", { className: "slds-p-vertical_x-small slds-p-horizontal_x-small" } ,
             // Advanded features should be put below this line, and the layout adjusted so they are below the fold
             h("div", { className: "slds-m-bottom_xx-small" },
               h("a", { ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
@@ -203,7 +205,7 @@ class App extends React.PureComponent {
                   className: "page-button slds-button slds-button_neutral"
                 }, 
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
-            )
+            ),
           )
         ),
         h("div", { className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top" },
@@ -418,7 +420,7 @@ class AllDataBox extends React.PureComponent {
     let { sfHost, showDetailsSupported, linkTarget } = this.props;
 
     return (
-      h("div", { className: "slds-p-around_small slds-border_bottom" + (this.isLoading() ? "loading " : "") },
+      h("div", { className: "slds-p-top_small slds-p-horizontal_small slds-p-bottom_x-small" + (this.isLoading() ? " loading " : "") },
         h("ul", { className: "small-tabs" },
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),

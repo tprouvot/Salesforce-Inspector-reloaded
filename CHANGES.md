@@ -2,6 +2,8 @@ Version 1.18
 ===========
 
 General
+-------
+* Fix "Show all data" shortcut from popup [issue 96](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/96) (fix by [Pietro Martino](https://github.com/pietromartino))
 
 Version 1.17
 ===========

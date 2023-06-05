@@ -420,7 +420,7 @@ class AllDataBox extends React.PureComponent {
     let { sfHost, showDetailsSupported, linkTarget } = this.props;
 
     return (
-      h("div", { className: "slds-p-top_small slds-p-horizontal_small slds-p-bottom_x-small" + (this.isLoading() ? " loading " : "") },
+      h("div", { className: "slds-p-top_small slds-p-horizontal_small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "") },
         h("ul", { className: "small-tabs" },
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),

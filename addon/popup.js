@@ -135,55 +135,102 @@ class App extends React.PureComponent {
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
     return (
       h("div", {},
-        h("div", { className: "header" },
-          h("div", { className: "header-icon" },
-            h("svg", { viewBox: "0 0 24 24" },
-              h("path", {
-                d: `
-                M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
-                m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
-                M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
-                m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
-                M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
-                `})
-            )
-          ),
-          "Salesforce Inspector"
+        h("div", { className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom"}, 
+          h("div", { className: "header-logo" },
+            h("div", { className: "header-icon slds-icon_container" },
+              h("svg", { className: "slds-icon", viewBox: "0 0 24 24" },
+                h("path", {
+                  d: `
+                  M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
+                  m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
+                  M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
+                  m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
+                  M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
+                  `})
+              )
+            ),
+            "Salesforce Inspector"
+          )
         ),
         h("div", { className: "main" },
           h(AllDataBox, { ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl }),
-          h("div", { className: "global-box" },
-            h("a", { ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "button" }, "Data ", h("u", {}, "E"), "xport"),
-            h("a", { ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "button" }, "Data ", h("u", {}, "I"), "mport"),
-            h("a", { ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "button" }, "Org ", h("u", {}, "L"), "imits"),
+          h("div", { className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom" },
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
+            ),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
+            ),
+            h("div", {},
+              h("a", { ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
+            ),
+          ),
+          h("div", { className: "slds-p-vertical_x-small slds-p-horizontal_x-small" } ,
             // Advanded features should be put below this line, and the layout adjusted so they are below the fold
-            h("a", { ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "button" }, h("u", {}, "D"), "ownload Metadata"),
-            h("a", { ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "button" }, "E", h("u", {}, "x"), "plore API"),
-            h("a", { ref: "generateToken", href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=chrome-extension://" + chrome.runtime.id + "/data-export.html?host=" + sfHost + "%26", target: linkTarget, className: !clientId ? "button hide" : "button" }, h("u", {}, "G"), "enerate Connected App Token"),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
+            ),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "E", h("u", {}, "x"), "plore API") )
+            ),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a",
+                {
+                  ref: "generateToken",
+                  href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=chrome-extension://" + chrome.runtime.id + "/data-export.html?host=" + sfHost + "%26",
+                  target: linkTarget,
+                  className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
+                },
+                h("span", {}, h("u", {}, "G"), "enerate Connected App Token"))
+            ),
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
-            inLightning && isInSetup && h("a", { ref: "homeBtn", href: `https://${sfHost}/lightning/page/home`, title: "You can choose if you want to open in a new tab or not", target: linkTarget, className: "button" }, "Salesforce ", h("u", {}, "H"), "ome"),
-            inLightning && !isInSetup && h("a", { ref: "homeBtn", href: `https://${sfHost}/lightning/setup/SetupOneHome/home?setupApp=all`, title: "You can choose if you want to open in a new tab or not", target: linkTarget, className: "button" }, "Setup ", h("u", {}, "H"), "ome"),
+            inLightning && isInSetup && h("div", { className: "slds-m-bottom_xx-small" },
+              h("a",
+                {
+                  ref: "homeBtn",
+                  href: `https://${sfHost}/lightning/page/home`,
+                  title: "You can choose if you want to open in a new tab or not",
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral"
+                }, 
+                h("span", {}, "Salesforce ", h("u", {}, "H"), "ome"))
+            ),
+            inLightning && !isInSetup && h("div", { className: "slds-m-bottom_xx-small" },
+              h("a",
+                {
+                  ref: "homeBtn",
+                  href: `https://${sfHost}/lightning/setup/SetupOneHome/home?setupApp=all`,
+                  title: "You can choose if you want to open in a new tab or not",
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral"
+                }, 
+                h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
+            ),
           )
         ),
-        h("div", { className: "footer" },
-          h("div", { className: "meta" },
-            h("div", { className: "version" },
-              h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note", target: linkTarget }, "v" + addonVersion),
-              " / ",
-              h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
-              " / ",
-              h("input", {
-                className: "api-input",
-                type: "number",
-                title: "Update api version",
-                onChange: this.onChangeApi,
-                value: apiVersionInput.split(".0")[0]
-              }),
-            ),
-            h("div", { className: "tip" }, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open"),
-            h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About"),
-            h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki", target: linkTarget }, "Wiki")
+        h("div", { className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top" },
+          h("div", { className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small" },
+            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note", target: linkTarget }, "v" + addonVersion),
+            h("span", {}, " / "),
+            h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
+            h("span", {}, " / "),
+            h("input", {
+              className: "api-input",
+              type: "number",
+              title: "Update api version",
+              onChange: this.onChangeApi,
+              value: apiVersionInput.split(".0")[0]
+            })
           ),
+          h("div", { className: "slds-col slds-size_3-of-12 slds-text-align_left" }, 
+            h("span", { className: "footer-small-text" }, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+          ),
+          h("div", { className: "slds-col slds-size_2-of-12 slds-text-align_right" },
+            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About")
+          ),
+          h("div", { className: "slds-col slds-size_2-of-12 slds-text-align_right" },
+            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki", target: linkTarget }, "Wiki")
+          )
         )
       )
     );
@@ -373,7 +420,7 @@ class AllDataBox extends React.PureComponent {
     let { sfHost, showDetailsSupported, linkTarget } = this.props;
 
     return (
-      h("div", { className: "all-data-box " + (this.isLoading() ? "loading " : "") },
+      h("div", { className: "slds-p-top_small slds-p-horizontal_small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "") },
         h("ul", { className: "small-tabs" },
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),
@@ -957,9 +1004,9 @@ class UserDetails extends React.PureComponent {
             )
           )),
         h("div", { ref: "userButtons", className: "center" },
-          this.doSupportLoginAs(user) ? h("a", { href: this.getLoginAsLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Try login as") : null,
-          h("a", { href: this.getUserDetailLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Details"),
-          h("a", { href: this.getUserPsetLink(user.Id), target: linkTarget, className: "button button-secondary" }, "PSet")
+          this.doSupportLoginAs(user) ? h("a", { href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral" }, "Try login as") : null,
+          h("a", { href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral" }, "Details"),
+          h("a", { href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral" }, "PSet")
         ))
     );
   }
@@ -1149,7 +1196,7 @@ class AllDataSelection extends React.PureComponent {
             ref: index == 0 ? "showAllDataBtn" : null,
             href: this.getAllDataUrl(button == "toolingApi"),
             target: linkTarget,
-            className: "button"
+            className: "page-button slds-button slds-button_neutral"
           },
           index == 0 ? h("span", {}, "Show ", h("u", {}, "a"), "ll data") : "Show all data",
           button == "regularApi" ? ""

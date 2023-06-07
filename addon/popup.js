@@ -135,7 +135,7 @@ class App extends React.PureComponent {
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
     return (
       h("div", {},
-        h("div", { className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom"}, 
+        h("div", { className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom" },
           h("div", { className: "header-logo" },
             h("div", { className: "header-icon slds-icon_container" },
               h("svg", { className: "slds-icon", viewBox: "0 0 24 24" },
@@ -165,13 +165,13 @@ class App extends React.PureComponent {
               h("a", { ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ),
           ),
-          h("div", { className: "slds-p-vertical_x-small slds-p-horizontal_x-small" } ,
+          h("div", { className: "slds-p-vertical_x-small slds-p-horizontal_x-small" },
             // Advanded features should be put below this line, and the layout adjusted so they are below the fold
             h("div", { className: "slds-m-bottom_xx-small" },
               h("a", { ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
             ),
             h("div", { className: "slds-m-bottom_xx-small" },
-              h("a", { ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "E", h("u", {}, "x"), "plore API") )
+              h("a", { ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "E", h("u", {}, "x"), "plore API"))
             ),
             h("div", { className: "slds-m-bottom_xx-small" },
               h("a",
@@ -192,7 +192,7 @@ class App extends React.PureComponent {
                   title: "You can choose if you want to open in a new tab or not",
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral"
-                }, 
+                },
                 h("span", {}, "Salesforce ", h("u", {}, "H"), "ome"))
             ),
             inLightning && !isInSetup && h("div", { className: "slds-m-bottom_xx-small" },
@@ -203,7 +203,7 @@ class App extends React.PureComponent {
                   title: "You can choose if you want to open in a new tab or not",
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral"
-                }, 
+                },
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
             ),
           )
@@ -222,7 +222,7 @@ class App extends React.PureComponent {
               value: apiVersionInput.split(".0")[0]
             })
           ),
-          h("div", { className: "slds-col slds-size_3-of-12 slds-text-align_left" }, 
+          h("div", { className: "slds-col slds-size_3-of-12 slds-text-align_left" },
             h("span", { className: "footer-small-text" }, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
           ),
           h("div", { className: "slds-col slds-size_2-of-12 slds-text-align_right" },
@@ -898,7 +898,7 @@ class AllDataBoxShortcut extends React.PureComponent {
           }),
           h("input", {
             type: "button",
-            className: "button top-space",
+            className: "top-space page-button slds-button slds-button_brand",
             ref: "saveLinkBtn",
             onClick: this.onSaveShortcut,
             //onInput: this.onAllDataInput,

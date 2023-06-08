@@ -483,7 +483,7 @@ th[tabindex] {
 
 .object-name {
   flex: 1 1 0;
-  margin: 0 0.5em;
+  margin: 0 1em;
   font-size: 1.2em;
   font-weight: normal;
   text-overflow: ellipsis;
@@ -491,7 +491,7 @@ th[tabindex] {
   overflow: hidden;
   position: relative;
   display: flex;
-  justify-content: center;
+  justify-content: left;
 }
 
 .button {

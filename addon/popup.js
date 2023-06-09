@@ -420,7 +420,7 @@ class AllDataBox extends React.PureComponent {
     let { sfHost, showDetailsSupported, linkTarget } = this.props;
 
     return (
-      h("div", { className: "slds-p-top_small slds-p-horizontal_small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "") },
+      h("div", { className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "") },
         h("ul", { className: "small-tabs" },
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),
@@ -894,7 +894,7 @@ class UserDetails extends React.PureComponent {
     let { user, linkTarget, sfHost } = this.props;
     return (
       h("div", { className: "all-data-box-inner" },
-        h("div", { className: "all-data-box-data" },
+        h("div", { className: "all-data-box-data slds-m-bottom_xx-small" },
           h("table", { className: (user.IsActive) ? "" : "inactive" },
             h("tbody", {},
               h("tr", {},
@@ -987,15 +987,17 @@ class ShowDetailsButton extends React.PureComponent {
   render() {
     let { detailsLoading, detailsShown } = this.state;
     return (
-      h("button",
-        {
-          id: "showStdPageDetailsBtn",
-          className: "button" + (detailsLoading ? " loading" : ""),
-          disabled: detailsShown,
-          onClick: this.onDetailsClick,
-          style: { display: !this.canShowDetails() ? "none" : "" }
-        },
-        "Show field ", h("u", {}, "m"), "etadata"
+      h("div", {}, 
+        h("a",
+          {
+            id: "showStdPageDetailsBtn",
+            className: "button" + (detailsLoading ? " loading" : "" + " page-button slds-button slds-button_neutral slds-m-bottom_xx-small"),
+            disabled: detailsShown,
+            onClick: this.onDetailsClick,
+            style: { display: !this.canShowDetails() ? "none" : "" }
+          },
+          h("span", {}, "Show field ", h("u", {}, "m"), "etadata")
+        )
       )
     );
   }
@@ -1090,7 +1092,7 @@ class AllDataSelection extends React.PureComponent {
     }
     return (
       h("div", { className: "all-data-box-inner" },
-        h("div", { className: "all-data-box-data" },
+        h("div", { className: "all-data-box-data slds-m-bottom_xx-small" },
           h("table", {},
             h("tbody", {},
               h("tr", {},
@@ -1126,8 +1128,8 @@ class AllDataSelection extends React.PureComponent {
         ),
         h(ShowDetailsButton, { ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId }),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", { href: this.getDeployStatusUrl(), target: linkTarget, className: "button" }, "Check Deploy Status") : null,
-        buttons.map((button, index) => h("a",
+          ? h("a", { href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-bottom_xx-small" }, "Check Deploy Status") : null,
+        buttons.map((button, index) => h("div", {}, h("a",
           {
             key: button,
             // If buttons for both APIs are shown, the keyboard shortcut should open the first button.
@@ -1138,9 +1140,9 @@ class AllDataSelection extends React.PureComponent {
           },
           index == 0 ? h("span", {}, "Show ", h("u", {}, "a"), "ll data") : "Show all data",
           button == "regularApi" ? ""
-            : button == "toolingApi" ? " (Tooling API)"
-              : " (Not readable)"
-        ))
+          : button == "toolingApi" ? " (Tooling API)"
+          : " (Not readable)"
+        )))
       )
     );
   }

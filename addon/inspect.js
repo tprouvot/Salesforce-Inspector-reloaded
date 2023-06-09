@@ -35,6 +35,10 @@ class Model {
     this.objectActionsOpen = false;
     this.objectSetupLinks = null;
     this.objectSetupLinksRequested = false;
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
+      //change background color for production
+      document.body.classList.add("prod");
+    }
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -1124,7 +1128,7 @@ class App extends React.Component {
             )
           )
         ),
-        h("div", { className: "body " + (model.fieldRows.selectedColumnMap.size < 2 && model.childRows.selectedColumnMap.size < 2 ? "empty " : "") },
+        h("div", { className: "table-container " + (model.fieldRows.selectedColumnMap.size < 2 && model.childRows.selectedColumnMap.size < 2 ? "empty " : "") },
           h("div", { hidden: model.errorMessages.length == 0, className: "error-message" }, model.errorMessages.map((data, index) => h("div", { key: index }, data))),
           model.useTab == "all" || model.useTab == "fields" ? h(RowTable, {
             rowList: model.fieldRows,

@@ -48,6 +48,11 @@ body,
   height: 100%;
 }
 
+.prod {
+  background-color: #e0a4b5;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png');
+}
+
 [data-reactroot] {
   display: flex;
   flex-direction: column;
@@ -663,7 +668,7 @@ th[tabindex] {
   background-color: #f4f6f9;
 }
 
-.body {
+.table-container {
   margin: 12px;
   overflow: auto;
   flex: 1 1 0;
@@ -678,7 +683,7 @@ th[tabindex] {
   }
 }
 
-.body.empty {
+.table-container.empty {
   animation: spin 4s linear infinite;
 }
 

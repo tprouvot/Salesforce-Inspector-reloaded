@@ -197,8 +197,11 @@ thead{
 }
 
 .field-label, .field-name, .field-column, .field-actions, .child-column, .child-actions {
-  border-bottom: 1px solid #DDDBDA;
   padding: 1px 4px;
+}
+
+.border-cell {
+  border-bottom: 1px solid #DDDBDA;
 }
 
 .field-label {
@@ -276,6 +279,26 @@ thead{
   height: .75rem;
   overflow: hidden;
   fill: #b0adab;
+}
+
+.table-settings-button {
+  border: 0px solid transparent;
+  padding: 0px 3px 0px 0px;
+}
+
+.table-settings-icon {
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  background-color: #706E6B;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/settings.svg');
+  margin: 3px 0px -3px 0px;
+}
+
+.table-settings-link {
+  font-weight: normal;
 }
 
 th[tabindex] {

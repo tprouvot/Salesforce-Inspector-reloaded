@@ -26,6 +26,7 @@ class Model {
     this.errorMessages = [];
     this.rowsFilter = "";
     this.useTab = "all";
+    this.showTableBorder = localStorage.getItem("displayInspectTableBorders") == "true";
     this.fieldRows = new FieldRowList(this);
     this.childRows = new ChildRowList(this);
     this.detailsFilter = "";
@@ -375,6 +376,16 @@ class Model {
     );
 
   }
+  updateShowTableBorder() {
+    this.showTableBorder = !this.showTableBorder;
+    localStorage.setItem("displayInspectTableBorders", "true"); // Save to local storage
+
+  }
+  reloadTables() {
+    this.fieldRows = new FieldRowList(this);
+    this.childRows = new ChildRowList(this);
+    this.startLoading();
+  }
 }
 
 class RowList {
@@ -461,6 +472,17 @@ class FieldRowList extends RowList {
     this.initColumns(["name", "label", "type"]);
     this.fetchFieldDescriptions = true;
   }
+  getColumnClassName(col) {
+    let className = this.model.showTableBorder ? "border-cell " : "";
+    if (col == "name") {
+      className += "field-name";
+    } else if (col == "label") {
+      className += "field-label";
+    } else {
+      className += "field-column";
+    }
+    return className;
+  }
   createColumn(col) {
     return {
       name: col,
@@ -472,10 +494,7 @@ class FieldRowList extends RowList {
                 : col == "helptext" ? "Help text"
                   : col == "desc" ? "Description"
                     : col,
-      className:
-        col == "name" ? "field-name"
-          : col == "label" ? "field-label"
-            : "field-column",
+      className: this.getColumnClassName(col),
       reactElement:
         col == "value" ? FieldValueCell
           : col == "type" ? FieldTypeCell
@@ -515,7 +534,7 @@ class ChildRowList extends RowList {
             : col == "field" ? "Field"
               : col == "label" ? "Label"
                 : col,
-      className: "child-column",
+      className: "child-column" + (this.model.showTableBorder ? " border-cell" : ""),
       reactElement: col == "object" ? ChildObjectCell : DefaultCell,
       columnFilter: ""
     };
@@ -949,6 +968,7 @@ class App extends React.Component {
     this.onDoCreate = this.onDoCreate.bind(this);
     this.onDoSave = this.onDoSave.bind(this);
     this.onCancelEdit = this.onCancelEdit.bind(this);
+    this.onUpdateTableBorderSettings = this.onUpdateTableBorderSettings.bind(this);
   }
   componentDidMount() {
     this.refs.rowsFilter.focus();
@@ -1026,6 +1046,13 @@ class App extends React.Component {
     let { model } = this.props;
     model.cancelEdit();
     model.didUpdate();
+  }
+  onUpdateTableBorderSettings() {
+    let { model } = this.props;
+    model.updateShowTableBorder();
+    model.reloadTables();
+    model.didUpdate();
+    // Save to local storage
   }
   render() {
     let { model } = this.props;
@@ -1131,14 +1158,18 @@ class App extends React.Component {
         h("div", { className: "table-container " + (model.fieldRows.selectedColumnMap.size < 2 && model.childRows.selectedColumnMap.size < 2 ? "empty " : "") },
           h("div", { hidden: model.errorMessages.length == 0, className: "error-message" }, model.errorMessages.map((data, index) => h("div", { key: index }, data))),
           model.useTab == "all" || model.useTab == "fields" ? h(RowTable, {
+            model,
             rowList: model.fieldRows,
-            actionsColumn: { className: "field-actions", reactElement: FieldActionsCell },
-            classNameForRow: row => (row.fieldIsCalculated() ? "fieldCalculated " : "") + (row.fieldIsHidden() ? "fieldHidden " : "")
+            actionsColumn: { className: "field-actions"  + (model.showTableBorder ? " border-cell" : ""), reactElement: FieldActionsCell },
+            classNameForRow: row => (row.fieldIsCalculated() ? "fieldCalculated " : "") + (row.fieldIsHidden() ? "fieldHidden " : ""),
+            onUpdateTableBorderSettings: this.onUpdateTableBorderSettings
           }) : null,
           model.useTab == "all" || model.useTab == "childs" ? h(RowTable, {
+            model,
             rowList: model.childRows,
-            actionsColumn: { className: "child-actions", reactElement: ChildActionsCell },
-            classNameForRow: () => ""
+            actionsColumn: { className: "child-actions" + (model.showTableBorder ? " border-cell" : ""), reactElement: ChildActionsCell },
+            classNameForRow: () => "",
+            onUpdateTableBorderSettings: this.onUpdateTableBorderSettings
           }) : null
         ),
         model.editMode != null && (model.useTab == "all" || model.useTab == "fields") ? h("div", { className: "footer-edit-bar" }, h("span", { className: "edit-bar" },
@@ -1226,6 +1257,21 @@ class ColumnVisibiltyToggle extends React.Component {
 }
 
 class RowTable extends React.Component {
+  constructor(props) {
+    super(props);
+    this.onToggleTableSettings = this.onToggleTableSettings.bind(this);
+    this.onClickTableBorderSettings = this.onClickTableBorderSettings.bind(this);
+    this.showTableBorder = this.props.model.showTableBorder;
+    this.tableSettingsOpen = false;
+  }
+  onToggleTableSettings() {
+    this.tableSettingsOpen = !this.tableSettingsOpen;
+    this.props.model.didUpdate();
+  }
+  onClickTableBorderSettings() {
+    this.props.onUpdateTableBorderSettings();
+    this.tableSettingsOpen = false;
+  }
   render() {
     let { rowList, actionsColumn, classNameForRow } = this.props;
     let selectedColumns = Array.from(rowList.selectedColumnMap.values());
@@ -1235,7 +1281,16 @@ class RowTable extends React.Component {
           selectedColumns.map(col =>
             h(HeaderCell, { key: col.name, col, rowList })
           ),
-          h("th", { className: actionsColumn.className, tabIndex: 0 }, "")
+          h("th", { className: actionsColumn.className, tabIndex: 0 },
+            h("button", { className: "table-settings-button", onClick: this.onToggleTableSettings },
+              h("div", { className: "table-settings-icon" })
+            ),
+            this.tableSettingsOpen && h("div", { className: "pop-menu-container" },
+              h("div", { className: "pop-menu" },
+                h("a", { className: "table-settings-link", onClick: this.onClickTableBorderSettings }, "Show / Hide table borders"),
+              )
+            ),
+          ),
         ),
         rowList.model.useTab != "all" ? h("tr", {},
           selectedColumns.map(col =>
@@ -1249,7 +1304,7 @@ class RowTable extends React.Component {
           selectedColumns.map(col =>
             h(col.reactElement, { key: col.name, row, col })
           ),
-          h(actionsColumn.reactElement, { row })
+          h(actionsColumn.reactElement, { className: actionsColumn.className, row })
         )
       ))
     );
@@ -1430,8 +1485,8 @@ class FieldActionsCell extends React.Component {
     row.rowList.model.didUpdate();
   }
   render() {
-    let { row } = this.props;
-    return h("td", { className: "field-actions" },
+    let { row, className } = this.props;
+    return h("td", { className },
       h("div", { className: "pop-menu-container" },
         h("button", { className: "actions-button", onClick: this.onToggleFieldActions },
           h("svg", { className: "actions-icon" },

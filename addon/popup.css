@@ -1,3 +1,42 @@
+@font-face {
+    font-family: 'Salesforce Sans';
+    src: url(fonts/SalesforceSans-Light.woff2);
+    font-weight: 300
+}
+
+@font-face {
+    font-family: 'Salesforce Sans';
+    src: url(fonts/SalesforceSans-LightItalic.woff2);
+    font-style: italic;
+    font-weight: 300
+}
+
+@font-face {
+    font-family: 'Salesforce Sans';
+    src: url(fonts/SalesforceSans-Regular.woff2);
+    font-weight: 400
+}
+
+@font-face {
+    font-family: 'Salesforce Sans';
+    src: url(fonts/SalesforceSans-Italic.woff2);
+    font-style: italic;
+    font-weight: 400
+}
+
+@font-face {
+    font-family: 'Salesforce Sans';
+    src: url(fonts/SalesforceSans-Bold.woff2);
+    font-weight: 700
+}
+
+@font-face {
+    font-family: 'Salesforce Sans';
+    src: url(fonts/SalesforceSans-BoldItalic.woff2);
+    font-style: italic;
+    font-weight: 700
+}
+
 * {
     box-sizing: border-box;
 }
@@ -5,7 +44,8 @@
 html,
 body {
     white-space: normal;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: "Salesforce Sans", Arial, Helvetica, sans-serif;
+    background-color: white;
     margin: 0;
 }
 
@@ -25,23 +65,24 @@ body,
     flex-direction: column;
 }
 
+a:link,
+a:visited {
+    color: #0176d3;
+}
+
 .main {
     flex: 1;
     overflow-y: scroll;
 }
 
-.footer {
-    padding: 12px 8px;
-    background: #f4f6f9;
-    border-top: 1px solid #d8dde6;
-}
-
-.header {
+.header-logo {
     background: #061c3f;
-    padding: 8px;
+    padding: 2px 1em 2px 2px;
     color: white;
     display: flex;
     align-items: center;
+    margin: 0 auto;
+    border-radius: 3px;
 }
 
 .header-icon {
@@ -58,26 +99,6 @@ body,
     vertical-align: middle;
 }
 
-a {
-    color: #d8dde6;
-}
-
-a[href] {
-    color: #0070d2;
-    text-decoration: none;
-    transition: color .1s linear;
-}
-
-a[href]:focus,
-a[href]:hover {
-    text-decoration: underline;
-    color: #005fb2;
-}
-
-a[href]:active {
-    color: #00396b;
-}
-
 button,
 input {
     width: 100%;
@@ -90,77 +111,13 @@ input.api-input {
     background: transparent;
 }
 
-.button,
-button.button.button[disabled],
-.base-button {
+.page-button {
     width: 100%;
-    padding: 0 1rem;
-    text-align: center;
-    vertical-align: middle;
-    border: 1px solid #d8dde6;
-    background-color: white;
-    display: inline-block;
-    border-radius: .25rem;
-    line-height: 1.875rem;
-    text-decoration: none;
-    transition: color 50ms linear, background-color 50ms linear;
-    color: #d8dde6;
-    cursor: default;
-    margin-bottom: 4px;
-}
-
-.button:last-child,
-button.button.button[disabled]:last-child,
-.base-button:last-child {
-    margin-bottom: 0;
-}
-
-.base-button {
-    border: none;
-}
-
-button.button,
-a.button[href],
-a.base-button[href] {
-    color: #0070d2;
-    cursor: pointer;
-    font-family: unset;
-    font-size: unset;
-}
-
-button.button:hover,
-a[href].button:hover,
-.button:focus {
-    background-color: #f4f6f9;
-    color: #005fb2;
-    text-decoration: none;
-}
-
-button.button:active,
-a[href]:active {
-    background-color: #eef1f6;
-    color: #00396b;
-    text-decoration: none;
-}
-
-.button:focus {
-    outline: 0;
-    box-shadow: 0 0 3px #0070D2;
-    text-decoration: none;
-}
-
-.global-box,
-.all-data-box {
-    padding: 12px 8px;
-}
-
-.all-data-box {
-    border-bottom: 1px solid #d8dde6;
 }
 
 .all-data-input {
     font-size: .9em;
-    font: inherit;
+    font-family: inherit;
     width: 100%;
     background-color: white;
     color: #16325c;
@@ -168,7 +125,7 @@ a[href]:active {
     border-radius: 0 .25rem .25rem .25rem;
     transition: border .1s linear, background-color .1s linear;
     display: inline-block;
-    padding: 0 2rem 0 .75rem;
+    padding: 0 2rem 0 .25rem;
     line-height: 1.875rem;
     vertical-align: middle;
     flex-grow: 1;
@@ -280,25 +237,10 @@ a[href]:active {
     animation: bg-load 1s cubic-bezier(.5, .4, .5, .6) infinite;
 }
 
-.meta {
-    font-size: 12px;
-    text-align: right;
-    display: flex;
-    justify-content: space-between;
+.footer-small-text {
+    font-size: 0.55rem;
 }
 
-.meta .version {
-    float: left;
-    font-size: 0.8em;
-    margin-top: 0.2em;
-}
-
-.meta .tip {
-    text-align: center;
-    color: #999999;
-    font-size: 0.8em;
-    margin-top: 0.2em;
-}
 
 .all-data-box-data table {
     text-align: left;
@@ -316,7 +258,8 @@ a[href]:active {
 }
 
 .top-space {
-    margin-top: 1em;
+    margin-top: 0.5em;
+    margin-bottom: 0.2em;
 }
 
 .button-secondary {

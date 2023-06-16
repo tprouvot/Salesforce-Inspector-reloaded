@@ -1,9 +1,21 @@
-Version 1.18
+Version 1.19
 ===========
 
 General
 -------
 * When coping filtered records from data export, only copy the filtered records and not all the results [feature 93](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/93) (idea by [LexerEP](https://github.com/LexerEP))
+* Add Export Query button [feature 109](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/109)
+* Add permission set group assignment button from popup [feature 106](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/106)
+
+Version 1.18
+===========
+
+General
+-------
+
+* Update to Salesforce API v 58.0 (Summer '23)
+* Restyle popup with SLDS (Salesforce Lightning Design System) [feature 9](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/9) (idea by [Loïc BERBEY](https://github.com/lberbey), contribution by [Pietro Martino](https://github.com/pietromartino))
+* Fix "Show all data" shortcut from popup [issue 96](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/96) (fix by [Pietro Martino](https://github.com/pietromartino))
 
 Version 1.17
 ===========

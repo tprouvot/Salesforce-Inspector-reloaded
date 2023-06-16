@@ -314,6 +314,11 @@ ul.small-tabs li:hover {
     font-size: 0.9em;
 }
 
+.small-font a {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
 .small {
     font-size: 0.8em;
 }

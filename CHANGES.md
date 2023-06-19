@@ -91,7 +91,7 @@ General
 * [Sticked table header to the top on export](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/10)
 * Update to Salesforce API v 53.0 (Winter '22)
 * Add label to saved query and sort list.
-* Remove extra comma when autocomplete query in data export, or select a field from suggested fields juste before 'FROM' keyword.
+* Remove extra comma when autocomplete query in data export, or select a field from suggested fields  before 'FROM' keyword.
 
 <img alt="Inspector menu" src="./docs/screenshots/7_latest_comma.png" height="100">
 
@@ -228,7 +228,7 @@ Inspector menu
 Show all data
 -------------
 * The Type column has more information. (required, unique, auto number etc.)
-* Add your own columns, (for example a column showing the formula of formula fields, or a collumn that tells which fields can be used as a filter.) for both fields and relationships.
+* Add your own columns, (for example a column showing the formula of formula fields, or a column that tells which fields can be used as a filter.) for both fields and relationships.
 * The "Advanced filter" option is more discoverable now.
 * New button to start data export for the shown object.
 * New button to edit the page layout for the shown record.
@@ -236,7 +236,7 @@ Show all data
 
 Data export
 -----------
-* Save your favourite SOQL queries.
+* Save your favorite SOQL queries.
 * The query history remembers if queries were done with the Tooling API or not.
 * Fixed right clicking on IDs in the exported data.
 
@@ -315,7 +315,7 @@ Show all data
 
 Data export
 -----------
-* Make record IDs clickable in the result table, in adition to object names.
+* Make record IDs clickable in the result table, in addition to object names.
 * Offer to either view all data for a record or view the record in normal Salesforce UI.
 * Fix bug opening the all data window when exporting with the Tooling API.
 * Fix keyboard shortcut issue in some variations of Chrome.

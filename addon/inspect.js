@@ -378,7 +378,7 @@ class Model {
   }
   updateShowTableBorder() {
     this.showTableBorder = !this.showTableBorder;
-    localStorage.setItem("displayInspectTableBorders", "true"); // Save to local storage
+    localStorage.setItem("displayInspectTableBorders", this.showTableBorder); // Save to local storage
 
   }
   reloadTables() {

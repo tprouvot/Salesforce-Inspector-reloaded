@@ -804,12 +804,7 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   onFillShortcut(e) {
-    let { newLinkLabel, newLinkSection, newLink } = this.state;
-    console.log(e.target);
     this.setState({ [e.target.name]: e.target.value });
-    console.log("this.newLinkLabel " + newLinkLabel);
-    console.log("this.newLinkSection " + newLinkSection);
-    console.log("this.newLink " + newLink);
   }
 
   onSaveShortcut(e) {
@@ -887,6 +882,7 @@ class AllDataBoxShortcut extends React.PureComponent {
               name: "newLinkLabel",
               placeholder: "Label",
               onInput: this.onFillShortcut,
+              //TODO FIX export shortcut triggering
               //onFocus: this.onAllDataFocus,
               //onBlur: this.onAllDataBlur,
               //onKeyDown: this.onAllDataKeyDown,

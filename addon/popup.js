@@ -804,22 +804,27 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   onFillShortcut(e) {
+    let { newLinkLabel, newLinkSection, newLink } = this.state;
     console.log(e.target);
     this.setState({ [e.target.name]: e.target.value });
+    console.log("this.newLinkLabel " + newLinkLabel);
+    console.log("this.newLinkSection " + newLinkSection);
+    console.log("this.newLink " + newLink);
   }
 
   onSaveShortcut(e) {
-    /*
-        let propertyName = "customLinks";
-        let newLinkVar = { label: newLinkLabel, section: newLinkSection, link: newLink };
+    let { sfHost } = this.props;
+    let { newLinkLabel, newLinkSection, newLink } = this.state;
+    let propertyName = sfHost + "_orgLinks";
+    let newLinkVar = { label: newLinkLabel, section: newLinkSection, link: newLink };
 
-        let customLinks = localStorage.getItem(propertyName);
-        //add new customLink
-        customLinks.push(newLinkVar);
-        localStorage.setItem(propertyName, customLinks);
+    let customLinks = JSON.parse(localStorage.getItem(propertyName));
 
-        this.setState({ newLinkLabel: e.target.value, newLinkSection: e.target.value, newLink: e.target.value });
-        */
+    //add new customLink
+    customLinks.push(newLinkVar);
+    setupLinks.push(newLinkVar);
+
+    localStorage.setItem(propertyName, JSON.stringify(customLinks));
   }
 
   async getMatches(shortcutSearch) {
@@ -908,7 +913,7 @@ class AllDataBoxShortcut extends React.PureComponent {
             value: newLink
           }),
           h("input", {
-            type: "button",
+            type: "button ",
             className: "top-space page-button slds-button slds-button_brand",
             ref: "saveLinkBtn",
             onClick: this.onSaveShortcut,

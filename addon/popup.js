@@ -1483,7 +1483,8 @@ function getSfPathFromUrl(href) {
 function sfLocaleKeyToCountryCode(localeKey) {
   //Converts a Salesforce locale key to a lower case country code (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) or "".
   if (!localeKey) { return ""; }
-  return localeKey.split("_").pop().toLowerCase();
+  const splitted = localeKey.split("_");
+  return splitted[(splitted.length > 1 && !localeKey.includes("_LATN_")) ? 1 : 0].toLowerCase();
 }
 
 window.getRecordId = getRecordId; // for unit tests

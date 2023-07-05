@@ -310,6 +310,15 @@ ul.small-tabs li:hover {
     color: #c0c0c0
 }
 
+.small-font {
+    font-size: 0.9em;
+}
+
+.small-font a {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
 .small {
     font-size: 0.8em;
 }

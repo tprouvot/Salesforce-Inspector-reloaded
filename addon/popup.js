@@ -11,6 +11,7 @@ let h = React.createElement;
     if (e.source == parent && e.data.insextInitResponse) {
       removeEventListener("message", initResponseHandler);
       init(e.data);
+      initLinks(e.data);
     }
   });
 }
@@ -33,6 +34,16 @@ function init({ sfHost, inDevConsole, inLightning, inInspector }) {
     }), document.getElementById("root"));
 
   });
+}
+
+function initLinks({sfHost}){
+  //add custom links to setupLink
+  if (localStorage.getItem(sfHost + "_orgLinks")){
+    let links = JSON.parse(localStorage.getItem(sfHost + "_orgLinks"));
+    links.forEach(link => {
+      setupLinks.push(link);
+    });
+  }
 }
 
 class App extends React.PureComponent {

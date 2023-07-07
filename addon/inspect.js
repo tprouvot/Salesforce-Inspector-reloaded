@@ -1521,8 +1521,8 @@ class ChildActionsCell extends React.Component {
     row.rowList.model.didUpdate();
   }
   render() {
-    let { row } = this.props;
-    return h("td", { className: "child-actions" },
+    let { row, className } = this.props;
+    return h("td", { className },
       h("div", { className: "pop-menu-container" },
         h("button", { className: "actions-button", onClick: this.onToggleChildActions },
           h("svg", { className: "actions-icon" },

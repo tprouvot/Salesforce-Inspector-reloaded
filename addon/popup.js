@@ -487,11 +487,11 @@ class AllDataBoxUsers extends React.PureComponent {
       "compositeRequest": [
         {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
           "referenceId": "fullData"
         }, {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
           "referenceId": "minimalData"
         }
       ]
@@ -533,11 +533,11 @@ class AllDataBoxUsers extends React.PureComponent {
       "compositeRequest": [
         {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
           "referenceId": "fullData"
         }, {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
           "referenceId": "minimalData"
         }
       ]
@@ -806,7 +806,37 @@ class AllDataBoxShortcut extends React.PureComponent {
     try {
       setIsLoading(true);
 
-      let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch.toLowerCase()));
+      const flowSelect = "SELECT LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+      const profileSelect = "SELECT Id, Name, UserLicense.name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
+      const permSetSelect = "SELECT Id, Name, Label, License.Name FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+      const compositeQuery = {
+        "compositeRequest": [
+          {
+            "method": "GET",
+            "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(flowSelect),
+            "referenceId": "flowSelect"
+          }, {
+            "method": "GET",
+            "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(profileSelect),
+            "referenceId": "profileSelect"
+          }, {
+            "method": "GET",
+            "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(permSetSelect),
+            "referenceId": "permSetSelect"
+          }
+        ]
+      };
+
+      const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", { method: "POST", body: compositeQuery });
+      let results = searchResult.compositeResponse.filter((elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0);
+      let result = [];
+      results.forEach(element => {
+        element.body.records.forEach(rec => {
+          result.push(rec);
+        });
+      });
+
+      //let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch.toLowerCase()));
       return result ? result : [];
     } catch (err) {
       console.error("Unable to find shortcut", err);
@@ -818,26 +848,42 @@ class AllDataBoxShortcut extends React.PureComponent {
 
   async onDataSelect(shortcut) {
     let { sfHost } = this.props;
-    window.open("https://" + sfHost + shortcut.link);
+    let link;
+    if(shortcut.attributes){
+      switch (shortcut.attributes.type) {
+        case "FlowDefinitionView":
+          link = "/builder_platform_interaction/flowBuilder.app?flowId=" + shortcut.LatestVersionId;
+          break;
+        case "Profile":
+          link = "/lightning/setup/EnhancedProfiles/page?address=%2F" + shortcut.Id;
+          break;
+        case "PermissionSet":
+          link = "/lightning/setup/PermSets/page?address=%2F" + shortcut.Id;
+          break;
+      }
+    } else {
+      link = shortcut.linkd;
+    }
+    window.open("https://" + sfHost + link);
   }
 
-  resultRender(matches, userQuery) {
+  resultRender(matches, shortcutQuery) {
     return matches.map(value => ({
-      key: value.label,
+      key: value.Id,
       value,
       element: [
         h("div", { className: "autocomplete-item-main", key: "main" },
           h(MarkSubstring, {
-            text: value.label,
-            start: value.label.toLowerCase().indexOf(userQuery.toLowerCase()),
-            length: userQuery.length
+            text: value.Label,
+            start: value.Label ? value.Label.toLowerCase().indexOf(shortcutQuery.toLowerCase()) : value.Name?.toLowerCase().indexOf(shortcutQuery.toLowerCase()),
+            length: shortcutQuery.length
           })),
         h("div", { className: "autocomplete-item-sub small", key: "sub" },
-          h("div", {}, value.section),
+          h("div", {}, value.attributes.type),
           h(MarkSubstring, {
-            text: value.link,
-            start: value.link.toLowerCase().indexOf(userQuery.toLowerCase()),
-            length: userQuery.length
+            text: value.Name ? value.Name : value.ApiName,
+            start: value.Label ? value.Label?.toLowerCase().indexOf(shortcutQuery.toLowerCase()) : value.ApiName?.toLowerCase().indexOf(shortcutQuery.toLowerCase()),
+            length: shortcutQuery.length
           }))
       ]
     }));
@@ -849,7 +895,7 @@ class AllDataBoxShortcut extends React.PureComponent {
 
     return (
       h("div", { ref: "shortcutsBox", className: "users-box" },
-        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 100, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
+        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 300, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
         h("div", { className: "all-data-box-inner" + (!selectedUser ? " empty" : "") },
           selectedUser
             ? h(UserDetails, { user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath })

@@ -630,8 +630,6 @@ class AllDataBoxSObject extends React.PureComponent {
     } else {
       match = this.getBestMatch(query);
     }
-    console.log(query);
-    console.log(match);
 
     await this.setState({ selectedValue: match });
     this.loadRecordIdDetails();

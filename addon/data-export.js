@@ -899,6 +899,7 @@ class App extends React.Component {
     this.onToggleExpand = this.onToggleExpand.bind(this);
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
+    this.onCopyQuery = this.onCopyQuery.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
@@ -992,6 +993,16 @@ class App extends React.Component {
   onExport() {
     let { model } = this.props;
     model.doExport();
+    model.didUpdate();
+  }
+  onCopyQuery() {
+    let { model } = this.props;
+    let url = new URL(window.location.href);
+    let searchParams = url.searchParams;
+    searchParams.set("query", model.queryInput.value);
+    url.search = searchParams.toString();
+    navigator.clipboard.writeText(url.toString());
+    navigator.clipboard.writeText(url.toString());
     model.didUpdate();
   }
   onCopyAsExcel() {
@@ -1163,8 +1174,9 @@ class App extends React.Component {
             h("span", {}, model.autocompleteResults.title),
             h("div", { className: "flex-right" },
               h("button", { tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted" }, "Run Export"),
-              h("a", { tabIndex: 2, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object" }, model.autocompleteResults.sobjectName + " Field Info"),
-              h("button", { tabIndex: 3, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line" },
+              h("button", { tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id" }, "Export Query"),
+              h("a", { tabIndex: 3, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object" }, model.autocompleteResults.sobjectName + " Field Info"),
+              h("button", { tabIndex: 4, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line" },
                 h("div", { className: "button-icon" }),
                 h("div", { className: "button-toggle-icon" })
               )

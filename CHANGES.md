@@ -1,7 +1,10 @@
 # Version 1.20
 
 ## General
+
 - Update pop-up release note link to github pages
+- Detect SObject on listview page [feature 121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/121) (idea by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
+
 # Version 1.19
 
 ## General

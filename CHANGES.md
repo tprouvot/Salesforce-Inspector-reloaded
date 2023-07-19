@@ -1,7 +1,7 @@
 # Version 1.20
 
 ## General
-
+- Update pop-up release note link to github pages
 # Version 1.19
 
 ## General

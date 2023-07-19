@@ -221,7 +221,7 @@ class App extends React.PureComponent {
         ),
         h("div", { className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top" },
           h("div", { className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small" },
-            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note", target: linkTarget }, "v" + addonVersion),
+            h("a", { href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", title: "Release note", target: linkTarget }, "v" + addonVersion),
             h("span", {}, " / "),
             h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
             h("span", {}, " / "),

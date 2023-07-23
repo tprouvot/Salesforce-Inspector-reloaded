@@ -9,7 +9,7 @@
 #insext .insext-popup {
     box-sizing: border-box;
     width: 280px;
-    height: 430px;
+    height: 450px;
     position:absolute;
     background-color: #ffffff;
     right: 0;
@@ -48,4 +48,30 @@
     width: 10px;
     height: 15px;
     margin: 2px;
+}
+.checkboxScrollSandbox {
+    position: fixed;
+    top: 10px;
+    right: 78px;
+    z-index: 100;
+}
+.checkboxScrollProd{
+    position: fixed;
+    top: 21px; 
+    right: 78px;
+    z-index: 100;
+}
+.labelCheckboxScrollSandbox{
+    position: fixed;
+    top: 7px; 
+    right: 100px; 
+    color: white;
+    z-index: 100;
+}
+.labeCheckboxScrollProd{
+    position: fixed;
+    top: 15px;
+    right: 100px;
+    color: white;
+    z-index: 100;
 }

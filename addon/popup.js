@@ -1,6 +1,7 @@
 /* global React ReactDOM */
 import { sfConn, apiVersion } from "./inspector.js";
 import { getAllFieldSetupLinks } from "./setup-links.js";
+import { setupLinks } from "./links.js";
 
 let h = React.createElement;
 
@@ -10,6 +11,7 @@ let h = React.createElement;
     if (e.source == parent && e.data.insextInitResponse) {
       removeEventListener("message", initResponseHandler);
       init(e.data);
+      initLinks(e.data);
     }
   });
 }
@@ -34,15 +36,27 @@ function init({ sfHost, inDevConsole, inLightning, inInspector }) {
   });
 }
 
+function initLinks({sfHost}){
+  //add custom links to setupLink
+  if (localStorage.getItem(sfHost + "_orgLinks")){
+    let links = JSON.parse(localStorage.getItem(sfHost + "_orgLinks"));
+    links.forEach(link => {
+      setupLinks.push(link);
+    });
+  }
+}
+
 class App extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
       isInSetup: false,
-      contextUrl: null
+      contextUrl: null,
+      apiVersionInput: apiVersion
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
+    this.onChangeApi = this.onChangeApi.bind(this);
   }
   onContextUrlMessage(e) {
     if (e.source == parent && e.data.insextUpdateRecordId) {
@@ -57,11 +71,11 @@ class App extends React.PureComponent {
   onShortcutKey(e) {
     if (e.key == "m") {
       e.preventDefault();
-      this.refs.showAllDataBox.clickShowDetailsBtn();
+      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickShowDetailsBtn();
     }
     if (e.key == "a") {
       e.preventDefault();
-      this.refs.showAllDataBox.clickAllDataBtn();
+      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickAllDataBtn();
     }
     if (e.key == "e") {
       e.preventDefault();
@@ -79,6 +93,10 @@ class App extends React.PureComponent {
       e.preventDefault();
       this.refs.metaRetrieveBtn.click();
     }
+    if (e.key == "d") {
+      e.preventDefault();
+      this.refs.metaRetrieveBtn.click();
+    }
     if (e.key == "x") {
       e.preventDefault();
       this.refs.apiExploreBtn.click();
@@ -87,6 +105,10 @@ class App extends React.PureComponent {
       this.refs.homeBtn.click();
     }
     //TODO: Add shortcut for "u to go to user aspect"
+  }
+  onChangeApi(e) {
+    localStorage.setItem("apiVersion", e.target.value + ".0");
+    this.setState({ apiVersionInput: e.target.value });
   }
   componentDidMount() {
     addEventListener("message", this.onContextUrlMessage);
@@ -97,61 +119,129 @@ class App extends React.PureComponent {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
   }
+  getOrgInstance(sfHost) {
+    let orgInstance = localStorage.getItem(sfHost + "_orgInstance");
+    if (orgInstance == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+InstanceName+FROM+Organization").then(res => {
+        orgInstance = res.records[0].InstanceName;
+        localStorage.setItem(sfHost + "_orgInstance", orgInstance);
+      });
+    }
+    return orgInstance;
+  }
   render() {
     let {
       sfHost,
       inDevConsole,
       inLightning,
       inInspector,
-      addonVersion,
+      addonVersion
     } = this.props;
-    let { isInSetup, contextUrl } = this.state;
+    let { isInSetup, contextUrl, apiVersionInput } = this.state;
     let clientId = localStorage.getItem(sfHost + "_clientId");
+    let orgInstance = this.getOrgInstance(sfHost);
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
-    let linkTarget = inDevConsole ? "_blank" : "_top";
+    let linkInNewTab = localStorage.getItem("openLinksInNewTab");
+    let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
     return (
       h("div", {},
-        h("div", { className: "header" },
-          h("div", { className: "header-icon" },
-            h("svg", { viewBox: "0 0 24 24" },
-              h("path", {
-                d: `
-                M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
-                m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
-                M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
-                m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
-                M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
-                `})
-            )
-          ),
-          "Sf Inspector"
+        h("div", { className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom" },
+          h("div", { className: "header-logo" },
+            h("div", { className: "header-icon slds-icon_container" },
+              h("svg", { className: "slds-icon", viewBox: "0 0 24 24" },
+                h("path", {
+                  d: `
+                  M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
+                  m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
+                  M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
+                  m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
+                  M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
+                  `})
+              )
+            ),
+            "Salesforce Inspector"
+          )
         ),
         h("div", { className: "main" },
           h(AllDataBox, { ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl }),
-          h("div", { className: "global-box" },
-            h("a", { ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "button" }, "Data ", h("u", {}, "E"), "xport"),
-            h("a", { ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "button" }, "Data ", h("u", {}, "I"), "mport"),
-            h("a", { ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "button" }, "Org ", h("u", {}, "L"), "imits"),
+          h("div", { className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom" },
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
+            ),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
+            ),
+            h("div", {},
+              h("a", { ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
+            ),
+          ),
+          h("div", { className: "slds-p-vertical_x-small slds-p-horizontal_x-small" },
             // Advanded features should be put below this line, and the layout adjusted so they are below the fold
-            h("a", { ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "button" }, h("u", {}, "D"), "ownload Metadata"),
-            h("a", { ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "button" }, "E", h("u", {}, "x"), "plore API"),
-            h("a", { ref: "generateToken", href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=chrome-extension://" + chrome.runtime.id + "/data-export.html?host=" + sfHost + "%26", target: linkTarget, className: !clientId ? "button hide" : "button" }, h("u", {}, "G"), "enerate Connected App Token"),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
+            ),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "E", h("u", {}, "x"), "plore API"))
+            ),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a",
+                {
+                  ref: "generateToken",
+                  href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=chrome-extension://" + chrome.runtime.id + "/data-export.html?host=" + sfHost + "%26",
+                  target: linkTarget,
+                  className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
+                },
+                h("span", {}, h("u", {}, "G"), "enerate Connected App Token"))
+            ),
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
-            inLightning && isInSetup && h("a", { ref: "homeBtn", href: `https://${sfHost}/lightning/page/home`, title: "You can choose if you want to open in a new tab or not", target: linkTarget, className: "button" }, "Salesforce ", h("u", {}, "H"), "ome"),
-            inLightning && !isInSetup && h("a", { ref: "homeBtn", href: `https://${sfHost}/lightning/setup/SetupOneHome/home?setupApp=all`, title: "You can choose if you want to open in a new tab or not", target: linkTarget, className: "button" }, "Setup ", h("u", {}, "H"), "ome"),
+            inLightning && isInSetup && h("div", { className: "slds-m-bottom_xx-small" },
+              h("a",
+                {
+                  ref: "homeBtn",
+                  href: `https://${sfHost}/lightning/page/home`,
+                  title: "You can choose if you want to open in a new tab or not",
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral"
+                },
+                h("span", {}, "Salesforce ", h("u", {}, "H"), "ome"))
+            ),
+            inLightning && !isInSetup && h("div", { className: "slds-m-bottom_xx-small" },
+              h("a",
+                {
+                  ref: "homeBtn",
+                  href: `https://${sfHost}/lightning/setup/SetupOneHome/home?setupApp=all`,
+                  title: "You can choose if you want to open in a new tab or not",
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral"
+                },
+                h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
+            ),
           )
         ),
-        h("div", { className: "footer" },
-          h("div", { className: "meta" },
-            h("div", { className: "version" },
-              "(",
-              h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md" }, "v" + addonVersion),
-              " / " + apiVersion + ")",
-            ),
-            h("div", { className: "tip" }, "[ctrl+alt+i] to open"),
-            h("a", { className: "about", href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About")
+        h("div", { className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top" },
+          h("div", { className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small" },
+            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note", target: linkTarget }, "v" + addonVersion),
+            h("span", {}, " / "),
+            h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
+            h("span", {}, " / "),
+            h("input", {
+              className: "api-input",
+              type: "number",
+              title: "Update api version",
+              onChange: this.onChangeApi,
+              value: apiVersionInput.split(".0")[0]
+            })
           ),
+          h("div", { className: "slds-col slds-size_3-of-12 slds-text-align_left" },
+            h("span", { className: "footer-small-text" }, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+          ),
+          h("div", { className: "slds-col slds-size_2-of-12 slds-text-align_right" },
+            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About")
+          ),
+          h("div", { className: "slds-col slds-size_2-of-12 slds-text-align_right" },
+            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki", target: linkTarget }, "Wiki")
+          )
         )
       )
     );
@@ -162,7 +252,7 @@ class AllDataBox extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({ sobject: "sobject", users: "users" }); //Enum. Supported aspects
+    this.SearchAspectTypes = Object.freeze({ sobject: "sobject", users: "users", shortcuts: "shortcuts" }); //Enum. Supported aspects
 
     this.state = {
       activeSearchAspect: this.SearchAspectTypes.sobject,
@@ -195,6 +285,9 @@ class AllDataBox extends React.PureComponent {
           break;
         case this.SearchAspectTypes.users:
           this.ensureKnownUserContext();
+          break;
+        case this.SearchAspectTypes.shortcuts:
+          this.ensureKnownBrowserContext();
           break;
       }
     }
@@ -248,7 +341,7 @@ class AllDataBox extends React.PureComponent {
   loadSobjects() {
     let entityMap = new Map();
 
-    function addEntity({ name, label, keyPrefix }, api) {
+    function addEntity({ name, label, keyPrefix, durableId, isCustomSetting }, api) {
       label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
       let entity = entityMap.get(name);
       if (entity) {
@@ -264,6 +357,8 @@ class AllDataBox extends React.PureComponent {
           name,
           label,
           keyPrefix,
+          durableId,
+          isCustomSetting,
           availableKeyPrefix: null,
         };
         entityMap.set(name, entity);
@@ -287,13 +382,15 @@ class AllDataBox extends React.PureComponent {
     }
 
     function getEntityDefinitions(bucket) {
-      let query = "select QualifiedApiName, Label, KeyPrefix from EntityDefinition" + bucket;
+      let query = "select QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting from EntityDefinition" + bucket;
       return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query)).then(res => {
         for (let record of res.records) {
           addEntity({
             name: record.QualifiedApiName,
             label: record.Label,
-            keyPrefix: record.KeyPrefix
+            keyPrefix: record.KeyPrefix,
+            durableId: record.DurableId,
+            isCustomSetting: record.IsCustomSetting
           }, null);
         }
       }).catch(err => {
@@ -334,10 +431,11 @@ class AllDataBox extends React.PureComponent {
     let { sfHost, showDetailsSupported, linkTarget } = this.props;
 
     return (
-      h("div", { className: "all-data-box " + (this.isLoading() ? "loading " : "") },
+      h("div", { className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "") },
         h("ul", { className: "small-tabs" },
           h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users")
+          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),
+          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : "" }, "Shortcuts")
         ),
 
         (activeSearchAspect == this.SearchAspectTypes.sobject)
@@ -345,6 +443,8 @@ class AllDataBox extends React.PureComponent {
           : (activeSearchAspect == this.SearchAspectTypes.users)
             ? h(AllDataBoxUsers, { ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); } }, "Users")
             : "AllData aspect " + activeSearchAspect + " not implemented"
+              ? h(AllDataBoxShortcut, { ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); } }, "Users")
+              : "AllData aspect " + activeSearchAspect + " not implemented"
       )
     );
   }
@@ -387,11 +487,11 @@ class AllDataBoxUsers extends React.PureComponent {
       "compositeRequest": [
         {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
           "referenceId": "fullData"
         }, {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
           "referenceId": "minimalData"
         }
       ]
@@ -433,11 +533,11 @@ class AllDataBoxUsers extends React.PureComponent {
       "compositeRequest": [
         {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
           "referenceId": "fullData"
         }, {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
           "referenceId": "minimalData"
         }
       ]
@@ -683,6 +783,148 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 }
 
+class AllDataBoxShortcut extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      selectedUser: null,
+      selectedUserId: null,
+    };
+    this.getMatches = this.getMatches.bind(this);
+    this.onDataSelect = this.onDataSelect.bind(this);
+  }
+
+  componentDidMount() {
+    this.refs.allDataSearch.refs.showAllDataInp.focus();
+  }
+
+  async getMatches(shortcutSearch) {
+    let { setIsLoading } = this.props;
+    if (!shortcutSearch) {
+      return [];
+    }
+    try {
+      setIsLoading(true);
+
+      //search for shortcuts
+      let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch.toLowerCase()));
+      result.forEach(element => {
+        element.detail = element.section;
+        element.name = element.link;
+        element.Id = element.name;
+      });
+
+      let metadataShortcutSearch = localStorage.getItem("metadataShortcutSearch");
+      if (metadataShortcutSearch == null) {
+        //enable metadata search by default
+        localStorage.setItem("metadataShortcutSearch", true);
+      }
+
+      //search for metadata if user did not disabled it
+      if (metadataShortcutSearch == "true"){
+        const flowSelect = "SELECT LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const compositeQuery = {
+          "compositeRequest": [
+            {
+              "method": "GET",
+              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(flowSelect),
+              "referenceId": "flowSelect"
+            }, {
+              "method": "GET",
+              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(profileSelect),
+              "referenceId": "profileSelect"
+            }, {
+              "method": "GET",
+              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(permSetSelect),
+              "referenceId": "permSetSelect"
+            }
+          ]
+        };
+
+        const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", { method: "POST", body: compositeQuery });
+        let results = searchResult.compositeResponse.filter((elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0);
+
+        results.forEach(element => {
+          element.body.records.forEach(rec => {
+            switch (rec.attributes.type) {
+              case "FlowDefinitionView":
+                rec.link = "/builder_platform_interaction/flowBuilder.app?flowId=" + rec.LatestVersionId;
+                rec.label = rec.Label;
+                rec.name = rec.ApiName;
+                rec.detail = rec.attributes.type + " • " + rec.ProcessType;
+                break;
+              case "Profile":
+                rec.link = "/lightning/setup/EnhancedProfiles/page?address=%2F" + rec.Id;
+                rec.label = rec.Name;
+                rec.name = rec.Id;
+                rec.detail = rec.attributes.type + " • " + rec.UserLicense.Name;
+                break;
+              case "PermissionSet":
+                rec.link = "/lightning/setup/PermSets/page?address=%2F" + rec.Id;
+                rec.label = rec.Label;
+                rec.name = rec.Name;
+                rec.detail = rec.attributes.type + " • " + rec.Type;
+                rec.detail += rec.License?.Name != null ? " • " + rec.License?.Name : "";
+                break;
+            }
+            result.push(rec);
+          });
+        });
+      }
+      return result ? result : [];
+    } catch (err) {
+      console.error("Unable to find shortcut", err);
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async onDataSelect(shortcut) {
+    let { sfHost } = this.props;
+    window.open("https://" + sfHost + shortcut.link);
+  }
+
+  resultRender(matches, shortcutQuery) {
+    return matches.map(value => ({
+      key: value.Id,
+      value,
+      element: [
+        h("div", { className: "autocomplete-item-main", key: "main" },
+          h(MarkSubstring, {
+            text: value.label,
+            start: value.label.toLowerCase().indexOf(shortcutQuery.toLowerCase()),
+            length: shortcutQuery.length
+          })),
+        h("div", { className: "autocomplete-item-sub small", key: "sub" },
+          h("div", {}, value.detail),
+          h(MarkSubstring, {
+            text: value.name,
+            start: value.name.toLowerCase().indexOf(shortcutQuery.toLowerCase()),
+            length: shortcutQuery.length
+          }))
+      ]
+    }));
+  }
+
+  render() {
+    let { selectedUser } = this.state;
+    let { sfHost, linkTarget, contextOrgId, contextUserId, contextPath } = this.props;
+
+    return (
+      h("div", { ref: "shortcutsBox", className: "users-box" },
+        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 200, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
+        h("div", { className: "all-data-box-inner" + (!selectedUser ? " empty" : "") },
+          selectedUser
+            ? h(UserDetails, { user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath })
+            : h("div", { className: "center" }, "No shortcut found")
+        ))
+    );
+  }
+}
+
 class UserDetails extends React.PureComponent {
   doSupportLoginAs(user) {
     let { currentUserId } = this.props;
@@ -706,6 +948,16 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1";
   }
 
+  getUserPsetLink(userId) {
+    let { sfHost } = this.props;
+    return "https://" + sfHost + "/lightning/setup/PermSets/page?address=%2Fudd%2FPermissionSet%2FassignPermissionSet.apexp%3FuserId%3D" + userId;
+  }
+
+  getUserPsetGroupLink(userId) {
+    let { sfHost } = this.props;
+    return "https://" + sfHost + "/lightning/setup/PermSetGroups/page?address=%2Fudd%2FPermissionSetGroup%2FassignPermissionSet.apexp%3FuserId%3D" + userId + "%26isPermsetGroup%3D1";
+  }
+
   getProfileLink(profileId) {
     let { sfHost } = this.props;
     return "https://" + sfHost + "/lightning/setup/EnhancedProfiles/page?address=%2F" + profileId;
@@ -724,7 +976,7 @@ class UserDetails extends React.PureComponent {
     let { user, linkTarget, sfHost } = this.props;
     return (
       h("div", { className: "all-data-box-inner" },
-        h("div", { className: "all-data-box-data" },
+        h("div", { className: "all-data-box-data slds-m-bottom_xx-small" },
           h("table", { className: (user.IsActive) ? "" : "inactive" },
             h("tbody", {},
               h("tr", {},
@@ -769,9 +1021,11 @@ class UserDetails extends React.PureComponent {
               )
             )
           )),
-        h("div", { ref: "userButtons", className: "center" },
-          this.doSupportLoginAs(user) ? h("a", { href: this.getLoginAsLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Try login as") : null,
-          h("a", { href: this.getUserDetailLink(user.Id), target: linkTarget, className: "button button-secondary" }, "Details")
+        h("div", { ref: "userButtons", className: "center small-font" },
+          this.doSupportLoginAs(user) ? h("a", { href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral" }, "Try login as") : null,
+          h("a", { href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral" }, "Details"),
+          h("a", { href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets" }, "PSet"),
+          h("a", { href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups" }, "PSetG")
         ))
     );
   }
@@ -816,15 +1070,17 @@ class ShowDetailsButton extends React.PureComponent {
   render() {
     let { detailsLoading, detailsShown } = this.state;
     return (
-      h("button",
-        {
-          id: "showStdPageDetailsBtn",
-          className: "button" + (detailsLoading ? " loading" : ""),
-          disabled: detailsShown,
-          onClick: this.onDetailsClick,
-          style: { display: !this.canShowDetails() ? "none" : "" }
-        },
-        "Show field ", h("u", {}, "m"), "etadata"
+      h("div", {},
+        h("a",
+          {
+            id: "showStdPageDetailsBtn",
+            className: "button" + (detailsLoading ? " loading" : "" + " page-button slds-button slds-button_neutral slds-m-bottom_xx-small"),
+            disabled: detailsShown,
+            onClick: this.onDetailsClick,
+            style: { display: !this.canShowDetails() ? "none" : "" }
+          },
+          h("span", {}, "Show field ", h("u", {}, "m"), "etadata")
+        )
       )
     );
   }
@@ -865,14 +1121,48 @@ class AllDataSelection extends React.PureComponent {
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
    */
-  getObjectSetupLink(sobjectName) {
-    return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
+  getObjectSetupLink(sobjectName, durableId, isCustomSetting) {
+    if (sobjectName.endsWith("__mdt")) {
+      return this.getCustomMetadataLink(durableId);
+    } else if (isCustomSetting) {
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
+    } else if (sobjectName.endsWith("__c")) {
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/Details/view";
+    } else {
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
+    }
   }
-  getObjectFieldsSetupLink(sobjectName) {
-    return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
+  getCustomMetadataLink(durableId) {
+    return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + durableId + "%3Fsetupid%3DCustomMetadata";
   }
-  getObjectListLink(sobjectName) {
-    return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
+  getObjectFieldsSetupLink(sobjectName, durableId, isCustomSetting) {
+    if (sobjectName.endsWith("__mdt")) {
+      return this.getCustomMetadataLink(durableId);
+    } else if (isCustomSetting) {
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
+
+    } else if (sobjectName.endsWith("__c")) {
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/FieldsAndRelationships/view";
+    } else {
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
+    }
+  }
+  getObjectListLink(sobjectName, keyPrefix, isCustomSetting) {
+    if (sobjectName.endsWith("__mdt")) {
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + keyPrefix;
+    } else if (isCustomSetting) {
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2Fsetup%2Fui%2FlistCustomSettingsData.apexp?id=" + keyPrefix;
+
+    } else {
+      return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
+    }
+  }
+  getRecordTypesLink(sfHost, sobjectName, durableId) {
+    if (sobjectName.endsWith("__c")) {
+      return "https://" + sfHost + "/lightning/setup/ObjectManager/" + durableId + "/RecordTypes/view";
+    } else {
+      return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
+    }
   }
   render() {
     let { sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails } = this.props;
@@ -885,26 +1175,24 @@ class AllDataSelection extends React.PureComponent {
     }
     return (
       h("div", { className: "all-data-box-inner" },
-        h("div", { className: "all-data-box-data" },
+        h("div", { className: "all-data-box-data slds-m-bottom_xx-small" },
           h("table", {},
             h("tbody", {},
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", { href: this.getObjectSetupLink(selectedValue.sobject.name), target: linkTarget }, selectedValue.sobject.name)
+                  h("a", { href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget }, selectedValue.sobject.name)
                 )
               ),
               h("tr", {},
-                h("th", {}, "Fields:"),
+                h("th", {}, "Links:"),
                 h("td", {},
-                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name), target: linkTarget }, "Fields setup")
-                )
-              ),
-              h("tr", {},
-                h("th", {}, "List:"),
-                h("td", {},
-                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name), target: linkTarget }, "Object list")
-                )
+                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget }, "Fields"),
+                  h("span", {}, " / "),
+                  h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Record Types"),
+                  h("span", {}, " / "),
+                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget }, "Object List")
+                ),
               ),
               h("tr", {},
                 h("th", {}, "Label:"),
@@ -923,21 +1211,21 @@ class AllDataSelection extends React.PureComponent {
         ),
         h(ShowDetailsButton, { ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId }),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", { href: this.getDeployStatusUrl(), target: linkTarget, className: "button" }, "Check Deploy Status") : null,
-        buttons.map((button, index) => h("a",
+          ? h("a", { href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-bottom_xx-small" }, "Check Deploy Status") : null,
+        buttons.map((button, index) => h("div", {}, h("a",
           {
             key: button,
             // If buttons for both APIs are shown, the keyboard shortcut should open the first button.
             ref: index == 0 ? "showAllDataBtn" : null,
             href: this.getAllDataUrl(button == "toolingApi"),
             target: linkTarget,
-            className: "button"
+            className: "page-button slds-button slds-button_neutral"
           },
           index == 0 ? h("span", {}, "Show ", h("u", {}, "a"), "ll data") : "Show all data",
           button == "regularApi" ? ""
             : button == "toolingApi" ? " (Tooling API)"
               : " (Not readable)"
-        ))
+        )))
       )
     );
   }
@@ -947,10 +1235,6 @@ class AllDataRecordDetails extends React.PureComponent {
 
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
-
-  }
-  getRecordTypesLink(sfHost, sobjectName) {
-    return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
   }
   render() {
     let { sfHost, recordIdDetails, className, selectedValue } = this.props;
@@ -959,9 +1243,7 @@ class AllDataRecordDetails extends React.PureComponent {
         h("table", { className },
           h("tbody", {},
             h("tr", {},
-              h("th", {},
-                h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name), target: "" }, "RecType:")
-              ),
+              h("th", {}, "RecType:"),
               h("td", {},
                 h("a", { href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: "" }, recordIdDetails.recordTypeName)
               )
@@ -1284,7 +1566,8 @@ function getSfPathFromUrl(href) {
 function sfLocaleKeyToCountryCode(localeKey) {
   //Converts a Salesforce locale key to a lower case country code (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) or "".
   if (!localeKey) { return ""; }
-  return localeKey.split("_").pop().toLowerCase();
+  const splitted = localeKey.split("_");
+  return splitted[(splitted.length > 1 && !localeKey.includes("_LATN_")) ? 1 : 0].toLowerCase();
 }
 
 window.getRecordId = getRecordId; // for unit tests

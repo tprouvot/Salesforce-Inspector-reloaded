@@ -169,12 +169,13 @@ class Model {
     this.queryHistory.clear();
   }
   selectSavedEntry() {
+    let delimiter = ":";
     if (this.selectedSavedEntry != null) {
       let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(":")) {
-        let query = this.selectedSavedEntry.query.split(":");
+      if (this.selectedSavedEntry.query.includes(delimiter)) {
+        let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
-        queryStr = query[1];
+        queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
       } else {
         queryStr = this.selectedSavedEntry.query;
       }
@@ -284,7 +285,7 @@ class Model {
       vm.queryInput.focus();
       //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
       let indexFrom = query.toLowerCase().indexOf("from");
-      if (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",")) {
+      if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
         suffix = "";
       }
       vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
@@ -364,7 +365,7 @@ class Model {
       }
       vm.autocompleteResults = {
         sobjectName: "",
-        title: "Object suggestions:",
+        title: "Objects suggestions:",
         results: new Enumerable(globalDescribe.sobjects)
           .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
           .map(sobjectDescribe => ({ value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: "" }))
@@ -584,7 +585,7 @@ class Model {
             }
             vm.autocompleteResults = {
               sobjectName,
-              title: fieldNames + " value suggestions:",
+              title: fieldNames + " values suggestions:",
               results: new Enumerable(data.records)
                 .map(record => record[contextValueField.field.name])
                 .filter(value => value)
@@ -671,7 +672,7 @@ class Model {
         .sort(resultsSort);
       vm.autocompleteResults = {
         sobjectName,
-        title: fieldNames + (ar.length == 0 ? " values (Press Ctrl+Space to load value suggestions):" : " values:"),
+        title: fieldNames + (ar.length == 0 ? " values (Press Ctrl+Space to load suggestions):" : " values:"),
         results: ar
       };
       return;
@@ -692,7 +693,7 @@ class Model {
       }
       vm.autocompleteResults = {
         sobjectName,
-        title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " field suggestions:",
+        title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " fields suggestions:",
         results: contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
           .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -703,7 +704,7 @@ class Model {
             }
           })
           .concat(
-            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "convertTimezone"])
+            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "convertTimezone", "toLabel"])
               .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
               .map(fn => {
                 if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
@@ -898,6 +899,7 @@ class App extends React.Component {
     this.onToggleExpand = this.onToggleExpand.bind(this);
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
+    this.onCopyQuery = this.onCopyQuery.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
@@ -991,6 +993,16 @@ class App extends React.Component {
   onExport() {
     let { model } = this.props;
     model.doExport();
+    model.didUpdate();
+  }
+  onCopyQuery() {
+    let { model } = this.props;
+    let url = new URL(window.location.href);
+    let searchParams = url.searchParams;
+    searchParams.set("query", model.queryInput.value);
+    url.search = searchParams.toString();
+    navigator.clipboard.writeText(url.toString());
+    navigator.clipboard.writeText(url.toString());
     model.didUpdate();
   }
   onCopyAsExcel() {
@@ -1128,7 +1140,7 @@ class App extends React.Component {
               h("button", { onClick: this.onClearHistory, title: "Clear Query History" }, "Clear")
             ),
             h("div", { className: "pop-menu saveOptions", hidden: !model.expandSavedOptions },
-              h("a", { href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history" }, "Removed Saved Query"),
+              h("a", { href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history" }, "Remove Saved Query"),
               h("a", { href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history" }, "Clear Saved Queries")
             ),
             h("div", { className: "button-group" },
@@ -1161,9 +1173,10 @@ class App extends React.Component {
           h("div", { className: "autocomplete-header" },
             h("span", {}, model.autocompleteResults.title),
             h("div", { className: "flex-right" },
-              h("button", { disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted" }, "Run Export"),
-              h("a", { className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object" }, model.autocompleteResults.sobjectName + " Field Info"),
-              h("button", { href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line" },
+              h("button", { tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted" }, "Run Export"),
+              h("button", { tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id" }, "Export Query"),
+              h("a", { tabIndex: 3, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object" }, model.autocompleteResults.sobjectName + " Field Info"),
+              h("button", { tabIndex: 4, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line" },
                 h("div", { className: "button-icon" }),
                 h("div", { className: "button-toggle-icon" })
               )
@@ -1171,7 +1184,7 @@ class App extends React.Component {
           ),
           h("div", { className: "autocomplete-results" },
             model.autocompleteResults.results.map(r =>
-              h("div", { className: "autocomplete-result", key: r.value }, h("a", { title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + ' ' + r.dataType }, h("div", { className: "autocomplete-icon" }), r.value), " ")
+              h("div", { className: "autocomplete-result", key: r.value }, h("a", { tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + ' ' + r.dataType }, h("div", { className: "autocomplete-icon" }), r.value), " ")
             )
           ),
         ),

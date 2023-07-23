@@ -18,6 +18,7 @@ class Model {
     this.dataError = "";
     this.useToolingApi = false;
     this.dataFormat = "excel";
+    this.importActionSelected = false;
     this.importAction = "create";
     this.importActionName = "Insert";
     this.importType = "Account";
@@ -85,12 +86,15 @@ class Model {
   }
 
   message() {
-    return this.dataFormat == "excel" ? "Paste Excel data here" : "Paste CSV data here";
+    return "Paste " + this.dataFormat.toUpperCase() + " data here";
   }
 
   setData(text) {
     if (this.isWorking()) {
       return;
+    }
+    if (this.dataFormat == "json") {
+      text = this.getDataFromJson(text);
     }
     let separator = this.dataFormat == "excel" ? "\t" : ",";
     let data;
@@ -125,10 +129,40 @@ class Model {
     let header = data.shift().map((c, index) => this.makeColumn(c, index));
     this.updateResult(null); // Two updates, the first clears state from the scrolltable
     this.updateResult({ header, data });
-    let obj = this.getSObject(data);
-    if (obj) {
-      this.importType = obj;
+
+    //automatically select the SObject if possible
+    let sobj = this.getSObject(data);
+    if (sobj) {
+      this.importType = sobj;
     }
+    //automatically select update if header contains id
+    if (this.hasIdColumn(header) && !this.importActionSelected) {
+      this.importAction = "update";
+      this.importActionName = "Update";
+    }
+  }
+
+  getDataFromJson(json) {
+    json = JSON.parse(json);
+    let csv;
+    let fields = ["_"].concat(Object.keys(json[0]));
+    fields = fields.filter(field => field != "attributes");
+
+    let sobject = json[0]["attributes"]["type"];
+    if (sobject) {
+      csv = json.map(function (row) {
+        return fields.map(function (fieldName) {
+          let value = row[fieldName];
+          if (value && typeof value === "string") {
+            return fieldName == "_" ? '"[' + sobject + ']"' : JSON.stringify(value)
+          }
+        }).join(",")
+      })
+      fields = fields.map(str => '"' + str + '"');
+      csv.unshift(fields.join(","));
+      csv = csv.join("\r\n");
+    }
+    return csv;
   }
 
   copyOptions() {
@@ -410,7 +444,7 @@ class Model {
     let importedRecords = this.importData.counts.Queued + this.importData.counts.Processing;
     let skippedRecords = this.importData.counts.Succeeded + this.importData.counts.Failed;
     this.confirmPopup = {
-      text: importedRecords + " records will be actioned."
+      text: importedRecords + " records will be imported."
         + (skippedRecords > 0 ? " " + skippedRecords + " records will be skipped because they have __Status Succeeded or Failed." : "")
     };
   }
@@ -467,6 +501,11 @@ class Model {
       return obj;
     }
     return "";
+  }
+
+  hasIdColumn(header) {
+    let hasId = header.find(column => column.columnValue.toLowerCase() === "id");
+    return hasId ? true : false;
   }
 
   makeColumn(column, index) {
@@ -712,6 +751,7 @@ class App extends React.Component {
     let { model } = this.props;
     model.importAction = e.target.value;
     model.importActionName = e.target.options[e.target.selectedIndex].text;
+    model.importActionSelected = true;
     model.didUpdate();
   }
   onImportTypeChange(e) {
@@ -902,7 +942,9 @@ class App extends React.Component {
               h("span", { className: "conf-label" }, "Format"),
               h("label", {}, h("input", { type: "radio", name: "data-input-format", value: "excel", checked: model.dataFormat == "excel", onChange: this.onDataFormatChange, disabled: model.isWorking() }), " ", h("span", {}, "Excel")),
               " ",
-              h("label", {}, h("input", { type: "radio", name: "data-input-format", value: "csv", checked: model.dataFormat == "csv", onChange: this.onDataFormatChange, disabled: model.isWorking() }), " ", h("span", {}, "CSV"))
+              h("label", {}, h("input", { type: "radio", name: "data-input-format", value: "csv", checked: model.dataFormat == "csv", onChange: this.onDataFormatChange, disabled: model.isWorking() }), " ", h("span", {}, "CSV")),
+              " ",
+              h("label", {}, h("input", { type: "radio", name: "data-input-format", value: "json", checked: model.dataFormat == "json", onChange: this.onDataFormatChange, disabled: model.isWorking() }), " ", h("span", {}, "JSON"))
             ),
             h("div", { className: "conf-line" },
               h("label", { className: "conf-input" },

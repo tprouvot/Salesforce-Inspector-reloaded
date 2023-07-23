@@ -99,6 +99,13 @@ class Model {
     this.exportProgress = {};
     this.queryName = "";
     this.clientId = localStorage.getItem(sfHost + "_clientId");
+    this.queryTemplates = [
+      "SELECT FROM",
+      "SELECT FROM WHERE",
+      "SELECT FROM WHERE IN",
+      "SELECT FROM WHERE LIKE",
+      "SELECT FROM ORDER BY"
+    ];
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -995,8 +1002,8 @@ class App extends React.Component {
     model.doExport();
     model.didUpdate();
   }
-  onInsertSelectFrom() {
-    document.querySelector("#query").value = "SELECT FROM";
+  onInsertSelectFrom(event) {
+    document.querySelector("#query").value = event.target.value;
   }
   onCopyQuery() {
     let { model } = this.props;
@@ -1135,7 +1142,10 @@ class App extends React.Component {
         h("div", { className: "query-controls" },
           h("h1", {}, "Export Query"),
           h("div", { className: "query-history-controls" },
-          h("button", { onClick: this.onInsertSelectFrom, title: "Insert SELECT FROM"}, "Insert SELECT FROM"),
+          h("select", { value: "" , onChange: this.onInsertSelectFrom, className: "query-history" },
+          h("option", { value: null, disabled: true , selected: true , hidden: true  }, "Select Template"),
+          model.queryTemplates.map(q => h("option", { key: q, value: q }, q))
+           ),
             h("div", { className: "button-group" },
               h("select", { value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history" },
                 h("option", { value: JSON.stringify(null), disabled: true }, "Query History"),

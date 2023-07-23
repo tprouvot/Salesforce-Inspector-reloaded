@@ -995,6 +995,9 @@ class App extends React.Component {
     model.doExport();
     model.didUpdate();
   }
+  onInsertSelectFrom() {
+    document.querySelector("#query").value = "SELECT FROM";
+  }
   onCopyQuery() {
     let { model } = this.props;
     let url = new URL(window.location.href);
@@ -1132,6 +1135,7 @@ class App extends React.Component {
         h("div", { className: "query-controls" },
           h("h1", {}, "Export Query"),
           h("div", { className: "query-history-controls" },
+          h("button", { onClick: this.onInsertSelectFrom, title: "Insert SELECT FROM"}, "Insert SELECT FROM"),
             h("div", { className: "button-group" },
               h("select", { value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history" },
                 h("option", { value: JSON.stringify(null), disabled: true }, "Query History"),

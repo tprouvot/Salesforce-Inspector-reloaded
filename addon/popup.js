@@ -221,7 +221,7 @@ class App extends React.PureComponent {
         ),
         h("div", { className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top" },
           h("div", { className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small" },
-            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note", target: linkTarget }, "v" + addonVersion),
+            h("a", { href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", title: "Release note", target: linkTarget }, "v" + addonVersion),
             h("span", {}, " / "),
             h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
             h("span", {}, " / "),
@@ -263,6 +263,7 @@ class AllDataBox extends React.PureComponent {
       contextUserId: null,
       contextOrgId: null,
       contextPath: null,
+      contextSobject: null
     };
     this.onAspectClick = this.onAspectClick.bind(this);
     this.parseContextUrl = this.ensureKnownBrowserContext.bind(this);
@@ -298,9 +299,11 @@ class AllDataBox extends React.PureComponent {
     if (contextUrl) {
       let recordId = getRecordId(contextUrl);
       let path = getSfPathFromUrl(contextUrl);
+      let sobject = getSobject(contextUrl);
       this.setState({
         contextRecordId: recordId,
-        contextPath: path
+        contextPath: path,
+        contextSobject: sobject
       });
     }
   }
@@ -427,7 +430,7 @@ class AllDataBox extends React.PureComponent {
   }
 
   render() {
-    let { activeSearchAspect, sobjectsLoading, contextRecordId, contextUserId, contextOrgId, contextPath, sobjectsList } = this.state;
+    let { activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList } = this.state;
     let { sfHost, showDetailsSupported, linkTarget } = this.props;
 
     return (
@@ -439,7 +442,7 @@ class AllDataBox extends React.PureComponent {
         ),
 
         (activeSearchAspect == this.SearchAspectTypes.sobject)
-          ? h(AllDataBoxSObject, { ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, linkTarget })
+          ? h(AllDataBoxSObject, { ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget })
           : (activeSearchAspect == this.SearchAspectTypes.users)
             ? h(AllDataBoxUsers, { ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); } }, "Users")
             : "AllData aspect " + activeSearchAspect + " not implemented"
@@ -606,22 +609,28 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   componentDidMount() {
-    let { contextRecordId } = this.props;
-    this.updateSelection(contextRecordId);
+    let { contextRecordId, contextSobject } = this.props;
+    this.updateSelection(contextRecordId, contextSobject);
   }
 
   componentDidUpdate(prevProps) {
-    let { contextRecordId, sobjectsLoading } = this.props;
+    let { contextRecordId, sobjectsLoading, contextSobject } = this.props;
     if (prevProps.contextRecordId !== contextRecordId) {
-      this.updateSelection(contextRecordId);
+      this.updateSelection(contextRecordId, contextSobject);
     }
     if (prevProps.sobjectsLoading !== sobjectsLoading && !sobjectsLoading) {
-      this.updateSelection(contextRecordId);
+      this.updateSelection(contextRecordId, contextSobject);
     }
   }
 
-  async updateSelection(query) {
-    let match = this.getBestMatch(query);
+  async updateSelection(query, contextSobject) {
+    let match;
+    if (query === "list"){
+      match = this.getBestMatch(contextSobject);
+    } else {
+      match = this.getBestMatch(query);
+    }
+
     await this.setState({ selectedValue: match });
     this.loadRecordIdDetails();
   }
@@ -1551,6 +1560,16 @@ function getRecordId(href) {
     if (p.match(/^([a-zA-Z0-9]{3}|[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})$/) && p.includes("0000")) {
       return p;
     }
+  }
+  return null;
+}
+
+function getSobject(href) {
+  let url = new URL(href);
+  if (url.pathname && url.pathname.endsWith("/list")){
+    let sobject = url.pathname.substring(0, url.pathname.lastIndexOf("/list"));
+    sobject = sobject.substring(sobject.lastIndexOf("/") + 1);
+    return sobject;
   }
   return null;
 }

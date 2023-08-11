@@ -12,6 +12,7 @@ export let setupLinks = [
 	{ label: "Permission Sets Groups", link: "/lightning/setup/PermSetGroups/home", section: "Administration > Users", prod: false },
 	{ label: "Permission Sets", link: "/lightning/setup/PermSets/home", section: "Administration > Users", prod: false },
 	{ label: "Profiles", link: "/lightning/setup/Profiles/home", section: "Administration > Users", prod: false },
+	{ label: "Profiles (Enhanced)", link: "/lightning/setup/EnhancedProfiles/home", section: "Administration > Users", prod: false },
 	{ label: "Public Groups", link: "/lightning/setup/PublicGroups/home", section: "Administration > Users", prod: false },
 	{ label: "Queues", link: "/lightning/setup/Queues/home", section: "Administration > Users", prod: false },
 	{ label: "Roles", link: "/lightning/setup/Roles/home", section: "Administration > Users", prod: false },
@@ -345,5 +346,8 @@ export let setupLinks = [
 	{ label: "Session Settings", link: "/lightning/setup/SecuritySession/home", section: "Settings > Security", prod: false },
 	{ label: "Sharing Settings", link: "/lightning/setup/SecuritySharing/home", section: "Settings > Security", prod: false },
 	{ label: "Trusted URLs for Redirects", link: "/lightning/setup/SecurityRedirectWhitelistUrl/home", section: "Settings > Security", prod: false },
-	{ label: "View Setup Audit Trail", link: "/lightning/setup/SecurityEvents/home", section: "Settings > Security", prod: false }
+	{ label: "View Setup Audit Trail", link: "/lightning/setup/SecurityEvents/home", section: "Settings > Security", prod: false },
+
+	//Custom Link:
+	{ label: "Create New Flow", link: "/builder_platform_interaction/flowBuilder.app", section: "Platform Tools > Process Automation", prod: false }
 ]

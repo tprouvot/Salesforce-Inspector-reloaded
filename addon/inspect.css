@@ -48,6 +48,11 @@ body,
   height: 100%;
 }
 
+.prod {
+  background-color: #e0a4b5;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png');
+}
+
 [data-reactroot] {
   display: flex;
   flex-direction: column;
@@ -65,6 +70,11 @@ body {
   font-family: "Salesforce Sans", Arial, sans-serif;
   font-size: .8125rem;
   margin: 0;
+  background-color: #B0C4DF;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png');
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: 0px 48px;
 }
 
 a {
@@ -101,7 +111,7 @@ a:hover {
   padding: 2px;
   color: white;
   padding-right: 1em;
-  margin-right: 20px;
+  margin-right: 4px;
 }
 
 .sf-link svg {
@@ -119,6 +129,9 @@ a:hover {
 table {
   width: 100%;
   border-spacing: 0px;
+  position: relative;
+  text-align: left;
+  overflow: scroll;
 }
 
 .value-text {
@@ -162,11 +175,33 @@ tr.fieldHidden a[href] {
 }
 
 tr:hover {
-  background-color: lightblue;
+  background-color: #f3f3f3;
 }
 
 th {
   text-align: left;
+}
+
+textarea {
+  font: inherit;
+}
+
+thead{
+  top: 0;
+  position: sticky;
+  z-index: 1;
+}
+
+.th-filter-row {
+  background-color: #FFFFFF;
+}
+
+.field-label, .field-name, .field-column, .field-actions, .child-column, .child-actions {
+  padding: 1px 4px;
+}
+
+.border-cell {
+  border-bottom: 1px solid #DDDBDA;
 }
 
 .field-label {
@@ -246,10 +281,31 @@ th {
   fill: #b0adab;
 }
 
+.table-settings-button {
+  border: 0px solid transparent;
+  padding: 0px 3px 0px 0px;
+}
+
+.table-settings-icon {
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  background-color: #706E6B;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/settings.svg');
+  margin: 3px 0px -3px 0px;
+}
+
+.table-settings-link {
+  font-weight: normal;
+}
+
 th[tabindex] {
-  text-decoration: underline;
   cursor: pointer;
-  color: darkblue;
+  font-weight: 700;
+  background: #eeeeee;
+  background-color: #eeeeee;
 }
 
 .column-filter-box {
@@ -306,13 +362,14 @@ th[tabindex] {
 
 .filter-box {
   white-space: nowrap;
-  margin: 0 1rem;
+  margin: 0 0.5rem;
   position: relative;
 }
 
 .filter-input {
+  font: inherit;
   width: 20em;
-  padding: 0 3rem;
+  padding: 0 2.5rem;
   background-color: #fff;
   color: #16325c;
   border: 1px solid #d8dde6;
@@ -332,7 +389,7 @@ th[tabindex] {
 }
 
 .filter-icon {
-  left: 1.25rem;
+  left: 0.75rem;
   width: 1rem;
   height: 1rem;
   position: absolute;
@@ -342,7 +399,7 @@ th[tabindex] {
 }
 
 .filter-clear {
-  right: 1.25rem;
+  right: 0.75rem;
   width: 1rem;
   height: 1rem;
   position: absolute;
@@ -387,8 +444,9 @@ th[tabindex] {
   width: 100%;
   display: flex;
   align-items: center;
-  padding: 0 1.5rem;
+  padding: 0 12px;
   flex-wrap: wrap;
+  border-bottom: 1px solid #d8dde6;
 }
 
 .object-tab {
@@ -460,6 +518,8 @@ th[tabindex] {
   white-space: nowrap;
   overflow: hidden;
   position: relative;
+  display: flex;
+  justify-content: left;
 }
 
 .button {
@@ -631,10 +691,13 @@ th[tabindex] {
   background-color: #f4f6f9;
 }
 
-.body {
-  padding: 8px;
+.table-container {
+  margin: 12px;
   overflow: auto;
   flex: 1 1 0;
+  border-radius: 3px;
+  border: 1px solid #d8dde6;
+  background-color: #ffffff;
 }
 
 @keyframes spin {
@@ -643,13 +706,21 @@ th[tabindex] {
   }
 }
 
-.body.empty {
+.table-container.empty {
   animation: spin 4s linear infinite;
 }
 
 .edit-bar {
   text-align: center;
-  padding: 1rem 0;
+  padding: 4px;
+}
+
+.footer-edit-bar {
+  display: flex;
+  padding: 4px;
+  border: 1px solid #d8dde6;
+  background-color: #f7f9fb;;
+  justify-content: flex-end;
 }
 
 .edit-bar .button {

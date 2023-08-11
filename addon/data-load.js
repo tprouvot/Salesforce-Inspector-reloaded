@@ -211,7 +211,7 @@ function renderCell(rt, cell, td) {
       function closer(ev) {
         if (ev != e && ev.target.closest(".pop-menu") != pop) {
           removeEventListener("click", closer);
-          td.removeChild(pop);
+          pop.remove();
         }
       }
       addEventListener("click", closer);

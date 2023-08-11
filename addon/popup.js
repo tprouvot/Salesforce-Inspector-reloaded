@@ -11,6 +11,7 @@ let h = React.createElement;
     if (e.source == parent && e.data.insextInitResponse) {
       removeEventListener("message", initResponseHandler);
       init(e.data);
+      initLinks(e.data);
     }
   });
 }
@@ -33,6 +34,16 @@ function init({ sfHost, inDevConsole, inLightning, inInspector }) {
     }), document.getElementById("root"));
 
   });
+}
+
+function initLinks({sfHost}){
+  //add custom links to setupLink
+  if (localStorage.getItem(sfHost + "_orgLinks")){
+    let links = JSON.parse(localStorage.getItem(sfHost + "_orgLinks"));
+    links.forEach(link => {
+      setupLinks.push(link);
+    });
+  }
 }
 
 class App extends React.PureComponent {
@@ -210,7 +221,7 @@ class App extends React.PureComponent {
         ),
         h("div", { className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top" },
           h("div", { className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small" },
-            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note", target: linkTarget }, "v" + addonVersion),
+            h("a", { href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", title: "Release note", target: linkTarget }, "v" + addonVersion),
             h("span", {}, " / "),
             h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
             h("span", {}, " / "),
@@ -252,6 +263,7 @@ class AllDataBox extends React.PureComponent {
       contextUserId: null,
       contextOrgId: null,
       contextPath: null,
+      contextSobject: null
     };
     this.onAspectClick = this.onAspectClick.bind(this);
     this.parseContextUrl = this.ensureKnownBrowserContext.bind(this);
@@ -287,9 +299,11 @@ class AllDataBox extends React.PureComponent {
     if (contextUrl) {
       let recordId = getRecordId(contextUrl);
       let path = getSfPathFromUrl(contextUrl);
+      let sobject = getSobject(contextUrl);
       this.setState({
         contextRecordId: recordId,
-        contextPath: path
+        contextPath: path,
+        contextSobject: sobject
       });
     }
   }
@@ -416,7 +430,7 @@ class AllDataBox extends React.PureComponent {
   }
 
   render() {
-    let { activeSearchAspect, sobjectsLoading, contextRecordId, contextUserId, contextOrgId, contextPath, sobjectsList } = this.state;
+    let { activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList } = this.state;
     let { sfHost, showDetailsSupported, linkTarget } = this.props;
 
     return (
@@ -428,7 +442,7 @@ class AllDataBox extends React.PureComponent {
         ),
 
         (activeSearchAspect == this.SearchAspectTypes.sobject)
-          ? h(AllDataBoxSObject, { ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, linkTarget })
+          ? h(AllDataBoxSObject, { ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget })
           : (activeSearchAspect == this.SearchAspectTypes.users)
             ? h(AllDataBoxUsers, { ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); } }, "Users")
             : "AllData aspect " + activeSearchAspect + " not implemented"
@@ -476,11 +490,11 @@ class AllDataBoxUsers extends React.PureComponent {
       "compositeRequest": [
         {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
           "referenceId": "fullData"
         }, {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
           "referenceId": "minimalData"
         }
       ]
@@ -522,11 +536,11 @@ class AllDataBoxUsers extends React.PureComponent {
       "compositeRequest": [
         {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
           "referenceId": "fullData"
         }, {
           "method": "GET",
-          "url": "/services/data/v47.0/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
           "referenceId": "minimalData"
         }
       ]
@@ -595,22 +609,28 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   componentDidMount() {
-    let { contextRecordId } = this.props;
-    this.updateSelection(contextRecordId);
+    let { contextRecordId, contextSobject } = this.props;
+    this.updateSelection(contextRecordId, contextSobject);
   }
 
   componentDidUpdate(prevProps) {
-    let { contextRecordId, sobjectsLoading } = this.props;
+    let { contextRecordId, sobjectsLoading, contextSobject } = this.props;
     if (prevProps.contextRecordId !== contextRecordId) {
-      this.updateSelection(contextRecordId);
+      this.updateSelection(contextRecordId, contextSobject);
     }
     if (prevProps.sobjectsLoading !== sobjectsLoading && !sobjectsLoading) {
-      this.updateSelection(contextRecordId);
+      this.updateSelection(contextRecordId, contextSobject);
     }
   }
 
-  async updateSelection(query) {
-    let match = this.getBestMatch(query);
+  async updateSelection(query, contextSobject) {
+    let match;
+    if (query === "list"){
+      match = this.getBestMatch(contextSobject);
+    } else {
+      match = this.getBestMatch(query);
+    }
+
     await this.setState({ selectedValue: match });
     this.loadRecordIdDetails();
   }
@@ -795,7 +815,73 @@ class AllDataBoxShortcut extends React.PureComponent {
     try {
       setIsLoading(true);
 
+      //search for shortcuts
       let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch.toLowerCase()));
+      result.forEach(element => {
+        element.detail = element.section;
+        element.name = element.link;
+        element.Id = element.name;
+      });
+
+      let metadataShortcutSearch = localStorage.getItem("metadataShortcutSearch");
+      if (metadataShortcutSearch == null) {
+        //enable metadata search by default
+        localStorage.setItem("metadataShortcutSearch", true);
+      }
+
+      //search for metadata if user did not disabled it
+      if (metadataShortcutSearch == "true"){
+        const flowSelect = "SELECT LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const compositeQuery = {
+          "compositeRequest": [
+            {
+              "method": "GET",
+              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(flowSelect),
+              "referenceId": "flowSelect"
+            }, {
+              "method": "GET",
+              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(profileSelect),
+              "referenceId": "profileSelect"
+            }, {
+              "method": "GET",
+              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(permSetSelect),
+              "referenceId": "permSetSelect"
+            }
+          ]
+        };
+
+        const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", { method: "POST", body: compositeQuery });
+        let results = searchResult.compositeResponse.filter((elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0);
+
+        results.forEach(element => {
+          element.body.records.forEach(rec => {
+            switch (rec.attributes.type) {
+              case "FlowDefinitionView":
+                rec.link = "/builder_platform_interaction/flowBuilder.app?flowId=" + rec.LatestVersionId;
+                rec.label = rec.Label;
+                rec.name = rec.ApiName;
+                rec.detail = rec.attributes.type + " • " + rec.ProcessType;
+                break;
+              case "Profile":
+                rec.link = "/lightning/setup/EnhancedProfiles/page?address=%2F" + rec.Id;
+                rec.label = rec.Name;
+                rec.name = rec.Id;
+                rec.detail = rec.attributes.type + " • " + rec.UserLicense.Name;
+                break;
+              case "PermissionSet":
+                rec.link = "/lightning/setup/PermSets/page?address=%2F" + rec.Id;
+                rec.label = rec.Label;
+                rec.name = rec.Name;
+                rec.detail = rec.attributes.type + " • " + rec.Type;
+                rec.detail += rec.License?.Name != null ? " • " + rec.License?.Name : "";
+                break;
+            }
+            result.push(rec);
+          });
+        });
+      }
       return result ? result : [];
     } catch (err) {
       console.error("Unable to find shortcut", err);
@@ -810,23 +896,23 @@ class AllDataBoxShortcut extends React.PureComponent {
     window.open("https://" + sfHost + shortcut.link);
   }
 
-  resultRender(matches, userQuery) {
+  resultRender(matches, shortcutQuery) {
     return matches.map(value => ({
-      key: value.label,
+      key: value.Id,
       value,
       element: [
         h("div", { className: "autocomplete-item-main", key: "main" },
           h(MarkSubstring, {
             text: value.label,
-            start: value.label.toLowerCase().indexOf(userQuery.toLowerCase()),
-            length: userQuery.length
+            start: value.label.toLowerCase().indexOf(shortcutQuery.toLowerCase()),
+            length: shortcutQuery.length
           })),
         h("div", { className: "autocomplete-item-sub small", key: "sub" },
-          h("div", {}, value.section),
+          h("div", {}, value.detail),
           h(MarkSubstring, {
-            text: value.link,
-            start: value.link.toLowerCase().indexOf(userQuery.toLowerCase()),
-            length: userQuery.length
+            text: value.name,
+            start: value.name.toLowerCase().indexOf(shortcutQuery.toLowerCase()),
+            length: shortcutQuery.length
           }))
       ]
     }));
@@ -838,7 +924,7 @@ class AllDataBoxShortcut extends React.PureComponent {
 
     return (
       h("div", { ref: "shortcutsBox", className: "users-box" },
-        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 100, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
+        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 200, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
         h("div", { className: "all-data-box-inner" + (!selectedUser ? " empty" : "") },
           selectedUser
             ? h(UserDetails, { user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath })
@@ -1478,6 +1564,16 @@ function getRecordId(href) {
   return null;
 }
 
+function getSobject(href) {
+  let url = new URL(href);
+  if (url.pathname && url.pathname.endsWith("/list")){
+    let sobject = url.pathname.substring(0, url.pathname.lastIndexOf("/list"));
+    sobject = sobject.substring(sobject.lastIndexOf("/") + 1);
+    return sobject;
+  }
+  return null;
+}
+
 function getSfPathFromUrl(href) {
   let url = new URL(href);
   if (url.protocol.endsWith("-extension:")) {
@@ -1489,7 +1585,8 @@ function getSfPathFromUrl(href) {
 function sfLocaleKeyToCountryCode(localeKey) {
   //Converts a Salesforce locale key to a lower case country code (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) or "".
   if (!localeKey) { return ""; }
-  return localeKey.split("_").pop().toLowerCase();
+  const splitted = localeKey.split("_");
+  return splitted[(splitted.length > 1 && !localeKey.includes("_LATN_")) ? 1 : 0].toLowerCase();
 }
 
 window.getRecordId = getRecordId; // for unit tests

@@ -7,7 +7,7 @@
   },
   "applications": {
     "gecko": {
-      "id": "ecc9a408-3029-4a26-bf43-0c9451dc5068",
+      "id": "salesforceinspector@reloaded",
       "strict_min_version": "60.0"
     }
   },

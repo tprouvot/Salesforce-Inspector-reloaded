@@ -704,7 +704,7 @@ class Model {
             }
           })
           .concat(
-            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "convertTimezone"])
+            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "convertTimezone", "toLabel"])
               .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
               .map(fn => {
                 if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
@@ -899,6 +899,7 @@ class App extends React.Component {
     this.onToggleExpand = this.onToggleExpand.bind(this);
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
+    this.onCopyQuery = this.onCopyQuery.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
@@ -992,6 +993,16 @@ class App extends React.Component {
   onExport() {
     let { model } = this.props;
     model.doExport();
+    model.didUpdate();
+  }
+  onCopyQuery() {
+    let { model } = this.props;
+    let url = new URL(window.location.href);
+    let searchParams = url.searchParams;
+    searchParams.set("query", model.queryInput.value);
+    url.search = searchParams.toString();
+    navigator.clipboard.writeText(url.toString());
+    navigator.clipboard.writeText(url.toString());
     model.didUpdate();
   }
   onCopyAsExcel() {
@@ -1129,7 +1140,7 @@ class App extends React.Component {
               h("button", { onClick: this.onClearHistory, title: "Clear Query History" }, "Clear")
             ),
             h("div", { className: "pop-menu saveOptions", hidden: !model.expandSavedOptions },
-              h("a", { href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history" }, "Removed Saved Query"),
+              h("a", { href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history" }, "Remove Saved Query"),
               h("a", { href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history" }, "Clear Saved Queries")
             ),
             h("div", { className: "button-group" },
@@ -1162,9 +1173,10 @@ class App extends React.Component {
           h("div", { className: "autocomplete-header" },
             h("span", {}, model.autocompleteResults.title),
             h("div", { className: "flex-right" },
-              h("button", { disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted" }, "Run Export"),
-              h("a", { className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object" }, model.autocompleteResults.sobjectName + " Field Info"),
-              h("button", { href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line" },
+              h("button", { tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted" }, "Run Export"),
+              h("button", { tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id" }, "Export Query"),
+              h("a", { tabIndex: 3, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object" }, model.autocompleteResults.sobjectName + " Field Info"),
+              h("button", { tabIndex: 4, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line" },
                 h("div", { className: "button-icon" }),
                 h("div", { className: "button-toggle-icon" })
               )
@@ -1172,7 +1184,7 @@ class App extends React.Component {
           ),
           h("div", { className: "autocomplete-results" },
             model.autocompleteResults.results.map(r =>
-              h("div", { className: "autocomplete-result", key: r.value }, h("a", { title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + ' ' + r.dataType }, h("div", { className: "autocomplete-icon" }), r.value), " ")
+              h("div", { className: "autocomplete-result", key: r.value }, h("a", { tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + ' ' + r.dataType }, h("div", { className: "autocomplete-icon" }), r.value), " ")
             )
           ),
         ),

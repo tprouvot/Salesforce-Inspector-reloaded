@@ -1,17 +1,41 @@
+
 <img src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/master/addon/icon128.png?raw=true" align="right">
 
-Salesforce inspector reloaded
-===========================
-Extension based on [Salesforce Inspector](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector) by Søren Krabbe.
+# Salesforce inspector reloaded
+
+![GitHub release](https://img.shields.io/github/v/release/tprouvot/Salesforce-Inspector-reloaded?sort=semver)
+[![Chrome Web Store Installs](https://img.shields.io/chrome-web-store/users/hpijlohoihegkfehhibggnkbjhoemldh)](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
+[![Chrome Web Store Rating](https://img.shields.io/chrome-web-store/rating/hpijlohoihegkfehhibggnkbjhoemldh)](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
+[![GitHub stars](https://img.shields.io/github/stars/tprouvot/Salesforce-Inspector-reloaded?cacheSeconds=3600)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/stargazers/)
+[![GitHub contributors](https://img.shields.io/github/contributors/tprouvot/Salesforce-Inspector-reloaded.svg)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/graphs/contributors/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 
 Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
 
-Release Note
+We all know and love Salesforce Inspector: As the great Søren Krabbe did not have the time to maintain it anymore, I decided to take over so trailblazer community can keep asking for new features !
+
+- [New features compared to the original SF Inspector](#new-features-compared-to-original-sf-inspector)
+- [Security and Privacy](#security-and-privacy)
+- [Use Salesforce Inspector with a Connected App](#use-salesforce-inspector-with-a-connected-app)
+- [Installation](#installation)
+- [Troubleshooting](#troubleshooting)
+- [Contributions](#contributions)
+- [Development](#development)
+  - [Chrome](#chrome)
+  - [Firefox](#firefox)
+  - [Unit tests](#unit-tests)
+  - [Linting](#linting)
+- [Release](#release)
+  - [Chrome](#chrome)
+  - [Firefox](#firefox)
+- [Design Principles](#design-principles)
+- [About](#about)
+- [License](#license)
+
+## New features compared to original SF Inspector
 -----
 [List of changes](CHANGES.md)
 
-New Features
------
 * Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
 * Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)
 * Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34)
@@ -19,8 +43,8 @@ New Features
 * Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3 (extensions using manifest v2 will be removed from the store)
 * New UI for Export / Import
 
-Security and Privacy
------
+## Security and Privacy
+
 The Salesforce Inspector browser extension/plugin communicates directly between the user's web browser and the Salesforce servers. No data is sent to other parties and no data is persisted outside of Salesforce servers after the user leaves the Salesforce Inspector pages.
 The Inspector communicates via the official Salesforce webservice APIs on behalf of the currently logged in user. This means the Inspector will be capable of accessing nothing but the data and features the user has been granted access to in Salesforce.
 
@@ -28,11 +52,11 @@ All Salesforce API calls from the Inspector re-uses the access token/session use
 
 To validate the accuracy of this description, inspect the source code, monitor the network traffic in your browser or take my word.
 
-Use Salesforce Inspector with a Connected App
------
+## Use Salesforce Inspector with a Connected App
+
 Follow steps described in [wiki](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
 
-Installation
+## Installation
 -----
 From the Chrome Web Store : [Salesforce Inspector reloaded](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
 
@@ -45,12 +69,24 @@ If you want to try it locally (to test the release candidate):
 5. Click `Load unpacked extension...`.
 6. Select the `addon` subdirectory of this repository.
 
-Troubleshooting
+## Troubleshooting
 -----
 * If Salesforce Inspector is not available after installation, the most likely issue is that your browser is not up to date. See [instructions for Google Chrome](https://productforums.google.com/forum/#!topic/chrome/YK1-o4KoSjc).
 * When you enable the My Domain feature in Salesforce, Salesforce Inspector may not work until you have restarted your browser (or until you have deleted the "sid" cookie for the old Salesforce domain by other means).
 
-Development
+
+## Contributions
+-----
+
+Contributions are welcomed !
+
+To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
+This branch will be merge into master when the new version is published on web store.
+
+Linting : to assure indentation, formatting and best practices coherence, please install ESLint extension.
+
+
+## Development
 -----
 
 1. Install Node.js with npm
@@ -70,7 +106,7 @@ Development
 3. Click `Load Temporary Add-on…`.
 4. Select the file `addon/manifest.json`.
 
-Unit tests
+### Unit tests
 -----
 
 1. Set up an org (e.g. a Developer Edition) and apply the following customizations:
@@ -86,7 +122,7 @@ Unit tests
 
 1. `npm run eslint`
 
-Release
+## Release
 -------
 Version number must be manually incremented in [addon/manifest-template.json](addon/manifest-template.json) file
 
@@ -112,10 +148,10 @@ Design Principles
 * Be conservative about the number and complexity of Salesforce API requests we make, but don't sacrifice the other principles to do so.
 * Focus on system administrators, developers and integrators.
 
-About
+## About
 -----
 By Thomas Prouvot and forked from [Søren Krabbe and Jesper Kristensen](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector)
 
-License
+## License
 -----
 [MIT](./LICENSE)

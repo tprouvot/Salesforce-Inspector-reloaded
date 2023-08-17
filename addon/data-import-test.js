@@ -170,6 +170,7 @@ export async function dataImportTest(test) {
   vm.dataFormat = "csv";
   vm.didUpdate();
   vm.importAction = "delete";
+  vm.importActionSelected = true;
   vm.didUpdate();
   vm.setData("Id,_foo*,__Status\r\n" + records[5].Id + ",foo,Queued\r\n" + records[6].Id + ",foo,Succeeded");
   assertEquals({ Queued: 1, Processing: 0, Succeeded: 1, Failed: 0 }, vm.importCounts());

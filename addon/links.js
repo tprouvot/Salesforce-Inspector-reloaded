@@ -12,6 +12,7 @@ export let setupLinks = [
 	{ label: "Permission Sets Groups", link: "/lightning/setup/PermSetGroups/home", section: "Administration > Users", prod: false },
 	{ label: "Permission Sets", link: "/lightning/setup/PermSets/home", section: "Administration > Users", prod: false },
 	{ label: "Profiles", link: "/lightning/setup/Profiles/home", section: "Administration > Users", prod: false },
+	{ label: "Profiles (Enhanced)", link: "/lightning/setup/EnhancedProfiles/home", section: "Administration > Users", prod: false },
 	{ label: "Public Groups", link: "/lightning/setup/PublicGroups/home", section: "Administration > Users", prod: false },
 	{ label: "Queues", link: "/lightning/setup/Queues/home", section: "Administration > Users", prod: false },
 	{ label: "Roles", link: "/lightning/setup/Roles/home", section: "Administration > Users", prod: false },

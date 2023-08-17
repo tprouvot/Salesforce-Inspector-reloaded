@@ -7,7 +7,7 @@
   },
   "applications": {
     "gecko": {
-      "id": "salesforceinspector@reloaded",
+      "id": "ecc9a408-3029-4a26-bf43-0c9451dc5068",
       "strict_min_version": "60.0"
     }
   },
@@ -29,20 +29,12 @@
         "https://*.visualforce.com/*"
       ],
       "all_frames": true,
-      "css": [
-        "button.css",
-        "inspect-inline.css"
-      ],
-      "js": [
-        "button.js",
-        "inspect-inline.js"
-      ]
+      "css": ["button.css", "inspect-inline.css"],
+      "js": ["button.js", "inspect-inline.js"]
     }
   ],
   "background": {
-    "scripts": [
-      "background.js"
-    ]
+    "scripts": ["background.js"]
   },
   "web_accessible_resources": [
     "popup.html",

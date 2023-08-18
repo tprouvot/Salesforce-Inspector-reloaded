@@ -346,5 +346,8 @@ export let setupLinks = [
 	{ label: "Session Settings", link: "/lightning/setup/SecuritySession/home", section: "Settings > Security", prod: false },
 	{ label: "Sharing Settings", link: "/lightning/setup/SecuritySharing/home", section: "Settings > Security", prod: false },
 	{ label: "Trusted URLs for Redirects", link: "/lightning/setup/SecurityRedirectWhitelistUrl/home", section: "Settings > Security", prod: false },
-	{ label: "View Setup Audit Trail", link: "/lightning/setup/SecurityEvents/home", section: "Settings > Security", prod: false }
+	{ label: "View Setup Audit Trail", link: "/lightning/setup/SecurityEvents/home", section: "Settings > Security", prod: false },
+
+	//Custom Link:
+	{ label: "Create New Flow", link: "/builder_platform_interaction/flowBuilder.app", section: "Platform Tools > Process Automation", prod: false }
 ]

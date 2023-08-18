@@ -2,6 +2,7 @@
 
 ## General
 
+- Fix hardcoded browser in Generate Token url [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
 - Add "Create New Flow" shortcut
 - Update pop-up release note link to github pages
 - Detect SObject on listview page [feature 121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/121) (idea by [Mehdi Cherfaoui](https://github.com/mehdisfdc))

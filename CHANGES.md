@@ -2,7 +2,7 @@
 
 ## General
 
-- Add support to Hyperforce China Organizations [PR140](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/140) (contribution by [Yaacov Elbaz](https://github.com/yaacov9))
+- Add support to Hyperforce China Organizations [PR141](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/141) (contribution by [Yaacov Elbaz](https://github.com/yaacov9))
 - Change method to get extension id to be compatible with firefox [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
 - Fix hardcoded browser in Generate Token url [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
 - Add "Create New Flow" shortcut

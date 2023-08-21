@@ -27,7 +27,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (sessionCookie) {
               sendResponse(sessionCookie.domain);
             } else {
-              sendResponse(null);
+              //Get Session cookies for Hyperforce China Orgs
+              chrome.cookies.getAll({name: "sid", domain: "sfcrmproducts.cn", secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
+                sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
+                if (sessionCookie) {
+                  sendResponse(sessionCookie.domain);
+                } else {
+                  sendResponse(null);
+                }
+              });
             }
           });
         }

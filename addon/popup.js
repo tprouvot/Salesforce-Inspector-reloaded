@@ -189,7 +189,7 @@ class App extends React.PureComponent {
               h("a",
                 {
                   ref: "generateToken",
-                  href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.runtime.id + "/data-export.html?host=" + sfHost + "%26",
+                  href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html?host=" + sfHost + "%26",
                   target: linkTarget,
                   className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
                 },

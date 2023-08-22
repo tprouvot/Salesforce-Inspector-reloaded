@@ -7,6 +7,7 @@
 - Add "Create New Flow" shortcut
 - Update pop-up release note link to github pages
 - Detect SObject on listview page [feature 121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/121) (idea by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
+- Automate test setup manual step of contact to multiple accounts [aidan](https://github.com/aimaj)
 
 # Version 1.19
 

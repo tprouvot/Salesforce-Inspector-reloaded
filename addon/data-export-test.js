@@ -147,7 +147,7 @@ export async function dataExportTest(test) {
   // Autocomplete object
   setQuery("select Id from OpportunityLi", "", "");
   assertEquals("Objects suggestions:", vm.autocompleteResults.title);
-  assertEquals(["OpportunityLineItem"], getValues(vm.autocompleteResults.results));
+  assertEquals(["OpportunityLineItem", "OpportunityLineItemSplit"], getValues(vm.autocompleteResults.results));
 
   // Autocomplete unknown object
   setQuery("select Id from UnknownObj", "", "");

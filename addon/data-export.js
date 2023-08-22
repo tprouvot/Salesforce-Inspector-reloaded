@@ -213,7 +213,7 @@ class Model {
     copyToClipboard(this.exportedData.csvSerialize(","));
   }
   copyAsJson() {
-    copyToClipboard(JSON.stringify(this.exportedData.filteredRecords, null, "  "));
+    copyToClipboard(JSON.stringify(this.exportedData.getVisibleTable(), null, "  "));
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -882,7 +882,7 @@ function RecordTable(vm) {
         discoverColumns(record, "", row);
       }
     },
-    csvSerialize: separator => rt.filteredRecords.map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
+    csvSerialize: separator => rt.getVisibleTable().map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
     updateVisibility() {
       let filter = vm.resultsFilter;
       let previousFilterResult = rt.filteredRecords.length;
@@ -899,6 +899,17 @@ function RecordTable(vm) {
       } else if (!filter && previousFilterResult != 0) {
         vm.exportStatus = "Exported " + rt.table.length + " record(s).";
       }
+    },
+    getVisibleTable() {
+      if (vm.resultsFilter) {
+        let filteredTable = [];
+        for (let i = 0; i < rt.table.length; i++) {
+          if (rt.rowVisibilities[i])
+          filteredTable.push(rt.table[i]);
+        }
+        return filteredTable;
+      }
+      return rt.table;
     }
   };
   return rt;

@@ -2,6 +2,7 @@
 
 ## General
 
+- Add 'LIMIT 200' when selecting 'FIELDS(' in autocomplete [issue 146](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/146) )
 - Change method to get extension id to be compatible with firefox [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
 - Fix hardcoded browser in Generate Token url [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
 - Add "Create New Flow" shortcut

@@ -292,7 +292,6 @@ class Model {
       //add query suffix if needed
       if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")){
         vm.queryInput.value += " LIMIT 200";
-        //vm.queryInput.setRangeText(" LIMIT 200", selStart, selEnd, "end");
       }
       vm.queryAutocompleteHandler();
     };

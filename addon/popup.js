@@ -413,8 +413,9 @@ class AllDataBox extends React.PureComponent {
       // We cannot use limit and offset to work around it, since EntityDefinition does not support those according to the documentation, and they seem to work in a querky way in practice.
       // Tried to use http://salesforce.stackexchange.com/a/22643, but "order by x" uses AaBbCc as sort order, while "where x > ..." uses sort order ABCabc, so it does not work on text fields, and there is no unique numerical field we can sort by.
       // Here we split the query into a somewhat arbitrary set of fixed buckets, and hope none of the buckets exceed 2000 records.
-      getEntityDefinitions(" where QualifiedApiName < 'M' limit 2000"),
-      getEntityDefinitions(" where QualifiedApiName >= 'M' limit 2000"),
+      getEntityDefinitions(" WHERE QualifiedApiName < 'M' LIMIT 2000"),
+      getEntityDefinitions(" WHERE QualifiedApiName >= 'M' AND QualifiedApiName < 'U' LIMIT 2000"),
+      getEntityDefinitions(" WHERE QualifiedApiName >= 'U' LIMIT 2000"),
     ])
       .then(() => {
         // TODO progressively display data as each of the three responses becomes available

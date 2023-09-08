@@ -104,7 +104,18 @@ class App extends React.PureComponent {
     if (e.key == "h" && this.refs.homeBtn) {
       this.refs.homeBtn.click();
     }
-    //TODO: Add shortcut for "u to go to user aspect"
+    if (e.key == "o") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs.objectTab.click();
+    }
+    if (e.key == "u") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs.userTab.click();
+    }
+    if (e.key == "s") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs.shortcutTab.click();
+    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
@@ -445,9 +456,9 @@ class AllDataBox extends React.PureComponent {
     return (
       h("div", { className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "") },
         h("ul", { className: "small-tabs" },
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : "" }, "Shortcuts")
+          h("li", { ref: "objectTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, h("span", {}, h("u", {}, "O"), "bjects")),
+          h("li", { ref: "userTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, h("span", {}, h("u", {}, "U"), "sers")),
+          h("li", { ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : "" }, h("span", {}, h("u", {}, "S"), "hortcuts"))
         ),
 
         (activeSearchAspect == this.SearchAspectTypes.sobject)

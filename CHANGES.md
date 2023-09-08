@@ -2,15 +2,15 @@
 
 ## General
 
-- Allow navigation to the extension tabs (Object, Users, Shortcuts) using keyboard [issue 135](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/135) (issue by [Sarath Addanki](https://github.com/asknet))
+- Allow navigation to the extension tabs (Object, Users, Shortcuts) using keyboard [feature 135](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/135) (feature by [Sarath Addanki](https://github.com/asknet))
 - Update query on EntityDefinition to avoid missing objects for large orgs [issue 138](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/138) (issue by [AjitRajendran](https://github.com/AjitRajendran))
-- Add 'LIMIT 200' when selecting 'FIELDS(' in autocomplete [issue 146](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/146) )
+- Add 'LIMIT 200' when selecting 'FIELDS(' in autocomplete [feature 146](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/146) )
 - Change method to get extension id to be compatible with firefox [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
 - Fix hardcoded browser in Generate Token url [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
 - Add "Create New Flow" shortcut
 - Update pop-up release note link to github pages
 - Detect SObject on listview page [feature 121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/121) (idea by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
-- Automate test setup manual step of contact to multiple accounts [aidan](https://github.com/aimaj)
+- Automate test setup manual step of contact to multiple accounts [Aidan Majewski](https://github.com/aimaj)
 
 # Version 1.19
 

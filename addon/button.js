@@ -104,10 +104,6 @@ function initButton(sfHost, inInspector) {
     buttonElement.appendChild(img);
   }
 
-  function setPopupCSSProperties() {
-
-  }
-
   function loadPopup() {
     btn.addEventListener("click", () => {
       if (!rootEl.classList.contains("insext-active")) {

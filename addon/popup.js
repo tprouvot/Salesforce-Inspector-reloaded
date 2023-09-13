@@ -104,7 +104,18 @@ class App extends React.PureComponent {
     if (e.key == "h" && this.refs.homeBtn) {
       this.refs.homeBtn.click();
     }
-    //TODO: Add shortcut for "u to go to user aspect"
+    if (e.key == "o") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs.objectTab.click();
+    }
+    if (e.key == "u") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs.userTab.click();
+    }
+    if (e.key == "s") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs.shortcutTab.click();
+    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
@@ -144,6 +155,7 @@ class App extends React.PureComponent {
     hostArg.set("host", sfHost);
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
+    let browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
     return (
       h("div", {},
         h("div", { className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom" },
@@ -188,7 +200,7 @@ class App extends React.PureComponent {
               h("a",
                 {
                   ref: "generateToken",
-                  href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=chrome-extension://" + chrome.runtime.id + "/data-export.html?host=" + sfHost + "%26",
+                  href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html?host=" + sfHost + "%26",
                   target: linkTarget,
                   className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
                 },
@@ -384,21 +396,31 @@ class AllDataBox extends React.PureComponent {
       });
     }
 
-    function getEntityDefinitions(bucket) {
-      let query = "select QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting from EntityDefinition" + bucket;
-      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query)).then(res => {
-        for (let record of res.records) {
-          addEntity({
-            name: record.QualifiedApiName,
-            label: record.Label,
-            keyPrefix: record.KeyPrefix,
-            durableId: record.DurableId,
-            isCustomSetting: record.IsCustomSetting
-          }, null);
-        }
-      }).catch(err => {
-        console.error("list entity definitions: " + bucket, err);
-      });
+    function getEntityDefinitions(){
+      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT COUNT() FROM EntityDefinition"))
+        .then(res => {
+          let entityNb = res.totalSize;
+          for (let bucket = 0; bucket < Math.ceil(entityNb / 2000); bucket++) {
+            let offset = bucket > 0 ? " OFFSET " + (bucket * 2000) : "";
+            let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
+            sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
+              .then(respEntity => {
+                for (let record of respEntity.records) {
+                  addEntity({
+                    name: record.QualifiedApiName,
+                    label: record.Label,
+                    keyPrefix: record.KeyPrefix,
+                    durableId: record.DurableId,
+                    isCustomSetting: record.IsCustomSetting
+                  }, null);
+                }
+              }).catch(err => {
+                console.error("list entity definitions: ", err);
+              });
+          }
+        }).catch(err => {
+          console.error("count entity definitions: ", err);
+        });
     }
 
     Promise.all([
@@ -410,10 +432,8 @@ class AllDataBox extends React.PureComponent {
       // These records are less interesting than the ones the user has access to, but still interesting since we can get information about them using the tooling API
       // If there are too many records, we get "EXCEEDED_ID_LIMIT: EntityDefinition does not support queryMore(), use LIMIT to restrict the results to a single batch"
       // We cannot use limit and offset to work around it, since EntityDefinition does not support those according to the documentation, and they seem to work in a querky way in practice.
-      // Tried to use http://salesforce.stackexchange.com/a/22643, but "order by x" uses AaBbCc as sort order, while "where x > ..." uses sort order ABCabc, so it does not work on text fields, and there is no unique numerical field we can sort by.
-      // Here we split the query into a somewhat arbitrary set of fixed buckets, and hope none of the buckets exceed 2000 records.
-      getEntityDefinitions(" where QualifiedApiName < 'M' limit 2000"),
-      getEntityDefinitions(" where QualifiedApiName >= 'M' limit 2000"),
+      // Even if documentation mention that LIMIT and OFFSET are not supported, we use it to split the EntityDefinition queries into 2000 buckets
+      getEntityDefinitions(),
     ])
       .then(() => {
         // TODO progressively display data as each of the three responses becomes available
@@ -436,9 +456,9 @@ class AllDataBox extends React.PureComponent {
     return (
       h("div", { className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "") },
         h("ul", { className: "small-tabs" },
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : "" }, "Shortcuts")
+          h("li", { ref: "objectTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, h("span", {}, h("u", {}, "O"), "bjects")),
+          h("li", { ref: "userTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, h("span", {}, h("u", {}, "U"), "sers")),
+          h("li", { ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : "" }, h("span", {}, h("u", {}, "S"), "hortcuts"))
         ),
 
         (activeSearchAspect == this.SearchAspectTypes.sobject)

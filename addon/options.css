@@ -130,3 +130,11 @@ body {
   align-content: center;
   flex-direction: column;
 }
+
+.slider-container {
+    min-width: 220px;
+}
+
+.combobox-container {
+    min-width: 80px;
+}

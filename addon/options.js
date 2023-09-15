@@ -59,7 +59,7 @@ class Model {
 
 }
 
-class SldsOptionsTabSelector extends React.Component {
+class OptionsTabSelector extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -69,10 +69,18 @@ class SldsOptionsTabSelector extends React.Component {
       {
         id: 1,
         tabTitle: "Tab1",
-        title: "Theme",
-        content: h(ThemeOptions)
-      }, 
-      // Add here additional options tabs (e.g. API Version?)
+        title: "UX",
+        content: [{ option: ArrowButtonOption, key: 1 }]
+      },
+      {
+        id: 2,
+        tabTitle: "Tab2",
+        title: "API",
+        content: [
+          { option: APIVersionOption, key: 1 },
+          { option: APIKeyOption, key: 2 }
+        ]
+      },
     ];
     this.onTabSelect = this.onTabSelect.bind(this);
   }
@@ -85,14 +93,14 @@ class SldsOptionsTabSelector extends React.Component {
   render() {
     return h("div", {className: "slds-tabs_default"},
       h("ul", { className: "slds-tabs_default__nav", role: "tablist"} ,
-        this.tabs.map((tab) => h(SldsOptionsTab, { key: tab.id, title: tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect }))
+        this.tabs.map((tab) => h(OptionsTab, { key: tab.id, title: tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect }))
       ),
-      this.tabs.map((tab) => h(SldsTabContent, { key: tab.id, id: tab.id, content: tab.content, selectedTabId: this.state.selectedTabId }))
+      this.tabs.map((tab) => h(OptionsContainer, { key: tab.id, id: tab.id, content: tab.content, selectedTabId: this.state.selectedTabId }))
     );
   }
 }
 
-class SldsOptionsTab extends React.Component {
+class OptionsTab extends React.Component {
 
   getClass() {
     return "slds-tabs_default__item" + (this.props.selectedTabId === this.props.id ? " slds-is-active" : "");
@@ -106,45 +114,132 @@ class SldsOptionsTab extends React.Component {
   }
 }
 
-class SldsTabContent extends React.Component {
+class OptionsContainer extends React.Component {
 
   getClass() {
     return (this.props.selectedTabId === this.props.id ? "slds-show" : " slds-hide");
   }
 
   render() {
-    return h("div", { id: this.props.id, className: this.getClass(), role: "tabpanel" }, this.props.content);
+    return h("div", { id: this.props.id, className: this.getClass(), role: "tabpanel" }, this.props.content.map((c) => h(c.option, { key: c.key })));
   }
 
 }
 
-class ThemeOptions extends React.Component {
+class ArrowButtonOption extends React.Component {
 
   constructor(props) {
     super(props);
-    this.onChangeTheme = this.onChangeTheme.bind(this);
-    // Theme is supposed to be light by default if not already set
+    this.onChangeArrowOrientation = this.onChangeArrowOrientation.bind(this);
+    this.onChangeArrowPosition = this.onChangeArrowPosition.bind(this);
     this.state = {
-      theme: localStorage.getItem("theme") ? localStorage.getItem("theme") : "light"
-    };
+      arrowButtonOrientation: localStorage.getItem("popupArrowOrientation") ? localStorage.getItem("popupArrowOrientation") : "vertical",
+      arrowButtonPosition: localStorage.getItem("popupArrowPosition") ? localStorage.getItem("popupArrowPosition") : "20"
+    }
   }
 
-  onChangeTheme(e) {
-    if (this.state.theme === "dark") {
-      localStorage.setItem("theme", "light");
-      this.setState({theme: "light"});
-    } else {
-      localStorage.setItem("theme", "dark");
-      this.setState({theme: "dark"});
-    }
+  onChangeArrowOrientation(e) {
+    let orientation = e.target.value;
+    this.setState({arrowButtonOrientation: orientation});
+    console.log("[SFInspector] Setting Arrow Orientation: ", orientation);
+    localStorage.setItem("popupArrowOrientation", orientation);
+  }
+
+  onChangeArrowPosition(e) {
+    let position = e.target.value;
+    this.setState({arrowButtonPosition: position});
+    console.log("[SFInspector] Setting Arrow Position: ", position);
+    localStorage.setItem("popupArrowPosition", position);
   }
 
   render() {
     return h("div", { className: "slds-grid slds-border_bottom slds-p-around_small" },
-      h("div", { className: "text-align-middle"},
-        h("span", {}, "Dark Theme")
+      h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, "Arrow Button orientation and position (refresh page to update)")
       ),
-      h("div", { className: "flex-right slds-form-element" },
+      h("div", { className: "slds-col slds-size_8-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" },
+        h("label", { className: "slds-col slds-size_2-of-12 slds-align_right slds-text-align_right" }, "Orientation:"),
+        h("select", { className: "slds-col slds-size_2-of-12 slds-combobox__form-element slds-input combobox-container", defaultValue: this.state.arrowButtonOrientation, name: "arrowPosition", id: "arrowPosition", onChange: this.onChangeArrowOrientation }, 
+          h("option", { value: "horizontal" }, "Horizontal" ),
+          h("option", { value: "vertical" }, "Vertical" )
+        ),
+        h("label", { className: "slds-m-left_medium slds-col slds-size_2-of-12 slds-text-align_right", htmlFor: "arrowPositionSlider" }, "Position (%):"),
+        h("div", { className: "slds-form-element__control slider-container slds-col slds-size_4-of-12" },
+          h("div", { className: "slds-slider sdlds-m-left_small" },
+            h("input", { type: "range", id: "arrowPositionSlider", className: "slds-slider__range", value: this.state.arrowButtonPosition, min: "0", max: "100", step: "1", onChange: this.onChangeArrowPosition }),
+            h("span", { className: "slds-slider__value", "aria-hidden": true }, this.state.arrowButtonPosition )
+          )
+        )
+      )
+    );
+  }
+}
+
+class APIVersionOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.onChangeApiVersion = this.onChangeApiVersion.bind(this);
+    this.state = { apiVersion: localStorage.getItem("apiVersion") };
+  }
+
+  onChangeApiVersion(e) {
+    let apiVersion = e.target.value;
+    this.setState({apiVersion: apiVersion});
+    localStorage.setItem("apiVersion", apiVersion + ".0");
+  }
+
+  render() {
+    return h("div", { className: "slds-grid slds-border_bottom slds-p-around_small" },
+      h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, "API Version")
+      ),
+      h("div", { className: "slds-col slds-size_8-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" },
+        h("div", { className: "slds-form-element__control slds-col slds-size_2-of-12" },
+          h("input", { type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: this.state.apiVersion.split(".0")[0], onChange: this.onChangeApiVersion }),
+        )
+      )
+    );
+  }
+}
+
+class APIKeyOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.onChangeApiKey = this.onChangeApiKey.bind(this);
+    this.state = { apiKey: localStorage.getItem(this.sfHost + "_clientId") };
+  }
+
+  onChangeApiKey(e) {
+    let apiKey = e.target.value;
+    this.setState({apiKey: apiKey});
+    localStorage.setItem(this.sfHost + "_clientId", apiKey);
+  }
+
+  render() {
+    return h("div", { className: "slds-grid slds-border_bottom slds-p-around_small" },
+      h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, "API Consumer Key")
+      ),
+      h("div", { className: "slds-col slds-size_8-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" },
+      h("div", { className: "slds-form-element__control slds-col slds-size_8-of-12" },
+      h("input", { type: "text", id: "apiKeyInput", className: "slds-input", placeholder: "Consumer Key", value: this.state.apiKey, onChange: this.onChangeApiKey }),
+        )
+      )
+    );
+  }
+}
+
+        /*
+
+
+                  <span class="slds-icon_container slds-icon-utility-down slds-input__icon slds-input__icon_right">
+            <svg class="slds-icon slds-icon slds-icon_x-small slds-icon-text-default" aria-hidden="true">
+              <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#down"></use>
+            </svg>
+
+
         h("label", { className: "slds-checkbox_toggle slds-grid" },
           h("span", { className: "slds-form-element__label slds-m-bottom_none" }),
           h("input", { type: "checkbox", name: "checkbox-toggle-1", value: "checkbox-toggle-1", checked: (this.state.theme === "dark"), onChange: this.onChangeTheme }),
@@ -154,10 +249,7 @@ class ThemeOptions extends React.Component {
             h("span", { className: "slds-checkbox_off" }, "Disabled"),
           )
         ),
-      )
-    );
-  }
-}
+        */
 
 let h = React.createElement;
 
@@ -181,7 +273,7 @@ class App extends React.Component {
         h("h1", { className: "slds-text-title_bold" }, "Salesforce Inspector Options"),
         h("div", { className: "flex-right" })),
       h("div", { className: "slds-card slds-m-around_x-small" },
-        h(SldsOptionsTabSelector)))
+        h(OptionsTabSelector, {})))
     );
   }
 }

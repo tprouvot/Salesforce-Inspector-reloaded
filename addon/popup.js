@@ -79,29 +79,32 @@ class App extends React.PureComponent {
     }
     if (e.key == "e") {
       e.preventDefault();
+      this.refs.dataExportBtn.target = (e.ctrlKey || e.metaKey) ? "_blank" : "_top";
       this.refs.dataExportBtn.click();
     }
     if (e.key == "i") {
       e.preventDefault();
+      this.refs.dataImportBtn.target = (e.ctrlKey || e.metaKey) ? "_blank" : "_top";
       this.refs.dataImportBtn.click();
     }
     if (e.key == "l") {
       e.preventDefault();
+      this.refs.limitsBtn.target = (e.ctrlKey || e.metaKey) ? "_blank" : "_top";
       this.refs.limitsBtn.click();
     }
     if (e.key == "d") {
       e.preventDefault();
-      this.refs.metaRetrieveBtn.click();
-    }
-    if (e.key == "d") {
-      e.preventDefault();
+      this.refs.metaRetrieveBtn.target = (e.ctrlKey || e.metaKey) ? "_blank" : "_top";
       this.refs.metaRetrieveBtn.click();
     }
     if (e.key == "x") {
       e.preventDefault();
+      this.refs.apiExploreBtn.target = (e.ctrlKey || e.metaKey) ? "_blank" : "_top";
       this.refs.apiExploreBtn.click();
     }
     if (e.key == "h" && this.refs.homeBtn) {
+      e.preventDefault();
+      this.refs.homeBtn.target = (e.ctrlKey || e.metaKey) ? "_blank" : "_top";
       this.refs.homeBtn.click();
     }
     if (e.key == "o") {

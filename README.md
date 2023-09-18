@@ -31,6 +31,10 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 - [About](#about)
 - [License](#license)
 
+## Documentation
+
+[Extension's doc](https://tprouvot.github.io/Salesforce-Inspector-reloaded/)
+
 ## New features compared to original SF Inspector
 
 [List of changes](CHANGES.md)

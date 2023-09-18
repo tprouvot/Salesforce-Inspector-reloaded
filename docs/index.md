@@ -13,7 +13,7 @@ Chrome and Firefox extension to add a metadata layout on top of the standard Sal
 
 ## Release Note
 
-[List of changes](/release-note)
+[List of changes](/release-note.md)
 
 ## Best Features
 

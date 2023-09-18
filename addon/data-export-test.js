@@ -140,7 +140,7 @@ export async function dataExportTest(test) {
   // Autocomplete datetime value
   setQuery("select Id from Account where LastModifiedDate < TOD", "", " and IsDeleted = false");
   assertEquals("Account.LastModifiedDate values:", vm.autocompleteResults.title);
-  assertEquals(["TODAY"], getValues(vm.autocompleteResults.results));
+  assertEquals(["TODAY","N_DAYS_AGO:n"], getValues(vm.autocompleteResults.results));
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
   assertEquals("select Id from Account where LastModifiedDate < TODAY  and IsDeleted = false", queryInput.value);
 

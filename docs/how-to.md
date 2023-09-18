@@ -56,3 +56,9 @@ To secure the extension usage, you can use a auth flow to get an access token li
    ```
 
 Re-import this json in the new extension (with the same key "insextSavedQueryHistory")
+
+## Define a CSV separator
+
+Add a new property "csvSeparator" containing the needed separator for CSV files
+
+   <img alt="Update csv separator" src="../assets/images/how-to/csv-separator.png?raw=true" height="300">

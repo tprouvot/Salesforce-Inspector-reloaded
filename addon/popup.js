@@ -431,7 +431,6 @@ class AllDataBox extends React.PureComponent {
       // Get all objects, even the ones the user cannot access from any API
       // These records are less interesting than the ones the user has access to, but still interesting since we can get information about them using the tooling API
       // If there are too many records, we get "EXCEEDED_ID_LIMIT: EntityDefinition does not support queryMore(), use LIMIT to restrict the results to a single batch"
-      // We cannot use limit and offset to work around it, since EntityDefinition does not support those according to the documentation, and they seem to work in a querky way in practice.
       // Even if documentation mention that LIMIT and OFFSET are not supported, we use it to split the EntityDefinition queries into 2000 buckets
       getEntityDefinitions(),
     ])

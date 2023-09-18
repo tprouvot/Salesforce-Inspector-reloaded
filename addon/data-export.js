@@ -210,7 +210,11 @@ class Model {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
   }
   copyAsCsv() {
-    copyToClipboard(this.exportedData.csvSerialize(","));
+    let separator = ",";
+    if (localStorage.getItem("csvSeparator")) {
+      separator = localStorage.getItem("csvSeparator");
+    }
+    copyToClipboard(this.exportedData.csvSerialize(separator));
   }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));

@@ -349,5 +349,6 @@ export let setupLinks = [
 	{ label: "View Setup Audit Trail", link: "/lightning/setup/SecurityEvents/home", section: "Settings > Security", prod: false },
 
 	//Custom Link:
-	{ label: "Create New Flow", link: "/builder_platform_interaction/flowBuilder.app", section: "Platform Tools > Process Automation", prod: false }
+	{ label: "Create New Flow", link: "/builder_platform_interaction/flowBuilder.app", section: "Platform Tools > Process Automation", prod: false },
+	{ label: "Recycle Bin", link: "/lightning/o/DeleteEvent/home", section: "App Launcher > Custom Link", prod: false }
 ]

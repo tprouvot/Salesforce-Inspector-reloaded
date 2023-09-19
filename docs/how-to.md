@@ -56,3 +56,7 @@ To secure the extension usage, you can use a auth flow to get an access token li
    ```
 
 Re-import this json in the new extension (with the same key "insextSavedQueryHistory")
+
+## Access Recycle Bin from Objects tab
+![2023-09-19_16-59-10 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/bfab8827-c78f-40ac-b26f-4bb27cf20425)
+

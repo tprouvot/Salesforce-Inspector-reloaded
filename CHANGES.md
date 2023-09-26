@@ -2,6 +2,7 @@
 
 ## General
 
+- Explore-api page restyling
 - Ability to define csv-file separator [feature 144](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/144) (issue by [Reinier van den Assum](https://github.com/foxysolutions))
 - Reduce the chances to hit limit on EntityDefinition query for large orgs [issue 138](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/138) (issue by [AjitRajendran](https://github.com/AjitRajendran))
 - Fix SObject auto detect for JSON input in data import

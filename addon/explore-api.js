@@ -66,24 +66,6 @@ class Model {
       })
       .catch(err => console.log("error handling failed", err));
   }
-  prettyPrint(json) {
-    json = json.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
-      let cls = "number";
-      if (/^"/.test(match)) {
-        if (/:$/.test(match)) {
-          cls = "key";
-        } else {
-          cls = "string";
-        }
-      } else if (/true|false/.test(match)) {
-        cls = "boolean";
-      } else if (/null/.test(match)) {
-        cls = "null";
-      }
-      return '<span class="' + cls + '">' + match + "</span>";
-    });
-  }
   openSubUrl(subUrl) {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
@@ -290,9 +272,6 @@ class App extends React.Component {
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
           ),
-          h("a", {href: "#", id: "help-btn", title: "Export Help", onClick: this.onToggleHelp},
-            h("div", {className: "icon"})
-          ),
         ),
       ),
       h("div", {className: "area", id: "result-area"},
@@ -313,8 +292,7 @@ class App extends React.Component {
               )
             ),
             model.selectedTextView && !model.selectedTextView.table && h("div", {},
-              h("textarea", {readOnly: true, value: model.selectedTextView.value}),
-              //h("textarea", {readOnly: true, value: model.prettyPrint(model.selectedTextView.value)}),
+              h("textarea", {readOnly: true, value: model.selectedTextView.value})
             ),
             model.selectedTextView && model.selectedTextView.table && h("div", {},
               h("table", {className: "scrolltable-scrolled"},

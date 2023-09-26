@@ -1,7 +1,7 @@
 /* global React ReactDOM */
-import { sfConn, apiVersion } from "./inspector.js";
+import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import { Enumerable, DescribeInfo, copyToClipboard, initScrollTable } from "./data-load.js";
+import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -65,12 +65,12 @@ class QueryHistory {
 }
 
 class Model {
-  constructor({ sfHost, args }) {
+  constructor({sfHost, args}) {
     this.sfHost = sfHost;
     this.queryInput = null;
     this.initialQuery = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
-      this.queryAutocompleteHandler({ newDescribe: true });
+      this.queryAutocompleteHandler({newDescribe: true});
       this.didUpdate();
     });
 
@@ -81,7 +81,7 @@ class Model {
     this.winInnerHeight = 0;
     this.queryAll = false;
     this.queryTooling = false;
-    this.autocompleteResults = { sobjectName: "", title: "\u00A0", results: [] };
+    this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
     this.exportStatus = "Ready";
@@ -99,6 +99,13 @@ class Model {
     this.exportProgress = {};
     this.queryName = "";
     this.clientId = localStorage.getItem(sfHost + "_clientId");
+    this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
+      "SELECT Id FROM Test",
+      "SELECT Id FROM Test WHERE",
+      "SELECT Id FROM Test WHERE IN",
+      "SELECT Id FROM Test WHERE LIKE",
+      "SELECT Id FROM ORDER BY"
+    ];
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -111,7 +118,7 @@ class Model {
       this.initialQuery = this.queryHistory.list[0].query;
       this.queryTooling = this.queryHistory.list[0].useToolingApi;
     } else {
-      this.initialQuery = "select Id from Account";
+      this.initialQuery = "SELECT Id FROM Account";
       this.queryTooling = false;
     }
 
@@ -165,6 +172,10 @@ class Model {
       this.selectedHistoryEntry = null;
     }
   }
+  selectQueryTemplate() {
+    this.queryInput.value = this.selectedQueryTemplate;
+    this.queryInput.focus();
+  }
   clearHistory() {
     this.queryHistory.clear();
   }
@@ -189,13 +200,13 @@ class Model {
     this.savedHistory.clear();
   }
   addToHistory() {
-    this.savedHistory.add({ query: this.getQueryToSave(), useToolingApi: this.queryTooling });
+    this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
   }
   saveClientId() {
     localStorage.setItem(this.sfHost + "_clientId", this.clientId);
   }
   removeFromHistory() {
-    this.savedHistory.remove({ query: this.getQueryToSave(), useToolingApi: this.queryTooling });
+    this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
   }
   getQueryToSave() {
     return this.queryName != "" ? this.queryName + ":" + this.queryInput.value : this.queryInput.value;
@@ -285,7 +296,7 @@ class Model {
       vm.autocompleteProgress.abort();
     }
 
-    vm.autocompleteClick = ({ value, suffix }) => {
+    vm.autocompleteClick = ({value, suffix}) => {
       vm.queryInput.focus();
       //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
       let indexFrom = query.toLowerCase().indexOf("from");
@@ -294,7 +305,7 @@ class Model {
       }
       vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
       //add query suffix if needed
-      if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")){
+      if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
         vm.queryInput.value += " LIMIT 200";
       }
       vm.queryAutocompleteHandler();
@@ -306,7 +317,7 @@ class Model {
       : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
     selStart = selEnd - searchTerm.length;
 
-    function sortRank({ value, title }) {
+    function sortRank({value, title}) {
       let i = 0;
       if (value.toLowerCase() == searchTerm.toLowerCase()) {
         return i;
@@ -344,7 +355,7 @@ class Model {
 
     // If we are just after the "from" keyword, autocomplete the sobject name
     if (query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
-      let { globalStatus, globalDescribe } = vm.describeInfo.describeGlobal(useToolingApi);
+      let {globalStatus, globalDescribe} = vm.describeInfo.describeGlobal(useToolingApi);
       if (!globalDescribe) {
         switch (globalStatus) {
           case "loading":
@@ -358,7 +369,7 @@ class Model {
             vm.autocompleteResults = {
               sobjectName: "",
               title: "Loading metadata failed.",
-              results: [{ value: "Retry", title: "Retry" }]
+              results: [{value: "Retry", title: "Retry"}]
             };
             vm.autocompleteClick = vm.autocompleteReload.bind(vm);
             return;
@@ -376,7 +387,7 @@ class Model {
         title: "Objects suggestions:",
         results: new Enumerable(globalDescribe.sobjects)
           .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
-          .map(sobjectDescribe => ({ value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: "" }))
+          .map(sobjectDescribe => ({value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: ""}))
           .toArray()
           .sort(resultsSort)
       };
@@ -415,7 +426,7 @@ class Model {
         isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
       }
     }
-    let { sobjectStatus, sobjectDescribe } = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
+    let {sobjectStatus, sobjectDescribe} = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
     if (!sobjectDescribe) {
       switch (sobjectStatus) {
         case "loading":
@@ -429,7 +440,7 @@ class Model {
           vm.autocompleteResults = {
             sobjectName,
             title: "Loading " + sobjectName + " metadata failed.",
-            results: [{ value: "Retry", title: "Retry" }]
+            results: [{value: "Retry", title: "Retry"}]
           };
           vm.autocompleteClick = vm.autocompleteReload.bind(vm);
           return;
@@ -492,7 +503,7 @@ class Model {
           .filter(field => field.relationshipName && field.relationshipName.toLowerCase() == referenceFieldName.toLowerCase())
           .flatMap(field => field.referenceTo)
         ) {
-          let { sobjectStatus, sobjectDescribe } = vm.describeInfo.describeSobject(useToolingApi, referencedSobjectName);
+          let {sobjectStatus, sobjectDescribe} = vm.describeInfo.describeSobject(useToolingApi, referencedSobjectName);
           if (sobjectDescribe) {
             newContextSobjectDescribes.add(sobjectDescribe);
           } else {
@@ -516,7 +527,7 @@ class Model {
         vm.autocompleteResults = {
           sobjectName,
           title: "Loading " + sobjectStatuses.get("loadfailed") + " metadata failed.",
-          results: [{ value: "Retry", title: "Retry" }]
+          results: [{value: "Retry", title: "Retry"}]
         };
         vm.autocompleteClick = vm.autocompleteReload.bind(vm);
         return;
@@ -550,7 +561,7 @@ class Model {
       let contextValueFields = contextSobjectDescribes
         .flatMap(sobjectDescribe => sobjectDescribe.fields
           .filter(field => field.name.toLowerCase() == fieldName.toLowerCase())
-          .map(field => ({ sobjectDescribe, field }))
+          .map(field => ({sobjectDescribe, field}))
         )
         .toArray();
       if (contextValueFields.length == 0) {
@@ -575,7 +586,7 @@ class Model {
         let contextValueField = contextValueFields[0];
         let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
         let acQuery = "select " + contextValueField.field.name + " from " + contextValueField.sobjectDescribe.name + " where " + contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%' group by " + contextValueField.field.name + " limit 100";
-        vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(acQuery), { progressHandler: vm.autocompleteProgress })
+        vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(acQuery), {progressHandler: vm.autocompleteProgress})
           .catch(err => {
             if (err.name != "AbortError") {
               vm.autocompleteResults = {
@@ -597,7 +608,7 @@ class Model {
               results: new Enumerable(data.records)
                 .map(record => record[contextValueField.field.name])
                 .filter(value => value)
-                .map(value => ({ value: "'" + value + "'", title: value, suffix: " ", rank: 1, autocompleteType: "fieldValue" }))
+                .map(value => ({value: "'" + value + "'", title: value, suffix: " ", rank: 1, autocompleteType: "fieldValue"}))
                 .toArray()
                 .sort(resultsSort)
             };
@@ -609,17 +620,17 @@ class Model {
         };
         return;
       }
-      let ar = new Enumerable(contextValueFields).flatMap(function* ({ field }) {
-        yield* field.picklistValues.map(pickVal => ({ value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: "" }));
+      let ar = new Enumerable(contextValueFields).flatMap(function* ({field}) {
+        yield* field.picklistValues.map(pickVal => ({value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: ""}));
         if (field.type == "boolean") {
-          yield { value: "true", title: "true", suffix: " ", rank: 1 };
-          yield { value: "false", title: "false", suffix: " ", rank: 1 };
+          yield {value: "true", title: "true", suffix: " ", rank: 1};
+          yield {value: "false", title: "false", suffix: " ", rank: 1};
         }
         if (field.type == "date" || field.type == "datetime") {
           let pad = (n, d) => ("000" + n).slice(-d);
           let d = new Date();
           if (field.type == "date") {
-            yield { value: pad(d.getFullYear(), 4) + "-" + pad(d.getMonth() + 1, 2) + "-" + pad(d.getDate(), 2), title: "Today", suffix: " ", rank: 1 };
+            yield {value: pad(d.getFullYear(), 4) + "-" + pad(d.getMonth() + 1, 2) + "-" + pad(d.getDate(), 2), title: "Today", suffix: " ", rank: 1};
           }
           if (field.type == "datetime") {
             yield {
@@ -633,53 +644,53 @@ class Model {
             };
           }
           // from https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select_dateformats.htm Winter 24
-          yield { value: "YESTERDAY", title: "Starts 12:00:00 the day before and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "TODAY", title: "Starts 12:00:00 of the current day and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "TOMORROW", title: "Starts 12:00:00 after the current day and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_WEEK", title: "Starts 12:00:00 on the first day of the week before the most recent first day of the week and continues for seven full days. First day of the week is determined by your locale.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "THIS_WEEK", title: "Starts 12:00:00 on the most recent first day of the week before the current day and continues for seven full days. First day of the week is determined by your locale.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_WEEK", title: "Starts 12:00:00 on the most recent first day of the week after the current day and continues for seven full days. First day of the week is determined by your locale.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_MONTH", title: "Starts 12:00:00 on the first day of the month before the current day and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "THIS_MONTH", title: "Starts 12:00:00 on the first day of the month that the current day is in and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_MONTH", title: "Starts 12:00:00 on the first day of the month after the month that the current day is in and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_90_DAYS", title: "Starts 12:00:00 of the current day and continues for the last 90 days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_90_DAYS", title: "Starts 12:00:00 of the current day and continues for the next 90 days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the last n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the next n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next week and continues for the next n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "N_DAYS_AGO:n", title: "Starts at 12:00:00 AM on the day n days before the current day and continues for 24 hours. (The range doesn’t include today.)", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous week and continues for the last n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "N_WEEKS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the month that started n months before the start of the current month and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_N_MONTHS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next month and continues for the next n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_N_MONTHS:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous month and continues for the last n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "N_MONTHS_AGO:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous month and continues for the last n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "THIS_QUARTER", title: "Starts 12:00:00 of the current quarter and continues to the end of the current quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_QUARTER", title: "Starts 12:00:00 of the previous quarter and continues to the end of that quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_QUARTER", title: "Starts 12:00:00 of the next quarter and continues to the end of that quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_N_QUARTERS:n", title: "Starts 12:00:00 of the next quarter and continues to the end of the nth quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_N_QUARTERS:n", title: "Starts 12:00:00 of the previous quarter and continues to the end of the previous nth quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "N_QUARTERS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the calendar quarter n quarters before the current calendar quarter and continues to the end of that quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "THIS_YEAR", title: "Starts 12:00:00 on January 1 of the current year and continues through the end of December 31 of the current year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_YEAR", title: "Starts 12:00:00 on January 1 of the previous year and continues through the end of December 31 of that year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_YEAR", title: "Starts 12:00:00 on January 1 of the following year and continues through the end of December 31 of that year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_N_YEARS:n", title: "Starts 12:00:00 on January 1 of the following year and continues through the end of December 31 of the nth year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_N_YEARS:n", title: "Starts 12:00:00 on January 1 of the previous year and continues through the end of December 31 of the previous nth year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "N_YEARS_AGO:n", title: "Starts at 12:00:00 AM on January 1 of the calendar year n years before the current calendar year and continues through the end of December 31 of that year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "THIS_FISCAL_QUARTER", title: "Starts 12:00:00 on the first day of the current fiscal quarter and continues through the end of the last day of the fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_FISCAL_QUARTER", title: "Starts 12:00:00 on the first day of the last fiscal quarter and continues through the end of the last day of that fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_FISCAL_QUARTER", title: "Starts 12:00:00 on the first day of the next fiscal quarter and continues through the end of the last day of that fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_N_FISCAL_QUARTERS:n", title: "Starts 12:00:00 on the first day of the next fiscal quarter and continues through the end of the last day of the nth fiscal quarter. The fiscal year is defined in the company profile under Setup atCompany Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_N_FISCAL_QUARTERS:n", title: "Starts 12:00:00 on the first day of the last fiscal quarter and continues through the end of the last day of the previous nth fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "N_FISCAL_QUARTERS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the fiscal quarter n fiscal quarters before the current fiscal quarter and continues through the end of the last day of that fiscal quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "THIS_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the current fiscal year and continues through the end of the last day of the fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the last fiscal year and continues through the end of the last day of that fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the next fiscal year and continues through the end of the last day of that fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "NEXT_N_FISCAL_YEARS:n", title: "Starts 12:00:00 on the first day of the next fiscal year and continues through the end of the last day of the nth fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "LAST_N_FISCAL_YEARS:n", title: "Starts 12:00:00 on the first day of the last fiscal year and continues through the end of the last day of the previous nth fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
-          yield { value: "N_FISCAL_YEARS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the fiscal year n fiscal years ago and continues through the end of the last day of that fiscal year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: "" };
+          yield {value: "YESTERDAY", title: "Starts 12:00:00 the day before and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "TODAY", title: "Starts 12:00:00 of the current day and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "TOMORROW", title: "Starts 12:00:00 after the current day and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_WEEK", title: "Starts 12:00:00 on the first day of the week before the most recent first day of the week and continues for seven full days. First day of the week is determined by your locale.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_WEEK", title: "Starts 12:00:00 on the most recent first day of the week before the current day and continues for seven full days. First day of the week is determined by your locale.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_WEEK", title: "Starts 12:00:00 on the most recent first day of the week after the current day and continues for seven full days. First day of the week is determined by your locale.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_MONTH", title: "Starts 12:00:00 on the first day of the month before the current day and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_MONTH", title: "Starts 12:00:00 on the first day of the month that the current day is in and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_MONTH", title: "Starts 12:00:00 on the first day of the month after the month that the current day is in and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_90_DAYS", title: "Starts 12:00:00 of the current day and continues for the last 90 days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_90_DAYS", title: "Starts 12:00:00 of the current day and continues for the next 90 days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the last n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the next n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next week and continues for the next n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_DAYS_AGO:n", title: "Starts at 12:00:00 AM on the day n days before the current day and continues for 24 hours. (The range doesn’t include today.)", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous week and continues for the last n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_WEEKS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the month that started n months before the start of the current month and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_MONTHS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next month and continues for the next n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_MONTHS:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous month and continues for the last n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_MONTHS_AGO:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous month and continues for the last n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_QUARTER", title: "Starts 12:00:00 of the current quarter and continues to the end of the current quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_QUARTER", title: "Starts 12:00:00 of the previous quarter and continues to the end of that quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_QUARTER", title: "Starts 12:00:00 of the next quarter and continues to the end of that quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_QUARTERS:n", title: "Starts 12:00:00 of the next quarter and continues to the end of the nth quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_QUARTERS:n", title: "Starts 12:00:00 of the previous quarter and continues to the end of the previous nth quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_QUARTERS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the calendar quarter n quarters before the current calendar quarter and continues to the end of that quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_YEAR", title: "Starts 12:00:00 on January 1 of the current year and continues through the end of December 31 of the current year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_YEAR", title: "Starts 12:00:00 on January 1 of the previous year and continues through the end of December 31 of that year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_YEAR", title: "Starts 12:00:00 on January 1 of the following year and continues through the end of December 31 of that year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_YEARS:n", title: "Starts 12:00:00 on January 1 of the following year and continues through the end of December 31 of the nth year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_YEARS:n", title: "Starts 12:00:00 on January 1 of the previous year and continues through the end of December 31 of the previous nth year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_YEARS_AGO:n", title: "Starts at 12:00:00 AM on January 1 of the calendar year n years before the current calendar year and continues through the end of December 31 of that year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_FISCAL_QUARTER", title: "Starts 12:00:00 on the first day of the current fiscal quarter and continues through the end of the last day of the fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_FISCAL_QUARTER", title: "Starts 12:00:00 on the first day of the last fiscal quarter and continues through the end of the last day of that fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_FISCAL_QUARTER", title: "Starts 12:00:00 on the first day of the next fiscal quarter and continues through the end of the last day of that fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_FISCAL_QUARTERS:n", title: "Starts 12:00:00 on the first day of the next fiscal quarter and continues through the end of the last day of the nth fiscal quarter. The fiscal year is defined in the company profile under Setup atCompany Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_FISCAL_QUARTERS:n", title: "Starts 12:00:00 on the first day of the last fiscal quarter and continues through the end of the last day of the previous nth fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_FISCAL_QUARTERS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the fiscal quarter n fiscal quarters before the current fiscal quarter and continues through the end of the last day of that fiscal quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the current fiscal year and continues through the end of the last day of the fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the last fiscal year and continues through the end of the last day of that fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the next fiscal year and continues through the end of the last day of that fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_FISCAL_YEARS:n", title: "Starts 12:00:00 on the first day of the next fiscal year and continues through the end of the last day of the nth fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_FISCAL_YEARS:n", title: "Starts 12:00:00 on the first day of the last fiscal year and continues through the end of the last day of the previous nth fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_FISCAL_YEARS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the fiscal year n fiscal years ago and continues through the end of the last day of that fiscal year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
         }
         if (field.nillable) {
-          yield { value: "null", title: "null", suffix: " ", rank: 1, autocompleteType: "null", dataType: "" };
+          yield {value: "null", title: "null", suffix: " ", rank: 1, autocompleteType: "null", dataType: ""};
         }
       })
         .filter(res => res.value.toLowerCase().includes(searchTerm.toLowerCase()) || res.title.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -713,9 +724,9 @@ class Model {
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
           .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
           .flatMap(function* (field) {
-            yield { value: field.name, title: field.label, suffix: isAfterFrom ? " " : ", ", rank: 1, autocompleteType: "fieldName", dataType: field.type };
+            yield {value: field.name, title: field.label, suffix: isAfterFrom ? " " : ", ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
             if (field.relationshipName) {
-              yield { value: field.relationshipName + ".", title: field.label, suffix: "", rank: 1, autocompleteType: "relationshipName", dataType: "" };
+              yield {value: field.relationshipName + ".", title: field.label, suffix: "", rank: 1, autocompleteType: "relationshipName", dataType: ""};
             }
           })
           .concat(
@@ -723,9 +734,9 @@ class Model {
               .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
               .map(fn => {
                 if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
-                  return { value: fn, title: fn, suffix: "", rank: 2, autocompleteType: "variable", dataType: "" };
+                  return {value: fn, title: fn, suffix: "", rank: 2, autocompleteType: "variable", dataType: ""};
                 } else {
-                  return { value: fn, title: fn + "()", suffix: "(", rank: 2, autocompleteType: "variable", dataType: "" };
+                  return {value: fn, title: fn + "()", suffix: "(", rank: 2, autocompleteType: "variable", dataType: ""};
                 }
               })
           )
@@ -746,7 +757,7 @@ class Model {
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
-          return { records: [], done: true, totalSize: -1 };
+          return {records: [], done: true, totalSize: -1};
         }
         throw err;
       }).then(data => {
@@ -755,7 +766,7 @@ class Model {
           exportedData.totalSize = data.totalSize;
         }
         if (!data.done) {
-          let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, { progressHandler: vm.exportProgress }));
+          let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
           vm.isWorking = true;
           vm.exportStatus = "Exporting... Completed " + exportedData.records.length + " of " + exportedData.totalSize + " record(s)";
           vm.exportError = null;
@@ -764,7 +775,7 @@ class Model {
           vm.didUpdate();
           return pr;
         }
-        vm.queryHistory.add({ query, useToolingApi: exportedData.isTooling });
+        vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
         if (exportedData.records.length == 0) {
           vm.isWorking = false;
           vm.exportStatus = data.totalSize > 0 ? "No data exported. " + data.totalSize + " record(s)." : "No data exported.";
@@ -800,7 +811,7 @@ class Model {
         return null;
       });
     }
-    vm.spinFor(batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query), { progressHandler: vm.exportProgress }))
+    vm.spinFor(batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query), {progressHandler: vm.exportProgress}))
       .catch(error => {
         console.error(error);
         vm.isWorking = false;
@@ -904,6 +915,7 @@ class App extends React.Component {
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
+    this.onSelectQueryTemplate = this.onSelectQueryTemplate.bind(this);
     this.onClearHistory = this.onClearHistory.bind(this);
     this.onSelectSavedEntry = this.onSelectSavedEntry.bind(this);
     this.onAddToHistory = this.onAddToHistory.bind(this);
@@ -924,53 +936,59 @@ class App extends React.Component {
     this.onStopExport = this.onStopExport.bind(this);
   }
   onQueryAllChange(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.queryAll = e.target.checked;
     model.didUpdate();
   }
   onQueryToolingChange(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.queryTooling = e.target.checked;
     model.queryAutocompleteHandler();
     model.didUpdate();
   }
   onSelectHistoryEntry(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.selectedHistoryEntry = JSON.parse(e.target.value);
     model.selectHistoryEntry();
+    model.didUpdate();
+  }
+  onSelectQueryTemplate(e) {
+    let {model} = this.props;
+    model.selectedQueryTemplate = e.target.value;
+    model.selectQueryTemplate();
     model.didUpdate();
   }
   onClearHistory(e) {
     e.preventDefault();
     let r = confirm("Are you sure you want to clear the query history?");
     if (r == true) {
-      let { model } = this.props;
+      let {model} = this.props;
       model.clearHistory();
       model.didUpdate();
     }
   }
   onSelectSavedEntry(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.selectedSavedEntry = JSON.parse(e.target.value);
     model.selectSavedEntry();
     model.didUpdate();
   }
   onAddToHistory(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.addToHistory();
     model.didUpdate();
   }
   onSaveClientId(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.saveClientId();
     model.didUpdate();
   }
   onRemoveFromHistory(e) {
     e.preventDefault();
     let r = confirm("Are you sure you want to remove this saved query?");
-    let { model } = this.props;
+    let {model} = this.props;
     if (r == true) {
       model.removeFromHistory();
     }
@@ -980,7 +998,7 @@ class App extends React.Component {
   onClearSavedHistory(e) {
     e.preventDefault();
     let r = confirm("Are you sure you want to remove all saved queries?");
-    let { model } = this.props;
+    let {model} = this.props;
     if (r == true) {
       model.clearSavedHistory();
     }
@@ -989,29 +1007,29 @@ class App extends React.Component {
   }
   onToggleHelp(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.toggleHelp();
     model.didUpdate();
   }
   onToggleExpand(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.toggleExpand();
     model.didUpdate();
   }
   onToggleSavedOptions(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.toggleSavedOptions();
     model.didUpdate();
   }
   onExport() {
-    let { model } = this.props;
+    let {model} = this.props;
     model.doExport();
     model.didUpdate();
   }
   onCopyQuery() {
-    let { model } = this.props;
+    let {model} = this.props;
     let url = new URL(window.location.href);
     let searchParams = url.searchParams;
     searchParams.set("query", model.queryInput.value);
@@ -1021,42 +1039,42 @@ class App extends React.Component {
     model.didUpdate();
   }
   onCopyAsExcel() {
-    let { model } = this.props;
+    let {model} = this.props;
     model.copyAsExcel();
     model.didUpdate();
   }
   onCopyAsCsv() {
-    let { model } = this.props;
+    let {model} = this.props;
     model.copyAsCsv();
     model.didUpdate();
   }
   onCopyAsJson() {
-    let { model } = this.props;
+    let {model} = this.props;
     model.copyAsJson();
     model.didUpdate();
   }
   onResultsFilterInput(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.setResultsFilter(e.target.value);
     model.didUpdate();
   }
   onSetQueryName(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.setQueryName(e.target.value);
     model.didUpdate();
   }
   onSetClientId(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.setClientId(e.target.value);
     model.didUpdate();
   }
   onStopExport() {
-    let { model } = this.props;
+    let {model} = this.props;
     model.stopExport();
     model.didUpdate();
   }
   componentDidMount() {
-    let { model } = this.props;
+    let {model} = this.props;
     let queryInput = this.refs.query;
 
     model.setQueryInput(queryInput);
@@ -1076,7 +1094,7 @@ class App extends React.Component {
     queryInput.addEventListener("keydown", e => {
       if (e.ctrlKey && e.key == " ") {
         e.preventDefault();
-        model.queryAutocompleteHandler({ ctrlSpace: true });
+        model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
       }
     });
@@ -1095,7 +1113,7 @@ class App extends React.Component {
     if (!window.webkitURL) {
       // Firefox
       // Firefox does not fire a resize event. The next best thing is to listen to when the browser changes the style.height attribute.
-      new MutationObserver(recalculateHeight).observe(queryInput, { attributes: true });
+      new MutationObserver(recalculateHeight).observe(queryInput, {attributes: true});
     } else {
       // Chrome
       // Chrome does not fire a resize event and does not allow us to get notified when the browser changes the style.height attribute.
@@ -1119,114 +1137,118 @@ class App extends React.Component {
     this.scrollTable.viewportChange();
   }
   render() {
-    let { model } = this.props;
+    let {model} = this.props;
     return h("div", {},
-      h("div", { id: "user-info" },
-        h("a", { href: model.sfLink, className: "sf-link" },
-          h("svg", { viewBox: "0 0 24 24" },
-            h("path", { d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z" })
+      h("div", {id: "user-info"},
+        h("a", {href: model.sfLink, className: "sf-link"},
+          h("svg", {viewBox: "0 0 24 24"},
+            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
           ),
           " Salesforce Home"
         ),
         h("h1", {}, "Data Export"),
         h("span", {}, " / " + model.userInfo),
-        h("div", { className: "flex-right" },
-          h("div", { id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0 },
-            h("span", { className: "slds-assistive-text" }),
-            h("div", { className: "slds-spinner__dot-a" }),
-            h("div", { className: "slds-spinner__dot-b" }),
+        h("div", {className: "flex-right"},
+          h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
+            h("span", {className: "slds-assistive-text"}),
+            h("div", {className: "slds-spinner__dot-a"}),
+            h("div", {className: "slds-spinner__dot-b"}),
           ),
-          h("a", { href: "#", id: "help-btn", title: "Export Help", onClick: this.onToggleHelp },
-            h("div", { className: "icon" })
+          h("a", {href: "#", id: "help-btn", title: "Export Help", onClick: this.onToggleHelp},
+            h("div", {className: "icon"})
           ),
         ),
       ),
-      h("div", { className: "area" },
-        h("div", { className: "area-header" },
+      h("div", {className: "area"},
+        h("div", {className: "area-header"},
         ),
-        h("div", { className: "query-controls" },
+        h("div", {className: "query-controls"},
           h("h1", {}, "Export Query"),
-          h("div", { className: "query-history-controls" },
-            h("div", { className: "button-group" },
-              h("select", { value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history" },
-                h("option", { value: JSON.stringify(null), disabled: true }, "Query History"),
-                model.queryHistory.list.map(q => h("option", { key: JSON.stringify(q), value: JSON.stringify(q) }, q.query.substring(0, 300)))
-              ),
-              h("button", { onClick: this.onClearHistory, title: "Clear Query History" }, "Clear")
+          h("div", {className: "query-history-controls"},
+            h("select", {value: "", onChange: this.onSelectQueryTemplate, className: "query-history", title: "Check documentation to customize templates"},
+              h("option", {value: null, disabled: true, selected: true, hidden: true}, "Templates"),
+              model.queryTemplates.map(q => h("option", {key: q, value: q}, q))
             ),
-            h("div", { className: "pop-menu saveOptions", hidden: !model.expandSavedOptions },
-              h("a", { href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history" }, "Remove Saved Query"),
-              h("a", { href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history" }, "Clear Saved Queries")
-            ),
-            h("div", { className: "button-group" },
-              h("select", { value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history" },
-                h("option", { value: JSON.stringify(null), disabled: true }, "Saved Queries"),
-                model.savedHistory.list.map(q => h("option", { key: JSON.stringify(q), value: JSON.stringify(q) }, q.query.substring(0, 300)))
+            h("div", {className: "button-group"},
+              h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
+                h("option", {value: JSON.stringify(null), disabled: true}, "Query History"),
+                model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
               ),
-              h("input", { placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName }),
-              h("button", { onClick: this.onAddToHistory, title: "Add query to saved history" }, "Save Query"),
-              h("button", { className: model.expandSavedOptions ? "toggle contract" : "toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions }, h("div", { className: "button-toggle-icon" })),
-              h("input", { placeholder: "Consumer Key", type: "default", value: model.clientId, onInput: this.onSetClientId }),
-              h("button", { onClick: this.onSaveClientId, title: "Save Consumer Key" }, "Save"),
+              h("button", {onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
+            ),
+            h("div", {className: "pop-menu saveOptions", hidden: !model.expandSavedOptions},
+              h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query"),
+              h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+            ),
+            h("div", {className: "button-group"},
+              h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
+                h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
+                model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+              ),
+              h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
+              h("button", {onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
+              h("button", {className: model.expandSavedOptions ? "toggle contract" : "toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"})),
+              h("input", {placeholder: "Consumer Key", type: "default", value: model.clientId, onInput: this.onSetClientId}),
+              h("button", {onClick: this.onSaveClientId, title: "Save Consumer Key"}, "Save"),
             ),
           ),
-          h("div", { className: "query-options" },
+          h("div", {className: "query-options"},
             h("label", {},
-              h("input", { type: "checkbox", checked: model.queryAll, onChange: this.onQueryAllChange, disabled: model.queryTooling }),
+              h("input", {type: "checkbox", checked: model.queryAll, onChange: this.onQueryAllChange, disabled: model.queryTooling}),
               " ",
               h("span", {}, "Add deleted records?")
             ),
-            h("label", { title: "With the tooling API you can query more metadata, but you cannot query regular data" },
-              h("input", { type: "checkbox", checked: model.queryTooling, onChange: this.onQueryToolingChange, disabled: model.queryAll }),
+            h("label", {title: "With the tooling API you can query more metadata, but you cannot query regular data"},
+              h("input", {type: "checkbox", checked: model.queryTooling, onChange: this.onQueryToolingChange, disabled: model.queryAll}),
               " ",
               h("span", {}, "Tooling API?")
             ),
           ),
         ),
-        h("textarea", { id: "query", ref: "query", style: { maxHeight: (model.winInnerHeight - 200) + "px" } }),
-        h("div", { className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "") },
-          h("div", { className: "autocomplete-header" },
+        h("textarea", {id: "query", ref: "query", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
+        h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
+          h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
-            h("div", { className: "flex-right" },
-              h("button", { tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted" }, "Run Export"),
-              h("button", { tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id" }, "Export Query"),
-              h("a", { tabIndex: 3, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object" }, model.autocompleteResults.sobjectName + " Field Info"),
-              h("button", { tabIndex: 4, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line" },
-                h("div", { className: "button-icon" }),
-                h("div", { className: "button-toggle-icon" })
+            h("div", {className: "flex-right"},
+              h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Export"),
+              h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query"),
+              h("a", {tabIndex: 3, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
+              h("button", {tabIndex: 4, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
+                h("div", {className: "button-icon"}),
+                h("div", {className: "button-toggle-icon"})
               )
             ),
           ),
-          h("div", { className: "autocomplete-results" },
+          h("div", {className: "autocomplete-results"},
             model.autocompleteResults.results.map(r =>
-              h("div", { className: "autocomplete-result", key: r.value }, h("a", { tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + ' ' + r.dataType }, h("div", { className: "autocomplete-icon" }), r.value), " ")
+              h("div", {className: "autocomplete-result", key: r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.value), " ")
             )
           ),
         ),
-        h("div", { hidden: !model.showHelp, className: "help-text" },
+        h("div", {hidden: !model.showHelp, className: "help-text"},
           h("h3", {}, "Export Help"),
-          h("p", {}, "Use for quick one-off data exports. Enter a ", h("a", { href: "http://www.salesforce.com/us/developer/docs/soql_sosl/", target: "_blank" }, "SOQL query"), " in the box above and press Export."),
+          h("p", {}, "Use for quick one-off data exports. Enter a ", h("a", {href: "http://www.salesforce.com/us/developer/docs/soql_sosl/", target: "_blank"}, "SOQL query"), " in the box above and press Export."),
           h("p", {}, "Press Ctrl+Space to insert all field name autosuggestions or to load suggestions for field values."),
           h("p", {}, "Press Ctrl+Enter or F5 to execute the export."),
           h("p", {}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
         )
       ),
-      h("div", { className: "area", id: "result-area" },
-        h("div", { className: "result-bar" },
+      h("div", {className: "area", id: "result-area"},
+        h("div", {className: "result-bar"},
           h("h1", {}, "Export Result"),
-          h("div", { className: "button-group" },
-            h("button", { disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar" }, "Copy (Excel format)"),
-            h("button", { disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file" }, "Copy (CSV)"),
-            h("button", { disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard" }, "Copy (JSON)"),
+          h("div", {className: "button-group"},
+            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
           ),
-          h("input", { placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput }),
-          h("span", { className: "result-status flex-right" },
+          h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
+          h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
-            h("button", { className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport }, "Stop"),
+            h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
           )
         ),
-        h("textarea", { id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null }),
-        h("div", { id: "result-table", ref: "scroller", hidden: model.exportError != null }
+        h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
+        h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null}
           /* the scroll table goes here */
         )
       )
@@ -1242,14 +1264,14 @@ class App extends React.Component {
   sfConn.getSession(sfHost).then(() => {
 
     let root = document.getElementById("root");
-    let model = new Model({ sfHost, args });
+    let model = new Model({sfHost, args});
     model.reactCallback = cb => {
-      ReactDOM.render(h(App, { model }), root, cb);
+      ReactDOM.render(h(App, {model}), root, cb);
     };
-    ReactDOM.render(h(App, { model }), root);
+    ReactDOM.render(h(App, {model}), root);
 
     if (parent && parent.isUnitTest) { // for unit tests
-      parent.insextTestLoaded({ model, sfConn });
+      parent.insextTestLoaded({model, sfConn});
     }
 
   });

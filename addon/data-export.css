@@ -224,7 +224,7 @@ select,
 input[type=search],
 input[type=save],
 input[type=default] {
-  width: 10rem;
+  width: 8.5rem;
   font-family: inherit;
   padding: 5px 13px;
   border: 1px solid #DDDBDA;

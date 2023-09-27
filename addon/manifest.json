@@ -1,7 +1,7 @@
 {
   "name": "Salesforce Inspector reloaded",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.20",
+  "version": "1.20.11",
   "icons": {
     "128": "icon128.png"
   },
@@ -11,7 +11,12 @@
     "https://*.salesforce.com/*",
     "https://*.force.com/*",
     "https://*.cloudforce.com/*",
-    "https://*.visualforce.com/*"
+    "https://*.visualforce.com/*",
+    "https://*.salesforce.mil/*",
+    "https://*.force.mil/*",
+    "https://*.cloudforce.mil/*",
+    "https://*.visualforce.mil/*",
+    "https://*.crmforce.mil/*"
   ],
   "content_scripts": [
     {
@@ -21,7 +26,14 @@
         "https://*.vf.force.com/*",
         "https://*.lightning.force.com/*",
         "https://*.cloudforce.com/*",
-        "https://*.visualforce.com/*"
+        "https://*.visualforce.com/*",
+        "https://*.salesforce.mil/*",
+        "https://*.visual.force.mil/*",
+        "https://*.vf.force.mil/*",
+        "https://*.lightning.force.mil/*",
+        "https://*.cloudforce.mil/*",
+        "https://*.visualforce.mil/*",
+        "https://*.crmforce.mil/*"
       ],
       "all_frames": true,
       "css": ["button.css", "inspect-inline.css"],

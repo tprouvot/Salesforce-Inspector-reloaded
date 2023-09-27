@@ -96,7 +96,11 @@ class Model {
     if (this.dataFormat == "json") {
       text = this.getDataFromJson(text);
     }
-    let separator = this.dataFormat == "excel" ? "\t" : ",";
+    let csvSeparator = ",";
+    if (localStorage.getItem("csvSeparator")) {
+      csvSeparator = localStorage.getItem("csvSeparator");
+    }
+    let separator = this.dataFormat == "excel" ? "\t" : csvSeparator;
     let data;
     try {
       data = csvParse(text, separator);
@@ -148,6 +152,11 @@ class Model {
     let fields = ["_"].concat(Object.keys(json[0]));
     fields = fields.filter(field => field != "attributes");
 
+    let separator = ",";
+    if (localStorage.getItem("csvSeparator")) {
+      separator = localStorage.getItem("csvSeparator");
+    }
+
     let sobject = json[0]["attributes"]["type"];
     if (sobject) {
       csv = json.map(function (row) {
@@ -156,10 +165,10 @@ class Model {
           if (typeof value == "boolean" || (value && typeof value !== "object")) {
             return fieldName == "_" ? '"[' + sobject + ']"' : JSON.stringify(value)
           }
-        }).join(",")
+        }).join(separator)
       })
       fields = fields.map(str => '"' + str + '"');
-      csv.unshift(fields.join(","));
+      csv.unshift(fields.join(separator));
       csv = csv.join("\r\n");
     }
     return csv;
@@ -822,7 +831,11 @@ class App extends React.Component {
   onCopyAsCsvClick(e) {
     e.preventDefault();
     let { model } = this.props;
-    model.copyResult(",");
+    let separator = ",";
+    if (localStorage.getItem("csvSeparator")) {
+      separator = localStorage.getItem("csvSeparator");
+    }
+    model.copyResult(separator);
   }
   onCopyOptionsClick(e) {
     e.preventDefault();

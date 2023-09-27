@@ -2,12 +2,12 @@
 
 export async function dataExportTest(test) {
   console.log("TEST data-export");
-  let { assertEquals, assert, loadPage, anonApex } = test;
+  let {assertEquals, assert, loadPage, anonApex} = test;
 
   localStorage.removeItem("insextQueryHistory");
   localStorage.removeItem("insextSavedQueryHistory");
 
-  let { model, sfConn } = await loadPage("data-export.html");
+  let {model, sfConn} = await loadPage("data-export.html");
   let vm = model;
   let queryInput = model.queryInput;
   function queryAutocompleteEvent() {
@@ -37,8 +37,8 @@ export async function dataExportTest(test) {
     return list.map(el => el.value);
   }
 
-  assertEquals("select Id from Account", queryInput.value);
-  queryInput.selectionStart = queryInput.selectionEnd = "select Id from Account".length; // When the cursor is placed after object name, we will try to autocomplete that once the global describe loads, and we will not try to load object field describes, so we can test loading those separately
+  assertEquals("SELECT Id FROM Account", queryInput.value);
+  queryInput.selectionStart = queryInput.selectionEnd = "SELECT Id FROM Account".length; // When the cursor is placed after object name, we will try to autocomplete that once the global describe loads, and we will not try to load object field describes, so we can test loading those separately
   vm.queryAutocompleteHandler();
 
   // Load global describe and user info
@@ -77,7 +77,7 @@ export async function dataExportTest(test) {
   assertEquals("select Id, shipp from Account", queryInput.value);
   assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
   assertEquals(["ShippingAddress", "ShippingCity", "ShippingCountry", "ShippingGeocodeAccuracy", "ShippingLatitude", "ShippingLongitude", "ShippingPostalCode", "ShippingState", "ShippingStreet"], getValues(vm.autocompleteResults.results));
-  vm.queryAutocompleteHandler({ ctrlSpace: true });
+  vm.queryAutocompleteHandler({ctrlSpace: true});
   assertEquals("select Id, ShippingStreet, ShippingCity, ShippingState, ShippingPostalCode, ShippingCountry, ShippingLatitude, ShippingLongitude, ShippingGeocodeAccuracy, ShippingAddress from Account", queryInput.value);
 
   // Autocomplete relationship field in SELECT
@@ -140,7 +140,7 @@ export async function dataExportTest(test) {
   // Autocomplete datetime value
   setQuery("select Id from Account where LastModifiedDate < TOD", "", " and IsDeleted = false");
   assertEquals("Account.LastModifiedDate values:", vm.autocompleteResults.title);
-  assertEquals(["TODAY","N_DAYS_AGO:n"], getValues(vm.autocompleteResults.results));
+  assertEquals(["TODAY", "N_DAYS_AGO:n"], getValues(vm.autocompleteResults.results));
   vm.autocompleteClick(vm.autocompleteResults.results[0]);
   assertEquals("select Id from Account where LastModifiedDate < TODAY  and IsDeleted = false", queryInput.value);
 
@@ -187,7 +187,7 @@ export async function dataExportTest(test) {
   await waitForSpinner();
   assertEquals("Profile.Name values (Press Ctrl+Space to load suggestions):", vm.autocompleteResults.title);
   assertEquals([], getValues(vm.autocompleteResults.results));
-  vm.queryAutocompleteHandler({ ctrlSpace: true });
+  vm.queryAutocompleteHandler({ctrlSpace: true});
   assertEquals("Loading Profile.Name values...", vm.autocompleteResults.title);
   assertEquals([], getValues(vm.autocompleteResults.results));
   await waitForSpinner();
@@ -200,7 +200,7 @@ export async function dataExportTest(test) {
   setQuery("select Id from Account where Id = foo", "", ""); // LIKE query not supported by Id field
   assertEquals("Account.Id values (Press Ctrl+Space to load suggestions):", vm.autocompleteResults.title);
   assertEquals([], getValues(vm.autocompleteResults.results));
-  vm.queryAutocompleteHandler({ ctrlSpace: true });
+  vm.queryAutocompleteHandler({ctrlSpace: true});
   assertEquals("Loading Account.Id values...", vm.autocompleteResults.title);
   assertEquals([], getValues(vm.autocompleteResults.results));
   await waitForSpinner();
@@ -283,11 +283,11 @@ export async function dataExportTest(test) {
   assertEquals("Exported 4 record(s)", vm.exportStatus);
   assertEquals([
     ["_", "Name", "Checkbox__c", "Number__c"],
-    [{ type: "Inspector_Test__c" }, "test1", false, 100.01],
-    [{ type: "Inspector_Test__c" }, "test2", true, 200.02],
-    [{ type: "Inspector_Test__c" }, "test3", false, 300.03],
-    [{ type: "Inspector_Test__c" }, "test4", true, 400.04]
-  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? { type: cell.attributes.type } : cell)));
+    [{type: "Inspector_Test__c"}, "test1", false, 100.01],
+    [{type: "Inspector_Test__c"}, "test2", true, 200.02],
+    [{type: "Inspector_Test__c"}, "test3", false, 300.03],
+    [{type: "Inspector_Test__c"}, "test4", true, 400.04]
+  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? {type: cell.attributes.type} : cell)));
   assertEquals(null, vm.exportError);
   assertEquals([true, true, true, true, true], vm.exportedData.rowVisibilities);
   assertEquals([true, true, true, true], vm.exportedData.colVisibilities);
@@ -311,11 +311,11 @@ export async function dataExportTest(test) {
   assertEquals("Exported 4 record(s)", vm.exportStatus);
   assertEquals([
     ["_", "Name", "Checkbox__c", "Number__c"],
-    [{ type: "Inspector_Test__c" }, "test1", false, 100.01],
-    [{ type: "Inspector_Test__c" }, "test2", true, 200.02],
-    [{ type: "Inspector_Test__c" }, "test3", false, 300.03],
-    [{ type: "Inspector_Test__c" }, "test4", true, 400.04]
-  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? { type: cell.attributes.type } : cell)));
+    [{type: "Inspector_Test__c"}, "test1", false, 100.01],
+    [{type: "Inspector_Test__c"}, "test2", true, 200.02],
+    [{type: "Inspector_Test__c"}, "test3", false, 300.03],
+    [{type: "Inspector_Test__c"}, "test4", true, 400.04]
+  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? {type: cell.attributes.type} : cell)));
   assertEquals(null, vm.exportError);
   assertEquals([true, false, true, false, true], vm.exportedData.rowVisibilities);
   assertEquals([true, true, true, true], vm.exportedData.colVisibilities);
@@ -326,11 +326,11 @@ export async function dataExportTest(test) {
   assertEquals("Exported 4 record(s)", vm.exportStatus);
   assertEquals([
     ["_", "Name", "Checkbox__c", "Number__c"],
-    [{ type: "Inspector_Test__c" }, "test1", false, 100.01],
-    [{ type: "Inspector_Test__c" }, "test2", true, 200.02],
-    [{ type: "Inspector_Test__c" }, "test3", false, 300.03],
-    [{ type: "Inspector_Test__c" }, "test4", true, 400.04]
-  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? { type: cell.attributes.type } : cell)));
+    [{type: "Inspector_Test__c"}, "test1", false, 100.01],
+    [{type: "Inspector_Test__c"}, "test2", true, 200.02],
+    [{type: "Inspector_Test__c"}, "test3", false, 300.03],
+    [{type: "Inspector_Test__c"}, "test4", true, 400.04]
+  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? {type: cell.attributes.type} : cell)));
   assertEquals(null, vm.exportError);
   assertEquals([true, true, true, true, true], vm.exportedData.rowVisibilities);
   assertEquals([true, true, true, true], vm.exportedData.colVisibilities);
@@ -353,11 +353,11 @@ export async function dataExportTest(test) {
   assertEquals("Exported 4 record(s)", vm.exportStatus);
   assertEquals([
     ["_", "Name", "Lookup__r", "Lookup__r.Name"],
-    [{ type: "Inspector_Test__c" }, "test1", null, null],
-    [{ type: "Inspector_Test__c" }, "test2", { type: "Inspector_Test__c" }, "test1"],
-    [{ type: "Inspector_Test__c" }, "test3", null, null],
-    [{ type: "Inspector_Test__c" }, "test4", { type: "Inspector_Test__c" }, "test3"]
-  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? { type: cell.attributes.type } : cell)));
+    [{type: "Inspector_Test__c"}, "test1", null, null],
+    [{type: "Inspector_Test__c"}, "test2", {type: "Inspector_Test__c"}, "test1"],
+    [{type: "Inspector_Test__c"}, "test3", null, null],
+    [{type: "Inspector_Test__c"}, "test4", {type: "Inspector_Test__c"}, "test3"]
+  ], vm.exportedData.table.map(row => row.map(cell => cell && cell.attributes ? {type: cell.attributes.type} : cell)));
   assertEquals(null, vm.exportError);
   assertEquals([true, true, true, true, true], vm.exportedData.rowVisibilities);
   assertEquals([true, true, true, true], vm.exportedData.colVisibilities);
@@ -521,12 +521,12 @@ export async function dataExportTest(test) {
 
   // Query history
   assertEquals([
-    { query: "select Name from ApexClass", useToolingApi: true },
-    { query: "select Id from Inspector_Test__c", useToolingApi: false },
-    { query: "select count() from Inspector_Test__c", useToolingApi: false },
-    { query: "select Id from Inspector_Test__c where name = 'no such name'", useToolingApi: false },
-    { query: "select Name, Lookup__r.Name from Inspector_Test__c order by Name", useToolingApi: false },
-    { query: "select Name, Checkbox__c, Number__c from Inspector_Test__c order by Name", useToolingApi: false }
+    {query: "select Name from ApexClass", useToolingApi: true},
+    {query: "select Id from Inspector_Test__c", useToolingApi: false},
+    {query: "select count() from Inspector_Test__c", useToolingApi: false},
+    {query: "select Id from Inspector_Test__c where name = 'no such name'", useToolingApi: false},
+    {query: "select Name, Lookup__r.Name from Inspector_Test__c order by Name", useToolingApi: false},
+    {query: "select Name, Checkbox__c, Number__c from Inspector_Test__c order by Name", useToolingApi: false}
   ], vm.queryHistory.list);
   vm.selectedHistoryEntry = vm.queryHistory.list[2];
   vm.selectHistoryEntry();

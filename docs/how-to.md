@@ -26,7 +26,7 @@ To secure the extension usage, you can use a auth flow to get an access token li
 
 1. Open data export page on legacy extension
    <img alt="Inspect legacy" src="../assets/images/how-to/inspect-legacy.png?raw=true" height="300">
-2. Get saved queries from "insextSavedQueryHistory" property
+2. Get saved queries from `insextSavedQueryHistory` property
    <img alt="Inspect legacy" src="../assets/images/how-to/query-history.png?raw=true" height="300">
 3. Open it in VS Code, you should have a JSON like this one:
 
@@ -55,10 +55,45 @@ To secure the extension usage, you can use a auth flow to get an access token li
    ]
    ```
 
-Re-import this json in the new extension (with the same key "insextSavedQueryHistory")
+Re-import this json in the new extension (with the same key `insextSavedQueryHistory`)
 
 ## Define a CSV separator
 
-Add a new property "csvSeparator" containing the needed separator for CSV files
+Add a new property `csvSeparator` containing the needed separator for CSV files
 
    <img alt="Update csv separator" src="../assets/images/how-to/csv-separator.png?raw=true" height="300">
+
+## Disable query input autofocus
+
+Add a new property `disableQueryInputAutoFocus` with `true`
+
+![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/89563a58-d8fa-4b14-a150-99c389e8df75)
+
+## Add custom query templates
+
+Add a new property `queryTemplates` with your custom queries separated by "//" character.
+Example:
+
+`SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE`
+
+## Open links in a new tab
+
+If you want to _always_ open extension's links in a new tab, you can set the `openLinksInNewTab` property to `true`
+
+![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/e6ae08a9-1ee9-4809-a820-1377aebcd547)
+
+If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
+Example:
+
+- Data <ins>E</ins>xport : e
+- Data <ins>I</ins>mport : i
+- Org <ins>L</ins>imits : l
+- <ins>D</ins>ownload Metadata : d
+- E<ins>x</ins>plore API : x
+
+## Disable metadata search from Shortcut tab
+
+By default when you enter keyword in the Shortcut tab, the search is performed on the Setup link shortcuts _AND_ metadata (Flows, PermissionSets and Profiles).
+If you want to disable the search on the metadata, set `metadataShortcutSearch` to `false`
+
+![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/a31566d8-0ad4-47e5-a1ab-3eada43b3430)

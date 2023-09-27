@@ -1170,7 +1170,7 @@ class App extends React.Component {
           h("h1", {}, "Export Query"),
           h("div", {className: "query-history-controls"},
             h("select", {value: "", onChange: this.onSelectQueryTemplate, className: "query-history", title: "Check documentation to customize templates"},
-              h("option", {value: null, disabled: true, selected: true, hidden: true}, "Templates"),
+              h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
               model.queryTemplates.map(q => h("option", {key: q, value: q}, q))
             ),
             h("div", {className: "button-group"},

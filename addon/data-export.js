@@ -100,11 +100,11 @@ class Model {
     this.queryName = "";
     this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
-      "SELECT Id FROM Test",
-      "SELECT Id FROM Test WHERE",
-      "SELECT Id FROM Test WHERE IN",
-      "SELECT Id FROM Test WHERE LIKE",
-      "SELECT Id FROM ORDER BY"
+      "SELECT Id FROM ",
+      "SELECT Id FROM WHERE",
+      "SELECT Id FROM WHERE IN",
+      "SELECT Id FROM WHERE LIKE",
+      "SELECT Id FROM WHERE ORDER BY"
     ];
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {

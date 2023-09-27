@@ -79,29 +79,32 @@ class App extends React.PureComponent {
     }
     if (e.key == "e") {
       e.preventDefault();
+      this.refs.dataExportBtn.target = getLinkTarget(e);
       this.refs.dataExportBtn.click();
     }
     if (e.key == "i") {
       e.preventDefault();
+      this.refs.dataImportBtn.target = getLinkTarget(e);
       this.refs.dataImportBtn.click();
     }
     if (e.key == "l") {
       e.preventDefault();
+      this.refs.limitsBtn.target = getLinkTarget(e);
       this.refs.limitsBtn.click();
     }
     if (e.key == "d") {
       e.preventDefault();
-      this.refs.metaRetrieveBtn.click();
-    }
-    if (e.key == "d") {
-      e.preventDefault();
+      this.refs.metaRetrieveBtn.target = getLinkTarget(e);
       this.refs.metaRetrieveBtn.click();
     }
     if (e.key == "x") {
       e.preventDefault();
+      this.refs.apiExploreBtn.target = getLinkTarget(e);
       this.refs.apiExploreBtn.click();
     }
     if (e.key == "h" && this.refs.homeBtn) {
+      e.preventDefault();
+      this.refs.homeBtn.target = getLinkTarget(e);
       this.refs.homeBtn.click();
     }
     if (e.key == "o") {
@@ -1606,6 +1609,14 @@ function sfLocaleKeyToCountryCode(localeKey) {
   if (!localeKey) { return ""; }
   const splitted = localeKey.split("_");
   return splitted[(splitted.length > 1 && !localeKey.includes("_LATN_")) ? 1 : 0].toLowerCase();
+}
+
+function getLinkTarget(e) {
+  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)){
+    return "_blank";
+  } else {
+    return "_top";
+  }
 }
 
 window.getRecordId = getRecordId; // for unit tests

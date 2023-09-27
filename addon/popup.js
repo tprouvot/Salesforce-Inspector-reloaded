@@ -1619,5 +1619,4 @@ function getLinkTarget(e) {
   }
 }
 
-
 window.getRecordId = getRecordId; // for unit tests

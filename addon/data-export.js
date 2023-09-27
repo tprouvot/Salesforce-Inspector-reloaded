@@ -98,7 +98,7 @@ class Model {
     this.autocompleteProgress = {};
     this.exportProgress = {};
     this.queryName = "";
-    this.clientId = localStorage.getItem(sfHost + "_clientId");
+    this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
       "SELECT Id FROM Test",
       "SELECT Id FROM Test WHERE",

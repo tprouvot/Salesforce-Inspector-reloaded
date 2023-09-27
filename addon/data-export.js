@@ -173,8 +173,12 @@ class Model {
     }
   }
   selectQueryTemplate() {
-    this.queryInput.value = this.selectedQueryTemplate;
+    this.queryInput.value = this.selectedQueryTemplate.trimStart();
     this.queryInput.focus();
+    let indexPos = this.queryInput.value.toLowerCase().indexOf("from ");
+    if (indexPos !== -1) {
+      this.queryInput.setRangeText("", indexPos + 5, indexPos + 5, "end");
+    }
   }
   clearHistory() {
     this.queryHistory.clear();

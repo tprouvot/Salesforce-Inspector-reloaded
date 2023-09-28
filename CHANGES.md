@@ -1,5 +1,6 @@
 ## Version 1.20
 
+- Display record name (and link) in popup [feature 165](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/165)
 - Add documentation link to popup
 - Add option to open extension pages in a new tab using keyboard shortcuts (contribution by [Joshua Yarmak](https://github.com/toly11))
 - Add customizable query templates to query export page (idea and co-develop with [Samuel Krissi](https://github.com/samuelkrissi))

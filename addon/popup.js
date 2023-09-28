@@ -661,32 +661,39 @@ class AllDataBoxSObject extends React.PureComponent {
     let {selectedValue} = this.state;
     //If a recordId is selected and the object supports regularApi
     if (selectedValue && selectedValue.recordId && selectedValue.sobject && selectedValue.sobject.availableApis && selectedValue.sobject.availableApis.includes("regularApi")) {
-      //optimistically assume the object has certain attribues. If some are not present, no recordIdDetails are displayed
-      //TODO: Better handle objects with no recordtypes. Currently the optimistic approach results in no record details being displayed for ids for objects without record types.
-      let query = "select Id, LastModifiedBy.Alias, CreatedBy.Alias, RecordType.DeveloperName, RecordType.Id, CreatedDate, LastModifiedDate from " + selectedValue.sobject.name + " where id='" + selectedValue.recordId + "'";
-      sfConn.rest("/services/data/v" + apiVersion + "/query?q=" + encodeURIComponent(query), {logErrors: false}).then(res => {
-        for (let record of res.records) {
-          let lastModifiedDate = new Date(record.LastModifiedDate);
-          let createdDate = new Date(record.CreatedDate);
-          this.setState({
-            recordIdDetails: {
-              "recordTypeId": (record.RecordType) ? record.RecordType.Id : "-",
-              "recordTypeName": (record.RecordType) ? record.RecordType.DeveloperName : "-",
-              "createdBy": record.CreatedBy.Alias,
-              "lastModifiedBy": record.LastModifiedBy.Alias,
-              "created": createdDate.toLocaleDateString() + " " + createdDate.toLocaleTimeString(),
-              "lastModified": lastModifiedDate.toLocaleDateString() + " " + lastModifiedDate.toLocaleTimeString(),
-            }
-          });
-        }
-      }).catch(() => {
-        //Swallow this exception since it is likely due to missing standard attributes on the record - i.e. an invalid query.
-        this.setState({recordIdDetails: null});
-      });
-
+      let fields = ["Id", "LastModifiedBy.Alias", "CreatedBy.Alias", "RecordType.DeveloperName", "RecordType.Id", "CreatedDate", "LastModifiedDate", "Name"];
+      this.restCallForRecordDetails(fields, selectedValue);
     } else {
       this.setState({recordIdDetails: null});
     }
+  }
+
+  restCallForRecordDetails(fields, selectedValue){
+    let query = "SELECT " + fields.join() + " FROM " + selectedValue.sobject.name + " where id='" + selectedValue.recordId + "'";
+    sfConn.rest("/services/data/v" + apiVersion + "/query?q=" + encodeURIComponent(query), {logErrors: false}).then(res => {
+      for (let record of res.records) {
+        let lastModifiedDate = new Date(record.LastModifiedDate);
+        let createdDate = new Date(record.CreatedDate);
+        this.setState({
+          recordIdDetails: {
+            "recordTypeId": (record.RecordType) ? record.RecordType.Id : "",
+            "recordName": (record.Name) ? record.Name : "",
+            "recordTypeName": (record.RecordType) ? record.RecordType.DeveloperName : "",
+            "createdBy": record.CreatedBy.Alias,
+            "lastModifiedBy": record.LastModifiedBy.Alias,
+            "created": createdDate.toLocaleDateString() + " " + createdDate.toLocaleTimeString(),
+            "lastModified": lastModifiedDate.toLocaleDateString() + " " + lastModifiedDate.toLocaleTimeString(),
+          }
+        });
+      }
+    }).catch(e => {
+      //some fields (Name, RecordTypeId) are not available for particular objects, in this case remove it from the fields list
+      if (e.message.includes("No such column ")){
+        this.restCallForRecordDetails(fields.filter(field => field !== "Name"), selectedValue);
+      } else if (e.message.includes("Didn't understand relationship 'RecordType'")){
+        this.restCallForRecordDetails(fields.filter(field => !field.startsWith("RecordType.")), selectedValue);
+      }
+    });
   }
 
   getBestMatch(query) {
@@ -1268,15 +1275,21 @@ class AllDataRecordDetails extends React.PureComponent {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
   }
   render() {
-    let {sfHost, recordIdDetails, className, selectedValue} = this.props;
+    let {sfHost, recordIdDetails, className, selectedValue, linkTarget} = this.props;
     if (recordIdDetails) {
       return (
         h("table", {className},
           h("tbody", {},
             h("tr", {},
+              h("th", {}, "Name:"),
+              h("td", {},
+                h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
+              )
+            ),
+            h("tr", {},
               h("th", {}, "RecType:"),
               h("td", {},
-                h("a", {href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: ""}, recordIdDetails.recordTypeName)
+                h("a", {href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: linkTarget}, recordIdDetails.recordTypeName)
               )
             ),
             h("tr", {},

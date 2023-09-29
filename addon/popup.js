@@ -1271,6 +1271,9 @@ class AllDataSelection extends React.PureComponent {
 
 class AllDataRecordDetails extends React.PureComponent {
 
+  getRecordLink(sfHost, recordId) {
+    return "https://" + sfHost + "/" + recordId;
+  }
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
   }

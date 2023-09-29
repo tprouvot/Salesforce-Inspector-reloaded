@@ -1610,7 +1610,7 @@ class DetailsBox extends React.Component {
     model.useToolingApi = args.has("useToolingApi");
     model.recordId = args.get("recordId");
     model.reactCallback = cb => { ReactDOM.render(h(App, {model}), root, cb); };
-    if (model.useToolingApi){
+    if (model.useToolingApi || !model.recordId){
       model.sobjectName = args.get("objectType");
       model.startLoading();
       ReactDOM.render(h(App, {model}), root);

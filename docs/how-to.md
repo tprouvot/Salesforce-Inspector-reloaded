@@ -97,3 +97,40 @@ By default when you enter keyword in the Shortcut tab, the search is performed o
 If you want to disable the search on the metadata, set `metadataShortcutSearch` to `false`
 
 ![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/a31566d8-0ad4-47e5-a1ab-3eada43b3430)
+
+## Enable / Disable Flow scrollability
+
+Go on a Salesforce flow and check / uncheck the checbox to update navigation scrollability on the Flow Builder
+
+![2023-09-29_16-01-14 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/91845a31-8f53-4ea1-b895-4cb036d1bed0)
+
+## Add custom links to "Shortcut" tab
+
+Because one of the main use case for custom links is to refer to a record in your org, those links are stored under a property prefixed by the org host url.
+You can find the value by checking the property `_isSandbox`
+
+![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/319585eb-03a3-4c16-948f-fa721214ba14)
+
+Then copy the url and add `_orgLinks` for the property name.
+Now you can enter the custom links following this convention:
+
+```json
+[
+  {
+    "label": "Test myLink",
+    "link": "/lightning/setup/SetupOneHome/home",
+    "section": "Custom",
+    "prod": false
+  },
+  {
+    "label": "EnhancedProfiles",
+    "section": "Custom",
+    "link": "/lightning/setup/EnhancedProfiles/home",
+    "prod": false
+  }
+]
+```
+
+ET VOILA !
+
+<img width="271" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/02066229-3af1-435d-9370-1dab91760940">

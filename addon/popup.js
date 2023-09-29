@@ -1245,7 +1245,7 @@ class AllDataSelection extends React.PureComponent {
               ))),
 
 
-          h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space"}),
+          h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
         h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")

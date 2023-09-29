@@ -1,5 +1,6 @@
 ## Version 1.20
 
+- Fix double 'Show all data' button in case of multiple objects with the same Id prefix [issue 63](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63) (bug fixed by [Luca Bassani](https://github.com/baslu93))
 - Display record name (and link) in popup [feature 165](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/165)
 - Add documentation link to popup
 - Add option to open extension pages in a new tab using keyboard shortcuts (contribution by [Joshua Yarmak](https://github.com/toly11))

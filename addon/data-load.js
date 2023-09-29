@@ -167,9 +167,9 @@ function renderCell(rt, cell, td) {
         let aShow = document.createElement("a");
         let args = new URLSearchParams();
         args.set("host", rt.sfHost);
-        args.set("objectType", objectType);
         if (rt.isTooling) {
           args.set("useToolingApi", "1");
+          args.set("objectType", objectType);
         }
         if (recordId) {
           args.set("recordId", recordId);
@@ -242,13 +242,18 @@ function renderCell(rt, cell, td) {
     popLink(
       () => {
         let recordId = cell;
-        let {globalDescribe} = rt.describeInfo.describeGlobal(rt.isTooling);
         let objectTypes;
-        if (globalDescribe) {
-          let keyPrefix = recordId.substring(0, 3);
-          objectTypes = globalDescribe.sobjects.filter(sobject => sobject.keyPrefix == keyPrefix).map(sobject => sobject.name);
+        if (rt.isTooling){
+          let {globalDescribe} = rt.describeInfo.describeGlobal(true);
+          let objectTypes;
+          if (globalDescribe) {
+            let keyPrefix = recordId.substring(0, 3);
+            objectTypes = globalDescribe.sobjects.filter(sobject => sobject.keyPrefix == keyPrefix).map(sobject => sobject.name);
+          } else {
+            objectTypes = [];
+          }
         } else {
-          objectTypes = [];
+          objectTypes = [undefined];
         }
         return {objectTypes, recordId};
       },

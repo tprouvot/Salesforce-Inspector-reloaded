@@ -1605,18 +1605,22 @@ class DetailsBox extends React.Component {
   let sfHost = args.get("host");
   initButton(sfHost, true);
   sfConn.getSession(sfHost).then(() => {
-
     let root = document.getElementById("root");
     let model = new Model(sfHost);
-    model.sobjectName = args.get("objectType");
     model.useToolingApi = args.has("useToolingApi");
     model.recordId = args.get("recordId");
-    model.startLoading();
-    model.reactCallback = cb => {
-      ReactDOM.render(h(App, { model }), root, cb);
-    };
-    ReactDOM.render(h(App, { model }), root);
-
+    model.reactCallback = cb => { ReactDOM.render(h(App, {model}), root, cb); };
+    if (model.useToolingApi){
+      model.sobjectName = args.get("objectType");
+      model.startLoading();
+      ReactDOM.render(h(App, {model}), root);
+    } else {
+      sfConn.rest(`/services/data/v${apiVersion}/ui-api/records/${model.recordId}?layoutTypes=Compact`).then(res => {
+        model.sobjectName = res.apiName;
+        model.startLoading();
+        ReactDOM.render(h(App, {model}), root);
+      });
+    }
   });
 
 }

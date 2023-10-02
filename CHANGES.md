@@ -11,7 +11,7 @@
 - Update pop-up release note link to github pages
 - Detect SObject on listview page [feature 121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/121) (idea by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
 - Automate test setup manual step of contact to multiple accounts [Aidan Majewski](https://github.com/aimaj)
-- In Data export, set input focus in SQOL query text area. PR #153
+- In Data export, set input focus in SQOL query text area. [PR153](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/153)
 
 # Version 1.19
 

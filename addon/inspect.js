@@ -702,9 +702,10 @@ class FieldRow extends TableRow {
     this.fieldActionsOpen = !this.fieldActionsOpen;
     if (this.fieldActionsOpen && !this.fieldSetupLinksRequested) {
       this.fieldSetupLinksRequested = true;
+      let isCustomSetting = this.rowList.model.objectData?.customSetting;
       this.rowList.model.spinFor(
         "getting field setup links for" + this.fieldName,
-        getFieldSetupLinks(this.rowList.model.sfHost, this.rowList.model.objectName(), this.fieldName)
+        getFieldSetupLinks(this.rowList.model.sfHost, this.rowList.model.objectName(), this.fieldName, isCustomSetting)
           .then(setupLinks => this.fieldSetupLinks = setupLinks)
       );
     }
@@ -908,9 +909,10 @@ class ChildRow extends TableRow {
       this.childSetupLinksRequested = true;
       let sobjectName = (this.childDescribe && this.childDescribe.childSObject) || (this.relatedListInfo && this.relatedListInfo.relatedList.sobject);
       let fieldName = (this.childDescribe && this.childDescribe.field) || (this.relatedListInfo && this.relatedListInfo.relatedList.field);
+      let isCustomSetting = this.rowList.model.objectData?.customSetting;
       this.rowList.model.spinFor(
         "getting relationship setup links for " + this.childName,
-        getFieldSetupLinks(this.rowList.model.sfHost, sobjectName, fieldName)
+        getFieldSetupLinks(this.rowList.model.sfHost, sobjectName, fieldName, isCustomSetting)
           .then(setupLinks => this.childSetupLinks = setupLinks)
       );
     }

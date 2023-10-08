@@ -221,6 +221,10 @@ class Model {
   canCopy() {
     return this.exportedData != null;
   }
+  canDelete() {
+    //In order to allow deletion, we should have at least 1 element and the Id field show have been included in the query
+    return !!this.exportedData?.records?.at(0)?.Id;
+  }
   copyAsExcel() {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
   }
@@ -233,6 +237,16 @@ class Model {
   }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
+  }
+  deleteRecords() {
+    let data = this.exportedData.records.map(({attributes, Id}) => ({attributes, Id}));
+    let encodedData = btoa(JSON.stringify(data));
+
+    let args = new URLSearchParams();
+    args.set("host", this.sfHost);
+    args.set("data", encodedData);
+
+    window.open("data-import.html?" + args, "_blank");
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -934,6 +948,7 @@ class App extends React.Component {
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
+    this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetClientId = this.onSetClientId.bind(this);
@@ -1055,6 +1070,11 @@ class App extends React.Component {
   onCopyAsJson() {
     let {model} = this.props;
     model.copyAsJson();
+    model.didUpdate();
+  }
+  onDeleteRecords() {
+    let {model} = this.props;
+    model.deleteRecords();
     model.didUpdate();
   }
   onResultsFilterInput(e) {
@@ -1244,6 +1264,7 @@ class App extends React.Component {
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
+            h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete. 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records"),
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
           h("span", {className: "result-status flex-right"},

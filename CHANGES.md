@@ -1,5 +1,6 @@
 ## Version 1.20
 
+- Add a parameter to activate summary view of pset / psetGroup from shortcut tab [feature 175](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/175)
 - Display record name (and link) in popup [feature 165](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/165)
 - Add documentation link to popup
 - Add option to open extension pages in a new tab using keyboard shortcuts (contribution by [Joshua Yarmak](https://github.com/toly11))
@@ -14,7 +15,7 @@
 - Add 'LIMIT 200' when selecting 'FIELDS(' in autocomplete [feature 146](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/146) )
 - Change method to get extension id to be compatible with firefox [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
 - Fix hardcoded browser in Generate Token url [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
-- Add "Create New Flow" and "Recycle Bin" shortcuts
+- Add "Create New Flow", "Create New Custom Object", "Create New Permission Set", "Create New Custom Permission" and "Recycle Bin" shortcuts
 - Update pop-up release note link to github pages
 - Detect SObject on listview page [feature 121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/121) (idea by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
 - Automate test setup manual step of contact to multiple accounts [Aidan Majewski](https://github.com/aimaj)

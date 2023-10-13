@@ -862,7 +862,7 @@ class AllDataBoxShortcut extends React.PureComponent {
       if (metadataShortcutSearch == "true"){
         const flowSelect = "SELECT LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const compositeQuery = {
           "compositeRequest": [
             {
@@ -900,7 +900,7 @@ class AllDataBoxShortcut extends React.PureComponent {
                 rec.detail = rec.attributes.type + " • " + rec.UserLicense.Name;
                 break;
               case "PermissionSet":
-                rec.link = "/lightning/setup/PermSets/page?address=%2F" + rec.Id;
+                rec.link = rec.Type === "Group" ? "/lightning/setup/PermSetGroups/page?address=%2F" + rec.PermissionSetGroupId : "/lightning/setup/PermSets/page?address=%2F" + rec.Id;
                 rec.label = rec.Label;
                 rec.name = rec.Name;
                 rec.detail = rec.attributes.type + " • " + rec.Type;

@@ -884,28 +884,37 @@ class AllDataBoxShortcut extends React.PureComponent {
         const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
         let results = searchResult.compositeResponse.filter((elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0);
 
+        let enablePermSetSummary = localStorage.getItem("enablePermSetSummary") === "true";
+
         results.forEach(element => {
           element.body.records.forEach(rec => {
-            switch (rec.attributes.type) {
-              case "FlowDefinitionView":
-                rec.link = "/builder_platform_interaction/flowBuilder.app?flowId=" + rec.LatestVersionId;
-                rec.label = rec.Label;
-                rec.name = rec.ApiName;
-                rec.detail = rec.attributes.type + " • " + rec.ProcessType;
-                break;
-              case "Profile":
-                rec.link = "/lightning/setup/EnhancedProfiles/page?address=%2F" + rec.Id;
-                rec.label = rec.Name;
-                rec.name = rec.Id;
-                rec.detail = rec.attributes.type + " • " + rec.UserLicense.Name;
-                break;
-              case "PermissionSet":
-                rec.link = rec.Type === "Group" ? "/lightning/setup/PermSetGroups/page?address=%2F" + rec.PermissionSetGroupId : "/lightning/setup/PermSets/page?address=%2F" + rec.Id;
-                rec.label = rec.Label;
-                rec.name = rec.Name;
-                rec.detail = rec.attributes.type + " • " + rec.Type;
-                rec.detail += rec.License?.Name != null ? " • " + rec.License?.Name : "";
-                break;
+            if (rec.attributes.type === "FlowDefinitionView"){
+              rec.link = "/builder_platform_interaction/flowBuilder.app?flowId=" + rec.LatestVersionId;
+              rec.label = rec.Label;
+              rec.name = rec.ApiName;
+              rec.detail = rec.attributes.type + " • " + rec.ProcessType;
+            } else if (rec.attributes.type === "Profile"){
+              rec.link = "/lightning/setup/EnhancedProfiles/page?address=%2F" + rec.Id;
+              rec.label = rec.Name;
+              rec.name = rec.Id;
+              rec.detail = rec.attributes.type + " • " + rec.UserLicense.Name;
+            } else if (rec.attributes.type === "PermissionSet"){
+              rec.label = rec.Label;
+              rec.name = rec.Name;
+              rec.detail = rec.attributes.type + " • " + rec.Type;
+              rec.detail += rec.License?.Name != null ? " • " + rec.License?.Name : "";
+
+              let psetOrGroupId;
+              let type;
+              if (rec.Type === "Group"){
+                psetOrGroupId = rec.PermissionSetGroupId;
+                type = "PermSetGroups";
+              } else {
+                psetOrGroupId = rec.Id;
+                type = "PermSets";
+              }
+              let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
+              rec.link = "/lightning/setup/" + type + "/" + endLink;
             }
             result.push(rec);
           });

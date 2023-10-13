@@ -134,3 +134,15 @@ Now you can enter the custom links following this convention:
 ET VOILA !
 
 <img width="271" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/02066229-3af1-435d-9370-1dab91760940">
+
+## Enable summary view of PermissionSet / PermissionSetGroups from shortcut tab
+
+Since Winter 24, there is a beta functionality to view a summary of the PermissionSet / PermissionSetGroups
+
+<img width="718" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/36448cd1-260e-49bd-9dfd-c61910f813f4">
+
+You can enable this view for the Shortcut search by creating a new localVariable as shown below.
+
+![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/f3093e4b-438c-4795-b64a-8d37651906a5)
+
+Then when you click on a PermissionSet / PermissionSetGroups search result, you'll be redirected to the summary.

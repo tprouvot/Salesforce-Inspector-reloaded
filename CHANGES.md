@@ -1,5 +1,6 @@
 ## Version 1.20
 
+- Update to Salesforce API v 59.0 (Winter '24)
 - Add a parameter to activate summary view of pset / psetGroup from shortcut tab [feature 175](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/175)
 - Display record name (and link) in popup [feature 165](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/165)
 - Add documentation link to popup

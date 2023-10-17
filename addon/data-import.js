@@ -49,10 +49,12 @@ class Model {
 
     if (args.has("data")) {
       let data = atob(args.get("data"));
-      this.dataFormat = "json";
+      this.dataFormat = "csv";
       this.setData(data);
       this.importAction = "delete";
       this.importActionName = "Delete";
+      this.skipAllUnknownFields();
+      console.log(this.importData);
     }
   }
 

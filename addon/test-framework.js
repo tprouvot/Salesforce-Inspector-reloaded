@@ -70,13 +70,12 @@ class Test {
     }
   }
 
-  loadPage(url) {
+  loadPage(url, args = new URLSearchParams()) {
     return new Promise(resolve => {
       window.insextTestLoaded = testData => {
         window.insextTestLoaded = null;
         resolve(testData);
       };
-      let args = new URLSearchParams();
       args.set("host", this.sfHost);
       window.page.src = url + "?" + args;
     });

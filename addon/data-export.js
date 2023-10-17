@@ -222,31 +222,31 @@ class Model {
     return this.exportedData != null;
   }
   canDelete() {
-    //In order to allow deletion, we should have at least 1 element and the Id field show have been included in the query
-    return !!this.exportedData?.records?.at(0)?.Id;
+    //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
+    return this.exportedData
+          && (this.exportedData.countOfVisibleRecords === null /* no filtering has been done yet*/ || this.exportedData.countOfVisibleRecords > 1)
+          && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
   }
   copyAsExcel() {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
   }
   copyAsCsv() {
-    let separator = ",";
-    if (localStorage.getItem("csvSeparator")) {
-      separator = localStorage.getItem("csvSeparator");
-    }
+    let separator = getSeparator();
     copyToClipboard(this.exportedData.csvSerialize(separator));
   }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
   }
-  deleteRecords() {
-    let data = this.exportedData.records.map(({attributes, Id}) => ({attributes, Id}));
-    let encodedData = btoa(JSON.stringify(data));
+  deleteRecords(e) {
+    let separator = getSeparator();
+    let data = this.exportedData.csvSerialize(separator);
+    let encodedData = btoa(data);
 
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
     args.set("data", encodedData);
 
-    window.open("data-import.html?" + args, "_blank");
+    window.open("data-import.html?" + args, getLinkTarget(e));
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -897,6 +897,7 @@ function RecordTable(vm) {
     table: [],
     rowVisibilities: [],
     colVisibilities: [true],
+    countOfVisibleRecords: null,
     isTooling: false,
     totalSize: -1,
     addToTable(expRecords) {
@@ -914,12 +915,26 @@ function RecordTable(vm) {
         discoverColumns(record, "", row);
       }
     },
-    csvSerialize: separator => rt.table.map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
+    csvSerialize: separator => rt.getVisibleTable().map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
     updateVisibility() {
       let filter = vm.resultsFilter;
+      let countOfVisibleRecords = 0;
       for (let r = 1/* always show header */; r < rt.table.length; r++) {
         rt.rowVisibilities[r] = isVisible(rt.table[r], filter);
+        if (isVisible(rt.table[r], filter)) countOfVisibleRecords++;
       }
+      this.countOfVisibleRecords = countOfVisibleRecords;
+    },
+    getVisibleTable() {
+      if (vm.resultsFilter) {
+        let filteredTable = [];
+        for (let i = 0; i < rt.table.length; i++) {
+          if (rt.rowVisibilities[i])
+            filteredTable.push(rt.table[i]);
+        }
+        return filteredTable;
+      }
+      return rt.table;
     }
   };
   return rt;
@@ -1072,9 +1087,9 @@ class App extends React.Component {
     model.copyAsJson();
     model.didUpdate();
   }
-  onDeleteRecords() {
+  onDeleteRecords(e) {
     let {model} = this.props;
-    model.deleteRecords();
+    model.deleteRecords(e);
     model.didUpdate();
   }
   onResultsFilterInput(e) {
@@ -1301,4 +1316,20 @@ class App extends React.Component {
 
   });
 
+}
+
+function getLinkTarget(e) {
+  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
+    return "_blank";
+  } else {
+    return "_top";
+  }
+}
+
+function getSeparator() {
+  let separator = ",";
+  if (localStorage.getItem("csvSeparator")) {
+    separator = localStorage.getItem("csvSeparator");
+  }
+  return separator;
 }

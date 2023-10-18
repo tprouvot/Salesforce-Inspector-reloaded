@@ -15,6 +15,7 @@
 - Fix 'Custom Object Name Links Don't Work' in popup [issue 218](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/218) (contribution by [Jeferson Chaves](https://github.com/JefersonChaves))
 - Show field API Name on Record Page [PR202](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/202) (contribution by [Mouloud Habchi](https://github.com/MD931))
 - Add support for domains protected by Microsoft Defender for Cloud Apps [issue 234](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/234) (contribution by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
+- Automatically request SObject type when data export from an SObject record [feature 45](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/45) SObject record (#45)) (contribution by [Olivier Dufour](https://github.com/dufoli))
 
 ## Version 1.20.1
 

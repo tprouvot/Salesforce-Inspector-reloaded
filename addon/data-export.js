@@ -1082,6 +1082,10 @@ class App extends React.Component {
     let queryInput = this.refs.query;
 
     model.setQueryInput(queryInput);
+    //Set the cursor focus on query text area
+    if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
+      queryInput.focus();
+    }
 
     function queryAutocompleteEvent() {
       model.queryAutocompleteHandler();

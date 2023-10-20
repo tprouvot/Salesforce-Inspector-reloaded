@@ -195,6 +195,23 @@ function renderCell(rt, cell, td) {
         pop.appendChild(aView);
         aView.prepend(aviewIcon);
       }
+      
+      //Query Record
+      let aQuery = document.createElement("a");
+      let query = "SELECT Id FROM "+objectTypes+ " WHERE Id = '"+recordId+"'";
+      let queryArgs = new URLSearchParams();
+      queryArgs.set("host", rt.sfHost);
+      queryArgs.set("query", query);
+      aQuery.href = "data-export.html?" + queryArgs;
+      aQuery.target = "_blank";
+      aQuery.textContent = "Query Record";
+      aQuery.className = "query-record";
+      let aqueryIcon = document.createElement("div");
+      aqueryIcon.className = "icon";
+      pop.appendChild(aQuery);
+      aQuery.prepend(aqueryIcon);
+
+
       //copy to clipboard
       let aCopy = document.createElement("a");
       aCopy.className = "copy-id";

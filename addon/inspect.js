@@ -795,7 +795,7 @@ class FieldRow extends TableRow {
             args.set("useToolingApi", "1");
           }
           args.set("recordId", recordId);
-          return {href: "inspect.html?" + args, target: linkTarget, text: "Show all data (" + sobject.name + ")"};
+          return {href: "inspect.html?" + args, text: "Show all data (" + sobject.name + ")"};
         });
     } else {
       links = [];

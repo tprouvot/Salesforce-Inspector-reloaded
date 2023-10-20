@@ -179,13 +179,13 @@ function renderCell(rt, cell, td) {
         aShow.textContent = "Show all data";
         aShow.className = "view-inspector";
         let aShowIcon = document.createElement("div");
-        aShowIcon.className = "icon"
+        aShowIcon.className = "icon";
         pop.appendChild(aShow);
         aShow.prepend(aShowIcon);
 
         //Query Record
         let aQuery = document.createElement("a");
-        let query = "SELECT Id FROM "+objectTypes+ " WHERE Id = '"+recordId+"'";
+        let query = "SELECT Id FROM " + objectTypes + " WHERE Id = '" + recordId + "'";
         let queryArgs = new URLSearchParams();
         queryArgs.set("host", rt.sfHost);
         queryArgs.set("query", query);

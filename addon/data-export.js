@@ -287,6 +287,10 @@ class Model {
 
     window.open("data-import.html?" + args, getLinkTarget(e));
   }
+  isSearchMode() {
+    //if query start with "f" like "find" instead of "select"
+    return this.queryInput.value != null ? this.queryInput.value.trim().toLowerCase().startsWith("f") : false;
+  }
   /**
    * Notify React that we changed something, so it will rerender the view.
    * Should only be called once at the end of an event or asynchronous operation, since each call can take some time.
@@ -322,7 +326,7 @@ class Model {
       .catch(err => console.log("error handling failed", err));
   }
   /**
-   * SOQL query autocomplete handling.
+   * SOSL query autocomplete handling.
    * Put caret at the end of a word or select some text to autocomplete it.
    * Searches for both label and API name.
    * Autocompletes sobject names after the "from" keyword.
@@ -333,51 +337,183 @@ class Model {
    * Inserts all autocomplete field suggestions when Ctrl+Space is pressed.
    * Supports subqueries in where clauses, but not in select clauses.
    */
-  queryAutocompleteHandler(e = {}) {
+  searchAutocompleteHandler(e = {}) {
+    //TODO MOVE TO tokenizer / lexer implem and so on for SOQL
+    /*
+    * search object after IN
+    * keyword and format :
+    * FIND {SearchQuery}
+    * [ IN [ALL FIELDS|NAME FIELDS|EMAIL FIELDS|PHONE FIELDS|SIDEBAR FIELDS] ]
+    * [ RETURNING objectType([[field] [ toLabel(fields)] [convertCurrency(Amount)] [FORMAT()], ]
+    *     WHERE ...
+    *     ORDER BY fieldOrderByList
+    *     LIMIT number_of_rows_to_return
+    *     OFFSET number_of_rows_to_skip)],...
+    * [ WITH  DIVISION = 'myDiv' ]
+    * [ WITH DATA CATEGORY field [AT|ABOVE|BELOW|ABOVE_OR_BELOW] AND... ]
+    * [ WITH HIGHLIGHT]
+    * [ WITH SNIPPET[(target_length=n)] ]
+    * [ WITH NETWORK [IN ('XX',...)|= 'XX'] ]
+    * [ WITH PricebookId = 'XX']
+    * [ WITH METADATA ='LABELS' ]
+    * [ LIMIT n ]
+    *
+    */
     let vm = this; // eslint-disable-line consistent-this
-    let useToolingApi = vm.queryTooling;
     let query = vm.queryInput.value;
     let selStart = vm.queryInput.selectionStart;
     let selEnd = vm.queryInput.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
-
-    // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
-    let newAutocompleteState = [useToolingApi, query, selStart, selEnd].join("$");
-    if (newAutocompleteState == vm.autocompleteState && !ctrlSpace && !e.newDescribe) {
-      return;
-    }
-    vm.autocompleteState = newAutocompleteState;
-
-    // Cancel any async operation since its results will no longer be relevant.
-    if (vm.autocompleteProgress.abort) {
-      vm.autocompleteProgress.abort();
-    }
-
+    let beforeSel = query.substring(0, selStart);
+    let searchTerm = selStart != selEnd
+      ? query.substring(selStart, selEnd)
+      : beforeSel.match(/[a-zA-Z0-9_]*$/)[0];
+    selStart = selEnd - searchTerm.length;
     vm.autocompleteClick = ({value, suffix, link}) => {
       if (link){
         window.open(link, "_blank");
       } else {
         vm.queryInput.focus();
-        //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
-        let indexFrom = query.toLowerCase().indexOf("from");
-        if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
-          suffix = "";
-        }
         vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
-        //add query suffix if needed
-        if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
-          vm.queryInput.value += " LIMIT 200";
-        }
         vm.queryAutocompleteHandler();
       }
     };
 
-    // Find the token we want to autocomplete. This is the selected text, or the last word before the cursor.
-    let searchTerm = selStart != selEnd
-      ? query.substring(selStart, selEnd)
-      : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
-    selStart = selEnd - searchTerm.length;
+    //kind of tokenizer/lexer by advancing step by step
+    //STEP 1 FIND
+    beforeSel = beforeSel.trim();
+    if (!beforeSel || !beforeSel.toUpperCase().startsWith("FIND")) {
+      vm.autocompleteResults = {
+        sobjectName: "",
+        title: "Suggestions:",
+        results: [{value: "FIND", title: "FIND", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""}]
+      };
+      return;
+    }
+    beforeSel = beforeSel.substring(4);
+    beforeSel = beforeSel.trim();
+    //STEP 2 {[\(|\)|OR|AND|NOT|\s|XXXX]}
+    if (!beforeSel || !beforeSel.trim().startsWith("{")) {
+      vm.autocompleteResults = {
+        sobjectName: "",
+        title: "Suggestions:",
+        results: [{value: "{", title: "{", suffix: "", rank: 1, autocompleteType: "keyword", dataType: ""}]
+      };
+      return;
+    }
+    beforeSel = beforeSel.substring(1);
+    beforeSel = beforeSel.trim();
+    //skip escaped }
+    while (beforeSel.indexOf("\\}") > -1 && beforeSel.indexOf("}") > beforeSel.indexOf("\\}")) {
+      beforeSel = beforeSel.substring(beforeSel.indexOf("\\}") + 2);
+      beforeSel = beforeSel.trim();
+    }
+    if (!beforeSel || beforeSel.indexOf("}") == -1) {
+      vm.autocompleteResults = {
+        sobjectName: "",
+        title: "keyword or boolean suggestions:",
+        results: [{value: "AND", title: "AND", suffix: "", rank: 1, autocompleteType: "keyword", dataType: ""},
+          {value: "OR", title: "OR", suffix: "", rank: 1, autocompleteType: "keyword", dataType: ""},
+          {value: "NOT", title: "NOT", suffix: "", rank: 1, autocompleteType: "keyword", dataType: ""}]
+      };
+      return;
+    }
+    beforeSel = beforeSel.substring(beforeSel.indexOf("}") + 1);
+    beforeSel = beforeSel.trim();
+    let keywords = [{value: "IN", title: "IN", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+      {value: "RETURNING", title: "RETURNING", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+      {value: "WITH DIVISION", title: "WITH DIVISION", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+      {value: "WITH DATA CATEGORY", title: "WITH DATA CATEGORY", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+      {value: "WITH HIGHLIGHT", title: "WITH HIGHLIGHT", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+      {value: "WITH SNIPPET", title: "WITH SNIPPET", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+      {value: "WITH NETWORK", title: "WITH NETWORK", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+      {value: "WITH PricebookId", title: "WITH PricebookId", suffix: " = ", rank: 1, autocompleteType: "keyword", dataType: ""},
+      {value: "WITH METADATA", title: "WITH METADATA", suffix: " = ", rank: 1, autocompleteType: "keyword", dataType: ""},
+      {value: "LIMIT", title: "LIMIT", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""}];
 
+    //STEP 3 check if IN [ALL FIELDS|NAME FIELDS|EMAIL FIELDS|PHONE FIELDS|SIDEBAR FIELDS
+    if (beforeSel.startsWith("IN")) {
+      beforeSel = beforeSel.substring(2);
+      beforeSel = beforeSel.trim();
+      if (!beforeSel.startsWith("ALL FIELDS")
+      && !beforeSel.startsWith("NAME FIELDS")
+      && !beforeSel.startsWith("EMAIL FIELDS")
+      && !beforeSel.startsWith("PHONE FIELDS")
+      && !beforeSel.startsWith("SIDEBAR FIELDS")) {
+        vm.autocompleteResults = {
+          sobjectName: "",
+          title: "IN suggestions:",
+          results: [{value: "ALL FIELDS", title: "ALL FIELDS", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+            {value: "NAME FIELDS", title: "NAME FIELDS", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+            {value: "EMAIL FIELDS", title: "EMAIL FIELDS", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+            {value: "PHONE FIELDS", title: "PHONE FIELDS", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+            {value: "SIDEBAR FIELDS", title: "SIDEBAR FIELDS", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""}]
+        };
+        return;
+      }
+      beforeSel = beforeSel.substring(beforeSel.indexOf("FIELDS") + 6);
+      beforeSel = beforeSel.trim();
+    }
+    //STEP 4  RETURNING objectType([[field] [ toLabel(fields)] [convertCurrency(Amount)] [FORMAT()], ] ORDER BY fieldOrderByList LIMIT number_of_rows_to_return OFFSET number_of_rows_to_skip)],...
+    if (beforeSel.startsWith("RETURNING")) {
+      beforeSel = beforeSel.substring(9);
+      beforeSel = beforeSel.trim();
+      let matchObjName = beforeSel.match(/^([a-zA-Z0-9_-]+)/i);
+      while (matchObjName && matchObjName[1] != "WITH" && matchObjName[1] != "LIMIT") { //object name
+        let sobjectName = matchObjName[1];
+        beforeSel = beforeSel.substring(sobjectName.length);
+        beforeSel = beforeSel.trim();
+        if (beforeSel.startsWith("(")) { //field
+          if (beforeSel.indexOf(")") == -1) {
+            let isAfterWhere = false;
+            let fromKeywordMatch = /\s+where\s+([a-z0-9_]*)/i.exec(beforeSel);
+            if (fromKeywordMatch) {
+              isAfterWhere = true;
+            }
+            this.autocompleteField(vm, ctrlSpace, sobjectName, isAfterWhere);
+            return;
+          }
+          beforeSel = beforeSel.substring(beforeSel.indexOf(")") + 1);
+          beforeSel = beforeSel.trim();
+        }
+        if (beforeSel.startsWith(",")) { // next object
+          beforeSel = beforeSel.substring(1);
+          beforeSel = beforeSel.trim();
+        }
+        if (beforeSel == "") {
+          this.autocompleteObject(vm, ctrlSpace);
+          return;
+        }
+        matchObjName = beforeSel.match(/^([a-zA-Z0-9_-]+)/i);
+      }
+      if (beforeSel == "") {
+        this.autocompleteObject(vm, ctrlSpace);
+        return;
+      }
+    }
+    if (beforeSel.startsWith("WITH")) {
+      //TODO detailed all case of intellisens around WITH
+      vm.autocompleteResults = {
+        sobjectName: "",
+        title: "Suggestions:",
+        results: new Enumerable(keywords)
+          .filter(keyword => keyword.value.toLowerCase().includes(searchTerm.toLowerCase()))
+          .toArray()
+      };
+      return;
+    }
+    //default all remaining keywords
+    vm.autocompleteResults = {
+      sobjectName: "",
+      title: "Suggestions:",
+      results: new Enumerable(keywords)
+        .filter(keyword => keyword.value.toLowerCase().includes(searchTerm.toLowerCase()))
+        .toArray()
+    };
+    return;
+  }
+
+  resultsSort(searchTerm) {
     function sortRank({value, title}) {
       let i = 0;
       if (value.toLowerCase() == searchTerm.toLowerCase()) {
@@ -410,83 +546,109 @@ class Model {
       i++;
       return i;
     }
-    function resultsSort(a, b) {
+    return function(a, b) {
       return sortRank(a) - sortRank(b) || a.rank - b.rank || a.value.localeCompare(b.value);
-    }
+    };
+  }
+  autocompleteObject(vm, ctrlSpace) {
+    let {globalStatus, globalDescribe} = vm.describeInfo.describeGlobal(vm.queryTooling);
+    let query = vm.queryInput.value;
+    let selStart = vm.queryInput.selectionStart;
+    let selEnd = vm.queryInput.selectionEnd;
+    let searchTerm = selStart != selEnd
+      ? query.substring(selStart, selEnd)
+      : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
+    selStart = selEnd - searchTerm.length;
 
-    // If we are just after the "from" keyword, autocomplete the sobject name
-    if (query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
-      let {globalStatus, globalDescribe} = vm.describeInfo.describeGlobal(useToolingApi);
-      if (!globalDescribe) {
-        switch (globalStatus) {
-          case "loading":
-            vm.autocompleteResults = {
-              sobjectName: "",
-              title: "Loading metadata...",
-              results: []
-            };
-            return;
-          case "loadfailed":
-            vm.autocompleteResults = {
-              sobjectName: "",
-              title: "Loading metadata failed.",
-              results: [{value: "Retry", title: "Retry"}]
-            };
-            vm.autocompleteClick = vm.autocompleteReload.bind(vm);
-            return;
-          default:
-            vm.autocompleteResults = {
-              sobjectName: "",
-              title: "Unexpected error: " + globalStatus,
-              results: []
-            };
-            return;
-        }
+    if (!globalDescribe) {
+      switch (globalStatus) {
+        case "loading":
+          vm.autocompleteResults = {
+            sobjectName: "",
+            title: "Loading metadata...",
+            results: []
+          };
+          return;
+        case "loadfailed":
+          vm.autocompleteResults = {
+            sobjectName: "",
+            title: "Loading metadata failed.",
+            results: [{value: "Retry", title: "Retry"}]
+          };
+          vm.autocompleteClick = vm.autocompleteReload.bind(vm);
+          return;
+        default:
+          vm.autocompleteResults = {
+            sobjectName: "",
+            title: "Unexpected error: " + globalStatus,
+            results: []
+          };
+          return;
       }
-      vm.autocompleteResults = {
-        sobjectName: "",
-        title: "Objects suggestions:",
-        results: new Enumerable(globalDescribe.sobjects)
-          .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
-          .map(sobjectDescribe => ({value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: ""}))
-          .toArray()
-          .sort(resultsSort)
-      };
+    }
+    if (ctrlSpace) {
+      let ar = new Enumerable(globalDescribe.sobjects)
+        .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
+        .map(sobjectDescribe => sobjectDescribe.name)
+        .toArray();
+      if (ar.length > 0) {
+        vm.queryInput.focus();
+        vm.queryInput.setRangeText(ar.join(", "), selStart, selEnd, "end");
+      }
+      vm.queryAutocompleteHandler();
       return;
     }
+    vm.autocompleteResults = {
+      sobjectName: "",
+      title: "Objects suggestions:",
+      results: new Enumerable(globalDescribe.sobjects)
+        .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
+        .map(sobjectDescribe => ({value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: ""}))
+        .toArray()
+        .sort(this.resultsSort(searchTerm))
+    };
+  }
 
-    let sobjectName, isAfterFrom;
-    // Find out what sobject we are querying, by using the word after the "from" keyword.
-    // Assuming no subqueries in the select clause, we should find the correct sobjectName. There should be only one "from" keyword, and strings (which may contain the word "from") are only allowed after the real "from" keyword.
-    let fromKeywordMatch = /(^|\s)from\s+([a-z0-9_]*)/i.exec(query);
-    if (fromKeywordMatch) {
-      sobjectName = fromKeywordMatch[2];
-      isAfterFrom = selStart > fromKeywordMatch.index + 1;
-    } else {
-      // We still want to find the from keyword if the user is typing just before the keyword, and there is no space.
-      fromKeywordMatch = /^from\s+([a-z0-9_]*)/i.exec(query.substring(selEnd));
-      if (fromKeywordMatch) {
-        sobjectName = fromKeywordMatch[1];
-        isAfterFrom = false;
-      } else {
-        vm.autocompleteResults = {
-          sobjectName: "",
-          title: "\"from\" keyword not found",
-          results: []
-        };
-        return;
-      }
+  autocompleteField(vm, ctrlSpace, sobjectName, isAfterWhere) {
+    let useToolingApi = vm.queryTooling;
+    let selStart = vm.queryInput.selectionStart;
+    let selEnd = vm.queryInput.selectionEnd;
+    let query = vm.queryInput.value;
+    let searchTerm = selStart != selEnd
+      ? query.substring(selStart, selEnd)
+      : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
+    selStart = selEnd - searchTerm.length;
+
+    /*
+        * The context of a field is used to support queries on relationship fields.
+        *
+        * For example: If the cursor is at the end of the query "select Id from Contact where Account.Owner.Usern"
+        * then the the searchTerm we want to autocomplete is "Usern", the contextPath is "Account.Owner." and the sobjectName is "Contact"
+        *
+        * When autocompleting field values in the query "select Id from Contact where Account.Type = 'Cus"
+        * then the searchTerm we want to autocomplete is "Cus", the fieldName is "Type", the contextPath is "Account." and the sobjectName is "Contact"
+        */
+
+    let contextEnd = selStart;
+
+    // If we are on the right hand side of a comparison operator, autocomplete field values
+    let isFieldValue = query.substring(0, selStart).match(/\s*[<>=!]+\s*('?[^'\s]*)$/);
+    let fieldName = null;
+    if (isFieldValue) {
+      let fieldEnd = selStart - isFieldValue[0].length;
+      fieldName = query.substring(0, fieldEnd).match(/[a-zA-Z0-9_]*$/)[0];
+      contextEnd = fieldEnd - fieldName.length;
+      selStart -= isFieldValue[1].length;
     }
-    // If we are in a subquery, try to detect that.
-    fromKeywordMatch = /\(\s*select.*\sfrom\s+([a-z0-9_]*)/i.exec(query);
-    if (fromKeywordMatch && fromKeywordMatch.index < selStart) {
-      let subQuery = query.substring(fromKeywordMatch.index, selStart);
-      // Try to detect if the subquery ends before the selection
-      if (subQuery.split(")").length < subQuery.split("(").length) {
-        sobjectName = fromKeywordMatch[1];
-        isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
-      }
-    }
+    /*
+    contextSobjectDescribes is a set of describe results for the relevant context sobjects.
+    Example: "select Subject, Who.Name from Task"
+    The context sobjects for "Subject" is {"Task"}.
+    The context sobjects for "Who" is {"Task"}.
+    The context sobjects for "Name" is {"Contact", "Lead"}.
+    */
+    let contextPath = query.substring(0, contextEnd).match(/[a-zA-Z0-9_.]*$/)[0];
+
     let {sobjectStatus, sobjectDescribe} = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
     if (!sobjectDescribe) {
       switch (sobjectStatus) {
@@ -521,38 +683,7 @@ class Model {
           return;
       }
     }
-
-    /*
-     * The context of a field is used to support queries on relationship fields.
-     *
-     * For example: If the cursor is at the end of the query "select Id from Contact where Account.Owner.Usern"
-     * then the the searchTerm we want to autocomplete is "Usern", the contextPath is "Account.Owner." and the sobjectName is "Contact"
-     *
-     * When autocompleting field values in the query "select Id from Contact where Account.Type = 'Cus"
-     * then the searchTerm we want to autocomplete is "Cus", the fieldName is "Type", the contextPath is "Account." and the sobjectName is "Contact"
-     */
-
-    let contextEnd = selStart;
-
-    // If we are on the right hand side of a comparison operator, autocomplete field values
-    let isFieldValue = query.substring(0, selStart).match(/\s*[<>=!]+\s*('?[^'\s]*)$/);
-    let fieldName = null;
-    if (isFieldValue) {
-      let fieldEnd = selStart - isFieldValue[0].length;
-      fieldName = query.substring(0, fieldEnd).match(/[a-zA-Z0-9_]*$/)[0];
-      contextEnd = fieldEnd - fieldName.length;
-      selStart -= isFieldValue[1].length;
-    }
-
-    /*
-    contextSobjectDescribes is a set of describe results for the relevant context sobjects.
-    Example: "select Subject, Who.Name from Task"
-    The context sobjects for "Subject" is {"Task"}.
-    The context sobjects for "Who" is {"Task"}.
-    The context sobjects for "Name" is {"Contact", "Lead"}.
-    */
     let contextSobjectDescribes = new Enumerable([sobjectDescribe]);
-    let contextPath = query.substring(0, contextEnd).match(/[a-zA-Z0-9_.]*$/)[0];
     let sobjectStatuses = new Map(); // Keys are error statuses, values are an object name with that status. Only one object name in the value, since we only show one error message.
     if (contextPath) {
       let contextFields = contextPath.split(".");
@@ -616,8 +747,16 @@ class Model {
       };
       return;
     }
-
     if (isFieldValue) {
+      //check if fieldname is polymorphique field
+      if (fieldName.toLowerCase() == "type"
+        && contextPath != null
+        && (contextPath.toLowerCase().endsWith("who.")
+        || contextPath.toLowerCase().endsWith("what.")
+        || contextPath.toLowerCase().endsWith("owner."))) {
+        this.autocompleteObject(vm, ctrlSpace);
+        return;
+      }
       // Autocomplete field values
       let contextValueFields = contextSobjectDescribes
         .flatMap(sobjectDescribe => sobjectDescribe.fields
@@ -671,7 +810,7 @@ class Model {
                 .filter(value => value)
                 .map(value => ({value: "'" + value + "'", title: value, suffix: " ", rank: 1, autocompleteType: "fieldValue"}))
                 .toArray()
-                .sort(resultsSort)
+                .sort(this.resultsSort(searchTerm))
             };
           }));
         vm.autocompleteResults = {
@@ -756,7 +895,7 @@ class Model {
       })
         .filter(res => res.value.toLowerCase().includes(searchTerm.toLowerCase()) || res.title.toLowerCase().includes(searchTerm.toLowerCase()))
         .toArray()
-        .sort(resultsSort);
+        .sort(this.resultsSort(searchTerm));
       vm.autocompleteResults = {
         sobjectName,
         title: fieldNames + (ar.length == 0 ? " values (Press Ctrl+Space to load suggestions):" : " values:"),
@@ -773,7 +912,7 @@ class Model {
           .toArray();
         if (ar.length > 0) {
           vm.queryInput.focus();
-          vm.queryInput.setRangeText(ar.join(", ") + (isAfterFrom ? " " : ""), selStart - contextPath.length, selEnd, "end");
+          vm.queryInput.setRangeText(ar.join(", ") + (isAfterWhere ? " " : ""), selStart - contextPath.length, selEnd, "end");
         }
         vm.queryAutocompleteHandler();
         return;
@@ -785,13 +924,13 @@ class Model {
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
           .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
           .flatMap(function* (field) {
-            yield {value: field.name, title: field.label, suffix: isAfterFrom ? " " : ", ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
+            yield {value: field.name, title: field.label, suffix: isAfterWhere ? " " : ", ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
             if (field.relationshipName) {
               yield {value: field.relationshipName + ".", title: field.label, suffix: "", rank: 1, autocompleteType: "relationshipName", dataType: ""};
             }
           })
           .concat(
-            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "convertTimezone", "toLabel"])
+            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "convertTimezone", "toLabel", "convertCurrency", "FORMAT"])
               .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
               .map(fn => {
                 if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
@@ -802,10 +941,112 @@ class Model {
               })
           )
           .toArray()
-          .sort(resultsSort)
+          .sort(this.resultsSort(searchTerm))
       };
       return;
     }
+  }
+
+  /**
+   * SOQL query autocomplete handling.
+   * Put caret at the end of a word or select some text to autocomplete it.
+   * Searches for both label and API name.
+   * Autocompletes sobject names after the "from" keyword.
+   * Autocompletes field names, if the "from" keyword exists followed by a valid object name.
+   * Supports relationship fields.
+   * Autocompletes field values (picklist values, date constants, boolean values).
+   * Autocompletes any textual field value by performing a Salesforce API query when Ctrl+Space is pressed.
+   * Inserts all autocomplete field suggestions when Ctrl+Space is pressed.
+   * Supports subqueries in where clauses, but not in select clauses.
+   */
+  queryAutocompleteHandler(e = {}) {
+    if (this.isSearchMode()) {
+      this.searchAutocompleteHandler(e);
+      return;
+    }
+    let vm = this; // eslint-disable-line consistent-this
+    let useToolingApi = vm.queryTooling;
+    let query = vm.queryInput.value;
+    let selStart = vm.queryInput.selectionStart;
+    let selEnd = vm.queryInput.selectionEnd;
+    let ctrlSpace = e.ctrlSpace;
+
+    // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
+    let newAutocompleteState = [useToolingApi, query, selStart, selEnd].join("$");
+    if (newAutocompleteState == vm.autocompleteState && !ctrlSpace && !e.newDescribe) {
+      return;
+    }
+    vm.autocompleteState = newAutocompleteState;
+
+    // Cancel any async operation since its results will no longer be relevant.
+    if (vm.autocompleteProgress.abort) {
+      vm.autocompleteProgress.abort();
+    }
+
+    vm.autocompleteClick = ({value, suffix, link}) => {
+      if (link){
+        window.open(link, "_blank");
+      } else {
+        vm.queryInput.focus();
+        //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
+        let indexFrom = query.toLowerCase().indexOf("from");
+        if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
+          suffix = "";
+        }
+        vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
+        //add query suffix if needed
+        if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
+          vm.queryInput.value += " LIMIT 200";
+        }
+        vm.queryAutocompleteHandler();
+      }
+    };
+
+    // Find the token we want to autocomplete. This is the selected text, or the last word before the cursor.
+    let searchTerm = selStart != selEnd
+      ? query.substring(selStart, selEnd)
+      : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
+    selStart = selEnd - searchTerm.length;
+
+    // If we are just after the "from" keyword, autocomplete the sobject name
+    if (query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
+      this.autocompleteObject(vm, false);
+      return;
+    }
+
+    let sobjectName, isAfterFrom;
+    // Find out what sobject we are querying, by using the word after the "from" keyword.
+    // Assuming no subqueries in the select clause, we should find the correct sobjectName. There should be only one "from" keyword, and strings (which may contain the word "from") are only allowed after the real "from" keyword.
+    let fromKeywordMatch = /(^|\s)from\s+([a-z0-9_]*)/i.exec(query);
+    if (fromKeywordMatch) {
+      sobjectName = fromKeywordMatch[2];
+      isAfterFrom = selStart > fromKeywordMatch.index + 1;
+    } else {
+      // We still want to find the from keyword if the user is typing just before the keyword, and there is no space.
+      fromKeywordMatch = /^from\s+([a-z0-9_]*)/i.exec(query.substring(selEnd));
+      if (fromKeywordMatch) {
+        sobjectName = fromKeywordMatch[1];
+        isAfterFrom = false;
+      } else {
+        vm.autocompleteResults = {
+          sobjectName: "",
+          title: "\"from\" keyword not found",
+          results: []
+        };
+        return;
+      }
+    }
+    // If we are in a subquery, try to detect that.
+    fromKeywordMatch = /\(\s*select.*\sfrom\s+([a-z0-9_]*)/i.exec(query);
+    if (fromKeywordMatch && fromKeywordMatch.index < selStart) {
+      let subQuery = query.substring(fromKeywordMatch.index, selStart);
+      // Try to detect if the subquery ends before the selection
+      if (subQuery.split(")").length < subQuery.split("(").length) {
+        sobjectName = fromKeywordMatch[1];
+        isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
+      }
+    }
+    this.autocompleteField(vm, ctrlSpace, sobjectName, isAfterFrom);
   }
   doExport() {
     let vm = this; // eslint-disable-line consistent-this
@@ -815,7 +1056,7 @@ class Model {
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
     let query = vm.queryInput.value;
-    let queryMethod = exportedData.isTooling ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
+    let queryMethod = vm.isSearchMode() ? "search" : (exportedData.isTooling ? "tooling/query" : vm.queryAll ? "queryAll" : "query");
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
@@ -823,14 +1064,24 @@ class Model {
         }
         throw err;
       }).then(data => {
-        exportedData.addToTable(data.records);
-        let recs = exportedData.records.length;
-        let total = exportedData.totalSize;
-        if (data.totalSize != -1) {
-          exportedData.totalSize = data.totalSize;
-          total = data.totalSize;
+        let total;
+        let recs;
+        if (vm.isSearchMode()) {
+          exportedData.addToTable(data.searchRecords);
+          recs = exportedData.records.length;
+          total = exportedData.totalSize;
+        } else {
+          exportedData.addToTable(data.records);
+          recs = exportedData.records.length;
+          total = exportedData.totalSize;
+          if (data.totalSize != -1) {
+            exportedData.totalSize = data.totalSize;
+            total = data.totalSize;
+          }
         }
-        if (!data.done) {
+
+
+        if (!vm.isSearchMode() && !data.done) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
           vm.isWorking = true;
           vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;

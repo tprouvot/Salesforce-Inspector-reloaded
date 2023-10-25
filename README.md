@@ -17,6 +17,10 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 - [Security and Privacy](#security-and-privacy)
 - [Use Salesforce Inspector with a Connected App](#use-salesforce-inspector-with-a-connected-app)
 - [Installation](#installation)
+  - [Browser Stores](#browser-stores)
+    - [Chrome Web Store](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
+    - [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
+    - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
 - [Troubleshooting](#troubleshooting)
 - [Contributions](#contributions)
 - [Development](#development)
@@ -61,16 +65,11 @@ Follow steps described in [wiki](https://github.com/tprouvot/Salesforce-Inspecto
 
 ## Installation
 
-From the Chrome Web Store : [Salesforce Inspector reloaded](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
+### Browser Stores
 
-If you want to try it locally (to test the release candidate):
-
-1. Download or clone the repo.
-2. Checkout the releaseCandidate branch.
-3. Open `chrome://extensions/`.
-4. Enable `Developer mode`.
-5. Click `Load unpacked extension...`.
-6. Select the `addon` subdirectory of this repository.
+- [Chrome Web Store](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
+- [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
+- [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
 
 ## Troubleshooting
 

@@ -175,7 +175,7 @@ class App extends React.PureComponent {
                   `})
               )
             ),
-            "Salesforce Inspector"
+            "Salesforce Inspector Reloaded"
           )
         ),
         h("div", {className: "main"},

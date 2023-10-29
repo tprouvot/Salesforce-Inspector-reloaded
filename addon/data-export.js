@@ -632,13 +632,14 @@ class Model {
     let contextEnd = selStart;
 
     // If we are on the right hand side of a comparison operator, autocomplete field values
-    let isFieldValue = query.substring(0, selStart).match(/\s*[<>=!]+\s*('?[^'\s]*)$/);
+    //opérator are = < > <= >= != includes() excludes() in like
+    let isFieldValue = query.substring(0, selStart).match(/\s*(=|<|>|<=|>=|!=|includes|excludes|like|in)\s*\(?('?[^'\s]*)$/i);
     let fieldName = null;
     if (isFieldValue) {
       let fieldEnd = selStart - isFieldValue[0].length;
       fieldName = query.substring(0, fieldEnd).match(/[a-zA-Z0-9_]*$/)[0];
       contextEnd = fieldEnd - fieldName.length;
-      selStart -= isFieldValue[1].length;
+      selStart -= isFieldValue[2].length;
     }
     /*
     contextSobjectDescribes is a set of describe results for the relevant context sobjects.

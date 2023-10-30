@@ -616,4 +616,54 @@ export async function dataExportTest(test) {
   await waitForSpinner();
   assertEquals("User fields suggestions:", vm.autocompleteResults.title);
 
+  // Autocomplet find object name
+  setQuery("find {test} returning Account", "", "");
+  //await waitForSpinner();
+
+  // Autocomplete find object names
+  assertEquals("Objects suggestions:", vm.autocompleteResults.title);
+  let findaccountsAutocompletes = getValues(vm.autocompleteResults.results);
+  assert(findaccountsAutocompletes.length > 1);
+  assert(findaccountsAutocompletes.includes("Account"));
+  assert(findaccountsAutocompletes.includes("AccountContactRelation"));
+
+  // Autocomplet find object name
+  setQuery("find {test} returning User,Account", "", "");
+  //await waitForSpinner();
+
+  // Autocomplete object names
+  assertEquals("Objects suggestions:", vm.autocompleteResults.title);
+  let findaccountAutocompletes = getValues(vm.autocompleteResults.results);
+  assert(findaccountAutocompletes.length > 1);
+  assert(findaccountAutocompletes.includes("Account"));
+  assert(findaccountAutocompletes.includes("AccountContactRelation"));
+
+  // Autocomplete field name in FIND with no field metadata
+  setQuery("find {test} returning Account(Id, nam", "", ")");
+  //await waitForSpinner();
+
+  // Autocomplete field name in FIND, sould automatically update when describe call completes
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
+  assertEquals("Name", getValues(vm.autocompleteResults.results)[0]);
+
+  // Select multiple values in SELECT using Ctrl+Space
+  setQuery("find {test} returning Account(Id, shipp", "", ")");
+  assertEquals("find {test} returning Account(Id, shipp)", queryInput.value);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
+  assertEquals(["ShippingAddress", "ShippingCity", "ShippingCountry", "ShippingGeocodeAccuracy", "ShippingLatitude", "ShippingLongitude", "ShippingPostalCode", "ShippingState", "ShippingStreet"], getValues(vm.autocompleteResults.results));
+  vm.queryAutocompleteHandler({ctrlSpace: true});
+  assertEquals("find {test} returning Account(Id, ShippingStreet, ShippingCity, ShippingState, ShippingPostalCode, ShippingCountry, ShippingLatitude, ShippingLongitude, ShippingGeocodeAccuracy, ShippingAddress)", queryInput.value);
+
+  // Autocomplete relationship field in SELECT
+  setQuery("find {test} returning Account(Id, OWNE", "", ")");
+  assertEquals("find {test} returning Account(Id, OWNE)", queryInput.value);
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
+  assertEquals(["Owner.", "OwnerId", "Ownership"], getValues(vm.autocompleteResults.results));
+
+  // Select relationship field in SELECT
+  vm.autocompleteClick(vm.autocompleteResults.results[0]);
+  assertEquals("find {test} returning Account(Id, Owner.)", queryInput.value);
+  assertEquals("User fields suggestions:", vm.autocompleteResults.title);
+  let findUserAutocompletes = getValues(vm.autocompleteResults.results);
+  assert(findUserAutocompletes.includes("AboutMe"));
 }

@@ -432,14 +432,14 @@ class Model {
       {value: "LIMIT", title: "LIMIT", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""}];
 
     //STEP 3 check if IN [ALL FIELDS|NAME FIELDS|EMAIL FIELDS|PHONE FIELDS|SIDEBAR FIELDS
-    if (beforeSel.startsWith("IN")) {
+    if (beforeSel.toUpperCase().startsWith("IN")) {
       beforeSel = beforeSel.substring(2);
       beforeSel = beforeSel.trim();
-      if (!beforeSel.startsWith("ALL FIELDS")
-      && !beforeSel.startsWith("NAME FIELDS")
-      && !beforeSel.startsWith("EMAIL FIELDS")
-      && !beforeSel.startsWith("PHONE FIELDS")
-      && !beforeSel.startsWith("SIDEBAR FIELDS")) {
+      if (!beforeSel.toUpperCase().startsWith("ALL FIELDS")
+      && !beforeSel.toUpperCase().startsWith("NAME FIELDS")
+      && !beforeSel.toUpperCase().startsWith("EMAIL FIELDS")
+      && !beforeSel.toUpperCase().startsWith("PHONE FIELDS")
+      && !beforeSel.toUpperCase().startsWith("SIDEBAR FIELDS")) {
         vm.autocompleteResults = {
           sobjectName: "",
           title: "IN suggestions:",
@@ -451,15 +451,15 @@ class Model {
         };
         return;
       }
-      beforeSel = beforeSel.substring(beforeSel.indexOf("FIELDS") + 6);
+      beforeSel = beforeSel.substring(beforeSel.toUpperCase().indexOf("FIELDS") + 6);
       beforeSel = beforeSel.trim();
     }
     //STEP 4  RETURNING objectType([[field] [ toLabel(fields)] [convertCurrency(Amount)] [FORMAT()], ] ORDER BY fieldOrderByList LIMIT number_of_rows_to_return OFFSET number_of_rows_to_skip)],...
-    if (beforeSel.startsWith("RETURNING")) {
+    if (beforeSel.toUpperCase().startsWith("RETURNING")) {
       beforeSel = beforeSel.substring(9);
       beforeSel = beforeSel.trim();
       let matchObjName = beforeSel.match(/^([a-zA-Z0-9_-]+)/i);
-      while (matchObjName && matchObjName[1] != "WITH" && matchObjName[1] != "LIMIT") { //object name
+      while (matchObjName && matchObjName.length > 1 && matchObjName[1].toUpperCase() != "WITH" && matchObjName[1].toUpperCase() != "LIMIT") { //object name
         let sobjectName = matchObjName[1];
         beforeSel = beforeSel.substring(sobjectName.length);
         beforeSel = beforeSel.trim();
@@ -491,7 +491,7 @@ class Model {
         return;
       }
     }
-    if (beforeSel.startsWith("WITH")) {
+    if (beforeSel.toUpperCase().startsWith("WITH")) {
       //TODO detailed all case of intellisens around WITH
       vm.autocompleteResults = {
         sobjectName: "",

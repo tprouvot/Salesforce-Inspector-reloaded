@@ -534,6 +534,30 @@ export async function dataExportTest(test) {
   vm.clearHistory();
   assertEquals([], vm.queryHistory.list);
 
+  await anonApex(`
+    delete [select Id from Inspector_Test__c];
+    insert new Inspector_Test__c(Name = 'test1', Checkbox__c = false, Number__c = 100.01);
+    insert new Inspector_Test__c(Name = 'test2', Checkbox__c = true, Number__c = 200.02, Lookup__r = new Inspector_Test__c(Name = 'test1'));
+    insert new Inspector_Test__c(Name = 'test3', Checkbox__c = false, Number__c = 300.03);
+    insert new Inspector_Test__c(Name = 'test4', Checkbox__c = true, Number__c = 400.04, Lookup__r = new Inspector_Test__c(Name = 'test3'));
+  `);
+
+  // "Delete Records" button
+  queryInput.value = "select Name from Inspector_Test__c";
+  vm.doExport();
+  await waitForSpinner();
+  assert(!vm.canDelete(), "Delete button should be disabled as there is no Id field included in the query");
+
+  queryInput.value = "select Id, Name from Inspector_Test__c where Name = 'no such name'";
+  vm.doExport();
+  await waitForSpinner();
+  assert(!vm.canDelete(), "Delete button should be disabled as there are no records to delete"); //Id field is not included in the query
+
+  queryInput.value = "select Id, Name from Inspector_Test__c";
+  vm.doExport();
+  await waitForSpinner();
+  assert(vm.canDelete(), "The Delete button should be enabled");
+
   // Autocomplete load errors
   let restOrig = sfConn.rest;
   let restError = () => Promise.reject();

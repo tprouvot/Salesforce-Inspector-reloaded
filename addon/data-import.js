@@ -6,7 +6,7 @@ import { DescribeInfo, copyToClipboard, initScrollTable } from "./data-load.js";
 
 class Model {
 
-  constructor(sfHost) {
+  constructor(sfHost, args) {
     this.sfHost = sfHost;
     this.importData = undefined;
     this.consecutiveFailures = 0;
@@ -47,6 +47,15 @@ class Model {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
     }));
 
+    if (args.has("data")) {
+      let data = atob(args.get("data"));
+      this.dataFormat = "csv";
+      this.setData(data);
+      this.importAction = "delete";
+      this.importActionName = "Delete";
+      this.skipAllUnknownFields();
+      console.log(this.importData);
+    }
   }
 
   /**
@@ -1135,7 +1144,7 @@ class StatusBox extends React.Component {
   sfConn.getSession(sfHost).then(() => {
 
     let root = document.getElementById("root");
-    let model = new Model(sfHost);
+    let model = new Model(sfHost, args);
     model.reactCallback = cb => {
       ReactDOM.render(h(App, { model }), root, cb);
     };

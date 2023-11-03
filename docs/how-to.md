@@ -146,3 +146,11 @@ You can enable this view for the Shortcut search by creating a new localVariable
 ![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/f3093e4b-438c-4795-b64a-8d37651906a5)
 
 Then when you click on a PermissionSet / PermissionSetGroups search result, you'll be redirected to the summary.
+
+## Customize Create / Update rest callout headers (to prevent execution of auto assignment rules for Accounts, Cases, or Leads)
+[Assignment Rule Header](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/headers_autoassign.htm)
+
+![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/7dcb4c7d-7e71-4abc-b055-6ccfd74a7688)
+
+If you want to prevent auto assignment rules, set the `createUpdateRestCalloutHeaders` property to `{"Sforce-Auto-Assign" : false}`
+

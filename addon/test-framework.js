@@ -1,3 +1,6 @@
+import "./localStorageMock.js";
+import "./windowMock.js";
+import "./chromeMock.js";
 import {sfConn, apiVersion} from "./inspector.js";
 import {popupTest} from "./popup-test.js";
 import {csvParseTest} from "./csv-parse-test.js";
@@ -5,6 +8,7 @@ import {dataImportTest} from "./data-import-test.js";
 import {dataExportTest} from "./data-export-test.js";
 
 let seenError = false;
+//let apiVersion = "59.0";
 class Test {
 
   constructor(sfHost) {

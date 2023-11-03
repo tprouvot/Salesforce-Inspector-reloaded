@@ -1,0 +1,87 @@
+name: Build
+
+on:
+  push:
+    paths-ignore:
+      - '.gitignore'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+      - 'README*'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+env:
+  SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
+  SF_CLIENT_ID: ${{ secrets.SF_CLIENT_ID }}
+  SF_LOGIN: ${{ secrets.SF_LOGIN }}
+  PULL_REQUEST_NUMBER: ${{ github.event.number }}
+  SF_JWT_SECRET_KEY: ${{ secrets.SF_JWT_SECRET_KEY }}
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '21.x'
+
+    - name: npm-install-eslint
+      run: npm install eslint --global
+
+    - name: formater
+      run: npm run eslint --fix
+
+    - name: Fail if there are uncommitted changes
+      shell: bash
+      run: |
+        [[ -z $(git status --porcelain) ]] || { echo 'Please format your code with npm run eslint'; git status; git diff; exit 1; }
+
+
+  build-and-run-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: create env file
+      run: |
+        touch .env
+        echo SF_JWT_SECRET_KEY_FILE="${{ secrets.SF_JWT_SECRET_KEY_FILE }}" >> .env
+        echo SF_JWT_SECRET_KEY="${{ secrets.SF_JWT_SECRET_KEY }}" >> .env
+        echo SF_INSTANCE_URL="${{ secrets.SF_INSTANCE_URL }}" >> .env
+        echo SF_CLIENT_ID="${{ secrets.SF_CLIENT_ID }}" >> .env
+        cat .env
+
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20.x'
+
+    - name: install-sf-cli
+      run: npm install @salesforce/cli --global
+
+    - name: copy jwt
+      run: echo "$SF_JWT_SECRET_KEY_FILE" > /tmp/sf_server.key
+
+    - name: sf-login
+      run: sf org login jwt --username "$SF_LOGIN" --jwt-key-file /tmp/sf_server.key --client-id "$SF_CLIENT_ID" --alias sfdev --set-default --instance-url "$SF_INSTANCE_URL"
+
+    - name: sf-org-list
+      run: sf org list
+
+    - name: deployPackage
+      run: sf project deploy start --source-dir test/ -o sfdev
+
+    - name: assignPset
+      run: sf org assign permset --name SfInspector -o sfdev
+
+    - name: runTest
+      if: always() 
+      run: npm run test

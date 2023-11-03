@@ -1,16 +1,21 @@
 {
   "name": "salesforce-inspector",
+  "type":"module",
   "scripts": {
     "eslint": "eslint .",
     "firefox-dev-build": "node scripts/dev-build.js firefox",
     "chrome-dev-build": "node scripts/dev-build.js chrome",
     "firefox-release-build": "node scripts/release-build.js firefox",
-    "chrome-release-build": "node scripts/release-build.js chrome"
+    "chrome-release-build": "node scripts/release-build.js chrome",
+    "test": "node addon/test-framework.js"
   },
   "devDependencies": {
-    "eslint": "^6.3.0",
+    "eslint": "^6.8.0",
     "fs-extra": "2.0.0",
     "replace-in-file": "2.2.2",
     "zip-dir": "2.0.0"
+  },
+  "dependencies": {
+    "global": "^4.4.0"
   }
 }

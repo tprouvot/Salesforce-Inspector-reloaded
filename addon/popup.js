@@ -20,6 +20,10 @@ function closePopup() {
   parent.postMessage({insextClosePopup: true}, "*");
 }
 
+function showApiName() {
+  parent.postMessage({ insextShowApiName: true }, "*");
+}
+
 function init({sfHost, inDevConsole, inLightning, inInspector}) {
   let addonVersion = chrome.runtime.getManifest().version;
 
@@ -119,6 +123,9 @@ class App extends React.PureComponent {
       e.preventDefault();
       this.refs.showAllDataBox.refs.shortcutTab.click();
     }
+    if (e.key == "f" && this.refs.showFieldApiNameBtn) {
+      this.refs.showFieldApiNameBtn.click();
+    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
@@ -198,6 +205,9 @@ class App extends React.PureComponent {
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
+            ),
+            h("div", { className: "slds-m-bottom_xx-small" },
+              h("a", { ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Show ", h("u", {}, "F"), "ield API Name"))
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a",

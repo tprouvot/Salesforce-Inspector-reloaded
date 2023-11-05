@@ -116,6 +116,14 @@ function initButton(sfHost, inInspector) {
       if (e.data.insextShowStdPageDetails) {
         showStdPageDetails(e.data.insextData, e.data.insextAllFieldSetupLinks);
       }
+      if (e.data.insextShowApiName) {
+        document.querySelectorAll('record_flexipage-record-field > div, records-record-layout-item > div').forEach(field =>{
+          let label = field.querySelector('span');
+          if(field.dataset.targetSelectionName){
+            label.innerText += ' - '+field.dataset.targetSelectionName.split('.')[2];
+          }
+        });
+      }
     });
     rootEl.appendChild(popupEl);
     function openPopup() {

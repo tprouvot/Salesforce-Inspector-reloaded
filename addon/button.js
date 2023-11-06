@@ -123,13 +123,18 @@ function initButton(sfHost, inInspector) {
             label.innerText = label.innerText + " ";
             const fieldApiName = document.createElement("mark");
             fieldApiName.className = "field-api-name";
+            fieldApiName.style.cursor = "copy";
             fieldApiName.innerText = field.dataset.targetSelectionName.split(".")[2];
             label.appendChild(fieldApiName);
+            document.addEventListener("click", copy);
           }
         });
       }
     });
     rootEl.appendChild(popupEl);
+    function copy(e){
+      navigator.clipboard.writeText(e.target.innerText);
+    }
     function openPopup() {
       popupEl.contentWindow.postMessage({insextUpdateRecordId: true, locationHref: location.href}, "*");
       rootEl.classList.add("insext-active");

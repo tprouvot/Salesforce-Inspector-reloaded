@@ -21,7 +21,7 @@ function closePopup() {
 }
 
 function showApiName() {
-  parent.postMessage({ insextShowApiName: true }, "*");
+  parent.postMessage({insextShowApiName: true}, "*");
 }
 
 function init({sfHost, inDevConsole, inLightning, inInspector}) {
@@ -780,7 +780,7 @@ class AllDataBoxSObject extends React.PureComponent {
       this.refs.allDataSelection.clickShowDetailsBtn();
     }
   }
-  
+
   clickAllDataBtn() {
     if (this.refs.allDataSelection) {
       this.refs.allDataSelection.clickAllDataBtn();
@@ -1158,7 +1158,7 @@ class AllDataSelection extends React.PureComponent {
     this.refs.showAllDataBtn.click();
   }
   clickShowFieldAPINameBtn(){
-    if(this.refs.showFieldApiNameBtn){
+    if (this.refs.showFieldApiNameBtn){
       this.refs.showFieldApiNameBtn.click();
     }
   }
@@ -1295,7 +1295,7 @@ class AllDataSelection extends React.PureComponent {
           : " (Not readable)"
         ))),
         isLightningRecordPage
-          ? h("a", { ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral" }, h("span", {}, "Show ", h("u", {}, "F"), "ield API Name")) : null,
+          ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
       )
     );
   }

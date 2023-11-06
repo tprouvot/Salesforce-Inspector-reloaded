@@ -576,7 +576,9 @@ class AllDataBoxUsers extends React.PureComponent {
       //query NetworkMember only if it is a portal user (display "Login to Experience" button)
       if (userDetail.IsPortalEnabled){
         await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+NetworkId+FROM+NetworkMember+WHERE+MemberId='" + userDetail.Id + "'").then(res => {
-          userDetail.NetworkId = res.records[0].NetworkId;
+          if (res.records && res.records.length > 0){
+            userDetail.NetworkId = res.records[0].NetworkId;
+          }
         });
       }
       await this.setState({selectedUser: userDetail});
@@ -990,7 +992,7 @@ class UserDetails extends React.PureComponent {
   }
 
   canLoginAsPortal(user){
-    return user.IsActive && user.IsPortalEnabled && user.ContactId;
+    return user.IsActive && user.NetworkId;
   }
 
   getLoginAsLink(userId) {

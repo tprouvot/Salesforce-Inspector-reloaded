@@ -124,7 +124,7 @@ function initButton(sfHost, inInspector) {
             const fieldApiName = document.createElement("mark");
             fieldApiName.className = "field-api-name";
             fieldApiName.innerText = field.dataset.targetSelectionName.split(".")[2];
-            label.appendChild(fieldApiName); 
+            label.appendChild(fieldApiName);
           }
         });
       }

@@ -573,6 +573,12 @@ class AllDataBoxUsers extends React.PureComponent {
       //const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + selectedUserId); //Does not return profile details. Query call is therefore prefered
       const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
       let userDetail = userResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records[0];
+      //query NetworkMember only if it is a portal user (display "Login to Experience" button)
+      if (userDetail.IsPortalEnabled){
+        await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+NetworkId+FROM+NetworkMember+WHERE+MemberId='" + userDetail.Id + "'").then(res => {
+          userDetail.NetworkId = res.records[0].NetworkId;
+        });
+      }
       await this.setState({selectedUser: userDetail});
     } catch (err) {
       console.error("Unable to query user details with: " + JSON.stringify(compositeQuery) + ".", err);
@@ -997,11 +1003,7 @@ class UserDetails extends React.PureComponent {
   getLoginAsPortalLink(user){
     let {sfHost, contextOrgId, contextPath} = this.props;
     const retUrl = contextPath || "/";
-    let networkId;
-    sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+NetworkId+FROM+NetworkMember+WHERE+MemberId='" + user.Id + "'").then(res => {
-      networkId = res.records[0].NetworkId;
-    });
-    return "https://" + sfHost + "/servlet/servlet.su" + "?oid=" + encodeURIComponent(contextOrgId) + "&retURL=" + encodeURIComponent(retUrl) + "&sunetworkid=" + encodeURIComponent(networkId) + "&sunetworkuserid=" + encodeURIComponent(user.Id);
+    return "https://" + sfHost + "/servlet/servlet.su" + "?oid=" + encodeURIComponent(contextOrgId) + "&retURL=" + encodeURIComponent(retUrl) + "&sunetworkid=" + encodeURIComponent(user.NetworkId) + "&sunetworkuserid=" + encodeURIComponent(user.Id);
   }
 
   getUserDetailLink(userId) {

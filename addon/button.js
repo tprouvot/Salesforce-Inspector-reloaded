@@ -117,7 +117,7 @@ function initButton(sfHost, inInspector) {
         showStdPageDetails(e.data.insextData, e.data.insextAllFieldSetupLinks);
       }
       if (e.data.insextShowApiName) {
-        document.querySelectorAll('record_flexipage-record-field > div, records-record-layout-item > div').forEach(field =>{
+        document.querySelectorAll('record_flexipage-record-field > div, records-record-layout-item > div, div .forcePageBlockItemView').forEach(field =>{
           let label = field.querySelector('span');
           if(field.dataset.targetSelectionName){
             label.innerText += ' - '+field.dataset.targetSelectionName.split('.')[2];

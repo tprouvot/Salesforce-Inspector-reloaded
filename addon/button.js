@@ -119,12 +119,12 @@ function initButton(sfHost, inInspector) {
       if (e.data.insextShowApiName) {
         document.querySelectorAll("record_flexipage-record-field > div, records-record-layout-item > div, div .forcePageBlockItemView").forEach(field => {
           let label = field.querySelector("span");
-          if (field.dataset.targetSelectionName){
+          if (field.dataset.targetSelectionName && label.querySelector('mark') == null){
             label.innerText = label.innerText + " ";
             const fieldApiName = document.createElement("mark");
             fieldApiName.className = "field-api-name";
             fieldApiName.innerText = field.dataset.targetSelectionName.split(".")[2];
-            label.appendChild(fieldApiName);
+            label.appendChild(fieldApiName); 
           }
         });
       }

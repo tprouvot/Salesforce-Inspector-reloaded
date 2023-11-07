@@ -69,7 +69,7 @@ class OptionsTabSelector extends React.Component {
       {
         id: 1,
         tabTitle: "Tab1",
-        title: "UX",
+        title: "User Experience",
         content: [{ option: ArrowButtonOption, key: 1 }]
       },
       {
@@ -92,7 +92,7 @@ class OptionsTabSelector extends React.Component {
 
   render() {
     return h("div", {className: "slds-tabs_default"},
-      h("ul", { className: "slds-tabs_default__nav", role: "tablist"} ,
+      h("ul", { className: "options-tab-container slds-tabs_default__nav", role: "tablist"} ,
         this.tabs.map((tab) => h(OptionsTab, { key: tab.id, title: tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect }))
       ),
       this.tabs.map((tab) => h(OptionsContainer, { key: tab.id, id: tab.id, content: tab.content, selectedTabId: this.state.selectedTabId }))
@@ -103,7 +103,7 @@ class OptionsTabSelector extends React.Component {
 class OptionsTab extends React.Component {
 
   getClass() {
-    return "slds-tabs_default__item" + (this.props.selectedTabId === this.props.id ? " slds-is-active" : "");
+    return "options-tab slds-text-align_center slds-tabs_default__item" + (this.props.selectedTabId === this.props.id ? " slds-is-active" : "");
   }
 
   render() {
@@ -153,7 +153,7 @@ class ArrowButtonOption extends React.Component {
   }
 
   render() {
-    return h("div", { className: "slds-grid slds-border_bottom slds-p-around_small" },
+    return h("div", { className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small" },
       h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "Arrow Button orientation and position (refresh page to update)")
       ),
@@ -185,12 +185,12 @@ class APIVersionOption extends React.Component {
 
   onChangeApiVersion(e) {
     let apiVersion = e.target.value;
-    this.setState({apiVersion: apiVersion});
+    this.setState({ apiVersion });
     localStorage.setItem("apiVersion", apiVersion + ".0");
   }
 
   render() {
-    return h("div", { className: "slds-grid slds-border_bottom slds-p-around_small" },
+    return h("div", { className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small" },
       h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "API Version")
       ),
@@ -218,7 +218,7 @@ class APIKeyOption extends React.Component {
   }
 
   render() {
-    return h("div", { className: "slds-grid slds-border_bottom slds-p-around_small" },
+    return h("div", { className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small" },
       h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "API Consumer Key")
       ),
@@ -262,7 +262,7 @@ class App extends React.Component {
 
   render() {
     let { model } = this.props;
-    return ( h("div", {},
+    return h("div", {},
       h("div", { id: "user-info", className: "slds-border_bottom" },
         h("a", { href: model.sfLink, className: "sf-link" },
           h("svg", { viewBox: "0 0 24 24" },
@@ -272,8 +272,8 @@ class App extends React.Component {
         ),
         h("h1", { className: "slds-text-title_bold" }, "Salesforce Inspector Options"),
         h("div", { className: "flex-right" })),
-      h("div", { className: "slds-card slds-m-around_x-small" },
-        h(OptionsTabSelector, {})))
+      h("div", { className: "main-container slds-card slds-m-around_x-small" },
+        h(OptionsTabSelector, {}))
     );
   }
 }

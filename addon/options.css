@@ -138,3 +138,25 @@ body {
 .combobox-container {
     min-width: 80px;
 }
+
+.options-tab {
+    min-width: 80px;
+}
+
+.options-tab-container {
+    background-color: #f7f9fb;
+}
+
+.main-container {
+    background-color: #F8F8F8;
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #DDDBDA;
+    margin: 12px 12px 0 12px;
+    flex-grow: 1;
+}
+
+.prod {
+  background-color: #e0a4b5;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png');
+}

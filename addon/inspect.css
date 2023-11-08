@@ -720,7 +720,7 @@ th[tabindex] {
   padding: 4px;
   border: 1px solid #d8dde6;
   background-color: #f7f9fb;;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .edit-bar .button {

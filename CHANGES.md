@@ -1,3 +1,5 @@
+# Release Notes
+
 ## Version 1.20
 
 - Move popup arrow icon in Flow Builder because of Winter 24 UI changes [feature 200](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/200)

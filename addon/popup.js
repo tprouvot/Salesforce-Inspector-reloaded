@@ -1,12 +1,12 @@
 /* global React ReactDOM */
-import { sfConn, apiVersion } from "./inspector.js";
-import { getAllFieldSetupLinks } from "./setup-links.js";
-import { setupLinks } from "./links.js";
+import {sfConn, apiVersion} from "./inspector.js";
+import {getAllFieldSetupLinks} from "./setup-links.js";
+import {setupLinks} from "./links.js";
 
 let h = React.createElement;
 
 {
-  parent.postMessage({ insextInitRequest: true }, "*");
+  parent.postMessage({insextInitRequest: true}, "*");
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent && e.data.insextInitResponse) {
       removeEventListener("message", initResponseHandler);
@@ -17,10 +17,10 @@ let h = React.createElement;
 }
 
 function closePopup() {
-  parent.postMessage({ insextClosePopup: true }, "*");
+  parent.postMessage({insextClosePopup: true}, "*");
 }
 
-function init({ sfHost, inDevConsole, inLightning, inInspector }) {
+function init({sfHost, inDevConsole, inLightning, inInspector}) {
   let addonVersion = chrome.runtime.getManifest().version;
 
   sfConn.getSession(sfHost).then(() => {
@@ -60,7 +60,7 @@ class App extends React.PureComponent {
   }
   onContextUrlMessage(e) {
     if (e.source == parent && e.data.insextUpdateRecordId) {
-      let { locationHref } = e.data;
+      let {locationHref} = e.data;
       this.setState({
         isInSetup: locationHref.includes("/lightning/setup/"),
         contextUrl: locationHref
@@ -79,41 +79,55 @@ class App extends React.PureComponent {
     }
     if (e.key == "e") {
       e.preventDefault();
+      this.refs.dataExportBtn.target = getLinkTarget(e);
       this.refs.dataExportBtn.click();
     }
     if (e.key == "i") {
       e.preventDefault();
+      this.refs.dataImportBtn.target = getLinkTarget(e);
       this.refs.dataImportBtn.click();
     }
     if (e.key == "l") {
       e.preventDefault();
+      this.refs.limitsBtn.target = getLinkTarget(e);
       this.refs.limitsBtn.click();
     }
     if (e.key == "d") {
       e.preventDefault();
-      this.refs.metaRetrieveBtn.click();
-    }
-    if (e.key == "d") {
-      e.preventDefault();
+      this.refs.metaRetrieveBtn.target = getLinkTarget(e);
       this.refs.metaRetrieveBtn.click();
     }
     if (e.key == "x") {
       e.preventDefault();
+      this.refs.apiExploreBtn.target = getLinkTarget(e);
       this.refs.apiExploreBtn.click();
     }
     if (e.key == "h" && this.refs.homeBtn) {
+      e.preventDefault();
+      this.refs.homeBtn.target = getLinkTarget(e);
       this.refs.homeBtn.click();
     }
-    //TODO: Add shortcut for "u to go to user aspect"
+    if (e.key == "o") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs.objectTab.click();
+    }
+    if (e.key == "u") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs.userTab.click();
+    }
+    if (e.key == "s") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs.shortcutTab.click();
+    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
-    this.setState({ apiVersionInput: e.target.value });
+    this.setState({apiVersionInput: e.target.value});
   }
   componentDidMount() {
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
-    parent.postMessage({ insextLoaded: true }, "*");
+    parent.postMessage({insextLoaded: true}, "*");
   }
   componentWillUnmount() {
     removeEventListener("message", this.onContextUrlMessage);
@@ -137,19 +151,20 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let { isInSetup, contextUrl, apiVersionInput } = this.state;
+    let {isInSetup, contextUrl, apiVersionInput} = this.state;
     let clientId = localStorage.getItem(sfHost + "_clientId");
     let orgInstance = this.getOrgInstance(sfHost);
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
+    let browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
     return (
       h("div", {},
-        h("div", { className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom" },
-          h("div", { className: "header-logo" },
-            h("div", { className: "header-icon slds-icon_container" },
-              h("svg", { className: "slds-icon", viewBox: "0 0 24 24" },
+        h("div", {className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom"},
+          h("div", {className: "header-logo"},
+            h("div", {className: "header-icon slds-icon_container"},
+              h("svg", {className: "slds-icon", viewBox: "0 0 24 24"},
                 h("path", {
                   d: `
                   M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
@@ -160,42 +175,42 @@ class App extends React.PureComponent {
                   `})
               )
             ),
-            "Salesforce Inspector"
+            "Salesforce Inspector Reloaded"
           )
         ),
-        h("div", { className: "main" },
-          h(AllDataBox, { ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl }),
-          h("div", { className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom" },
-            h("div", { className: "slds-m-bottom_xx-small" },
-              h("a", { ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
+        h("div", {className: "main"},
+          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl}),
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
             ),
-            h("div", { className: "slds-m-bottom_xx-small" },
-              h("a", { ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
             ),
             h("div", {},
-              h("a", { ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
+              h("a", {ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ),
           ),
-          h("div", { className: "slds-p-vertical_x-small slds-p-horizontal_x-small" },
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
             // Advanded features should be put below this line, and the layout adjusted so they are below the fold
-            h("div", { className: "slds-m-bottom_xx-small" },
-              h("a", { ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
             ),
-            h("div", { className: "slds-m-bottom_xx-small" },
-              h("a", { ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral" }, h("span", {}, "E", h("u", {}, "x"), "plore API"))
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
             ),
-            h("div", { className: "slds-m-bottom_xx-small" },
+            h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
                 {
                   ref: "generateToken",
-                  href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=chrome-extension://" + chrome.runtime.id + "/data-export.html?host=" + sfHost + "%26",
+                  href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html?host=" + sfHost + "%26",
                   target: linkTarget,
                   className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
                 },
                 h("span", {}, h("u", {}, "G"), "enerate Connected App Token"))
             ),
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
-            inLightning && isInSetup && h("div", { className: "slds-m-bottom_xx-small" },
+            inLightning && isInSetup && h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
                 {
                   ref: "homeBtn",
@@ -206,7 +221,7 @@ class App extends React.PureComponent {
                 },
                 h("span", {}, "Salesforce ", h("u", {}, "H"), "ome"))
             ),
-            inLightning && !isInSetup && h("div", { className: "slds-m-bottom_xx-small" },
+            inLightning && !isInSetup && h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
                 {
                   ref: "homeBtn",
@@ -219,11 +234,11 @@ class App extends React.PureComponent {
             ),
           )
         ),
-        h("div", { className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top" },
-          h("div", { className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small" },
-            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/CHANGES.md", title: "Release note", target: linkTarget }, "v" + addonVersion),
+        h("div", {className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top"},
+          h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
+            h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
-            h("a", { href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget }, orgInstance),
+            h("a", {href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget}, orgInstance),
             h("span", {}, " / "),
             h("input", {
               className: "api-input",
@@ -233,14 +248,14 @@ class App extends React.PureComponent {
               value: apiVersionInput.split(".0")[0]
             })
           ),
-          h("div", { className: "slds-col slds-size_3-of-12 slds-text-align_left" },
-            h("span", { className: "footer-small-text" }, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+          h("div", {className: "slds-col slds-size_3-of-12 slds-text-align_left"},
+            h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
           ),
-          h("div", { className: "slds-col slds-size_2-of-12 slds-text-align_right" },
-            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector", target: linkTarget }, "About")
+          h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right"},
+            h("a", {href: "https://github.com/tprouvot/Salesforce-Inspector-reloaded#salesforce-inspector-reloaded", target: linkTarget}, "About")
           ),
-          h("div", { className: "slds-col slds-size_2-of-12 slds-text-align_right" },
-            h("a", { href: "https://github.com/tprouvot/Chrome-Salesforce-inspector/wiki", target: linkTarget }, "Wiki")
+          h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right"},
+            h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget}, "Doc")
           )
         )
       )
@@ -252,7 +267,7 @@ class AllDataBox extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({ sobject: "sobject", users: "users", shortcuts: "shortcuts" }); //Enum. Supported aspects
+    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts"}); //Enum. Supported aspects
 
     this.state = {
       activeSearchAspect: this.SearchAspectTypes.sobject,
@@ -263,6 +278,7 @@ class AllDataBox extends React.PureComponent {
       contextUserId: null,
       contextOrgId: null,
       contextPath: null,
+      contextSobject: null
     };
     this.onAspectClick = this.onAspectClick.bind(this);
     this.parseContextUrl = this.ensureKnownBrowserContext.bind(this);
@@ -274,7 +290,7 @@ class AllDataBox extends React.PureComponent {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    let { activeSearchAspect } = this.state;
+    let {activeSearchAspect} = this.state;
     if (prevProps.contextUrl !== this.props.contextUrl) {
       this.ensureKnownBrowserContext();
     }
@@ -294,38 +310,40 @@ class AllDataBox extends React.PureComponent {
   }
 
   ensureKnownBrowserContext() {
-    let { contextUrl } = this.props;
+    let {contextUrl} = this.props;
     if (contextUrl) {
       let recordId = getRecordId(contextUrl);
       let path = getSfPathFromUrl(contextUrl);
+      let sobject = getSobject(contextUrl);
       this.setState({
         contextRecordId: recordId,
-        contextPath: path
+        contextPath: path,
+        contextSobject: sobject
       });
     }
   }
 
   setIsLoading(aspect, value) {
     switch (aspect) {
-      case "usersBox": this.setState({ usersBoxLoading: value });
+      case "usersBox": this.setState({usersBoxLoading: value});
         break;
     }
   }
 
   isLoading() {
-    let { usersBoxLoading, sobjectsLoading } = this.state;
+    let {usersBoxLoading, sobjectsLoading} = this.state;
     return sobjectsLoading || usersBoxLoading;
   }
 
   async ensureKnownUserContext() {
-    let { contextUserId, contextOrgId } = this.state;
+    let {contextUserId, contextOrgId} = this.state;
 
     if (!contextUserId || !contextOrgId) {
       try {
         const userInfo = await sfConn.rest("/services/oauth2/userinfo");
         let contextUserId = userInfo.user_id;
         let contextOrgId = userInfo.organization_id;
-        this.setState({ contextUserId, contextOrgId });
+        this.setState({contextUserId, contextOrgId});
       } catch (err) {
         console.error("Unable to query user context", err);
       }
@@ -341,7 +359,7 @@ class AllDataBox extends React.PureComponent {
   loadSobjects() {
     let entityMap = new Map();
 
-    function addEntity({ name, label, keyPrefix, durableId, isCustomSetting }, api) {
+    function addEntity({name, label, keyPrefix, durableId, isCustomSetting}, api) {
       label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
       let entity = entityMap.get(name);
       if (entity) {
@@ -381,21 +399,31 @@ class AllDataBox extends React.PureComponent {
       });
     }
 
-    function getEntityDefinitions(bucket) {
-      let query = "select QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting from EntityDefinition" + bucket;
-      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query)).then(res => {
-        for (let record of res.records) {
-          addEntity({
-            name: record.QualifiedApiName,
-            label: record.Label,
-            keyPrefix: record.KeyPrefix,
-            durableId: record.DurableId,
-            isCustomSetting: record.IsCustomSetting
-          }, null);
-        }
-      }).catch(err => {
-        console.error("list entity definitions: " + bucket, err);
-      });
+    function getEntityDefinitions(){
+      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT COUNT() FROM EntityDefinition"))
+        .then(res => {
+          let entityNb = res.totalSize;
+          for (let bucket = 0; bucket < Math.ceil(entityNb / 2000); bucket++) {
+            let offset = bucket > 0 ? " OFFSET " + (bucket * 2000) : "";
+            let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
+            sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
+              .then(respEntity => {
+                for (let record of respEntity.records) {
+                  addEntity({
+                    name: record.QualifiedApiName,
+                    label: record.Label,
+                    keyPrefix: record.KeyPrefix,
+                    durableId: record.DurableId,
+                    isCustomSetting: record.IsCustomSetting
+                  }, null);
+                }
+              }).catch(err => {
+                console.error("list entity definitions: ", err);
+              });
+          }
+        }).catch(err => {
+          console.error("count entity definitions: ", err);
+        });
     }
 
     Promise.all([
@@ -406,11 +434,8 @@ class AllDataBox extends React.PureComponent {
       // Get all objects, even the ones the user cannot access from any API
       // These records are less interesting than the ones the user has access to, but still interesting since we can get information about them using the tooling API
       // If there are too many records, we get "EXCEEDED_ID_LIMIT: EntityDefinition does not support queryMore(), use LIMIT to restrict the results to a single batch"
-      // We cannot use limit and offset to work around it, since EntityDefinition does not support those according to the documentation, and they seem to work in a querky way in practice.
-      // Tried to use http://salesforce.stackexchange.com/a/22643, but "order by x" uses AaBbCc as sort order, while "where x > ..." uses sort order ABCabc, so it does not work on text fields, and there is no unique numerical field we can sort by.
-      // Here we split the query into a somewhat arbitrary set of fixed buckets, and hope none of the buckets exceed 2000 records.
-      getEntityDefinitions(" where QualifiedApiName < 'M' limit 2000"),
-      getEntityDefinitions(" where QualifiedApiName >= 'M' limit 2000"),
+      // Even if documentation mention that LIMIT and OFFSET are not supported, we use it to split the EntityDefinition queries into 2000 buckets
+      getEntityDefinitions(),
     ])
       .then(() => {
         // TODO progressively display data as each of the three responses becomes available
@@ -422,28 +447,28 @@ class AllDataBox extends React.PureComponent {
       })
       .catch(e => {
         console.error(e);
-        this.setState({ sobjectsLoading: false });
+        this.setState({sobjectsLoading: false});
       });
   }
 
   render() {
-    let { activeSearchAspect, sobjectsLoading, contextRecordId, contextUserId, contextOrgId, contextPath, sobjectsList } = this.state;
-    let { sfHost, showDetailsSupported, linkTarget } = this.props;
+    let {activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList} = this.state;
+    let {sfHost, showDetailsSupported, linkTarget} = this.props;
 
     return (
-      h("div", { className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "") },
-        h("ul", { className: "small-tabs" },
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : "" }, "Objects"),
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : "" }, "Users"),
-          h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : "" }, "Shortcuts")
+      h("div", {className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "")},
+        h("ul", {className: "small-tabs"},
+          h("li", {ref: "objectTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : ""}, h("span", {}, h("u", {}, "O"), "bjects")),
+          h("li", {ref: "userTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : ""}, h("span", {}, h("u", {}, "U"), "sers")),
+          h("li", {ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : ""}, h("span", {}, h("u", {}, "S"), "hortcuts"))
         ),
 
         (activeSearchAspect == this.SearchAspectTypes.sobject)
-          ? h(AllDataBoxSObject, { ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, linkTarget })
+          ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget})
           : (activeSearchAspect == this.SearchAspectTypes.users)
-            ? h(AllDataBoxUsers, { ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); } }, "Users")
+            ? h(AllDataBoxUsers, {ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); }}, "Users")
             : "AllData aspect " + activeSearchAspect + " not implemented"
-              ? h(AllDataBoxShortcut, { ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); } }, "Users")
+              ? h(AllDataBoxShortcut, {ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); }}, "Users")
               : "AllData aspect " + activeSearchAspect + " not implemented"
       )
     );
@@ -462,19 +487,19 @@ class AllDataBoxUsers extends React.PureComponent {
   }
 
   componentDidMount() {
-    let { contextUserId } = this.props;
-    this.onDataSelect({ Id: contextUserId });
+    let {contextUserId} = this.props;
+    this.onDataSelect({Id: contextUserId});
     this.refs.allDataSearch.refs.showAllDataInp.focus();
   }
 
   componentDidUpdate(prevProps) {
     if (prevProps.contextUserId !== this.props.contextUserId) {
-      this.onDataSelect({ Id: this.props.contextUserId });
+      this.onDataSelect({Id: this.props.contextUserId});
     }
   }
 
   async getMatches(userQuery) {
-    let { setIsLoading } = this.props;
+    let {setIsLoading} = this.props;
     if (!userQuery) {
       return [];
     }
@@ -499,7 +524,7 @@ class AllDataBoxUsers extends React.PureComponent {
 
     try {
       setIsLoading(true);
-      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", { method: "POST", body: compositeQuery });
+      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
       let users = userSearchResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records;
       return users;
     } catch (err) {
@@ -513,22 +538,22 @@ class AllDataBoxUsers extends React.PureComponent {
 
   async onDataSelect(userRecord) {
     if (userRecord && userRecord.Id) {
-      await this.setState({ selectedUserId: userRecord.Id, selectedUser: null });
+      await this.setState({selectedUserId: userRecord.Id, selectedUser: null});
       await this.querySelectedUserDetails();
     }
   }
 
   async querySelectedUserDetails() {
-    let { selectedUserId } = this.state;
-    let { setIsLoading } = this.props;
+    let {selectedUserId} = this.state;
+    let {setIsLoading} = this.props;
 
     if (!selectedUserId) {
       return;
     }
     //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
-    const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name";
-    const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier";
-    const queryFrom = "from User where Id='" + selectedUserId + "' limit 1";
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, IsPortalEnabled";
+    const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
     const compositeQuery = {
       "compositeRequest": [
         {
@@ -546,9 +571,17 @@ class AllDataBoxUsers extends React.PureComponent {
     try {
       setIsLoading(true);
       //const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + selectedUserId); //Does not return profile details. Query call is therefore prefered
-      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", { method: "POST", body: compositeQuery });
+      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
       let userDetail = userResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records[0];
-      await this.setState({ selectedUser: userDetail });
+      //query NetworkMember only if it is a portal user (display "Login to Experience" button)
+      if (userDetail.IsPortalEnabled){
+        await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+NetworkId+FROM+NetworkMember+WHERE+MemberId='" + userDetail.Id + "'").then(res => {
+          if (res.records && res.records.length > 0){
+            userDetail.NetworkId = res.records[0].NetworkId;
+          }
+        });
+      }
+      await this.setState({selectedUser: userDetail});
     } catch (err) {
       console.error("Unable to query user details with: " + JSON.stringify(compositeQuery) + ".", err);
     } finally {
@@ -561,13 +594,13 @@ class AllDataBoxUsers extends React.PureComponent {
       key: value.Id,
       value,
       element: [
-        h("div", { className: "autocomplete-item-main", key: "main" },
+        h("div", {className: "autocomplete-item-main", key: "main"},
           h(MarkSubstring, {
             text: value.Name + " (" + value.Alias + ")",
             start: value.Name.toLowerCase().indexOf(userQuery.toLowerCase()),
             length: userQuery.length
           })),
-        h("div", { className: "autocomplete-item-sub small", key: "sub" },
+        h("div", {className: "autocomplete-item-sub small", key: "sub"},
           h("div", {}, (value.Profile) ? value.Profile.Name : ""),
           h(MarkSubstring, {
             text: (!value.IsActive) ? "⚠ " + value.Username : value.Username,
@@ -579,16 +612,16 @@ class AllDataBoxUsers extends React.PureComponent {
   }
 
   render() {
-    let { selectedUser } = this.state;
-    let { sfHost, linkTarget, contextOrgId, contextUserId, contextPath } = this.props;
+    let {selectedUser} = this.state;
+    let {sfHost, linkTarget, contextOrgId, contextUserId, contextPath} = this.props;
 
     return (
-      h("div", { ref: "usersBox", className: "users-box" },
-        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: "Username, email, alias or name of user", resultRender: this.resultRender }),
-        h("div", { className: "all-data-box-inner" + (!selectedUser ? " empty" : "") },
+      h("div", {ref: "usersBox", className: "users-box"},
+        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: "Username, email, alias or name of user", resultRender: this.resultRender}),
+        h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
-            ? h(UserDetails, { user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath })
-            : h("div", { className: "center" }, "No user details available")
+            ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
+            : h("div", {className: "center"}, "No user details available")
         ))
     );
   }
@@ -606,60 +639,73 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   componentDidMount() {
-    let { contextRecordId } = this.props;
-    this.updateSelection(contextRecordId);
+    let {contextRecordId, contextSobject} = this.props;
+    this.updateSelection(contextRecordId, contextSobject);
   }
 
   componentDidUpdate(prevProps) {
-    let { contextRecordId, sobjectsLoading } = this.props;
+    let {contextRecordId, sobjectsLoading, contextSobject} = this.props;
     if (prevProps.contextRecordId !== contextRecordId) {
-      this.updateSelection(contextRecordId);
+      this.updateSelection(contextRecordId, contextSobject);
     }
     if (prevProps.sobjectsLoading !== sobjectsLoading && !sobjectsLoading) {
-      this.updateSelection(contextRecordId);
+      this.updateSelection(contextRecordId, contextSobject);
     }
   }
 
-  async updateSelection(query) {
-    let match = this.getBestMatch(query);
-    await this.setState({ selectedValue: match });
+  async updateSelection(query, contextSobject) {
+    let match;
+    if (query === "list"){
+      match = this.getBestMatch(contextSobject);
+    } else {
+      match = this.getBestMatch(query);
+    }
+
+    await this.setState({selectedValue: match});
     this.loadRecordIdDetails();
   }
 
   loadRecordIdDetails() {
-    let { selectedValue } = this.state;
+    let {selectedValue} = this.state;
     //If a recordId is selected and the object supports regularApi
     if (selectedValue && selectedValue.recordId && selectedValue.sobject && selectedValue.sobject.availableApis && selectedValue.sobject.availableApis.includes("regularApi")) {
-      //optimistically assume the object has certain attribues. If some are not present, no recordIdDetails are displayed
-      //TODO: Better handle objects with no recordtypes. Currently the optimistic approach results in no record details being displayed for ids for objects without record types.
-      let query = "select Id, LastModifiedBy.Alias, CreatedBy.Alias, RecordType.DeveloperName, RecordType.Id, CreatedDate, LastModifiedDate from " + selectedValue.sobject.name + " where id='" + selectedValue.recordId + "'";
-      sfConn.rest("/services/data/v" + apiVersion + "/query?q=" + encodeURIComponent(query), { logErrors: false }).then(res => {
-        for (let record of res.records) {
-          let lastModifiedDate = new Date(record.LastModifiedDate);
-          let createdDate = new Date(record.CreatedDate);
-          this.setState({
-            recordIdDetails: {
-              "recordTypeId": (record.RecordType) ? record.RecordType.Id : "-",
-              "recordTypeName": (record.RecordType) ? record.RecordType.DeveloperName : "-",
-              "createdBy": record.CreatedBy.Alias,
-              "lastModifiedBy": record.LastModifiedBy.Alias,
-              "created": createdDate.toLocaleDateString() + " " + createdDate.toLocaleTimeString(),
-              "lastModified": lastModifiedDate.toLocaleDateString() + " " + lastModifiedDate.toLocaleTimeString(),
-            }
-          });
-        }
-      }).catch(() => {
-        //Swallow this exception since it is likely due to missing standard attributes on the record - i.e. an invalid query.
-        this.setState({ recordIdDetails: null });
-      });
-
+      let fields = ["Id", "LastModifiedBy.Alias", "CreatedBy.Alias", "RecordType.DeveloperName", "RecordType.Id", "CreatedDate", "LastModifiedDate", "Name"];
+      this.restCallForRecordDetails(fields, selectedValue);
     } else {
-      this.setState({ recordIdDetails: null });
+      this.setState({recordIdDetails: null});
     }
   }
 
+  restCallForRecordDetails(fields, selectedValue){
+    let query = "SELECT " + fields.join() + " FROM " + selectedValue.sobject.name + " where id='" + selectedValue.recordId + "'";
+    sfConn.rest("/services/data/v" + apiVersion + "/query?q=" + encodeURIComponent(query), {logErrors: false}).then(res => {
+      for (let record of res.records) {
+        let lastModifiedDate = new Date(record.LastModifiedDate);
+        let createdDate = new Date(record.CreatedDate);
+        this.setState({
+          recordIdDetails: {
+            "recordTypeId": (record.RecordType) ? record.RecordType.Id : "",
+            "recordName": (record.Name) ? record.Name : "",
+            "recordTypeName": (record.RecordType) ? record.RecordType.DeveloperName : "",
+            "createdBy": record.CreatedBy.Alias,
+            "lastModifiedBy": record.LastModifiedBy.Alias,
+            "created": createdDate.toLocaleDateString() + " " + createdDate.toLocaleTimeString(),
+            "lastModified": lastModifiedDate.toLocaleDateString() + " " + lastModifiedDate.toLocaleTimeString(),
+          }
+        });
+      }
+    }).catch(e => {
+      //some fields (Name, RecordTypeId) are not available for particular objects, in this case remove it from the fields list
+      if (e.message.includes("No such column ")){
+        this.restCallForRecordDetails(fields.filter(field => field !== "Name"), selectedValue);
+      } else if (e.message.includes("Didn't understand relationship 'RecordType'")){
+        this.restCallForRecordDetails(fields.filter(field => !field.startsWith("RecordType.")), selectedValue);
+      }
+    });
+  }
+
   getBestMatch(query) {
-    let { sobjectsList } = this.props;
+    let {sobjectsList} = this.props;
     // Find the best match based on the record id or object name from the page URL.
     if (!query) {
       return null;
@@ -682,11 +728,11 @@ class AllDataBoxSObject extends React.PureComponent {
     if (sobject.keyPrefix == queryKeyPrefix && query.match(/^([a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})$/)) {
       recordId = query;
     }
-    return { recordId, sobject };
+    return {recordId, sobject};
   }
 
   getMatches(query) {
-    let { sobjectsList, contextRecordId } = this.props;
+    let {sobjectsList, contextRecordId} = this.props;
 
     if (!sobjectsList) {
       return [];
@@ -700,21 +746,21 @@ class AllDataBoxSObject extends React.PureComponent {
         // TO-DO: merge with the sortRank function in data-export
         relevance:
           (sobject.keyPrefix == queryKeyPrefix ? 2
-            : sobject.name.toLowerCase() == query.toLowerCase() ? 3
-              : sobject.label.toLowerCase() == query.toLowerCase() ? 4
-                : sobject.name.toLowerCase().startsWith(query.toLowerCase()) ? 5
-                  : sobject.label.toLowerCase().startsWith(query.toLowerCase()) ? 6
-                    : sobject.name.toLowerCase().includes("__" + query.toLowerCase()) ? 7
-                      : sobject.name.toLowerCase().includes("_" + query.toLowerCase()) ? 8
-                        : sobject.label.toLowerCase().includes(" " + query.toLowerCase()) ? 9
-                          : 10) + (sobject.availableApis.length == 0 ? 20 : 0)
+          : sobject.name.toLowerCase() == query.toLowerCase() ? 3
+          : sobject.label.toLowerCase() == query.toLowerCase() ? 4
+          : sobject.name.toLowerCase().startsWith(query.toLowerCase()) ? 5
+          : sobject.label.toLowerCase().startsWith(query.toLowerCase()) ? 6
+          : sobject.name.toLowerCase().includes("__" + query.toLowerCase()) ? 7
+          : sobject.name.toLowerCase().includes("_" + query.toLowerCase()) ? 8
+          : sobject.label.toLowerCase().includes(" " + query.toLowerCase()) ? 9
+          : 10) + (sobject.availableApis.length == 0 ? 20 : 0)
       }));
     query = query || contextRecordId || "";
     queryKeyPrefix = query.substring(0, 3);
     if (query.match(/^([a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})$/)) {
       let objectsForId = sobjectsList.filter(sobject => sobject.keyPrefix == queryKeyPrefix);
       for (let sobject of objectsForId) {
-        res.unshift({ recordId: query, sobject, relevance: 1 });
+        res.unshift({recordId: query, sobject, relevance: 1});
       }
     }
     res.sort((a, b) => a.relevance - b.relevance || a.sobject.name.localeCompare(b.sobject.name));
@@ -722,7 +768,7 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   onDataSelect(value) {
-    this.setState({ selectedValue: value }, () => {
+    this.setState({selectedValue: value}, () => {
       this.loadRecordIdDetails();
     });
   }
@@ -744,7 +790,7 @@ class AllDataBoxSObject extends React.PureComponent {
       key: value.recordId + "#" + value.sobject.name,
       value,
       element: [
-        h("div", { className: "autocomplete-item-main", key: "main" },
+        h("div", {className: "autocomplete-item-main", key: "main"},
           value.recordId || h(MarkSubstring, {
             text: value.sobject.name,
             start: value.sobject.name.toLowerCase().indexOf(userQuery.toLowerCase()),
@@ -752,7 +798,7 @@ class AllDataBoxSObject extends React.PureComponent {
           }),
           value.sobject.availableApis.length == 0 ? " (Not readable)" : ""
         ),
-        h("div", { className: "autocomplete-item-sub", key: "sub" },
+        h("div", {className: "autocomplete-item-sub", key: "sub"},
           h(MarkSubstring, {
             text: value.sobject.keyPrefix || "---",
             start: value.sobject.keyPrefix == userQuery.substring(0, 3) ? 0 : -1,
@@ -770,14 +816,14 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   render() {
-    let { sfHost, showDetailsSupported, sobjectsList, linkTarget, contextRecordId } = this.props;
-    let { selectedValue, recordIdDetails } = this.state;
+    let {sfHost, showDetailsSupported, sobjectsList, linkTarget, contextRecordId} = this.props;
+    let {selectedValue, recordIdDetails} = this.state;
     return (
       h("div", {},
-        h(AllDataSearch, { ref: "allDataSearch", onDataSelect: this.onDataSelect, sobjectsList, getMatches: this.getMatches, inputSearchDelay: 0, placeholderText: "Record id, id prefix or object name", resultRender: this.resultRender }),
+        h(AllDataSearch, {ref: "allDataSearch", onDataSelect: this.onDataSelect, sobjectsList, getMatches: this.getMatches, inputSearchDelay: 0, placeholderText: "Record id, id prefix or object name", resultRender: this.resultRender}),
         selectedValue
-          ? h(AllDataSelection, { ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId })
-          : h("div", { className: "all-data-box-inner empty" }, "No record to display")
+          ? h(AllDataSelection, {ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId})
+          : h("div", {className: "all-data-box-inner empty"}, "No record to display")
       )
     );
   }
@@ -799,7 +845,7 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   async getMatches(shortcutSearch) {
-    let { setIsLoading } = this.props;
+    let {setIsLoading} = this.props;
     if (!shortcutSearch) {
       return [];
     }
@@ -824,7 +870,7 @@ class AllDataBoxShortcut extends React.PureComponent {
       if (metadataShortcutSearch == "true"){
         const flowSelect = "SELECT LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const compositeQuery = {
           "compositeRequest": [
             {
@@ -843,31 +889,40 @@ class AllDataBoxShortcut extends React.PureComponent {
           ]
         };
 
-        const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", { method: "POST", body: compositeQuery });
+        const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
         let results = searchResult.compositeResponse.filter((elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0);
+
+        let enablePermSetSummary = localStorage.getItem("enablePermSetSummary") === "true";
 
         results.forEach(element => {
           element.body.records.forEach(rec => {
-            switch (rec.attributes.type) {
-              case "FlowDefinitionView":
-                rec.link = "/builder_platform_interaction/flowBuilder.app?flowId=" + rec.LatestVersionId;
-                rec.label = rec.Label;
-                rec.name = rec.ApiName;
-                rec.detail = rec.attributes.type + " • " + rec.ProcessType;
-                break;
-              case "Profile":
-                rec.link = "/lightning/setup/EnhancedProfiles/page?address=%2F" + rec.Id;
-                rec.label = rec.Name;
-                rec.name = rec.Id;
-                rec.detail = rec.attributes.type + " • " + rec.UserLicense.Name;
-                break;
-              case "PermissionSet":
-                rec.link = "/lightning/setup/PermSets/page?address=%2F" + rec.Id;
-                rec.label = rec.Label;
-                rec.name = rec.Name;
-                rec.detail = rec.attributes.type + " • " + rec.Type;
-                rec.detail += rec.License?.Name != null ? " • " + rec.License?.Name : "";
-                break;
+            if (rec.attributes.type === "FlowDefinitionView"){
+              rec.link = "/builder_platform_interaction/flowBuilder.app?flowId=" + rec.LatestVersionId;
+              rec.label = rec.Label;
+              rec.name = rec.ApiName;
+              rec.detail = rec.attributes.type + " • " + rec.ProcessType;
+            } else if (rec.attributes.type === "Profile"){
+              rec.link = "/lightning/setup/EnhancedProfiles/page?address=%2F" + rec.Id;
+              rec.label = rec.Name;
+              rec.name = rec.Id;
+              rec.detail = rec.attributes.type + " • " + rec.UserLicense.Name;
+            } else if (rec.attributes.type === "PermissionSet"){
+              rec.label = rec.Label;
+              rec.name = rec.Name;
+              rec.detail = rec.attributes.type + " • " + rec.Type;
+              rec.detail += rec.License?.Name != null ? " • " + rec.License?.Name : "";
+
+              let psetOrGroupId;
+              let type;
+              if (rec.Type === "Group"){
+                psetOrGroupId = rec.PermissionSetGroupId;
+                type = "PermSetGroups";
+              } else {
+                psetOrGroupId = rec.Id;
+                type = "PermSets";
+              }
+              let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
+              rec.link = "/lightning/setup/" + type + "/" + endLink;
             }
             result.push(rec);
           });
@@ -883,7 +938,7 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   async onDataSelect(shortcut) {
-    let { sfHost } = this.props;
+    let {sfHost} = this.props;
     window.open("https://" + sfHost + shortcut.link);
   }
 
@@ -892,13 +947,13 @@ class AllDataBoxShortcut extends React.PureComponent {
       key: value.Id,
       value,
       element: [
-        h("div", { className: "autocomplete-item-main", key: "main" },
+        h("div", {className: "autocomplete-item-main", key: "main"},
           h(MarkSubstring, {
             text: value.label,
             start: value.label.toLowerCase().indexOf(shortcutQuery.toLowerCase()),
             length: shortcutQuery.length
           })),
-        h("div", { className: "autocomplete-item-sub small", key: "sub" },
+        h("div", {className: "autocomplete-item-sub small", key: "sub"},
           h("div", {}, value.detail),
           h(MarkSubstring, {
             text: value.name,
@@ -910,16 +965,16 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   render() {
-    let { selectedUser } = this.state;
-    let { sfHost, linkTarget, contextOrgId, contextUserId, contextPath } = this.props;
+    let {selectedUser} = this.state;
+    let {sfHost, linkTarget, contextOrgId, contextUserId, contextPath} = this.props;
 
     return (
-      h("div", { ref: "shortcutsBox", className: "users-box" },
-        h(AllDataSearch, { ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 200, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender }),
-        h("div", { className: "all-data-box-inner" + (!selectedUser ? " empty" : "") },
+      h("div", {ref: "shortcutsBox", className: "users-box"},
+        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 200, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender}),
+        h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
-            ? h(UserDetails, { user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath })
-            : h("div", { className: "center" }, "No shortcut found")
+            ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
+            : h("div", {className: "center"}, "No shortcut found")
         ))
     );
   }
@@ -927,7 +982,7 @@ class AllDataBoxShortcut extends React.PureComponent {
 
 class UserDetails extends React.PureComponent {
   doSupportLoginAs(user) {
-    let { currentUserId } = this.props;
+    let {currentUserId} = this.props;
     //Optimistically show login unless it's logged in user's userid or user is inactive.
     //No API to determine if user is allowed to login as given user. See https://salesforce.stackexchange.com/questions/224342/query-can-i-login-as-for-users
     if (!user || user.Id == currentUserId || !user.IsActive) {
@@ -936,35 +991,45 @@ class UserDetails extends React.PureComponent {
     return true;
   }
 
+  canLoginAsPortal(user){
+    return user.IsActive && user.NetworkId;
+  }
+
   getLoginAsLink(userId) {
-    let { sfHost, contextOrgId, contextPath } = this.props;
+    let {sfHost, contextOrgId, contextPath} = this.props;
     const retUrl = contextPath || "/";
     const targetUrl = contextPath || "/";
     return "https://" + sfHost + "/servlet/servlet.su" + "?oid=" + encodeURIComponent(contextOrgId) + "&suorgadminid=" + encodeURIComponent(userId) + "&retURL=" + encodeURIComponent(retUrl) + "&targetURL=" + encodeURIComponent(targetUrl);
   }
 
+  getLoginAsPortalLink(user){
+    let {sfHost, contextOrgId, contextPath} = this.props;
+    const retUrl = contextPath || "/";
+    return "https://" + sfHost + "/servlet/servlet.su" + "?oid=" + encodeURIComponent(contextOrgId) + "&retURL=" + encodeURIComponent(retUrl) + "&sunetworkid=" + encodeURIComponent(user.NetworkId) + "&sunetworkuserid=" + encodeURIComponent(user.Id);
+  }
+
   getUserDetailLink(userId) {
-    let { sfHost } = this.props;
+    let {sfHost} = this.props;
     return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1";
   }
 
   getUserPsetLink(userId) {
-    let { sfHost } = this.props;
+    let {sfHost} = this.props;
     return "https://" + sfHost + "/lightning/setup/PermSets/page?address=%2Fudd%2FPermissionSet%2FassignPermissionSet.apexp%3FuserId%3D" + userId;
   }
 
   getUserPsetGroupLink(userId) {
-    let { sfHost } = this.props;
+    let {sfHost} = this.props;
     return "https://" + sfHost + "/lightning/setup/PermSetGroups/page?address=%2Fudd%2FPermissionSetGroup%2FassignPermissionSet.apexp%3FuserId%3D" + userId + "%26isPermsetGroup%3D1";
   }
 
   getProfileLink(profileId) {
-    let { sfHost } = this.props;
+    let {sfHost} = this.props;
     return "https://" + sfHost + "/lightning/setup/EnhancedProfiles/page?address=%2F" + profileId;
   }
 
   getShowAllDataLink(userId) {
-    let { sfHost } = this.props;
+    let {sfHost} = this.props;
     let args = new URLSearchParams();
     args.set("host", sfHost);
     args.set("objectType", "User");
@@ -973,60 +1038,64 @@ class UserDetails extends React.PureComponent {
   }
 
   render() {
-    let { user, linkTarget, sfHost } = this.props;
+    let {user, linkTarget, sfHost} = this.props;
     return (
-      h("div", { className: "all-data-box-inner" },
-        h("div", { className: "all-data-box-data slds-m-bottom_xx-small" },
-          h("table", { className: (user.IsActive) ? "" : "inactive" },
+      h("div", {className: "all-data-box-inner"},
+        h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},
+          h("table", {className: (user.IsActive) ? "" : "inactive"},
             h("tbody", {},
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  (user.IsActive) ? "" : h("span", { title: "User is inactive" }, "⚠ "),
+                  (user.IsActive) ? "" : h("span", {title: "User is inactive"}, "⚠ "),
                   user.Name + " (" + user.Alias + ")"
                 )
               ),
               h("tr", {},
                 h("th", {}, "Username:"),
-                h("td", { className: "oneliner" }, user.Username)
+                h("td", {className: "oneliner"}, user.Username)
               ),
               h("tr", {},
                 h("th", {}, "Id:"),
-                h("td", { className: "oneliner" },
-                  h("a", { href: this.getShowAllDataLink(user.Id), target: linkTarget, title: "Show all data" }, user.Id))
+                h("td", {className: "oneliner"},
+                  h("a", {href: this.getShowAllDataLink(user.Id), target: linkTarget, title: "Show all data"}, user.Id))
               ),
               h("tr", {},
                 h("th", {}, "E-mail:"),
-                h("td", { className: "oneliner" }, user.Email)
+                h("td", {className: "oneliner"}, user.Email)
               ),
               h("tr", {},
                 h("th", {}, "Profile:"),
-                h("td", { className: "oneliner" },
+                h("td", {className: "oneliner"},
                   (user.Profile)
-                    ? h("a", { href: this.getProfileLink(user.ProfileId), target: linkTarget }, user.Profile.Name)
-                    : h("em", { className: "inactive" }, "unknown")
+                    ? h("a", {href: this.getProfileLink(user.ProfileId), target: linkTarget}, user.Profile.Name)
+                    : h("em", {className: "inactive"}, "unknown")
                 )
               ),
               h("tr", {},
                 h("th", {}, "Role:"),
-                h("td", { className: "oneliner" }, (user.UserRole) ? user.UserRole.Name : "")
+                h("td", {className: "oneliner"}, (user.UserRole) ? user.UserRole.Name : "")
               ),
               h("tr", {},
                 h("th", {}, "Language:"),
                 h("td", {},
-                  h("div", { className: "flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Language: " + user.LanguageLocaleKey }),
+                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Language: " + user.LanguageLocaleKey}),
                   " | ",
-                  h("div", { className: "flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Locale: " + user.LocaleSidKey })
+                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Locale: " + user.LocaleSidKey})
                 )
               )
             )
           )),
-        h("div", { ref: "userButtons", className: "center small-font" },
-          this.doSupportLoginAs(user) ? h("a", { href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral" }, "Try login as") : null,
-          h("a", { href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral" }, "Details"),
-          h("a", { href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets" }, "PSet"),
-          h("a", { href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups" }, "PSetG")
-        ))
+        h("div", {ref: "userButtons", className: "center small-font"},
+          h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Details"),
+          h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
+          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG")
+        ),
+        h("div", {ref: "userButtons", className: "center small-font top-space"},
+          this.doSupportLoginAs(user) ? h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Try login as") : null,
+          this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "Login to Experience") : null,
+        )
+      )
     );
   }
 }
@@ -1042,33 +1111,33 @@ class ShowDetailsButton extends React.PureComponent {
     this.onDetailsClick = this.onDetailsClick.bind(this);
   }
   canShowDetails() {
-    let { showDetailsSupported, selectedValue, contextRecordId } = this.props;
+    let {showDetailsSupported, selectedValue, contextRecordId} = this.props;
     return showDetailsSupported && contextRecordId && selectedValue.sobject.keyPrefix == contextRecordId.substring(0, 3) && selectedValue.sobject.availableApis.length > 0;
   }
   onDetailsClick() {
-    let { sfHost, selectedValue } = this.props;
-    let { detailsShown } = this.state;
+    let {sfHost, selectedValue} = this.props;
+    let {detailsShown} = this.state;
     if (detailsShown || !this.canShowDetails()) {
       return;
     }
     let tooling = !selectedValue.sobject.availableApis.includes("regularApi");
     let url = "/services/data/v" + apiVersion + "/" + (tooling ? "tooling/" : "") + "sobjects/" + selectedValue.sobject.name + "/describe/";
-    this.setState({ detailsShown: true, detailsLoading: true });
+    this.setState({detailsShown: true, detailsLoading: true});
     Promise.all([
       sfConn.rest(url),
       getAllFieldSetupLinks(sfHost, selectedValue.sobject.name)
     ]).then(([res, insextAllFieldSetupLinks]) => {
-      this.setState({ detailsShown: true, detailsLoading: false });
-      parent.postMessage({ insextShowStdPageDetails: true, insextData: res, insextAllFieldSetupLinks }, "*");
+      this.setState({detailsShown: true, detailsLoading: false});
+      parent.postMessage({insextShowStdPageDetails: true, insextData: res, insextAllFieldSetupLinks}, "*");
       closePopup();
     }).catch(error => {
-      this.setState({ detailsShown: false, detailsLoading: false });
+      this.setState({detailsShown: false, detailsLoading: false});
       console.error(error);
       alert(error);
     });
   }
   render() {
-    let { detailsLoading, detailsShown } = this.state;
+    let {detailsLoading, detailsShown} = this.state;
     return (
       h("div", {},
         h("a",
@@ -1077,7 +1146,7 @@ class ShowDetailsButton extends React.PureComponent {
             className: "button" + (detailsLoading ? " loading" : "" + " page-button slds-button slds-button_neutral slds-m-bottom_xx-small"),
             disabled: detailsShown,
             onClick: this.onDetailsClick,
-            style: { display: !this.canShowDetails() ? "none" : "" }
+            style: {display: !this.canShowDetails() ? "none" : ""}
           },
           h("span", {}, "Show field ", h("u", {}, "m"), "etadata")
         )
@@ -1095,7 +1164,7 @@ class AllDataSelection extends React.PureComponent {
     this.refs.showAllDataBtn.click();
   }
   getAllDataUrl(toolingApi) {
-    let { sfHost, selectedValue } = this.props;
+    let {sfHost, selectedValue} = this.props;
     if (selectedValue) {
       let args = new URLSearchParams();
       args.set("host", sfHost);
@@ -1112,7 +1181,7 @@ class AllDataSelection extends React.PureComponent {
     }
   }
   getDeployStatusUrl() {
-    let { sfHost, selectedValue } = this.props;
+    let {sfHost, selectedValue} = this.props;
     let args = new URLSearchParams();
     args.set("host", sfHost);
     args.set("checkDeployStatus", selectedValue.recordId);
@@ -1165,7 +1234,7 @@ class AllDataSelection extends React.PureComponent {
     }
   }
   render() {
-    let { sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails } = this.props;
+    let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails} = this.props;
     // Show buttons for the available APIs.
     let buttons = Array.from(selectedValue.sobject.availableApis);
     buttons.sort();
@@ -1174,24 +1243,24 @@ class AllDataSelection extends React.PureComponent {
       buttons.push("noApi");
     }
     return (
-      h("div", { className: "all-data-box-inner" },
-        h("div", { className: "all-data-box-data slds-m-bottom_xx-small" },
+      h("div", {className: "all-data-box-inner"},
+        h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},
           h("table", {},
             h("tbody", {},
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", { href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget }, selectedValue.sobject.name)
+                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name)
                 )
               ),
               h("tr", {},
                 h("th", {}, "Links:"),
                 h("td", {},
-                  h("a", { href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget }, "Fields"),
+                  h("a", {href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Fields"),
                   h("span", {}, " / "),
-                  h("a", { href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget }, "Record Types"),
+                  h("a", {href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget}, "Record Types"),
                   h("span", {}, " / "),
-                  h("a", { href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget }, "Object List")
+                  h("a", {href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Object List")
                 ),
               ),
               h("tr", {},
@@ -1207,11 +1276,11 @@ class AllDataSelection extends React.PureComponent {
               ))),
 
 
-          h(AllDataRecordDetails, { sfHost, selectedValue, recordIdDetails, className: "top-space" }),
+          h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
-        h(ShowDetailsButton, { ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId }),
+        h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", { href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-bottom_xx-small" }, "Check Deploy Status") : null,
+          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
         buttons.map((button, index) => h("div", {}, h("a",
           {
             key: button,
@@ -1223,8 +1292,8 @@ class AllDataSelection extends React.PureComponent {
           },
           index == 0 ? h("span", {}, "Show ", h("u", {}, "a"), "ll data") : "Show all data",
           button == "regularApi" ? ""
-            : button == "toolingApi" ? " (Tooling API)"
-              : " (Not readable)"
+          : button == "toolingApi" ? " (Tooling API)"
+          : " (Not readable)"
         )))
       )
     );
@@ -1233,19 +1302,28 @@ class AllDataSelection extends React.PureComponent {
 
 class AllDataRecordDetails extends React.PureComponent {
 
+  getRecordLink(sfHost, recordId) {
+    return "https://" + sfHost + "/" + recordId;
+  }
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
   }
   render() {
-    let { sfHost, recordIdDetails, className, selectedValue } = this.props;
+    let {sfHost, recordIdDetails, className, selectedValue, linkTarget} = this.props;
     if (recordIdDetails) {
       return (
-        h("table", { className },
+        h("table", {className},
           h("tbody", {},
+            h("tr", {},
+              h("th", {}, "Name:"),
+              h("td", {},
+                h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
+              )
+            ),
             h("tr", {},
               h("th", {}, "RecType:"),
               h("td", {},
-                h("a", { href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: "" }, recordIdDetails.recordTypeName)
+                h("a", {href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: linkTarget}, recordIdDetails.recordTypeName)
               )
             ),
             h("tr", {},
@@ -1279,14 +1357,14 @@ class AllDataSearch extends React.PureComponent {
     this.onAllDataArrowClick = this.onAllDataArrowClick.bind(this);
   }
   componentDidMount() {
-    let { queryString } = this.state;
+    let {queryString} = this.state;
     this.getMatchesDelayed(queryString);
   }
   onAllDataInput(e) {
     let val = e.target.value;
     this.refs.autoComplete.handleInput();
     this.getMatchesDelayed(val);
-    this.setState({ queryString: val });
+    this.setState({queryString: val});
   }
   onAllDataFocus() {
     this.refs.autoComplete.handleFocus();
@@ -1300,32 +1378,32 @@ class AllDataSearch extends React.PureComponent {
   }
   updateAllDataInput(value) {
     this.props.onDataSelect(value);
-    this.setState({ queryString: "" });
+    this.setState({queryString: ""});
     this.getMatchesDelayed("");
   }
   onAllDataArrowClick() {
     this.refs.showAllDataInp.focus();
   }
   getMatchesDelayed(userQuery) {
-    let { queryDelayTimer } = this.state;
-    let { inputSearchDelay } = this.props;
+    let {queryDelayTimer} = this.state;
+    let {inputSearchDelay} = this.props;
 
     if (queryDelayTimer) {
       clearTimeout(queryDelayTimer);
     }
     queryDelayTimer = setTimeout(async () => {
-      let { getMatches } = this.props;
+      let {getMatches} = this.props;
       const matchingResults = await getMatches(userQuery);
-      await this.setState({ matchingResults });
+      await this.setState({matchingResults});
     }, inputSearchDelay);
 
-    this.setState({ queryDelayTimer });
+    this.setState({queryDelayTimer});
   }
   render() {
-    let { queryString, matchingResults } = this.state;
-    let { placeholderText, resultRender } = this.props;
+    let {queryString, matchingResults} = this.state;
+    let {placeholderText, resultRender} = this.props;
     return (
-      h("div", { className: "input-with-dropdown" },
+      h("div", {className: "input-with-dropdown"},
         h("input", {
           className: "all-data-input",
           ref: "showAllDataInp",
@@ -1341,15 +1419,15 @@ class AllDataSearch extends React.PureComponent {
           updateInput: this.updateAllDataInput,
           matchingResults: resultRender(matchingResults, queryString)
         }),
-        h("svg", { viewBox: "0 0 24 24", onClick: this.onAllDataArrowClick },
-          h("path", { d: "M3.8 6.5h16.4c.4 0 .8.6.4 1l-8 9.8c-.3.3-.9.3-1.2 0l-8-9.8c-.4-.4-.1-1 .4-1z" })
+        h("svg", {viewBox: "0 0 24 24", onClick: this.onAllDataArrowClick},
+          h("path", {d: "M3.8 6.5h16.4c.4 0 .8.6.4 1l-8 9.8c-.3.3-.9.3-1.2 0l-8-9.8c-.4-.4-.1-1 .4-1z"})
         )
       )
     );
   }
 }
 
-function MarkSubstring({ text, start, length }) {
+function MarkSubstring({text, start, length}) {
   if (start == -1) {
     return h("span", {}, text);
   }
@@ -1378,33 +1456,33 @@ class Autocomplete extends React.PureComponent {
     this.onScroll = this.onScroll.bind(this);
   }
   handleInput() {
-    this.setState({ showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1 });
+    this.setState({showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
   }
   handleFocus() {
-    this.setState({ showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1 });
+    this.setState({showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
   }
   handleBlur() {
-    this.setState({ showResults: false });
+    this.setState({showResults: false});
   }
   handleKeyDown(e) {
-    let { matchingResults } = this.props;
-    let { selectedIndex, showResults, scrollToSelectedIndex } = this.state;
+    let {matchingResults} = this.props;
+    let {selectedIndex, showResults, scrollToSelectedIndex} = this.state;
     if (e.key == "Enter") {
       if (!showResults) {
-        this.setState({ showResults: true, selectedIndex: 0, scrollToSelectedIndex: scrollToSelectedIndex + 1 });
+        this.setState({showResults: true, selectedIndex: 0, scrollToSelectedIndex: scrollToSelectedIndex + 1});
         return;
       }
       if (selectedIndex < matchingResults.length) {
         e.preventDefault();
-        let { value } = matchingResults[selectedIndex];
+        let {value} = matchingResults[selectedIndex];
         this.props.updateInput(value);
-        this.setState({ showResults: false, selectedIndex: 0 });
+        this.setState({showResults: false, selectedIndex: 0});
       }
       return;
     }
     if (e.key == "Escape") {
       e.preventDefault();
-      this.setState({ showResults: false, selectedIndex: 0 });
+      this.setState({showResults: false, selectedIndex: 0});
       return;
     }
     let selectionMove = 0;
@@ -1417,7 +1495,7 @@ class Autocomplete extends React.PureComponent {
     if (selectionMove != 0) {
       e.preventDefault();
       if (!showResults) {
-        this.setState({ showResults: true, selectedIndex: 0, scrollToSelectedIndex: scrollToSelectedIndex + 1 });
+        this.setState({showResults: true, selectedIndex: 0, scrollToSelectedIndex: scrollToSelectedIndex + 1});
         return;
       }
       let index = selectedIndex + selectionMove;
@@ -1428,26 +1506,26 @@ class Autocomplete extends React.PureComponent {
       if (index > length - 1) {
         index = 0;
       }
-      this.setState({ selectedIndex: index, scrollToSelectedIndex: scrollToSelectedIndex + 1 });
+      this.setState({selectedIndex: index, scrollToSelectedIndex: scrollToSelectedIndex + 1});
     }
   }
   onResultsMouseDown() {
-    this.setState({ resultsMouseIsDown: true });
+    this.setState({resultsMouseIsDown: true});
   }
   onResultsMouseUp() {
-    this.setState({ resultsMouseIsDown: false });
+    this.setState({resultsMouseIsDown: false});
   }
   onResultClick(value) {
     this.props.updateInput(value);
-    this.setState({ showResults: false, selectedIndex: 0 });
+    this.setState({showResults: false, selectedIndex: 0});
   }
   onResultMouseEnter(index) {
-    this.setState({ selectedIndex: index, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1 });
+    this.setState({selectedIndex: index, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
   }
   onScroll() {
     let scrollTopIndex = Math.floor(this.refs.scrollBox.scrollTop / this.state.itemHeight);
     if (scrollTopIndex != this.state.scrollTopIndex) {
-      this.setState({ scrollTopIndex });
+      this.setState({scrollTopIndex});
     }
   }
   componentDidUpdate(prevProps, prevState) {
@@ -1456,7 +1534,7 @@ class Autocomplete extends React.PureComponent {
       if (anItem) {
         let itemHeight = anItem.offsetHeight;
         if (itemHeight > 0) {
-          this.setState({ itemHeight });
+          this.setState({itemHeight});
         }
       }
       return;
@@ -1472,7 +1550,7 @@ class Autocomplete extends React.PureComponent {
     }
   }
   render() {
-    let { matchingResults } = this.props;
+    let {matchingResults} = this.props;
     let {
       showResults,
       selectedIndex,
@@ -1490,12 +1568,12 @@ class Autocomplete extends React.PureComponent {
     let bottomSpace = (lastIndex - lastRenderedIndex) * itemHeight;
     let topSelected = (selectedIndex - firstIndex) * itemHeight;
     return (
-      h("div", { className: "autocomplete-container", style: { display: (showResults && matchingResults.length > 0) || resultsMouseIsDown ? "" : "none" }, onMouseDown: this.onResultsMouseDown, onMouseUp: this.onResultsMouseUp },
-        h("div", { className: "autocomplete", onScroll: this.onScroll, ref: "scrollBox" },
-          h("div", { ref: "selectedItem", style: { position: "absolute", top: topSelected + "px", height: itemHeight + "px" } }),
-          h("div", { style: { height: topSpace + "px" } }),
+      h("div", {className: "autocomplete-container", style: {display: (showResults && matchingResults.length > 0) || resultsMouseIsDown ? "" : "none"}, onMouseDown: this.onResultsMouseDown, onMouseUp: this.onResultsMouseUp},
+        h("div", {className: "autocomplete", onScroll: this.onScroll, ref: "scrollBox"},
+          h("div", {ref: "selectedItem", style: {position: "absolute", top: topSelected + "px", height: itemHeight + "px"}}),
+          h("div", {style: {height: topSpace + "px"}}),
           matchingResults.slice(firstRenderedIndex, lastRenderedIndex + 1)
-            .map(({ key, value, element }, index) =>
+            .map(({key, value, element}, index) =>
               h("a", {
                 key,
                 className: "autocomplete-item " + (selectedIndex == index + firstRenderedIndex ? "selected" : ""),
@@ -1503,7 +1581,7 @@ class Autocomplete extends React.PureComponent {
                 onMouseEnter: () => this.onResultMouseEnter(index + firstRenderedIndex)
               }, element)
             ),
-          h("div", { style: { height: bottomSpace + "px" } })
+          h("div", {style: {height: bottomSpace + "px"}})
         )
       )
     );
@@ -1515,7 +1593,7 @@ function getRecordId(href) {
   // Find record ID from URL
   let searchParams = new URLSearchParams(url.search.substring(1));
   // Salesforce Classic and Console
-  if (url.hostname.endsWith(".salesforce.com")) {
+  if (url.hostname.endsWith(".salesforce.com") || url.hostname.endsWith(".salesforce.mil")) {
     let match = url.pathname.match(/\/([a-zA-Z0-9]{3}|[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})(?:\/|$)/);
     if (match) {
       let res = match[1];
@@ -1526,7 +1604,7 @@ function getRecordId(href) {
   }
 
   // Lightning Experience and Salesforce1
-  if (url.hostname.endsWith(".lightning.force.com")) {
+  if (url.hostname.endsWith(".lightning.force.com") || url.hostname.endsWith(".lightning.force.mil") || url.hostname.endsWith(".lightning.crmforce.mil")) {
     let match;
 
     if (url.pathname == "/one/one.app") {
@@ -1555,6 +1633,16 @@ function getRecordId(href) {
   return null;
 }
 
+function getSobject(href) {
+  let url = new URL(href);
+  if (url.pathname && url.pathname.endsWith("/list")){
+    let sobject = url.pathname.substring(0, url.pathname.lastIndexOf("/list"));
+    sobject = sobject.substring(sobject.lastIndexOf("/") + 1);
+    return sobject;
+  }
+  return null;
+}
+
 function getSfPathFromUrl(href) {
   let url = new URL(href);
   if (url.protocol.endsWith("-extension:")) {
@@ -1568,6 +1656,14 @@ function sfLocaleKeyToCountryCode(localeKey) {
   if (!localeKey) { return ""; }
   const splitted = localeKey.split("_");
   return splitted[(splitted.length > 1 && !localeKey.includes("_LATN_")) ? 1 : 0].toLowerCase();
+}
+
+function getLinkTarget(e) {
+  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)){
+    return "_blank";
+  } else {
+    return "_top";
+  }
 }
 
 window.getRecordId = getRecordId; // for unit tests

@@ -37,7 +37,10 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 ## Documentation
 
-[Extension's doc](https://tprouvot.github.io/Salesforce-Inspector-reloaded/)
+> User guide for using the extension.
+
+[![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://tprouvot.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
+
 
 ## New features compared to original SF Inspector
 
@@ -61,7 +64,7 @@ To validate the accuracy of this description, inspect the source code, monitor t
 
 ## Use Salesforce Inspector with a Connected App
 
-Follow steps described in [wiki](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
+Follow steps described in [how-to documentation](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#use-sf-inspector-with-a-connected-app)
 
 ## Installation
 
@@ -70,6 +73,15 @@ Follow steps described in [wiki](https://github.com/tprouvot/Salesforce-Inspecto
 - [Chrome Web Store](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
 - [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
 - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
+
+### Local Installation
+
+1. Download or clone the repo.
+2. Checkout the releaseCandidate branch.
+3. Open `chrome://extensions/`.
+4. Enable `Developer mode`.
+5. Click `Load unpacked extension...`.
+6. Select the **`addon`** subdirectory of this repository.
 
 ## Troubleshooting
 
@@ -119,19 +131,6 @@ Linting : to assure indentation, formatting and best practices coherence, please
 ### Linting
 
 1. `npm run eslint`
-
-## Release
-
-Version number must be manually incremented in [addon/manifest-template.json](addon/manifest-template.json) file
-
-### Chrome
-
-If the version number is greater than the version currently in Chrome Web Store, the revision will be packaged and uploaded to the store ready for manual release to the masses.
-
-### Firefox
-
-1. `npm run firefox-release-build`
-2. Upload the file from `target/firefox/firefox-release-build.zip` to addons.mozilla.org
 
 ## Design Principles
 

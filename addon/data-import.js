@@ -6,7 +6,7 @@ import { DescribeInfo, copyToClipboard, initScrollTable } from "./data-load.js";
 
 class Model {
 
-  constructor(sfHost) {
+  constructor(sfHost, args) {
     this.sfHost = sfHost;
     this.importData = undefined;
     this.consecutiveFailures = 0;
@@ -47,6 +47,15 @@ class Model {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
     }));
 
+    if (args.has("data")) {
+      let data = atob(args.get("data"));
+      this.dataFormat = "csv";
+      this.setData(data);
+      this.importAction = "delete";
+      this.importActionName = "Delete";
+      this.skipAllUnknownFields();
+      console.log(this.importData);
+    }
   }
 
   /**
@@ -96,7 +105,11 @@ class Model {
     if (this.dataFormat == "json") {
       text = this.getDataFromJson(text);
     }
-    let separator = this.dataFormat == "excel" ? "\t" : ",";
+    let csvSeparator = ",";
+    if (localStorage.getItem("csvSeparator")) {
+      csvSeparator = localStorage.getItem("csvSeparator");
+    }
+    let separator = this.dataFormat == "excel" ? "\t" : csvSeparator;
     let data;
     try {
       data = csvParse(text, separator);
@@ -148,18 +161,23 @@ class Model {
     let fields = ["_"].concat(Object.keys(json[0]));
     fields = fields.filter(field => field != "attributes");
 
+    let separator = ",";
+    if (localStorage.getItem("csvSeparator")) {
+      separator = localStorage.getItem("csvSeparator");
+    }
+
     let sobject = json[0]["attributes"]["type"];
     if (sobject) {
       csv = json.map(function (row) {
         return fields.map(function (fieldName) {
-          let value = row[fieldName];
-          if (value && typeof value === "string") {
+          let value = fieldName == "_" ? sobject : row[fieldName];
+          if (typeof value == "boolean" || (value && typeof value !== "object")) {
             return fieldName == "_" ? '"[' + sobject + ']"' : JSON.stringify(value)
           }
-        }).join(",")
+        }).join(separator)
       })
       fields = fields.map(str => '"' + str + '"');
-      csv.unshift(fields.join(","));
+      csv.unshift(fields.join(separator));
       csv = csv.join("\r\n");
     }
     return csv;
@@ -822,7 +840,11 @@ class App extends React.Component {
   onCopyAsCsvClick(e) {
     e.preventDefault();
     let { model } = this.props;
-    model.copyResult(",");
+    let separator = ",";
+    if (localStorage.getItem("csvSeparator")) {
+      separator = localStorage.getItem("csvSeparator");
+    }
+    model.copyResult(separator);
   }
   onCopyOptionsClick(e) {
     e.preventDefault();
@@ -1122,7 +1144,7 @@ class StatusBox extends React.Component {
   sfConn.getSession(sfHost).then(() => {
 
     let root = document.getElementById("root");
-    let model = new Model(sfHost);
+    let model = new Model(sfHost, args);
     model.reactCallback = cb => {
       ReactDOM.render(h(App, { model }), root, cb);
     };

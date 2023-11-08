@@ -224,7 +224,7 @@ select,
 input[type=search],
 input[type=save],
 input[type=default] {
-  width: 10rem;
+  width: 8.5rem;
   font-family: inherit;
   padding: 5px 13px;
   border: 1px solid #DDDBDA;
@@ -380,6 +380,32 @@ textarea[readonly] {
 .cancel-btn:not(:disabled):active,
 .cancel-btn:not(:disabled):focus {
   color: #a12b2b;
+}
+
+.delete-btn {
+  background-color: #c23934;
+  border-color: #c23934;
+  color: white;
+  /* Allows to still show the title even when disabled as it contains useful information */
+  pointer-events: auto;
+}
+
+.delete-btn:not(:disabled):hover,
+.delete-btn:not(:disabled):focus {
+  background-color: #a61a14;
+  border-color: #c23934;
+  color: white;
+}
+
+.delete-btn:not(:disabled):active {
+  background-color: #870500;
+  border-color: #870500;
+}
+
+.delete-btn:disabled, .delete-btn:disabled:hover {
+  background-color: #c9c7c5;
+  border-color: #c9c7c5;
+  color: white;
 }
 
 .char-btn {

@@ -6,6 +6,8 @@ labels: bug
 assignees: tprouvot
 
 ---
+**Make sure to read the troubleshooting section before creating an issue**
+[Common issues](https://tprouvot.github.io/Salesforce-Inspector-reloaded/troubleshooting/)
 
 **Describe the bug**
 A clear and concise description of what the bug is.

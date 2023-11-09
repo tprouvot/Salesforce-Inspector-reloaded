@@ -361,6 +361,29 @@ export async function dataImportTest(test) {
   records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
   assertEquals([], records);
 
+  // Delete from data-export
+  let separator = ",";
+  if (localStorage.getItem("csvSeparator")) {
+    separator = localStorage.getItem("csvSeparator");
+  }
+
+  let data = [
+    ["_", "Id", "Name"],
+    ["[Account]", "0010Y00000kCUn3QAG", "GenePoint1111"],
+    ["[Account]", "0010Y00000kCUn1QAG", "United Oil & Gas UK2222"]
+  ];
+  let encodedData = btoa(data.map(r => r.join(separator)).join("\r\n"));
+  let args = new URLSearchParams();
+  args.set("data", encodedData);
+
+  let result = await loadPage("data-import.html", args);
+  let importModel = result.model;
+  assertEquals([
+    ["[Account]", "0010Y00000kCUn3QAG", "GenePoint1111"],
+    ["[Account]", "0010Y00000kCUn1QAG", "United Oil & Gas UK2222"]
+  ], importModel.importData.importTable.data);
+  assertEquals("delete", importModel.importAction);
+
   // Big result
   // TODO Write test for clipboard copy
   // TODO Write test for showStatus

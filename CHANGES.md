@@ -2,7 +2,7 @@
 
 ## Version 1.21
 
-- Add Salesforce SObject documentation links [feature 219](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/219)
+- Add Salesforce SObject documentation links [feature 219](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/219) (idea by [Antoine Audollent])
 
 ## Version 1.20.1
 

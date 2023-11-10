@@ -146,3 +146,12 @@ You can enable this view for the Shortcut search by creating a new localVariable
 ![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/f3093e4b-438c-4795-b64a-8d37651906a5)
 
 Then when you click on a PermissionSet / PermissionSetGroups search result, you'll be redirected to the summary.
+
+## Update API Version
+
+Since the plugin's api version is only updated when all productions have been updated to the new release, you may want to use the latest version during preview windows.
+> [!IMPORTANT]  
+> When you manually update the API version, it won't be overriden by extension future updates.
+
+![2023-11-10_09-50-55 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6ae51a29-9887-41a6-8148-d9e12c2dc10d)
+

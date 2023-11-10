@@ -20,7 +20,8 @@
     "https://*.force.mil/*",
     "https://*.cloudforce.mil/*",
     "https://*.visualforce.mil/*",
-    "https://*.crmforce.mil/*"
+    "https://*.crmforce.mil/*",
+    "cookies"
   ],
   "content_scripts": [
     {

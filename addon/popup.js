@@ -249,7 +249,7 @@ class App extends React.PureComponent {
             })
           ),
           h("div", {className: "slds-col slds-size_3-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+            h("span", {className: "footer-small-text"}, navigator.userAgent.indexOf("Mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right"},
             h("a", {href: "https://github.com/tprouvot/Salesforce-Inspector-reloaded#salesforce-inspector-reloaded", target: linkTarget}, "About")

@@ -552,7 +552,9 @@ class AllDataBoxUsers extends React.PureComponent {
     }
     //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
     const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled";
-    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, IsPortalEnabled";
+    //TODO implement a try catch to remove non existing fields ProfileId or IsPortalEnabled (experience is not enabled)
+    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId";
     const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
     const compositeQuery = {
       "compositeRequest": [
@@ -560,6 +562,10 @@ class AllDataBoxUsers extends React.PureComponent {
           "method": "GET",
           "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
           "referenceId": "fullData"
+        }, {
+          "method": "GET",
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(mediumQuerySelect + " " + queryFrom),
+          "referenceId": "mediumData"
         }, {
           "method": "GET",
           "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
@@ -1233,6 +1239,12 @@ class AllDataSelection extends React.PureComponent {
       return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
     }
   }
+  getObjectDocLink(sobject){
+    if (sobject.availableApis.filter(api => api === "toolingApi").length > 0){
+      return "https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/tooling_api_objects_" + sobject.name.toLowerCase() + ".htm";
+    }
+    return "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_" + sobject.name.toLowerCase() + ".htm";
+  }
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails} = this.props;
     // Show buttons for the available APIs.
@@ -1250,7 +1262,8 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name)
+                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name),
+                  selectedValue.sobject.name.indexOf("__") == -1 ? h("a", {className: "left-space", href: this.getObjectDocLink(selectedValue.sobject), target: linkTarget}, "(doc)") : ""
                 )
               ),
               h("tr", {},
@@ -1308,6 +1321,7 @@ class AllDataRecordDetails extends React.PureComponent {
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
   }
+
   render() {
     let {sfHost, recordIdDetails, className, selectedValue, linkTarget} = this.props;
     if (recordIdDetails) {
@@ -1315,7 +1329,7 @@ class AllDataRecordDetails extends React.PureComponent {
         h("table", {className},
           h("tbody", {},
             h("tr", {},
-              h("th", {}, "Name:"),
+              h("th", {}, "Namere:"),
               h("td", {},
                 h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
               )

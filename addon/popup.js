@@ -134,11 +134,11 @@ class App extends React.PureComponent {
     removeEventListener("keydown", this.onShortcutKey);
   }
   getOrgInstance(sfHost) {
-    let orgInstance = localStorage.getItem(sfHost + "_orgInstance");
+    let orgInstance = sessionStorage.getItem(sfHost + "_orgInstance");
     if (orgInstance == null) {
       sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+InstanceName+FROM+Organization").then(res => {
         orgInstance = res.records[0].InstanceName;
-        localStorage.setItem(sfHost + "_orgInstance", orgInstance);
+        sessionStorage.setItem(sfHost + "_orgInstance", orgInstance);
       });
     }
     return orgInstance;
@@ -237,8 +237,8 @@ class App extends React.PureComponent {
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top"},
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", title: "Release note", target: linkTarget}, "v" + addonVersion),
-            h("span", {}, " / "),
-            h("a", {href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget}, orgInstance),
+            orgInstance ? h("span", {}, " / ") : "",
+            orgInstance ? h("a", {href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget}, orgInstance) : "",
             h("span", {}, " / "),
             h("input", {
               className: "api-input",

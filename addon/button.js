@@ -5,10 +5,9 @@
 // sfdcBody = normal Salesforce page
 // ApexCSIPage = Developer Console
 // auraLoadingBox = Lightning / Salesforce1
-// location.host.endsWith("visualforce.com") = Visualforce page
 if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox") || location.host.endsWith("visualforce.com")) {
   // We are in a Salesforce org
-  chrome.runtime.sendMessage({ message: "getSfHost", url: location.href }, sfHost => {
+  chrome.runtime.sendMessage({message: "getSfHost", url: location.href}, sfHost => {
     if (sfHost) {
       initButton(sfHost, false);
     }
@@ -16,7 +15,6 @@ if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox") |
 }
 
 function initButton(sfHost, inInspector) {
-  addFlowScrollability();
   let rootEl = document.createElement("div");
   rootEl.id = "insext";
   let btn = document.createElement("div");
@@ -34,11 +32,19 @@ function initButton(sfHost, inInspector) {
     loadPopup();
   });
 
+  addFlowScrollability();
+
 
   function addFlowScrollability() {
     const currentUrl = window.location.href;
     // Check the current URL for the string "builder_platform_interaction"
     if (currentUrl.includes("builder_platform_interaction")) {
+      //add marging for the popup arrow to prevent overlap with standard close button in flow builder (Winter 24)
+      //temporary workaround, will be removed in next release when the popupArrow position will be updatable by users
+      const popupArrow = document.querySelector("#insext");
+      if (popupArrow){
+        popupArrow.style = "margin-top: 50px;";
+      }
       // Create a new checkbox element
       const headerFlow = document.querySelector("builder_platform_interaction-container-common");
       const overflowCheckbox = document.createElement("input");
@@ -120,7 +126,7 @@ function initButton(sfHost, inInspector) {
     });
     rootEl.appendChild(popupEl);
     function openPopup() {
-      popupEl.contentWindow.postMessage({ insextUpdateRecordId: true, locationHref: location.href }, "*");
+      popupEl.contentWindow.postMessage({insextUpdateRecordId: true, locationHref: location.href}, "*");
       rootEl.classList.add("insext-active");
       // These event listeners are only enabled when the popup is active to avoid interfering with Salesforce when not using the inspector
       addEventListener("click", outsidePopupClick);

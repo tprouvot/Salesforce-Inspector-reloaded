@@ -140,6 +140,14 @@
   -webkit-mask-position: center;
 }
 
+.pop-menu a.query-record .icon {
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/record_lookup.svg');
+  -webkit-mask-position: center;
+  background-color: #706E6B;
+}
+
 .pop-menu a.copy-id .icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;

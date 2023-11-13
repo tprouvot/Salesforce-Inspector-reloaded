@@ -134,11 +134,11 @@ class App extends React.PureComponent {
     removeEventListener("keydown", this.onShortcutKey);
   }
   getOrgInstance(sfHost) {
-    let orgInstance = localStorage.getItem(sfHost + "_orgInstance");
+    let orgInstance = sessionStorage.getItem(sfHost + "_orgInstance");
     if (orgInstance == null) {
       sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+InstanceName+FROM+Organization").then(res => {
         orgInstance = res.records[0].InstanceName;
-        localStorage.setItem(sfHost + "_orgInstance", orgInstance);
+        sessionStorage.setItem(sfHost + "_orgInstance", orgInstance);
       });
     }
     return orgInstance;
@@ -237,8 +237,8 @@ class App extends React.PureComponent {
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top"},
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", title: "Release note", target: linkTarget}, "v" + addonVersion),
-            h("span", {}, " / "),
-            h("a", {href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget}, orgInstance),
+            orgInstance ? h("span", {}, " / ") : "",
+            orgInstance ? h("a", {href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget}, orgInstance) : "",
             h("span", {}, " / "),
             h("input", {
               className: "api-input",
@@ -1239,6 +1239,12 @@ class AllDataSelection extends React.PureComponent {
       return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
     }
   }
+  getObjectDocLink(sobject){
+    if (sobject.availableApis.filter(api => api === "toolingApi").length > 0){
+      return "https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/tooling_api_objects_" + sobject.name.toLowerCase() + ".htm";
+    }
+    return "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_" + sobject.name.toLowerCase() + ".htm";
+  }
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails} = this.props;
     // Show buttons for the available APIs.
@@ -1256,7 +1262,8 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name)
+                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name),
+                  selectedValue.sobject.name.indexOf("__") == -1 ? h("a", {className: "left-space", href: this.getObjectDocLink(selectedValue.sobject), target: linkTarget}, "(doc)") : ""
                 )
               ),
               h("tr", {},
@@ -1314,6 +1321,7 @@ class AllDataRecordDetails extends React.PureComponent {
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
   }
+
   render() {
     let {sfHost, recordIdDetails, className, selectedValue, linkTarget} = this.props;
     if (recordIdDetails) {
@@ -1321,7 +1329,7 @@ class AllDataRecordDetails extends React.PureComponent {
         h("table", {className},
           h("tbody", {},
             h("tr", {},
-              h("th", {}, "Name:"),
+              h("th", {}, "Namere:"),
               h("td", {},
                 h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
               )

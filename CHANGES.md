@@ -1,5 +1,39 @@
 # Release Notes
 
+## Version 1.20.1
+
+- Bugfix User selection not displaying information (for orgs without community enabled) [issue 211](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/211)
+
+## Version 1.20
+
+- Move popup arrow icon in Flow Builder because of Winter 24 UI changes [feature 200](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/200)
+- Add 'Login As' button for Experience users [feature 190](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/190)
+- Add 'Delete Records' button from data export page [feature 134](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/134) (contribution by [Oscar Gomez Balaguer](https://github.com/ogomezba))
+- Update popup title to show "Salesforce Inspector Reloaded" [feature 188](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/188) (idea by [Nicolas Vuillamy](https://github.com/nvuillam))
+- Add "Query Record" link from data-export page [feature 111](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/111) (contribution by [Antoine Leleu](https://github.com/AntoineLeleu-Salesforce))
+- Fix "Edit page layout link" for from show all data and use "openLinksInNewTab" property for those links [issue 181](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/181)
+- Update to Salesforce API v 59.0 (Winter '24)
+- Add a parameter to activate summary view of pset / psetGroup from shortcut tab [feature 175](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/175)
+- Display record name (and link) in popup [feature 165](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/165)
+- Add documentation link to popup
+- Add option to open extension pages in a new tab using keyboard shortcuts (contribution by [Joshua Yarmak](https://github.com/toly11))
+- Add customizable query templates to query export page (idea and co-develop with [Samuel Krissi](https://github.com/samuelkrissi))
+- Explore-api page restyling
+- Ability to define csv-file separator [feature 144](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/144) (issue by [Reinier van den Assum](https://github.com/foxysolutions))
+- Fix SObject auto detect for JSON input in data import
+- "Lightning Field Setup" (from show all data) link did not work for CustomMetadataType and CustomSettings [issue 154](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/154) (issue by [Camille Guillory](https://github.com/CamilleGuillory))
+- Add missing Date Literals [feature 155](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/155)
+- Allow navigation to the extension tabs (Object, Users, Shortcuts) using keyboard [feature 135](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/135) (feature by [Sarath Addanki](https://github.com/asknet))
+- Update query on EntityDefinition to avoid missing objects for large orgs [issue 138](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/138) (issue by [AjitRajendran](https://github.com/AjitRajendran))
+- Add 'LIMIT 200' when selecting 'FIELDS(' in autocomplete [feature 146](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/146) )
+- Change method to get extension id to be compatible with firefox [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
+- Fix hardcoded browser in Generate Token url [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
+- Add "Create New Flow", "Create New Custom Object", "Create New Permission Set", "Create New Custom Permission" and "Recycle Bin" shortcuts
+- Update pop-up release note link to github pages
+- Detect SObject on list view page [feature 121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/121) (idea by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
+- Automate test setup manual step of contact to multiple accounts [Aidan Majewski](https://github.com/aimaj)
+- In Data export, set input focus in SOQL query text area. [feature 183](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/183) (contribution by [Sarath Addanki](https://github.com/asknet))
+
 ## Version 1.19
 
 - Inspect Page Restyling (UI improvements, red background for PROD, display / hide table borders) [PR105](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/105) (contribution by [Pietro Martino](https://github.com/pietromartino))
@@ -42,7 +76,7 @@
 
 ## Version 1.14
 
-- Add checkbox in flow builder to give the possibility to the user to scroll on the flow (by [Samuel Krissi](https://github.com/samuelkrissi) )
+- Add checkbox in flow builder to give the possibility to the user to scroll on the flow (by [Samuel Krissi](https://github.com/samuelkrissi))
 
 ![image](https://user-images.githubusercontent.com/96471586/226161542-cbedec0a-8988-4559-9152-d067ea6f9cb6.png)
 

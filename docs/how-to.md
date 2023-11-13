@@ -153,4 +153,4 @@ Then when you click on a PermissionSet / PermissionSetGroups search result, you'
 Because it is not always easy to download event log files, you can now do it from the export option.
 On each even log file, you can clic on the path and download the file:
 
-<img alt="Download Eventlogfiles" src="./assets/images/how-to/download-eventlogfiles.gif" height="300">
+<img alt="Download Eventlogfiles" src="./assets/images/how-to/download-eventlogfiles.gif" height="600">

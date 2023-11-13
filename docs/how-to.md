@@ -146,3 +146,11 @@ You can enable this view for the Shortcut search by creating a new localVariable
 ![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/f3093e4b-438c-4795-b64a-8d37651906a5)
 
 Then when you click on a PermissionSet / PermissionSetGroups search result, you'll be redirected to the summary.
+
+
+## Download Event Log Files
+
+Because it is not always easy to download event log files, you can now do it from the export option.
+On each even log file, you can clic on the path and download the file:
+
+<img alt="Download Eventlogfiles" src="../assets/images/how-to/download-eventlogfiles.gif?raw=true" height="300">

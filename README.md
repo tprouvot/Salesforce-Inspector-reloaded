@@ -95,6 +95,10 @@ Contributions are welcomed !
 To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
 This branch will be merge into master when the new version is published on web store.
 
+Make sure to update CHANGES.md file by describing the improvement / bugfix you realised.
+
+In order to make sure everyone who reads documentation is aware of your improvment, you can update the 'how-to' page to document / expose this new functionnality.
+
 Linting : to assure indentation, formatting and best practices coherence, please install ESLint extension.
 
 ## Development

@@ -167,6 +167,10 @@
   background-color: #61fab8;
 }
 
+.pop-menu a.download-salesforce {
+  cursor: pointer;
+}
+
 .pop-menu a.copy-id {
   cursor: pointer;
 }

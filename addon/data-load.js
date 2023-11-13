@@ -228,21 +228,21 @@ function renderCell(rt, cell, td) {
           });
           td.removeChild(pop);
         });
+      } else {
+        //copy to clipboard
+        let aCopy = document.createElement("a");
+        aCopy.className = "copy-id";
+        aCopy.textContent = "Copy Id";
+        aCopy.id = recordId;
+        let acopyIcon = document.createElement("div");
+        acopyIcon.className = "icon";
+        pop.appendChild(aCopy);
+        aCopy.prepend(acopyIcon);
+        aCopy.addEventListener("click", e => {
+          navigator.clipboard.writeText(e.target.id);
+          td.removeChild(pop);
+        });
       }
-
-      //copy to clipboard
-      let aCopy = document.createElement("a");
-      aCopy.className = "copy-id";
-      aCopy.textContent = "Copy Id";
-      aCopy.id = recordId;
-      let acopyIcon = document.createElement("div");
-      acopyIcon.className = "icon";
-      pop.appendChild(aCopy);
-      aCopy.prepend(acopyIcon);
-      aCopy.addEventListener("click", e => {
-        navigator.clipboard.writeText(e.target.id);
-        td.removeChild(pop);
-      });
       function closer(ev) {
         if (ev != e && ev.target.closest(".pop-menu") != pop) {
           removeEventListener("click", closer);
@@ -262,7 +262,7 @@ function renderCell(rt, cell, td) {
     return /^[a-z0-9]{5}0000[a-z0-9]{9}$/i.exec(recordId) && !recordId.startsWith("000");
   }
   function isEventLogFile(text) {
-    // test the text to identify if this is an path to an eventLogFile
+    // test the text to identify if this is a path to an eventLogFile
     return /^\/services\/data\/v[0-9]{2,3}.[0-9]{1}\/sobjects\/EventLogFile\/[a-z0-9]{5}0000[a-z0-9]{9}\/LogFile$/i.exec(text);
   }
   if (typeof cell == "object" && cell != null && cell.attributes && cell.attributes.type) {

@@ -4,6 +4,7 @@
 
 - Org instance in not correct with after Hyperforce migration: store org instance in sessionStorage to retrieve it once per session [issue 167](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/167)
 - Add Salesforce SObject documentation links [feature 219](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/219) (idea by [Antoine Audollent])
+- Add "Download" option on event log files (contribution by [Annubis45])
 
 ## Version 1.20.1
 

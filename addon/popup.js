@@ -465,7 +465,7 @@ class AllDataBox extends React.PureComponent {
   render() {
     let {activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList} = this.state;
     let {sfHost, showDetailsSupported, linkTarget, isFieldsPresent} = this.props;
-    
+
     return (
       h("div", {className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "")},
         h("ul", {className: "small-tabs"},
@@ -1311,7 +1311,7 @@ class AllDataSelection extends React.PureComponent {
               ))),
 
 
-          h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget})
+          h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
         h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")

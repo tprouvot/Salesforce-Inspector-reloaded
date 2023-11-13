@@ -56,7 +56,8 @@ class App extends React.PureComponent {
     this.state = {
       isInSetup: false,
       contextUrl: null,
-      apiVersionInput: apiVersion
+      apiVersionInput: apiVersion,
+      isFieldsPresent: false
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);

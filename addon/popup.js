@@ -70,6 +70,9 @@ class App extends React.PureComponent {
         contextUrl: locationHref
       });
     }
+    this.setState({
+      isFieldsPresent: e.data.isFieldsPresent 
+    });
   }
 
   onShortcutKey(e) {
@@ -159,7 +162,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, isFieldsPresent} = this.state;
     let clientId = localStorage.getItem(sfHost + "_clientId");
     let orgInstance = this.getOrgInstance(sfHost);
     let hostArg = new URLSearchParams();
@@ -187,7 +190,7 @@ class App extends React.PureComponent {
           )
         ),
         h("div", {className: "main"},
-          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl}),
+          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, isFieldsPresent}),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
@@ -286,8 +289,7 @@ class AllDataBox extends React.PureComponent {
       contextUserId: null,
       contextOrgId: null,
       contextPath: null,
-      contextSobject: null,
-      isLightningRecordPage: false,
+      contextSobject: null
     };
     this.onAspectClick = this.onAspectClick.bind(this);
     this.parseContextUrl = this.ensureKnownBrowserContext.bind(this);
@@ -327,8 +329,7 @@ class AllDataBox extends React.PureComponent {
       this.setState({
         contextRecordId: recordId,
         contextPath: path,
-        contextSobject: sobject,
-        isLightningRecordPage: contextUrl.includes("/lightning/r/")
+        contextSobject: sobject
       });
     }
   }
@@ -462,9 +463,9 @@ class AllDataBox extends React.PureComponent {
   }
 
   render() {
-    let {activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList, isLightningRecordPage} = this.state;
-    let {sfHost, showDetailsSupported, linkTarget} = this.props;
-
+    let {activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList} = this.state;
+    let {sfHost, showDetailsSupported, linkTarget, isFieldsPresent} = this.props;
+    
     return (
       h("div", {className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "")},
         h("ul", {className: "small-tabs"},
@@ -474,7 +475,7 @@ class AllDataBox extends React.PureComponent {
         ),
 
         (activeSearchAspect == this.SearchAspectTypes.sobject)
-          ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, isLightningRecordPage})
+          ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, isFieldsPresent})
           : (activeSearchAspect == this.SearchAspectTypes.users)
             ? h(AllDataBoxUsers, {ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); }}, "Users")
             : "AllData aspect " + activeSearchAspect + " not implemented"
@@ -838,13 +839,13 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   render() {
-    let {sfHost, showDetailsSupported, sobjectsList, linkTarget, contextRecordId, isLightningRecordPage} = this.props;
+    let {sfHost, showDetailsSupported, sobjectsList, linkTarget, contextRecordId, isFieldsPresent} = this.props;
     let {selectedValue, recordIdDetails} = this.state;
     return (
       h("div", {},
         h(AllDataSearch, {ref: "allDataSearch", onDataSelect: this.onDataSelect, sobjectsList, getMatches: this.getMatches, inputSearchDelay: 0, placeholderText: "Record id, id prefix or object name", resultRender: this.resultRender}),
         selectedValue
-          ? h(AllDataSelection, {ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId, isLightningRecordPage})
+          ? h(AllDataSelection, {ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId, isFieldsPresent})
           : h("div", {className: "all-data-box-inner empty"}, "No record to display")
       )
     );
@@ -1267,7 +1268,7 @@ class AllDataSelection extends React.PureComponent {
     return "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_" + sobject.name.toLowerCase() + ".htm";
   }
   render() {
-    let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isLightningRecordPage} = this.props;
+    let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent} = this.props;
     // Show buttons for the available APIs.
     let buttons = Array.from(selectedValue.sobject.availableApis);
     buttons.sort();
@@ -1329,7 +1330,7 @@ class AllDataSelection extends React.PureComponent {
           : button == "toolingApi" ? " (Tooling API)"
           : " (Not readable)"
         ))),
-        isLightningRecordPage
+        isFieldsPresent
           ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
       )
     );

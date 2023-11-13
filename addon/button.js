@@ -143,7 +143,11 @@ function initButton(sfHost, inInspector) {
       navigator.clipboard.writeText(e.target.innerText);
     }
     function openPopup() {
-      popupEl.contentWindow.postMessage({insextUpdateRecordId: true, locationHref: location.href}, "*");
+      let activeContentElem = document.querySelector('.windowViewMode-normal.active');
+      let isFieldsPresent = activeContentElem ? !! activeContentElem.querySelector("record_flexipage-record-field > div, records-record-layout-item > div, div .forcePageBlockItemView") : false;
+      popupEl.contentWindow.postMessage({insextUpdateRecordId: true, locationHref: location.href,
+        isFieldsPresent
+      }, "*");
       rootEl.classList.add("insext-active");
       // These event listeners are only enabled when the popup is active to avoid interfering with Salesforce when not using the inspector
       addEventListener("click", outsidePopupClick);

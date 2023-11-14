@@ -1329,7 +1329,7 @@ class AllDataRecordDetails extends React.PureComponent {
         h("table", {className},
           h("tbody", {},
             h("tr", {},
-              h("th", {}, "Namere:"),
+              h("th", {}, "Name:"),
               h("td", {},
                 h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
               )

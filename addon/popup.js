@@ -359,7 +359,7 @@ class AllDataBox extends React.PureComponent {
   loadSobjects() {
     let entityMap = new Map();
 
-    function addEntity({name, label, keyPrefix, durableId, isCustomSetting}, api) {
+    function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported}, api) {
       label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
       let entity = entityMap.get(name);
       if (entity) {
@@ -378,6 +378,7 @@ class AllDataBox extends React.PureComponent {
           durableId,
           isCustomSetting,
           availableKeyPrefix: null,
+          recordTypesSupported
         };
         entityMap.set(name, entity);
       }
@@ -405,7 +406,7 @@ class AllDataBox extends React.PureComponent {
           let entityNb = res.totalSize;
           for (let bucket = 0; bucket < Math.ceil(entityNb / 2000); bucket++) {
             let offset = bucket > 0 ? " OFFSET " + (bucket * 2000) : "";
-            let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
+            let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
             sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
               .then(respEntity => {
                 for (let record of respEntity.records) {
@@ -414,7 +415,8 @@ class AllDataBox extends React.PureComponent {
                     label: record.Label,
                     keyPrefix: record.KeyPrefix,
                     durableId: record.DurableId,
-                    isCustomSetting: record.IsCustomSetting
+                    isCustomSetting: record.IsCustomSetting,
+                    recordTypesSupported: record.RecordTypesSupported
                   }, null);
                 }
               }).catch(err => {
@@ -675,7 +677,10 @@ class AllDataBoxSObject extends React.PureComponent {
     let {selectedValue} = this.state;
     //If a recordId is selected and the object supports regularApi
     if (selectedValue && selectedValue.recordId && selectedValue.sobject && selectedValue.sobject.availableApis && selectedValue.sobject.availableApis.includes("regularApi")) {
-      let fields = ["Id", "LastModifiedBy.Alias", "CreatedBy.Alias", "RecordType.DeveloperName", "RecordType.Id", "CreatedDate", "LastModifiedDate", "Name"];
+      let fields = ["Id", "LastModifiedBy.Alias", "CreatedBy.Alias", "CreatedDate", "LastModifiedDate", "Name"];
+      if (selectedValue.sobject.recordTypesSupported){
+        fields.push("RecordType.DeveloperName", "RecordType.Id");
+      }
       this.restCallForRecordDetails(fields, selectedValue);
     } else {
       this.setState({recordIdDetails: null});
@@ -1329,7 +1334,7 @@ class AllDataRecordDetails extends React.PureComponent {
         h("table", {className},
           h("tbody", {},
             h("tr", {},
-              h("th", {}, "Namere:"),
+              h("th", {}, "Name:"),
               h("td", {},
                 h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
               )

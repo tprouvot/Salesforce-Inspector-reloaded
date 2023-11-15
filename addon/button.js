@@ -143,7 +143,7 @@ function initButton(sfHost, inInspector) {
       navigator.clipboard.writeText(e.target.innerText);
     }
     function openPopup() {
-      let activeContentElem = document.querySelector('div.windowViewMode-normal.active, div.content > div.active.lafPageHost');
+      let activeContentElem = document.querySelector('div.windowViewMode-normal.active, section.oneConsoleTab div.windowViewMode-maximized.active.lafPageHost');
       let isFieldsPresent = activeContentElem ? !! activeContentElem.querySelector("record_flexipage-record-field > div, records-record-layout-item > div, div .forcePageBlockItemView") : false;
       popupEl.contentWindow.postMessage({insextUpdateRecordId: true, locationHref: location.href,
         isFieldsPresent

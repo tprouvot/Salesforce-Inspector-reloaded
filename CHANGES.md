@@ -10,6 +10,7 @@
 
 ## Version 1.20.1
 
+- Bugfix Delete Button not enabled when only one record is queried/filtered
 - Bugfix User selection not displaying information (for orgs without community enabled) [issue 211](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/211)
 
 ## Version 1.20

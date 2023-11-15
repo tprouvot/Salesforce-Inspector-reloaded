@@ -225,7 +225,7 @@ function renderCell(rt, cell, td) {
         aDownload.addEventListener("click", e => {
           sfConn.rest(e.target.id, {responseType: "text/csv"}).then(data => {
             let downloadLink = document.createElement("a");
-            downloadLink.download = recordId.split("EventLogFile/")[1];
+            downloadLink.download = recordId.split("/")[6];
             downloadLink.href = "data:text/csv;charset=utf-8," + data;
             downloadLink.click();
           });

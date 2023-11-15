@@ -240,26 +240,6 @@ class APIKeyOption extends React.Component {
   }
 }
 
-        /*
-
-
-                  <span class="slds-icon_container slds-icon-utility-down slds-input__icon slds-input__icon_right">
-            <svg class="slds-icon slds-icon slds-icon_x-small slds-icon-text-default" aria-hidden="true">
-              <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#down"></use>
-            </svg>
-
-
-        h("label", { className: "slds-checkbox_toggle slds-grid" },
-          h("span", { className: "slds-form-element__label slds-m-bottom_none" }),
-          h("input", { type: "checkbox", name: "checkbox-toggle-1", value: "checkbox-toggle-1", checked: (this.state.theme === "dark"), onChange: this.onChangeTheme }),
-          h("span", { id: "checkbox-toggle-1", className: "slds-checkbox_faux_container" },
-            h("span", { className: "slds-checkbox_faux" }),
-            h("span", { className: "slds-checkbox_on" }, "Enabled"),
-            h("span", { className: "slds-checkbox_off" }, "Disabled"),
-          )
-        ),
-        */
-
 let h = React.createElement;
 
 class App extends React.Component {

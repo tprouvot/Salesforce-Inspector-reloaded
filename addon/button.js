@@ -144,7 +144,6 @@ function initButton(sfHost, inInspector) {
     }
     function openPopup() {
       let activeContentElem = document.querySelector('div.windowViewMode-normal.active, div.content > div.active.lafPageHost');
-      console.log('activeContentElem', activeContentElem);
       let isFieldsPresent = activeContentElem ? !! activeContentElem.querySelector("record_flexipage-record-field > div, records-record-layout-item > div, div .forcePageBlockItemView") : false;
       popupEl.contentWindow.postMessage({insextUpdateRecordId: true, locationHref: location.href,
         isFieldsPresent

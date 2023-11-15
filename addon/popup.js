@@ -6,7 +6,11 @@ import {setupLinks} from "./links.js";
 let h = React.createElement;
 
 {
-  parent.postMessage({insextInitRequest: true}, "*");
+  parent.postMessage({
+    insextInitRequest: true,
+    popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
+    popupArrowPosition: localStorage.getItem("popupArrowPosition")
+  }, "*");
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent && e.data.insextInitResponse) {
       removeEventListener("message", initResponseHandler);
@@ -148,7 +152,6 @@ class App extends React.PureComponent {
     let {sfHost} = this.props;
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
-    parent.postMessage({insextLoaded: true}, "*");
     this.setOrgInfo(sfHost);
   }
   componentWillUnmount() {

@@ -135,7 +135,8 @@ class ArrowButtonOption extends React.Component {
     this.state = {
       arrowButtonOrientation: localStorage.getItem("popupArrowOrientation") ? localStorage.getItem("popupArrowOrientation") : "vertical",
       arrowButtonPosition: localStorage.getItem("popupArrowPosition") ? localStorage.getItem("popupArrowPosition") : "20"
-    }
+    };
+    this.timeout;
   }
 
   onChangeArrowOrientation(e) {
@@ -143,13 +144,21 @@ class ArrowButtonOption extends React.Component {
     this.setState({arrowButtonOrientation: orientation});
     console.log("[SFInspector] Setting Arrow Orientation: ", orientation);
     localStorage.setItem("popupArrowOrientation", orientation);
+    window.location.reload();
   }
 
   onChangeArrowPosition(e) {
     let position = e.target.value;
     this.setState({arrowButtonPosition: position});
-    console.log("[SFInspector] Setting Arrow Position: ", position);
-    localStorage.setItem("popupArrowPosition", position);
+    console.log("[SFInspector] New Arrow Position Value: ", position);
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+    }
+    this.timeout = setTimeout(() => {
+      console.log("[SFInspector] Setting Arrow Position: ", position);
+      localStorage.setItem("popupArrowPosition", position);
+      window.location.reload();
+    }, 1000);
   }
 
   render() {

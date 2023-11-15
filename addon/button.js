@@ -18,17 +18,14 @@ function initButton(sfHost, inInspector) {
   let rootEl = document.createElement("div");
   rootEl.id = "insext";
   let btn = document.createElement("div");
+  let iFrameLocalStorage = {};
   btn.className = "insext-btn";
   btn.tabIndex = 0;
   btn.accessKey = "i";
   btn.title = "Show Salesforce details (Alt+I / Shift+Alt+I)";
   rootEl.appendChild(btn);
-  setRootCSSProperties(rootEl, btn);
+  loadPopup();
   document.body.appendChild(rootEl);
-  btn.addEventListener("click", function clickListener() {
-    btn.removeEventListener("click", clickListener);
-    loadPopup();
-  });
 
   addFlowScrollability();
 
@@ -87,8 +84,8 @@ function initButton(sfHost, inInspector) {
   }
 
   function setRootCSSProperties(rootElement, buttonElement) {
-    let popupArrowOrientation = localStorage.getItem("popupArrowOrientation") ? localStorage.getItem("popupArrowOrientation") : "vertical";
-    let popupArrowPosition = localStorage.getItem("popupArrowPosition") ? (localStorage.getItem("popupArrowPosition") + "%") : "122px";
+    let popupArrowOrientation = iFrameLocalStorage.popupArrowOrientation ? iFrameLocalStorage.popupArrowOrientation : "vertical";
+    let popupArrowPosition = iFrameLocalStorage.popupArrowPosition ? (iFrameLocalStorage.popupArrowPosition + "%") : "122px";
     let img = document.createElement("img");
     if (popupArrowOrientation == "vertical") {
       rootElement.style.right = 0;
@@ -116,13 +113,16 @@ function initButton(sfHost, inInspector) {
     let popupSrc = chrome.runtime.getURL("popup.html");
     let popupEl = document.createElement("iframe");
     popupEl.className = "insext-popup";
-    popupEl.classList.add(localStorage.getItem("popupArrowOrientation") == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
     popupEl.src = popupSrc;
     addEventListener("message", e => {
       if (e.source != popupEl.contentWindow) {
         return;
       }
       if (e.data.insextInitRequest) {
+        iFrameLocalStorage["popupArrowOrientation"] = e.data.popupArrowOrientation;
+        iFrameLocalStorage["popupArrowPosition"] = e.data.popupArrowPosition;
+        popupEl.classList.add(iFrameLocalStorage.popupArrowOrientation == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
+        setRootCSSProperties(rootEl, btn);
         popupEl.contentWindow.postMessage({
           insextInitResponse: true,
           sfHost,

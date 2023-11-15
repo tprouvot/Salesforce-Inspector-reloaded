@@ -6,6 +6,7 @@
 - Add Salesforce SObject documentation links [feature 219](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/219) (idea by [Antoine Audollent])
 - Add centering buttons section in footer after edit field (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
 - Add dynamic display text show/hide borders table popup in record field preview setting (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
+- Add "Download" option on event log files (contribution by [Annubis45](https://github.com/Annubis45))
 
 ## Version 1.20.1
 

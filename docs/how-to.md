@@ -149,8 +149,8 @@ Then when you click on a PermissionSet / PermissionSetGroups search result, you'
 
 
 ## Download Event Log Files
+To make your life easier and avoid third party tools or login to ELF website, we implemented the download option from the data export page.
+When quering EventLogFile, add the "LogFile" field in the query and click on the value to download corresponding log.
 
-Because it is not always easy to download event log files, you can now do it from the export option.
-On each even log file, you can clic on the path and download the file:
+![2023-11-15_14-32-44 (1)](https://github.com/Annubis45/Salesforce-Inspector-reloaded/assets/35368290/ba1fcbed-8428-495e-b03b-7816320d95df)
 
-<img alt="Download Eventlogfiles" src="./assets/images/how-to/download-eventlogfiles.gif" height="600">

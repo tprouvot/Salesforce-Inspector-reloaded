@@ -72,7 +72,7 @@ class App extends React.PureComponent {
       });
     }
     this.setState({
-      isFieldsPresent: e.data.isFieldsPresent 
+      isFieldsPresent: e.data.isFieldsPresent
     });
   }
 

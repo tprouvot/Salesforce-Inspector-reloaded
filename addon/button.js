@@ -126,7 +126,7 @@ function initButton(sfHost, inInspector) {
       if (e.data.insextShowApiName) {
         document.querySelectorAll("record_flexipage-record-field > div, records-record-layout-item > div, div .forcePageBlockItemView").forEach(field => {
           let label = field.querySelector("span");
-          if (field.dataset.targetSelectionName && label.querySelector('mark') == null){
+          if (field.dataset.targetSelectionName && label.querySelector("mark") == null){
             label.innerText = label.innerText + " ";
             const fieldApiName = document.createElement("mark");
             fieldApiName.className = "field-api-name";
@@ -143,9 +143,10 @@ function initButton(sfHost, inInspector) {
       navigator.clipboard.writeText(e.target.innerText);
     }
     function openPopup() {
-      let activeContentElem = document.querySelector('div.windowViewMode-normal.active, section.oneConsoleTab div.windowViewMode-maximized.active.lafPageHost');
-      let isFieldsPresent = activeContentElem ? !! activeContentElem.querySelector("record_flexipage-record-field > div, records-record-layout-item > div, div .forcePageBlockItemView") : false;
-      popupEl.contentWindow.postMessage({insextUpdateRecordId: true, locationHref: location.href,
+      let activeContentElem = document.querySelector("div.windowViewMode-normal.active, section.oneConsoleTab div.windowViewMode-maximized.active.lafPageHost");
+      let isFieldsPresent = activeContentElem ? !!activeContentElem.querySelector("record_flexipage-record-field > div, records-record-layout-item > div, div .forcePageBlockItemView") : false;
+      popupEl.contentWindow.postMessage({insextUpdateRecordId: true,
+        locationHref: location.href,
         isFieldsPresent
       }, "*");
       rootEl.classList.add("insext-active");

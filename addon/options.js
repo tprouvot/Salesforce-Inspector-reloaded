@@ -167,14 +167,14 @@ class ArrowButtonOption extends React.Component {
         h("span", {}, "Arrow Button orientation and position (refresh page to update)")
       ),
       h("div", { className: "slds-col slds-size_8-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" },
-        h("label", { className: "slds-col slds-size_2-of-12 slds-align_right slds-text-align_right" }, "Orientation:"),
+        h("label", { className: "slds-col slds-size_2-of-12 slds-text-align_right" }, "Orientation:"),
         h("select", { className: "slds-col slds-size_2-of-12 slds-combobox__form-element slds-input combobox-container", defaultValue: this.state.arrowButtonOrientation, name: "arrowPosition", id: "arrowPosition", onChange: this.onChangeArrowOrientation }, 
           h("option", { value: "horizontal" }, "Horizontal" ),
           h("option", { value: "vertical" }, "Vertical" )
         ),
         h("label", { className: "slds-m-left_medium slds-col slds-size_2-of-12 slds-text-align_right", htmlFor: "arrowPositionSlider" }, "Position (%):"),
         h("div", { className: "slds-form-element__control slider-container slds-col slds-size_4-of-12" },
-          h("div", { className: "slds-slider sdlds-m-left_small" },
+          h("div", { className: "slds-slider" },
             h("input", { type: "range", id: "arrowPositionSlider", className: "slds-slider__range", value: this.state.arrowButtonPosition, min: "0", max: "100", step: "1", onChange: this.onChangeArrowPosition }),
             h("span", { className: "slds-slider__value", "aria-hidden": true }, this.state.arrowButtonPosition )
           )

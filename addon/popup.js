@@ -421,7 +421,7 @@ class AllDataBox extends React.PureComponent {
           let entityNb = res.totalSize;
           for (let bucket = 0; bucket < Math.ceil(entityNb / 2000); bucket++) {
             let offset = bucket > 0 ? " OFFSET " + (bucket * 2000) : "";
-            let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
+            let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
             sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
               .then(respEntity => {
                 for (let record of respEntity.records) {
@@ -431,7 +431,9 @@ class AllDataBox extends React.PureComponent {
                     keyPrefix: record.KeyPrefix,
                     durableId: record.DurableId,
                     isCustomSetting: record.IsCustomSetting,
-                    recordTypesSupported: record.RecordTypesSupported
+                    recordTypesSupported: record.RecordTypesSupported,
+                    newUrl: record.NewUrl,
+                    isEverCreatable: record.IsEverCreatable
                   }, null);
                 }
               }).catch(err => {
@@ -1276,6 +1278,9 @@ class AllDataSelection extends React.PureComponent {
     }
     return "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_" + sobject.name.toLowerCase() + ".htm";
   }
+  getNewObjectUrl(sfHost, newUrl){
+    return "https://" + sfHost + newUrl;
+  }
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent} = this.props;
     // Show buttons for the available APIs.
@@ -1339,6 +1344,7 @@ class AllDataSelection extends React.PureComponent {
           : button == "toolingApi" ? " (Tooling API)"
           : " (Not readable)"
         ))),
+        selectedValue.isEverCreatable ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("N", {}, "f"), "ew")) : null,
         isFieldsPresent
           ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
       )

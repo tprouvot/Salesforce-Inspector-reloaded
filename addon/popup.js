@@ -885,7 +885,7 @@ class AllDataBoxShortcut extends React.PureComponent {
       setIsLoading(true);
 
       //search for shortcuts
-      let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch.toLowerCase()));
+      let result = setupLinks.filter(item => item.label.toLowerCase().includes(shortcutSearch.toLowerCase()));
       result.forEach(element => {
         element.detail = element.section;
         element.name = element.link;

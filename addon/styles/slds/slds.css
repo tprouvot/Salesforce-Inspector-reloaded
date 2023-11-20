@@ -1599,6 +1599,812 @@ a.slds-button--inverse:focus{
   border-radius:0.25rem;
 }
 
+/* Checkbox */
+
+.slds-checkbox.slds-checkbox_stacked .slds-checkbox__label{
+    display:-webkit-box;
+    display:-ms-flexbox;
+    display:flex;
+    -webkit-box-orient:vertical;
+    -webkit-box-direction:normal;
+        -ms-flex-direction:column;
+            flex-direction:column;
+    -webkit-box-align:start;
+        -ms-flex-align:start;
+            align-items:flex-start;
+  }
+  .slds-checkbox.slds-checkbox_stacked .slds-form-element__label{
+    font-size:0.75rem;
+  }
+  .slds-checkbox.slds-checkbox_stacked .slds-checkbox_faux{
+    -webkit-box-ordinal-group:2;
+        -ms-flex-order:1;
+            order:1;
+    margin-bottom:1px;
+  }
+  .slds-checkbox.slds-checkbox_stacked .slds-required{
+    float:left;
+  }
+  .slds-checkbox{
+    display:inline-block;
+    position:relative;
+  }
+  .slds-checkbox .slds-checkbox_faux,
+  .slds-checkbox .slds-checkbox--faux{
+    width:1rem;
+    height:1rem;
+    display:inline-block;
+    position:relative;
+    vertical-align:middle;
+    border-radius:var(--sds-c-checkbox-radius-border, 0.125rem);
+    border-width:1px;
+    border-style:solid;
+    border-color:var(--sds-c-checkbox-color-border, #dddbda);
+    background-color:var(--sds-c-checkbox-color-background, white);
+    -webkit-box-shadow:var(--sds-c-checkbox-shadow);
+            box-shadow:var(--sds-c-checkbox-shadow);
+    -webkit-transition:border 0.1s linear, background-color 0.1s linear;
+    transition:border 0.1s linear, background-color 0.1s linear;
+  }
+  .slds-checkbox .slds-checkbox__label .slds-form-element__label{
+    display:inline;
+    vertical-align:middle;
+    font-size:0.8125rem;
+  }
+  .slds-checkbox [type=checkbox]{
+    width:1px;
+    height:1px;
+    border:0;
+    clip:rect(0 0 0 0);
+    margin:-1px;
+    overflow:hidden;
+    padding:0;
+    position:absolute;
+    pointer-events:auto;
+  }
+  .slds-checkbox [type=checkbox]:checked + .slds-checkbox_faux, .slds-checkbox [type=checkbox]:checked + .slds-checkbox--faux, .slds-checkbox [type=checkbox]:checked ~ .slds-checkbox_faux, .slds-checkbox [type=checkbox]:checked ~ .slds-checkbox--faux, .slds-checkbox [type=checkbox]:checked + .slds-checkbox__label .slds-checkbox_faux, .slds-checkbox [type=checkbox]:checked + .slds-checkbox__label .slds-checkbox--faux{
+    border-color:var(--sds-c-checkbox-color-border-checked, var(--sds-c-checkbox-color-border, #dddbda));
+    background-color:var(--sds-c-checkbox-color-background-checked, var(--sds-c-checkbox-color-background, white));
+  }
+  .slds-checkbox [type=checkbox]:checked + .slds-checkbox_faux:after, .slds-checkbox [type=checkbox]:checked + .slds-checkbox--faux:after, .slds-checkbox [type=checkbox]:checked ~ .slds-checkbox_faux:after, .slds-checkbox [type=checkbox]:checked ~ .slds-checkbox--faux:after, .slds-checkbox [type=checkbox]:checked + .slds-checkbox__label .slds-checkbox_faux:after, .slds-checkbox [type=checkbox]:checked + .slds-checkbox__label .slds-checkbox--faux:after{
+    display:block;
+    content:"";
+    height:0.25rem;
+    width:0.5rem;
+    position:absolute;
+    top:50%;
+    /*! @noflip */
+    left:50%;
+    -webkit-transform:translate3d(-50%, -50%, 0) rotate(-45deg);
+            transform:translate3d(-50%, -50%, 0) rotate(-45deg);
+    border-bottom:2px solid var(--sds-c-checkbox-mark-color-foreground, #0176d3);
+    /*! @noflip */
+    border-left:2px solid var(--sds-c-checkbox-mark-color-foreground, #0176d3);
+  }
+  .slds-checkbox [type=checkbox]:focus + .slds-checkbox_faux,
+  .slds-checkbox [type=checkbox]:focus + .slds-checkbox--faux,
+  .slds-checkbox [type=checkbox]:focus ~ .slds-checkbox_faux,
+  .slds-checkbox [type=checkbox]:focus ~ .slds-checkbox--faux,
+  .slds-checkbox [type=checkbox]:focus + .slds-checkbox__label .slds-checkbox_faux,
+  .slds-checkbox [type=checkbox]:focus + .slds-checkbox__label .slds-checkbox--faux{
+    border-color:var(--sds-c-checkbox-color-border-focus, #1b96ff);
+    -webkit-box-shadow:var(--sds-c-checkbox-shadow-focus, 0 0 3px #0176d3);
+            box-shadow:var(--sds-c-checkbox-shadow-focus, 0 0 3px #0176d3);
+  }
+  .slds-checkbox [type=checkbox]:focus:checked > .slds-checkbox_faux, .slds-checkbox [type=checkbox]:focus:checked > .slds-checkbox--faux, .slds-checkbox [type=checkbox]:focus:checked ~ .slds-checkbox_faux, .slds-checkbox [type=checkbox]:focus:checked ~ .slds-checkbox--faux, .slds-checkbox [type=checkbox]:focus:checked + .slds-checkbox__label .slds-checkbox_faux, .slds-checkbox [type=checkbox]:focus:checked + .slds-checkbox__label .slds-checkbox--faux{
+    border-color:var(--sds-c-checkbox-color-border-focus, #1b96ff);
+  }
+  .slds-checkbox [type=checkbox]:indeterminate + .slds-checkbox_faux, .slds-checkbox [type=checkbox]:indeterminate + .slds-checkbox--faux, .slds-checkbox [type=checkbox]:indeterminate ~ .slds-checkbox_faux, .slds-checkbox [type=checkbox]:indeterminate ~ .slds-checkbox--faux, .slds-checkbox [type=checkbox]:indeterminate + .slds-checkbox__label .slds-checkbox_faux, .slds-checkbox [type=checkbox]:indeterminate + .slds-checkbox__label .slds-checkbox--faux{
+    border-color:var(--sds-c-checkbox-color-border-checked, var(--sds-c-checkbox-color-border, #dddbda));
+    background-color:var(--sds-c-checkbox-color-background-checked, var(--sds-c-checkbox-color-background, white));
+  }
+  .slds-checkbox [type=checkbox]:indeterminate + .slds-checkbox_faux:after, .slds-checkbox [type=checkbox]:indeterminate + .slds-checkbox--faux:after, .slds-checkbox [type=checkbox]:indeterminate ~ .slds-checkbox_faux:after, .slds-checkbox [type=checkbox]:indeterminate ~ .slds-checkbox--faux:after, .slds-checkbox [type=checkbox]:indeterminate + .slds-checkbox__label .slds-checkbox_faux:after, .slds-checkbox [type=checkbox]:indeterminate + .slds-checkbox__label .slds-checkbox--faux:after{
+    content:"";
+    display:block;
+    position:absolute;
+    top:50%;
+    /*! @noflip */
+    left:50%;
+    width:0.5rem;
+    height:2px;
+    border:0;
+    -webkit-transform:translate3d(-50%, -50%, 0);
+            transform:translate3d(-50%, -50%, 0);
+    background:var(--sds-c-checkbox-mark-color-foreground, #0176d3);
+  }
+  .slds-checkbox [type=checkbox][disabled] + .slds-checkbox_faux,
+  .slds-checkbox [type=checkbox][disabled] + .slds-checkbox--faux,
+  .slds-checkbox [type=checkbox][disabled] ~ .slds-checkbox_faux,
+  .slds-checkbox [type=checkbox][disabled] ~ .slds-checkbox--faux,
+  .slds-checkbox [type=checkbox][disabled] + .slds-checkbox__label .slds-checkbox_faux,
+  .slds-checkbox [type=checkbox][disabled] + .slds-checkbox__label .slds-checkbox--faux{
+    border-color:#c9c7c5;
+    background-color:#ecebea;
+  }
+  .slds-checkbox [type=checkbox][disabled] + .slds-checkbox_faux:after,
+  .slds-checkbox [type=checkbox][disabled] + .slds-checkbox--faux:after,
+  .slds-checkbox [type=checkbox][disabled] ~ .slds-checkbox_faux:after,
+  .slds-checkbox [type=checkbox][disabled] ~ .slds-checkbox--faux:after,
+  .slds-checkbox [type=checkbox][disabled] + .slds-checkbox__label .slds-checkbox_faux:after,
+  .slds-checkbox [type=checkbox][disabled] + .slds-checkbox__label .slds-checkbox--faux:after{
+    border-color:#969492;
+  }
+  
+  .slds-has-error .slds-checkbox [type=checkbox] + .slds-checkbox_faux,
+  .slds-has-error .slds-checkbox [type=checkbox] + .slds-checkbox--faux,
+  .slds-has-error .slds-checkbox [type=checkbox] ~ .slds-checkbox_faux,
+  .slds-has-error .slds-checkbox [type=checkbox] ~ .slds-checkbox--faux,
+  .slds-has-error .slds-checkbox [type=checkbox] + .slds-checkbox__label .slds-checkbox_faux,
+  .slds-has-error .slds-checkbox [type=checkbox] + .slds-checkbox__label .slds-checkbox--faux{
+    border-color:#ea001e;
+    border-width:2px;
+  }
+  .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox_faux, .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox--faux, .slds-has-error .slds-checkbox [type=checkbox]:checked ~ .slds-checkbox_faux, .slds-has-error .slds-checkbox [type=checkbox]:checked ~ .slds-checkbox--faux, .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox__label .slds-checkbox_faux, .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox__label .slds-checkbox--faux{
+    border-color:#ea001e;
+  }
+  .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox_faux:after, .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox--faux:after, .slds-has-error .slds-checkbox [type=checkbox]:checked ~ .slds-checkbox_faux:after, .slds-has-error .slds-checkbox [type=checkbox]:checked ~ .slds-checkbox--faux:after, .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox__label .slds-checkbox_faux:after, .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox__label .slds-checkbox--faux:after{
+    border-color:#fe5c4c;
+  }
+  
+  .slds-form-element .slds-checkbox [type=checkbox] + .slds-checkbox_faux,
+  .slds-form-element .slds-checkbox [type=checkbox] + .slds-checkbox--faux,
+  .slds-form-element .slds-checkbox [type=checkbox] ~ .slds-checkbox_faux,
+  .slds-form-element .slds-checkbox [type=checkbox] ~ .slds-checkbox--faux,
+  .slds-form-element .slds-checkbox [type=checkbox] + .slds-checkbox__label .slds-checkbox_faux,
+  .slds-form-element .slds-checkbox [type=checkbox] + .slds-checkbox__label .slds-checkbox--faux{
+    margin-right:0.5rem;
+  }
+  .slds-checkbox_standalone{
+    pointer-events:none;
+  }
+  .slds-checkbox_standalone [type=checkbox]{
+    width:1rem;
+    height:1rem;
+    margin:0;
+    clip:auto;
+    opacity:0;
+  }
+  .slds-checkbox_standalone .slds-checkbox_faux{
+    display:block;
+  }
+  .slds-checkbox_toggle,
+  .slds-checkbox--toggle{
+    width:100%;
+  }
+  .slds-checkbox_toggle .slds-checkbox_faux,
+  .slds-checkbox_toggle .slds-checkbox--faux,
+  .slds-checkbox--toggle .slds-checkbox_faux,
+  .slds-checkbox--toggle .slds-checkbox--faux{
+    display:block;
+    position:relative;
+    width:3rem;
+    height:1.5rem;
+    border-width:1px;
+    border-style:solid;
+    border-color:var(--sds-c-checkbox-toggle-color-border, #b0adab);
+    padding:0.125rem;
+    background-color:var(--sds-c-checkbox-toggle-color-background, #b0adab);
+    border-radius:var(--sds-c-checkbox-toggle-radius-border, 15rem);
+    -webkit-box-shadow:var(--sds-c-checkbox-toggle-shadow);
+            box-shadow:var(--sds-c-checkbox-toggle-shadow);
+    -webkit-transition:background-color 0.2s cubic-bezier(0.75, 0, 0.08, 1);
+    transition:background-color 0.2s cubic-bezier(0.75, 0, 0.08, 1);
+  }
+  .slds-checkbox_toggle .slds-checkbox_faux:hover, .slds-checkbox_toggle .slds-checkbox_faux:focus,
+  .slds-checkbox_toggle .slds-checkbox--faux:hover,
+  .slds-checkbox_toggle .slds-checkbox--faux:focus,
+  .slds-checkbox--toggle .slds-checkbox_faux:hover,
+  .slds-checkbox--toggle .slds-checkbox_faux:focus,
+  .slds-checkbox--toggle .slds-checkbox--faux:hover,
+  .slds-checkbox--toggle .slds-checkbox--faux:focus{
+    cursor:pointer;
+    background-color:var(--sds-c-checkbox-toggle-color-background-hover, #969492);
+  }
+  .slds-checkbox_toggle .slds-checkbox_faux:after,
+  .slds-checkbox_toggle .slds-checkbox--faux:after,
+  .slds-checkbox--toggle .slds-checkbox_faux:after,
+  .slds-checkbox--toggle .slds-checkbox--faux:after{
+    content:"";
+    position:absolute;
+    top:1px;
+    left:1px;
+    width:1.25rem;
+    height:1.25rem;
+    background-color:var(--sds-c-checkbox-toggle-switch-color-background, white);
+    border-radius:var(--sds-c-checkbox-toggle-radius-border, 15rem);
+  }
+  .slds-checkbox_toggle [type=checkbox],
+  .slds-checkbox--toggle [type=checkbox]{
+    width:1px;
+    height:1px;
+    border:0;
+    clip:rect(0 0 0 0);
+    margin:-1px;
+    overflow:hidden;
+    padding:0;
+    position:absolute;
+  }
+  .slds-checkbox_toggle [type=checkbox] + .slds-checkbox_faux_container,
+  .slds-checkbox_toggle [type=checkbox] + .slds-checkbox--faux_container,
+  .slds-checkbox--toggle [type=checkbox] + .slds-checkbox_faux_container,
+  .slds-checkbox--toggle [type=checkbox] + .slds-checkbox--faux_container{
+    font-size:0.625rem;
+    color:#3e3e3c;
+  }
+  .slds-checkbox_toggle [type=checkbox] + .slds-checkbox_faux_container .slds-checkbox_off,
+  .slds-checkbox_toggle [type=checkbox] + .slds-checkbox_faux_container .slds-checkbox--off,
+  .slds-checkbox_toggle [type=checkbox] + .slds-checkbox--faux_container .slds-checkbox_off,
+  .slds-checkbox_toggle [type=checkbox] + .slds-checkbox--faux_container .slds-checkbox--off,
+  .slds-checkbox--toggle [type=checkbox] + .slds-checkbox_faux_container .slds-checkbox_off,
+  .slds-checkbox--toggle [type=checkbox] + .slds-checkbox_faux_container .slds-checkbox--off,
+  .slds-checkbox--toggle [type=checkbox] + .slds-checkbox--faux_container .slds-checkbox_off,
+  .slds-checkbox--toggle [type=checkbox] + .slds-checkbox--faux_container .slds-checkbox--off{
+    display:block;
+  }
+  .slds-checkbox_toggle [type=checkbox] + .slds-checkbox_faux_container .slds-checkbox_on,
+  .slds-checkbox_toggle [type=checkbox] + .slds-checkbox_faux_container .slds-checkbox--on,
+  .slds-checkbox_toggle [type=checkbox] + .slds-checkbox--faux_container .slds-checkbox_on,
+  .slds-checkbox_toggle [type=checkbox] + .slds-checkbox--faux_container .slds-checkbox--on,
+  .slds-checkbox--toggle [type=checkbox] + .slds-checkbox_faux_container .slds-checkbox_on,
+  .slds-checkbox--toggle [type=checkbox] + .slds-checkbox_faux_container .slds-checkbox--on,
+  .slds-checkbox--toggle [type=checkbox] + .slds-checkbox--faux_container .slds-checkbox_on,
+  .slds-checkbox--toggle [type=checkbox] + .slds-checkbox--faux_container .slds-checkbox--on{
+    display:none;
+  }
+  .slds-checkbox_toggle [type=checkbox]:focus + .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox]:focus + .slds-checkbox--faux,
+  .slds-checkbox_toggle [type=checkbox]:focus ~ .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox]:focus ~ .slds-checkbox--faux,
+  .slds-checkbox_toggle [type=checkbox]:focus + .slds-checkbox_faux_container .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox]:focus + .slds-checkbox--faux_container .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox]:focus + .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox]:focus + .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox]:focus ~ .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox]:focus ~ .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox]:focus + .slds-checkbox_faux_container .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox]:focus + .slds-checkbox--faux_container .slds-checkbox--faux{
+    background-color:var(--sds-c-checkbox-toggle-color-background-focus, #969492);
+    border-color:var(--sds-c-checkbox-toggle-color-border-focus, #1b96ff);
+    -webkit-box-shadow:var(--sds-c-checkbox-toggle-shadow-focus, 0 0 3px #0176d3);
+            box-shadow:var(--sds-c-checkbox-toggle-shadow-focus, 0 0 3px #0176d3);
+  }
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_off,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--off,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_off,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--off{
+    display:none;
+  }
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_on,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--on,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_on,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--on{
+    display:block;
+  }
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux,
+  .slds-checkbox_toggle [type=checkbox]:checked ~ .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox]:checked ~ .slds-checkbox--faux,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox]:checked ~ .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox]:checked ~ .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--faux{
+    border-color:var(--sds-c-checkbox-toggle-color-border-checked, #0176d3);
+    background-color:var(--sds-c-checkbox-toggle-color-background-checked, #0176d3);
+  }
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux:hover, .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux:focus,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux:hover,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux:focus,
+  .slds-checkbox_toggle [type=checkbox]:checked ~ .slds-checkbox_faux:hover,
+  .slds-checkbox_toggle [type=checkbox]:checked ~ .slds-checkbox_faux:focus,
+  .slds-checkbox_toggle [type=checkbox]:checked ~ .slds-checkbox--faux:hover,
+  .slds-checkbox_toggle [type=checkbox]:checked ~ .slds-checkbox--faux:focus,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:hover,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:focus,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:hover,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:focus,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux:hover,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux:focus,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux:hover,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux:focus,
+  .slds-checkbox--toggle [type=checkbox]:checked ~ .slds-checkbox_faux:hover,
+  .slds-checkbox--toggle [type=checkbox]:checked ~ .slds-checkbox_faux:focus,
+  .slds-checkbox--toggle [type=checkbox]:checked ~ .slds-checkbox--faux:hover,
+  .slds-checkbox--toggle [type=checkbox]:checked ~ .slds-checkbox--faux:focus,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:hover,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:focus,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:hover,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:focus{
+    background-color:var(--sds-c-checkbox-toggle-color-background-checked-hover, #014486);
+  }
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux:before,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux:before,
+  .slds-checkbox_toggle [type=checkbox]:checked ~ .slds-checkbox_faux:before,
+  .slds-checkbox_toggle [type=checkbox]:checked ~ .slds-checkbox--faux:before,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:before,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:before,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux:before,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux:before,
+  .slds-checkbox--toggle [type=checkbox]:checked ~ .slds-checkbox_faux:before,
+  .slds-checkbox--toggle [type=checkbox]:checked ~ .slds-checkbox--faux:before,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:before,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:before{
+    content:"";
+    position:absolute;
+    top:1px;
+    right:1px;
+    width:1.25rem;
+    height:1.25rem;
+    background-color:var(--sds-c-checkbox-toggle-switch-color-background-checked, var(--sds-c-checkbox-toggle-switch-color-background, white));
+    border-radius:var(--sds-c-checkbox-toggle-radius-border, 15rem);
+    -webkit-transition:-webkit-transform 0.2s cubic-bezier(0.75, 0, 0.08, 1);
+    transition:-webkit-transform 0.2s cubic-bezier(0.75, 0, 0.08, 1);
+    transition:transform 0.2s cubic-bezier(0.75, 0, 0.08, 1);
+    transition:transform 0.2s cubic-bezier(0.75, 0, 0.08, 1), -webkit-transform 0.2s cubic-bezier(0.75, 0, 0.08, 1);
+  }
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux:after,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux:after,
+  .slds-checkbox_toggle [type=checkbox]:checked ~ .slds-checkbox_faux:after,
+  .slds-checkbox_toggle [type=checkbox]:checked ~ .slds-checkbox--faux:after,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:after,
+  .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:after,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux:after,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux:after,
+  .slds-checkbox--toggle [type=checkbox]:checked ~ .slds-checkbox_faux:after,
+  .slds-checkbox--toggle [type=checkbox]:checked ~ .slds-checkbox--faux:after,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:after,
+  .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:after{
+    content:" ";
+    position:absolute;
+    top:0.25rem;
+    left:0.6rem;
+    height:0.7rem;
+    width:0.45rem;
+    border-bottom-width:2px;
+    border-bottom-style:solid;
+    border-bottom-color:var(--sds-c-checkbox-toggle-mark-color-foreground, white);
+    /*! @noflip */
+    border-right-width:2px;
+    border-right-style:solid;
+    border-right-color:var(--sds-c-checkbox-toggle-mark-color-foreground, white);
+    border-radius:0;
+    background-color:transparent;
+    -webkit-transform:rotate(45deg);
+            transform:rotate(45deg);
+  }
+  .slds-checkbox_toggle [type=checkbox]:checked:focus + .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox]:checked:focus + .slds-checkbox--faux,
+  .slds-checkbox_toggle [type=checkbox]:checked:focus ~ .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox]:checked:focus ~ .slds-checkbox--faux,
+  .slds-checkbox_toggle [type=checkbox]:checked:focus + .slds-checkbox_faux_container .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox]:checked:focus + .slds-checkbox--faux_container .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox]:checked:focus + .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox]:checked:focus + .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox]:checked:focus ~ .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox]:checked:focus ~ .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox]:checked:focus + .slds-checkbox_faux_container .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox]:checked:focus + .slds-checkbox--faux_container .slds-checkbox--faux{
+    background-color:var(--sds-c-checkbox-toggle-color-background-checked-focus, #014486);
+  }
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox--faux,
+  .slds-checkbox_toggle [type=checkbox][disabled] ~ .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox][disabled] ~ .slds-checkbox--faux,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox_faux_container .slds-checkbox_faux,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox--faux_container .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox][disabled] ~ .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox][disabled] ~ .slds-checkbox--faux,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox_faux_container .slds-checkbox_faux,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox--faux_container .slds-checkbox--faux{
+    background-color:#b0adab;
+    border-color:#b0adab;
+    pointer-events:none;
+  }
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox_faux:after,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox--faux:after,
+  .slds-checkbox_toggle [type=checkbox][disabled] ~ .slds-checkbox_faux:after,
+  .slds-checkbox_toggle [type=checkbox][disabled] ~ .slds-checkbox--faux:after,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox_faux_container .slds-checkbox_faux:after,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox--faux_container .slds-checkbox--faux:after,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox_faux:after,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox--faux:after,
+  .slds-checkbox--toggle [type=checkbox][disabled] ~ .slds-checkbox_faux:after,
+  .slds-checkbox--toggle [type=checkbox][disabled] ~ .slds-checkbox--faux:after,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox_faux_container .slds-checkbox_faux:after,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox--faux_container .slds-checkbox--faux:after{
+    background-color:#dddbda;
+  }
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox_faux:hover, .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox_faux:focus,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox--faux:hover,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox--faux:focus,
+  .slds-checkbox_toggle [type=checkbox][disabled] ~ .slds-checkbox_faux:hover,
+  .slds-checkbox_toggle [type=checkbox][disabled] ~ .slds-checkbox_faux:focus,
+  .slds-checkbox_toggle [type=checkbox][disabled] ~ .slds-checkbox--faux:hover,
+  .slds-checkbox_toggle [type=checkbox][disabled] ~ .slds-checkbox--faux:focus,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox_faux_container .slds-checkbox_faux:hover,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox_faux_container .slds-checkbox_faux:focus,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox--faux_container .slds-checkbox--faux:hover,
+  .slds-checkbox_toggle [type=checkbox][disabled] + .slds-checkbox--faux_container .slds-checkbox--faux:focus,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox_faux:hover,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox_faux:focus,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox--faux:hover,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox--faux:focus,
+  .slds-checkbox--toggle [type=checkbox][disabled] ~ .slds-checkbox_faux:hover,
+  .slds-checkbox--toggle [type=checkbox][disabled] ~ .slds-checkbox_faux:focus,
+  .slds-checkbox--toggle [type=checkbox][disabled] ~ .slds-checkbox--faux:hover,
+  .slds-checkbox--toggle [type=checkbox][disabled] ~ .slds-checkbox--faux:focus,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox_faux_container .slds-checkbox_faux:hover,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox_faux_container .slds-checkbox_faux:focus,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox--faux_container .slds-checkbox--faux:hover,
+  .slds-checkbox--toggle [type=checkbox][disabled] + .slds-checkbox--faux_container .slds-checkbox--faux:focus{
+    background-color:#b0adab;
+    cursor:default;
+  }
+  .slds-checkbox_toggle [type=checkbox][disabled]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:before,
+  .slds-checkbox_toggle [type=checkbox][disabled]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:before,
+  .slds-checkbox--toggle [type=checkbox][disabled]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:before,
+  .slds-checkbox--toggle [type=checkbox][disabled]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:before{
+    background-color:#dddbda;
+  }
+  .slds-checkbox_toggle [type=checkbox][disabled]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:after,
+  .slds-checkbox_toggle [type=checkbox][disabled]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:after,
+  .slds-checkbox--toggle [type=checkbox][disabled]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:after,
+  .slds-checkbox--toggle [type=checkbox][disabled]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:after{
+    background-color:transparent;
+  }
+  .slds-checkbox_add-button,
+  .slds-checkbox--add-button{
+  }
+  .slds-checkbox_add-button .slds-checkbox_faux,
+  .slds-checkbox_add-button .slds-checkbox--faux,
+  .slds-checkbox--add-button .slds-checkbox_faux,
+  .slds-checkbox--add-button .slds-checkbox--faux{
+    width:2rem;
+    height:2rem;
+    position:relative;
+    display:inline-block;
+    border:1px solid #dddbda;
+    border-radius:0.25rem;
+    background-color:white;
+    cursor:pointer;
+  }
+  .slds-checkbox_add-button .slds-checkbox_faux:before, .slds-checkbox_add-button .slds-checkbox_faux:after,
+  .slds-checkbox_add-button .slds-checkbox--faux:before,
+  .slds-checkbox_add-button .slds-checkbox--faux:after,
+  .slds-checkbox--add-button .slds-checkbox_faux:before,
+  .slds-checkbox--add-button .slds-checkbox_faux:after,
+  .slds-checkbox--add-button .slds-checkbox--faux:before,
+  .slds-checkbox--add-button .slds-checkbox--faux:after{
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    height:0.875rem;
+    width:0.125rem;
+    margin:auto;
+    background:#0176d3;
+  }
+  .slds-checkbox_add-button .slds-checkbox_faux:after,
+  .slds-checkbox_add-button .slds-checkbox--faux:after,
+  .slds-checkbox--add-button .slds-checkbox_faux:after,
+  .slds-checkbox--add-button .slds-checkbox--faux:after{
+    width:0.875rem;
+    height:0.125rem;
+  }
+  .slds-checkbox_add-button .slds-checkbox_faux:hover:not([disabled]), .slds-checkbox_add-button .slds-checkbox_faux:focus:not([disabled]),
+  .slds-checkbox_add-button .slds-checkbox--faux:hover:not([disabled]),
+  .slds-checkbox_add-button .slds-checkbox--faux:focus:not([disabled]),
+  .slds-checkbox--add-button .slds-checkbox_faux:hover:not([disabled]),
+  .slds-checkbox--add-button .slds-checkbox_faux:focus:not([disabled]),
+  .slds-checkbox--add-button .slds-checkbox--faux:hover:not([disabled]),
+  .slds-checkbox--add-button .slds-checkbox--faux:focus:not([disabled]){
+    border:1px solid #dddbda;
+    background-color:#fafaf9;
+  }
+  .slds-checkbox_add-button .slds-checkbox_faux:active,
+  .slds-checkbox_add-button .slds-checkbox--faux:active,
+  .slds-checkbox--add-button .slds-checkbox_faux:active,
+  .slds-checkbox--add-button .slds-checkbox--faux:active{
+    background-color:#f3f2f2;
+  }
+  .slds-checkbox_add-button [type=checkbox]:checked ~ .slds-checkbox_faux,
+  .slds-checkbox_add-button [type=checkbox]:checked ~ .slds-checkbox--faux,
+  .slds-checkbox_add-button [type=checkbox]:checked + .slds-checkbox_faux,
+  .slds-checkbox_add-button [type=checkbox]:checked + .slds-checkbox--faux,
+  .slds-checkbox--add-button [type=checkbox]:checked ~ .slds-checkbox_faux,
+  .slds-checkbox--add-button [type=checkbox]:checked ~ .slds-checkbox--faux,
+  .slds-checkbox--add-button [type=checkbox]:checked + .slds-checkbox_faux,
+  .slds-checkbox--add-button [type=checkbox]:checked + .slds-checkbox--faux{
+    border-color:transparent;
+    background:#014486;
+  }
+  .slds-checkbox_add-button [type=checkbox]:checked ~ .slds-checkbox_faux:before, .slds-checkbox_add-button [type=checkbox]:checked ~ .slds-checkbox_faux:after,
+  .slds-checkbox_add-button [type=checkbox]:checked ~ .slds-checkbox--faux:before,
+  .slds-checkbox_add-button [type=checkbox]:checked ~ .slds-checkbox--faux:after,
+  .slds-checkbox_add-button [type=checkbox]:checked + .slds-checkbox_faux:before,
+  .slds-checkbox_add-button [type=checkbox]:checked + .slds-checkbox_faux:after,
+  .slds-checkbox_add-button [type=checkbox]:checked + .slds-checkbox--faux:before,
+  .slds-checkbox_add-button [type=checkbox]:checked + .slds-checkbox--faux:after,
+  .slds-checkbox--add-button [type=checkbox]:checked ~ .slds-checkbox_faux:before,
+  .slds-checkbox--add-button [type=checkbox]:checked ~ .slds-checkbox_faux:after,
+  .slds-checkbox--add-button [type=checkbox]:checked ~ .slds-checkbox--faux:before,
+  .slds-checkbox--add-button [type=checkbox]:checked ~ .slds-checkbox--faux:after,
+  .slds-checkbox--add-button [type=checkbox]:checked + .slds-checkbox_faux:before,
+  .slds-checkbox--add-button [type=checkbox]:checked + .slds-checkbox_faux:after,
+  .slds-checkbox--add-button [type=checkbox]:checked + .slds-checkbox--faux:before,
+  .slds-checkbox--add-button [type=checkbox]:checked + .slds-checkbox--faux:after{
+    background:white;
+  }
+  .slds-checkbox_add-button [type=checkbox]:checked ~ .slds-checkbox_faux:before,
+  .slds-checkbox_add-button [type=checkbox]:checked ~ .slds-checkbox--faux:before,
+  .slds-checkbox_add-button [type=checkbox]:checked + .slds-checkbox_faux:before,
+  .slds-checkbox_add-button [type=checkbox]:checked + .slds-checkbox--faux:before,
+  .slds-checkbox--add-button [type=checkbox]:checked ~ .slds-checkbox_faux:before,
+  .slds-checkbox--add-button [type=checkbox]:checked ~ .slds-checkbox--faux:before,
+  .slds-checkbox--add-button [type=checkbox]:checked + .slds-checkbox_faux:before,
+  .slds-checkbox--add-button [type=checkbox]:checked + .slds-checkbox--faux:before{
+    left:0.3125rem;
+    width:0.125rem;
+    height:1rem;
+    -webkit-transform:rotate(40deg);
+            transform:rotate(40deg);
+  }
+  .slds-checkbox_add-button [type=checkbox]:checked ~ .slds-checkbox_faux:after,
+  .slds-checkbox_add-button [type=checkbox]:checked ~ .slds-checkbox--faux:after,
+  .slds-checkbox_add-button [type=checkbox]:checked + .slds-checkbox_faux:after,
+  .slds-checkbox_add-button [type=checkbox]:checked + .slds-checkbox--faux:after,
+  .slds-checkbox--add-button [type=checkbox]:checked ~ .slds-checkbox_faux:after,
+  .slds-checkbox--add-button [type=checkbox]:checked ~ .slds-checkbox--faux:after,
+  .slds-checkbox--add-button [type=checkbox]:checked + .slds-checkbox_faux:after,
+  .slds-checkbox--add-button [type=checkbox]:checked + .slds-checkbox--faux:after{
+    top:0.3125rem;
+    left:-0.625rem;
+    width:0.5625rem;
+    height:0.125rem;
+    -webkit-transform:rotate(40deg);
+            transform:rotate(40deg);
+  }
+  .slds-checkbox_add-button [type=checkbox]:focus ~ .slds-checkbox_faux,
+  .slds-checkbox_add-button [type=checkbox]:focus ~ .slds-checkbox--faux,
+  .slds-checkbox_add-button [type=checkbox]:focus + .slds-checkbox_faux,
+  .slds-checkbox_add-button [type=checkbox]:focus + .slds-checkbox--faux,
+  .slds-checkbox--add-button [type=checkbox]:focus ~ .slds-checkbox_faux,
+  .slds-checkbox--add-button [type=checkbox]:focus ~ .slds-checkbox--faux,
+  .slds-checkbox--add-button [type=checkbox]:focus + .slds-checkbox_faux,
+  .slds-checkbox--add-button [type=checkbox]:focus + .slds-checkbox--faux{
+    outline:0;
+    -webkit-box-shadow:0 0 3px #0176d3;
+            box-shadow:0 0 3px #0176d3;
+    border-color:#1b96ff;
+  }
+  .slds-checkbox_add-button [type=checkbox][disabled] ~ .slds-checkbox_faux,
+  .slds-checkbox_add-button [type=checkbox][disabled] ~ .slds-checkbox--faux,
+  .slds-checkbox_add-button [type=checkbox][disabled] + .slds-checkbox_faux,
+  .slds-checkbox_add-button [type=checkbox][disabled] + .slds-checkbox--faux,
+  .slds-checkbox--add-button [type=checkbox][disabled] ~ .slds-checkbox_faux,
+  .slds-checkbox--add-button [type=checkbox][disabled] ~ .slds-checkbox--faux,
+  .slds-checkbox--add-button [type=checkbox][disabled] + .slds-checkbox_faux,
+  .slds-checkbox--add-button [type=checkbox][disabled] + .slds-checkbox--faux{
+    background-color:#f3f2f2;
+    border-color:rgba(0, 0, 0, 0);
+    color:white;
+    cursor:default;
+  }
+  .slds-checkbox_add-button [type=checkbox][disabled] ~ .slds-checkbox_faux:before, .slds-checkbox_add-button [type=checkbox][disabled] ~ .slds-checkbox_faux:after,
+  .slds-checkbox_add-button [type=checkbox][disabled] ~ .slds-checkbox--faux:before,
+  .slds-checkbox_add-button [type=checkbox][disabled] ~ .slds-checkbox--faux:after,
+  .slds-checkbox_add-button [type=checkbox][disabled] + .slds-checkbox_faux:before,
+  .slds-checkbox_add-button [type=checkbox][disabled] + .slds-checkbox_faux:after,
+  .slds-checkbox_add-button [type=checkbox][disabled] + .slds-checkbox--faux:before,
+  .slds-checkbox_add-button [type=checkbox][disabled] + .slds-checkbox--faux:after,
+  .slds-checkbox--add-button [type=checkbox][disabled] ~ .slds-checkbox_faux:before,
+  .slds-checkbox--add-button [type=checkbox][disabled] ~ .slds-checkbox_faux:after,
+  .slds-checkbox--add-button [type=checkbox][disabled] ~ .slds-checkbox--faux:before,
+  .slds-checkbox--add-button [type=checkbox][disabled] ~ .slds-checkbox--faux:after,
+  .slds-checkbox--add-button [type=checkbox][disabled] + .slds-checkbox_faux:before,
+  .slds-checkbox--add-button [type=checkbox][disabled] + .slds-checkbox_faux:after,
+  .slds-checkbox--add-button [type=checkbox][disabled] + .slds-checkbox--faux:before,
+  .slds-checkbox--add-button [type=checkbox][disabled] + .slds-checkbox--faux:after{
+    background:#969492;
+  }
+  .slds-checkbox_add-button [type=checkbox][disabled]:checked ~ .slds-checkbox_faux,
+  .slds-checkbox_add-button [type=checkbox][disabled]:checked + .slds-checkbox_faux,
+  .slds-checkbox--add-button [type=checkbox][disabled]:checked ~ .slds-checkbox_faux,
+  .slds-checkbox--add-button [type=checkbox][disabled]:checked + .slds-checkbox_faux{
+    background-color:white;
+  }
+  .slds-checkbox-button{
+    width:2rem;
+    height:2rem;
+    display:-webkit-inline-box;
+    display:-ms-inline-flexbox;
+    display:inline-flex;
+    -webkit-box-align:center;
+        -ms-flex-align:center;
+            align-items:center;
+    -webkit-box-pack:center;
+        -ms-flex-pack:center;
+            justify-content:center;
+    border:1px solid #dddbda;
+    border-radius:0.25rem;
+    color:#014486;
+    cursor:pointer;
+  }
+  .slds-checkbox-button_is-checked{
+    background-color:#014486;
+    border-color:transparent;
+    color:white;
+  }
+  .slds-checkbox-button_is-disabled{
+    background-color:white;
+    border-color:#dddbda;
+    color:#dddbda;
+    cursor:default;
+  }
+  .slds-checkbox-button_is-disabled.slds-checkbox-button_is-checked{
+    background-color:#f3f2f2;
+    border-color:rgba(0, 0, 0, 0);
+    color:white;
+  }
+  .slds-checkbox-button_is-focused{
+    outline:0;
+    -webkit-box-shadow:0 0 3px #0176d3;
+            box-shadow:0 0 3px #0176d3;
+    border-color:#1b96ff;
+  }
+  .slds-checkbox_button-group,
+  .slds-checkbox--button-group{
+    display:-webkit-inline-box;
+    display:-ms-inline-flexbox;
+    display:inline-flex;
+    background-color:white;
+    border:1px solid #dddbda;
+    border-radius:0.25rem;
+  }
+  .slds-checkbox_button,
+  .slds-checkbox--button{
+    display:-webkit-box;
+    display:-ms-flexbox;
+    display:flex;
+    border:0;
+    border-radius:0;
+    background-clip:padding-box;
+  }
+  .slds-checkbox_button .slds-checkbox_faux,
+  .slds-checkbox_button .slds-checkbox--faux,
+  .slds-checkbox--button .slds-checkbox_faux,
+  .slds-checkbox--button .slds-checkbox--faux{
+    padding-left:1rem;
+    padding-right:1rem;
+    text-align:center;
+    vertical-align:middle;
+    position:relative;
+    background-color:white;
+    -webkit-transition:border 0.1s linear, background-color 0.1s linear;
+    transition:border 0.1s linear, background-color 0.1s linear;
+  }
+  .slds-checkbox_button .slds-checkbox_faux:hover, .slds-checkbox_button .slds-checkbox_faux:focus,
+  .slds-checkbox_button .slds-checkbox--faux:hover,
+  .slds-checkbox_button .slds-checkbox--faux:focus,
+  .slds-checkbox--button .slds-checkbox_faux:hover,
+  .slds-checkbox--button .slds-checkbox_faux:focus,
+  .slds-checkbox--button .slds-checkbox--faux:hover,
+  .slds-checkbox--button .slds-checkbox--faux:focus{
+    cursor:pointer;
+    background-color:#fafaf9;
+  }
+  .slds-checkbox_button .slds-checkbox_button__label .slds-checkbox_faux,
+  .slds-checkbox_button .slds-checkbox--button__label .slds-checkbox--faux,
+  .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox--button__label .slds-checkbox--faux,
+  .slds-checkbox--button .slds-checkbox_button__label .slds-checkbox_faux,
+  .slds-checkbox--button .slds-checkbox--button__label .slds-checkbox--faux,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox--button__label .slds-checkbox--faux{
+    background-color:transparent;
+  }
+  .slds-checkbox_button + .slds-checkbox_button,
+  .slds-checkbox_button + .slds-checkbox--button,
+  .slds-checkbox--button + .slds-checkbox_button,
+  .slds-checkbox--button + .slds-checkbox--button{
+    border-left:1px solid #dddbda;
+    border-radius:0;
+    margin:0;
+  }
+  .slds-checkbox_button:first-child > .slds-checkbox_faux, .slds-checkbox_button:first-child > .slds-checkbox--faux, .slds-checkbox_button:first-child > .slds-checkbox_button__label, .slds-checkbox_button:first-child > .slds-checkbox--button__label,
+  .slds-checkbox--button:first-child > .slds-checkbox_faux,
+  .slds-checkbox--button:first-child > .slds-checkbox--faux,
+  .slds-checkbox--button:first-child > .slds-checkbox_button__label,
+  .slds-checkbox--button:first-child > .slds-checkbox--button__label{
+    border-radius:0.25rem 0 0 0.25rem;
+  }
+  .slds-checkbox_button:last-child > .slds-checkbox_faux, .slds-checkbox_button:last-child > .slds-checkbox--faux,
+  .slds-checkbox_button .slds-button_last > .slds-checkbox_faux,
+  .slds-checkbox_button .slds-button--last > .slds-checkbox--faux, .slds-checkbox_button:last-child > .slds-checkbox_button__label, .slds-checkbox_button:last-child > .slds-checkbox--button__label,
+  .slds-checkbox--button:last-child > .slds-checkbox_faux,
+  .slds-checkbox--button:last-child > .slds-checkbox--faux,
+  .slds-checkbox--button .slds-button_last > .slds-checkbox_faux,
+  .slds-checkbox--button .slds-button--last > .slds-checkbox--faux,
+  .slds-checkbox--button:last-child > .slds-checkbox_button__label,
+  .slds-checkbox--button:last-child > .slds-checkbox--button__label{
+    border-radius:0 0.25rem 0.25rem 0;
+  }
+  .slds-checkbox_button [type=checkbox],
+  .slds-checkbox--button [type=checkbox]{
+    width:1px;
+    height:1px;
+    border:0;
+    clip:rect(0 0 0 0);
+    margin:-1px;
+    overflow:hidden;
+    padding:0;
+    position:absolute;
+  }
+  .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox_faux, .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox--faux, .slds-checkbox_button [type=checkbox]:checked ~ .slds-checkbox_faux, .slds-checkbox_button [type=checkbox]:checked ~ .slds-checkbox--faux, .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox_button__label, .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox--button__label,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox_faux,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox--faux,
+  .slds-checkbox--button [type=checkbox]:checked ~ .slds-checkbox_faux,
+  .slds-checkbox--button [type=checkbox]:checked ~ .slds-checkbox--faux,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox_button__label,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox--button__label{
+    background-color:#0176d3;
+    color:white;
+  }
+  .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox_faux:hover, .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox_faux:focus, .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox--faux:hover, .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox--faux:focus, .slds-checkbox_button [type=checkbox]:checked ~ .slds-checkbox_faux:hover, .slds-checkbox_button [type=checkbox]:checked ~ .slds-checkbox_faux:focus, .slds-checkbox_button [type=checkbox]:checked ~ .slds-checkbox--faux:hover, .slds-checkbox_button [type=checkbox]:checked ~ .slds-checkbox--faux:focus, .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox_button__label:hover, .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox_button__label:focus, .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox--button__label:hover, .slds-checkbox_button [type=checkbox]:checked + .slds-checkbox--button__label:focus,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox_faux:hover,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox_faux:focus,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox--faux:hover,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox--faux:focus,
+  .slds-checkbox--button [type=checkbox]:checked ~ .slds-checkbox_faux:hover,
+  .slds-checkbox--button [type=checkbox]:checked ~ .slds-checkbox_faux:focus,
+  .slds-checkbox--button [type=checkbox]:checked ~ .slds-checkbox--faux:hover,
+  .slds-checkbox--button [type=checkbox]:checked ~ .slds-checkbox--faux:focus,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox_button__label:hover,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox_button__label:focus,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox--button__label:hover,
+  .slds-checkbox--button [type=checkbox]:checked + .slds-checkbox--button__label:focus{
+    background-color:#014486;
+  }
+  .slds-checkbox_button [type=checkbox]:focus + .slds-checkbox_faux, .slds-checkbox_button [type=checkbox]:focus + .slds-checkbox--faux, .slds-checkbox_button [type=checkbox]:focus ~ .slds-checkbox_faux, .slds-checkbox_button [type=checkbox]:focus ~ .slds-checkbox--faux, .slds-checkbox_button [type=checkbox]:focus + .slds-checkbox_button__label, .slds-checkbox_button [type=checkbox]:focus + .slds-checkbox--button__label,
+  .slds-checkbox--button [type=checkbox]:focus + .slds-checkbox_faux,
+  .slds-checkbox--button [type=checkbox]:focus + .slds-checkbox--faux,
+  .slds-checkbox--button [type=checkbox]:focus ~ .slds-checkbox_faux,
+  .slds-checkbox--button [type=checkbox]:focus ~ .slds-checkbox--faux,
+  .slds-checkbox--button [type=checkbox]:focus + .slds-checkbox_button__label,
+  .slds-checkbox--button [type=checkbox]:focus + .slds-checkbox--button__label{
+    outline:0;
+    -webkit-box-shadow:0 0 3px #0176d3;
+            box-shadow:0 0 3px #0176d3;
+    z-index:1;
+  }
+  .slds-checkbox_button [type=checkbox][disabled] + .slds-checkbox_faux, .slds-checkbox_button [type=checkbox][disabled] + .slds-checkbox--faux, .slds-checkbox_button [type=checkbox][disabled] ~ .slds-checkbox_faux, .slds-checkbox_button [type=checkbox][disabled] ~ .slds-checkbox--faux, .slds-checkbox_button [type=checkbox][disabled] + .slds-checkbox_button__label, .slds-checkbox_button [type=checkbox][disabled] + .slds-checkbox--button__label,
+  .slds-checkbox--button [type=checkbox][disabled] + .slds-checkbox_faux,
+  .slds-checkbox--button [type=checkbox][disabled] + .slds-checkbox--faux,
+  .slds-checkbox--button [type=checkbox][disabled] ~ .slds-checkbox_faux,
+  .slds-checkbox--button [type=checkbox][disabled] ~ .slds-checkbox--faux,
+  .slds-checkbox--button [type=checkbox][disabled] + .slds-checkbox_button__label,
+  .slds-checkbox--button [type=checkbox][disabled] + .slds-checkbox--button__label{
+    background-color:white;
+    color:#dddbda;
+    cursor:default;
+  }
+  .slds-checkbox_button [type=checkbox][disabled]:checked + .slds-checkbox_faux, .slds-checkbox_button [type=checkbox][disabled]:checked + .slds-checkbox--faux, .slds-checkbox_button [type=checkbox][disabled]:checked ~ .slds-checkbox_faux, .slds-checkbox_button [type=checkbox][disabled]:checked ~ .slds-checkbox--faux, .slds-checkbox_button [type=checkbox][disabled]:checked + .slds-checkbox_button__label, .slds-checkbox_button [type=checkbox][disabled]:checked + .slds-checkbox--button__label,
+  .slds-checkbox--button [type=checkbox][disabled]:checked + .slds-checkbox_faux,
+  .slds-checkbox--button [type=checkbox][disabled]:checked + .slds-checkbox--faux,
+  .slds-checkbox--button [type=checkbox][disabled]:checked ~ .slds-checkbox_faux,
+  .slds-checkbox--button [type=checkbox][disabled]:checked ~ .slds-checkbox--faux,
+  .slds-checkbox--button [type=checkbox][disabled]:checked + .slds-checkbox_button__label,
+  .slds-checkbox--button [type=checkbox][disabled]:checked + .slds-checkbox--button__label{
+    background-color:#c9c7c5;
+    color:white;
+    cursor:default;
+  }
+
 /* ComboBox */
 
 .slds-combobox__form-element{

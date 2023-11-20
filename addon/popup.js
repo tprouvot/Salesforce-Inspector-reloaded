@@ -179,7 +179,7 @@ class App extends React.PureComponent {
     let clientId = localStorage.getItem(sfHost + "_clientId");
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
-    let linkInNewTab = localStorage.getItem("openLinksInNewTab");
+    let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
     let browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
     return (
@@ -1841,7 +1841,7 @@ function sfLocaleKeyToCountryCode(localeKey) {
 }
 
 function getLinkTarget(e) {
-  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)){
+  if (JSON.parse(localStorage.getItem("openLinksInNewTab")) || (e.ctrlKey || e.metaKey)) {
     return "_blank";
   } else {
     return "_top";

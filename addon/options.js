@@ -75,6 +75,9 @@ class OptionsTabSelector extends React.Component {
           { option: FlowScrollabilityOption, key: 2 },
           { option: InspectTableBorderOption, key: 3 },
           { option: OpenLinkNewTabOption, key: 4 },
+          { option: OpenPermSetSummaryOption, key: 5 },
+          { option: MdShortcutSearchOption, key: 6 },
+          { option: QueryInputAutoFocusOption, key: 7 }
         ]
       },
       {
@@ -216,7 +219,8 @@ class APIVersionOption extends React.Component {
       h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "API Version")
       ),
-      h("div", { className: "slds-col slds-size_8-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" },
+      h("div", { className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" }),
+      h("div", { className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" },
         h("div", { className: "slds-form-element__control slds-col slds-size_2-of-12" },
           h("input", { type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: this.state.apiVersion.split(".0")[0], onChange: this.onChangeApiVersion }),
         )
@@ -244,15 +248,14 @@ class FlowScrollabilityOption extends React.Component {
       h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "Flow Scrollability")
       ),
-      h("div", { className: "slds-col slds-size_8-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" },
-        h("div", { className: "slds-form-element__control slds-col slds-size_2-of-12" },
-          h("label", { className: "slds-checkbox_toggle slds-grid"}, 
-            h("input", { type: "checkbox", required: true, id: "checkbox-toggle-flowScroll", "aria-describedby": "checkbox-toggle-flowScroll", className: "slds-input", checked: this.state.flowScrollabilityEnabled, onChange: this.onChangeFlowScrollability }),
-            h("span", { id: "checkbox-toggle-flowScroll", className: "slds-checkbox_faux_container" },
-              h("span", { className: "slds-checkbox_faux" }),
-              h("span", { className: "slds-checkbox_on" }, "Enabled"),
-              h("span", { className: "slds-checkbox_off"}, "Disabled"),
-            )
+      h("div", { className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" }),
+      h("div", { dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium" },
+        h("label", { className: "slds-checkbox_toggle slds-grid"}, 
+          h("input", { type: "checkbox", required: true, id: "checkbox-toggle-flowScroll", "aria-describedby": "checkbox-toggle-flowScroll", className: "slds-input", checked: this.state.flowScrollabilityEnabled, onChange: this.onChangeFlowScrollability }),
+          h("span", { id: "checkbox-toggle-flowScroll", className: "slds-checkbox_faux_container center-label" },
+            h("span", { className: "slds-checkbox_faux" }),
+            h("span", { className: "slds-checkbox_on" }, "Enabled"),
+            h("span", { className: "slds-checkbox_off"}, "Disabled"),
           )
         )
       )
@@ -280,10 +283,44 @@ class OpenLinkNewTabOption extends React.Component {
         h("span", {}, "Always open links in a new tab")
       ),
       h("div", { className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" }),
-      h("div", { className: "slds-form-element__control slds-col slds-size_1-of-12" },
-        h("label", { className: "slds-checkbox_toggle slds-grid slds-grid_align-end slds-grid_vertical-align-center"}, 
+      h("div", { dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium" },
+        h("label", { className: "slds-checkbox_toggle slds-grid"}, 
           h("input", { type: "checkbox", required: true, id: "checkbox-toggle-openLinkNewTab", "aria-describedby": "checkbox-toggle-openLinkNewTab", className: "slds-input", checked: this.state.openLinksInNewTab, onChange: this.onChangeOpenLink }),
-          h("span", { id: "checkbox-toggle-openLinkNewTab", className: "slds-checkbox_faux_container" },
+          h("span", { id: "checkbox-toggle-openLinkNewTab", className: "slds-checkbox_faux_container center-label" },
+            h("span", { className: "slds-checkbox_faux" }),
+            h("span", { className: "slds-checkbox_on" }, "Enabled"),
+            h("span", { className: "slds-checkbox_off"}, "Disabled"),
+          )
+        )
+      )
+    );
+  }
+}
+
+class OpenPermSetSummaryOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.onChangeOpenPermSetSummary = this.onChangeOpenPermSetSummary.bind(this);
+    this.state = { enablePermSetSummary: (JSON.parse(localStorage.getItem("enablePermSetSummary")))};
+  }
+
+  onChangeOpenPermSetSummary(e) {
+    let enablePermSetSummary = e.target.checked;
+    this.setState({ enablePermSetSummary });
+    localStorage.setItem("enablePermSetSummary", JSON.stringify(enablePermSetSummary));
+  }
+
+  render() {
+    return h("div", { className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small" },
+      h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, "Open Permission Set / Permission Set Group summary from shortcuts")
+      ),
+      h("div", { className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" }),
+      h("div", { dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium" },
+        h("label", { className: "slds-checkbox_toggle slds-grid"}, 
+          h("input", { type: "checkbox", required: true, id: "checkbox-toggle-openLinkNewTab", "aria-describedby": "checkbox-toggle-openLinkNewTab", className: "slds-input", checked: this.state.enablePermSetSummary, onChange: this.onChangeOpenPermSetSummary }),
+          h("span", { id: "checkbox-toggle-openLinkNewTab", className: "slds-checkbox_faux_container center-label" },
             h("span", { className: "slds-checkbox_faux" }),
             h("span", { className: "slds-checkbox_on" }, "Enabled"),
             h("span", { className: "slds-checkbox_off"}, "Disabled"),
@@ -313,15 +350,82 @@ class InspectTableBorderOption extends React.Component {
       h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "Inspect page - Show table borders")
       ),
-      h("div", { className: "slds-col slds-size_8-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" },
-        h("div", { className: "slds-form-element__control slds-col slds-size_2-of-12" },
-          h("label", { className: "slds-checkbox_toggle slds-grid"}, 
-            h("input", { type: "checkbox", required: true, id: "checkbox-toggle-tableBorders", "aria-describedby": "checkbox-toggle-tableBorders", className: "slds-input", checked: this.state.displayInspectTableBorders, onChange: this.onChangeShowTableBorders }),
-            h("span", { id: "checkbox-toggle-tableBorders", className: "slds-checkbox_faux_container" },
-              h("span", { className: "slds-checkbox_faux" }),
-              h("span", { className: "slds-checkbox_on" }, "Enabled"),
-              h("span", { className: "slds-checkbox_off"}, "Disabled"),
-            )
+      h("div", { className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" }),
+      h("div", { dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium" },
+        h("label", { className: "slds-checkbox_toggle slds-grid"}, 
+          h("input", { type: "checkbox", required: true, id: "checkbox-toggle-tableBorders", "aria-describedby": "checkbox-toggle-tableBorders", className: "slds-input", checked: this.state.displayInspectTableBorders, onChange: this.onChangeShowTableBorders }),
+          h("span", { id: "checkbox-toggle-tableBorders", className: "slds-checkbox_faux_container center-label" },
+            h("span", { className: "slds-checkbox_faux" }),
+            h("span", { className: "slds-checkbox_on" }, "Enabled"),
+            h("span", { className: "slds-checkbox_off"}, "Disabled"),
+          )
+        )
+      )
+    );
+  }
+}
+
+class MdShortcutSearchOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.onChangeMdShortcutSearch = this.onChangeMdShortcutSearch.bind(this);
+    this.state = { metadataShortcutSearch: (JSON.parse(localStorage.getItem("metadataShortcutSearch")))};
+  }
+
+  onChangeMdShortcutSearch(e) {
+    let metadataShortcutSearch = e.target.checked;
+    this.setState({ metadataShortcutSearch });
+    localStorage.setItem("metadataShortcutSearch", JSON.stringify(metadataShortcutSearch));
+  }
+
+  render() {
+    return h("div", { className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small" },
+      h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, "Search metadata from Shortcut tab")
+      ),
+      h("div", { className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" }),
+      h("div", { dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium" },
+        h("label", { className: "slds-checkbox_toggle slds-grid"}, 
+          h("input", { type: "checkbox", required: true, id: "checkbox-toggle-tableBorders", "aria-describedby": "checkbox-toggle-tableBorders", className: "slds-input", checked: this.state.metadataShortcutSearch, onChange: this.onChangeMdShortcutSearch }),
+          h("span", { id: "checkbox-toggle-tableBorders", className: "slds-checkbox_faux_container center-label" },
+            h("span", { className: "slds-checkbox_faux" }),
+            h("span", { className: "slds-checkbox_on" }, "Enabled"),
+            h("span", { className: "slds-checkbox_off"}, "Disabled"),
+          )
+        )
+      )
+    );
+  }
+}
+
+class QueryInputAutoFocusOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.onChangeQueryInputAutoFocus = this.onChangeQueryInputAutoFocus.bind(this);
+    this.state = { disableQueryInputAutoFocus: (JSON.parse(localStorage.getItem("disableQueryInputAutoFocus")))};
+  }
+
+  onChangeQueryInputAutoFocus(e) {
+    let disableQueryInputAutoFocus = e.target.checked;
+    this.setState({ disableQueryInputAutoFocus });
+    localStorage.setItem("disableQueryInputAutoFocus", JSON.stringify(disableQueryInputAutoFocus));
+  }
+
+  render() {
+    return h("div", { className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small" },
+      h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, "Disable query input autofocus")
+      ),
+      h("div", { className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" }),
+      h("div", { dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium" },
+        h("label", { className: "slds-checkbox_toggle slds-grid"}, 
+          h("input", { type: "checkbox", required: true, id: "checkbox-toggle-tableBorders", "aria-describedby": "checkbox-toggle-tableBorders", className: "slds-input", checked: this.state.disableQueryInputAutoFocus, onChange: this.onChangeQueryInputAutoFocus }),
+          h("span", { id: "checkbox-toggle-tableBorders", className: "slds-checkbox_faux_container center-label" },
+            h("span", { className: "slds-checkbox_faux" }),
+            h("span", { className: "slds-checkbox_on" }, "Enabled"),
+            h("span", { className: "slds-checkbox_off"}, "Disabled"),
           )
         )
       )
@@ -334,7 +438,7 @@ class APIKeyOption extends React.Component {
   constructor(props) {
     super(props);
     this.onChangeApiKey = this.onChangeApiKey.bind(this);
-    this.state = { apiKey: localStorage.getItem(this.sfHost + "_clientId") };
+    this.state = { apiKey: localStorage.getItem(this.sfHost + "_clientId") ? localStorage.getItem(this.sfHost + "_clientId") : "" };
   }
 
   onChangeApiKey(e) {
@@ -348,8 +452,8 @@ class APIKeyOption extends React.Component {
       h("div", { className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "API Consumer Key")
       ),
-      h("div", { className: "slds-col slds-size_8-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" },
-      h("div", { className: "slds-form-element__control slds-col slds-size_8-of-12" },
+      h("div", { className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" },
+      h("div", { className: "slds-form-element__control slds-col slds-size_6-of-12" },
       h("input", { type: "text", id: "apiKeyInput", className: "slds-input", placeholder: "Consumer Key", value: this.state.apiKey, onChange: this.onChangeApiKey }),
         )
       )
@@ -378,7 +482,7 @@ class CSVSeparatorOption extends React.Component {
       ),
       h("div", { className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" }),
       h("div", { className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small" },
-        h("input", { type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right", placeholder: "CSV Separator", value: this.state.csvSeparator, onChange: this.onChangeCSVSeparator })
+        h("input", { type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: this.state.csvSeparator, onChange: this.onChangeCSVSeparator })
       )
     );
   }
@@ -404,13 +508,13 @@ class App extends React.Component {
           " Salesforce Home"
         ),
         h("h1", { className: "slds-text-title_bold" }, "Salesforce Inspector Options"),
+        h("span", {}, " / " + model.userInfo),
         h("div", { className: "flex-right" })),
-      h("div", { className: "main-container slds-card slds-m-around_x-small" },
+      h("div", { className: "main-container slds-card slds-m-around_small" },
         h(OptionsTabSelector, {}))
     );
   }
 }
-
 
 {
 

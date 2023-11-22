@@ -4725,6 +4725,10 @@ a.slds-button--inverse:focus{
 
 /* Text */ 
 
+.slds-text-title_bold{
+    font-size:0.875rem;
+    font-weight:700;
+}
 .slds-text-align_left,
 .slds-text-align--left{
   text-align:left;

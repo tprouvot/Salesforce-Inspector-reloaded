@@ -214,7 +214,7 @@ class App extends React.PureComponent {
               h("a", {ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ),
           ),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
             // Advanded features should be put below this line, and the layout adjusted so they are below the fold
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
@@ -254,6 +254,11 @@ class App extends React.PureComponent {
                   className: "page-button slds-button slds-button_neutral"
                 },
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
+            ),
+          ),
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "options", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Options"))
             ),
           )
         ),

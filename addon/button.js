@@ -30,7 +30,7 @@ function initButton(sfHost, inInspector) {
   addFlowScrollability();
 
 
-  function addFlowScrollability() {
+  function addFlowScrollability(popupEl) {
     const currentUrl = window.location.href;
     // Check the current URL for the string "builder_platform_interaction"
     if (currentUrl.includes("builder_platform_interaction")) {
@@ -45,9 +45,9 @@ function initButton(sfHost, inInspector) {
       const overflowCheckbox = document.createElement("input");
       overflowCheckbox.type = "checkbox";
       overflowCheckbox.id = "overflow-checkbox";
-      const checkboxState = localStorage.getItem("scrollOnFlowBuilder");
+      const checkboxState = iFrameLocalStorage.scrollOnFlowBuilder;
       // Check local storage for the checkbox state
-      checkboxState ? overflowCheckbox.checked = JSON.parse(checkboxState) : overflowCheckbox.checked = true;
+      (checkboxState != null) ? (overflowCheckbox.checked = checkboxState) : (overflowCheckbox.checked = true);
       // Create a new label element for the checkbox
       const overflowLabel = document.createElement("label");
       overflowLabel.textContent = "Enable flow scrollability";
@@ -76,7 +76,11 @@ function initButton(sfHost, inInspector) {
       overflowCheckbox.addEventListener("change", function() {
         // Check if the checkbox is currently checked
         // Save the checkbox state to local storage
-        localStorage.setItem("scrollOnFlowBuilder", JSON.stringify(this.checked));
+        popupEl.contentWindow.postMessage({
+          updateLocalStorage: true,
+          key: "scrollOnFlowBuilder",
+          value: JSON.stringify(this.checked)
+        }, "*");
         // Set the overflow property to "auto"
         this.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
       });
@@ -119,10 +123,24 @@ function initButton(sfHost, inInspector) {
         return;
       }
       if (e.data.insextInitRequest) {
-        iFrameLocalStorage["popupArrowOrientation"] = e.data.popupArrowOrientation;
-        iFrameLocalStorage["popupArrowPosition"] = e.data.popupArrowPosition;
+        // Set CSS classes for arrow button position 
+        iFrameLocalStorage = e.data.iFrameLocalStorage;
         popupEl.classList.add(iFrameLocalStorage.popupArrowOrientation == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
+        if (iFrameLocalStorage.popupArrowOrientation == "horizontal") {
+          if (iFrameLocalStorage.popupArrowPosition < 8) {
+            popupEl.classList.add("insext-popup-horizontal-left");
+          } else if (iFrameLocalStorage.popupArrowPosition >= 90) {
+            popupEl.classList.add("insext-popup-horizontal-right");
+          } else {
+            popupEl.classList.add("insext-popup-horizontal-centered");
+          }
+        } else if (iFrameLocalStorage.popupArrowOrientation == "vertical") {
+          if (iFrameLocalStorage.popupArrowPosition >= 55) {
+            popupEl.classList.add("insext-popup-vertical-up");
+          }
+        }
         setRootCSSProperties(rootEl, btn);
+        addFlowScrollability(popupEl);
         popupEl.contentWindow.postMessage({
           insextInitResponse: true,
           sfHost,

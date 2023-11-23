@@ -18,15 +18,30 @@
 }
 
 #insext .insext-popup-vertical {
-    right: 0;
+    right: 0%;
     border-top-right-radius: 0;
     box-shadow: 0 -2px 2px 0 rgba(0,0,0,.16);
 }
 
+#insext .insext-popup-vertical-up {
+    bottom: 100%;
+}
+
 #insext .insext-popup-horizontal {
     bottom: 20px;
-    right: -380%;
     box-shadow: 2px 0 2px 0 rgba(0,0,0,.16);
+}
+
+#insext .insext-popup-horizontal-left {
+    right: 0%;
+}
+
+#insext .insext-popup-horizontal-centered {
+    right: -380%;
+}
+
+#insext .insext-popup-horizontal-right {
+    left: 0%;
 }
 
 #insext.insext-active .insext-popup {

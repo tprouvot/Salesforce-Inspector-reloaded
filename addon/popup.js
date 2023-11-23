@@ -8,14 +8,21 @@ let h = React.createElement;
 {
   parent.postMessage({
     insextInitRequest: true,
-    popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
-    popupArrowPosition: localStorage.getItem("popupArrowPosition")
+    iFrameLocalStorage: {
+      popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
+      popupArrowPosition: JSON.parse(localStorage.getItem("popupArrowPosition")),
+      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder"))
+    }
   }, "*");
   addEventListener("message", function initResponseHandler(e) {
-    if (e.source == parent && e.data.insextInitResponse) {
-      removeEventListener("message", initResponseHandler);
-      init(e.data);
-      initLinks(e.data);
+    if (e.source == parent) {
+      if (e.data.insextInitResponse) {
+        //removeEventListener("message", initResponseHandler);
+        init(e.data);
+        initLinks(e.data);  
+      } else if (e.data.updateLocalStorage) {
+        localStorage.setItem(e.data.key, e.data.value);
+      }
     }
   });
 }

@@ -131,6 +131,10 @@ class App extends React.PureComponent {
       e.preventDefault();
       this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickShowFieldAPINameBtn();
     }
+    if (e.key == "n") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickNewBtn();
+    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
@@ -371,7 +375,7 @@ class AllDataBox extends React.PureComponent {
   loadSobjects() {
     let entityMap = new Map();
 
-    function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported}, api) {
+    function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported, isEverCreatable, newUrl}, api) {
       label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
       let entity = entityMap.get(name);
       if (entity) {
@@ -384,6 +388,12 @@ class AllDataBox extends React.PureComponent {
         if (!entity.durableId) { // For some objects the durableId is only available in some of the APIs
           entity.durableId = durableId;
         }
+        if (!entity.isEverCreatable) { // For some objects isEverCreatable is only available in some of the APIs
+          entity.isEverCreatable = isEverCreatable;
+        }
+        if (!entity.newUrl) { // For some objects isEverCreatable is only available in some of the APIs
+          entity.newUrl = newUrl;
+        }
       } else {
         entity = {
           availableApis: [],
@@ -393,7 +403,9 @@ class AllDataBox extends React.PureComponent {
           durableId,
           isCustomSetting,
           availableKeyPrefix: null,
-          recordTypesSupported
+          recordTypesSupported,
+          isEverCreatable,
+          newUrl
         };
         entityMap.set(name, entity);
       }
@@ -818,6 +830,11 @@ class AllDataBoxSObject extends React.PureComponent {
       this.refs.allDataSelection.clickShowFieldAPINameBtn();
     }
   }
+  clickNewBtn() {
+    if (this.refs.allDataSelection) {
+      this.refs.allDataSelection.clickNewBtn();
+    }
+  }
 
   resultRender(matches, userQuery) {
     return matches.map(value => ({
@@ -1202,6 +1219,11 @@ class AllDataSelection extends React.PureComponent {
       this.refs.showFieldApiNameBtn.click();
     }
   }
+  clickNewBtn(){
+    if (this.refs.showNewBtn){
+      this.refs.showNewBtn.click();
+    }
+  }
   getAllDataUrl(toolingApi) {
     let {sfHost, selectedValue} = this.props;
     if (selectedValue) {
@@ -1328,8 +1350,9 @@ class AllDataSelection extends React.PureComponent {
           h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
         h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
+        selectedValue.sobject.isEverCreatable ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.name)) : null,
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
         buttons.map((button, index) => h("div", {}, h("a",
           {
             key: button,
@@ -1337,16 +1360,14 @@ class AllDataSelection extends React.PureComponent {
             ref: index == 0 ? "showAllDataBtn" : null,
             href: this.getAllDataUrl(button == "toolingApi"),
             target: linkTarget,
-            className: "page-button slds-button slds-button_neutral"
+            className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"
           },
           index == 0 ? h("span", {}, "Show ", h("u", {}, "a"), "ll data") : "Show all data",
           button == "regularApi" ? ""
           : button == "toolingApi" ? " (Tooling API)"
           : " (Not readable)"
         ))),
-        selectedValue.isEverCreatable ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("N", {}, "f"), "ew")) : null,
-        isFieldsPresent
-          ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
+        isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
       )
     );
   }

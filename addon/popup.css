@@ -338,10 +338,16 @@ ul.small-tabs li:hover {
 .hide {
     display: none;
 }
-a.link-icon {
+
+a.icon {
+    display: inline-block;
     -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: 1rem;
-    -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/link.svg');
-    -webkit-mask-position: center;
+    -webkit-mask-size: 0.95rem;
     background-color: #706E6B;
-  }
+    width: 16px;
+    height: 16px;
+}
+
+ a.icon-url {
+    -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/link.svg');
+}

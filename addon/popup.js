@@ -1294,8 +1294,8 @@ class AllDataSelection extends React.PureComponent {
       return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
     }
   }
-  getObjectDocLink(sobject){
-    if (sobject.availableApis.filter(api => api === "toolingApi").length > 0){
+  getObjectDocLink(sobject, api){
+    if (api === "toolingApi"){
       return "https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/tooling_api_objects_" + sobject.name.toLowerCase() + ".htm";
     }
     return "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_" + sobject.name.toLowerCase() + ".htm";
@@ -1320,8 +1320,7 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name),
-                  selectedValue.sobject.name.indexOf("__") == -1 ? h("a", {className: "left-space", href: this.getObjectDocLink(selectedValue.sobject), target: linkTarget}, "(doc)") : ""
+                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name)
                 )
               ),
               h("tr", {},
@@ -1344,8 +1343,18 @@ class AllDataSelection extends React.PureComponent {
                   h("span", {}, selectedValue.sobject.keyPrefix),
                   h("span", {}, (selectedValue.recordId) ? " / " + selectedValue.recordId : ""),
                 )
-              ))),
-
+              ),
+              selectedValue.sobject.name.indexOf("__") == -1
+                ? h("tr", {},
+                  h("th", {}, "Doc:"),
+                  h("td", {},
+                    h("a", {href: this.getObjectDocLink(selectedValue.sobject, selectedValue.sobject.availableApis[1]), target: linkTarget}, "Standard"),
+                    selectedValue.sobject.availableApis.length > 1
+                      ? h("a", {href: this.getObjectDocLink(selectedValue.sobject, selectedValue.sobject.availableApis[0]), target: linkTarget, className: "left-space"}, "Tooling")
+                      : null
+                  ),
+                ) : null
+            )),
 
           h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),

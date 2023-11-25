@@ -2,6 +2,8 @@
 
 ## Version 1.21
 
+- Add support for upserting and deleting Custom Metadata (contribution by [Joshua Yarmak](https://github.com/toly11))
+
 - Org instance in not correct with after Hyperforce migration: store org instance in sessionStorage to retrieve it once per session [issue 167](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/167)
 - Add Salesforce SObject documentation links [feature 219](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/219) (idea by [Antoine Audollent])
 - Add centering buttons section in footer after edit field (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))

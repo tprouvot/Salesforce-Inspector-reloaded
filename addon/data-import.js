@@ -623,6 +623,8 @@ class Model {
     }
     if (importAction == "delete") {
       importArgs.ID = [];
+    } else if (importAction == "upsertMetadata") {
+      importArgs["met:metadata"] = [];
     } else {
       importArgs.sObjects = [];
     }
@@ -638,6 +640,35 @@ class Model {
       row[statusColumnIndex] = "Processing";
       if (importAction == "delete") {
         importArgs.ID.push(row[inputIdColumnIndex]);
+      } else if (importAction == "upsertMetadata") {
+        let sobject = {};
+        sobject["$xsi:type"] = "met:CustomMetadata";
+
+        for (let c = 0; c < row.length; c++) {
+          let fieldName = header[c];
+          let fieldValue = row[c];
+
+          if (fieldName.startsWith("_")) {
+            continue;
+          }
+
+          if (fieldName == "DeveloperName") {
+            sobject["met:fullName"] = `${sobjectType}.${fieldValue}`
+          } else if(fieldName == "MasterLabel") {
+            sobject["met:label"] = fieldValue;
+          } else {
+            if (stringIsEmpty(fieldValue)) {
+              fieldValue = null
+            }
+            
+            sobject["met:values"] = {
+              "met:field": fieldName,
+              "met:value": fieldValue
+            }
+          }
+        }
+        
+        importArgs["met:metadata"].push(sobject);
       } else {
         let sobject = {};
         sobject["$xsi:type"] = sobjectType;
@@ -691,7 +722,10 @@ class Model {
     // unless batches are slower than timeoutDelay.
     setTimeout(this.executeBatch.bind(this), 2500);
 
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, useToolingApi ? "Tooling" : "Enterprise"), importAction, importArgs).then(res => {
+    let wsdlApiName = useToolingApi ? "Tooling" : this.importAction == "upsertMetadata" ? "Metadata" : "Enterprise";
+    let wsdl = sfConn.wsdl(apiVersion, wsdlApiName);
+    this.spinFor(sfConn.soap(wsdl, importAction, importArgs).then(res => {
+
       let results = sfConn.asArray(res);
       for (let i = 0; i < results.length; i++) {
         let result = results[i];
@@ -701,7 +735,7 @@ class Model {
           row[actionColumnIndex]
             = importAction == "create" ? "Inserted"
               : importAction == "update" ? "Updated"
-                : importAction == "upsert" ? (result.created == "true" ? "Inserted" : "Updated")
+                : importAction == "upsert" || importAction == "upsertMetadata" ? (result.created == "true" ? "Inserted" : "Updated")
                   : importAction == "delete" ? "Deleted"
                     : "Unknown";
         } else {
@@ -1176,4 +1210,9 @@ class StatusBox extends React.Component {
 
   });
 
+}
+
+
+function stringIsEmpty(str) {
+  return str == null || str == undefined || str.trim() == "";
 }

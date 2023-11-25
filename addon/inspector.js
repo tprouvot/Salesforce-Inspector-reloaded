@@ -112,23 +112,28 @@ export let sfConn = {
     let wsdl = {
       Enterprise: {
         servicePortAddress: "/services/Soap/c/" + apiVersion,
-        targetNamespaces: ' xmlns="urn:enterprise.soap.sforce.com" xmlns:sf="urn:sobject.enterprise.soap.sforce.com"'
+        targetNamespaces: ' xmlns="urn:enterprise.soap.sforce.com" xmlns:sf="urn:sobject.enterprise.soap.sforce.com"',
+        apiName: "Enterprise"
       },
       Partner: {
         servicePortAddress: "/services/Soap/u/" + apiVersion,
-        targetNamespaces: ' xmlns="urn:partner.soap.sforce.com" xmlns:sf="urn:sobject.partner.soap.sforce.com"'
+        targetNamespaces: ' xmlns="urn:partner.soap.sforce.com" xmlns:sf="urn:sobject.partner.soap.sforce.com"',
+        apiName: "Partner"
       },
       Apex: {
         servicePortAddress: "/services/Soap/s/" + apiVersion,
-        targetNamespaces: ' xmlns="http://soap.sforce.com/2006/08/apex"'
+        targetNamespaces: ' xmlns="http://soap.sforce.com/2006/08/apex"',
+        apiName: "Apex"
       },
       Metadata: {
         servicePortAddress: "/services/Soap/m/" + apiVersion,
-        targetNamespaces: ' xmlns="http://soap.sforce.com/2006/04/metadata"'
+        targetNamespaces: ' xmlns="http://soap.sforce.com/2006/04/metadata"',
+        apiName: "Metadata"
       },
       Tooling: {
         servicePortAddress: "/services/Soap/T/" + apiVersion,
-        targetNamespaces: ' xmlns="urn:tooling.soap.sforce.com" xmlns:sf="urn:sobject.tooling.soap.sforce.com" xmlns:mns="urn:metadata.tooling.soap.sforce.com"'
+        targetNamespaces: ' xmlns="urn:tooling.soap.sforce.com" xmlns:sf="urn:sobject.tooling.soap.sforce.com" xmlns:mns="urn:metadata.tooling.soap.sforce.com"',
+        apiName: "Tooling"
       }
     };
     if (apiName) {
@@ -147,16 +152,27 @@ export let sfConn = {
     xhr.setRequestHeader("Content-Type", "text/xml");
     xhr.setRequestHeader("SOAPAction", '""');
 
-    let sessionHeader = {SessionHeader: {sessionId: this.sessionId}};
+    let sessionHeaderKey = wsdl.apiName == "Metadata" ? "met:SessionHeader" : "SessionHeader";
+    let sessionIdKey = wsdl.apiName == "Metadata" ? "met:sessionId" : "sessionId";
+    let requestMethod = wsdl.apiName == "Metadata" ? `met:${method}` : method;
+    let requestAttributes = [
+      'xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"',
+      'xmlns:xsd="http://www.w3.org/2001/XMLSchema"',
+      'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
+    ];
+    if (wsdl.apiName == "Metadata") {
+      requestAttributes.push('xmlns:met="http://soap.sforce.com/2006/04/metadata"');
+    }
+
     let requestBody = XML.stringify({
       name: "soapenv:Envelope",
-      attributes: ` xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"${wsdl.targetNamespaces}`,
+      attributes: ` ${requestAttributes.join(" ")}${wsdl.targetNamespaces}`,
       value: {
-        "soapenv:Header": Object.assign({}, sessionHeader, headers),
-        "soapenv:Body": {[method]: args}
+        "soapenv:Header": Object.assign({}, {[sessionHeaderKey]: {[sessionIdKey]: this.sessionId}}, headers),
+        "soapenv:Body": {[requestMethod]: args}
       }
     });
-
+    
     xhr.responseType = "document";
     await new Promise(resolve => {
       xhr.onreadystatechange = () => {

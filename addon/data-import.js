@@ -58,6 +58,10 @@ class Model {
     }
   }
 
+  get isMetadataAction() {
+    return this.importAction == "upsertMetadata" || this.importAction == "deleteMetadata";
+  }
+
   /**
    * Notify React that we changed something, so it will rerender the view.
    * Should only be called once at the end of an event or asynchronous operation, since each call can take some time.
@@ -225,7 +229,7 @@ class Model {
       return [];
     }
     
-    if (this.importAction == "upsertMetadata") {
+    if (this.isMetadataAction) {
       return globalDescribe.sobjects
         .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"))
         .map(sobjectDescribe => sobjectDescribe.name);
@@ -253,6 +257,8 @@ class Model {
 
       if (importAction == "delete") {
         yield "Id";
+      } else if (importAction == "deleteMetadata") {
+        yield "DeveloperName";
       } else {
         let sobjectName = self.importType;
         let useToolingApi = self.useToolingApi;
@@ -321,7 +327,7 @@ class Model {
       return "";
     } else if (this.importAction == "upsert") {
       return this.externalId;
-    } else if (this.importAction == "upsertMetadata") {
+    } else if (this.isMetadataAction) {
       return "DeveloperName";
     } else {
       return "Id";
@@ -623,6 +629,9 @@ class Model {
     }
     if (importAction == "delete") {
       importArgs.ID = [];
+    } else if (importAction == "deleteMetadata") {
+      importArgs["met:type"] = "CustomMetadata";
+      importArgs["met:fullNames"] = [];
     } else if (importAction == "upsertMetadata") {
       importArgs["met:metadata"] = [];
     } else {
@@ -640,6 +649,8 @@ class Model {
       row[statusColumnIndex] = "Processing";
       if (importAction == "delete") {
         importArgs.ID.push(row[inputIdColumnIndex]);
+      } else if (importAction == "deleteMetadata") {
+        importArgs["met:fullNames"].push(`${sobjectType}.${row[inputIdColumnIndex]}`);
       } else if (importAction == "upsertMetadata") {
         let sobject = {};
         sobject["$xsi:type"] = "met:CustomMetadata";
@@ -722,7 +733,7 @@ class Model {
     // unless batches are slower than timeoutDelay.
     setTimeout(this.executeBatch.bind(this), 2500);
 
-    let wsdlApiName = useToolingApi ? "Tooling" : this.importAction == "upsertMetadata" ? "Metadata" : "Enterprise";
+    let wsdlApiName = useToolingApi ? "Tooling" : this.isMetadataAction ? "Metadata" : "Enterprise";
     let wsdl = sfConn.wsdl(apiVersion, wsdlApiName);
     this.spinFor(sfConn.soap(wsdl, importAction, importArgs).then(res => {
 
@@ -736,7 +747,7 @@ class Model {
             = importAction == "create" ? "Inserted"
               : importAction == "update" ? "Updated"
                 : importAction == "upsert" || importAction == "upsertMetadata" ? (result.created == "true" ? "Inserted" : "Updated")
-                  : importAction == "delete" ? "Deleted"
+                  : importAction == "delete" || importAction == "deleteMetadata" ? "Deleted"
                     : "Unknown";
         } else {
           row[statusColumnIndex] = "Failed";
@@ -997,7 +1008,8 @@ class App extends React.Component {
                     h("option", { value: "update" }, "Update"),
                     h("option", { value: "upsert" }, "Upsert"),
                     h("option", { value: "delete" }, "Delete"),
-                    h("option", { value: "upsertMetadata" }, "Upsert Metadata")
+                    h("option", { value: "upsertMetadata" }, "Upsert Metadata"),
+                    h("option", { value: "deleteMetadata" }, "Delete Metadata")
                   )
                 )
               )

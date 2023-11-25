@@ -224,9 +224,16 @@ class Model {
     if (!globalDescribe) {
       return [];
     }
-    return globalDescribe.sobjects
-      .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable)
-      .map(sobjectDescribe => sobjectDescribe.name);
+    
+    if (this.importAction == "upsertMetadata") {
+      return globalDescribe.sobjects
+        .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"))
+        .map(sobjectDescribe => sobjectDescribe.name);
+    } else {
+      return globalDescribe.sobjects
+        .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable)
+        .map(sobjectDescribe => sobjectDescribe.name);
+    }
   }
 
   idLookupList() {
@@ -267,6 +274,10 @@ class Model {
               }
             } else if (field.idLookup && field.name.toLowerCase() == idFieldName.toLowerCase()) {
               yield field.name;
+            } else if (importAction == "upsertMetadata") {
+              if (["DeveloperName", "MasterLabel"].includes(field.name) || field.custom) {
+                yield field.name;
+              }
             }
           }
         }
@@ -306,7 +317,15 @@ class Model {
   }
 
   idFieldName() {
-    return this.importAction == "create" ? "" : this.importAction == "upsert" ? this.externalId : "Id";
+    if (this.importAction == "create") {
+      return "";
+    } else if (this.importAction == "upsert") {
+      return this.externalId;
+    } else if (this.importAction == "upsertMetadata") {
+      return "DeveloperName";
+    } else {
+      return "Id";
+    }
   }
 
   inputIdColumnIndex() {
@@ -943,7 +962,8 @@ class App extends React.Component {
                     h("option", { value: "create" }, "Insert"),
                     h("option", { value: "update" }, "Update"),
                     h("option", { value: "upsert" }, "Upsert"),
-                    h("option", { value: "delete" }, "Delete")
+                    h("option", { value: "delete" }, "Delete"),
+                    h("option", { value: "upsertMetadata" }, "Upsert Metadata")
                   )
                 )
               )

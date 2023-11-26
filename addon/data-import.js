@@ -16,12 +16,13 @@ class Model {
     this.showHelp = false;
     this.userInfo = "...";
     this.dataError = "";
-    this.useToolingApi = false;
+    this.apiType = "Enterprise";
     this.dataFormat = "excel";
     this.importActionSelected = false;
     this.importAction = "create";
     this.importActionName = "Insert";
     this.importType = "Account";
+    this.availableActions = this.allActions.filter(action => action.supportedApis.includes(this.apiType));
     this.externalId = "Id";
     this.batchSize = "200";
     this.batchConcurrency = "6";
@@ -58,9 +59,20 @@ class Model {
     }
   }
 
-  get isMetadataAction() {
-    return this.importAction == "upsertMetadata" || this.importAction == "deleteMetadata";
-  }
+  allApis = [
+    { value: "Enterprise", label: "Enterprise (default)" },
+    { value: "Tooling", label: "Tooling" },
+    { value: "Metadata", label: "Metadata" }
+  ];
+
+  allActions = [
+    { value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling"] },
+    { value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling"] },
+    { value: "upsert", label: "Upsert", supportedApis: ["Enterprise", "Tooling"] },
+    { value: "delete", label: "Delete", supportedApis: ["Enterprise", "Tooling"] },
+    { value: "upsertMetadata", label: "Upsert Metadata", supportedApis: ["Metadata"] },
+    { value: "deleteMetadata", label: "Delete Metadata", supportedApis: ["Metadata"] }
+  ];
 
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -125,8 +137,10 @@ class Model {
 
     if (data[0] && data[0][0] && data[0][0].trimStart().startsWith("salesforce-inspector-import-options")) {
       let importOptions = new URLSearchParams(data.shift()[0].trim());
-      if (importOptions.get("useToolingApi") == "1") this.useToolingApi = true;
-      if (importOptions.get("useToolingApi") == "0") this.useToolingApi = false;
+      if (importOptions.get("useToolingApi") == "1") this.apiType = "Tooling";
+      if (importOptions.get("useToolingApi") == "0") this.apiType = "Enterprise";
+      // Keep the above two checks, in order to support old import options
+      if (this.allApis.some(api => api.value == importOptions.get("apiType"))) this.apiType = importOptions.get("apiType");
       if (importOptions.get("action") == "create") this.importAction = "create";
       if (importOptions.get("action") == "update") this.importAction = "update";
       if (importOptions.get("action") == "upsert") this.importAction = "upsert";
@@ -190,7 +204,7 @@ class Model {
   copyOptions() {
     let importOptions = new URLSearchParams();
     importOptions.set("salesforce-inspector-import-options", "");
-    importOptions.set("useToolingApi", this.useToolingApi ? "1" : "0");
+    importOptions.set("apiType", this.apiType);
     importOptions.set("action", this.importAction);
     importOptions.set("object", this.importType);
     if (this.importAction == "upsert") importOptions.set("externalId", this.externalId);
@@ -224,12 +238,12 @@ class Model {
   }
 
   sobjectList() {
-    let { globalDescribe } = this.describeInfo.describeGlobal(this.useToolingApi);
+    let { globalDescribe } = this.describeInfo.describeGlobal(this.apiType == "Tooling");
     if (!globalDescribe) {
       return [];
     }
-    
-    if (this.isMetadataAction) {
+
+    if (this.apiType == "Metadata") {
       return globalDescribe.sobjects
         .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"))
         .map(sobjectDescribe => sobjectDescribe.name);
@@ -242,7 +256,7 @@ class Model {
 
   idLookupList() {
     let sobjectName = this.importType;
-    let sobjectDescribe = this.describeInfo.describeSobject(this.useToolingApi, sobjectName).sobjectDescribe;
+    let sobjectDescribe = this.describeInfo.describeSobject(this.apiType == "Tooling", sobjectName).sobjectDescribe;
 
     if (!sobjectDescribe) {
       return [];
@@ -261,15 +275,14 @@ class Model {
         yield "DeveloperName";
       } else {
         let sobjectName = self.importType;
-        let useToolingApi = self.useToolingApi;
-        let sobjectDescribe = self.describeInfo.describeSobject(useToolingApi, sobjectName).sobjectDescribe;
+        let sobjectDescribe = self.describeInfo.describeSobject(self.apiType == "Tooling", sobjectName).sobjectDescribe;
         if (sobjectDescribe) {
           let idFieldName = self.idFieldName();
           for (let field of sobjectDescribe.fields) {
             if (field.createable || field.updateable) {
               yield field.name;
               for (let referenceSobjectName of field.referenceTo) {
-                let referenceSobjectDescribe = self.describeInfo.describeSobject(useToolingApi, referenceSobjectName).sobjectDescribe;
+                let referenceSobjectDescribe = self.describeInfo.describeSobject(self.apiType == "Tooling", referenceSobjectName).sobjectDescribe;
                 if (referenceSobjectDescribe) {
                   for (let referenceField of referenceSobjectDescribe.fields) {
                     if (referenceField.idLookup) {
@@ -327,7 +340,7 @@ class Model {
       return "";
     } else if (this.importAction == "upsert") {
       return this.externalId;
-    } else if (this.isMetadataAction) {
+    } else if (this.apiType == "Metadata") {
       return "DeveloperName";
     } else {
       return "Id";
@@ -398,7 +411,7 @@ class Model {
     let data = this.importData.taggedRows.map(row => row.cells);
     this.importTableResult = {
       table: [header, ...data],
-      isTooling: this.useToolingApi,
+      isTooling: this.apiType == "Tooling",
       describeInfo: this.describeInfo,
       sfHost: this.sfHost,
       rowVisibilities: [true, ...this.importData.taggedRows.map(row => this.showStatus[row.status])],
@@ -458,7 +471,6 @@ class Model {
       actionColumnIndex,
       errorColumnIndex,
       importAction: this.importAction,
-      useToolingApi: this.useToolingApi,
       sobjectType: this.importType,
       idFieldName: this.idFieldName(),
       inputIdColumnIndex: this.inputIdColumnIndex()
@@ -477,7 +489,7 @@ class Model {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
     args.set("objectType", this.importType);
-    if (this.useToolingApi) {
+    if (this.apiType == "Tooling") {
       args.set("useToolingApi", "1");
     }
     return "inspect.html?" + args;
@@ -619,7 +631,7 @@ class Model {
       return;
     }
 
-    let { statusColumnIndex, resultIdColumnIndex, actionColumnIndex, errorColumnIndex, importAction, useToolingApi, sobjectType, idFieldName, inputIdColumnIndex } = this.importState;
+    let { statusColumnIndex, resultIdColumnIndex, actionColumnIndex, errorColumnIndex, importAction, sobjectType, idFieldName, inputIdColumnIndex } = this.importState;
     let data = this.importData.importTable.data;
     let header = this.importData.importTable.header.map(c => c.columnValue);
     let batchRows = [];
@@ -664,21 +676,21 @@ class Model {
           }
 
           if (fieldName == "DeveloperName") {
-            sobject["met:fullName"] = `${sobjectType}.${fieldValue}`
-          } else if(fieldName == "MasterLabel") {
+            sobject["met:fullName"] = `${sobjectType}.${fieldValue}`;
+          } else if (fieldName == "MasterLabel") {
             sobject["met:label"] = fieldValue;
           } else {
             if (stringIsEmpty(fieldValue)) {
-              fieldValue = null
+              fieldValue = null;
             }
-            
+
             sobject["met:values"] = {
               "met:field": fieldName,
               "met:value": fieldValue
-            }
+            };
           }
         }
-        
+
         importArgs["met:metadata"].push(sobject);
       } else {
         let sobject = {};
@@ -733,8 +745,7 @@ class Model {
     // unless batches are slower than timeoutDelay.
     setTimeout(this.executeBatch.bind(this), 2500);
 
-    let wsdlApiName = useToolingApi ? "Tooling" : this.isMetadataAction ? "Metadata" : "Enterprise";
-    let wsdl = sfConn.wsdl(apiVersion, wsdlApiName);
+    let wsdl = sfConn.wsdl(apiVersion, this.apiType);
     this.spinFor(sfConn.soap(wsdl, importAction, importArgs).then(res => {
 
       let results = sfConn.asArray(res);
@@ -803,7 +814,7 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.onUseToolingApiChange = this.onUseToolingApiChange.bind(this);
+    this.onApiTypeChange = this.onApiTypeChange.bind(this);
     this.onImportActionChange = this.onImportActionChange.bind(this);
     this.onImportTypeChange = this.onImportTypeChange.bind(this);
     this.onDataFormatChange = this.onDataFormatChange.bind(this);
@@ -823,9 +834,11 @@ class App extends React.Component {
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
     this.unloadListener = null;
   }
-  onUseToolingApiChange(e) {
+  onApiTypeChange(e) {
     let { model } = this.props;
-    model.useToolingApi = e.target.checked;
+    model.apiType = e.target.value;
+    model.availableActions = model.allActions.filter(action => action.supportedApis.includes(model.apiType));
+    model.importAction = model.availableActions[0].value;
     model.updateImportTableResult();
     model.didUpdate();
   }
@@ -992,10 +1005,12 @@ class App extends React.Component {
               h("h1", {}, "Configure Import")
             ),
             h("div", { className: "conf-line" },
-              h("label", { className: "conf-input", title: "With the tooling API you can query more metadata, but you cannot query regular data" },
-                h("span", { className: "conf-label" }, "Use Tooling API?"),
+              h("label", { className: "conf-input", title: "With the tooling API you can import more metadata, but you cannot import regular data. With the metadata API you can import custom metadata types." },
+                h("span", { className: "conf-label" }, "API Type"),
                 h("span", { className: "conf-value" },
-                  h("input", { type: "checkbox", checked: model.useToolingApi, onChange: this.onUseToolingApiChange, disabled: model.isWorking() }),
+                  h("select", { value: model.apiType, onChange: this.onApiTypeChange, disabled: model.isWorking() },
+                    ...model.allApis.map((api, index) => h("option", { key: index, value: api.value }, api.label))
+                  )
                 )
               )
             ),
@@ -1004,12 +1019,7 @@ class App extends React.Component {
                 h("span", { className: "conf-label" }, "Action"),
                 h("span", { className: "conf-value" },
                   h("select", { value: model.importAction, onChange: this.onImportActionChange, disabled: model.isWorking() },
-                    h("option", { value: "create" }, "Insert"),
-                    h("option", { value: "update" }, "Update"),
-                    h("option", { value: "upsert" }, "Upsert"),
-                    h("option", { value: "delete" }, "Delete"),
-                    h("option", { value: "upsertMetadata" }, "Upsert Metadata"),
-                    h("option", { value: "deleteMetadata" }, "Delete Metadata")
+                    ...model.availableActions.map((action, index) => h("option", { key: index, value: action.value }, action.label))
                   )
                 )
               )

@@ -839,6 +839,7 @@ class App extends React.Component {
     model.apiType = e.target.value;
     model.availableActions = model.allActions.filter(action => action.supportedApis.includes(model.apiType));
     model.importAction = model.availableActions[0].value;
+    model.importActionName = model.allActions.find(action => action.value == model.importAction).label;
     model.updateImportTableResult();
     model.didUpdate();
   }

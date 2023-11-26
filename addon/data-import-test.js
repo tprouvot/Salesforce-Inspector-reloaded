@@ -222,7 +222,7 @@ export async function dataImportTest(test) {
   vm.importAction = "update";
   vm.didUpdate();
   vm.copyOptions();
-  assertEquals("salesforce-inspector-import-options=&useToolingApi=0&action=update&object=Inspector_Test__c&batchSize=200&threads=6", window.testClipboardValue);
+  assertEquals("salesforce-inspector-import-options=&apiType=Enterprise&action=update&object=Inspector_Test__c&batchSize=200&threads=6", window.testClipboardValue);
 
   // Restore import options
   vm.importAction = "create";
@@ -231,8 +231,8 @@ export async function dataImportTest(test) {
   vm.didUpdate();
   vm.dataFormat = "excel";
   vm.didUpdate();
-  vm.setData('"salesforce-inspector-import-options=&useToolingApi=0&action=update&object=Inspector_Test__c&batchSize=200&threads=6"\t""\r\n"Name"\t"Number__c"\r\n"test"\t"100"\r\n"test"\t"200"\r\n');
-  assertEquals(false, vm.useToolingApi);
+  vm.setData('"salesforce-inspector-import-options=&apiType=Enterprise&action=update&object=Inspector_Test__c&batchSize=200&threads=6"\t""\r\n"Name"\t"Number__c"\r\n"test"\t"100"\r\n"test"\t"200"\r\n');
+  assertEquals("Enterprise", vm.apiType);
   assertEquals("update", vm.importAction);
   assertEquals("Inspector_Test__c", vm.importType);
   assertEquals("200", vm.batchSize);

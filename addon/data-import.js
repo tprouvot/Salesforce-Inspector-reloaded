@@ -52,8 +52,10 @@ class Model {
       let data = atob(args.get("data"));
       this.dataFormat = "csv";
       this.setData(data);
-      this.importAction = "delete";
-      this.importActionName = "Delete";
+      this.apiType = this.importType.endsWith("__mdt") ? "Metadata" : "Enterprise";
+      this.availableActions = this.allActions.filter(action => action.supportedApis.includes(this.apiType));
+      this.importAction = this.importType.endsWith("__mdt") ? "deleteMetadata" : "delete";
+      this.importActionName = this.importType.endsWith("__mdt") ? "Delete Metadata" : "Delete";
       this.skipAllUnknownFields();
       console.log(this.importData);
     }

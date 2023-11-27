@@ -215,7 +215,9 @@ class XML {
         el.setAttribute("xsi:nil", "true");
       } else if (typeof params == "object") {
         for (let [key, value] of Object.entries(params)) {
-          if (key == "$xsi:type") {
+          if (key == "_") {
+            el.textContent = value;
+          } else if (key == "$xsi:type") {
             el.setAttribute("xsi:type", value);
           } else if (value === undefined) {
             // ignore

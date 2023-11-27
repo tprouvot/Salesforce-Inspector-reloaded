@@ -664,8 +664,16 @@ class Model {
       } else if (importAction == "deleteMetadata") {
         importArgs["met:fullNames"].push(`${sobjectType}.${row[inputIdColumnIndex]}`);
       } else if (importAction == "upsertMetadata") {
+
+        let fieldTypes = {};
+        let selectedObjectFields = this.describeInfo.describeSobject(false, sobjectType).sobjectDescribe?.fields || [];
+        selectedObjectFields.forEach(field => {
+          fieldTypes[field.name] = field.soapType;
+        });
+
         let sobject = {};
         sobject["$xsi:type"] = "met:CustomMetadata";
+        sobject["met:values"] = [];
 
         for (let c = 0; c < row.length; c++) {
           let fieldName = header[c];
@@ -684,10 +692,18 @@ class Model {
               fieldValue = null;
             }
 
-            sobject["met:values"] = {
+            let field = {
               "met:field": fieldName,
-              "met:value": fieldValue
+              "met:value": {
+                "_": fieldValue
+              }
             };
+
+            if (fieldTypes[fieldName]) {
+              field["met:value"]["$xsi:type"] = fieldTypes[fieldName];
+            }
+
+            sobject["met:values"].push(field);
           }
         }
 

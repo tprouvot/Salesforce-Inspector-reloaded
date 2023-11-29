@@ -2,6 +2,7 @@
 
 ## Version 1.21
 
+- Undelete records from data import page [feature 193](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/193)
 - Create new records from SObject tab ("New" button) [feature 226](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/226)
 - Enhance shortcut search to include any part of the shortcut title, not only the beginning (contribution by [Joshua Yarmak](https://github.com/toly11))
 - Org instance in not correct with after Hyperforce migration: store org instance in sessionStorage to retrieve it once per session [issue 167](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/167)

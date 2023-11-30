@@ -146,15 +146,17 @@ class App extends React.PureComponent {
     this.setState({apiVersionInput: e.target.value});
   }
   componentDidMount() {
+    let {sfHost} = this.props;
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
     parent.postMessage({insextLoaded: true}, "*");
+    this.setOrgInfo(sfHost);
   }
   componentWillUnmount() {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
   }
-  getOrgInfo(sfHost) {
+  setOrgInfo(sfHost) {
     let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
     if (orgInfo == null) {
       sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType,TimeZoneSidKey+FROM+Organization").then(res => {
@@ -162,7 +164,6 @@ class App extends React.PureComponent {
         sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
       });
     }
-    return orgInfo;
   }
   render() {
     let {
@@ -174,8 +175,6 @@ class App extends React.PureComponent {
     } = this.props;
     let {isInSetup, contextUrl, apiVersionInput, isFieldsPresent} = this.state;
     let clientId = localStorage.getItem(sfHost + "_clientId");
-    let orgInfo = this.getOrgInfo(sfHost);
-    let orgInstance = orgInfo.InstanceName;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
@@ -259,8 +258,6 @@ class App extends React.PureComponent {
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top"},
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", title: "Release note", target: linkTarget}, "v" + addonVersion),
-            orgInstance ? h("span", {}, " / ") : "",
-            orgInstance ? h("a", {href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget}, orgInstance) : "",
             h("span", {}, " / "),
             h("input", {
               className: "api-input",

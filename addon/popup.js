@@ -2,6 +2,7 @@
 import {sfConn, apiVersion} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
+import {copyToClipboard} from "./data-load.js";
 
 let h = React.createElement;
 
@@ -153,15 +154,15 @@ class App extends React.PureComponent {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
   }
-  getOrgInstance(sfHost) {
-    let orgInstance = sessionStorage.getItem(sfHost + "_orgInstance");
-    if (orgInstance == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+InstanceName+FROM+Organization").then(res => {
-        orgInstance = res.records[0].InstanceName;
-        sessionStorage.setItem(sfHost + "_orgInstance", orgInstance);
+  getOrgInfo(sfHost) {
+    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
+    if (orgInfo == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType,TimeZoneSidKey+FROM+Organization").then(res => {
+        orgInfo = res.records[0];
+        sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
       });
     }
-    return orgInstance;
+    return orgInfo;
   }
   render() {
     let {
@@ -173,7 +174,8 @@ class App extends React.PureComponent {
     } = this.props;
     let {isInSetup, contextUrl, apiVersionInput, isFieldsPresent} = this.state;
     let clientId = localStorage.getItem(sfHost + "_clientId");
-    let orgInstance = this.getOrgInstance(sfHost);
+    let orgInfo = this.getOrgInfo(sfHost);
+    let orgInstance = orgInfo.InstanceName;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
@@ -326,7 +328,7 @@ class AllDataBox extends React.PureComponent {
           this.ensureKnownBrowserContext();
           break;
         case this.SearchAspectTypes.org:
-          this.ensureKnownOrgContext();
+          this.ensureKnownBrowserContext();
           break;
       }
     }
@@ -370,25 +372,6 @@ class AllDataBox extends React.PureComponent {
       } catch (err) {
         console.error("Unable to query user context", err);
       }
-    }
-  }
-
-  async ensureKnownOrgContext() {
-    let {contextOrgId, contextInstanceName} = this.state;
-
-    if (!contextOrgId){
-      try {
-        const userInfo = await sfConn.rest("/services/oauth2/userinfo");
-        let contextOrgId = userInfo.organization_id;
-        this.setState({contextOrgId});
-      } catch (err) {
-        console.error("Unable to query user context", err);
-      }
-    }
-
-    if (!contextInstanceName){
-      const result = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+InstanceName+FROM+Organization");
-      this.setState({contextInstanceName: result.records[0].InstanceName});
     }
   }
 
@@ -1064,41 +1047,50 @@ class AllDataBoxOrg extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.state = {
-      contextOrgId: null,
-      releaseVersion: null,
-      contextInstanceName: null
-    };
+    this.state = {};
   }
 
   componentDidMount() {
-    this.setReleaseVersion();
+    let {sfHost} = this.props;
+    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
+    this.setInstanceStatus(orgInfo.InstanceName, sfHost);
   }
 
   contextOrgId(){
     return this.props.contextOrgId;
   }
 
-  get contextInstanceName(){
-    return this.props.contextInstanceName;
+  getNextMajorRelease(maintenances){
+    if (maintenances){
+      let event = maintenances.find(event => event.name.endsWith("Major Release"));
+      return event.name.replace(" Major Release", "") + " on " + new Date(event.plannedStartTime).toDateString();
+    }
+    return null;
   }
 
-  setReleaseVersion(){
-    if (!this.state.releaseVersion && this.contextInstanceName){
-      fetch(`https://api.status.salesforce.com/v1/instances/${this.contextInstanceName}/status`).then(response => {
+  copy(text){
+    copyToClipboard(text);
+  }
+
+  setInstanceStatus(instanceName, sfHost){
+    let instanceStatusLocal = JSON.parse(sessionStorage.getItem(sfHost + "_instanceStatus"));
+    if (instanceStatusLocal == null){
+      fetch(`https://api.status.salesforce.com/v1/instances/${instanceName}/status`).then(response => {
         response.json().then(result => {
-          this.setState({releaseVersion: result.releaseVersion});
+          this.setState({instanceStatus: result});
+          sessionStorage.setItem(sfHost + "_instanceStatus", JSON.stringify(result));
         });
-      }).catch(() => {
-        this.setState({releaseVersion: "Unknown"});
+      }).catch((e) => {
+        console.error(e);
       });
+    } else {
+      this.setState({instanceStatus: instanceStatusLocal});
     }
-    return;
   }
 
   render() {
-    let {linkTarget} = this.props;
-    this.setReleaseVersion();
+    let {linkTarget, sfHost} = this.props;
+    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
     return (
       h("div", {ref: "orgBox", className: "users-box"},
         h("div", {className: "all-data-box-inner"},
@@ -1106,17 +1098,33 @@ class AllDataBoxOrg extends React.PureComponent {
             h("table", {},
               h("tbody", {},
                 h("tr", {},
-                  h("th", {}, "Org Id:"),
-                  h("td", {}, this.contextOrgId())
+                  h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget}, "Org Id:")),
+                  h("td", {className: "pointer", title: "Copy Id", onClick: this.copy(orgInfo.Id)}, orgInfo.Id)
                 ),
                 h("tr", {},
-                  h("th", {}, "Instance:"),
-                  h("td", {}, h("a", {href: "https://status.salesforce.com/instances/" + this.contextInstanceName, title: "Instance status", target: linkTarget}, this.contextInstanceName))
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName, title: "Instance status", target: linkTarget}, "Instance:")),
+                  h("td", {}, orgInfo.InstanceName)
+                ),
+                h("tr", {},
+                  h("th", {}, "Type:"),
+                  h("td", {}, orgInfo.OrganizationType)
+                ),
+                h("tr", {},
+                  h("th", {}, "Status:"),
+                  h("td", {}, this.state.instanceStatus?.status)
                 ),
                 h("tr", {},
                   h("th", {}, "Release:"),
-                  h("td", {}, this.state.releaseVersion)
-                )
+                  h("td", {}, this.state.instanceStatus?.releaseVersion ? (this.state.instanceStatus.releaseVersion + " / " + this.state.instanceStatus?.releaseNumber) : "")
+                ),
+                h("tr", {},
+                  h("th", {}, "Location:"),
+                  h("td", {}, this.state.instanceStatus?.location)
+                ),
+                h("tr", {},
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
+                  h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
+                ),
               )))))
     );
   }

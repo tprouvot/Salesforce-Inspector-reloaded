@@ -119,6 +119,10 @@ class App extends React.PureComponent {
       e.preventDefault();
       this.refs.showAllDataBox.refs.shortcutTab.click();
     }
+    if (e.key == "r") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs.orgTab.click();
+    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
@@ -361,7 +365,7 @@ class AllDataBox extends React.PureComponent {
       try {
         const userInfo = await sfConn.rest("/services/oauth2/userinfo");
         let contextOrgId = userInfo.organization_id;
-        this.setState({ contextOrgId });
+        this.setState({contextOrgId});
       } catch (err) {
         console.error("Unable to query user context", err);
       }
@@ -477,24 +481,23 @@ class AllDataBox extends React.PureComponent {
   render() {
     let {activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList, contextInstanceName} = this.state;
     let {sfHost, showDetailsSupported, linkTarget} = this.props;
-    debugger
     return (
       h("div", {className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "")},
         h("ul", {className: "small-tabs"},
           h("li", {ref: "objectTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : ""}, h("span", {}, h("u", {}, "O"), "bjects")),
           h("li", {ref: "userTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : ""}, h("span", {}, h("u", {}, "U"), "sers")),
           h("li", {ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : ""}, h("span", {}, h("u", {}, "S"), "hortcuts")),
-          h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, h("u", {}, "O"), "rg"))
+          h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g"))
         ),
         (activeSearchAspect == this.SearchAspectTypes.sobject)
           ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget})
           : (activeSearchAspect == this.SearchAspectTypes.users)
             ? h(AllDataBoxUsers, {ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); }}, "Users")
-            : "AllData aspect " + activeSearchAspect + " not implemented"
+            : (activeSearchAspect == this.SearchAspectTypes.shortcuts)
               ? h(AllDataBoxShortcut, {ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); }}, "Users")
-              : (activeSearchAspect === this.SearchAspectTypes.org)
-              ? h("li", { onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : "" }, "Org")
-              : "AllData aspect " + activeSearchAspect + " not implemented"
+              : (activeSearchAspect == this.SearchAspectTypes.org)
+                ? h(AllDataBoxOrg, {ref: "showAllDataBoxOrg", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("orgBox", value); }}, "Users")
+                : "AllData aspect " + activeSearchAspect + " not implemented"
       )
     );
   }
@@ -1007,6 +1010,69 @@ class AllDataBoxShortcut extends React.PureComponent {
             ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
             : h("div", {className: "center"}, "No shortcut found")
         ))
+    );
+  }
+}
+
+/** ORG Tab Component */
+class AllDataBoxOrg extends React.PureComponent {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      contextOrgId: null,
+      releaseVersion: null,
+      contextInstanceName: null
+    };
+  }
+
+  componentDidMount() {
+    this.setReleaseVersion();
+  }
+
+  contextOrgId(){
+    return this.props.contextOrgId;
+  }
+
+  get contextInstanceName(){
+    return this.props.contextInstanceName;
+  }
+
+  setReleaseVersion(){
+    if (!this.state.releaseVersion && this.contextInstanceName){
+      fetch(`https://api.status.salesforce.com/v1/instances/${this.contextInstanceName}/status`).then(response => {
+        response.json().then(result => {
+          this.setState({releaseVersion: result.releaseVersion});
+        });
+      }).catch(() => {
+        this.setState({releaseVersion: "Unknown"});
+      });
+    }
+    return;
+  }
+
+  render() {
+    let {linkTarget} = this.props;
+    this.setReleaseVersion();
+    return (
+      h("div", {ref: "orgBox", className: "users-box"},
+        h("div", {className: "all-data-box-inner"},
+          h("div", {className: "all-data-box-data"},
+            h("table", {},
+              h("tbody", {},
+                h("tr", {},
+                  h("th", {}, "Org Id:"),
+                  h("td", {}, this.contextOrgId())
+                ),
+                h("tr", {},
+                  h("th", {}, "Instance:"),
+                  h("td", {}, h("a", {href: "https://status.salesforce.com/instances/" + this.contextInstanceName, title: "Instance status", target: linkTarget}, this.contextInstanceName))
+                ),
+                h("tr", {},
+                  h("th", {}, "Release:"),
+                  h("td", {}, this.state.releaseVersion)
+                )
+              )))))
     );
   }
 }
@@ -1695,66 +1761,6 @@ function getLinkTarget(e) {
   } else {
     return "_top";
   }
-}
-
-/** ORG Tab Component */
-class AllDataBoxOrg extends React.PureComponent {
-	constructor(props) {
-		super(props);
-		this.state = {
-			contextOrgId: null,
-			releaseVersion: null,
-			contextInstanceName: null
-		};
-	}
-
-	componentDidMount() {
-		this.setReleaseVersion();
-	}
-
-	contextOrgId(){
-		return this.props.contextOrgId;
-	}
-
-	get contextInstanceName(){
-		return this.props.contextInstanceName;
-	}
-
-	setReleaseVersion(){
-		if(!this.state.releaseVersion && this.contextInstanceName){
-			fetch(`https://api.status.salesforce.com/v1/instances/${this.contextInstanceName}/status`).then(response => {
-				response.json().then(result => {
-					this.setState({releaseVersion: result.releaseVersion })
-				})
-			}).catch( () => {
-				this.setState({releaseVersion: 'Unknown'});
-			});
-		}
-		return 
-	}
-
-	render() {
-		this.setReleaseVersion();
-		return (
-			h("div", { className: "all-data-box-inner" },
-        h("div", { className: "all-data-box-data" },
-          h("table", {},
-            h("tbody", {},
-              h("tr", {},
-                h("th", {}, "Org ID:"),
-                h("td", {}, this.contextOrgId())
-              ),
-              h("tr", {},
-                h("th", {}, "Instance:"),
-                h("td", {}, this.contextInstanceName)
-              ),
-              h("tr", {},
-                h("th", {}, "Release:"),
-                h("td", {}, this.state.releaseVersion)
-              )
-			))))
-		);
-	  }
 }
 
 window.getRecordId = getRecordId; // for unit tests

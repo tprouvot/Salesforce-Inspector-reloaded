@@ -20,6 +20,10 @@ function closePopup() {
   parent.postMessage({insextClosePopup: true}, "*");
 }
 
+function showApiName() {
+  parent.postMessage({insextShowApiName: true}, "*");
+}
+
 function init({sfHost, inDevConsole, inLightning, inInspector}) {
   let addonVersion = chrome.runtime.getManifest().version;
 
@@ -52,7 +56,8 @@ class App extends React.PureComponent {
     this.state = {
       isInSetup: false,
       contextUrl: null,
-      apiVersionInput: apiVersion
+      apiVersionInput: apiVersion,
+      isFieldsPresent: false
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
@@ -66,6 +71,9 @@ class App extends React.PureComponent {
         contextUrl: locationHref
       });
     }
+    this.setState({
+      isFieldsPresent: e.data.isFieldsPresent
+    });
   }
 
   onShortcutKey(e) {
@@ -123,6 +131,14 @@ class App extends React.PureComponent {
       e.preventDefault();
       this.refs.showAllDataBox.refs.orgTab.click();
     }
+    if (e.key == "f") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickShowFieldAPINameBtn();
+    }
+    if (e.key == "n") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickNewBtn();
+    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
@@ -138,12 +154,11 @@ class App extends React.PureComponent {
     removeEventListener("keydown", this.onShortcutKey);
   }
   getOrgInstance(sfHost) {
-    let orgInstance = localStorage.getItem(sfHost + "_orgInstance");
+    let orgInstance = sessionStorage.getItem(sfHost + "_orgInstance");
     if (orgInstance == null) {
       sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+InstanceName+FROM+Organization").then(res => {
         orgInstance = res.records[0].InstanceName;
-        localStorage.setItem(sfHost + "_orgInstance", orgInstance);
-        this.setState({orgInstance});
+        sessionStorage.setItem(sfHost + "_orgInstance", orgInstance);
       });
     }
     return orgInstance;
@@ -156,7 +171,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, isFieldsPresent} = this.state;
     let clientId = localStorage.getItem(sfHost + "_clientId");
     let orgInstance = this.getOrgInstance(sfHost);
     let hostArg = new URLSearchParams();
@@ -184,7 +199,7 @@ class App extends React.PureComponent {
           )
         ),
         h("div", {className: "main"},
-          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl}),
+          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, isFieldsPresent}),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
@@ -242,8 +257,8 @@ class App extends React.PureComponent {
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top"},
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", title: "Release note", target: linkTarget}, "v" + addonVersion),
-            h("span", {}, " / "),
-            h("a", {href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget}, orgInstance),
+            orgInstance ? h("span", {}, " / ") : "",
+            orgInstance ? h("a", {href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget}, orgInstance) : "",
             h("span", {}, " / "),
             h("input", {
               className: "api-input",
@@ -386,7 +401,7 @@ class AllDataBox extends React.PureComponent {
   loadSobjects() {
     let entityMap = new Map();
 
-    function addEntity({name, label, keyPrefix, durableId, isCustomSetting}, api) {
+    function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported, isEverCreatable, newUrl}, api) {
       label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
       let entity = entityMap.get(name);
       if (entity) {
@@ -395,6 +410,15 @@ class AllDataBox extends React.PureComponent {
         }
         if (!entity.keyPrefix) { // For some objects the keyPrefix is only available in some of the APIs.
           entity.keyPrefix = keyPrefix;
+        }
+        if (!entity.durableId) { // For some objects the durableId is only available in some of the APIs
+          entity.durableId = durableId;
+        }
+        if (!entity.isEverCreatable) { // For some objects isEverCreatable is only available in some of the APIs
+          entity.isEverCreatable = isEverCreatable;
+        }
+        if (!entity.newUrl) { // For some objects isEverCreatable is only available in some of the APIs
+          entity.newUrl = newUrl;
         }
       } else {
         entity = {
@@ -405,6 +429,9 @@ class AllDataBox extends React.PureComponent {
           durableId,
           isCustomSetting,
           availableKeyPrefix: null,
+          recordTypesSupported,
+          isEverCreatable,
+          newUrl
         };
         entityMap.set(name, entity);
       }
@@ -432,7 +459,7 @@ class AllDataBox extends React.PureComponent {
           let entityNb = res.totalSize;
           for (let bucket = 0; bucket < Math.ceil(entityNb / 2000); bucket++) {
             let offset = bucket > 0 ? " OFFSET " + (bucket * 2000) : "";
-            let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
+            let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
             sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
               .then(respEntity => {
                 for (let record of respEntity.records) {
@@ -441,7 +468,10 @@ class AllDataBox extends React.PureComponent {
                     label: record.Label,
                     keyPrefix: record.KeyPrefix,
                     durableId: record.DurableId,
-                    isCustomSetting: record.IsCustomSetting
+                    isCustomSetting: record.IsCustomSetting,
+                    recordTypesSupported: record.RecordTypesSupported,
+                    newUrl: record.NewUrl,
+                    isEverCreatable: record.IsEverCreatable
                   }, null);
                 }
               }).catch(err => {
@@ -479,8 +509,9 @@ class AllDataBox extends React.PureComponent {
   }
 
   render() {
-    let {activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList, contextInstanceName} = this.state;
-    let {sfHost, showDetailsSupported, linkTarget} = this.props;
+    let {activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList} = this.state;
+    let {sfHost, showDetailsSupported, linkTarget, isFieldsPresent} = this.props;
+
     return (
       h("div", {className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "")},
         h("ul", {className: "small-tabs"},
@@ -490,7 +521,7 @@ class AllDataBox extends React.PureComponent {
           h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g"))
         ),
         (activeSearchAspect == this.SearchAspectTypes.sobject)
-          ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget})
+          ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, isFieldsPresent})
           : (activeSearchAspect == this.SearchAspectTypes.users)
             ? h(AllDataBoxUsers, {ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); }}, "Users")
             : (activeSearchAspect == this.SearchAspectTypes.shortcuts)
@@ -703,7 +734,10 @@ class AllDataBoxSObject extends React.PureComponent {
     let {selectedValue} = this.state;
     //If a recordId is selected and the object supports regularApi
     if (selectedValue && selectedValue.recordId && selectedValue.sobject && selectedValue.sobject.availableApis && selectedValue.sobject.availableApis.includes("regularApi")) {
-      let fields = ["Id", "LastModifiedBy.Alias", "CreatedBy.Alias", "RecordType.DeveloperName", "RecordType.Id", "CreatedDate", "LastModifiedDate", "Name"];
+      let fields = ["Id", "LastModifiedBy.Alias", "CreatedBy.Alias", "CreatedDate", "LastModifiedDate", "Name"];
+      if (selectedValue.sobject.recordTypesSupported){
+        fields.push("RecordType.DeveloperName", "RecordType.Id");
+      }
       this.restCallForRecordDetails(fields, selectedValue);
     } else {
       this.setState({recordIdDetails: null});
@@ -819,6 +853,17 @@ class AllDataBoxSObject extends React.PureComponent {
     }
   }
 
+  clickShowFieldAPINameBtn() {
+    if (this.refs.allDataSelection) {
+      this.refs.allDataSelection.clickShowFieldAPINameBtn();
+    }
+  }
+  clickNewBtn() {
+    if (this.refs.allDataSelection) {
+      this.refs.allDataSelection.clickNewBtn();
+    }
+  }
+
   resultRender(matches, userQuery) {
     return matches.map(value => ({
       key: value.recordId + "#" + value.sobject.name,
@@ -850,13 +895,13 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   render() {
-    let {sfHost, showDetailsSupported, sobjectsList, linkTarget, contextRecordId} = this.props;
+    let {sfHost, showDetailsSupported, sobjectsList, linkTarget, contextRecordId, isFieldsPresent} = this.props;
     let {selectedValue, recordIdDetails} = this.state;
     return (
       h("div", {},
         h(AllDataSearch, {ref: "allDataSearch", onDataSelect: this.onDataSelect, sobjectsList, getMatches: this.getMatches, inputSearchDelay: 0, placeholderText: "Record id, id prefix or object name", resultRender: this.resultRender}),
         selectedValue
-          ? h(AllDataSelection, {ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId})
+          ? h(AllDataSelection, {ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId, isFieldsPresent})
           : h("div", {className: "all-data-box-inner empty"}, "No record to display")
       )
     );
@@ -887,7 +932,7 @@ class AllDataBoxShortcut extends React.PureComponent {
       setIsLoading(true);
 
       //search for shortcuts
-      let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch.toLowerCase()));
+      let result = setupLinks.filter(item => item.label.toLowerCase().includes(shortcutSearch.toLowerCase()));
       result.forEach(element => {
         element.detail = element.section;
         element.name = element.link;
@@ -1260,6 +1305,16 @@ class AllDataSelection extends React.PureComponent {
   clickAllDataBtn() {
     this.refs.showAllDataBtn.click();
   }
+  clickShowFieldAPINameBtn(){
+    if (this.refs.showFieldApiNameBtn){
+      this.refs.showFieldApiNameBtn.click();
+    }
+  }
+  clickNewBtn(){
+    if (this.refs.showNewBtn){
+      this.refs.showNewBtn.click();
+    }
+  }
   getAllDataUrl(toolingApi) {
     let {sfHost, selectedValue} = this.props;
     if (selectedValue) {
@@ -1330,8 +1385,17 @@ class AllDataSelection extends React.PureComponent {
       return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
     }
   }
+  getObjectDocLink(sobject, api){
+    if (api === "toolingApi"){
+      return "https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/tooling_api_objects_" + sobject.name.toLowerCase() + ".htm";
+    }
+    return "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_" + sobject.name.toLowerCase() + ".htm";
+  }
+  getNewObjectUrl(sfHost, newUrl){
+    return "https://" + sfHost + newUrl;
+  }
   render() {
-    let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails} = this.props;
+    let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent} = this.props;
     // Show buttons for the available APIs.
     let buttons = Array.from(selectedValue.sobject.availableApis);
     buttons.sort();
@@ -1370,14 +1434,25 @@ class AllDataSelection extends React.PureComponent {
                   h("span", {}, selectedValue.sobject.keyPrefix),
                   h("span", {}, (selectedValue.recordId) ? " / " + selectedValue.recordId : ""),
                 )
-              ))),
-
+              ),
+              selectedValue.sobject.name.indexOf("__") == -1
+                ? h("tr", {},
+                  h("th", {}, "Doc:"),
+                  h("td", {},
+                    h("a", {href: this.getObjectDocLink(selectedValue.sobject, selectedValue.sobject.availableApis[1]), target: linkTarget}, "Standard"),
+                    selectedValue.sobject.availableApis.length > 1
+                      ? h("a", {href: this.getObjectDocLink(selectedValue.sobject, selectedValue.sobject.availableApis[0]), target: linkTarget, className: "left-space"}, "Tooling")
+                      : null
+                  ),
+                ) : null
+            )),
 
           h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
         h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
+        selectedValue.sobject.isEverCreatable ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.name)) : null,
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
         buttons.map((button, index) => h("div", {}, h("a",
           {
             key: button,
@@ -1385,13 +1460,14 @@ class AllDataSelection extends React.PureComponent {
             ref: index == 0 ? "showAllDataBtn" : null,
             href: this.getAllDataUrl(button == "toolingApi"),
             target: linkTarget,
-            className: "page-button slds-button slds-button_neutral"
+            className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"
           },
           index == 0 ? h("span", {}, "Show ", h("u", {}, "a"), "ll data") : "Show all data",
           button == "regularApi" ? ""
           : button == "toolingApi" ? " (Tooling API)"
           : " (Not readable)"
-        )))
+        ))),
+        isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
       )
     );
   }
@@ -1405,6 +1481,7 @@ class AllDataRecordDetails extends React.PureComponent {
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
   }
+
   render() {
     let {sfHost, recordIdDetails, className, selectedValue, linkTarget} = this.props;
     if (recordIdDetails) {

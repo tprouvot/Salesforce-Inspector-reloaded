@@ -31,7 +31,7 @@ export let sfConn = {
     }
   },
 
-  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", headers = {}, progressHandler = null} = {}) {
+  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}) {
     if (!this.instanceHostname || !this.sessionId) {
       throw new Error("Session not found");
     }
@@ -65,7 +65,7 @@ export let sfConn = {
       xhr.setRequestHeader(name, value);
     }
 
-    xhr.responseType = "json";
+    xhr.responseType = responseType;
     await new Promise((resolve, reject) => {
       if (progressHandler) {
         progressHandler.abort = () => {

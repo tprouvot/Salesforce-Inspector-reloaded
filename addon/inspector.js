@@ -6,7 +6,9 @@ export let sfConn = {
     let message = await new Promise(resolve =>
       chrome.runtime.sendMessage({message: "getSession", sfHost}, resolve));
     if (message) {
-      this.instanceHostname = message.hostname;
+      this.instanceHostname = message.hostname
+        .replace(/\.lightning\.force\./, ".my.salesforce.") //avoid HTTP redirect (that would cause Authorization header to be dropped)
+        .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
       this.sessionId = message.key;
       if (window.location.href.includes(paramKey)) {
         let url = new URL(window.location.href);

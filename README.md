@@ -90,12 +90,12 @@ Follow steps described in [how-to documentation](https://tprouvot.github.io/Sale
 
 ## Contributions
 
-Contributions are welcomed !
+Contributions are welcome!
 
 To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
 This branch will be merge into master when the new version is published on web store.
 
-Linting : to assure indentation, formatting and best practices coherence, please install ESLint extension.
+Linting: to assure indentation, formatting and best practices coherence, please install ESLint extension.
 
 ## Development
 
@@ -107,7 +107,7 @@ Linting : to assure indentation, formatting and best practices coherence, please
 1. `npm run chrome-dev-build`
 2. Open `chrome://extensions/`.
 3. Enable `Developer mode`.
-4. Click `Load unpacked extension...`.
+4. Click `Load unpacked`.
 5. Select the `addon` subdirectory of this repository.
 
 ### Firefox

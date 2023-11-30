@@ -891,12 +891,15 @@ class App extends React.Component {
   onImportUndelete(model){
     //reinit import table to remove __Status column to be able to undelete rows after deleting it
     if (model.importData.importTable.header.find(c => c.columnValue == "__Status")) {
-      model.importData.importTable.header = model.importData.importTable.header.filter(c => !c.columnValue.startsWith("__"));
-      model.importCounts().Queued = model.importData.importTable.data.length;
-      model.importData.importTable.data = [];
-    }
-    console.log(model);
+      //get indexes to remove
+      const indices = model.importData.importTable.header.map((element, index) => element.columnValue.startsWith("__") ? index : undefined).filter(index => index !== undefined);
+      //remove indexes from header and data
+      model.importData.importTable.header = model.importData.importTable.header.filter((element, index) => !indices.includes(index));
+      model.importData.importTable.data = model.importData.importTable.data.map(innerArray => innerArray.filter((element, index) => !indices.includes(index)));
 
+      model.importCounts().Queued = model.importData.importTable.data.length;
+      model.updateImportTableResult();
+    }
   }
   componentDidMount() {
     let {model} = this.props;

@@ -1117,10 +1117,6 @@ class AllDataBoxOrg extends React.PureComponent {
                   h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
                   h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
                 ),
-                /*)),
-                h("div", {className: "slds-m-top_xx-small"},
-                  h("a", {href: "#", onClick: this.copy(JSON.stringify(this.state.instanceStatus)), className: "page-button slds-button slds-button_neutral"}, "Copy JSON Instance Status result")),
-                  )))*/ //commented because of error "DOMException: The Clipboard API has been blocked because of a permissions policy applied to the current document"
               )))))
     );
   }

@@ -70,6 +70,7 @@ class Model {
     { value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling"] },
     { value: "upsert", label: "Upsert", supportedApis: ["Enterprise", "Tooling"] },
     { value: "delete", label: "Delete", supportedApis: ["Enterprise", "Tooling"] },
+    { value: "undelete", label: "Undelete", supportedApis: ["Enterprise", "Tooling"] },
     { value: "upsertMetadata", label: "Upsert Metadata", supportedApis: ["Metadata"] },
     { value: "deleteMetadata", label: "Delete Metadata", supportedApis: ["Metadata"] }
   ];

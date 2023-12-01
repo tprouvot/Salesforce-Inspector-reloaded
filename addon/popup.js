@@ -1091,7 +1091,6 @@ class AllDataBoxOrg extends React.PureComponent {
               h("tbody", {},
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget}, "Org Id:")),
-                  //h("td", {className: "pointer", title: "Copy Id", onClick: this.copy(orgInfo.Id)}, orgInfo.Id)//commented because of error "DOMException: The Clipboard API has been blocked because of a permissions policy applied to the current document"
                   h("td", {}, orgInfo.Id)
                 ),
                 h("tr", {},

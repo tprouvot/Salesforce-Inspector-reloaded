@@ -19,10 +19,8 @@ class Model {
     this.apiType = "Enterprise";
     this.dataFormat = "excel";
     this.importActionSelected = false;
-    this.importAction = "create";
-    this.importActionName = "Insert";
+    this.updateAvailableActions();
     this.importType = "Account";
-    this.availableActions = this.allActions.filter(action => action.supportedApis.includes(this.apiType));
     this.externalId = "Id";
     this.batchSize = "200";
     this.batchConcurrency = "6";
@@ -53,7 +51,7 @@ class Model {
       this.dataFormat = "csv";
       this.setData(data);
       this.apiType = this.importType.endsWith("__mdt") ? "Metadata" : "Enterprise";
-      this.availableActions = this.allActions.filter(action => action.supportedApis.includes(this.apiType));
+      this.updateAvailableActions();
       this.importAction = this.importType.endsWith("__mdt") ? "deleteMetadata" : "delete";
       this.importActionName = this.importType.endsWith("__mdt") ? "Delete Metadata" : "Delete";
       this.skipAllUnknownFields();
@@ -75,6 +73,13 @@ class Model {
     { value: "upsertMetadata", label: "Upsert Metadata", supportedApis: ["Metadata"] },
     { value: "deleteMetadata", label: "Delete Metadata", supportedApis: ["Metadata"] }
   ];
+
+  // set available actions based on api type, and set the first one as the default
+  updateAvailableActions() {
+    this.availableActions = this.allActions.filter(action => action.supportedApis.includes(this.apiType));
+    this.importAction = this.availableActions[0].value;
+    this.importActionName = this.availableActions[0].label;
+  }
 
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -166,10 +171,12 @@ class Model {
     //automatically select the SObject if possible
     let sobj = this.getSObject(data);
     if (sobj) {
+      this.apiType = sobj.endsWith("__mdt") ? "Metadata" : "Enterprise";
+      this.updateAvailableActions();
       this.importType = sobj;
     }
     //automatically select update if header contains id
-    if (this.hasIdColumn(header) && !this.importActionSelected) {
+    if (this.hasIdColumn(header) && !this.importActionSelected && this.apiType != "Metadata") {
       this.importAction = "update";
       this.importActionName = "Update";
     }
@@ -855,7 +862,7 @@ class App extends React.Component {
   onApiTypeChange(e) {
     let { model } = this.props;
     model.apiType = e.target.value;
-    model.availableActions = model.allActions.filter(action => action.supportedApis.includes(model.apiType));
+    model.updateAvailableActions();
     model.importAction = model.availableActions[0].value;
     model.importActionName = model.allActions.find(action => action.value == model.importAction).label;
     model.updateImportTableResult();

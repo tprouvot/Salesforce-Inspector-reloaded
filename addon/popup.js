@@ -2,7 +2,6 @@
 import {sfConn, apiVersion} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
-import {copyToClipboard} from "./data-load.js";
 
 let h = React.createElement;
 
@@ -1065,10 +1064,6 @@ class AllDataBoxOrg extends React.PureComponent {
     return null;
   }
 
-  copy(text){
-    copyToClipboard(text);
-  }
-
   setInstanceStatus(instanceName, sfHost){
     let instanceStatusLocal = JSON.parse(sessionStorage.getItem(sfHost + "_instanceStatus"));
     if (instanceStatusLocal == null){
@@ -1096,7 +1091,8 @@ class AllDataBoxOrg extends React.PureComponent {
               h("tbody", {},
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget}, "Org Id:")),
-                  h("td", {className: "pointer", title: "Copy Id", onClick: this.copy(orgInfo.Id)}, orgInfo.Id)
+                  //h("td", {className: "pointer", title: "Copy Id", onClick: this.copy(orgInfo.Id)}, orgInfo.Id)//commented because of error "DOMException: The Clipboard API has been blocked because of a permissions policy applied to the current document"
+                  h("td", {}, orgInfo.Id)
                 ),
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName, title: "Instance status", target: linkTarget}, "Instance:")),
@@ -1122,6 +1118,10 @@ class AllDataBoxOrg extends React.PureComponent {
                   h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
                   h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
                 ),
+                /*)),
+                h("div", {className: "slds-m-top_xx-small"},
+                  h("a", {href: "#", onClick: this.copy(JSON.stringify(this.state.instanceStatus)), className: "page-button slds-button slds-button_neutral"}, "Copy JSON Instance Status result")),
+                  )))*/ //commented because of error "DOMException: The Clipboard API has been blocked because of a permissions policy applied to the current document"
               )))))
     );
   }

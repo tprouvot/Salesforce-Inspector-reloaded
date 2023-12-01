@@ -11,3 +11,4 @@ yarn.lock
 .history/
 .sfdx/
 venv/
+.sf/

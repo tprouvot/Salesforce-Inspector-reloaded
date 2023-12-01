@@ -1674,8 +1674,7 @@ class Autocomplete extends React.PureComponent {
 function getRecordId(href) {
   let url = new URL(href);
   // Find record ID from URL
-  let searchParams = new URLSearchParams(url.search.substring(1));
-  // Salesforce Classic and Console
+  // Salesforce Classic
   if (url.hostname.endsWith(".salesforce.com") || url.hostname.endsWith(".salesforce.mil")) {
     let match = url.pathname.match(/\/([a-zA-Z0-9]{3}|[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})(?:\/|$)/);
     if (match) {
@@ -1686,12 +1685,16 @@ function getRecordId(href) {
     }
   }
 
-  // Lightning Experience and Salesforce1
-  if (url.hostname.endsWith(".lightning.force.com") || url.hostname.endsWith(".lightning.force.mil") || url.hostname.endsWith(".lightning.crmforce.mil")) {
+  // Lightning Experience
+  const lightningHostnames = [
+    ".lightning.force.com",
+    ".lightning.force.mil",
+    ".lightning.crmforce.mil",
+    ".lightning.force.com.mcas.ms"
+  ];
+  if (lightningHostnames.some(hostname => url.hostname.endsWith(hostname))) {
     let match;
-
     if (url.pathname == "/one/one.app") {
-      // Pre URL change: https://docs.releasenotes.salesforce.com/en-us/spring18/release-notes/rn_general_enhanced_urls_cruc.htm
       match = url.hash.match(/\/sObject\/([a-zA-Z0-9]+)(?:\/|$)/);
     } else {
       match = url.pathname.match(/\/lightning\/[r|o]\/[a-zA-Z0-9_]+\/([a-zA-Z0-9]+)/);
@@ -1701,6 +1704,7 @@ function getRecordId(href) {
     }
   }
   // Visualforce
+  let searchParams = new URLSearchParams(url.search.substring(1));
   {
     let idParam = searchParams.get("id");
     if (idParam) {

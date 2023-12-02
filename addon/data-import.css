@@ -234,6 +234,9 @@ h1 {
 .confError {
   box-shadow: 0 0 3px 1px #a00;
 }
+.confError + .confError {
+  margin-top: 5px;
+}
 .columns-mapping .conf-line {
   padding: 5px 0;
   margin: 0;

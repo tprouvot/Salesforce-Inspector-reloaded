@@ -232,11 +232,25 @@ class Model {
     this.didUpdate();
   }
 
+  // Used only for requried fields that will prevent us from building a valid API request or definitely cause an error if missing.
+  getRequiredMissingFields() {
+    let missingFields = [];
+
+    if (!this.importIdColumnValid()) {
+      missingFields.push(this.idFieldName());
+    }
+
+    if (this.apiType == "Metadata" && this.importAction == "upsertMetadata" && !this.columns().some(c => c.columnValue == "MasterLabel")) {
+      missingFields.push("MasterLabel");
+    }
+    return missingFields;
+  }
+
   invalidInput() {
     // We should try to allow imports to succeed even if our validation logic does not exactly match the one in Salesforce.
     // We only hard-fail on errors that prevent us from building the API request.
     // When possible, we submit the request with errors and let Salesforce give a descriptive message in the response.
-    return !this.importIdColumnValid() || !this.importData.importTable || !this.importData.importTable.header.every(col => col.columnIgnore() || col.columnValid());
+    return !this.importData.importTable || !this.importData.importTable.header.every(col => col.columnIgnore() || col.columnValid()) || this.getRequiredMissingFields().length > 0;
   }
 
   isWorking() {
@@ -320,13 +334,6 @@ class Model {
 
   importIdColumnValid() {
     return this.importAction == "create" || this.inputIdColumnIndex() > -1;
-  }
-
-  importIdColumnError() {
-    if (!this.importIdColumnValid()) {
-      return "Error: The field mapping has no '" + this.idFieldName() + "' column";
-    }
-    return "";
   }
 
   importTypeError() {
@@ -1119,7 +1126,7 @@ class App extends React.Component {
               h("h1", {}, "Field Mapping")
             ),
             /* h("div", {className: "columns-label"}, "Field mapping"), */
-            h("div", { className: "conf-error confError", hidden: !model.importIdColumnError() }, model.importIdColumnError()),
+            model.getRequiredMissingFields().map((field, index) => h("div", { key: index, className: "conf-error confError" }, `Error: The field mapping has no '${field}' column`)),
             h("div", { className: "conf-value" }, model.columns().map((column, index) => h(ColumnMapper, { key: index, model, column })))
           )
         )

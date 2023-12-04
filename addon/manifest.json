@@ -16,7 +16,8 @@
     "https://*.force.mil/*",
     "https://*.cloudforce.mil/*",
     "https://*.visualforce.mil/*",
-    "https://*.crmforce.mil/*"
+    "https://*.crmforce.mil/*",
+    "https://*.force.com.mcas.ms/*"
   ],
   "content_scripts": [
     {
@@ -33,7 +34,8 @@
         "https://*.lightning.force.mil/*",
         "https://*.cloudforce.mil/*",
         "https://*.visualforce.mil/*",
-        "https://*.crmforce.mil/*"
+        "https://*.crmforce.mil/*",
+        "https://*.lightning.force.com.mcas.ms/*"
       ],
       "all_frames": true,
       "css": ["button.css", "inspect-inline.css"],

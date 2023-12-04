@@ -2,6 +2,8 @@
 
 ## Version 1.21
 
+- Add support for upserting and deleting Custom Metadata (contribution by [Joshua Yarmak](https://github.com/toly11))
+- Add "Org" tab to display org and instance information (contribution by [Victor Garcia Zarco](https://github.com/victorgz))
 - Undelete records from data import page [feature 193](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/193)
 - Create new records from SObject tab ("New" button) [feature 226](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/226)
 - Enhance shortcut search to include any part of the shortcut title, not only the beginning (contribution by [Joshua Yarmak](https://github.com/toly11))
@@ -12,6 +14,7 @@
 - Add "Download" option on event log files (contribution by [Annubis45](https://github.com/Annubis45))
 - Fix 'Custom Object Name Links Don't Work' in popup [issue 218](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/218) (contribution by [Jeferson Chaves](https://github.com/JefersonChaves))
 - Show field API Name on Record Page [PR202](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/202) (contribution by [Mouloud Habchi](https://github.com/MD931))
+- Add support for domains protected by Microsoft Defender for Cloud Apps [issue 234](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/234) (contribution by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
 
 ## Version 1.20.1
 

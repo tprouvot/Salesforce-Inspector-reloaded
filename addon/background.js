@@ -12,8 +12,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // There is no straight forward way to unambiguously understand if the user authenticated against salesforce.com or cloudforce.com
     // (and thereby the domain of the relevant cookie) cookie domains are therefore tried in sequence.
     chrome.cookies.get({url: request.url, name: "sid", storeId: sender.tab.cookieStoreId}, cookie => {
+      const currentDomain = new URL(request.url).hostname;
       if (!cookie) {
-        sendResponse(null);
+        sendResponse(currentDomain); //default
         return;
       }
       let [orgId] = cookie.value.split("!");
@@ -37,7 +38,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     if (sessionCookie) {
                       sendResponse(sessionCookie.domain);
                     } else {
-                      sendResponse(null);
+                      sendResponse(currentDomain); //default
                     }
                   });
                 }

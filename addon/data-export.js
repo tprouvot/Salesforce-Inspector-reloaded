@@ -1302,8 +1302,12 @@ class App extends React.Component {
 
 {
 
-  let args = new URLSearchParams(location.search.slice(1));
+  let args = new URLSearchParams(location.search);
   let sfHost = args.get("host");
+  let hash = new URLSearchParams(location.hash); //User-agent OAuth flow
+  if (!sfHost && hash) {
+    sfHost = decodeURIComponent(hash.get("instance_url"));
+  }
   initButton(sfHost, true);
   sfConn.getSession(sfHost).then(() => {
 

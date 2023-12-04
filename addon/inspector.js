@@ -2,7 +2,7 @@ export let apiVersion = localStorage.getItem("apiVersion") == null ? "59.0" : lo
 export let sfConn = {
 
   async getSession(sfHost) {
-    let paramKey = "access_token";
+    const ACCESS_TOKEN = "access_token";
     let message = await new Promise(resolve =>
       chrome.runtime.sendMessage({message: "getSession", sfHost}, resolve));
     if (message) {
@@ -10,17 +10,18 @@ export let sfConn = {
         .replace(/\.lightning\.force\./, ".my.salesforce.") //avoid HTTP redirect (that would cause Authorization header to be dropped)
         .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
       this.sessionId = message.key;
-      if (window.location.href.includes(paramKey)) {
+      if (window.location.href.includes(ACCESS_TOKEN)) {
         let url = new URL(window.location.href);
-        let access = url.hash.split("&")[0].split(paramKey + "=")[1];
-        access = decodeURI(access);
+        let params = new URLSearchParams(url.search);
+        let accessToken = decodeURI(params.get("access_token"));
+        sfHost = decodeURI(params.get("instance_url"));
 
-        if (access) {
-          this.sessionId = access;
-          localStorage.setItem(sfHost + "_" + paramKey, access);
+        if (accessToken) {
+          this.sessionId = accessToken;
+          localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
         }
-      } else if (localStorage.getItem(sfHost + "_" + paramKey) != null) {
-        let data = localStorage.getItem(sfHost + "_" + paramKey);
+      } else if (localStorage.getItem(sfHost + "_" + ACCESS_TOKEN) != null) {
+        let data = localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
         this.sessionId = data;
       }
       let isSandbox = "isSandbox";

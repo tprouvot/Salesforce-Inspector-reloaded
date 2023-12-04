@@ -1460,7 +1460,7 @@ class AllDataSelection extends React.PureComponent {
             ref: index == 0 ? "showAllDataBtn" : null,
             href: this.getAllDataUrl(button == "toolingApi"),
             target: linkTarget,
-            className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"
+            className: "slds-m-top_xx-small page-button slds-button slds-button_neutral slds-m-top_xx-small"
           },
           index == 0 ? h("span", {}, "Show ", h("u", {}, "a"), "ll data") : "Show all data",
           button == "regularApi" ? ""

@@ -118,7 +118,7 @@ class Model {
       this.initialQuery = this.queryHistory.list[0].query;
       this.queryTooling = this.queryHistory.list[0].useToolingApi;
     } else {
-      this.initialQuery = "SELECT Id FROM Account";
+      this.initialQuery = "SELECT Id FROM Account LIMIT 200";
       this.queryTooling = false;
     }
 

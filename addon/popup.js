@@ -127,9 +127,17 @@ class App extends React.PureComponent {
       e.preventDefault();
       this.refs.showAllDataBox.refs.shortcutTab.click();
     }
+    if (e.key == "r") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs.orgTab.click();
+    }
     if (e.key == "f") {
       e.preventDefault();
       this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickShowFieldAPINameBtn();
+    }
+    if (e.key == "n") {
+      e.preventDefault();
+      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickNewBtn();
     }
   }
   onChangeApi(e) {
@@ -137,23 +145,24 @@ class App extends React.PureComponent {
     this.setState({apiVersionInput: e.target.value});
   }
   componentDidMount() {
+    let {sfHost} = this.props;
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
     parent.postMessage({insextLoaded: true}, "*");
+    this.setOrgInfo(sfHost);
   }
   componentWillUnmount() {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
   }
-  getOrgInstance(sfHost) {
-    let orgInstance = sessionStorage.getItem(sfHost + "_orgInstance");
-    if (orgInstance == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+InstanceName+FROM+Organization").then(res => {
-        orgInstance = res.records[0].InstanceName;
-        sessionStorage.setItem(sfHost + "_orgInstance", orgInstance);
+  setOrgInfo(sfHost) {
+    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
+    if (orgInfo == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType,TimeZoneSidKey+FROM+Organization").then(res => {
+        orgInfo = res.records[0];
+        sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
       });
     }
-    return orgInstance;
   }
   render() {
     let {
@@ -165,7 +174,6 @@ class App extends React.PureComponent {
     } = this.props;
     let {isInSetup, contextUrl, apiVersionInput, isFieldsPresent} = this.state;
     let clientId = localStorage.getItem(sfHost + "_clientId");
-    let orgInstance = this.getOrgInstance(sfHost);
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
@@ -249,8 +257,6 @@ class App extends React.PureComponent {
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top"},
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", title: "Release note", target: linkTarget}, "v" + addonVersion),
-            orgInstance ? h("span", {}, " / ") : "",
-            orgInstance ? h("a", {href: "https://status.salesforce.com/instances/" + orgInstance, title: "Instance status", target: linkTarget}, orgInstance) : "",
             h("span", {}, " / "),
             h("input", {
               className: "api-input",
@@ -279,7 +285,7 @@ class AllDataBox extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts"}); //Enum. Supported aspects
+    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"}); //Enum. Supported aspects
 
     this.state = {
       activeSearchAspect: this.SearchAspectTypes.sobject,
@@ -315,6 +321,9 @@ class AllDataBox extends React.PureComponent {
           this.ensureKnownUserContext();
           break;
         case this.SearchAspectTypes.shortcuts:
+          this.ensureKnownBrowserContext();
+          break;
+        case this.SearchAspectTypes.org:
           this.ensureKnownBrowserContext();
           break;
       }
@@ -371,7 +380,7 @@ class AllDataBox extends React.PureComponent {
   loadSobjects() {
     let entityMap = new Map();
 
-    function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported}, api) {
+    function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported, isEverCreatable, newUrl}, api) {
       label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
       let entity = entityMap.get(name);
       if (entity) {
@@ -380,6 +389,15 @@ class AllDataBox extends React.PureComponent {
         }
         if (!entity.keyPrefix) { // For some objects the keyPrefix is only available in some of the APIs.
           entity.keyPrefix = keyPrefix;
+        }
+        if (!entity.durableId) { // For some objects the durableId is only available in some of the APIs
+          entity.durableId = durableId;
+        }
+        if (!entity.isEverCreatable) { // For some objects isEverCreatable is only available in some of the APIs
+          entity.isEverCreatable = isEverCreatable;
+        }
+        if (!entity.newUrl) { // For some objects isEverCreatable is only available in some of the APIs
+          entity.newUrl = newUrl;
         }
       } else {
         entity = {
@@ -390,7 +408,9 @@ class AllDataBox extends React.PureComponent {
           durableId,
           isCustomSetting,
           availableKeyPrefix: null,
-          recordTypesSupported
+          recordTypesSupported,
+          isEverCreatable,
+          newUrl
         };
         entityMap.set(name, entity);
       }
@@ -418,7 +438,7 @@ class AllDataBox extends React.PureComponent {
           let entityNb = res.totalSize;
           for (let bucket = 0; bucket < Math.ceil(entityNb / 2000); bucket++) {
             let offset = bucket > 0 ? " OFFSET " + (bucket * 2000) : "";
-            let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
+            let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
             sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
               .then(respEntity => {
                 for (let record of respEntity.records) {
@@ -428,7 +448,9 @@ class AllDataBox extends React.PureComponent {
                     keyPrefix: record.KeyPrefix,
                     durableId: record.DurableId,
                     isCustomSetting: record.IsCustomSetting,
-                    recordTypesSupported: record.RecordTypesSupported
+                    recordTypesSupported: record.RecordTypesSupported,
+                    newUrl: record.NewUrl,
+                    isEverCreatable: record.IsEverCreatable
                   }, null);
                 }
               }).catch(err => {
@@ -474,16 +496,18 @@ class AllDataBox extends React.PureComponent {
         h("ul", {className: "small-tabs"},
           h("li", {ref: "objectTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : ""}, h("span", {}, h("u", {}, "O"), "bjects")),
           h("li", {ref: "userTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : ""}, h("span", {}, h("u", {}, "U"), "sers")),
-          h("li", {ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : ""}, h("span", {}, h("u", {}, "S"), "hortcuts"))
+          h("li", {ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : ""}, h("span", {}, h("u", {}, "S"), "hortcuts")),
+          h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g"))
         ),
-
         (activeSearchAspect == this.SearchAspectTypes.sobject)
           ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, isFieldsPresent})
           : (activeSearchAspect == this.SearchAspectTypes.users)
             ? h(AllDataBoxUsers, {ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); }}, "Users")
-            : "AllData aspect " + activeSearchAspect + " not implemented"
+            : (activeSearchAspect == this.SearchAspectTypes.shortcuts)
               ? h(AllDataBoxShortcut, {ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); }}, "Users")
-              : "AllData aspect " + activeSearchAspect + " not implemented"
+              : (activeSearchAspect == this.SearchAspectTypes.org)
+                ? h(AllDataBoxOrg, {ref: "showAllDataBoxOrg", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("orgBox", value); }}, "Users")
+                : "AllData aspect " + activeSearchAspect + " not implemented"
       )
     );
   }
@@ -813,6 +837,11 @@ class AllDataBoxSObject extends React.PureComponent {
       this.refs.allDataSelection.clickShowFieldAPINameBtn();
     }
   }
+  clickNewBtn() {
+    if (this.refs.allDataSelection) {
+      this.refs.allDataSelection.clickNewBtn();
+    }
+  }
 
   resultRender(matches, userQuery) {
     return matches.map(value => ({
@@ -882,7 +911,7 @@ class AllDataBoxShortcut extends React.PureComponent {
       setIsLoading(true);
 
       //search for shortcuts
-      let result = setupLinks.filter(item => item.label.toLowerCase().startsWith(shortcutSearch.toLowerCase()));
+      let result = setupLinks.filter(item => item.label.toLowerCase().includes(shortcutSearch.toLowerCase()));
       result.forEach(element => {
         element.detail = element.section;
         element.name = element.link;
@@ -1005,6 +1034,90 @@ class AllDataBoxShortcut extends React.PureComponent {
             ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
             : h("div", {className: "center"}, "No shortcut found")
         ))
+    );
+  }
+}
+
+/** ORG Tab Component */
+class AllDataBoxOrg extends React.PureComponent {
+
+  constructor(props) {
+    super(props);
+    this.state = {};
+  }
+
+  componentDidMount() {
+    let {sfHost} = this.props;
+    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
+    this.setInstanceStatus(orgInfo.InstanceName, sfHost);
+  }
+
+  contextOrgId(){
+    return this.props.contextOrgId;
+  }
+
+  getNextMajorRelease(maintenances){
+    if (maintenances){
+      let event = maintenances.find(event => event.name.endsWith("Major Release"));
+      return event.name.replace(" Major Release", "") + " on " + new Date(event.plannedStartTime).toDateString();
+    }
+    return null;
+  }
+
+  setInstanceStatus(instanceName, sfHost){
+    let instanceStatusLocal = JSON.parse(sessionStorage.getItem(sfHost + "_instanceStatus"));
+    if (instanceStatusLocal == null){
+      fetch(`https://api.status.salesforce.com/v1/instances/${instanceName}/status`).then(response => {
+        response.json().then(result => {
+          this.setState({instanceStatus: result});
+          sessionStorage.setItem(sfHost + "_instanceStatus", JSON.stringify(result));
+        });
+      }).catch((e) => {
+        console.error(e);
+      });
+    } else {
+      this.setState({instanceStatus: instanceStatusLocal});
+    }
+  }
+
+  render() {
+    let {linkTarget, sfHost} = this.props;
+    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
+    return (
+      h("div", {ref: "orgBox", className: "users-box"},
+        h("div", {className: "all-data-box-inner"},
+          h("div", {className: "all-data-box-data"},
+            h("table", {},
+              h("tbody", {},
+                h("tr", {},
+                  h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget}, "Org Id:")),
+                  h("td", {}, orgInfo.Id)
+                ),
+                h("tr", {},
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName, title: "Instance status", target: linkTarget}, "Instance:")),
+                  h("td", {}, orgInfo.InstanceName)
+                ),
+                h("tr", {},
+                  h("th", {}, "Type:"),
+                  h("td", {}, orgInfo.OrganizationType)
+                ),
+                h("tr", {},
+                  h("th", {}, "Status:"),
+                  h("td", {}, this.state.instanceStatus?.status)
+                ),
+                h("tr", {},
+                  h("th", {}, "Release:"),
+                  h("td", {}, this.state.instanceStatus?.releaseVersion ? (this.state.instanceStatus.releaseVersion + " / " + this.state.instanceStatus?.releaseNumber) : "")
+                ),
+                h("tr", {},
+                  h("th", {}, "Location:"),
+                  h("td", {}, this.state.instanceStatus?.location)
+                ),
+                h("tr", {},
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
+                  h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
+                ),
+              )))))
     );
   }
 }
@@ -1197,6 +1310,11 @@ class AllDataSelection extends React.PureComponent {
       this.refs.showFieldApiNameBtn.click();
     }
   }
+  clickNewBtn(){
+    if (this.refs.showNewBtn){
+      this.refs.showNewBtn.click();
+    }
+  }
   getAllDataUrl(toolingApi) {
     let {sfHost, selectedValue} = this.props;
     if (selectedValue) {
@@ -1267,11 +1385,14 @@ class AllDataSelection extends React.PureComponent {
       return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
     }
   }
-  getObjectDocLink(sobject){
-    if (sobject.availableApis.filter(api => api === "toolingApi").length > 0){
+  getObjectDocLink(sobject, api){
+    if (api === "toolingApi"){
       return "https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/tooling_api_objects_" + sobject.name.toLowerCase() + ".htm";
     }
     return "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_" + sobject.name.toLowerCase() + ".htm";
+  }
+  getNewObjectUrl(sfHost, newUrl){
+    return "https://" + sfHost + newUrl;
   }
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent} = this.props;
@@ -1290,8 +1411,7 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name),
-                  selectedValue.sobject.name.indexOf("__") == -1 ? h("a", {className: "left-space", href: this.getObjectDocLink(selectedValue.sobject), target: linkTarget}, "(doc)") : ""
+                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name)
                 )
               ),
               h("tr", {},
@@ -1314,14 +1434,25 @@ class AllDataSelection extends React.PureComponent {
                   h("span", {}, selectedValue.sobject.keyPrefix),
                   h("span", {}, (selectedValue.recordId) ? " / " + selectedValue.recordId : ""),
                 )
-              ))),
-
+              ),
+              selectedValue.sobject.name.indexOf("__") == -1
+                ? h("tr", {},
+                  h("th", {}, "Doc:"),
+                  h("td", {},
+                    h("a", {href: this.getObjectDocLink(selectedValue.sobject, selectedValue.sobject.availableApis[1]), target: linkTarget}, "Standard"),
+                    selectedValue.sobject.availableApis.length > 1
+                      ? h("a", {href: this.getObjectDocLink(selectedValue.sobject, selectedValue.sobject.availableApis[0]), target: linkTarget, className: "left-space"}, "Tooling")
+                      : null
+                  ),
+                ) : null
+            )),
 
           h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
         h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
+        selectedValue.sobject.isEverCreatable ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.name)) : null,
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
         buttons.map((button, index) => h("div", {}, h("a",
           {
             key: button,
@@ -1329,15 +1460,14 @@ class AllDataSelection extends React.PureComponent {
             ref: index == 0 ? "showAllDataBtn" : null,
             href: this.getAllDataUrl(button == "toolingApi"),
             target: linkTarget,
-            className: "page-button slds-button slds-button_neutral"
+            className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"
           },
           index == 0 ? h("span", {}, "Show ", h("u", {}, "a"), "ll data") : "Show all data",
           button == "regularApi" ? ""
           : button == "toolingApi" ? " (Tooling API)"
           : " (Not readable)"
         ))),
-        isFieldsPresent
-          ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
+        isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
       )
     );
   }
@@ -1635,8 +1765,7 @@ class Autocomplete extends React.PureComponent {
 function getRecordId(href) {
   let url = new URL(href);
   // Find record ID from URL
-  let searchParams = new URLSearchParams(url.search.substring(1));
-  // Salesforce Classic and Console
+  // Salesforce Classic
   if (url.hostname.endsWith(".salesforce.com") || url.hostname.endsWith(".salesforce.mil")) {
     let match = url.pathname.match(/\/([a-zA-Z0-9]{3}|[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})(?:\/|$)/);
     if (match) {
@@ -1647,12 +1776,16 @@ function getRecordId(href) {
     }
   }
 
-  // Lightning Experience and Salesforce1
-  if (url.hostname.endsWith(".lightning.force.com") || url.hostname.endsWith(".lightning.force.mil") || url.hostname.endsWith(".lightning.crmforce.mil")) {
+  // Lightning Experience
+  const lightningHostnames = [
+    ".lightning.force.com",
+    ".lightning.force.mil",
+    ".lightning.crmforce.mil",
+    ".lightning.force.com.mcas.ms"
+  ];
+  if (lightningHostnames.some(hostname => url.hostname.endsWith(hostname))) {
     let match;
-
     if (url.pathname == "/one/one.app") {
-      // Pre URL change: https://docs.releasenotes.salesforce.com/en-us/spring18/release-notes/rn_general_enhanced_urls_cruc.htm
       match = url.hash.match(/\/sObject\/([a-zA-Z0-9]+)(?:\/|$)/);
     } else {
       match = url.pathname.match(/\/lightning\/[r|o]\/[a-zA-Z0-9_]+\/([a-zA-Z0-9]+)/);
@@ -1662,6 +1795,7 @@ function getRecordId(href) {
     }
   }
   // Visualforce
+  let searchParams = new URLSearchParams(url.search.substring(1));
   {
     let idParam = searchParams.get("id");
     if (idParam) {

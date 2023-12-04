@@ -90,10 +90,14 @@ Follow steps described in [how-to documentation](https://tprouvot.github.io/Sale
 
 ## Contributions
 
-Contributions are welcomed !
+Contributions are welcome!
 
 To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
 This branch will be merge into master when the new version is published on web store.
+
+Make sure to update CHANGES.md file by describing the improvement / bugfix you realised.
+
+In order to make sure everyone who reads documentation is aware of your improvement, you can update the 'how-to' page to document / expose this new functionality.
 
 Linting : to assure indentation, formatting and best practices coherence, please install ESLint extension.
 
@@ -107,7 +111,7 @@ Linting : to assure indentation, formatting and best practices coherence, please
 1. `npm run chrome-dev-build`
 2. Open `chrome://extensions/`.
 3. Enable `Developer mode`.
-4. Click `Load unpacked extension...`.
+4. Click `Load unpacked`.
 5. Select the `addon` subdirectory of this repository.
 
 ### Firefox
@@ -120,10 +124,11 @@ Linting : to assure indentation, formatting and best practices coherence, please
 ### Unit tests
 
 1. Set up an org (e.g. a Developer Edition) and apply the following customizations:
-   1. Everything described in metadata in `test/`. Push to org with `sfdx force:source:deploy -p test/ -u [your-test-org-alias]`
-   2. Ensure _Allow users to relate a contact to multiple accounts_ is enabled (Setup→Account Settings)
-   3. Ensure the org has no _namespace prefix_ (Setup→Package Manager)
-   4. Assign PermissionSet SfInspector
+   1. Everything described in metadata in `test/`. Push to org with `sfdx force:source:deploy -p test/ -u [your-test-org-alias]`.
+   2. Make sure your user language is set to English.
+   3. Ensure _Allow users to relate a contact to multiple accounts_ is enabled (Setup → Account Settings).
+   4. Ensure the org has no _namespace prefix_ (Setup → Package Manager).
+   5. Assign Permission Set `SfInspector` to your user.
 2. Navigate to one of the extension pages and replace the file name with `test-framework.html`, for example `chrome-extension://example/test-framework.html?host=example.my.salesforce.com`.
 3. Wait until "Salesforce Inspector unit test finished successfully" is shown.
 4. If the test fails, open your browser's developer tools console to see error messages.

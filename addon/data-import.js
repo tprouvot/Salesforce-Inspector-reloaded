@@ -1,8 +1,8 @@
 /* global React ReactDOM */
-import { sfConn, apiVersion } from "./inspector.js";
+import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import { csvParse } from "./csv-parse.js";
-import { DescribeInfo, copyToClipboard, initScrollTable } from "./data-load.js";
+import {csvParse} from "./csv-parse.js";
+import {DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
 
 class Model {
 
@@ -167,7 +167,7 @@ class Model {
     this.dataError = "";
     let header = data.shift().map((c, index) => this.makeColumn(c, index));
     this.updateResult(null); // Two updates, the first clears state from the scrolltable
-    this.updateResult({ header, data });
+    this.updateResult({header, data});
 
     //automatically select the SObject if possible
     let sobj = this.getSObject(data);
@@ -196,14 +196,12 @@ class Model {
 
     let sobject = json[0]["attributes"]["type"];
     if (sobject) {
-      csv = json.map(function (row) {
-        return fields.map(function (fieldName) {
-          let value = fieldName == "_" ? sobject : row[fieldName];
-          if (typeof value == "boolean" || (value && typeof value !== "object")) {
-            return fieldName == "_" ? '"[' + sobject + ']"' : JSON.stringify(value)
-          }
-        }).join(separator)
-      })
+      csv = json.map((row) => fields.map((fieldName) => {
+        let value = fieldName == "_" ? sobject : row[fieldName];
+        if (typeof value == "boolean" || (value && typeof value !== "object")) {
+          return fieldName == "_" ? '"[' + sobject + ']"' : JSON.stringify(value);
+        }
+      }).join(separator));
       fields = fields.map(str => '"' + str + '"');
       csv.unshift(fields.join(separator));
       csv = csv.join("\r\n");
@@ -293,7 +291,7 @@ class Model {
     return Array.from(function* () {
       let importAction = self.importAction;
 
-      if (importAction == "delete") {
+      if (importAction == "delete" || importAction == "undelete") {
         yield "Id";
       } else if (importAction == "deleteMetadata") {
         yield "DeveloperName";
@@ -442,7 +440,7 @@ class Model {
   confirmPopupYes() {
     this.confirmPopup = null;
 
-    let { header, data } = this.importData.importTable;
+    let {header, data} = this.importData.importTable;
 
     let statusColumnIndex = header.findIndex(c => c.columnValue.toLowerCase() == "__status");
     if (statusColumnIndex == -1) {
@@ -514,11 +512,29 @@ class Model {
 
   doImport() {
     let importedRecords = this.importData.counts.Queued + this.importData.counts.Processing;
-    let skippedRecords = this.importData.counts.Succeeded + this.importData.counts.Failed;
+    let skippedRecords = this.importAction != "undelete" ? this.importData.counts.Succeeded + this.importData.counts.Failed : 0;
+    let actionVerb = this.getActionVerb(this.importAction);
     this.confirmPopup = {
-      text: importedRecords + " records will be imported."
+      text: importedRecords + " records will be " + actionVerb + "."
         + (skippedRecords > 0 ? " " + skippedRecords + " records will be skipped because they have __Status Succeeded or Failed." : "")
     };
+  }
+
+  getActionVerb(importAction){
+    switch (importAction) {
+      case "create":
+        return "created";
+      case "update":
+        return "updated";
+      case "upsert":
+        return "upserted";
+      case "delete":
+        return "deleted";
+      case "undelete":
+        return "undeleted";
+      default:
+        return "imported";
+    }
   }
 
   retryFailed() {
@@ -539,7 +555,7 @@ class Model {
   }
 
   updateResult(importTable) {
-    let counts = { Queued: 0, Processing: 0, Succeeded: 0, Failed: 0 };
+    let counts = {Queued: 0, Processing: 0, Succeeded: 0, Failed: 0};
     if (!importTable) {
       this.importData = {
         importTable: null,
@@ -554,16 +570,16 @@ class Model {
     for (let cells of importTable.data) {
       let status = statusColumnIndex < 0 ? "Queued"
         : cells[statusColumnIndex].toLowerCase() == "queued" ? "Queued"
-          : cells[statusColumnIndex].toLowerCase() == "" ? "Queued"
-            : cells[statusColumnIndex].toLowerCase() == "processing" && !this.isWorking() ? "Queued"
-              : cells[statusColumnIndex].toLowerCase() == "processing" ? "Processing"
-                : cells[statusColumnIndex].toLowerCase() == "succeeded" ? "Succeeded"
-                  : "Failed";
+        : cells[statusColumnIndex].toLowerCase() == "" ? "Queued"
+        : cells[statusColumnIndex].toLowerCase() == "processing" && !this.isWorking() ? "Queued"
+        : cells[statusColumnIndex].toLowerCase() == "processing" ? "Processing"
+        : cells[statusColumnIndex].toLowerCase() == "succeeded" ? "Succeeded"
+        : "Failed";
       counts[status]++;
-      taggedRows.push({ status, cells });
+      taggedRows.push({status, cells});
     }
     // Note: caller will call this.executeBatch() if needed
-    this.importData = { importTable, counts, taggedRows };
+    this.importData = {importTable, counts, taggedRows};
     this.updateImportTableResult();
   }
 
@@ -656,7 +672,7 @@ class Model {
     if (importAction == "upsert") {
       importArgs.externalIDFieldName = idFieldName;
     }
-    if (importAction == "delete") {
+    if (importAction == "delete" || importAction == "undelete") {
       importArgs.ID = [];
     } else if (importAction == "deleteMetadata") {
       importArgs["met:type"] = "CustomMetadata";
@@ -676,7 +692,7 @@ class Model {
       }
       batchRows.push(row);
       row[statusColumnIndex] = "Processing";
-      if (importAction == "delete") {
+      if (importAction == "delete" || importAction == "undelete") {
         importArgs.ID.push(row[inputIdColumnIndex]);
       } else if (importAction == "deleteMetadata") {
         importArgs["met:fullNames"].push(`${sobjectType}.${row[inputIdColumnIndex]}`);
@@ -789,10 +805,11 @@ class Model {
           row[statusColumnIndex] = "Succeeded";
           row[actionColumnIndex]
             = importAction == "create" ? "Inserted"
-              : importAction == "update" ? "Updated"
-                : importAction == "upsert" || importAction == "upsertMetadata" ? (result.created == "true" ? "Inserted" : "Updated")
-                  : importAction == "delete" || importAction == "deleteMetadata" ? "Deleted"
-                    : "Unknown";
+            : importAction == "update" ? "Updated"
+            : importAction == "upsert" || importAction == "upsertMetadata" ? (result.created == "true" ? "Inserted" : "Updated")
+            : importAction == "delete" || importAction == "deleteMetadata" ? "Deleted"
+            : importAction == "undelete" ? "Undeleted"
+            : "Unknown";
         } else {
           row[statusColumnIndex] = "Failed";
           row[actionColumnIndex] = "";
@@ -877,48 +894,51 @@ class App extends React.Component {
     model.didUpdate();
   }
   onImportActionChange(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.importAction = e.target.value;
     model.importActionName = e.target.options[e.target.selectedIndex].text;
     model.importActionSelected = true;
+    if (model.importAction === "undelete"){
+      this.onImportUndelete(model);
+    }
     model.didUpdate();
   }
   onImportTypeChange(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.importType = e.target.value;
     model.didUpdate();
   }
   onDataFormatChange(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.dataFormat = e.target.value;
     model.didUpdate();
   }
   onDataPaste(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     let text = e.clipboardData.getData("text/plain");
     model.setData(text);
     model.didUpdate();
   }
   onExternalIdChange(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.externalId = e.target.value;
     model.didUpdate();
   }
   onBatchSizeChange(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.batchSize = e.target.value;
     model.executeBatch();
     model.didUpdate();
   }
   onBatchConcurrencyChange(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.batchConcurrency = e.target.value;
     model.executeBatch();
     model.didUpdate();
   }
   onToggleHelpClick(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.showHelp = !model.showHelp;
     model.didUpdate(() => {
       this.scrollTable.viewportChange();
@@ -926,31 +946,31 @@ class App extends React.Component {
   }
   onDoImportClick(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.doImport();
     model.didUpdate();
   }
   onToggleProcessingClick(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.isProcessingQueue = !model.isProcessingQueue;
     model.executeBatch();
     model.didUpdate();
   }
   onRetryFailedClick(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.retryFailed();
     model.didUpdate();
   }
   onCopyAsExcelClick(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.copyResult("\t");
   }
   onCopyAsCsvClick(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     let separator = ",";
     if (localStorage.getItem("csvSeparator")) {
       separator = localStorage.getItem("csvSeparator");
@@ -959,28 +979,41 @@ class App extends React.Component {
   }
   onCopyOptionsClick(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.copyOptions();
   }
   onSkipAllUnknownFieldsClick(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.skipAllUnknownFields();
   }
   onConfirmPopupYesClick(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.confirmPopupYes();
     model.didUpdate();
   }
   onConfirmPopupNoClick(e) {
     e.preventDefault();
-    let { model } = this.props;
+    let {model} = this.props;
     model.confirmPopupNo();
     model.didUpdate();
   }
+  onImportUndelete(model){
+    //reinit import table to remove __Status column to be able to undelete rows after deleting it
+    if (model.importData.importTable.header.find(c => c.columnValue == "__Status")) {
+      //get indexes to remove
+      const indices = model.importData.importTable.header.map((element, index) => element.columnValue.startsWith("__") ? index : undefined).filter(index => index !== undefined);
+      //remove indexes from header and data
+      model.importData.importTable.header = model.importData.importTable.header.filter((element, index) => !indices.includes(index));
+      model.importData.importTable.data = model.importData.importTable.data.map(innerArray => innerArray.filter((element, index) => !indices.includes(index)));
+
+      model.importCounts().Queued = model.importData.importTable.data.length;
+      model.updateImportTableResult();
+    }
+  }
   componentDidMount() {
-    let { model } = this.props;
+    let {model} = this.props;
 
     addEventListener("resize", () => { this.scrollTable.viewportChange(); });
 
@@ -989,7 +1022,7 @@ class App extends React.Component {
     model.updateImportTableResult();
   }
   componentDidUpdate() {
-    let { model } = this.props;
+    let {model} = this.props;
 
     // We completely remove the listener when not needed (as opposed to just not setting returnValue in the listener),
     // because having the listener disables BFCache in Firefox (even if the listener does nothing).
@@ -1009,33 +1042,33 @@ class App extends React.Component {
     }
   }
   render() {
-    let { model } = this.props;
+    let {model} = this.props;
     //console.log(model);
     return h("div", {},
-      h("div", { id: "user-info" },
-        h("a", { href: model.sfLink, className: "sf-link" },
-          h("svg", { viewBox: "0 0 24 24" },
-            h("path", { d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z" })
+      h("div", {id: "user-info"},
+        h("a", {href: model.sfLink, className: "sf-link"},
+          h("svg", {viewBox: "0 0 24 24"},
+            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
           ),
           " Salesforce Home"
         ),
         h("h1", {}, "Data Import"),
         h("span", {}, " / " + model.userInfo),
-        h("div", { className: "flex-right" },
-          h("div", { id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0 },
-            h("span", { className: "slds-assistive-text" }),
-            h("div", { className: "slds-spinner__dot-a" }),
-            h("div", { className: "slds-spinner__dot-b" }),
+        h("div", {className: "flex-right"},
+          h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
+            h("span", {className: "slds-assistive-text"}),
+            h("div", {className: "slds-spinner__dot-a"}),
+            h("div", {className: "slds-spinner__dot-b"}),
           ),
-          h("a", { href: "#", id: "help-btn", title: "Import Help", onClick: this.onToggleHelpClick },
-            h("div", { className: "icon" })
+          h("a", {href: "#", id: "help-btn", title: "Import Help", onClick: this.onToggleHelpClick},
+            h("div", {className: "icon"})
           ),
         ),
       ),
-      h("div", { className: "conf-section" },
-        h("div", { className: "conf-subsection" },
-          h("div", { className: "area configure-import" },
-            h("div", { className: "area-header" },
+      h("div", {className: "conf-section"},
+        h("div", {className: "conf-subsection"},
+          h("div", {className: "area configure-import"},
+            h("div", {className: "area-header"},
               h("h1", {}, "Configure Import")
             ),
             h("div", { className: "conf-line" },
@@ -1058,71 +1091,71 @@ class App extends React.Component {
                 )
               )
             ),
-            h("div", { className: "conf-line" },
-              h("label", { className: "conf-input" },
-                h("span", { className: "conf-label" }, "Object"),
-                h("span", { className: "conf-value" },
-                  h("input", { type: "search", value: model.importType, onChange: this.onImportTypeChange, className: model.importTypeError() ? "object-list confError" : "object-list", disabled: model.isWorking(), list: "sobjectlist" }),
-                  h("div", { className: "conf-error", hidden: !model.importTypeError() }, model.importTypeError())
+            h("div", {className: "conf-line"},
+              h("label", {className: "conf-input"},
+                h("span", {className: "conf-label"}, "Object"),
+                h("span", {className: "conf-value"},
+                  h("input", {type: "search", value: model.importType, onChange: this.onImportTypeChange, className: model.importTypeError() ? "object-list confError" : "object-list", disabled: model.isWorking(), list: "sobjectlist"}),
+                  h("div", {className: "conf-error", hidden: !model.importTypeError()}, model.importTypeError())
                 )
               ),
-              h("a", { className: "button field-info", href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the selected object" },
-                h("div", { className: "button-icon" }),
+              h("a", {className: "button field-info", href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the selected object"},
+                h("div", {className: "button-icon"}),
               )
             ),
-            h("div", { className: "conf-line radio-buttons" },
-              h("span", { className: "conf-label" }, "Format"),
-              h("label", {}, h("input", { type: "radio", name: "data-input-format", value: "excel", checked: model.dataFormat == "excel", onChange: this.onDataFormatChange, disabled: model.isWorking() }), " ", h("span", {}, "Excel")),
+            h("div", {className: "conf-line radio-buttons"},
+              h("span", {className: "conf-label"}, "Format"),
+              h("label", {}, h("input", {type: "radio", name: "data-input-format", value: "excel", checked: model.dataFormat == "excel", onChange: this.onDataFormatChange, disabled: model.isWorking()}), " ", h("span", {}, "Excel")),
               " ",
-              h("label", {}, h("input", { type: "radio", name: "data-input-format", value: "csv", checked: model.dataFormat == "csv", onChange: this.onDataFormatChange, disabled: model.isWorking() }), " ", h("span", {}, "CSV")),
+              h("label", {}, h("input", {type: "radio", name: "data-input-format", value: "csv", checked: model.dataFormat == "csv", onChange: this.onDataFormatChange, disabled: model.isWorking()}), " ", h("span", {}, "CSV")),
               " ",
-              h("label", {}, h("input", { type: "radio", name: "data-input-format", value: "json", checked: model.dataFormat == "json", onChange: this.onDataFormatChange, disabled: model.isWorking() }), " ", h("span", {}, "JSON"))
+              h("label", {}, h("input", {type: "radio", name: "data-input-format", value: "json", checked: model.dataFormat == "json", onChange: this.onDataFormatChange, disabled: model.isWorking()}), " ", h("span", {}, "JSON"))
             ),
-            h("div", { className: "conf-line" },
-              h("label", { className: "conf-input" },
-                h("span", { className: "conf-label" }, "Data"),
-                h("span", { className: "conf-value" },
-                  h("textarea", { id: "data", value: model.message(), onPaste: this.onDataPaste, className: model.dataError ? "confError" : "", disabled: model.isWorking(), readOnly: true, rows: 1 }),
-                  h("div", { className: "conf-error", hidden: !model.dataError }, model.dataError)
+            h("div", {className: "conf-line"},
+              h("label", {className: "conf-input"},
+                h("span", {className: "conf-label"}, "Data"),
+                h("span", {className: "conf-value"},
+                  h("textarea", {id: "data", value: model.message(), onPaste: this.onDataPaste, className: model.dataError ? "confError" : "", disabled: model.isWorking(), readOnly: true, rows: 1}),
+                  h("div", {className: "conf-error", hidden: !model.dataError}, model.dataError)
                 )
               )
             ),
-            h("div", { className: "conf-line", hidden: model.importAction != "upsert" },
-              h("label", { className: "conf-input", title: "Used in upserts to determine if an existing record should be updated or a new record should be created" },
-                h("span", { className: "conf-label" }, "External ID:"),
-                h("span", { className: "conf-value" },
-                  h("input", { type: "text", value: model.externalId, onChange: this.onExternalIdChange, className: model.externalIdError() ? "confError" : "", disabled: model.isWorking(), list: "idlookuplist" }),
-                  h("div", { className: "conf-error", hidden: !model.externalIdError() }, model.externalIdError())
+            h("div", {className: "conf-line", hidden: model.importAction != "upsert"},
+              h("label", {className: "conf-input", title: "Used in upserts to determine if an existing record should be updated or a new record should be created"},
+                h("span", {className: "conf-label"}, "External ID:"),
+                h("span", {className: "conf-value"},
+                  h("input", {type: "text", value: model.externalId, onChange: this.onExternalIdChange, className: model.externalIdError() ? "confError" : "", disabled: model.isWorking(), list: "idlookuplist"}),
+                  h("div", {className: "conf-error", hidden: !model.externalIdError()}, model.externalIdError())
                 )
               )
             ),
-            h("div", { className: "conf-line" },
-              h("label", { className: "conf-input", title: "The number of records per batch. A higher value is faster but increases the risk of errors due to governor limits." },
-                h("span", { className: "conf-label" }, "Batch size"),
-                h("span", { className: "conf-value" },
-                  h("input", { type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, className: (model.batchSizeError() ? "confError" : "") + " batch-size" }),
-                  h("div", { className: "conf-error", hidden: !model.batchSizeError() }, model.batchSizeError())
+            h("div", {className: "conf-line"},
+              h("label", {className: "conf-input", title: "The number of records per batch. A higher value is faster but increases the risk of errors due to governor limits."},
+                h("span", {className: "conf-label"}, "Batch size"),
+                h("span", {className: "conf-value"},
+                  h("input", {type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, className: (model.batchSizeError() ? "confError" : "") + " batch-size"}),
+                  h("div", {className: "conf-error", hidden: !model.batchSizeError()}, model.batchSizeError())
                 )
               )
             ),
-            h("div", { className: "conf-line" },
-              h("label", { className: "conf-input", title: "The number of batches to execute concurrently. A higher number is faster but increases the risk of errors due to lock congestion." },
-                h("span", { className: "conf-label" }, "Threads"),
-                h("span", { className: "conf-value" },
-                  h("input", { type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, className: (model.batchConcurrencyError() ? "confError" : "") + " batch-size" }),
-                  h("span", { hidden: !model.isWorking() }, model.activeBatches),
-                  h("div", { className: "conf-error", hidden: !model.batchConcurrencyError() }, model.batchConcurrencyError())
+            h("div", {className: "conf-line"},
+              h("label", {className: "conf-input", title: "The number of batches to execute concurrently. A higher number is faster but increases the risk of errors due to lock congestion."},
+                h("span", {className: "conf-label"}, "Threads"),
+                h("span", {className: "conf-value"},
+                  h("input", {type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, className: (model.batchConcurrencyError() ? "confError" : "") + " batch-size"}),
+                  h("span", {hidden: !model.isWorking()}, model.activeBatches),
+                  h("div", {className: "conf-error", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
                 )
               )
             ),
-            h("datalist", { id: "sobjectlist" }, model.sobjectList().map(data => h("option", { key: data, value: data }))),
-            h("datalist", { id: "idlookuplist" }, model.idLookupList().map(data => h("option", { key: data, value: data }))),
-            h("datalist", { id: "columnlist" }, model.columnList().map(data => h("option", { key: data, value: data })))
+            h("datalist", {id: "sobjectlist"}, model.sobjectList().map(data => h("option", {key: data, value: data}))),
+            h("datalist", {id: "idlookuplist"}, model.idLookupList().map(data => h("option", {key: data, value: data}))),
+            h("datalist", {id: "columnlist"}, model.columnList().map(data => h("option", {key: data, value: data})))
           ),
         ),
-        h("div", { className: "conf-subsection columns-mapping" },
-          h("div", { className: "area" },
-            h("div", { className: "area-header" },
+        h("div", {className: "conf-subsection columns-mapping"},
+          h("div", {className: "area"},
+            h("div", {className: "area-header"},
               h("h1", {}, "Field Mapping")
             ),
             /* h("div", {className: "columns-label"}, "Field mapping"), */
@@ -1131,33 +1164,33 @@ class App extends React.Component {
           )
         )
       ),
-      h("div", { className: "area import-actions" },
-        h("div", { className: "conf-line" },
-          h("div", { className: "flex-wrapper" },
-            h("button", { onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "highlighted" }, "Run " + model.importActionName),
-            h("button", { disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "" : "cancel-btn" }, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
-            h("button", { disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick }, "Retry Failed"),
-            h("div", { className: "button-group" },
-              h("button", { disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar" }, "Copy (Excel format)"),
-              h("button", { disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file" }, "Copy (CSV)"),
+      h("div", {className: "area import-actions"},
+        h("div", {className: "conf-line"},
+          h("div", {className: "flex-wrapper"},
+            h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "highlighted"}, "Run " + model.importActionName),
+            h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "" : "cancel-btn"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
+            h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick}, "Retry Failed"),
+            h("div", {className: "button-group"},
+              h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
+              h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             ),
           ),
-          h("div", { className: "status-group" },
+          h("div", {className: "status-group"},
             h("div", {},
-              h(StatusBox, { model, name: "Queued" }),
-              h(StatusBox, { model, name: "Processing" })
+              h(StatusBox, {model, name: "Queued"}),
+              h(StatusBox, {model, name: "Processing"})
             ),
             h("div", {},
-              h(StatusBox, { model, name: "Succeeded" }),
-              h(StatusBox, { model, name: "Failed" })
+              h(StatusBox, {model, name: "Succeeded"}),
+              h(StatusBox, {model, name: "Failed"})
             ),
           ),
-          h("div", { className: "flex-right" },
-            h("button", { onClick: this.onCopyOptionsClick, title: "Save these import options by pasting them into Excel in the top left cell, just above the header row" }, "Copy Options"),
-            h("button", { onClick: this.onSkipAllUnknownFieldsClick, disabled: !model.canSkipAllUnknownFields() || model.isWorking() || model.importCounts().Queued == 0 }, "Skip all unknown fields")
+          h("div", {className: "flex-right"},
+            h("button", {onClick: this.onCopyOptionsClick, title: "Save these import options by pasting them into Excel in the top left cell, just above the header row"}, "Copy Options"),
+            h("button", {onClick: this.onSkipAllUnknownFieldsClick, disabled: !model.canSkipAllUnknownFields() || model.isWorking() || model.importCounts().Queued == 0}, "Skip all unknown fields")
           ),
         ),
-        h("div", { hidden: !model.showHelp, className: "help-text" },
+        h("div", {hidden: !model.showHelp, className: "help-text"},
           h("h3", {}, "Import Help"),
           h("p", {}, "Use for quick one-off data imports."),
           h("ul", {},
@@ -1166,7 +1199,7 @@ class App extends React.Component {
                 h("li", {}, "The input must contain a header row with field API names."),
                 h("li", {}, "To use an external ID for a lookup field, the header row should contain the lookup relation name, the target sobject name and the external ID name separated by colons, e.g. \"MyLookupField__r:MyObject__c:MyExternalIdField__c\"."),
                 h("li", {}, "Empty cells insert null values."),
-                h("li", {}, "Number, date, time and checkbox values must conform to the relevant ", h("a", { href: "http://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes", target: "_blank" }, "XSD datatypes"), "."),
+                h("li", {}, "Number, date, time and checkbox values must conform to the relevant ", h("a", {href: "http://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes", target: "_blank"}, "XSD datatypes"), "."),
                 h("li", {}, "Columns starting with an underscore are ignored."),
                 h("li", {}, "You can resume a previous import by including the \"__Status\" column in your input."),
                 h("li", {}, "You can supply the other import options by clicking \"Copy options\" and pasting the options into Excel in the top left cell, just above the header row.")
@@ -1180,17 +1213,17 @@ class App extends React.Component {
           h("p", {}, "Bulk API is not supported. Large data volumes may freeze or crash your browser.")
         ),
       ),
-      h("div", { className: "area result-area" },
-        h("div", { id: "result-table", ref: "scroller" }),
+      h("div", {className: "area result-area"},
+        h("div", {id: "result-table", ref: "scroller"}),
         model.confirmPopup ? h("div", {},
-          h("div", { id: "confirm-background" },
-            h("div", { id: "confirm-dialog" },
+          h("div", {id: "confirm-background"},
+            h("div", {id: "confirm-dialog"},
               h("h1", {}, "Import"),
               h("p", {}, "You are about to modify your data in Salesforce. This action cannot be undone."),
               h("p", {}, model.confirmPopup.text),
-              h("div", { className: "dialog-buttons" },
-                h("button", { onClick: this.onConfirmPopupYesClick }, model.importActionName),
-                h("button", { onClick: this.onConfirmPopupNoClick, className: "cancel-btn" }, "Cancel")
+              h("div", {className: "dialog-buttons"},
+                h("button", {onClick: this.onConfirmPopupYesClick}, model.importActionName),
+                h("button", {onClick: this.onConfirmPopupNoClick, className: "cancel-btn"}, "Cancel")
               )
             )
           )
@@ -1207,23 +1240,23 @@ class ColumnMapper extends React.Component {
     this.onColumnSkipClick = this.onColumnSkipClick.bind(this);
   }
   onColumnValueChange(e) {
-    let { model, column } = this.props;
+    let {model, column} = this.props;
     column.columnValue = e.target.value;
     model.didUpdate();
   }
   onColumnSkipClick(e) {
-    let { model, column } = this.props;
+    let {model, column} = this.props;
     e.preventDefault();
     column.columnSkip();
     model.didUpdate();
   }
   render() {
-    let { model, column } = this.props;
-    return h("div", { className: "conf-line" },
-      h("label", { htmlFor: "col-" + column.columnIndex }, column.columnOriginalValue),
-      h("div", { className: "flex-wrapper" },
-        h("input", { type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: column.columnError() ? "confError" : "", disabled: model.isWorking(), id: "col-" + column.columnIndex }),
-        h("div", { className: "conf-error", hidden: !column.columnError() }, h("span", {}, column.columnError()), " ", h("button", { onClick: this.onColumnSkipClick, hidden: model.isWorking(), title: "Don't import this column" }, "Skip"))
+    let {model, column} = this.props;
+    return h("div", {className: "conf-line"},
+      h("label", {htmlFor: "col-" + column.columnIndex}, column.columnOriginalValue),
+      h("div", {className: "flex-wrapper"},
+        h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: column.columnError() ? "confError" : "", disabled: model.isWorking(), id: "col-" + column.columnIndex}),
+        h("div", {className: "conf-error", hidden: !column.columnError()}, h("span", {}, column.columnError()), " ", h("button", {onClick: this.onColumnSkipClick, hidden: model.isWorking(), title: "Don't import this column"}, "Skip"))
       )
     );
   }
@@ -1235,14 +1268,14 @@ class StatusBox extends React.Component {
     this.onShowStatusChange = this.onShowStatusChange.bind(this);
   }
   onShowStatusChange(e) {
-    let { model, name } = this.props;
+    let {model, name} = this.props;
     model.showStatus[name] = e.target.checked;
     model.updateImportTableResult();
     model.didUpdate();
   }
   render() {
-    let { model, name } = this.props;
-    return h("label", { className: model.importCounts()[name] == 0 ? "statusGroupEmpty" : "" }, h("input", { type: "checkbox", checked: model.showStatus[name], onChange: this.onShowStatusChange }), " " + model.importCounts()[name] + " " + name);
+    let {model, name} = this.props;
+    return h("label", {className: model.importCounts()[name] == 0 ? "statusGroupEmpty" : ""}, h("input", {type: "checkbox", checked: model.showStatus[name], onChange: this.onShowStatusChange}), " " + model.importCounts()[name] + " " + name);
   }
 }
 
@@ -1256,12 +1289,12 @@ class StatusBox extends React.Component {
     let root = document.getElementById("root");
     let model = new Model(sfHost, args);
     model.reactCallback = cb => {
-      ReactDOM.render(h(App, { model }), root, cb);
+      ReactDOM.render(h(App, {model}), root, cb);
     };
-    ReactDOM.render(h(App, { model }), root);
+    ReactDOM.render(h(App, {model}), root);
 
     if (parent && parent.isUnitTest) { // for unit tests
-      parent.insextTestLoaded({ model });
+      parent.insextTestLoaded({model});
     }
 
   });

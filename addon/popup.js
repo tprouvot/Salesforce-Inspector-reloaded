@@ -173,7 +173,8 @@ class App extends React.PureComponent {
       addonVersion
     } = this.props;
     let {isInSetup, contextUrl, apiVersionInput, isFieldsPresent} = this.state;
-    let clientId = localStorage.getItem(sfHost + "_clientId");
+    const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
+    const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");

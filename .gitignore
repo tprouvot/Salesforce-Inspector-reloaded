@@ -13,3 +13,4 @@ yarn.lock
 venv/
 .sf/
 .vscode/
+.DS_Store

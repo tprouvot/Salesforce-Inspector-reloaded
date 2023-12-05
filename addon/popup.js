@@ -179,7 +179,7 @@ class App extends React.PureComponent {
     hostArg.set("host", sfHost);
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
-    let browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
+    const browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
     return (
       h("div", {},
         h("div", {className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom"},
@@ -199,6 +199,7 @@ class App extends React.PureComponent {
             "Salesforce Inspector Reloaded"
           )
         ),
+        h("div", {id: "expiredTokenLink"}),
         h("div", {className: "main"},
           h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, isFieldsPresent}),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
@@ -228,7 +229,7 @@ class App extends React.PureComponent {
                   target: linkTarget,
                   className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
                 },
-                h("span", {}, h("u", {}, "G"), "enerate Connected App Token"))
+                h("span", {}, h("u", {}, "G"), "enerate Access Token"))
             ),
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
             inLightning && isInSetup && h("div", {className: "slds-m-bottom_xx-small"},

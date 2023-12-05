@@ -11,18 +11,16 @@ export let sfConn = {
         .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
       this.sessionId = message.key;
       if (window.location.href.includes(ACCESS_TOKEN)) {
-        let url = new URL(window.location.href);
-        let params = new URLSearchParams(url.search);
-        let accessToken = decodeURI(params.get("access_token"));
-        sfHost = decodeURI(params.get("instance_url"));
-
-        if (accessToken) {
-          this.sessionId = accessToken;
-          localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
-        }
+        const url = new URL(window.location.href);
+        const hash = url.hash.substring(1); //hash (#) used in user-agent flow
+        const hashParams = new URLSearchParams(hash);
+        const accessToken = decodeURI(hashParams.get("access_token"));
+        sfHost = decodeURI(hashParams.get("instance_url")).replace(/^https?:\/\//i, "");
+        this.sessionId = accessToken;
+        localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
       } else if (localStorage.getItem(sfHost + "_" + ACCESS_TOKEN) != null) {
-        let data = localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
-        this.sessionId = data;
+        const oldToken = localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
+        this.sessionId = oldToken;
       }
       let isSandbox = "isSandbox";
       if (localStorage.getItem(sfHost + "_" + isSandbox) == null) {
@@ -175,7 +173,7 @@ export let sfConn = {
         "soapenv:Body": {[requestMethod]: args}
       }
     });
-    
+
     xhr.responseType = "document";
     await new Promise(resolve => {
       xhr.onreadystatechange = () => {

@@ -8,10 +8,10 @@ If you enabled "API client whitelisting", Sf Inspector may not work anymore.
 To secure the extension usage, you can use a auth flow to get an access token linked to a connected app.
 
 1. Create a connected app.
-2. Set permissions and callback url. (chrome-extension://chromeExtensionId/data-export.html?host=mysandboxHost&)
+2. Set permissions and callback url (chrome-extension://chromeExtensionId/data-export.html).
 
    > **Warning**
-   > Don't forget to replace "chromeExtensionId" and "mysandboxHost" with you current extension id and org domain
+   > Don't forget to replace "chromeExtensionId" with your current extension Id
    > <img alt="Connected App" src="https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/docs/screenshots/connectedApp.png?raw=true" height="300">
 
 3. Get Consumer Key and save it in the export page

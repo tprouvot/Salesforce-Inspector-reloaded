@@ -73,7 +73,6 @@ class Model {
       this.queryAutocompleteHandler({newDescribe: true});
       this.didUpdate();
     });
-
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
@@ -98,7 +97,8 @@ class Model {
     this.autocompleteProgress = {};
     this.exportProgress = {};
     this.queryName = "";
-    this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
+    const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of the default connected app
+    this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
       "SELECT Id FROM ",
       "SELECT Id FROM WHERE",
@@ -929,8 +929,7 @@ function RecordTable(vm) {
       if (vm.resultsFilter) {
         let filteredTable = [];
         for (let i = 0; i < rt.table.length; i++) {
-          if (rt.rowVisibilities[i])
-            filteredTable.push(rt.table[i]);
+          if (rt.rowVisibilities[i]) { filteredTable.push(rt.table[i]); }
         }
         return filteredTable;
       }

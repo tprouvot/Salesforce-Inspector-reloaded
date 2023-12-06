@@ -17,9 +17,9 @@ export let sfConn = {
         const accessToken = decodeURI(hashParams.get("access_token"));
         sfHost = decodeURI(hashParams.get("instance_url")).replace(/^https?:\/\//i, "");
         this.sessionId = accessToken;
-        localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
-      } else if (localStorage.getItem(sfHost + "_" + ACCESS_TOKEN) != null) {
-        const oldToken = localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
+        sessionStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
+      } else if (sessionStorage.getItem(sfHost + "_" + ACCESS_TOKEN) != null) {
+        const oldToken = sessionStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
         this.sessionId = oldToken;
       }
       let isSandbox = "isSandbox";

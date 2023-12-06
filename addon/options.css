@@ -45,11 +45,11 @@ body {
   margin: 0;
   height: 100%;
   display: flex;
-  background-color: #B0C4DF;
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png');
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: 0px 48px;
+  background-color: #B0C4DF !important;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png') !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  background-position: 0px 48px !important;
 }
 #root {
   display: flex;
@@ -64,18 +64,6 @@ body {
 }
 [hidden] {
   display: none !important;
-}
-
-body {
-  font-family: "Salesforce Sans", Arial, sans-serif;
-  font-size: .8125rem;
-  overflow: hidden;
-  margin: 0;
-  background-color: #B0C4DF;
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png');
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: 0px 48px;
 }
 
 #user-info {
@@ -157,11 +145,11 @@ body {
 }
 
 .prod {
-  background-color: #e0a4b5;
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png');
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: 0px 48px;
+  background-color: #e0a4b5 !important;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png') !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  background-position: 0px 48px !important;
 }
 
 .center-label {

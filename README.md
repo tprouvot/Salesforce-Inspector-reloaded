@@ -80,7 +80,7 @@ Follow steps described in [how-to documentation](https://tprouvot.github.io/Sale
 2. Checkout the releaseCandidate branch.
 3. Open `chrome://extensions/`.
 4. Enable `Developer mode`.
-5. Click `Load unpacked extension...`.
+5. Click `Load unpacked`.
 6. Select the **`addon`** subdirectory of this repository.
 
 ## Troubleshooting

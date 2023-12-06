@@ -69,7 +69,7 @@ class OptionsTabSelector extends React.Component {
       {
         id: 1,
         tabTitle: "Tab1",
-        title: "User Interface",
+        title: "User Experience",
         content: [
           { option: ArrowButtonOption, key: 1 },
           { option: FlowScrollabilityOption, key: 2 },

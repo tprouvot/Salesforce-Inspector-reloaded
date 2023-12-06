@@ -64,7 +64,7 @@ To validate the accuracy of this description, inspect the source code, monitor t
 
 ## Use Salesforce Inspector with a Connected App
 
-Follow steps described in [how-to documentation](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#use-sf-inspector-with-a-connected-app)
+Follow steps described in [how-to documentation](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#use-sf-inspector-with-a-connected-app). Note: you must complete these steps to use the extension in orgs where "API Access Control" is enabled.
 
 ## Installation
 

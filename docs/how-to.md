@@ -4,11 +4,16 @@
 
 ---
 
-If you enabled "API client whitelisting", Sf Inspector may not work anymore.
-To secure the extension usage, you can use a auth flow to get an access token linked to a connected app.
+If you enabled "API client whitelisting" (a.k.a "API Access Control") in your org, SF Inspector may not work anymore.
 
-1. Create a connected app.
-2. Set permissions and callback url (chrome-extension://chromeExtensionId/data-export.html).
+To secure the extension usage, you can use a OAuth 2.0 flow to get an access token, linked to a connected app installed in your org.
+
+To install the default "SF Inspector reloaded" connected app, navigate to Setup | Connected Apps OAuth Usage, and click "Install" on the Salesforce Inspector reloaded app.
+
+If you are a Firefox user, or if you want to have full control over the connected app settings, you can also use your own connected app by following these instructions: 
+
+1. Create a connected app under Setup | App Manager > New Connected App.
+2. Set callback url to `chrome-extension://chromeExtensionId/data-export.html` (replace `chromeExtensionId` by the actual ID of the extension in your web browser). Make sure the "Manage user data via APIs (api)" scope is selected. You can leave other settings to their default values.
 
    > **Warning**
    > Don't forget to replace "chromeExtensionId" with your current extension Id

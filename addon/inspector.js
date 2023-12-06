@@ -93,19 +93,13 @@ export let sfConn = {
       err.name = "SalesforceRestError";
       err.message = "Network error, offline or timeout";
       throw err;
-    } else if (xhr.status == 401 && !document.querySelector("#expiredTokenLink a")) {
-      const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
-      const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
-      const browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
-      const oauthFlowUrl = `${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
-      const linkContainer = document.createElement("div");
-      const link = document.createElement("a");
-      link.href = oauthFlowUrl;
-      link.textContent = "Access Token expired! Click here to resolve";
-      link.target = "_top";
-      linkContainer.appendChild(link);
+    } else if (xhr.status == 401) {
       const container = document.getElementById("expiredTokenLink");
-      container.appendChild(linkContainer);
+      container.classList.remove("hide");
+      let err = new Error();
+      err.name = "Unauthorized";
+      err.message = "New access token needed";
+      throw err;
     } else {
       if (!logErrors) { console.error("Received error response from Salesforce REST API", xhr); }
       let err = new Error();

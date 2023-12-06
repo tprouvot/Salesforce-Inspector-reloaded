@@ -154,8 +154,6 @@ input.api-input {
     font-size: 0.9em;
 }
 
-.data-element {}
-
 .input-with-dropdown {
     position: relative;
     flex-grow: 1;
@@ -348,4 +346,8 @@ a.icon {
 }
 .pointer {
     cursor: pointer;
+}
+
+.text-error{
+	color: red;
 }

@@ -173,13 +173,14 @@ class App extends React.PureComponent {
       addonVersion
     } = this.props;
     let {isInSetup, contextUrl, apiVersionInput, isFieldsPresent} = this.state;
-    const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
-    const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
     const browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
+    const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
+    const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
+    const oauthAuthorizeUrl = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     return (
       h("div", {},
         h("div", {className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom"},
@@ -199,7 +200,22 @@ class App extends React.PureComponent {
             "Salesforce Inspector Reloaded"
           )
         ),
-        h("div", {id: "expiredTokenLink"}),
+        h("div", {id: "expiredTokenLink", className: "hide"},
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
+            h("span", {className: "text-error"}, "⚠ Access Token expired!"),
+          ),
+          h("div", {className: "slds-m-bottom_xx-small"},
+            h("a",
+              {
+                ref: "generateNewToken",
+                href: oauthAuthorizeUrl,
+                target: linkTarget,
+                className: !clientId ? "button hide" : "page-button slds-button slds-button_brand"
+              },
+              "➔ Click here to generate new token"
+            ),
+          ),
+        ),
         h("div", {className: "main"},
           h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, isFieldsPresent}),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
@@ -225,7 +241,7 @@ class App extends React.PureComponent {
               h("a",
                 {
                   ref: "generateToken",
-                  href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html",
+                  href: oauthAuthorizeUrl,
                   target: linkTarget,
                   className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
                 },

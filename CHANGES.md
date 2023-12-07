@@ -106,7 +106,7 @@
 - Auto detect SObject on import page when posting data which contain SObject header [feature 30](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/30)
 - Update to Salesforce API v 57.0 (Spring '23)
 - [Switch background color on import page to alert users that it's a production environnement](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/20)
-- Implement Auth2 flow to generate access token for connected App
+- Implement OAuth2 flow to generate access token for connected App
 
 ## Version 1.13
 

@@ -2,20 +2,24 @@ export let apiVersion = localStorage.getItem("apiVersion") == null ? "59.0" : lo
 export let sfConn = {
 
   async getSession(sfHost) {
-    const ACCESS_TOKEN = "access_token";
     let message = await new Promise(resolve =>
       chrome.runtime.sendMessage({message: "getSession", sfHost}, resolve));
+    const ACCESS_TOKEN = "access_token";
+    const currentPageIncludesToken = window.location.href.includes(ACCESS_TOKEN);
     if (message) {
       this.instanceHostname = message.hostname
         .replace(/\.lightning\.force\./, ".my.salesforce.") //avoid HTTP redirect (that would cause Authorization header to be dropped)
         .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
       this.sessionId = message.key;
+    }
+    if (currentPageIncludesToken){
       if (window.location.href.includes(ACCESS_TOKEN)) {
         const url = new URL(window.location.href);
         const hash = url.hash.substring(1); //hash (#) used in user-agent flow
         const hashParams = new URLSearchParams(hash);
         const accessToken = decodeURI(hashParams.get("access_token"));
         sfHost = decodeURI(hashParams.get("instance_url")).replace(/^https?:\/\//i, "");
+        this.instanceHostname = sfHost;
         this.sessionId = accessToken;
         sessionStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
       } else if (sessionStorage.getItem(sfHost + "_" + ACCESS_TOKEN) != null) {

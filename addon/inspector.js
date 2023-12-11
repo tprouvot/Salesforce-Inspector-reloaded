@@ -12,7 +12,7 @@ export let sfConn = {
         .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
       this.sessionId = message.key;
     }
-    if (currentPageIncludesToken){
+    if (currentPageIncludesToken){ //meaning OAuth flow just completed
       if (window.location.href.includes(ACCESS_TOKEN)) {
         const url = new URL(window.location.href);
         const hash = url.hash.substring(1); //hash (#) used in user-agent flow

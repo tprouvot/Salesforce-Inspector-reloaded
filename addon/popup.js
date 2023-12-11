@@ -159,6 +159,7 @@ class App extends React.PureComponent {
     let {sfHost} = this.props;
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
+    parent.postMessage({insextLoaded: true}, "*");
     this.setOrgInfo(sfHost);
   }
   componentWillUnmount() {

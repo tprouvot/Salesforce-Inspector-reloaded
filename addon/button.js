@@ -150,9 +150,6 @@ function initButton(sfHost, inInspector) {
           inInspector,
         }, "*");
       }
-      if (e.data.insextLoaded) {
-        openPopup();
-      }
       if (e.data.insextClosePopup) {
         closePopup();
       }

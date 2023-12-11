@@ -5,14 +5,14 @@ export let sfConn = {
     let message = await new Promise(resolve =>
       chrome.runtime.sendMessage({message: "getSession", sfHost}, resolve));
     const ACCESS_TOKEN = "access_token";
-    const currentPageIncludesToken = window.location.href.includes(ACCESS_TOKEN);
+    const currentUrlIncludesToken = window.location.href.includes(ACCESS_TOKEN);
     if (message) {
       this.instanceHostname = message.hostname
         .replace(/\.lightning\.force\./, ".my.salesforce.") //avoid HTTP redirect (that would cause Authorization header to be dropped)
         .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
       this.sessionId = message.key;
     }
-    if (currentPageIncludesToken){ //meaning OAuth flow just completed
+    if (currentUrlIncludesToken){ //meaning OAuth flow just completed
       if (window.location.href.includes(ACCESS_TOKEN)) {
         const url = new URL(window.location.href);
         const hash = url.hash.substring(1); //hash (#) used in user-agent flow

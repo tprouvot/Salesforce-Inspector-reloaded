@@ -2,6 +2,7 @@
 
 ## Version 1.21
 
+- Add "Options" page to manage local storage variables directly from the UX. Allow to reposition the popup button (contribution by [Pietro Martino](https://github.com/pietromartino))
 - Add support for upserting and deleting Custom Metadata (contribution by [Joshua Yarmak](https://github.com/toly11))
 - Add "Org" tab to display org and instance information (contribution by [Victor Garcia Zarco](https://github.com/victorgz))
 - Undelete records from data import page [feature 193](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/193)

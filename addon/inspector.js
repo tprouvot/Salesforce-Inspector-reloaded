@@ -2,37 +2,40 @@ export let apiVersion = localStorage.getItem("apiVersion") == null ? "59.0" : lo
 export let sfConn = {
 
   async getSession(sfHost) {
-    let message = await new Promise(resolve =>
-      chrome.runtime.sendMessage({message: "getSession", sfHost}, resolve));
     const ACCESS_TOKEN = "access_token";
     const currentUrlIncludesToken = window.location.href.includes(ACCESS_TOKEN);
-    if (message) {
-      this.instanceHostname = message.hostname
-        .replace(/\.lightning\.force\./, ".my.salesforce.") //avoid HTTP redirect (that would cause Authorization header to be dropped)
-        .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
-      this.sessionId = message.key;
+    if (sfHost){
+      sfHost = getMyDomain(sfHost);
     }
+    console.log("getSession - sfHost updated: " + JSON.stringify(sfHost));
     if (currentUrlIncludesToken){ //meaning OAuth flow just completed
       if (window.location.href.includes(ACCESS_TOKEN)) {
         const url = new URL(window.location.href);
-        const hash = url.hash.substring(1); //hash (#) used in user-agent flow
-        const hashParams = new URLSearchParams(hash);
+        const hashParams = new URLSearchParams(url.hash.substring(1)); //hash (#) used in user-agent flow
         const accessToken = decodeURI(hashParams.get("access_token"));
         sfHost = decodeURI(hashParams.get("instance_url")).replace(/^https?:\/\//i, "");
         this.instanceHostname = sfHost;
         this.sessionId = accessToken;
         sessionStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
-      } else if (sessionStorage.getItem(sfHost + "_" + ACCESS_TOKEN) != null) {
-        const oldToken = sessionStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
-        this.sessionId = oldToken;
       }
-      let isSandbox = "isSandbox";
-      if (localStorage.getItem(sfHost + "_" + isSandbox) == null) {
-        sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+FROM+Organization").then(res => {
-          localStorage.setItem(sfHost + "_" + isSandbox, res.records[0].IsSandbox);
-          localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
-        });
+    } else if (sessionStorage.getItem(sfHost + "_" + ACCESS_TOKEN) != null) {
+      const oldToken = sessionStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
+      this.sessionId = oldToken;
+      this.instanceHostname = sfHost;
+    } else {
+      let message = await new Promise(resolve =>
+        chrome.runtime.sendMessage({message: "getSession", sfHost}, resolve));
+      if (message) {
+        this.instanceHostname = getMyDomain(message.hostname);
+        this.sessionId = message.key;
       }
+    }
+    let isSandbox = "isSandbox";
+    if (localStorage.getItem(sfHost + "_" + isSandbox) == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+FROM+Organization").then(res => {
+        localStorage.setItem(sfHost + "_" + isSandbox, res.records[0].IsSandbox);
+        localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
+      });
     }
   },
 
@@ -300,4 +303,12 @@ class XML {
     }
     return parseResponse(element);
   }
+
+}
+
+function getMyDomain(hostname) {
+  const myDomain = hostname
+    .replace(/\.lightning\.force\./, ".my.salesforce.") //avoid HTTP redirect (that would cause Authorization header to be dropped)
+    .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
+  return myDomain;
 }

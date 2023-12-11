@@ -30,10 +30,10 @@ export let sfConn = {
         this.sessionId = message.key;
       }
     }
-    let isSandbox = "isSandbox";
-    if (localStorage.getItem(sfHost + "_" + isSandbox) == null) {
+    const IS_SANDBOX = "isSandbox";
+    if (localStorage.getItem(sfHost + "_" + IS_SANDBOX) == null) {
       sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+FROM+Organization").then(res => {
-        localStorage.setItem(sfHost + "_" + isSandbox, res.records[0].IsSandbox);
+        localStorage.setItem(sfHost + "_" + IS_SANDBOX, res.records[0].IsSandbox);
         localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
       });
     }

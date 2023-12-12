@@ -7,7 +7,6 @@ export let sfConn = {
     if (sfHost){
       sfHost = getMyDomain(sfHost);
     }
-    console.log("getSession - sfHost updated: " + JSON.stringify(sfHost));
     if (currentUrlIncludesToken){ //meaning OAuth flow just completed
       if (window.location.href.includes(ACCESS_TOKEN)) {
         const url = new URL(window.location.href);

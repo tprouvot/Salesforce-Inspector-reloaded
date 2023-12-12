@@ -2,25 +2,22 @@ export let apiVersion = localStorage.getItem("apiVersion") == null ? "59.0" : lo
 export let sfConn = {
 
   async getSession(sfHost) {
+    sfHost = getMyDomain(sfHost);
     const ACCESS_TOKEN = "access_token";
     const currentUrlIncludesToken = window.location.href.includes(ACCESS_TOKEN);
-    if (sfHost){
-      sfHost = getMyDomain(sfHost);
-    }
+    const oldToken = sessionStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
+    this.instanceHostname = sfHost;
     if (currentUrlIncludesToken){ //meaning OAuth flow just completed
       if (window.location.href.includes(ACCESS_TOKEN)) {
         const url = new URL(window.location.href);
         const hashParams = new URLSearchParams(url.hash.substring(1)); //hash (#) used in user-agent flow
-        const accessToken = decodeURI(hashParams.get("access_token"));
+        const accessToken = decodeURI(hashParams.get(ACCESS_TOKEN));
         sfHost = decodeURI(hashParams.get("instance_url")).replace(/^https?:\/\//i, "");
-        this.instanceHostname = sfHost;
         this.sessionId = accessToken;
         sessionStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
       }
-    } else if (sessionStorage.getItem(sfHost + "_" + ACCESS_TOKEN) != null) {
-      const oldToken = sessionStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
+    } else if (oldToken) {
       this.sessionId = oldToken;
-      this.instanceHostname = sfHost;
     } else {
       let message = await new Promise(resolve =>
         chrome.runtime.sendMessage({message: "getSession", sfHost}, resolve));
@@ -39,8 +36,8 @@ export let sfConn = {
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}) {
-    if (!this.instanceHostname || !this.sessionId) {
-      throw new Error("Session not found");
+    if (!this.instanceHostname) {
+      throw new Error("Instance Hostname not found");
     }
 
     let xhr = new XMLHttpRequest();
@@ -305,9 +302,12 @@ class XML {
 
 }
 
-function getMyDomain(hostname) {
-  const myDomain = hostname
-    .replace(/\.lightning\.force\./, ".my.salesforce.") //avoid HTTP redirect (that would cause Authorization header to be dropped)
-    .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
-  return myDomain;
+function getMyDomain(host) {
+  if (host) {
+    const myDomain = host
+      .replace(/\.lightning\.force\./, ".my.salesforce.") //avoid HTTP redirect (that would cause Authorization header to be dropped)
+      .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
+    return myDomain;
+  }
+  return host;
 }

@@ -98,7 +98,7 @@ export let sfConn = {
       throw err;
     } else if (xhr.status == 401) {
       const container = document.getElementById("expiredTokenLink");
-      container.classList.remove("hide");
+      if (container) { container.classList.remove("hide"); }
       let err = new Error();
       err.name = "Unauthorized";
       err.message = "New access token needed";

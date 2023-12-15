@@ -10,8 +10,17 @@ Make sure that third party cookies are enabled in your browser:
 ![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/503852db-37fd-48fb-9a83-f3008a1be9f1)
 
 ### Salesforce Inspector Reloaded is not working anymore
-One of the cause can be a domain update (hyperforce migration, MyDomain activation ...)
-What you need to do is to delete the sid cookie (and website associated cookies if sid did not worked)
+
+One of the cause can be a domain update (Hyperforce migration, MyDomain change ...).
+What you need to do is to delete the sid cookie (and website associated cookies if sid did not worked).
 
 ![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/637656f6-fcb0-4419-b2da-98853049c473)
 
+### Unauthorized or Network error
+
+If your are getting an "Unauthorized" or "Network error" while online, it is likely caused by an authentication issue.
+To troubleshoot, clean Local Storage, and then try to reauthenticate in the extension, by clicking the "Click here to generate new token" button, or the "Generate Access Token" button.
+
+When redirected to the "Data Export" tab at the end of the OAuth flow, check the URL parameters in your address bar: if it contains `error=OAUTH_APP_BLOCKED&error_description=this+app+is+blocked+by+admin`` this means that your org has API Access Control enabled. In that situation, you must ask your Salesforce admin to install and allow the Salesforce Inspector Connected App before you can use it.
+
+![image](docs/screenshots/oauthError.png)

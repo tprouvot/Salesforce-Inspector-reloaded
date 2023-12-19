@@ -201,7 +201,7 @@ class App extends React.PureComponent {
           )
         ),
         h("div", {id: "expiredTokenLink", className: "hide"},
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom slds-text-align_center "},
             h("span", {className: "text-error"}, "⚠ Access Token expired!"),
           ),
           h("div", {className: "slds-m-bottom_xx-small"},
@@ -217,7 +217,7 @@ class App extends React.PureComponent {
           ),
         ),
         h("div", {className: "main"},
-          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, isFieldsPresent}),
+          h(AllDataBox, {id: "mainZone", ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, isFieldsPresent}),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "E"), "xport"))

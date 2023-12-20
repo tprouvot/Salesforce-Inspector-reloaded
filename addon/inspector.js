@@ -97,8 +97,7 @@ export let sfConn = {
       err.message = "Network error, offline or timeout";
       throw err;
     } else if (xhr.status == 401) {
-      const container = document.getElementById("expiredTokenLink");
-      if (container) { container.classList.remove("hide"); }
+      showExpiredTokenLink();
       let err = new Error();
       err.name = "Unauthorized";
       err.message = "New access token needed";
@@ -310,4 +309,11 @@ function getMyDomain(host) {
     return myDomain;
   }
   return host;
+}
+
+function showExpiredTokenLink() {
+  const expiredTokenLinkContainer = document.getElementById("expiredTokenLink");
+  if (expiredTokenLinkContainer) { expiredTokenLinkContainer.classList.remove("hide"); }
+  const mainContainer = document.getElementById("mainTabs");
+  if (mainContainer) { mainContainer.classList.add("mask"); }
 }

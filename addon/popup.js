@@ -217,16 +217,18 @@ class App extends React.PureComponent {
           ),
         ),
         h("div", {className: "main"},
-          h(AllDataBox, {id: "mainZone", ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, isFieldsPresent}),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
-            h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
-            ),
-            h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
-            ),
-            h("div", {},
-              h("a", {ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
+          h("div", {id: "mainTabs"},
+            h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, isFieldsPresent}),
+            h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
+              h("div", {className: "slds-m-bottom_xx-small"},
+                h("a", {ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
+              ),
+              h("div", {className: "slds-m-bottom_xx-small"},
+                h("a", {ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
+              ),
+              h("div", {},
+                h("a", {ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
+              ),
             ),
           ),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
@@ -270,7 +272,7 @@ class App extends React.PureComponent {
                 },
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
             ),
-          )
+          ),
         ),
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top"},
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},

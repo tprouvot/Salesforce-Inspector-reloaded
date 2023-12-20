@@ -201,7 +201,7 @@ class App extends React.PureComponent {
           )
         ),
         h("div", {id: "expiredTokenLink", className: "hide"},
-          h("div", {className: "slds-p-horizontal_x-small slds-text-align_center "},
+          h("div", {className: "slds-p-top_x-small slds-p-horizontal_x-small slds-text-align_center "},
             h("span", {className: "text-error"}, "⚠ Access Token expired!"),
           ),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-m-bottom_xx-small"},

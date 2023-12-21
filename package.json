@@ -13,7 +13,8 @@
     "eslint": "^6.8.0",
     "fs-extra": "2.0.0",
     "replace-in-file": "2.2.2",
-    "zip-dir": "2.0.0"
+    "zip-dir": "2.0.0",
+    "jsdom": "22.1.0"
   },
   "dependencies": {
     "global": "^4.4.0"

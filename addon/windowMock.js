@@ -14,6 +14,7 @@ class WindowMock {
   }
 }
 if (global && global.window == undefined) {
+  //ELSE : const { window } = new JSDOM(``, { runScripts: "outside-only" });
   global.window = new WindowMock;
   global.addEventListener = global.window.addEventListener;
   global.location = global.window.location;

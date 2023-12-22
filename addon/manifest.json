@@ -1,7 +1,8 @@
 {
-  "name": "Salesforce Inspector reloaded",
+  "name": "Salesforce Inspector reloaded BETA",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.201",
+  "version": "1.21",
+  "version_name": "1.21",
   "icons": {
     "128": "icon128.png"
   },
@@ -21,7 +22,7 @@
     "https://*.cloudforce.mil/*",
     "https://*.visualforce.mil/*",
     "https://*.crmforce.mil/*",
-    "cookies"
+    "https://*.force.com.mcas.ms/*"
   ],
   "content_scripts": [
     {
@@ -38,7 +39,8 @@
         "https://*.lightning.force.mil/*",
         "https://*.cloudforce.mil/*",
         "https://*.visualforce.mil/*",
-        "https://*.crmforce.mil/*"
+        "https://*.crmforce.mil/*",
+        "https://*.lightning.force.com.mcas.ms/*"
       ],
       "all_frames": true,
       "css": ["button.css", "inspect-inline.css"],

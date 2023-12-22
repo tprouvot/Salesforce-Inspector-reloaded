@@ -261,6 +261,9 @@ input.api-input {
     margin-top: 0.5em;
     margin-bottom: 0.2em;
 }
+.left-space {
+    margin-left: 0.5em;
+}
 
 .button-secondary {
     line-height: 1.2rem;
@@ -334,4 +337,20 @@ ul.small-tabs li:hover {
 
 .hide {
     display: none;
+}
+
+a.icon {
+    display: inline-block;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 0.95rem;
+    background-color: #706E6B;
+    width: 16px;
+    height: 16px;
+}
+
+ a.icon-url {
+    -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/link.svg');
+}
+.pointer {
+    cursor: pointer;
 }

@@ -28,7 +28,6 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
   let addonVersion = chrome.runtime.getManifest().version;
 
   sfConn.getSession(sfHost).then(() => {
-
     ReactDOM.render(h(App, {
       sfHost,
       inDevConsole,
@@ -1863,8 +1862,8 @@ class Autocomplete extends React.PureComponent {
 function getRecordId(href) {
   let url = new URL(href);
   // Find record ID from URL
-  // Salesforce Classic
-  if (url.hostname.endsWith(".salesforce.com") || url.hostname.endsWith(".salesforce.mil")) {
+  // Salesforce and Console (+ Hyperforce China Lightning & Classic)
+  if (url.hostname.endsWith(".salesforce.com") || url.hostname.endsWith(".salesforce.mil") || url.hostname.endsWith(".sfcrmapps.cn") || url.hostname.endsWith(".sfcrmproducts.cn")) {
     let match = url.pathname.match(/\/([a-zA-Z0-9]{3}|[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})(?:\/|$)/);
     if (match) {
       let res = match[1];

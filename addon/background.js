@@ -17,28 +17,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return;
       }
       let [orgId] = cookie.value.split("!");
-      chrome.cookies.getAll({name: "sid", domain: "salesforce.com", secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
-        let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
-        if (sessionCookie) {
-          sendResponse(sessionCookie.domain);
-        } else {
-          chrome.cookies.getAll({name: "sid", domain: "cloudforce.com", secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
-            sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
-            if (sessionCookie) {
-              sendResponse(sessionCookie.domain);
-            } else {
-              //Get Session cookies for Hyperforce China Orgs
-              chrome.cookies.getAll({name: "sid", domain: "sfcrmproducts.cn", secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
-                sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
-                if (sessionCookie) {
-                  sendResponse(sessionCookie.domain);
-                } else {
-                  sendResponse(null);
-                }
-              });
-            }
-          });
-        }
+      let orderedDomains = ["salesforce.com", "cloudforce.com", "salesforce.mil", "cloudforce.mil", "sfcrmproducts.cn"];
+
+      orderedDomains.forEach(currentDomain => {
+        chrome.cookies.getAll({name: "sid", domain: currentDomain, secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
+          let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
+          if (sessionCookie) {
+            sendResponse(sessionCookie.domain);
+          } else if (orderedDomains[orderedDomains.length] === currentDomain){
+            sendResponse(null);
+          }
+        });
       });
     });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.

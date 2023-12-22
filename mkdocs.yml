@@ -1,8 +1,11 @@
 site_name: Salesforce Inspector reloaded
+site_url: https://tprouvot.github.io/Salesforce-Inspector-reloaded/
+repo_url: https://github.com/tprouvot/Salesforce-Inspector-reloaded
+site_author: Thomas Prouvot
 theme:
   name: material
-  logo: ./assets/images/icon128.png
-  favicon: ./assets/images/icon128.png
+  logo: assets/images/icon128.png
+  favicon: assets/images/icon128.png
   features:
     - navigation.tabs
     - navigation.sections
@@ -39,7 +42,10 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path:
+        - CHANGES.md
+      check_paths: true
   - admonition
   - pymdownx.arithmatex:
       generic: true

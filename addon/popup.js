@@ -210,7 +210,7 @@ class App extends React.PureComponent {
                 ref: "generateNewToken",
                 href: oauthAuthorizeUrl,
                 target: linkTarget,
-                className: !clientId ? "button hide" : "page-button slds-button slds-button_brand"
+                className: !clientId ? "button hide" : "page-button slds-button slds-button_brand inverse"
               },
               "➔ Click here to generate new token"
             ),

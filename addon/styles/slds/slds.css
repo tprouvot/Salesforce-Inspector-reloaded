@@ -1,9 +1,9 @@
-/*! 
+/*!
   Salesforce Lightning Design System
 
   Only CSS classes currently used - feel free to add if new ones should be needed
-  
-  Current version used: 2.21.1 
+
+  Current version used: 2.21.1
 */
 
 /* Border */
@@ -120,6 +120,9 @@ a.slds-button--brand:hover,
 a.slds-button_brand:focus,
 a.slds-button--brand:focus{
   color:var(--slds-c-button-brand-text-color-hover, var(--sds-c-button-brand-text-color-hover, var(--slds-g-link-text-color-hover, var(--slds-g-color-neutral-base-100, white))));
+}
+a.slds-button_brand:visited{
+  color:white;
 }
 
 a.slds-button_destructive:hover,
@@ -1551,7 +1554,7 @@ a.slds-button--inverse:focus{
 }
 
 
-/* Padding */ 
+/* Padding */
 
 .slds-p-top_none,
 .slds-p-top--none{
@@ -1948,7 +1951,7 @@ a.slds-button--inverse:focus{
   width:100%;
 }
 
-/* Text */ 
+/* Text */
 
 .slds-text-align_left,
 .slds-text-align--left{
@@ -1963,7 +1966,7 @@ a.slds-button--inverse:focus{
   text-align:right;
 }
 
-/* Theme */ 
+/* Theme */
 
 .slds-theme_shade,
 .slds-theme--shade{

@@ -65,6 +65,11 @@ body,
     flex-direction: column;
 }
 
+a:link,
+a:visited {
+    color: #0176d3;
+}
+
 .main {
     flex: 1;
     overflow-y: scroll;

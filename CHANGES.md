@@ -1,5 +1,7 @@
 # Release Notes
 
+## Version 1.22
+
 ## Version 1.21
 
 - Add support for upserting and deleting Custom Metadata (contribution by [Joshua Yarmak](https://github.com/toly11))

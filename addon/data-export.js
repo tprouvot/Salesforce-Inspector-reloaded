@@ -225,7 +225,7 @@ class Model {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
     return this.exportedData
           && (this.exportedData.countOfVisibleRecords === null /* no filtering has been done yet*/ || this.exportedData.countOfVisibleRecords > 0)
-          && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
+          && this.exportedData.records.length < 20001 && !this.exportStatus.includes("Exporting") && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
   }
   copyAsExcel() {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
@@ -929,8 +929,7 @@ function RecordTable(vm) {
       if (vm.resultsFilter) {
         let filteredTable = [];
         for (let i = 0; i < rt.table.length; i++) {
-          if (rt.rowVisibilities[i])
-            filteredTable.push(rt.table[i]);
+          if (rt.rowVisibilities[i]) { filteredTable.push(rt.table[i]); }
         }
         return filteredTable;
       }
@@ -1283,7 +1282,7 @@ class App extends React.Component {
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
-            h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete. 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records"),
+            h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried, ", className: "delete-btn"}, "Delete Records"),
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
           h("span", {className: "result-status flex-right"},

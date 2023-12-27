@@ -2,6 +2,7 @@
 
 ## Version 1.22
 
+- Automatically request SObject type for data import and SObject record id for data export [feature 45](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/45) SObject record (#45)) (contribution by [Olivier Dufour](https://github.com/dufoli))
 - Add support to Hyperforce China Organizations [PR141](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/141) (contribution by [Yaacov Elbaz](https://github.com/yaacov9))
 
 ## Version 1.21

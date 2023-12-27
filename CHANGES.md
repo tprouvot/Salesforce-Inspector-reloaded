@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.22
+
+- Add support to Hyperforce China Organizations [PR141](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/141) (contribution by [Yaacov Elbaz](https://github.com/yaacov9))
+
 ## Version 1.21
 
 - Add support for upserting and deleting Custom Metadata (contribution by [Joshua Yarmak](https://github.com/toly11))

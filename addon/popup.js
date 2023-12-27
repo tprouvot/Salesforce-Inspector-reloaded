@@ -84,13 +84,13 @@ class App extends React.PureComponent {
         query += " WHERE Id = '" + e.contextRecordId + "'";
       }
       exportArg.set("query", query);
-      importArg.set('sobject', e.contextSobject)
+      importArg.set("sobject", e.contextSobject);
     }
     this.setState({
       exportHref: "data-export.html?" + exportArg,
       importHref: "data-import.html?" + importArg,
       limitsHref: "limits.html?" + limitsArg
-    })
+    });
   }
   onContextUrlMessage(e) {
     if (e.source == parent && e.data.insextUpdateRecordId) {
@@ -850,7 +850,7 @@ class AllDataBoxSObject extends React.PureComponent {
     this.setState({selectedValue: value}, () => {
       this.loadRecordIdDetails();
       if (value) {
-        onContextRecordChange({contextSobject : value.sobject.name, contextRecordId : value.recordId});
+        onContextRecordChange({contextSobject: value.sobject.name, contextRecordId: value.recordId});
       }
     });
   }

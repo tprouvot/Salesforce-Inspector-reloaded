@@ -211,19 +211,41 @@ function renderCell(rt, cell, td) {
         aView.prepend(aviewIcon);
       }
 
-      //copy to clipboard
-      let aCopy = document.createElement("a");
-      aCopy.className = "copy-id";
-      aCopy.textContent = "Copy Id";
-      aCopy.id = recordId;
-      let acopyIcon = document.createElement("div");
-      acopyIcon.className = "icon";
-      pop.appendChild(aCopy);
-      aCopy.prepend(acopyIcon);
-      aCopy.addEventListener("click", e => {
-        navigator.clipboard.writeText(e.target.id);
-        td.removeChild(pop);
-      });
+      //Download event logFile
+      if (isEventLogFile(recordId)) {
+        let aDownload = document.createElement("a");
+        aDownload.id = recordId;
+        aDownload.target = "_blank";
+        aDownload.textContent = "Download File";
+        aDownload.className = "download-salesforce";
+        let aDownloadIcon = document.createElement("div");
+        aDownloadIcon.className = "icon";
+        pop.appendChild(aDownload);
+        aDownload.prepend(aDownloadIcon);
+        aDownload.addEventListener("click", e => {
+          sfConn.rest(e.target.id, {responseType: "text/csv"}).then(data => {
+            let downloadLink = document.createElement("a");
+            downloadLink.download = recordId.split("/")[6];
+            downloadLink.href = "data:text/csv;charset=utf-8," + data;
+            downloadLink.click();
+          });
+          td.removeChild(pop);
+        });
+      } else {
+        //copy to clipboard
+        let aCopy = document.createElement("a");
+        aCopy.className = "copy-id";
+        aCopy.textContent = "Copy Id";
+        aCopy.id = recordId;
+        let acopyIcon = document.createElement("div");
+        acopyIcon.className = "icon";
+        pop.appendChild(aCopy);
+        aCopy.prepend(acopyIcon);
+        aCopy.addEventListener("click", e => {
+          navigator.clipboard.writeText(e.target.id);
+          td.removeChild(pop);
+        });
+      }
       function closer(ev) {
         if (ev != e && ev.target.closest(".pop-menu") != pop) {
           removeEventListener("click", closer);
@@ -241,6 +263,10 @@ function renderCell(rt, cell, td) {
     // the record part (after the 3 character object key prefix and 2 character instance id) starts with at least four zeroes,
     // and the 3 character object key prefix is not all zeroes.
     return /^[a-z0-9]{5}0000[a-z0-9]{9}$/i.exec(recordId) && !recordId.startsWith("000");
+  }
+  function isEventLogFile(text) {
+    // test the text to identify if this is a path to an eventLogFile
+    return /^\/services\/data\/v[0-9]{2,3}.[0-9]{1}\/sobjects\/EventLogFile\/[a-z0-9]{5}0000[a-z0-9]{9}\/LogFile$/i.exec(text);
   }
   if (typeof cell == "object" && cell != null && cell.attributes && cell.attributes.type) {
     popLink(
@@ -266,6 +292,15 @@ function renderCell(rt, cell, td) {
         } else {
           objectTypes = [];
         }
+        return {objectTypes, recordId};
+      },
+      cell
+    );
+  } else if (typeof cell == "string" && isEventLogFile(cell)) {
+    popLink(
+      () => {
+        let recordId = cell;
+        let objectTypes = [];
         return {objectTypes, recordId};
       },
       cell

@@ -224,7 +224,7 @@ class Model {
   canDelete() {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
     return this.exportedData
-          && (this.exportedData.countOfVisibleRecords === null /* no filtering has been done yet*/ || this.exportedData.countOfVisibleRecords > 1)
+          && (this.exportedData.countOfVisibleRecords === null /* no filtering has been done yet*/ || this.exportedData.countOfVisibleRecords > 0)
           && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
   }
   copyAsExcel() {

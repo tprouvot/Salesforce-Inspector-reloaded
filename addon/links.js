@@ -3,6 +3,7 @@ export let setupLinks = [
   //Setup
   {label: "Setup Home", link: "/lightning/setup/SetupOneHome/home", section: "Setup", prod: false},
   {label: "Service Setup Assistant", link: "/lightning/setup/ServiceHome/home", section: "Setup", prod: false},
+  {label: "Service Setup", link: "/lightning/setup/SetupOneHome/home", section: "Setup", prod: false},
   {label: "Multi-Factor Authentication Assistant", link: "/lightning/setup/MfaAssistant/home", section: "Setup", prod: false},
   {label: "Release Updates", link: "/lightning/setup/ReleaseUpdates/home", section: "Setup", prod: false},
   {label: "Salesforce Mobile App", link: "/lightning/setup/SalesforceMobileAppQuickStart/home", section: "Setup", prod: false},
@@ -92,6 +93,7 @@ export let setupLinks = [
   {label: "Functions", link: "/lightning/setup/Functions/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Home", link: "/lightning/setup/Home/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Quip (Salesforce Anywhere)", link: "/lightning/setup/SalesforceAnywhereSetupPage/home", section: "Platform Tools > Feature Settings", prod: false},
+
   //Platform Tools > Einstein > Einstein Assessors
   {label: "Einstein Bots Assessor", link: "/lightning/setup/EinsteinBotsReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   {label: "Einstein Conversation Insights Assessor", link: "/lightning/setup/EinsteinCIReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
@@ -136,24 +138,35 @@ export let setupLinks = [
   {label: "Person Account", link: "/lightning/setup/PersonAccountSettings/home", section: "Platform Tools > Feature Settings > Sales > Account", prod: false},
 
   //Platform Tools > Feature Settings > Service
-  {label: "Case Assignment Rules", link: "/lightning/setup/CaseRules/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Case Auto-Response Rules", link: "/lightning/setup/CaseResponses/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Case Comment Triggers", link: "/lightning/setup/CaseCommentTriggers/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Case Team Roles", link: "/lightning/setup/CaseTeamRoles/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Predefined Case Teams", link: "/lightning/setup/CaseTeamTemplates/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Contact Roles on Cases", link: "/lightning/setup/CaseContactRoles/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Customer Contact Requests", link: "/lightning/setup/ContactRequestFlows/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Email-to-Case", link: "/lightning/setup/EmailToCase/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Escalation Rules", link: "/lightning/setup/CaseEscRules/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Feed Filters", link: "/lightning/setup/FeedFilterDefinitions/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Field Service Settings", link: "/lightning/setup/FieldServiceSettings/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Macro Settings", link: "/lightning/setup/MacroSettings/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Omni-Channel Settings", link: "/lightning/setup/OmniChannelSettings/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Snap-ins", link: "/lightning/setup/Snap-ins/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Social Business Rules", link: "/lightning/setup/SocialCustomerServiceBusinessRules/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Social Customer Service", link: "/lightning/setup/SocialCustomerManagementAccountSettings/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Support Processes", link: "/lightning/setup/CaseProcess/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
-  {label: "Support Settings", link: "/lightning/setup/CaseSettings/home", section: "//Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Case Assignment Rules", link: "/lightning/setup/CaseRules/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Case Auto-Response Rules", link: "/lightning/setup/CaseResponses/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Case Comment Triggers", link: "/lightning/setup/CaseCommentTriggers/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Case Team Roles", link: "/lightning/setup/CaseTeamRoles/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Predefined Case Teams", link: "/lightning/setup/CaseTeamTemplates/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Contact Roles on Cases", link: "/lightning/setup/CaseContactRoles/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Customer Contact Requests", link: "/lightning/setup/ContactRequestFlows/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Email-to-Case", link: "/lightning/setup/EmailToCase/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Escalation Rules", link: "/lightning/setup/CaseEscRules/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Feed Filters", link: "/lightning/setup/FeedFilterDefinitions/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+
+  //Platform Tools > Feature Settings > Service > Field Service
+  {label: "Field Service Settings", link: "/lightning/setup/FieldServiceSettings/home", section: "Platform Tools > Feature Settings > Service > Field Service", prod: false},
+  {label: "Field Service Mobile App Builder", link: "/lightning/setup/FieldServiceAppBuilder/home", section: "Platform Tools > Feature Settings > Service > Field Service", prod: false},
+  {label: "Inbound Social Post Errors", link: "/lightning/setup/InboundSocialPostErrors/homee", section: "Platform Tools > Feature Settings > Service > Field Service", prod: false},
+
+  //Platform Tools > Feature Settings > Service > Knowledge
+  {label: "Data Category Assignments", link: "/lightning/setup/KnowledgeDataCategorySetup/home", section: "Platform Tools > Feature Settings > Service > Knowledge", prod: false},
+  {label: "Data Category Mapping", link: "/lightning/setup/ArticleFilterRules/home", section: "Platform Tools > Feature Settings > Service > Knowledge", prod: false},
+  {label: "Knowledge Settings", link: "/lightning/setup/KnowledgeSettings/home", section: "Platform Tools > Feature Settings > Service > Knowledge", prod: false},
+  {label: "Validation Statuses", link: "/lightning/setup/ValidationStatuses/home", section: "Platform Tools > Feature Settings > Service > Knowledge", prod: false},
+
+  {label: "Macro Settings", link: "/lightning/setup/MacroSettings/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Omni-Channel Settings", link: "/lightning/setup/OmniChannelSettings/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Snap-ins", link: "/lightning/setup/Snap-ins/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Social Business Rules", link: "/lightning/setup/SocialCustomerServiceBusinessRules/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Social Customer Service", link: "/lightning/setup/SocialCustomerManagementAccountSettings/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Support Processes", link: "/lightning/setup/CaseProcess/home", section: "Platform Tools > Feature Settings > Service", prod: false},
+  {label: "Support Settings", link: "/lightning/setup/CaseSettings/home", section: "Platform Tools > Feature Settings > Service", prod: false},
   {label: "Web-to-Case", link: "/lightning/setup/CaseWebtocase/home", section: "Platform Tools > Feature Settings > Service", prod: false},
   {label: "Web-to-Case HTML Generator", link: "/lightning/setup/CaseWebToCaseHtmlGenerator/home", section: "Platform Tools > Feature Settings > Service", prod: false},
   //Platform Tools > Feature Settings > Survey

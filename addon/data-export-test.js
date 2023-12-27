@@ -558,6 +558,14 @@ export async function dataExportTest(test) {
   await waitForSpinner();
   assert(vm.canDelete(), "The Delete button should be enabled");
 
+  vm.setResultsFilter("test3");
+  assert(vm.canDelete(), "The Delete button should be enabled");
+
+  vm.setResultsFilter("test5");
+  assert(!vm.canDelete(), "The Delete button should be disabled as there are no results after filtering");
+
+  vm.setResultsFilter("");
+
   // Autocomplete load errors
   let restOrig = sfConn.rest;
   let restError = () => Promise.reject();

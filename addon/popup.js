@@ -1031,7 +1031,8 @@ class AllDataBoxShortcut extends React.PureComponent {
 
   async onDataSelect(shortcut) {
     let {sfHost} = this.props;
-    window.open("https://" + sfHost + shortcut.link);
+    let link = shortcut.isExternal ? shortcut.link : "https://" + sfHost + shortcut.link;
+    window.open(link);
   }
 
   resultRender(matches, shortcutQuery) {

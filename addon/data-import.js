@@ -34,6 +34,9 @@ class Model {
       Succeeded: true,
       Failed: true
     };
+    if (args.has("sobject")) {
+      this.importType = args.get("sobject");
+    }
     if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
       //change background color for production
       document.body.classList.add("prod");

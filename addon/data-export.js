@@ -245,6 +245,7 @@ class Model {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
     args.set("data", encodedData);
+    if (this.queryTooling) args.set("apitype", 'Tooling');
 
     window.open("data-import.html?" + args, getLinkTarget(e));
   }

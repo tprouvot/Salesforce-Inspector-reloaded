@@ -1,9 +1,9 @@
-/*! 
+/*!
   Salesforce Lightning Design System
 
   Only CSS classes currently used - feel free to add if new ones should be needed
-  
-  Current version used: 2.21.1 
+
+  Current version used: 2.21.1
 */
 
 /*! normalize.css v3.0.2 | MIT License | git.io/normalize */
@@ -346,10 +346,7 @@ a{
   -webkit-transition:color 0.1s linear;
   transition:color 0.1s linear;
 }
-a:hover, a:focus{
-  text-decoration:underline;
-  color:#014486;
-}
+
 a:active{
   color:#014486;
 }
@@ -1364,7 +1361,7 @@ a.slds-button--inverse:focus{
   fill:var(--slds-g-color-neutral-100-opacity-50, rgba(255, 255, 255, 0.5));
 }
 
-/* Card */ 
+/* Card */
 
 .slds-card_empty .slds-card__body,
 .slds-card--empty .slds-card__body{
@@ -1729,7 +1726,7 @@ a.slds-button--inverse:focus{
   .slds-checkbox [type=checkbox][disabled] + .slds-checkbox__label .slds-checkbox--faux:after{
     border-color:#969492;
   }
-  
+
   .slds-has-error .slds-checkbox [type=checkbox] + .slds-checkbox_faux,
   .slds-has-error .slds-checkbox [type=checkbox] + .slds-checkbox--faux,
   .slds-has-error .slds-checkbox [type=checkbox] ~ .slds-checkbox_faux,
@@ -1745,7 +1742,7 @@ a.slds-button--inverse:focus{
   .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox_faux:after, .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox--faux:after, .slds-has-error .slds-checkbox [type=checkbox]:checked ~ .slds-checkbox_faux:after, .slds-has-error .slds-checkbox [type=checkbox]:checked ~ .slds-checkbox--faux:after, .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox__label .slds-checkbox_faux:after, .slds-has-error .slds-checkbox [type=checkbox]:checked + .slds-checkbox__label .slds-checkbox--faux:after{
     border-color:#fe5c4c;
   }
-  
+
   .slds-form-element .slds-checkbox [type=checkbox] + .slds-checkbox_faux,
   .slds-form-element .slds-checkbox [type=checkbox] + .slds-checkbox--faux,
   .slds-form-element .slds-checkbox [type=checkbox] ~ .slds-checkbox_faux,
@@ -3801,7 +3798,7 @@ a.slds-button--inverse:focus{
 }
 
 
-/* Padding */ 
+/* Padding */
 
 .slds-p-top_none,
 .slds-p-top--none{
@@ -4723,7 +4720,7 @@ a.slds-button--inverse:focus{
   border-bottom-color:var(--slds-c-tabs-list-color-border, var(--sds-c-tabs-list-color-border, var(--slds-g-color-border-base-1, #e5e5e5)));
 }
 
-/* Text */ 
+/* Text */
 
 .slds-text-title_bold{
     font-size:0.875rem;
@@ -4742,7 +4739,7 @@ a.slds-button--inverse:focus{
   text-align:right;
 }
 
-/* Theme */ 
+/* Theme */
 
 .slds-theme_shade,
 .slds-theme--shade{

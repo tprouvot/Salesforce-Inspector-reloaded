@@ -236,9 +236,9 @@ class Model {
     if (!objectName) {
       return undefined;
     }
-    let query = "select Id from " + objectName;
+    let query = "SELECT Id FROM " + objectName;
     if (this.recordData && this.recordData.Id) {
-      query += " where Id = '" + this.recordData.Id + "'";
+      query += " WHERE Id = '" + this.recordData.Id + "'";
     }
     return this.dataExportUrl(query);
   }

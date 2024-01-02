@@ -65,7 +65,8 @@
         "inspect.html",
         "metadata-retrieve.html",
         "explore-api.html",
-        "limits.html"
+        "limits.html",
+        "options.html"
       ],
       "matches": ["https://*/*"],
       "extension_ids": []

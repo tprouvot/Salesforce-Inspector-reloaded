@@ -68,5 +68,40 @@
     }
   ],
   "incognito": "split",
-  "manifest_version": 3
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+U",
+        "mac": "Command+U"
+      }
+    },
+    "open-popup": {
+      "suggested_key": {
+        "default": "Ctrl+I",
+        "mac": "Command+I"
+      },
+      "description": "Open popup"
+    },
+    "data-export": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+E",
+        "mac": "Command+Shift+E"
+      },
+      "description": "Data Export"
+    },
+    "data-import": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+I",
+        "mac": "Command+Shift+I"
+      },
+      "description": "Data Import"
+    },
+    "open-options": {
+      "description": "Options"
+    }
+  }
 }

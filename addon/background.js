@@ -45,3 +45,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   return false;
 });
+
+chrome.commands.onCommand.addListener((command) => {
+  console.log(`Command ${command} pressed`);
+  let extensionPage;
+  switch (command) {
+    case "open-popup":
+      extensionPage = "./data-import.html";
+      break;
+    case "data-import":
+      extensionPage = "./data-import.html";
+      break;
+    case "data-export":
+      extensionPage = "./data-export.html";
+      break;
+    case "open-options":
+      extensionPage = "./options.html";
+      break;
+    default:
+      console.log(`Command ${command} not found`);
+  }
+  if (extensionPage){
+    chrome.tabs.create({
+      url: extensionPage
+    });
+  } else {
+    //post message to enable popup
+    console.log("Open popup pressed");
+  }
+});
+chrome.runtime.onInstalled.addListener(({reason}) => {
+  if (reason === "install") {
+    chrome.tabs.create({
+      url: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/"
+    });
+  } else if (reason === "update"){
+    //TODO Add the option to disable the tab opening with user preferences & handle beta version release note description
+    chrome.tabs.create({
+      url: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/"
+    });
+  }
+});

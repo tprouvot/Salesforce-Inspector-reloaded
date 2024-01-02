@@ -436,14 +436,17 @@ class AllDataBox extends React.PureComponent {
         if (!entity.keyPrefix) { // For some objects the keyPrefix is only available in some of the APIs.
           entity.keyPrefix = keyPrefix;
         }
-        if (!entity.durableId) { // For some objects the durableId is only available in some of the APIs
+        if (!entity.durableId) {
           entity.durableId = durableId;
         }
-        if (!entity.isEverCreatable) { // For some objects isEverCreatable is only available in some of the APIs
+        if (!entity.isEverCreatable) {
           entity.isEverCreatable = isEverCreatable;
         }
-        if (!entity.newUrl) { // For some objects isEverCreatable is only available in some of the APIs
+        if (!entity.newUrl) {
           entity.newUrl = newUrl;
+        }
+        if (!entity.recordTypesSupported) {
+          entity.recordTypesSupported = recordTypesSupported;
         }
       } else {
         entity = {

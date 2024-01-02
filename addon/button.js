@@ -34,12 +34,6 @@ function initButton(sfHost, inInspector) {
     const currentUrl = window.location.href;
     // Check the current URL for the string "builder_platform_interaction"
     if (currentUrl.includes("builder_platform_interaction")) {
-      //add marging for the popup arrow to prevent overlap with standard close button in flow builder (Winter 24)
-      //temporary workaround, will be removed in next release when the popupArrow position will be updatable by users
-      const popupArrow = document.querySelector("#insext");
-      if (popupArrow){
-        popupArrow.style = "margin-top: 50px;";
-      }
       // Create a new checkbox element
       const headerFlow = document.querySelector("builder_platform_interaction-container-common");
       const overflowCheckbox = document.createElement("input");
@@ -124,7 +118,7 @@ function initButton(sfHost, inInspector) {
         return;
       }
       if (e.data.insextInitRequest) {
-        // Set CSS classes for arrow button position 
+        // Set CSS classes for arrow button position
         iFrameLocalStorage = e.data.iFrameLocalStorage;
         popupEl.classList.add(iFrameLocalStorage.popupArrowOrientation == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
         if (iFrameLocalStorage.popupArrowOrientation == "horizontal") {

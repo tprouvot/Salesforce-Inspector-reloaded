@@ -1,0 +1,157 @@
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-Light.woff2);
+  font-weight:300
+}
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-LightItalic.woff2);
+  font-style:italic;
+  font-weight:300
+}
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-Regular.woff2);
+  font-weight:400
+}
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-Italic.woff2);
+  font-style:italic;
+  font-weight:400
+}
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-Bold.woff2);
+  font-weight:700
+}
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-BoldItalic.woff2);
+  font-style:italic;
+  font-weight:700
+}
+* {
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+html {
+  height: 100%;
+}
+body {
+  font-family: "Salesforce Sans", Arial, sans-serif;
+  font-size: .8125rem;
+  overflow: hidden;
+  margin: 0;
+  height: 100%;
+  display: flex;
+  background-color: #B0C4DF !important;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png') !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  background-position: 0px 48px !important;
+}
+#root {
+  display: flex;
+  flex-grow: 1;
+  width: 100%;
+}
+[data-reactroot] {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  width: 100%;
+}
+[hidden] {
+  display: none !important;
+}
+
+#user-info {
+  background: #f7f9fb;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  flex-wrap: wrap;
+}
+
+#user-info h1 {
+  padding: 0 6px 0 10px;
+}
+
+#user-info span {
+  font-size: 1em;
+}
+
+.sf-link {
+  background-color: rgb(6, 28, 63);
+  border-radius: 3px;
+  line-height: 1.8em;
+  text-decoration: none;
+  display: inline-block;
+  padding: 2px;
+  color: white;
+  padding-right: 1em;
+}
+
+.sf-link svg {
+  width: 1.8em;
+  height: 1.8em;
+  display: block;
+  margin-left: 1px;
+  margin-right: 1em;
+  float: left;
+  background-color: #ef7ead;
+  border-radius: 2px;
+  fill: white;
+}
+
+.flex-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.text-align-middle {
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  flex-direction: column;
+}
+
+.slider-container {
+    min-width: 220px;
+}
+
+.combobox-container {
+    min-width: 80px;
+}
+
+.options-tab {
+    min-width: 80px;
+}
+
+.options-tab-container {
+    background-color: #f7f9fb;
+}
+
+.main-container {
+    background-color: #F8F8F8;
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #DDDBDA;
+    margin: 12px 12px 0 12px;
+    flex-grow: 1;
+}
+
+.prod {
+  background-color: #e0a4b5 !important;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png') !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  background-position: 0px 48px !important;
+}
+
+.center-label {
+    text-align: center;
+}

@@ -2,6 +2,7 @@
 
 ## Version 1.22
 
+- Add "Options" page to manage local storage variables directly from the UX. Allow to reposition the popup button [feature 145](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/145) (contribution by [Pietro Martino](https://github.com/pietromartino))
 - Bugfix Delete button does not check for 'toolingApi' parameter [issue 254](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/254) (contribution by [Oscar Gomez Balaguer](https://github.com/ogomezba))
 - Add Apex classes documentation in shortcut [feature 247](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/247)
 - Disable "Delete records" button when a query returns more than 20k records [feature 251](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/251)

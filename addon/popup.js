@@ -1507,7 +1507,7 @@ class AllDataSelection extends React.PureComponent {
         h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
           ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
-        buttons.map((button, index) => h("div", {}, h("a",
+        buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
           {
             key: button,
             // If buttons for both APIs are shown, the keyboard shortcut should open the first button.

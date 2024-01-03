@@ -59,7 +59,7 @@
     position: fixed;
     top: 21px; 
     right: 78px;
-    z-index: 10000;
+    z-index: 100;
 }
 .labelCheckboxScrollSandbox{
     position: fixed;
@@ -73,5 +73,5 @@
     top: 15px;
     right: 100px;
     color: white;
-    z-index: 10000;
+    z-index: 100;
 }

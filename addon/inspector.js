@@ -5,7 +5,7 @@ export let sfConn = {
     sfHost = getMyDomain(sfHost);
     const ACCESS_TOKEN = "access_token";
     const currentUrlIncludesToken = window.location.href.includes(ACCESS_TOKEN);
-    const oldToken = sessionStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
+    const oldToken = localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
     this.instanceHostname = sfHost;
     if (currentUrlIncludesToken){ //meaning OAuth flow just completed
       if (window.location.href.includes(ACCESS_TOKEN)) {
@@ -14,7 +14,7 @@ export let sfConn = {
         const accessToken = decodeURI(hashParams.get(ACCESS_TOKEN));
         sfHost = decodeURI(hashParams.get("instance_url")).replace(/^https?:\/\//i, "");
         this.sessionId = accessToken;
-        sessionStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
+        localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
       }
     } else if (oldToken) {
       this.sessionId = oldToken;

@@ -6,12 +6,23 @@ import {setupLinks} from "./links.js";
 let h = React.createElement;
 
 {
-  parent.postMessage({insextInitRequest: true}, "*");
+  parent.postMessage({
+    insextInitRequest: true,
+    iFrameLocalStorage: {
+      popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
+      popupArrowPosition: JSON.parse(localStorage.getItem("popupArrowPosition")),
+      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder"))
+    }
+  }, "*");
   addEventListener("message", function initResponseHandler(e) {
-    if (e.source == parent && e.data.insextInitResponse) {
-      removeEventListener("message", initResponseHandler);
-      init(e.data);
-      initLinks(e.data);
+    if (e.source == parent) {
+      if (e.data.insextInitResponse) {
+        //removeEventListener("message", initResponseHandler);
+        init(e.data);
+        initLinks(e.data);
+      } else if (e.data.updateLocalStorage) {
+        localStorage.setItem(e.data.key, e.data.value);
+      }
     }
   });
 }
@@ -28,7 +39,6 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
   let addonVersion = chrome.runtime.getManifest().version;
 
   sfConn.getSession(sfHost).then(() => {
-
     ReactDOM.render(h(App, {
       sfHost,
       inDevConsole,
@@ -53,15 +63,44 @@ function initLinks({sfHost}){
 class App extends React.PureComponent {
   constructor(props) {
     super(props);
+    let {sfHost} = this.props;
+    let hostArg = new URLSearchParams();
+    hostArg.set("host", sfHost);
     this.state = {
       isInSetup: false,
       contextUrl: null,
       apiVersionInput: apiVersion,
-      isFieldsPresent: false
+      isFieldsPresent: false,
+      exportHref: "data-export.html?" + hostArg,
+      importHref: "data-import.html?" + hostArg,
+      limitsHref: "limits.html?" + hostArg
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
+    this.onContextRecordChange = this.onContextRecordChange.bind(this);
+  }
+  onContextRecordChange(e) {
+    let {sfHost} = this.props;
+    let limitsArg = new URLSearchParams();
+    let exportArg = new URLSearchParams();
+    let importArg = new URLSearchParams();
+    exportArg.set("host", sfHost);
+    importArg.set("host", sfHost);
+    limitsArg.set("host", sfHost);
+    if (e.contextSobject) {
+      let query = "SELECT Id FROM " + e.contextSobject;
+      if (e.contextRecordId && (e.contextRecordId.length == 15 || e.contextRecordId.length == 18)) {
+        query += " WHERE Id = '" + e.contextRecordId + "'";
+      }
+      exportArg.set("query", query);
+      importArg.set("sobject", e.contextSobject);
+    }
+    this.setState({
+      exportHref: "data-export.html?" + exportArg,
+      importHref: "data-import.html?" + importArg,
+      limitsHref: "limits.html?" + limitsArg
+    });
   }
   onContextUrlMessage(e) {
     if (e.source == parent && e.data.insextUpdateRecordId) {
@@ -172,11 +211,11 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, isFieldsPresent} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, limitsHref, isFieldsPresent} = this.state;
     let clientId = localStorage.getItem(sfHost + "_clientId");
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
-    let linkInNewTab = localStorage.getItem("openLinksInNewTab");
+    let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
     let browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
     return (
@@ -199,19 +238,19 @@ class App extends React.PureComponent {
           )
         ),
         h("div", {className: "main"},
-          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, isFieldsPresent}),
+          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, onContextRecordChange: this.onContextRecordChange, isFieldsPresent}),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
             h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "dataExportBtn", href: "data-export.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
+              h("a", {ref: "dataExportBtn", href: exportHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "dataImportBtn", href: "data-import.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
+              h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
             ),
             h("div", {},
-              h("a", {ref: "limitsBtn", href: "limits.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
+              h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ),
           ),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
             // Advanded features should be put below this line, and the layout adjusted so they are below the fold
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
@@ -251,6 +290,11 @@ class App extends React.PureComponent {
                   className: "page-button slds-button slds-button_neutral"
                 },
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
+            ),
+          ),
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "options", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Options"))
             ),
           )
         ),
@@ -331,16 +375,18 @@ class AllDataBox extends React.PureComponent {
   }
 
   ensureKnownBrowserContext() {
-    let {contextUrl} = this.props;
+    let {contextUrl, onContextRecordChange} = this.props;
     if (contextUrl) {
       let recordId = getRecordId(contextUrl);
       let path = getSfPathFromUrl(contextUrl);
       let sobject = getSobject(contextUrl);
-      this.setState({
+      let context = {
         contextRecordId: recordId,
         contextPath: path,
         contextSobject: sobject
-      });
+      };
+      this.setState(context);
+      onContextRecordChange(context);
     }
   }
 
@@ -390,14 +436,17 @@ class AllDataBox extends React.PureComponent {
         if (!entity.keyPrefix) { // For some objects the keyPrefix is only available in some of the APIs.
           entity.keyPrefix = keyPrefix;
         }
-        if (!entity.durableId) { // For some objects the durableId is only available in some of the APIs
+        if (!entity.durableId) {
           entity.durableId = durableId;
         }
-        if (!entity.isEverCreatable) { // For some objects isEverCreatable is only available in some of the APIs
+        if (!entity.isEverCreatable) {
           entity.isEverCreatable = isEverCreatable;
         }
-        if (!entity.newUrl) { // For some objects isEverCreatable is only available in some of the APIs
+        if (!entity.newUrl) {
           entity.newUrl = newUrl;
+        }
+        if (!entity.recordTypesSupported) {
+          entity.recordTypesSupported = recordTypesSupported;
         }
       } else {
         entity = {
@@ -489,7 +538,7 @@ class AllDataBox extends React.PureComponent {
 
   render() {
     let {activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList} = this.state;
-    let {sfHost, showDetailsSupported, linkTarget, isFieldsPresent} = this.props;
+    let {sfHost, showDetailsSupported, linkTarget, onContextRecordChange, isFieldsPresent} = this.props;
 
     return (
       h("div", {className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "")},
@@ -500,7 +549,7 @@ class AllDataBox extends React.PureComponent {
           h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g"))
         ),
         (activeSearchAspect == this.SearchAspectTypes.sobject)
-          ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, isFieldsPresent})
+          ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, onContextRecordChange, isFieldsPresent})
           : (activeSearchAspect == this.SearchAspectTypes.users)
             ? h(AllDataBoxUsers, {ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); }}, "Users")
             : (activeSearchAspect == this.SearchAspectTypes.shortcuts)
@@ -815,8 +864,12 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   onDataSelect(value) {
+    let {onContextRecordChange} = this.props;
     this.setState({selectedValue: value}, () => {
       this.loadRecordIdDetails();
+      if (value) {
+        onContextRecordChange({contextSobject: value.sobject.name, contextRecordId: value.recordId});
+      }
     });
   }
 
@@ -997,7 +1050,8 @@ class AllDataBoxShortcut extends React.PureComponent {
 
   async onDataSelect(shortcut) {
     let {sfHost} = this.props;
-    window.open("https://" + sfHost + shortcut.link);
+    let link = shortcut.isExternal ? shortcut.link : "https://" + sfHost + shortcut.link;
+    window.open(link);
   }
 
   resultRender(matches, shortcutQuery) {
@@ -1766,8 +1820,8 @@ class Autocomplete extends React.PureComponent {
 function getRecordId(href) {
   let url = new URL(href);
   // Find record ID from URL
-  // Salesforce Classic
-  if (url.hostname.endsWith(".salesforce.com") || url.hostname.endsWith(".salesforce.mil")) {
+  // Salesforce and Console (+ Hyperforce China Lightning & Classic)
+  if (url.hostname.endsWith(".salesforce.com") || url.hostname.endsWith(".salesforce.mil") || url.hostname.endsWith(".sfcrmapps.cn") || url.hostname.endsWith(".sfcrmproducts.cn")) {
     let match = url.pathname.match(/\/([a-zA-Z0-9]{3}|[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})(?:\/|$)/);
     if (match) {
       let res = match[1];
@@ -1814,10 +1868,11 @@ function getRecordId(href) {
 
 function getSobject(href) {
   let url = new URL(href);
-  if (url.pathname && url.pathname.endsWith("/list")){
-    let sobject = url.pathname.substring(0, url.pathname.lastIndexOf("/list"));
-    sobject = sobject.substring(sobject.lastIndexOf("/") + 1);
-    return sobject;
+  if (url.pathname) {
+    let match = url.pathname.match(/\/lightning\/[r|o]\/([a-zA-Z0-9_]+)\/[a-zA-Z0-9]+/);
+    if (match) {
+      return match[1];
+    }
   }
   return null;
 }
@@ -1838,7 +1893,7 @@ function sfLocaleKeyToCountryCode(localeKey) {
 }
 
 function getLinkTarget(e) {
-  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)){
+  if (JSON.parse(localStorage.getItem("openLinksInNewTab")) || (e.ctrlKey || e.metaKey)) {
     return "_blank";
   } else {
     return "_top";

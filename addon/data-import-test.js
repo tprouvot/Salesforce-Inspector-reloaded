@@ -367,22 +367,40 @@ export async function dataImportTest(test) {
     separator = localStorage.getItem("csvSeparator");
   }
 
-  let data = [
+  let generateDataParam = data => {
+    let encodedData = btoa(data.map(r => r.join(separator)).join("\r\n"));
+    let args = new URLSearchParams();
+    args.set("data", encodedData);
+    return args;
+  };
+
+  let args = generateDataParam([
     ["_", "Id", "Name"],
     ["[Account]", "0010Y00000kCUn3QAG", "GenePoint1111"],
     ["[Account]", "0010Y00000kCUn1QAG", "United Oil & Gas UK2222"]
-  ];
-  let encodedData = btoa(data.map(r => r.join(separator)).join("\r\n"));
-  let args = new URLSearchParams();
-  args.set("data", encodedData);
+  ]);
 
   let result = await loadPage("data-import.html", args);
   let importModel = result.model;
+
   assertEquals([
     ["[Account]", "0010Y00000kCUn3QAG", "GenePoint1111"],
     ["[Account]", "0010Y00000kCUn1QAG", "United Oil & Gas UK2222"]
   ], importModel.importData.importTable.data);
+  assertEquals("Enterprise", importModel.apiType);
   assertEquals("delete", importModel.importAction);
+
+  args = generateDataParam([
+    ["_", "Id", "ApexCode"],
+    ["[TraceFlag]", "7tf1n000006zoecAAA", "FINEST"],
+    ["[TraceFlag]", "7tf1n000007GUCAAA4", "DEBUG"]
+  ]);
+  args.set("apitype", "Tooling");
+
+  result = await loadPage("data-import.html", args)
+  importModel = result.model;
+  assertEquals("Tooling", importModel.apiType);
+
 
   // Big result
   // TODO Write test for clipboard copy

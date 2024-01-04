@@ -6,12 +6,23 @@ import {setupLinks} from "./links.js";
 let h = React.createElement;
 
 {
-  parent.postMessage({insextInitRequest: true}, "*");
+  parent.postMessage({
+    insextInitRequest: true,
+    iFrameLocalStorage: {
+      popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
+      popupArrowPosition: JSON.parse(localStorage.getItem("popupArrowPosition")),
+      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder"))
+    }
+  }, "*");
   addEventListener("message", function initResponseHandler(e) {
-    if (e.source == parent && e.data.insextInitResponse) {
-      removeEventListener("message", initResponseHandler);
-      init(e.data);
-      initLinks(e.data);
+    if (e.source == parent) {
+      if (e.data.insextInitResponse) {
+        //removeEventListener("message", initResponseHandler);
+        init(e.data);
+        initLinks(e.data);
+      } else if (e.data.updateLocalStorage) {
+        localStorage.setItem(e.data.key, e.data.value);
+      }
     }
   });
 }
@@ -204,7 +215,7 @@ class App extends React.PureComponent {
     let clientId = localStorage.getItem(sfHost + "_clientId");
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
-    let linkInNewTab = localStorage.getItem("openLinksInNewTab");
+    let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
     let browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
     return (
@@ -239,7 +250,7 @@ class App extends React.PureComponent {
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ),
           ),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
             // Advanded features should be put below this line, and the layout adjusted so they are below the fold
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
@@ -279,6 +290,11 @@ class App extends React.PureComponent {
                   className: "page-button slds-button slds-button_neutral"
                 },
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
+            ),
+          ),
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "options", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Options"))
             ),
           )
         ),
@@ -420,14 +436,17 @@ class AllDataBox extends React.PureComponent {
         if (!entity.keyPrefix) { // For some objects the keyPrefix is only available in some of the APIs.
           entity.keyPrefix = keyPrefix;
         }
-        if (!entity.durableId) { // For some objects the durableId is only available in some of the APIs
+        if (!entity.durableId) {
           entity.durableId = durableId;
         }
-        if (!entity.isEverCreatable) { // For some objects isEverCreatable is only available in some of the APIs
+        if (!entity.isEverCreatable) {
           entity.isEverCreatable = isEverCreatable;
         }
-        if (!entity.newUrl) { // For some objects isEverCreatable is only available in some of the APIs
+        if (!entity.newUrl) {
           entity.newUrl = newUrl;
+        }
+        if (!entity.recordTypesSupported) {
+          entity.recordTypesSupported = recordTypesSupported;
         }
       } else {
         entity = {
@@ -1488,7 +1507,7 @@ class AllDataSelection extends React.PureComponent {
         h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
           ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
-        buttons.map((button, index) => h("div", {}, h("a",
+        buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
           {
             key: button,
             // If buttons for both APIs are shown, the keyboard shortcut should open the first button.
@@ -1874,7 +1893,7 @@ function sfLocaleKeyToCountryCode(localeKey) {
 }
 
 function getLinkTarget(e) {
-  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)){
+  if (JSON.parse(localStorage.getItem("openLinksInNewTab")) || (e.ctrlKey || e.metaKey)) {
     return "_blank";
   } else {
     return "_top";

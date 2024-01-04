@@ -49,11 +49,13 @@ class Model {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
     }));
 
+    let apiTypeParam = args.get("apitype");
+    this.apiType = this.importType.endsWith("__mdt") ? "Metadata" : apiTypeParam ? apiTypeParam : 'Enterprise';
+
     if (args.has("data")) {
       let data = atob(args.get("data"));
       this.dataFormat = "csv";
       this.setData(data);
-      this.apiType = this.importType.endsWith("__mdt") ? "Metadata" : "Enterprise";
       this.updateAvailableActions();
       this.importAction = this.importType.endsWith("__mdt") ? "deleteMetadata" : "delete";
       this.importActionName = this.importType.endsWith("__mdt") ? "Delete Metadata" : "Delete";
@@ -175,7 +177,8 @@ class Model {
     //automatically select the SObject if possible
     let sobj = this.getSObject(data);
     if (sobj) {
-      this.apiType = sobj.endsWith("__mdt") ? "Metadata" : "Enterprise";
+      //We avoid overwriting the Tooling option in case it was already set
+      this.apiType = sobj.endsWith("__mdt") ? "Metadata" : this.apiType === 'Tooling' ? 'Tooling' : 'Enterprise';
       this.updateAvailableActions();
       this.importType = sobj;
     }

@@ -1125,6 +1125,102 @@ class AllDataBoxOrg extends React.PureComponent {
 }
 
 class UserDetails extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      logButtonLabel: "Enable Log"
+    }
+    this.enableDebugLog = this.enableDebugLog.bind(this);
+  }
+
+  async enableDebugLog() {
+
+    let {user} = this.props;
+    const DTnow = new Date(Date.now());
+
+    //Enable debug level and expiration time (minutes) as default parameters.
+    let debugLogDebugLevel = localStorage.getItem("debugLogDebugLevel");
+    if (debugLogDebugLevel == null) {
+      localStorage.setItem("debugLogDebugLevel", 'SFDC_DevConsole');
+    }
+
+    let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");
+    if (debugLogTimeMinutes == null) {
+      localStorage.setItem("debugLogTimeMinutes", 15);
+    }
+
+    let traceFlags = await this.getTraceFlags(user, DTnow, debugLogDebugLevel, debugLogTimeMinutes);
+    /*If an old trace flag is found on the user and with this debug level
+     *Update the trace flag extending the experiation date.
+     */
+    if(traceFlags.size > 0){
+      this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugLogTimeMinutes);
+    //Else create new trace flag
+    }else{
+      let debugLog = await this.getDebugLog(debugLogDebugLevel);
+
+      if(debugLog && debugLog.size > 0){
+        let result = this.insertTraceFlag(user, debugLog.records[0].Id, DTnow, debugLogTimeMinutes);
+        console.log(result); 
+      }
+    }
+    //Disable button after executing.
+    const element = document.querySelector("#enableDebugLog");
+    element.setAttribute("disabled", true);
+    this.setState({logButtonLabel: "Log Enabled"});
+
+  }
+
+ getTraceFlags(user, DTnow, debugLogDebugLevel, debugLogTimeMinutes){
+    try{
+      const expirationDate = new Date(DTnow.getTime() + debugLogTimeMinutes * 60 * 1000);
+      let query = 'query/?q=+SELECT+Id,ExpirationDate+FROM+TraceFlag+'+
+                  'WHERE+TracedEntityid=\''+user.Id+'\'+'+
+                  'AND+DebugLevel.DeveloperName=\''+debugLogDebugLevel+'\'+'+
+                  'AND+StartDate<'+DTnow.toISOString()+'+'+
+                  'AND+ExpirationDate<'+expirationDate.toISOString();
+      return sfConn.rest('/services/data/v58.0/tooling/'+query, {method: "GET"});
+    } catch (e){
+      console.log(e);
+    }
+  }
+
+  getDebugLog(debugLogDebugLevel){
+    try{
+      let query = 'query/?q=+SELECT+Id+FROM+DebugLevel+'+
+                    'WHERE+DeveloperName=\''+debugLogDebugLevel+'\'';
+      return sfConn.rest('/services/data/v58.0/tooling/'+query, {method: "GET"});
+    } catch (e){
+      console.log(e);
+    }
+  }
+
+  insertTraceFlag(user, debugLogId, DTnow, debugLogTimeMinutes){
+    try{
+      let newTraceFlag = 
+          {
+            TracedEntityId: user.Id,
+            DebugLevelId: debugLogId,
+            LogType:"USER_DEBUG",
+            StartDate:DTnow,
+            ExpirationDate: (DTnow.getTime() + debugLogTimeMinutes * 60 * 1000),
+            
+        };
+      return sfConn.rest('/services/data/v58.0/tooling/sobjects/traceflag', {method: "POST", body: newTraceFlag})
+    } catch (e){
+      console.log(e);
+    }
+  }
+
+  extendTraceFlag(traceFlagId, DTnow, debugLogTimeMinutes){
+    try {
+      let traceFlagToUpdate = {StartDate: DTnow, ExpirationDate: (DTnow.getTime() + debugLogTimeMinutes * 60 * 1000)}
+      return sfConn.rest('/services/data/v58.0/tooling/sobjects/traceflag/'+traceFlagId, {method: "PATCH", body: traceFlagToUpdate})
+    } catch (e){
+      console.log(e);
+    }
+  }
+
   doSupportLoginAs(user) {
     let {currentUserId} = this.props;
     //Optimistically show login unless it's logged in user's userid or user is inactive.
@@ -1233,7 +1329,8 @@ class UserDetails extends React.PureComponent {
         h("div", {ref: "userButtons", className: "center small-font"},
           h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Details"),
           h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
-          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG")
+          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
+          h("a", {href: "#", id:"enableDebugLog",disabled:false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, this.state.logButtonLabel)
         ),
         h("div", {ref: "userButtons", className: "center small-font top-space"},
           this.doSupportLoginAs(user) ? h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Try login as") : null,

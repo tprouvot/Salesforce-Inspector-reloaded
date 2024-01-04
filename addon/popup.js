@@ -1182,7 +1182,7 @@ class UserDetails extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
-      logButtonLabel: "Enable Logs"
+      logButtonLabel: "Enable Log"
     }
     this.enableDebugLog = this.enableDebugLog.bind(this);
   }
@@ -1221,7 +1221,7 @@ class UserDetails extends React.PureComponent {
     //Disable button after executing.
     const element = document.querySelector("#enableDebugLog");
     element.setAttribute("disabled", true);
-    this.setState({logButtonLabel: "Logs Enabled"});
+    this.setState({logButtonLabel: "Log Enabled"});
 
   }
 

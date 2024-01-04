@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 1.22
+- - Add "Enable Logs" button in the User tab [issue 245](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/245)
+
 ## Version 1.21
 
 - Add support for upserting and deleting Custom Metadata (contribution by [Joshua Yarmak](https://github.com/toly11))

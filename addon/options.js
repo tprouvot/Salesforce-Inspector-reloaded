@@ -240,7 +240,7 @@ class RestHeaderOption extends React.Component {
   onChangeRestHeader(e) {
     let restHeader = e.target.value;
     this.setState({restHeader});
-    localStorage.setItem("restHeader", restHeader);
+    localStorage.setItem("createUpdateRestCalloutHeaders", restHeader);
   }
 
   render() {

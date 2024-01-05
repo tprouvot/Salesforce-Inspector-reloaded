@@ -2,6 +2,7 @@
 
 ## Version 1.22
 
+- Allow users to define REST callout headers on showAllData page. The need is to prevent the auto assignation of Accounts, Cases and Leads. [feature 198](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/198) (issue by [SfdxDieter](https://github.com/SfdxDieter)
 - Fix flow scrollability] checkbox on non dev environments [issue 258](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/258) (by [Samuel Krissi](https://github.com/samuelkrissi))
 - Fix 'Record Type not displayed' in popup [issue 255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/255)
 - Add "Options" page to manage local storage variables directly from the UX. Allow to reposition the popup button [feature 145](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/145) (contribution by [Pietro Martino](https://github.com/pietromartino))

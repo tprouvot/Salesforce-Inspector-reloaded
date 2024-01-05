@@ -151,7 +151,9 @@ Then when you click on a PermissionSet / PermissionSetGroups search result, you'
 
 [Assignment Rule Header](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/headers_autoassign.htm)
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/7dcb4c7d-7e71-4abc-b055-6ccfd74a7688)
+From the popup, click on "Options" button and select the API tab.
+
+<img width="846" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/fba23a19-0b11-4275-b4d9-52e9e6ac1bd9">
 
 If you want to prevent auto assignment rules, set the `createUpdateRestCalloutHeaders` property to `{"Sforce-Auto-Assign" : false}`
 

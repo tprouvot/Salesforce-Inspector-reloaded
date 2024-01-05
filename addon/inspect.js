@@ -33,7 +33,7 @@ class Model {
     this.detailsFilter = "";
     this.detailsBox = null;
     this.editMode = null; // null (when not editing), "update", "delete" (for confirming) or "create"
-    this.headerCallout = localStorage.getItem("createUpdateRestCalloutHeaders") ? localStorage.getItem("createUpdateRestCalloutHeaders") : "{}";
+    this.headerCallout = localStorage.getItem("createUpdateRestCalloutHeaders") ? JSON.parse(localStorage.getItem("createUpdateRestCalloutHeaders")) : "{}";
     this.hasEntityParticles = false;
     this.objectActionsOpen = false;
     this.objectSetupLinks = null;

@@ -27,7 +27,7 @@ class Model {
     this.errorMessages = [];
     this.rowsFilter = "";
     this.useTab = "all";
-    this.showTableBorder = localStorage.getItem("displayInspectTableBorders") == "true";
+    this.showTableBorder = localStorage.getItem("displayInspectTableBorders") === "true";
     this.fieldRows = new FieldRowList(this);
     this.childRows = new ChildRowList(this);
     this.detailsFilter = "";
@@ -237,9 +237,9 @@ class Model {
     if (!objectName) {
       return undefined;
     }
-    let query = "select Id from " + objectName;
+    let query = "SELECT Id FROM " + objectName;
     if (this.recordData && this.recordData.Id) {
-      query += " where Id = '" + this.recordData.Id + "'";
+      query += " WHERE Id = '" + this.recordData.Id + "'";
     }
     return this.dataExportUrl(query);
   }
@@ -1274,10 +1274,16 @@ class RowTable extends React.Component {
     this.tableSettingsOpen = false;
   }
   onToggleTableSettings() {
+    this.state = {
+      showOrHideBorders: localStorage.getItem("displayInspectTableBorders") === "true" ? "Hide table borders" : "Show table borders"
+    };
     this.tableSettingsOpen = !this.tableSettingsOpen;
     this.props.model.didUpdate();
   }
   onClickTableBorderSettings() {
+    this.setState({
+      showOrHideBorders: localStorage.getItem("displayInspectTableBorders") === "false" ? "Show table borders" : "Hide table borders"
+    });
     this.props.onUpdateTableBorderSettings();
     this.tableSettingsOpen = false;
   }
@@ -1296,7 +1302,7 @@ class RowTable extends React.Component {
             ),
             this.tableSettingsOpen && h("div", {className: "pop-menu-container"},
               h("div", {className: "pop-menu"},
-                h("a", {className: "table-settings-link", onClick: this.onClickTableBorderSettings}, "Show / Hide table borders"),
+                h("a", {className: "table-settings-link", onClick: this.onClickTableBorderSettings}, this.state.showOrHideBorders),
               )
             ),
           ),

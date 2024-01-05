@@ -17,6 +17,10 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 - [Security and Privacy](#security-and-privacy)
 - [Use Salesforce Inspector with a Connected App](#use-salesforce-inspector-with-a-connected-app)
 - [Installation](#installation)
+  - [Browser Stores](#browser-stores)
+    - [Chrome Web Store](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
+    - [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
+    - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
 - [Troubleshooting](#troubleshooting)
 - [Contributions](#contributions)
 - [Development](#development)
@@ -36,6 +40,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 > User guide for using the extension.
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://tprouvot.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
+
 
 ## New features compared to original SF Inspector
 
@@ -67,10 +72,9 @@ Follow steps described in [how-to documentation](https://tprouvot.github.io/Sale
 
 - [Chrome Web Store](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
 - [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
+- [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
 
 ### Local Installation
-
-If you want to try it locally (to test the release candidate):
 
 1. Download or clone the repo.
 2. Checkout the releaseCandidate branch.
@@ -86,10 +90,14 @@ If you want to try it locally (to test the release candidate):
 
 ## Contributions
 
-Contributions are welcomed !
+Contributions are welcome!
 
 To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
 This branch will be merge into master when the new version is published on web store.
+
+Make sure to update CHANGES.md file by describing the improvement / bugfix you realised.
+
+In order to make sure everyone who reads documentation is aware of your improvement, you can update the 'how-to' page to document / expose this new functionality.
 
 Linting : to assure indentation, formatting and best practices coherence, please install ESLint extension.
 
@@ -103,7 +111,7 @@ Linting : to assure indentation, formatting and best practices coherence, please
 1. `npm run chrome-dev-build`
 2. Open `chrome://extensions/`.
 3. Enable `Developer mode`.
-4. Click `Load unpacked extension...`.
+4. Click `Load unpacked`.
 5. Select the `addon` subdirectory of this repository.
 
 ### Firefox
@@ -116,9 +124,11 @@ Linting : to assure indentation, formatting and best practices coherence, please
 ### Unit tests
 
 1. Set up an org (e.g. a Developer Edition) and apply the following customizations:
-   1. Everything described in metadata in `test/`. Push to org with `sfdx force:source:deploy -p test/ -u [your-test-org-alias]`
-   2. Ensure the org has no _namespace prefix_ (Setup→Package Manager)
-   3. Assign PermissionSet SfInspector
+   1. Everything described in metadata in `test/`. Push to org with `sfdx force:source:deploy -p test/ -u [your-test-org-alias]`.
+   2. Make sure your user language is set to English.
+   3. Ensure _Allow users to relate a contact to multiple accounts_ is enabled (Setup → Account Settings).
+   4. Ensure the org has no _namespace prefix_ (Setup → Package Manager).
+   5. Assign Permission Set `SfInspector` to your user.
 2. Navigate to one of the extension pages and replace the file name with `test-framework.html`, for example `chrome-extension://example/test-framework.html?host=example.my.salesforce.com`.
 3. Wait until "Salesforce Inspector unit test finished successfully" is shown.
 4. If the test fails, open your browser's developer tools console to see error messages.

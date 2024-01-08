@@ -3,6 +3,14 @@
 ## Version 1.22
 
 - Add default connected app setting and improve access token renew flow. Note: Due to the simplified redirect url, this is a BREAKING CHANGE for users who have created their own connected app: those users MUST update their connected app Callback URL to the new value before they can use this version of the extension (contribution by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
+- Allow users to define REST callout headers on showAllData page. The need is to prevent the auto assignation of Accounts, Cases and Leads. [feature 198](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/198) (issue by [SfdxDieter](https://github.com/SfdxDieter)
+- Fix flow scrollability] checkbox on non dev environments [issue 258](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/258) (by [Samuel Krissi](https://github.com/samuelkrissi))
+- Fix 'Record Type not displayed' in popup [issue 255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/255)
+- Add "Options" page to manage local storage variables directly from the UX. Allow to reposition the popup button [feature 145](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/145) (contribution by [Pietro Martino](https://github.com/pietromartino))
+- Bugfix Delete button does not check for 'toolingApi' parameter [issue 254](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/254) (contribution by [Oscar Gomez Balaguer](https://github.com/ogomezba))
+- Add Apex classes documentation in shortcut [feature 247](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/247)
+- Disable "Delete records" button when a query returns more than 20k records [feature 251](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/251)
+- Automatically request SObject type for data import and SObject record id for data export [feature 45](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/45) SObject record (#45)) (contribution by [Olivier Dufour](https://github.com/dufoli))
 - Add support to Hyperforce China Organizations [PR141](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/141) (contribution by [Yaacov Elbaz](https://github.com/yaacov9))
 
 ## Version 1.21

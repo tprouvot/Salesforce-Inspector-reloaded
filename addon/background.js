@@ -45,3 +45,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   return false;
 });
+chrome.runtime.onInstalled.addListener(({reason}) => {
+  if (reason === "install") {
+    chrome.tabs.create({
+      url: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/"
+    });
+  } else if (reason === "update" && chrome.runtime.id === "hpijlohoihegkfehhibggnkbjhoemldh"){
+    //since the extension can be a local version, the beta version or the main version, open release note only for the main one.
+    chrome.tabs.create({
+      url: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/"
+    });
+  }
+});

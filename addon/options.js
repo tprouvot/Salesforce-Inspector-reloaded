@@ -97,6 +97,14 @@ class OptionsTabSelector extends React.Component {
           {option: CSVSeparatorOption, key: 1}
         ]
       },
+      {
+        id: 4,
+        tabTitle: "Tab4",
+        title: "Enable Logs",
+        content: [
+          {option: enableLogsOption, key: 1}
+        ]
+      }
     ];
     this.onTabSelect = this.onTabSelect.bind(this);
   }
@@ -484,6 +492,56 @@ class CSVSeparatorOption extends React.Component {
       h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("input", {type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: this.state.csvSeparator, onChange: this.onChangeCSVSeparator})
       )
+    );
+  }
+}
+
+class enableLogsOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.onChangeDebugLogTime = this.onChangeDebugLogTime.bind(this);
+    this.onChangeDebugLevel = this.onChangeDebugLevel.bind(this);
+    this.state = {
+      debugLogDebugLevel: localStorage.getItem("debugLogDebugLevel") ? localStorage.getItem("debugLogDebugLevel") : "SFDC_DevConsole",
+      debugLogTimeMinutes: localStorage.getItem("debugLogTimeMinutes") ? localStorage.getItem("debugLogTimeMinutes") : "15",
+    };
+  }
+
+  onChangeDebugLevel(e) {
+    let debugLogDebugLevel = e.target.value;
+    this.setState({debugLogDebugLevel});
+    localStorage.setItem("debugLogDebugLevel", debugLogDebugLevel);
+  }
+
+  onChangeDebugLogTime(e) {
+    let debugLogTimeMinutes = e.target.value;
+    this.setState({debugLogTimeMinutes});
+    localStorage.setItem("debugLogTimeMinutes", debugLogTimeMinutes);
+  }
+
+  render() {
+    return h("div", {className: "slds-grid slds-grid_vertical"},
+      h("div", {className: "slds-col slds-grid slds-wrap slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_2-of-12 text-align-middle"},
+          h("span", {}, "Debug Level (DeveloperName)")
+        ),
+        h("div", {className: "slds-col slds-size_1-of-12 slds-form-element"}),
+        h("div", {className: "slds-col slds-size_2-of-12 slds-form-element"},
+          h("input", {type: "text", id: "debugLogDebugLevel", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "SFDC_DevConsole", value: this.state.debugLogDebugLevel, onChange: this.onChangeDebugLevel})
+        ),
+        h("div", {className: "slds-col slds-size_7-of-12 slds-form-element"})
+      ),
+      h("div", {className: "slds-col slds-grid slds-wrap slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_2-of-12 text-align-middle"},
+          h("span", {}, "Debug Log Time (Minutes)")
+        ),
+        h("div", {className: "slds-col slds-size_1-of-12 slds-form-element"}),
+        h("div", {className: "slds-col slds-size_2-of-12 slds-form-element"},
+          h("input", {type: "text", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "15", value: this.state.debugLogTimeMinutes, onChange: this.onChangeDebugLogTime})
+        ),
+        h("div", {className: "slds-col slds-size_7-of-12 slds-form-element"})
+      )  
     );
   }
 }

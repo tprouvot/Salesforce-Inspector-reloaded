@@ -159,8 +159,6 @@ input.api-input {
     font-size: 0.9em;
 }
 
-.data-element {}
-
 .input-with-dropdown {
     position: relative;
     flex-grow: 1;
@@ -339,6 +337,10 @@ ul.small-tabs li:hover {
     display: none;
 }
 
+.mask {
+    visibility: hidden;
+}
+
 a.icon {
     display: inline-block;
     -webkit-mask-repeat: no-repeat;
@@ -353,4 +355,8 @@ a.icon {
 }
 .pointer {
     cursor: pointer;
+}
+
+.text-error{
+	color: red;
 }

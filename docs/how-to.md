@@ -4,21 +4,33 @@
 
 ---
 
-If you enabled "API client whitelisting", Sf Inspector may not work anymore.
-To secure the extension usage, you can use a auth flow to get an access token linked to a connected app.
+If you enabled "API client whitelisting" (a.k.a "API Access Control") in your org, SF Inspector may not work anymore.
 
-1. Create a connected app.
-2. Set permissions and callback url. (chrome-extension://chromeExtensionId/data-export.html?host=mysandboxHost&)
+To secure the extension usage, you can use a OAuth 2.0 flow to get an access token, linked to a connected app installed in your org.
+
+To install the default "SF Inspector reloaded" connected app, navigate to Setup | Connected Apps OAuth Usage, and click "Install" on the Salesforce Inspector reloaded app.
+
+> **Warning**
+> Don't forget to grant access to the users by selecting the related profile(s) or permission set(s).
+
+If you are a Firefox user, or if you want to have full control over the connected app settings, you can also use your own connected app by following these instructions:
+
+1. Create a connected app under Setup | App Manager > New Connected App.
+2. Set callback url to `chrome-extension://chromeExtensionId/data-export.html` (replace `chromeExtensionId` by the actual ID of the extension in your web browser). Make sure the "Manage user data via APIs (api)" scope is selected. You can leave other settings to their default values.
 
    > **Warning**
-   > Don't forget to replace "chromeExtensionId" and "mysandboxHost" with you current extension id and org domain
+   > Don't forget to replace "chromeExtensionId" with your current extension Id
    > <img alt="Connected App" src="https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/docs/screenshots/connectedApp.png?raw=true" height="300">
 
-3. Get Consumer Key and save it in the export page
+3. Get Consumer Key and save it in the Options page
 
-   <img alt="Client Id" src="https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/docs/screenshots/clientId.png?raw=true" height="300">
+   <img alt="Option button" width="276" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/14cc8aac-5ffc-4747-9da1-ba892231ace1">
 
-4. Refresh page and generate new token
+4. Enter the consumer key
+
+   <img alt="Client Id" width="849" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/b1edfea1-5a56-4f42-8945-e452a7ab5cf5">
+
+5. Refresh page and generate new token
 
    <img alt="Generate Token" src="https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/docs/screenshots/generateAccessToken.png?raw=true" width="300">
 

@@ -526,6 +526,9 @@ a.slds-button_brand:focus,
 a.slds-button--brand:focus{
   color:var(--slds-c-button-brand-text-color-hover, var(--sds-c-button-brand-text-color-hover, var(--slds-g-link-text-color-hover, var(--slds-g-color-neutral-base-100, white))));
 }
+a.slds-button_brand:visited{
+  color:white;
+}
 
 a.slds-button_destructive:hover,
 a.slds-button--destructive:hover,

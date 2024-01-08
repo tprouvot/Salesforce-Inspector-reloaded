@@ -73,7 +73,6 @@ class Model {
       this.queryAutocompleteHandler({newDescribe: true});
       this.didUpdate();
     });
-
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
@@ -118,8 +117,12 @@ class Model {
       this.initialQuery = this.queryHistory.list[0].query;
       this.queryTooling = this.queryHistory.list[0].useToolingApi;
     } else {
-      this.initialQuery = "SELECT Id FROM Account";
+      this.initialQuery = "SELECT Id FROM Account LIMIT 200";
       this.queryTooling = false;
+    }
+
+    if (args.has("error")) {
+      this.exportError = args.get("error") + " " + args.get("error_description");
     }
 
   }
@@ -1302,8 +1305,12 @@ class App extends React.Component {
 
 {
 
-  let args = new URLSearchParams(location.search.slice(1));
+  let args = new URLSearchParams(location.search);
   let sfHost = args.get("host");
+  let hash = new URLSearchParams(location.hash); //User-agent OAuth flow
+  if (!sfHost && hash) {
+    sfHost = decodeURIComponent(hash.get("instance_url")).replace(/^https?:\/\//i, "");
+  }
   initButton(sfHost, true);
   sfConn.getSession(sfHost).then(() => {
 

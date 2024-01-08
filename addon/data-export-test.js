@@ -37,7 +37,7 @@ export async function dataExportTest(test) {
     return list.map(el => el.value);
   }
 
-  assertEquals("SELECT Id FROM Account", queryInput.value);
+  assertEquals("SELECT Id FROM Account LIMIT 200", queryInput.value);
   queryInput.selectionStart = queryInput.selectionEnd = "SELECT Id FROM Account".length; // When the cursor is placed after object name, we will try to autocomplete that once the global describe loads, and we will not try to load object field describes, so we can test loading those separately
   vm.queryAutocompleteHandler();
 

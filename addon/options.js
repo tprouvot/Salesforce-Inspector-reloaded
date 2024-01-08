@@ -541,7 +541,7 @@ class enableLogsOption extends React.Component {
           h("input", {type: "text", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "15", value: this.state.debugLogTimeMinutes, onChange: this.onChangeDebugLogTime})
         ),
         h("div", {className: "slds-col slds-size_7-of-12 slds-form-element"})
-      )  
+      )
     );
   }
 }

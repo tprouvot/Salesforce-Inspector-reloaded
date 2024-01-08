@@ -1213,8 +1213,8 @@ class UserDetails extends React.PureComponent {
 
       if (debugLog && debugLog.size > 0){
         this.insertTraceFlag(user.Id, debugLog.records[0].Id, DTnow, debugTimeInMs);
-      }else{
-        throw new Error('Debug Level with developerName = "'+debugLogDebugLevel+'" not found');
+      } else {
+        throw new Error('Debug Level with developerName = "' + debugLogDebugLevel + '" not found');
       }
     }
     //Disable button after executing.

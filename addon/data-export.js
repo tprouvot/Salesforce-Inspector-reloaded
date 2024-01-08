@@ -121,6 +121,10 @@ class Model {
       this.queryTooling = false;
     }
 
+    if (args.has("error")) {
+      this.exportError = args.get("error") + " " + args.get("error_description");
+    }
+
   }
   updatedExportedData() {
     this.resultTableCallback(this.exportedData);

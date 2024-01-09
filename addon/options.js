@@ -503,7 +503,7 @@ class enableLogsOption extends React.Component {
     this.onChangeDebugLogTime = this.onChangeDebugLogTime.bind(this);
     this.onChangeDebugLevel = this.onChangeDebugLevel.bind(this);
     this.state = {
-      debugLogDebugLevel: localStorage.getItem("debugLogDebugLevel") ? localStorage.getItem("debugLogDebugLevel") : "SFDC_DevConsole",
+      debugLogDebugLevel: localStorage.getItem(this.sfHost + "_debugLogDebugLevel") ? localStorage.getItem(this.sfHost + "_debugLogDebugLevel") : "SFDC_DevConsole",
       debugLogTimeMinutes: localStorage.getItem("debugLogTimeMinutes") ? localStorage.getItem("debugLogTimeMinutes") : "15",
     };
   }
@@ -511,7 +511,7 @@ class enableLogsOption extends React.Component {
   onChangeDebugLevel(e) {
     let debugLogDebugLevel = e.target.value;
     this.setState({debugLogDebugLevel});
-    localStorage.setItem("debugLogDebugLevel", debugLogDebugLevel);
+    localStorage.setItem(this.sfHost + "_debugLogDebugLevel", debugLogDebugLevel);
   }
 
   onChangeDebugLogTime(e) {
@@ -523,24 +523,22 @@ class enableLogsOption extends React.Component {
   render() {
     return h("div", {className: "slds-grid slds-grid_vertical"},
       h("div", {className: "slds-col slds-grid slds-wrap slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-        h("div", {className: "slds-col slds-size_2-of-12 text-align-middle"},
+        h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
           h("span", {}, "Debug Level (DeveloperName)")
         ),
-        h("div", {className: "slds-col slds-size_1-of-12 slds-form-element"}),
-        h("div", {className: "slds-col slds-size_2-of-12 slds-form-element"},
+        h("div", {className: "slds-col slds-size_6-of-12 slds-form-element"}),
+        h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
           h("input", {type: "text", id: "debugLogDebugLevel", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "SFDC_DevConsole", value: this.state.debugLogDebugLevel, onChange: this.onChangeDebugLevel})
         ),
-        h("div", {className: "slds-col slds-size_7-of-12 slds-form-element"})
       ),
       h("div", {className: "slds-col slds-grid slds-wrap slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-        h("div", {className: "slds-col slds-size_2-of-12 text-align-middle"},
+        h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
           h("span", {}, "Debug Log Time (Minutes)")
         ),
-        h("div", {className: "slds-col slds-size_1-of-12 slds-form-element"}),
-        h("div", {className: "slds-col slds-size_2-of-12 slds-form-element"},
+        h("div", {className: "slds-col slds-size_6-of-12 slds-form-element"}),
+        h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
           h("input", {type: "number", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", value: this.state.debugLogTimeMinutes, onChange: this.onChangeDebugLogTime})
         ),
-        h("div", {className: "slds-col slds-size_7-of-12 slds-form-element"})
       )
     );
   }

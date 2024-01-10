@@ -62,6 +62,7 @@ class Model {
 class OptionsTabSelector extends React.Component {
   constructor(props) {
     super(props);
+    this.model = props.model;
     this.state = {
       selectedTabId: 1
     };
@@ -119,7 +120,7 @@ class OptionsTabSelector extends React.Component {
       h("ul", {className: "options-tab-container slds-tabs_default__nav", role: "tablist"},
         this.tabs.map((tab) => h(OptionsTab, {key: tab.id, title: tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect}))
       ),
-      this.tabs.map((tab) => h(OptionsContainer, {key: tab.id, id: tab.id, content: tab.content, selectedTabId: this.state.selectedTabId}))
+      this.tabs.map((tab) => h(OptionsContainer, {key: tab.id, id: tab.id, content: tab.content, selectedTabId: this.state.selectedTabId, model: this.model}))
     );
   }
 }
@@ -140,12 +141,17 @@ class OptionsTab extends React.Component {
 
 class OptionsContainer extends React.Component {
 
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+  }
+
   getClass() {
     return (this.props.selectedTabId === this.props.id ? "slds-show" : " slds-hide");
   }
 
   render() {
-    return h("div", {id: this.props.id, className: this.getClass(), role: "tabpanel"}, this.props.content.map((c) => h(c.option, {key: c.key})));
+    return h("div", {id: this.props.id, className: this.getClass(), role: "tabpanel"}, this.props.content.map((c) => h(c.option, {key: c.key, model: this.model})));
   }
 
 }
@@ -445,11 +451,13 @@ class APIKeyOption extends React.Component {
 
   constructor(props) {
     super(props);
+    this.sfHost = props.model.sfHost;
     this.onChangeApiKey = this.onChangeApiKey.bind(this);
     this.state = {apiKey: localStorage.getItem(this.sfHost + "_clientId") ? localStorage.getItem(this.sfHost + "_clientId") : ""};
   }
 
   onChangeApiKey(e) {
+    let {model} = this.props;
     let apiKey = e.target.value;
     this.setState({apiKey});
     localStorage.setItem(this.sfHost + "_clientId", apiKey);
@@ -500,6 +508,7 @@ class enableLogsOption extends React.Component {
 
   constructor(props) {
     super(props);
+    this.sfHost = props.model.sfHost;
     this.onChangeDebugLogTime = this.onChangeDebugLogTime.bind(this);
     this.onChangeDebugLevel = this.onChangeDebugLevel.bind(this);
     this.state = {
@@ -567,7 +576,7 @@ class App extends React.Component {
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"})),
       h("div", {className: "main-container slds-card slds-m-around_small"},
-        h(OptionsTabSelector, {}))
+        h(OptionsTabSelector, {model}))
     );
   }
 }

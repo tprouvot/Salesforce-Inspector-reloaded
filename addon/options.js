@@ -62,6 +62,7 @@ class Model {
 class OptionsTabSelector extends React.Component {
   constructor(props) {
     super(props);
+    this.model = props.model;
     this.state = {
       selectedTabId: 1
     };
@@ -98,6 +99,14 @@ class OptionsTabSelector extends React.Component {
           {option: CSVSeparatorOption, key: 1}
         ]
       },
+      {
+        id: 4,
+        tabTitle: "Tab4",
+        title: "Enable Logs",
+        content: [
+          {option: enableLogsOption, key: 1}
+        ]
+      }
     ];
     this.onTabSelect = this.onTabSelect.bind(this);
   }
@@ -112,7 +121,7 @@ class OptionsTabSelector extends React.Component {
       h("ul", {className: "options-tab-container slds-tabs_default__nav", role: "tablist"},
         this.tabs.map((tab) => h(OptionsTab, {key: tab.id, title: tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect}))
       ),
-      this.tabs.map((tab) => h(OptionsContainer, {key: tab.id, id: tab.id, content: tab.content, selectedTabId: this.state.selectedTabId}))
+      this.tabs.map((tab) => h(OptionsContainer, {key: tab.id, id: tab.id, content: tab.content, selectedTabId: this.state.selectedTabId, model: this.model}))
     );
   }
 }
@@ -133,12 +142,17 @@ class OptionsTab extends React.Component {
 
 class OptionsContainer extends React.Component {
 
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+  }
+
   getClass() {
     return (this.props.selectedTabId === this.props.id ? "slds-show" : " slds-hide");
   }
 
   render() {
-    return h("div", {id: this.props.id, className: this.getClass(), role: "tabpanel"}, this.props.content.map((c) => h(c.option, {key: c.key})));
+    return h("div", {id: this.props.id, className: this.getClass(), role: "tabpanel"}, this.props.content.map((c) => h(c.option, {key: c.key, model: this.model})));
   }
 
 }
@@ -465,11 +479,13 @@ class APIKeyOption extends React.Component {
 
   constructor(props) {
     super(props);
+    this.sfHost = props.model.sfHost;
     this.onChangeApiKey = this.onChangeApiKey.bind(this);
     this.state = {apiKey: localStorage.getItem(this.sfHost + "_clientId") ? localStorage.getItem(this.sfHost + "_clientId") : ""};
   }
 
   onChangeApiKey(e) {
+    let {model} = this.props;
     let apiKey = e.target.value;
     this.setState({apiKey});
     localStorage.setItem(this.sfHost + "_clientId", apiKey);
@@ -516,6 +532,55 @@ class CSVSeparatorOption extends React.Component {
   }
 }
 
+class enableLogsOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.sfHost = props.model.sfHost;
+    this.onChangeDebugLogTime = this.onChangeDebugLogTime.bind(this);
+    this.onChangeDebugLevel = this.onChangeDebugLevel.bind(this);
+    this.state = {
+      debugLogDebugLevel: localStorage.getItem(this.sfHost + "_debugLogDebugLevel") ? localStorage.getItem(this.sfHost + "_debugLogDebugLevel") : "SFDC_DevConsole",
+      debugLogTimeMinutes: localStorage.getItem("debugLogTimeMinutes") ? localStorage.getItem("debugLogTimeMinutes") : "15",
+    };
+  }
+
+  onChangeDebugLevel(e) {
+    let debugLogDebugLevel = e.target.value;
+    this.setState({debugLogDebugLevel});
+    localStorage.setItem(this.sfHost + "_debugLogDebugLevel", debugLogDebugLevel);
+  }
+
+  onChangeDebugLogTime(e) {
+    let debugLogTimeMinutes = e.target.value;
+    this.setState({debugLogTimeMinutes});
+    localStorage.setItem("debugLogTimeMinutes", debugLogTimeMinutes);
+  }
+
+  render() {
+    return h("div", {className: "slds-grid slds-grid_vertical"},
+      h("div", {className: "slds-col slds-grid slds-wrap slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
+          h("span", {}, "Debug Level (DeveloperName)")
+        ),
+        h("div", {className: "slds-col slds-size_6-of-12 slds-form-element"}),
+        h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
+          h("input", {type: "text", id: "debugLogDebugLevel", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "SFDC_DevConsole", value: this.state.debugLogDebugLevel, onChange: this.onChangeDebugLevel})
+        ),
+      ),
+      h("div", {className: "slds-col slds-grid slds-wrap slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
+          h("span", {}, "Debug Log Time (Minutes)")
+        ),
+        h("div", {className: "slds-col slds-size_6-of-12 slds-form-element"}),
+        h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
+          h("input", {type: "number", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", value: this.state.debugLogTimeMinutes, onChange: this.onChangeDebugLogTime})
+        ),
+      )
+    );
+  }
+}
+
 let h = React.createElement;
 
 class App extends React.Component {
@@ -539,7 +604,7 @@ class App extends React.Component {
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"})),
       h("div", {className: "main-container slds-card slds-m-around_small"},
-        h(OptionsTabSelector, {}))
+        h(OptionsTabSelector, {model}))
     );
   }
 }

@@ -184,3 +184,19 @@ To make your life easier and avoid third party tools or login to ELF website, we
 When quering EventLogFile, add the "LogFile" field in the query and click on the value to download corresponding log.
 
 ![2023-11-15_14-32-44 (1)](https://github.com/Annubis45/Salesforce-Inspector-reloaded/assets/35368290/ba1fcbed-8428-495e-b03b-7816320d95df)
+
+## Enable debug logs
+
+Sometimes you may want to enable logs for a particular user.
+From User tab, click the "Enable Log" button.
+
+By default, this will enable logs with level "SFDC_DevConsole" for 15 minutes.
+
+<img width="279" alt="Enable Log button" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/e87d2ed6-5c21-4e03-8fb1-16e3bc6121f3">
+
+You can update the debug level (configuration is per organization) and duration (for all organizations) on the Options page.
+
+<img width="788" alt="DebugLog Options" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/f7aa5680-742a-4581-ad29-770089d2b55e">
+
+> **Warning**
+> Increasing the default duration may lead to a high volume of logs generated.

@@ -1190,9 +1190,9 @@ class UserDetails extends React.PureComponent {
     const DTnow = new Date(Date.now());
 
     //Enable debug level and expiration time (minutes) as default parameters.
-    let debugLogDebugLevel = localStorage.getItem("debugLogDebugLevel");
+    let debugLogDebugLevel = localStorage.getItem(this.sfHost + "_debugLogDebugLevel");
     if (debugLogDebugLevel == null) {
-      localStorage.setItem("debugLogDebugLevel", "SFDC_DevConsole");
+      localStorage.setItem(this.sfHost + "_debugLogDebugLevel", "SFDC_DevConsole");
     }
 
     let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");

@@ -1199,6 +1199,7 @@ class AllDataBoxOrg extends React.PureComponent {
 class UserDetails extends React.PureComponent {
   constructor(props) {
     super(props);
+    this.sfHost = props.sfHost;
     this.enableDebugLog = this.enableDebugLog.bind(this);
   }
 

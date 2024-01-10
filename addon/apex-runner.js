@@ -76,6 +76,7 @@ class Model {
 
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
+    this.numberOfLines = 1;
     this.showHelp = false;
     this.userInfo = "...";
     this.winInnerHeight = 0;
@@ -93,7 +94,6 @@ class Model {
     this.expandSavedOptions = false;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
-    this.executeProgress = {};
     this.scriptName = "";
     this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     this.scriptTemplates = localStorage.getItem("scriptTemplates") ? this.scriptTemplates = localStorage.getItem("scriptTemplates").split("//") : [
@@ -274,8 +274,21 @@ class Model {
       ? script.substring(selStart, selEnd)
       : script.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
     selStart = selEnd - searchTerm.length;
+    let queryLogs = "SELECT Id, Name, NamespacePrefix FROM ApexClass";
+    let header = ["Id", "Name", "NamespacePrefix"];
+    let colVisibilities = [false, true, true];
+    let apexClasses = new RecordTable(vm, header, colVisibilities);
     //TODO SELECT NamespacePrefix FROM ApexClass GROUP BY NamespacePrefix
-    //TODO SELECT Id, Name, NamespacePrefix FROM ApexClass
+    vm.spinFor(vm.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryLogs), {}), vm, apexClasses, () => {
+      //TODO cache apex class and handle here suggestions
+    })
+      .catch(error => {
+        console.error(error);
+        vm.isWorking = false;
+        vm.executeStatus = "Error";
+        vm.executeError = "UNEXPECTED EXCEPTION:" + error;
+        vm.logs = null;
+      }));
     if (ctrlSpace) {
       //TODO
     }
@@ -291,7 +304,12 @@ class Model {
     let selStart = vm.scriptInput.selectionStart;
     let selEnd = vm.scriptInput.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
-
+    let numberOfLines = script.split("\n").length;
+    if (vm.numberOfLines != numberOfLines) {
+      vm.numberOfLines = numberOfLines;
+      vm.didUpdate();
+    }
+    //TODO https://phuoc.ng/collection/mirror-a-text-area/add-autocomplete-to-your-text-area/
     // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
     let newAutocompleteState = [script, selStart, selEnd].join("$");
     if (newAutocompleteState == vm.autocompleteState && !ctrlSpace && !e.newDescribe) {
@@ -318,146 +336,218 @@ class Model {
 
     this.autocompleteClass(vm, false);
   }
-  doExecute() {
-    //TODO execute then
-    /*
-    GET http://domain/services/data/vXX.X/tooling/executeAnonymous/?anonymousBody= <url encoded body>
 
-query log: 
-SELECT Id, Application, Status, Operation, StartTime, LogLength, LogUserId, LogUser.Name FROM ApexLog ORDER BY StartTime DESC
-
-detail log:
-https://domain/servlet/debug/apex/ApexCSIJsonServlet?log=07LAY000003tnkp2AA&extent=steps&_=
-*/
-    let vm = this; // eslint-disable-line consistent-this
-    let logs = new RecordTable(vm);
-    logs.describeInfo = vm.describeInfo;
-    logs.sfHost = vm.sfHost;
-    let script = vm.scriptInput.value;
-    let scriptMethod = "script";
-    function batchHandler(batch) {
-      return batch.catch(err => {
-        if (err.name == "AbortError") {
-          return {records: [], done: true, totalSize: -1};
-        }
-        throw err;
-      }).then(data => {
-        logs.addToTable(data.records);
-        if (data.totalSize != -1) {
-          logs.totalSize = data.totalSize;
-        }
-        if (!data.done) {
-          let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.executeProgress}));
-          vm.isWorking = true;
-          vm.executeStatus = "Executing... Completed " + logs.records.length + " of " + logs.totalSize + " record(s)";
-          vm.executeError = null;
-          vm.logs = logs;
-          vm.updatedLogs();
-          vm.didUpdate();
-          return pr;
-        }
-        vm.scriptHistory.add({script});
-        if (logs.records.length == 0) {
-          vm.isWorking = false;
-          vm.executeStatus = data.totalSize > 0 ? "No data executed. " + data.totalSize + " record(s)." : "No data executed.";
-          vm.executeError = null;
-          vm.logs = logs;
-          vm.updatedLogs();
-          return null;
-        }
-        vm.isWorking = false;
-        vm.executeStatus = "Executed " + logs.records.length + (logs.records.length != logs.totalSize ? " of " + logs.totalSize : "") + " record(s)";
+  batchHandler(batch, vm, logs, onData) {
+    return batch.catch(err => {
+      if (err.name == "AbortError") {
+        return {records: [], done: true, totalSize: -1};
+      }
+      throw err;
+    }).then(data => {
+      logs.addToTable(data.records);
+      if (data.totalSize != -1) {
+        logs.totalSize = data.totalSize;
+      }
+      if (!data.done) {
+        let pr = vm.batchHandler(sfConn.rest(data.nextRecordsUrl, {}), vm, logs, onData);
+        vm.executeStatus = "Executing... Completed " + logs.records.length + " of " + logs.totalSize + " record(s)";
         vm.executeError = null;
         vm.logs = logs;
-        vm.updatedLogs();
+        onData();
+        vm.didUpdate();
+        return pr;
+      }
+      if (logs.records.length == 0) {
+        vm.executeStatus = data.totalSize > 0 ? "No data executed. " + data.totalSize + " record(s)." : "No data executed.";
+        vm.executeError = null;
+        vm.logs = logs;
+        onData();
         return null;
-      }, err => {
-        if (err.name != "SalesforceRestError") {
-          throw err; // not a SalesforceRestError
-        }
-        if (logs.totalSize != -1) {
-          // We already got some data. Show it, and indicate that not all data was executed
-          vm.isWorking = false;
-          vm.executeStatus = "Executed " + logs.records.length + " of " + logs.totalSize + " record(s). Stopped by error.";
-          vm.executeError = null;
-          vm.logs = logs;
-          vm.updatedLogs();
-          return null;
-        }
-        vm.isWorking = false;
-        vm.executeStatus = "Error";
-        vm.executeError = err.message;
-        vm.logs = null;
-        vm.updatedLogs();
+      }
+      vm.executeStatus = "Executed " + logs.records.length + (logs.records.length != logs.totalSize ? " of " + logs.totalSize : "") + " record(s)";
+      vm.executeError = null;
+      vm.logs = logs;
+      onData();
+      return null;
+    }, err => {
+      if (err.name != "SalesforceRestError") {
+        throw err; // not a SalesforceRestError
+      }
+      if (logs.totalSize != -1) {
+        // We already got some data. Show it, and indicate that not all data was executed
+        vm.executeStatus = "Executed " + logs.records.length + " of " + logs.totalSize + " record(s). Stopped by error.";
+        vm.executeError = null;
+        vm.logs = logs;
+        onData();
         return null;
-      });
-    }
-    vm.spinFor(batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/" + scriptMethod + "/?q=" + encodeURIComponent(script), {progressHandler: vm.executeProgress}))
+      }
+      vm.executeStatus = "Error";
+      vm.executeError = err.message;
+      vm.logs = null;
+      onData();
+      return null;
+    });
+  }
+
+  doExecute() {
+    let vm = this; // eslint-disable-line consistent-this
+    let script = vm.scriptInput.value;
+    vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/tooling/executeAnonymous/?anonymousBody=" + encodeURIComponent(script), {})
       .catch(error => {
         console.error(error);
-        vm.isWorking = false;
         vm.executeStatus = "Error";
         vm.executeError = "UNEXPECTED EXCEPTION:" + error;
         vm.logs = null;
         vm.updatedLogs();
+      })
+      .then(result => {
+        vm.autocompleteProgress = {};
+        if (!result) {
+          return;
+        }
+        if (result.success != true) {
+          let error = "";
+          if (!result.compiled) {
+            error += result.line != -1 ? " (line :" + result.line + ", column :" + result.column + ") " : "";
+            if (result.compileProblem != null) {
+              error += result.compileProblem + "\n";
+            }
+          } else {
+            vm.scriptHistory.add({script});
+            if (result.exceptionMessage != null) {
+              error += "UNEXPECTED EXCEPTION:" + result.exceptionMessage;
+            }
+            if (result.exceptionStackTrace != null) {
+              error += result.exceptionStackTrace;
+            }
+          }
+          console.error(error);
+          vm.executeStatus = "Error";
+          vm.executeError = error;
+          vm.logs = null;
+          vm.updatedLogs();
+          return;
+        }
+        vm.poll(vm);
+
       }));
-    vm.isWorking = true;
-    vm.executeStatus = "Executing...";
-    vm.executeError = null;
-    vm.logs = logs;
-    vm.updatedLogs();
   }
   stopExecut() {
-    this.executeProgress.abort();
+    this.isWorking = false;
+  }
+  //TODO move poll inside the component of result.
+  async poll(vm) {
+    let header = ["Id", "Application", "Status", "Operation", "StartTime", "LogLength", "LogUserId", "LogUser.Name"];
+    let colVisibilities = [false, true, true, true, true, true, false, true];
+    let logs = new RecordTable(vm, header, colVisibilities);
+    logs.describeInfo = vm.describeInfo;
+    logs.sfHost = vm.sfHost;
+    //TODO move this out of runner and poll every 5 seconds for example.
+    let pollId = 1;
+    vm.isWorking = true;
+    let handshake = await sfConn.rest("/cometd/" + apiVersion, {
+      method: "POST",
+      body: [
+        {
+          "version": "1.0",
+          "minimumVersion": "0.9",
+          "channel": "/meta/handshake",
+          "supportedConnectionTypes": ["long-polling", "callback-polling"],
+          "advice": {"timeout": 60000, "interval": 0},
+          "id": pollId.toString()
+        }],
+      bodyType: "json",
+      headers: {}
+    });
+    pollId++;
+    if (Array.isArray(handshake)) {
+      handshake = handshake[0];
+    }
+    if (handshake == null || !handshake.successful) {
+      console.log("handshake failed");
+      return;
+    }
+    //TODO get clientId from handshake
+    let subResponse = await sfConn.rest("/cometd/" + apiVersion, {
+      method: "POST",
+      body: [
+        {
+          "channel": "/meta/subscribe",
+          "subscription": "/systemTopic/Logging",
+          "id": pollId.toString(),
+          "clientId": handshake.clientId
+        }],
+      bodyType: "json",
+      headers: {}
+    });
+    pollId++;
+
+    if (subResponse == null || !Array.isArray(subResponse) || !subResponse[0].successful) {
+      console.log("subscription failed");
+      return;
+    }
+    // other topic of dev console : /systemTopic/ApexExecutionOverlayResult /systemTopic/TestResult /systemTopic/ContainerDeployStateChange
+    let advice = null;
+    while (vm.isWorking) {
+      let response = await sfConn.rest("/cometd/" + apiVersion, {
+        method: "POST",
+        body: [
+          {
+            "channel": "/meta/connect",
+            "connectionType": "long-polling",
+            "advice": advice || {"timeout": 0},
+            "id": pollId.toString(),
+            "clientId": handshake.clientId
+          }],
+        bodyType: "json",
+        headers: {}
+      });
+      pollId++;
+      if (response == null || !Array.isArray(response)) {
+        console.log("polling failed");
+        return;
+      }
+      if (response.find(rsp => rsp == null || (rsp.data == null && !rsp.successful))) {
+        console.log("polling failed");
+      }
+      let arsp = response.find(rsp => rsp != null && rsp.successful);
+      if (arsp) {
+        advice = arsp.advice;
+      }
+      if (response.find(rsp => rsp != null && rsp.data != null && rsp.data.channel == "/systemTopic/Logging")) {
+        console.log("fill logs");
+        let queryLogs = "SELECT Id, Application, Status, Operation, StartTime, LogLength, LogUserId, LogUser.Name FROM ApexLog ORDER BY StartTime DESC";
+        await vm.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryLogs), {}), vm, logs, () => {
+          vm.updatedLogs();
+        })
+          .catch(error => {
+            console.error(error);
+            vm.isWorking = false;
+            vm.executeStatus = "Error";
+            vm.executeError = "UNEXPECTED EXCEPTION:" + error;
+            vm.logs = null;
+          });
+      }
+
+      //TODO table to query job in run
+      // SELECT Id, ApexClass.Name, JobType, CreatedDate, CompletedDate, Status, ExtendedStatus,JobItemsProcessed,LastProcessed,LastProcessedOffset,MethodName,NumberOfErrors,TotalJobItems FROM AsyncApexJob
+
+    }
   }
 }
 
-function RecordTable(vm) {
-  /*
-  We don't want to build our own SOQL parser, so we discover the columns based on the data returned.
-  This means that we cannot find the columns of cross-object relationships, when the relationship field is null for all returned records.
-  We don't care, because we don't need a stable set of columns for our use case.
-  */
-  let columnIdx = new Map();
-  let header = ["_"];
-  function discoverColumns(record, prefix, row) {
-    for (let field in record) {
-      if (field == "attributes") {
-        continue;
-      }
-      let column = prefix + field;
-      let c;
-      if (columnIdx.has(column)) {
-        c = columnIdx.get(column);
-      } else {
-        c = header.length;
-        columnIdx.set(column, c);
-        for (let row of rt.table) {
-          row.push(undefined);
-        }
-        header[c] = column;
-        rt.colVisibilities.push(true);
-      }
-      row[c] = record[field];
-      if (typeof record[field] == "object" && record[field] != null) {
-        discoverColumns(record[field], column + ".", row);
-      }
-    }
-  }
-  function cellToString(cell) {
-    if (cell == null) {
-      return "";
-    } else if (typeof cell == "object" && cell.attributes && cell.attributes.type) {
-      return "[" + cell.attributes.type + "]";
-    } else {
-      return "" + cell;
-    }
-  }
+/*
+TODO
+detail log view:
+https://domain/servlet/debug/apex/ApexCSIJsonServlet?log=07LAY000003tnkp2AA&extent=steps&_=
+Id, Application, Status, Operation, StartTime, LogLength, LogUserId, LogUser.Name
+*/
+function RecordTable(vm, header, columnVisibilities) {
   let rt = {
     records: [],
     table: [],
     rowVisibilities: [],
-    colVisibilities: [true],
+    colVisibilities: columnVisibilities,
     totalSize: -1,
     addToTable(expRecords) {
       rt.records = rt.records.concat(expRecords);
@@ -467,12 +557,16 @@ function RecordTable(vm) {
       }
       for (let record of expRecords) {
         let row = new Array(header.length);
-        row[0] = record;
         rt.table.push(row);
-        discoverColumns(record, "", row);
+        for (let c = 0; c < header.length; c++) {
+          let obj = record;
+          header[c].split(".").forEach((path) => {
+            obj = obj[path];
+          });
+          row[c] = obj;
+        }
       }
-    },
-    csvSerialize: separator => rt.table.map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n")
+    }
   };
   return rt;
 }
@@ -723,12 +817,17 @@ class App extends React.Component {
             ),
           ),
         ),
-        h("textarea", {id: "script", ref: "script", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
+        h("div", {className: "editor"},
+          h("div", {className: "line-numbers"},
+            Array(model.numberOfLines).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}))
+          ),
+          h("textarea", {id: "script", ref: "script", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
+        ),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
             h("div", {className: "flex-right"},
-              h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExecute, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Execute"),
+              h("button", {tabIndex: 1, onClick: this.onExecute, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Execute"),
               h("button", {tabIndex: 2, onClick: this.onCopyScript, title: "Copy script url", className: "copy-id"}, "Execute Script"),
               h("a", {tabIndex: 3, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info")
             ),
@@ -748,7 +847,7 @@ class App extends React.Component {
       ),
       h("div", {className: "area", id: "result-area"},
         h("div", {className: "result-bar"},
-          h("h1", {}, "Execute Result")
+          h("h1", {}, "Execute Result"),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.executeStatus),
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExecute}, "Stop"),

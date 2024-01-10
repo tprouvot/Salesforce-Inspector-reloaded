@@ -1,0 +1,19 @@
+  .line-numbers {
+    text-align: right;
+    padding: 8px 10px;
+  }
+  
+  .line-numbers span {
+    counter-increment: linenumber;
+    font-family: monospace;
+    font-size: 0.75rem;
+  }
+  
+  .line-numbers span::before {
+    content: counter(linenumber);
+    display: block;
+    color: #506882;
+  }
+  .editor {
+    display: flex;
+  }

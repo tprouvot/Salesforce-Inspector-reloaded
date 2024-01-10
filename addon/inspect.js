@@ -33,6 +33,7 @@ class Model {
     this.detailsFilter = "";
     this.detailsBox = null;
     this.editMode = null; // null (when not editing), "update", "delete" (for confirming) or "create"
+    this.headerCallout = localStorage.getItem("createUpdateRestCalloutHeaders") ? JSON.parse(localStorage.getItem("createUpdateRestCalloutHeaders")) : "{}";
     this.hasEntityParticles = false;
     this.objectActionsOpen = false;
     this.objectSetupLinks = null;
@@ -148,7 +149,7 @@ class Model {
       let recordUrl = this.objectData.urls.rowTemplate.replace("{ID}", this.recordData.Id);
       this.spinFor(
         "saving record",
-        sfConn.rest(recordUrl, {method: "PATCH", body: record}).then(() => {
+        sfConn.rest(recordUrl, {method: "PATCH", body: record, headers: this.headerCallout}).then(() => {
           this.endEdit();
           this.clearRecordData();
           this.setRecordData(sfConn.rest(recordUrl));
@@ -175,7 +176,7 @@ class Model {
       let recordUrl = this.objectData.urls.sobject;
       this.spinFor(
         "creating record",
-        sfConn.rest(recordUrl, {method: "POST", body: record}).then(result => {
+        sfConn.rest(recordUrl, {method: "POST", body: record, headers: this.headerCallout}).then(result => {
           this.endEdit();
           let args = new URLSearchParams();
           args.set("host", this.sfHost);

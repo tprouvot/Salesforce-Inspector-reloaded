@@ -212,12 +212,14 @@ class App extends React.PureComponent {
       addonVersion
     } = this.props;
     let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, limitsHref, isFieldsPresent} = this.state;
-    let clientId = localStorage.getItem(sfHost + "_clientId");
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
-    let browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
+    const browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
+    const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
+    const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
+    const oauthAuthorizeUrl = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     return (
       h("div", {},
         h("div", {className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom"},
@@ -237,7 +239,23 @@ class App extends React.PureComponent {
             "Salesforce Inspector Reloaded"
           )
         ),
-        h("div", {className: "main"},
+        h("div", {id: "expiredTokenLink", className: "hide"},
+          h("div", {className: "slds-p-top_x-small slds-p-horizontal_x-small slds-text-align_center "},
+            h("span", {className: "text-error"}, "⚠ Access Token expired!"),
+          ),
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-m-bottom_xx-small"},
+            h("a",
+              {
+                ref: "generateNewToken",
+                href: oauthAuthorizeUrl,
+                target: linkTarget,
+                className: !clientId ? "button hide" : "page-button slds-button slds-button_brand inverse"
+              },
+              "➔ Click here to generate new token"
+            ),
+          ),
+        ),
+        h("div", {className: "main", id: "mainTabs"},
           h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, onContextRecordChange: this.onContextRecordChange, isFieldsPresent}),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
             h("div", {className: "slds-m-bottom_xx-small"},
@@ -262,11 +280,11 @@ class App extends React.PureComponent {
               h("a",
                 {
                   ref: "generateToken",
-                  href: `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html?host=" + sfHost + "%26",
+                  href: oauthAuthorizeUrl,
                   target: linkTarget,
                   className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
                 },
-                h("span", {}, h("u", {}, "G"), "enerate Connected App Token"))
+                h("span", {}, h("u", {}, "G"), "enerate Access Token"))
             ),
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
             inLightning && isInSetup && h("div", {className: "slds-m-bottom_xx-small"},
@@ -1179,6 +1197,108 @@ class AllDataBoxOrg extends React.PureComponent {
 }
 
 class UserDetails extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.enableDebugLog = this.enableDebugLog.bind(this);
+  }
+
+  async enableDebugLog() {
+
+    let {user} = this.props;
+    const DTnow = new Date(Date.now());
+
+    //Enable debug level and expiration time (minutes) as default parameters.
+    let debugLogDebugLevel = localStorage.getItem(this.sfHost + "_debugLogDebugLevel");
+    if (debugLogDebugLevel == null) {
+      localStorage.setItem(this.sfHost + "_debugLogDebugLevel", "SFDC_DevConsole");
+    }
+
+    let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");
+    if (debugLogTimeMinutes == null) {
+      localStorage.setItem("debugLogTimeMinutes", 15);
+    }
+    let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
+
+    let traceFlags = await this.getTraceFlags(user.Id, DTnow, debugLogDebugLevel, debugTimeInMs);
+    /*If an old trace flag is found on the user and with this debug level
+     *Update the trace flag extending the experiation date.
+     */
+    if (traceFlags.size > 0){
+      this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
+    //Else create new trace flag
+    } else {
+      let debugLog = await this.getDebugLog(debugLogDebugLevel);
+
+      if (debugLog && debugLog.size > 0){
+        this.insertTraceFlag(user.Id, debugLog.records[0].Id, DTnow, debugTimeInMs);
+      } else {
+        throw new Error('Debug Level with developerName = "' + debugLogDebugLevel + '" not found');
+      }
+    }
+    //Disable button after executing.
+    const element = document.querySelector("#enableDebugLog");
+    element.setAttribute("disabled", true);
+    element.text = "Logs Enabled";
+  }
+
+  getTraceFlags(userId, DTnow, debugLogDebugLevel, debugTimeInMs){
+    try {
+      const expirationDate = new Date(DTnow.getTime() + debugTimeInMs);
+      let query = "query/?q=+SELECT+Id,ExpirationDate+FROM+TraceFlag+"
+                  + "WHERE+TracedEntityid='" + userId + "'+"
+                  + "AND+DebugLevel.DeveloperName='" + debugLogDebugLevel + "'+"
+                  + "AND+StartDate<" + DTnow.toISOString() + "+"
+                  + "AND+ExpirationDate<" + expirationDate.toISOString();
+      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/" + query, {method: "GET"});
+    } catch (e){
+      console.error(e);
+      return null;
+    }
+  }
+
+  getDebugLog(debugLogDebugLevel){
+    try {
+      let query = "query/?q=+SELECT+Id+FROM+DebugLevel+"
+                    + "WHERE+DeveloperName='" + debugLogDebugLevel + "'";
+      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/" + query, {method: "GET"});
+    } catch (e){
+      console.error(e);
+      return null;
+    }
+  }
+
+  insertTraceFlag(userId, debugLogId, DTnow, debugTimeInMs){
+    try {
+      let newTraceFlag
+          = {
+            TracedEntityId: userId,
+            DebugLevelId: debugLogId,
+            LogType: "USER_DEBUG",
+            StartDate: DTnow,
+            ExpirationDate: (DTnow.getTime() + debugTimeInMs),
+
+          };
+      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/sobjects/traceflag", {method: "POST", body: newTraceFlag});
+    } catch (e){
+      console.error(e);
+      return null;
+    }
+  }
+
+  extendTraceFlag(traceFlagId, DTnow, debugTimeInMs){
+    try {
+      let traceFlagToUpdate = {StartDate: DTnow, ExpirationDate: (DTnow.getTime() + debugTimeInMs)};
+      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/sobjects/traceflag/" + traceFlagId, {method: "PATCH", body: traceFlagToUpdate});
+    } catch (e){
+      console.error(e);
+      return null;
+    }
+  }
+
+  getDebugTimeInMs(debugLogTimeMinutes){
+    return debugLogTimeMinutes * 60 * 1000;
+  }
+
   doSupportLoginAs(user) {
     let {currentUserId} = this.props;
     //Optimistically show login unless it's logged in user's userid or user is inactive.
@@ -1287,7 +1407,8 @@ class UserDetails extends React.PureComponent {
         h("div", {ref: "userButtons", className: "center small-font"},
           h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Details"),
           h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
-          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG")
+          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
+          h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs")
         ),
         h("div", {ref: "userButtons", className: "center small-font top-space"},
           this.doSupportLoginAs(user) ? h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Try login as") : null,

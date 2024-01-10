@@ -2,6 +2,9 @@
 
 ## Version 1.22
 
+- Add "Enable Logs" button in the User tab [feature 245](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/245) (contribution by [Antoine Leleu](https://github.com/AntoineLeleu-Salesforce))
+- Add default connected app setting and improve access token renew flow. Note: Due to the simplified redirect url, this is a BREAKING CHANGE for users who have created their own connected app: those users MUST update their connected app Callback URL to the new value before they can use this version of the extension (contribution by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
+- Allow users to define REST callout headers on showAllData page. The need is to prevent the auto assignation of Accounts, Cases and Leads. [feature 198](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/198) (issue by [SfdxDieter](https://github.com/SfdxDieter)
 - Fix flow scrollability] checkbox on non dev environments [issue 258](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/258) (by [Samuel Krissi](https://github.com/samuelkrissi))
 - Fix 'Record Type not displayed' in popup [issue 255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/255)
 - Add "Options" page to manage local storage variables directly from the UX. Allow to reposition the popup button [feature 145](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/145) (contribution by [Pietro Martino](https://github.com/pietromartino))
@@ -116,7 +119,7 @@
 - Auto detect SObject on import page when posting data which contain SObject header [feature 30](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/30)
 - Update to Salesforce API v 57.0 (Spring '23)
 - [Switch background color on import page to alert users that it's a production environnement](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/20)
-- Implement Auth2 flow to generate access token for connected App
+- Implement OAuth2 flow to generate access token for connected App
 
 ## Version 1.13
 

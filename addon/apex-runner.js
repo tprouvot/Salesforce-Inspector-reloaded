@@ -94,6 +94,10 @@ class Model {
     this.expandSavedOptions = false;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
+    this.classInit = false;
+    let header = ["Id", "Name", "NamespacePrefix"];
+    let colVisibilities = [false, true, true];
+    this.apexClasses = new RecordTable(this, header, colVisibilities);
     this.scriptName = "";
     this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     this.scriptTemplates = localStorage.getItem("scriptTemplates") ? this.scriptTemplates = localStorage.getItem("scriptTemplates").split("//") : [
@@ -275,22 +279,40 @@ class Model {
       : script.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
     selStart = selEnd - searchTerm.length;
     let queryLogs = "SELECT Id, Name, NamespacePrefix FROM ApexClass";
-    let header = ["Id", "Name", "NamespacePrefix"];
-    let colVisibilities = [false, true, true];
-    let apexClasses = new RecordTable(vm, header, colVisibilities);
     //TODO SELECT NamespacePrefix FROM ApexClass GROUP BY NamespacePrefix
-    vm.spinFor(vm.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryLogs), {}), vm, apexClasses, () => {
-      //TODO cache apex class and handle here suggestions
-    })
-      .catch(error => {
-        console.error(error);
-        vm.isWorking = false;
-        vm.executeStatus = "Error";
-        vm.executeError = "UNEXPECTED EXCEPTION:" + error;
-        vm.logs = null;
-      }));
-    if (ctrlSpace) {
-      //TODO
+    function suggestClass() {
+      if (ctrlSpace) {
+        //TODO if item selected => write it
+        //return;
+      }
+      vm.autocompleteResults = {
+        sobjectName: "ApexClass",
+        title: "Class suggestions:",
+        results: new Enumerable(vm.apexClasses.records)
+          .filter(c => (c.Name.toLowerCase().includes(searchTerm.toLowerCase())))
+          .map((c) => ({"value": (c.NamespacePrefix ? c.NamespacePrefix + "." : "") + c.Name, "title": (c.NamespacePrefix ? c.NamespacePrefix + "." : "") + c.Name, "suffix": " ", "rank": 1, "autocompleteType": "fieldName"}))
+          .toArray()
+          .sort(vm.resultsSort(searchTerm))
+      };
+    }
+    if (!vm.classInit) {
+      vm.classInit = true;
+      vm.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryLogs), {}), vm, vm.apexClasses, (isFinished) => {
+        //TODO cache apex class and handle here suggestions
+        if (!isFinished){
+          return;
+        }
+        suggestClass();
+      })
+        .catch(error => {
+          console.error(error);
+          vm.isWorking = false;
+          vm.executeStatus = "Error";
+          vm.executeError = "UNEXPECTED EXCEPTION:" + error;
+          vm.logs = null;
+        });
+    } else {
+      suggestClass();
     }
   }
 
@@ -350,24 +372,21 @@ class Model {
       }
       if (!data.done) {
         let pr = vm.batchHandler(sfConn.rest(data.nextRecordsUrl, {}), vm, logs, onData);
-        vm.executeStatus = "Executing... Completed " + logs.records.length + " of " + logs.totalSize + " record(s)";
         vm.executeError = null;
         vm.logs = logs;
-        onData();
+        onData(false);
         vm.didUpdate();
         return pr;
       }
       if (logs.records.length == 0) {
-        vm.executeStatus = data.totalSize > 0 ? "No data executed. " + data.totalSize + " record(s)." : "No data executed.";
         vm.executeError = null;
         vm.logs = logs;
-        onData();
+        onData(true);
         return null;
       }
-      vm.executeStatus = "Executed " + logs.records.length + (logs.records.length != logs.totalSize ? " of " + logs.totalSize : "") + " record(s)";
       vm.executeError = null;
       vm.logs = logs;
-      onData();
+      onData(true);
       return null;
     }, err => {
       if (err.name != "SalesforceRestError") {
@@ -375,16 +394,15 @@ class Model {
       }
       if (logs.totalSize != -1) {
         // We already got some data. Show it, and indicate that not all data was executed
-        vm.executeStatus = "Executed " + logs.records.length + " of " + logs.totalSize + " record(s). Stopped by error.";
         vm.executeError = null;
         vm.logs = logs;
-        onData();
+        onData(true);
         return null;
       }
       vm.executeStatus = "Error";
       vm.executeError = err.message;
       vm.logs = null;
-      onData();
+      onData(true);
       return null;
     });
   }

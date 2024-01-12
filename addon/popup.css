@@ -65,7 +65,6 @@ body,
     flex-direction: column;
 }
 
-a:link,
 a:visited {
     color: #0176d3;
 }

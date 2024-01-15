@@ -31,8 +31,13 @@ function closePopup() {
   parent.postMessage({insextClosePopup: true}, "*");
 }
 
-function showApiName() {
-  parent.postMessage({insextShowApiName: true}, "*");
+function showApiName(e) {
+  parent.postMessage({insextShowApiName: true, btnLabel: e.target.innerText}, "*");
+  if (e.target.innerText.startsWith("Show")){
+    e.target.innerText = e.target.innerText.replace("Show", "Hide");
+  } else {
+    e.target.innerText = e.target.innerText.replace("Hide", "Show");
+  }
 }
 
 function init({sfHost, inDevConsole, inLightning, inInspector}) {

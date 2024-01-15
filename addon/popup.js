@@ -31,8 +31,13 @@ function closePopup() {
   parent.postMessage({insextClosePopup: true}, "*");
 }
 
-function showApiName() {
-  parent.postMessage({insextShowApiName: true}, "*");
+function showApiName(e) {
+  parent.postMessage({insextShowApiName: true, btnLabel: e.target.innerText}, "*");
+  if (e.target.innerText.startsWith("Show")){
+    e.target.innerText = e.target.innerText.replace("Show", "Hide");
+  } else {
+    e.target.innerText = e.target.innerText.replace("Hide", "Show");
+  }
 }
 
 function init({sfHost, inDevConsole, inLightning, inInspector}) {
@@ -1643,7 +1648,7 @@ class AllDataSelection extends React.PureComponent {
           : button == "toolingApi" ? " (Tooling API)"
           : " (Not readable)"
         ))),
-        isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
+        isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", id: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
         selectedValue.sobject.isEverCreatable ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
       )
     );

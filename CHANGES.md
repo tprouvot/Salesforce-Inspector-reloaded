@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.23
+
+- Add the possibility to hide fields API names after users clicked "Show fields API names"
+
 ## Version 1.22
 
 - Add "Enable Logs" button in the User tab [feature 245](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/245) (contribution by [Antoine Leleu](https://github.com/AntoineLeleu-Salesforce))

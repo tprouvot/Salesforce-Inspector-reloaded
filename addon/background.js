@@ -13,23 +13,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // (and thereby the domain of the relevant cookie) cookie domains are therefore tried in sequence.
     chrome.cookies.get({url: request.url, name: "sid", storeId: sender.tab.cookieStoreId}, cookie => {
       const currentDomain = new URL(request.url).hostname;
-      if (!cookie) {
-        sendResponse(currentDomain);
-        return;
-      }
-      let [orgId] = cookie.value.split("!");
-      let orderedDomains = ["salesforce.com", "cloudforce.com", "salesforce.mil", "cloudforce.mil", "sfcrmproducts.cn"];
-
-      orderedDomains.forEach(currentDomain => {
-        chrome.cookies.getAll({name: "sid", domain: currentDomain, secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
-          let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
-          if (sessionCookie) {
-            sendResponse(sessionCookie.domain);
-          } else if (orderedDomains[orderedDomains.length] === currentDomain){
-            sendResponse(currentDomain);
-          }
-        });
-      });
+      sendResponse(currentDomain);
     });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }

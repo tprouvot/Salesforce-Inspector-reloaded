@@ -79,6 +79,7 @@ class Model {
     this.numberOfLines = 1;
     this.showHelp = false;
     this.userInfo = "...";
+    this.userId = null;
     this.winInnerHeight = 0;
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
@@ -94,7 +95,6 @@ class Model {
     this.expandSavedOptions = false;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
-    this.classInit = false;
     let header = ["Id", "Name", "NamespacePrefix"];
     let colVisibilities = [false, true, true];
     this.apexClasses = new RecordTable(this, header, colVisibilities);
@@ -107,6 +107,8 @@ class Model {
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
+      this.userId = res.userId;
+      this.enableLogs();
     }));
 
     if (args.has("script")) {
@@ -278,42 +280,20 @@ class Model {
       ? script.substring(selStart, selEnd)
       : script.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
     selStart = selEnd - searchTerm.length;
-    let queryLogs = "SELECT Id, Name, NamespacePrefix FROM ApexClass";
-    //TODO SELECT NamespacePrefix FROM ApexClass GROUP BY NamespacePrefix
-    function suggestClass() {
-      if (ctrlSpace) {
-        //TODO if item selected => write it
-        //return;
-      }
-      vm.autocompleteResults = {
-        sobjectName: "ApexClass",
-        title: "Class suggestions:",
-        results: new Enumerable(vm.apexClasses.records)
-          .filter(c => (c.Name.toLowerCase().includes(searchTerm.toLowerCase())))
-          .map((c) => ({"value": (c.NamespacePrefix ? c.NamespacePrefix + "." : "") + c.Name, "title": (c.NamespacePrefix ? c.NamespacePrefix + "." : "") + c.Name, "suffix": " ", "rank": 1, "autocompleteType": "fieldName"}))
-          .toArray()
-          .sort(vm.resultsSort(searchTerm))
-      };
+
+    if (ctrlSpace) {
+      //TODO if item selected => write it
+      //return;
     }
-    if (!vm.classInit) {
-      vm.classInit = true;
-      vm.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryLogs), {}), vm, vm.apexClasses, (isFinished) => {
-        //TODO cache apex class and handle here suggestions
-        if (!isFinished){
-          return;
-        }
-        suggestClass();
-      })
-        .catch(error => {
-          console.error(error);
-          vm.isWorking = false;
-          vm.executeStatus = "Error";
-          vm.executeError = "UNEXPECTED EXCEPTION:" + error;
-          vm.logs = null;
-        });
-    } else {
-      suggestClass();
-    }
+    vm.autocompleteResults = {
+      sobjectName: "ApexClass",
+      title: "Class suggestions:",
+      results: new Enumerable(vm.apexClasses.records)
+        .filter(c => (c.Name.toLowerCase().includes(searchTerm.toLowerCase())))
+        .map((c) => ({"value": (c.NamespacePrefix ? c.NamespacePrefix + "." : "") + c.Name, "title": (c.NamespacePrefix ? c.NamespacePrefix + "." : "") + c.Name, "suffix": " ", "rank": 1, "autocompleteType": "fieldName"}))
+        .toArray()
+        .sort(vm.resultsSort(searchTerm))
+    };
   }
 
   /**
@@ -446,21 +426,94 @@ class Model {
           vm.updatedLogs();
           return;
         }
-        vm.poll(vm);
 
       }));
   }
   stopExecut() {
     this.isWorking = false;
   }
-  //TODO move poll inside the component of result.
-  async poll(vm) {
+  disableLogs() {
+    //DO NOTHING because trace flag have is timed
+  }
+  getTraceFlags(DTnow, debugTimeInMs){
+    try {
+      const expirationDate = new Date(DTnow.getTime() + debugTimeInMs);
+      let query = "query/?q=+SELECT+Id,ExpirationDate+FROM+TraceFlag+"
+                  + "WHERE+TracedEntityid='" + this.userId + "'+"
+                  + "AND+DebugLevel.DeveloperName='SFDC_DevConsole'+"
+                  + "AND+StartDate<" + DTnow.toISOString() + "+"
+                  + "AND+ExpirationDate<" + expirationDate.toISOString();
+      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/" + query, {method: "GET"});
+    } catch (e){
+      console.error(e);
+      return null;
+    }
+  }
+  insertTraceFlag(debugLogId, DTnow, debugTimeInMs){
+    try {
+      let newTraceFlag
+          = {
+            TracedEntityId: this.userId,
+            DebugLevelId: debugLogId,
+            LogType: "DEVELOPER_LOG",
+            StartDate: DTnow,
+            ExpirationDate: (DTnow.getTime() + debugTimeInMs),
+
+          };
+      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/sobjects/traceflag", {method: "POST", body: newTraceFlag});
+    } catch (e){
+      console.error(e);
+      return null;
+    }
+  }
+
+  extendTraceFlag(traceFlagId, DTnow, debugTimeInMs){
+    try {
+      let traceFlagToUpdate = {StartDate: DTnow, ExpirationDate: (DTnow.getTime() + debugTimeInMs)};
+      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/sobjects/traceflag/" + traceFlagId, {method: "PATCH", body: traceFlagToUpdate});
+    } catch (e){
+      console.error(e);
+      return null;
+    }
+  }
+  getDebugLog(){
+    try {
+      let query = "query/?q=+SELECT+Id+FROM+DebugLevel+"
+                    + "WHERE+DeveloperName='SFDC_DevConsole'";
+      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/" + query, {method: "GET"});
+    } catch (e){
+      console.error(e);
+      return null;
+    }
+  }
+  async enableLogs() {
+    const DTnow = new Date(Date.now());
+    const debugTimeInMs = 15 * 60 * 1000;
+
+    let traceFlags = await this.getTraceFlags(DTnow, debugTimeInMs);
+    /*If an old trace flag is found on the user and with this debug level
+     *Update the trace flag extending the experiation date.
+     */
+    if (traceFlags.size > 0){
+      this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
+    //Else create new trace flag
+    } else {
+      let debugLog = await this.getDebugLog();
+
+      if (debugLog && debugLog.size > 0){
+        this.insertTraceFlag(debugLog.records[0].Id, DTnow, debugTimeInMs);
+      } else {
+        throw new Error('Debug Level with developerName = "SFDC_DevConsole" not found');
+      }
+    }
+  }
+
+  async pollLogs(vm) {
     let header = ["Id", "Application", "Status", "Operation", "StartTime", "LogLength", "LogUserId", "LogUser.Name"];
     let colVisibilities = [false, true, true, true, true, true, false, true];
     let logs = new RecordTable(vm, header, colVisibilities);
     logs.describeInfo = vm.describeInfo;
     logs.sfHost = vm.sfHost;
-    //TODO move this out of runner and poll every 5 seconds for example.
     let pollId = 1;
     vm.isWorking = true;
     let handshake = await sfConn.rest("/cometd/" + apiVersion, {
@@ -532,7 +585,7 @@ class Model {
       if (arsp) {
         advice = arsp.advice;
       }
-      if (response.find(rsp => rsp != null && rsp.data != null && rsp.data.channel == "/systemTopic/Logging")) {
+      if (response.find(rsp => rsp != null && rsp.data != null && rsp.channel == "/systemTopic/Logging")) {
         console.log("fill logs");
         let queryLogs = "SELECT Id, Application, Status, Operation, StartTime, LogLength, LogUserId, LogUser.Name FROM ApexLog ORDER BY StartTime DESC";
         await vm.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryLogs), {}), vm, logs, () => {
@@ -576,6 +629,7 @@ function RecordTable(vm, header, columnVisibilities) {
       for (let record of expRecords) {
         let row = new Array(header.length);
         rt.table.push(row);
+        rt.rowVisibilities.push(true);
         for (let c = 0; c < header.length; c++) {
           let obj = record;
           header[c].split(".").forEach((path) => {
@@ -714,7 +768,18 @@ class App extends React.Component {
   componentDidMount() {
     let {model} = this.props;
     let scriptInput = this.refs.script;
+    //TODO SELECT NamespacePrefix FROM ApexClass GROUP BY NamespacePrefix
+    let queryLogs = "SELECT Id, Name, NamespacePrefix FROM ApexClass";
+    model.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryLogs), {}), model, model.apexClasses, (isFinished) => {
+      if (!isFinished){
+        return;
+      }
+    })
+      .catch(error => {
+        console.error(error);
+      });
 
+    model.pollLogs(model);
     model.setScriptInput(scriptInput);
     //Set the cursor focus on script text area
     if (localStorage.getItem("disableScriptInputAutoFocus") !== "true"){
@@ -773,6 +838,10 @@ class App extends React.Component {
   }
   componentDidUpdate() {
     this.recalculateSize();
+  }
+  componentWillUnmount() {
+    let {model} = this.props;
+    model.disableLogs();
   }
   recalculateSize() {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.

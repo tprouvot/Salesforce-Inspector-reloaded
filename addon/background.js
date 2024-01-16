@@ -4,15 +4,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Firefox does not support incognito split mode, so we use sender.tab.cookieStoreId to select the right cookie store.
   // Chrome does not support sender.tab.cookieStoreId, which means it is undefined, and we end up using the default cookie store according to incognito split mode.
   if (request.message == "getSfHost") {
-    // When on a *.visual.force.com page, the session in the cookie does not have API access,
-    // so we read the corresponding session from *.salesforce.com page.
-    // The first part of the session cookie is the OrgID,
-    // which we use as key to support being logged in to multiple orgs at once.
-    // http://salesforce.stackexchange.com/questions/23277/different-session-ids-in-different-contexts
-    // There is no straight forward way to unambiguously understand if the user authenticated against salesforce.com or cloudforce.com
-    // (and thereby the domain of the relevant cookie) cookie domains are therefore tried in sequence.
-      const currentDomain = new URL(request.url).hostname;
-      sendResponse(currentDomain);
+    const currentDomain = new URL(request.url).hostname;
+    sendResponse(currentDomain);
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
   if (request.message == "getSession") {

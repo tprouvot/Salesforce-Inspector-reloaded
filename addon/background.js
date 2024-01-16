@@ -11,7 +11,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // http://salesforce.stackexchange.com/questions/23277/different-session-ids-in-different-contexts
     // There is no straight forward way to unambiguously understand if the user authenticated against salesforce.com or cloudforce.com
     // (and thereby the domain of the relevant cookie) cookie domains are therefore tried in sequence.
-    chrome.cookies.get({url: request.url, name: "sid", storeId: sender.tab.cookieStoreId}, cookie => {
       const currentDomain = new URL(request.url).hostname;
       sendResponse(currentDomain);
     });

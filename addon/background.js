@@ -13,7 +13,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // (and thereby the domain of the relevant cookie) cookie domains are therefore tried in sequence.
       const currentDomain = new URL(request.url).hostname;
       sendResponse(currentDomain);
-    });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
   if (request.message == "getSession") {

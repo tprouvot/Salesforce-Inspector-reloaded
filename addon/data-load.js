@@ -203,6 +203,28 @@ function renderCell(rt, cell, td) {
         aqueryIcon.className = "icon";
         pop.appendChild(aQuery);
         aQuery.prepend(aqueryIcon);
+        if (objectType == "ApexLog") {
+          //TODO item analyze log and open page analyze-log with recordid log as parameter...
+          //It download the log file and switch between view: treeview, profiler (time to trigger apex cpu limits 10sec), limits (DML, SOQL, ...), exception
+          let aDownload = document.createElement("a");
+          aDownload.id = recordId;
+          aDownload.target = "_blank";
+          aDownload.textContent = "Download File";
+          aDownload.className = "download-salesforce";
+          let aDownloadIcon = document.createElement("div");
+          aDownloadIcon.className = "icon";
+          pop.appendChild(aDownload);
+          aDownload.prepend(aDownloadIcon);
+          aDownload.addEventListener("click", e => {
+            sfConn.rest("/services/data/v60.0/tooling/sobjects/ApexLog/" + e.target.id + "/Body?_dc=1705483656182", {responseType: "text"}).then(data => {
+              let downloadLink = document.createElement("a");
+              downloadLink.download = e.target.id + ".txt";
+              downloadLink.href = "data:text/plain;charset=utf-8," + data;
+              downloadLink.click();
+            });
+            td.removeChild(pop);
+          });
+        }
 
         // If the recordId ends with 0000000000AAA it is a dummy ID such as the ID for the master record type 012000000000000AAA
         if (recordId && isRecordId(recordId) && !recordId.endsWith("0000000000AAA")) {

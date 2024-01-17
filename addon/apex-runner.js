@@ -95,9 +95,7 @@ class Model {
     this.expandSavedOptions = false;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
-    let header = ["Id", "Name", "NamespacePrefix"];
-    let colVisibilities = [false, true, true];
-    this.apexClasses = new RecordTable(this, header, colVisibilities);
+    this.apexClasses = new RecordTable();
     this.scriptName = "";
     this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     this.scriptTemplates = localStorage.getItem("scriptTemplates") ? this.scriptTemplates = localStorage.getItem("scriptTemplates").split("//") : [
@@ -509,9 +507,7 @@ class Model {
   }
 
   async pollLogs(vm) {
-    let header = ["Id", "Application", "Status", "Operation", "StartTime", "LogLength", "LogUserId", "LogUser.Name"];
-    let colVisibilities = [false, true, true, true, true, true, false, true];
-    let logs = new RecordTable(vm, header, colVisibilities);
+    let logs = new RecordTable();
     logs.describeInfo = vm.describeInfo;
     logs.sfHost = vm.sfHost;
     let pollId = 1;
@@ -613,12 +609,45 @@ detail log view:
 https://domain/servlet/debug/apex/ApexCSIJsonServlet?log=07LAY000003tnkp2AA&extent=steps&_=
 Id, Application, Status, Operation, StartTime, LogLength, LogUserId, LogUser.Name
 */
-function RecordTable(vm, header, columnVisibilities) {
+function RecordTable() {
+  /*
+  We don't want to build our own SOQL parser, so we discover the columns based on the data returned.
+  This means that we cannot find the columns of cross-object relationships, when the relationship field is null for all returned records.
+  We don't care, because we don't need a stable set of columns for our use case.
+  */
+  let columnIdx = new Map();
+  let header = ["_"];
+  function discoverColumns(record, prefix, row) {
+    for (let field in record) {
+      if (field == "attributes") {
+        continue;
+      }
+      let column = prefix + field;
+      let c;
+      if (columnIdx.has(column)) {
+        c = columnIdx.get(column);
+      } else {
+        c = header.length;
+        columnIdx.set(column, c);
+        for (let row of rt.table) {
+          row.push(undefined);
+        }
+        header[c] = column;
+        rt.colVisibilities.push(true);
+      }
+      row[c] = record[field];
+      if (typeof record[field] == "object" && record[field] != null) {
+        discoverColumns(record[field], column + ".", row);
+      }
+    }
+  }
   let rt = {
     records: [],
     table: [],
     rowVisibilities: [],
-    colVisibilities: columnVisibilities,
+    colVisibilities: [true],
+    countOfVisibleRecords: null,
+    isTooling: false,
     totalSize: -1,
     addToTable(expRecords) {
       rt.records = rt.records.concat(expRecords);
@@ -628,15 +657,10 @@ function RecordTable(vm, header, columnVisibilities) {
       }
       for (let record of expRecords) {
         let row = new Array(header.length);
+        row[0] = record;
         rt.table.push(row);
         rt.rowVisibilities.push(true);
-        for (let c = 0; c < header.length; c++) {
-          let obj = record;
-          header[c].split(".").forEach((path) => {
-            obj = obj[path];
-          });
-          row[c] = obj;
-        }
+        discoverColumns(record, "", row);
       }
     }
   };
@@ -769,8 +793,8 @@ class App extends React.Component {
     let {model} = this.props;
     let scriptInput = this.refs.script;
     //TODO SELECT NamespacePrefix FROM ApexClass GROUP BY NamespacePrefix
-    let queryLogs = "SELECT Id, Name, NamespacePrefix FROM ApexClass";
-    model.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryLogs), {}), model, model.apexClasses, (isFinished) => {
+    let queryApexClass = "SELECT Id, Name, NamespacePrefix FROM ApexClass";
+    model.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryApexClass), {}), model, model.apexClasses, (isFinished) => {
       if (!isFinished){
         return;
       }
@@ -812,7 +836,8 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
-
+    //TODO create a component dedicated without dom but react for table of result
+    // move data to state
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
 

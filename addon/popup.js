@@ -160,6 +160,11 @@ class App extends React.PureComponent {
     } else if (action === "tab") {
       refs.showAllDataBox.refs[target].click();
     }
+    if (e.key == "p") {
+      e.preventDefault();
+      this.refs.apexRunnerBtn.target = getLinkTarget(e);
+      this.refs.apexRunnerBtn.click();
+    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
@@ -292,7 +297,7 @@ class App extends React.PureComponent {
               h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "apexRunnerBtn", href: apexRunnerHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "A"), "pex"))
+              h("a", {ref: "apexRunnerBtn", href: apexRunnerHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Run A", h("u", {}, "p"), "ex"))
             ),
             h("div", {},
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))

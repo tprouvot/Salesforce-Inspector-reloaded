@@ -77,8 +77,8 @@ class App extends React.PureComponent {
       isFieldsPresent: false,
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
-      limitsHref: "limits.html?" + hostArg,
       apexRunnerHref: "apex-runner.html?" + hostArg,
+      limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
@@ -159,6 +159,11 @@ class App extends React.PureComponent {
       refs[target].click();
     } else if (action === "tab") {
       refs.showAllDataBox.refs[target].click();
+    }
+    if (e.key == "p") {
+      e.preventDefault();
+      this.refs.apexRunnerBtn.target = getLinkTarget(e);
+      this.refs.apexRunnerBtn.click();
     }
     if (e.key == "p") {
       e.preventDefault();

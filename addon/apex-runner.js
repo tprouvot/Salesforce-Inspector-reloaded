@@ -556,6 +556,7 @@ class Model {
     // other topic of dev console : /systemTopic/ApexExecutionOverlayResult /systemTopic/TestResult /systemTopic/ContainerDeployStateChange
     let advice = null;
     while (vm.isWorking) {
+      vm.executeStatus = "Polling logs";
       let response = await sfConn.rest("/cometd/" + apiVersion, {
         method: "POST",
         body: [
@@ -962,7 +963,7 @@ class App extends React.Component {
           h("h1", {}, "Execute Result"),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.executeStatus),
-            h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExecute}, "Stop"),
+            h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExecute}, "Stop polling logs"),
           )
         ),
         h("textarea", {id: "result-text", readOnly: true, value: model.executeError || "", hidden: model.executeError == null}),

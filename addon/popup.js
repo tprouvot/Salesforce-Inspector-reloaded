@@ -78,6 +78,7 @@ class App extends React.PureComponent {
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
+      apexRunnerHref: "apex-runner.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
@@ -105,6 +106,7 @@ class App extends React.PureComponent {
     this.setState({
       exportHref: "data-export.html?" + exportArg,
       importHref: "data-import.html?" + importArg,
+      apexRunnerHref: "data-import.html?" + limitsArg,
       limitsHref: "limits.html?" + limitsArg
     });
   }
@@ -206,7 +208,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, apexRunnerHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -288,6 +290,9 @@ class App extends React.PureComponent {
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
+            ),
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "apexRunnerBtn", href: apexRunnerHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "A"), "pex"))
             ),
             h("div", {},
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))

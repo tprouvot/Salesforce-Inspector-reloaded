@@ -14,6 +14,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // (and thereby the domain of the relevant cookie) cookie domains are therefore tried in sequence.
     if (currentDomain.endsWith("force.com.mcas.ms")) { // when the org is protected by Microsoft Defender for Cloud Apps (.mcas.ms domain), the extension won't have access to cookies
       sendResponse(currentDomain);
+      return;
     } else {
       chrome.cookies.get({url: request.url, name: "sid", storeId: sender.tab.cookieStoreId}, cookie => {
         if (!cookie) {

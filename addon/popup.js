@@ -17,7 +17,6 @@ let h = React.createElement;
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent) {
       if (e.data.insextInitResponse) {
-        //removeEventListener("message", initResponseHandler);
         init(e.data);
         initLinks(e.data);
       } else if (e.data.updateLocalStorage) {

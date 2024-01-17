@@ -5,6 +5,15 @@
     vertical-align: middle;
 }
 
+#insext .insext-alert {
+        height: 10px;
+        width: 10px;
+        padding: 2px;
+        background-color: #f00;
+        border-radius: 50%;
+        position: fixed;
+}
+
 #insext .insext-popup {
     box-sizing: border-box;
     width: 280px;

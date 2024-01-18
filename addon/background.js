@@ -12,30 +12,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // http://salesforce.stackexchange.com/questions/23277/different-session-ids-in-different-contexts
     // There is no straight forward way to unambiguously understand if the user authenticated against salesforce.com or cloudforce.com
     // (and thereby the domain of the relevant cookie) cookie domains are therefore tried in sequence.
-    if (currentDomain.endsWith("force.com.mcas.ms")) { // when the org is protected by Microsoft Defender for Cloud Apps (.mcas.ms domain), the extension won't have access to cookies
-      sendResponse(currentDomain);
-      return;
-    } else {
-      chrome.cookies.get({url: request.url, name: "sid", storeId: sender.tab.cookieStoreId}, cookie => {
-        if (!cookie) {
-          sendResponse(currentDomain);
-          return;
-        }
-        let [orgId] = cookie.value.split("!");
-        let orderedDomains = ["salesforce.com", "cloudforce.com", "salesforce.mil", "cloudforce.mil", "sfcrmproducts.cn"];
+    chrome.cookies.get({url: request.url, name: "sid", storeId: sender.tab.cookieStoreId}, cookie => {
+      if (!cookie) {
+        sendResponse(currentDomain);
+        return;
+      }
+      const [orgId] = cookie.value.split("!");
+      const orderedDomains = ["salesforce.com", "cloudforce.com", "salesforce.mil", "cloudforce.mil", "sfcrmproducts.cn"];
 
-        orderedDomains.forEach(currentDomain => {
-          chrome.cookies.getAll({name: "sid", domain: currentDomain, secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
-            let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
-            if (sessionCookie) {
-              sendResponse(sessionCookie.domain);
-            } else if (orderedDomains[orderedDomains.length] === currentDomain){
-              sendResponse(currentDomain);
-            }
-          });
+      orderedDomains.forEach(currentDomain => {
+        chrome.cookies.getAll({name: "sid", domain: currentDomain, secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
+          let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
+          if (sessionCookie) {
+            sendResponse(sessionCookie.domain);
+            return;
+          }
         });
       });
-    }
+      sendResponse(currentDomain); //default
+    });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
   if (request.message == "getSession") {

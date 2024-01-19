@@ -251,25 +251,22 @@ class App extends React.PureComponent {
           )
         ),
         !latestNotesViewed && h("div", {className: "slds-notify slds-notify_alert", role: "alert"},
-          h("span", {className: "slds-assistive-text"}, "Update notification"),
-          h("span", {className: "slds-icon_container slds-icon-utility-user slds-m-right_x-small", title: "Description"},
-            h("svg", {className: "slds-icon slds-icon_small", viewBox: "0 0 520 520", fill: "#fff"},
-              h("path", {
-                d: `
-                M460 330h-5a35 35 0 0 1-35-35V180A160 160 0 0 0 252 20c-86 4-152 78-152 165v111c0
-                19-16 34-35 34h-5c-22 0-40 19-40 41v15c0 7 7 14 15 14h450c8 0 15-7 15-15v-15a40 40
-                0 0 0-40-40zM309 440h-98a10 10 0 0 0-10 12c5 28 30 48 59 48s54-21 59-48a10 10 0 0 0-10-12z
-                `})
-            )
+          h("span", {className: "slds-assistive-text"}, "Latest Version Notification"),
+          h("span", {className: "slds-icon_container slds-m-right_x-small", title: "Notification"},
+            h("svg", {className: "slds-icon slds-icon_small slds-icon-text-default", viewBox: "0 0 52 52"},
+              h("use", {xlinkHref: "symbols.svg#notification"})
+            ),
           ),
           h("h2", {}, "Current Version: " + addonVersion,
             h("p", {}, ""),
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", target: "_blank", onClick: this.onReleaseNotesViewed, "data-version": addonVersion}, "See What's New")
           ),
           h("div", {className: "slds-notify__close"},
-            h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close"},
-              h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"}),
-              h("span", {className: "slds-assistive-text"}, "Close")
+            h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: this.onReleaseNotesViewed, "data-version": addonVersion},
+            h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"},
+            h("use", {xlinkHref: "symbols.svg#close"})
+          ),
+              h("span", {className: "slds-assistive-text"}, "Close"),
             )
           )
         ),
@@ -1723,6 +1720,45 @@ class AllDataRecordDetails extends React.PureComponent {
     } else {
       return null;
     }
+  }
+}
+
+// SLDS Alert Banner - spec https://www.lightningdesignsystem.com/components/alert/
+// props: {style: "base"|"warning"|"error"|"offline", icon: any SVG, bannerText: "", linkOnClick: function}
+class AlertBanner extends React.PureComponent {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    let {type, iconName, iconTitle, bannerText, linkProps, assistiveText} = this.props;
+    const typeClassMap = {
+      "warning": " slds-theme_warning",
+      "error": " slds-theme_error",
+      "offline": " slds-theme_offline"
+    };
+    const typeClass = typeClassMap[type] || "";
+
+    return (
+      h("div", {className: `slds-notify slds-notify_alert${typeClass}`, role: "alert"},
+        h("span", {className: "slds-assistive-text"}, assistiveText | "Notification"),
+        h("span", {className: "slds-icon_container slds-m-right_x-small", title: iconTitle},
+          h("svg", {className: "slds-icon slds-icon_small slds-icon-text-default", viewBox: "0 0 52 52"},
+            h("use", {xlinkHref: `symbols.svg#${iconName}`})
+          ),
+        ),
+        h("h2", {}, bannerText,
+          h("p", {}, ""),
+          h("a", {href: linkProps?.href, target: linkProps?.target, onClick: () => {linkOnClick()}}, "See What's New")
+        ),
+        h("div", {className: "slds-notify__close"},
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close"},
+            h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"}),
+            h("span", {className: "slds-assistive-text"}, "Close")
+          )
+        )
+      )
+    );
   }
 }
 

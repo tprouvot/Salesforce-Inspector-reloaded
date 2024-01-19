@@ -49,7 +49,7 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
       inDevConsole,
       inLightning,
       inInspector,
-      addonVersion,
+      addonVersion
     }), document.getElementById("root"));
 
   });
@@ -78,12 +78,14 @@ class App extends React.PureComponent {
       isFieldsPresent: false,
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
-      limitsHref: "limits.html?" + hostArg
+      limitsHref: "limits.html?" + hostArg,
+      latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
+    this.onReleaseNotesViewed = this.onReleaseNotesViewed.bind(this);
   }
   onContextRecordChange(e) {
     let {sfHost} = this.props;
@@ -119,7 +121,12 @@ class App extends React.PureComponent {
       isFieldsPresent: e.data.isFieldsPresent
     });
   }
-
+  onReleaseNotesViewed(e) {
+    localStorage.setItem("latestReleaseNotesVersionViewed", e.currentTarget.dataset.version);
+    this.setState({
+      latestNotesViewed: true
+    });
+  }
   onShortcutKey(e) {
     if (e.key == "m") {
       e.preventDefault();
@@ -216,7 +223,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, limitsHref, isFieldsPresent} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -243,30 +250,30 @@ class App extends React.PureComponent {
             ),
             "Salesforce Inspector Reloaded"
           )
-        ), 
-        h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small", style: {color: "white", backgroundColor: "navy"}}, "New! version: 1.23",
-        h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", target: "_blank", style: {marginLeft: "5px"}}, "View Release Notes")),
-        h("div", {className: "slds-notify slds-notify_alert", role: "alert"},{}),
-        //   h("span", {className: "slds-assistive-text"}, "Update notification"),
-        //     h("span", {className: "slds-icon-container slds-icon-utility-user slds-m-right_x-small", title: "Update notification"},
-        //       h("svg", {className: "slds-icon slds-icon_small", viewBox: "0 0 520 520", fill: "#fff"},
-        //         h("path", {d: `m227 454-13-10c-14-10-14-30-14-40v-29c0-8-7-15-15-15h-60c-8 0-15 7-15 15v77c0 27 16 48 41
-        //                        48h49c29 0 31-20 31-20s5-18-4-26zm223-274V43c0-24-30-31-46-15l-89 84a76 76 0 0 1-50 17H113a97 
-        //                        97 0 0 0-93 98v2a90 90 0 0 0 93 91h152a80 80 0 0 1 51 20l88 86c16 16 
-        //                        46 10 46-14V276c30 0 48-21 48-48s-18-48-48-48z
-        //           `}
-        //       ))
-        //     ),
-        //     h("h2", "Salesforce Inspector Reloaded has been updated!"),
-        //        h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", target: "_blank"}, "View Release Notes")
-        //     ,
-        //     h("div", {className: "slds-notify__close"},
-        //       h("button", {className: "slds-button slds-button_icon slds-button_icon-small", title: "Close"},)
-        //     )
-        //   ),
-            
-            
-        
+        ),
+        !latestNotesViewed && h("div", {className: "slds-notify slds-notify_alert", role: "alert"},
+          h("span", {className: "slds-assistive-text"}, "Update notification"),
+          h("span", {className: "slds-icon_container slds-icon-utility-user slds-m-right_x-small", title: "Description"},
+            h("svg", {className: "slds-icon slds-icon_small", viewBox: "0 0 520 520", fill: "#fff"},
+              h("path", {
+                d: `
+                M460 330h-5a35 35 0 0 1-35-35V180A160 160 0 0 0 252 20c-86 4-152 78-152 165v111c0
+                19-16 34-35 34h-5c-22 0-40 19-40 41v15c0 7 7 14 15 14h450c8 0 15-7 15-15v-15a40 40
+                0 0 0-40-40zM309 440h-98a10 10 0 0 0-10 12c5 28 30 48 59 48s54-21 59-48a10 10 0 0 0-10-12z
+                `})
+            )
+          ),
+          h("h2", {}, "Current Version: " + addonVersion,
+            h("p", {}, ""),
+            h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", target: "_blank", onClick: this.onReleaseNotesViewed, "data-version": addonVersion}, "See What's New")
+          ),
+          h("div", {className: "slds-notify__close"},
+            h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close"},
+              h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"}),
+              h("span", {className: "slds-assistive-text"}, "Close")
+            )
+          )
+        ),
         h("div", {id: "expiredTokenLink", className: "hide"},
           h("div", {className: "slds-p-top_x-small slds-p-horizontal_x-small slds-text-align_center "},
             h("span", {className: "text-error"}, "⚠ Access Token expired!"),

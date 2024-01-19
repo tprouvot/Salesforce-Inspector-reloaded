@@ -85,9 +85,6 @@ function initButton(sfHost, inInspector) {
     let popupArrowOrientation = iFrameLocalStorage.popupArrowOrientation ? iFrameLocalStorage.popupArrowOrientation : "vertical";
     let popupArrowPosition = iFrameLocalStorage.popupArrowPosition ? (iFrameLocalStorage.popupArrowPosition + "%") : "122px";
     let img = document.createElement("img");
-    let alert = document.createElement("div");
-    alert.className = "insext-alert";
-    btn.appendChild(alert);
     if (popupArrowOrientation == "vertical") {
       rootElement.style.right = 0;
       rootElement.style.top = popupArrowPosition;
@@ -100,7 +97,6 @@ function initButton(sfHost, inInspector) {
       buttonElement.classList.add("insext-btn-horizontal");
     }
     buttonElement.appendChild(img);
-    buttonElement.appendChild(alert);
   }
 
   function loadPopup() {

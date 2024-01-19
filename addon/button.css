@@ -5,15 +5,6 @@
     vertical-align: middle;
 }
 
-#insext .insext-alert {
-        height: 10px;
-        width: 10px;
-        padding: 2px;
-        background-color: #f00;
-        border-radius: 50%;
-        position: fixed;
-}
-
 #insext .insext-popup {
     box-sizing: border-box;
     width: 280px;
@@ -86,13 +77,13 @@
 #insext .insext-btn-vertical:hover,
 #insext.insext-active .insext-btn-vertical {
     opacity: 1;
-    width: 20px; 
+    width: 20px;
 }
 
 #insext .insext-btn-horizontal:hover,
 #insext.insext-active .insext-btn-horizontal {
     opacity: 1;
-    height: 20px; 
+    height: 20px;
 }
 
 #insext .insext-btn img {
@@ -119,14 +110,14 @@
 }
 .checkboxScrollProd{
     position: fixed;
-    top: 21px; 
+    top: 21px;
     right: 78px;
     z-index: 10000;
 }
 .labelCheckboxScrollSandbox{
     position: fixed;
-    top: 7px; 
-    right: 100px; 
+    top: 7px;
+    right: 100px;
     color: white;
     z-index: 10000;
 }

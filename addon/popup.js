@@ -182,6 +182,10 @@ class App extends React.PureComponent {
       e.preventDefault();
       this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickNewBtn();
     }
+    if (e.key == "p") {
+      e.preventDefault();
+      this.refs.optionsBtn.click();
+    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
@@ -316,7 +320,7 @@ class App extends React.PureComponent {
           ),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
             h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "options", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Options"))
+              h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
             ),
           )
         ),

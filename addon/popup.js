@@ -1149,8 +1149,8 @@ class AllDataBoxOrg extends React.PureComponent {
     if (instanceStatusLocal == null){
       fetch(`https://api.status.salesforce.com/v1/instances/${instanceName}/status`).then(response => {
         response.json().then(result => {
-          //manually sort maintenance since list in not ordered by default
-          result.Maintenances.sort((a, b) => (a.plannedStartTime > b.plannedStartTime) ? 1 : ((b.plannedStartTime > a.plannedStartTime) ? -1 : 0));
+          //manually filter to get only the future releases (based on today's date) and sort maintenance since list in not ordered by default
+          result.Maintenances = result.Maintenances.filter(dt => dt.plannedEndTime >= new Date().toISOString()).sort((a, b) => (a.plannedStartTime > b.plannedStartTime) ? 1 : ((b.plannedStartTime > a.plannedStartTime) ? -1 : 0));
           this.setState({instanceStatus: result});
           sessionStorage.setItem(sfHost + "_instanceStatus", JSON.stringify(result));
         });

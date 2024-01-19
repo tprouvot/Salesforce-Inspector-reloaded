@@ -106,7 +106,7 @@ class App extends React.PureComponent {
     this.setState({
       exportHref: "data-export.html?" + exportArg,
       importHref: "data-import.html?" + importArg,
-      apexRunnerHref: "data-import.html?" + limitsArg,
+      apexRunnerHref: "apex-runner.html?" + limitsArg,
       limitsHref: "limits.html?" + limitsArg
     });
   }

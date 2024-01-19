@@ -1,0 +1,34 @@
+body {
+    --inspector-black: #000000;
+    --inspector-white: #FFFFFF;
+
+    --inspector-light-blue: #1789EE;
+    --inspector-light-gray: #787878;
+    --inspector-light-red: #C3423F;
+    --inspector-light-yellow: #FDE74C;
+    --inspector-light-purple: #990099;
+    --inspector-light-pink: #E0A4B5;
+
+    --inspector-dark-blue: #00396B;
+    --inspector-dark-gray: #404E4D;
+    --inspector-dark-red: #A31914;
+    --inspector-dark-yellow: #999900;
+    --inspector-dark-purple: #49416D;
+    --inspector-dark-pink: #BD4F6C;
+}
+
+[data-theme="light"] {
+    --inspector-background: var(--inspector-white);
+    --inspector-primary: var(--inspector-light-blue);
+    --inspector-accent: var(--inspector-black);
+    --inspector-error: var(--inspector-light-red);
+    --inspector-success: var(--inspector-light-green);
+}
+
+[data-theme="dark"] {
+    --inspector-background: var(--inspector-white);
+    --inspector-primary: var(--inspector-dark-blue);
+    --inspector-accent: var(--inspector-black);
+    --inspector-error: var(--inspector-dark-red);
+    --inspector-success: var(--inspector-dark-green);
+}

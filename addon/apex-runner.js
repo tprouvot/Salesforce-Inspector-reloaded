@@ -80,6 +80,7 @@ class Model {
     this.showHelp = false;
     this.userInfo = "...";
     this.userId = null;
+    this.timeout = null;
     this.winInnerHeight = 0;
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
@@ -387,6 +388,10 @@ class Model {
 
   doExecute() {
     let vm = this; // eslint-disable-line consistent-this
+    //if polling have been stoped resume it.
+    if (!vm.isWorking) {
+      this.enableLogs();
+    }
     let script = vm.scriptInput.value;
     vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/tooling/executeAnonymous/?anonymousBody=" + encodeURIComponent(script), {})
       .catch(error => {
@@ -428,10 +433,12 @@ class Model {
       }));
   }
   stopExecut() {
-    this.isWorking = false;
+    this.disableLogs();
   }
   disableLogs() {
-    //DO NOTHING because trace flag have is timed
+    clearTimeout(this.timeout);
+    this.executeStatus = "Stop polling";
+    this.isWorking = false;
   }
   getTraceFlags(DTnow, debugTimeInMs){
     try {
@@ -484,6 +491,15 @@ class Model {
       return null;
     }
   }
+  resumePolling() {
+    let vm = this; // eslint-disable-line consistent-this
+    this.executeStatus = "Polling finished";
+    this.isWorking = false;
+    //TODO prompt resume or close + maj status
+    if (confirm("Resume Polling of logs?")) {
+      vm.enableLogs();
+    }
+  }
   async enableLogs() {
     const DTnow = new Date(Date.now());
     const debugTimeInMs = 15 * 60 * 1000;
@@ -504,6 +520,16 @@ class Model {
         throw new Error('Debug Level with developerName = "SFDC_DevConsole" not found');
       }
     }
+    let vm = this; // eslint-disable-line consistent-this
+    vm.isWorking = true;
+    vm.executeStatus = "Polling logs";
+    //after 15 min auto disable logs
+    this.timeout = setTimeout(() => {
+      vm.resumePolling();
+    }, debugTimeInMs);
+
+    //start to poll logs
+    vm.pollLogs(vm);
   }
 
   async pollLogs(vm) {
@@ -511,7 +537,6 @@ class Model {
     logs.describeInfo = vm.describeInfo;
     logs.sfHost = vm.sfHost;
     let pollId = 1;
-    vm.isWorking = true;
     let handshake = await sfConn.rest("/cometd/" + apiVersion, {
       method: "POST",
       body: [
@@ -556,7 +581,6 @@ class Model {
     // other topic of dev console : /systemTopic/ApexExecutionOverlayResult /systemTopic/TestResult /systemTopic/ContainerDeployStateChange
     let advice = null;
     while (vm.isWorking) {
-      vm.executeStatus = "Polling logs";
       let response = await sfConn.rest("/cometd/" + apiVersion, {
         method: "POST",
         body: [
@@ -804,7 +828,6 @@ class App extends React.Component {
         console.error(error);
       });
 
-    model.pollLogs(model);
     model.setScriptInput(scriptInput);
     //Set the cursor focus on script text area
     if (localStorage.getItem("disableScriptInputAutoFocus") !== "true"){

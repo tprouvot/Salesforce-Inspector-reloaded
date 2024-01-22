@@ -124,7 +124,7 @@ Linting : to assure indentation, formatting and best practices coherence, please
 ### Unit tests
 
 1. Set up an org (e.g. a Developer Edition) and apply the following customizations:
-   1. Everything described in metadata in `test/`. Push to org with `sf deploy metadata -d test/ -o [your-test-org-alias]` or legacy: `sfdx force:source:deploy -p test/ -u [your-test-org-alias]`.
+   1. Everything described in metadata in `test/`. Push to org with `sf deploy metadata -d test/ -o [your-test-org-alias]` or legacy `sfdx force:source:deploy -p test/ -u [your-test-org-alias]`.
    2. Make sure your user language is set to English.
    3. Ensure _Allow users to relate a contact to multiple accounts_ is enabled (Setup → Account Settings).
    4. Ensure the org has no _namespace prefix_ (Setup → Package Manager).

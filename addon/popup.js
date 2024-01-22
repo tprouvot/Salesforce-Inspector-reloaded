@@ -221,27 +221,31 @@ class App extends React.PureComponent {
         ),
         !latestNotesViewed && h(AlertBanner, {type: "base",
           bannerText: `Current Version: ${addonVersion}`,
-          iconName: "notification", iconTitle: "Notification",
+          iconName: "notification",
+          iconTitle: "Notification",
           assistiveTest: "Version Update Notification",
           onClose: () => this.updateReleaseNotesViewed(addonVersion),
           link: {
             text: "See What's New",
             props: {
               href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/",
-              target: "_blank", onClick: () => this.updateReleaseNotesViewed(addonVersion)
+              target: "_blank",
+              onClick: () => this.updateReleaseNotesViewed(addonVersion)
             }
           }
         }),
         h("div", {id: "expiredTokenLink", className: "hide"},
           h(AlertBanner, {type: "warning",
             bannerText: "Access Token Expired",
-            iconName: "warning", iconTitle: "Warning",
+            iconName: "warning",
+            iconTitle: "Warning",
             assistiveTest: "Access Token Expired",
             onClose: null,
             link: {
               text: "Generate New Token",
               props: {
-                href: oauthAuthorizeUrl, target: linkTarget
+                href: oauthAuthorizeUrl,
+                target: linkTarget
               }
             }
           })
@@ -1688,9 +1692,6 @@ class AllDataRecordDetails extends React.PureComponent {
 // bannerText: header, link: {text, props}, assistiveText: icon description, onClose: function}
 class AlertBanner extends React.PureComponent {
   // From SLDS Alert Banner spec https://www.lightningdesignsystem.com/components/alert/
-  constructor(props) {
-    super(props);
-  }
 
   render() {
     let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
@@ -1709,7 +1710,7 @@ class AlertBanner extends React.PureComponent {
           link && h("a", link.props, link.text)
         ),
         onClose && h("div", {className: "slds-notify__close"},
-            h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},
             h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"},
               h("use", {xlinkHref: "symbols.svg#close"})
             ),

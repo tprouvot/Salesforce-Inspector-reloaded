@@ -3,7 +3,7 @@
 ## Version 1.23
 
 - Add the possibility to hide fields API names after users clicked "Show fields API names"
-- Add AlertBanner component for Alerts following [SLDS guidelines](https://www.lightningdesignsystem.com/components/alert/). Lost Session warning converted to AlertBanner. (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Add AlertBanner component for Alerts following [SLDS guidelines](https://www.lightningdesignsystem.com/components/alert/). Lost Session warning converted to AlertBanner (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Add "New Version Notice" AlertBanner. "What's New" link opens release notes, close icon hides without opening notes. Notification reappears for new versions. Release notes are still always available by clicking the version number at bottom. [Issue #51](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/51) (contribution by [Nathan Shulman](https://github.com/nshulman))
 
 ## Version 1.22

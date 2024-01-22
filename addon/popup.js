@@ -157,6 +157,10 @@ class App extends React.PureComponent {
     } else if (action === "tab") {
       refs.showAllDataBox.refs[target].click();
     }
+    if (e.key == "p") {
+      e.preventDefault();
+      this.refs.optionsBtn.click();
+    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
@@ -302,7 +306,7 @@ class App extends React.PureComponent {
           ),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
             h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "options", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Options"))
+              h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
             ),
           )
         ),
@@ -1131,8 +1135,8 @@ class AllDataBoxOrg extends React.PureComponent {
     if (instanceStatusLocal == null){
       fetch(`https://api.status.salesforce.com/v1/instances/${instanceName}/status`).then(response => {
         response.json().then(result => {
-          //manually sort maintenance since list in not ordered by default
-          result.Maintenances.sort((a, b) => (a.plannedStartTime > b.plannedStartTime) ? 1 : ((b.plannedStartTime > a.plannedStartTime) ? -1 : 0));
+          //manually filter to get only the future releases (based on today's date) and sort maintenance since list in not ordered by default
+          result.Maintenances = result.Maintenances.filter(dt => dt.plannedEndTime >= new Date().toISOString()).sort((a, b) => (a.plannedStartTime > b.plannedStartTime) ? 1 : ((b.plannedStartTime > a.plannedStartTime) ? -1 : 0));
           this.setState({instanceStatus: result});
           sessionStorage.setItem(sfHost + "_instanceStatus", JSON.stringify(result));
         });

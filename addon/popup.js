@@ -1413,7 +1413,7 @@ class UserDetails extends React.PureComponent {
               )
             )
           )),
-        h("div", {ref: "userButtons", className: "center small-font"},
+        h("div", {ref: "userButtons", className: "user-buttons center small-font"},
           h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Details"),
           h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
           h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),

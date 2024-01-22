@@ -158,10 +158,6 @@ class App extends React.PureComponent {
     } else if (action === "tab") {
       refs.showAllDataBox.refs[target].click();
     }
-    if (e.key == "p") {
-      e.preventDefault();
-      this.refs.optionsBtn.click();
-    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");

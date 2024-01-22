@@ -4,7 +4,8 @@
   Only CSS classes currently used - feel free to add if new ones should be needed
   See https://www.lightningdesignsystem.com/resources/downloads/ for latest version and archives
 
-  Current version used: 2.21.1
+  Current versions used: 2.21.1
+  - 2.21.5 for AlertBanner
 */
 
 /*! normalize.css v3.0.2 | MIT License | git.io/normalize */
@@ -4744,12 +4745,151 @@ a.slds-button--inverse:focus{
 }
 
 /* Theme */
-
+.slds-theme {
+}
+.slds-theme_default {
+  background-color: var(--slds-g-color-neutral-base-100, white);
+  color: var(--slds-g-color-neutral-base-10, #181818);
+}
 .slds-theme_shade,
 .slds-theme--shade{
   background-color:var(--slds-g-color-neutral-base-95, #f3f3f3);
 }
+.slds-theme_info {
+  color: var(--slds-g-color-neutral-base-100, white);
+  background-color: var(--slds-g-color-neutral-base-50, #747474);
+}
 
+.slds-theme--info a:not(.slds-button--neutral) {
+  color: var(--slds-g-color-neutral-base-100, white);
+  text-decoration: underline;
+}
+
+.slds-theme--info a:not(.slds-button--neutral):visited {
+  color: var(--slds-g-color-neutral-base-100, white);
+}
+
+.slds-theme--info a:not(.slds-button--neutral):focus {
+  text-decoration: none;
+}
+
+.slds-theme--info a:not(.slds-button--neutral):active {
+  color: var(--slds-g-color-neutral-100-opacity-50, rgba(255, 255, 255, 0.5));
+}
+
+.slds-theme--info a:not(.slds-button--neutral)[disabled] {
+  color: var(--slds-g-color-neutral-100-opacity-10, rgba(255, 255, 255, 0.15));
+}
+.slds-theme_warning {
+  background-color: var(--slds-g-color-warning-base-60, #fe9339) !important;
+  color: var(--slds-g-color-neutral-base-10, #181818) !important;
+}
+.slds-theme_warning a {
+  color: var(--slds-g-color-neutral-base-10, #181818) !important;
+  text-decoration: underline !important;
+}
+.slds-theme_warning a:link,
+.slds-theme_warning a:visited {
+  color: var(--slds-g-color-neutral-base-10, #181818) !important;
+}
+.slds-theme_warning a:hover,
+.slds-theme_warning a:focus {
+  text-decoration: none !important;
+}
+.slds-theme_warning a:focus {
+  -webkit-box-shadow: 0 0 3px var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  box-shadow: 0 0 3px var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  border: 1px solid var(--slds-g-color-neutral-base-30, #514f4d) !important;
+}
+.slds-theme_warning a:active {
+  color: var(--slds-g-color-neutral-base-30, #514f4d) !important;
+}
+.slds-theme_warning a[disabled]a[disabled] {
+  color: var(--slds-g-color-neutral-base-30, #514f4d) !important;
+}
+.slds-theme_warning button {
+  color: var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  text-decoration: underline !important;
+}
+.slds-theme_warning button:hover {
+  color: var(--slds-g-color-neutral-base-50, #706e6b) !important;
+}
+.slds-theme_warning button:focus {
+  color: var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  -webkit-box-shadow: 0 0 3px var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  box-shadow: 0 0 3px var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  border: 1px solid var(--slds-g-color-neutral-base-30, #514f4d) !important;
+}
+.slds-theme_warning button:active {
+  color: var(--slds-g-color-neutral-base-50, #706e6b) !important;
+}
+.slds-theme_warning .slds-icon,
+.slds-theme_warning .slds-button__icon {
+  fill: var(--slds-g-color-neutral-base-30, #514f4d) !important;
+}
+.slds-theme_error {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+  background-color: var(--slds-g-color-error-base-40, #ea001e) !important;
+}
+
+.slds-theme--error a:not(.slds-button--neutral) {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+  text-decoration: underline !important;
+}
+
+.slds-theme--error a:not(.slds-button--neutral):visited {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+}
+
+.slds-theme--error a:not(.slds-button--neutral):focus {
+  text-decoration: none !important;
+}
+
+.slds-theme--error a:not(.slds-button--neutral):active {
+  color: var(--slds-g-color-neutral-100-opacity-50, rgba(255, 255, 255, 0.5)) !important;
+}
+
+.slds-theme--error a:not(.slds-button--neutral)[disabled] {
+  color: var(--slds-g-color-neutral-100-opacity-10, rgba(255, 255, 255, 0.15)) !important;
+}
+.slds-theme_offline {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+  background-color: var(--slds-g-color-neutral-base-30, #444) !important;
+}
+
+.slds-theme--offline a:not(.slds-button--neutral) {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+  text-decoration: underline !important;
+}
+
+.slds-theme--offline a:not(.slds-button--neutral):visited {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+}
+
+.slds-theme--offline a:not(.slds-button--neutral):focus {
+  text-decoration: none !important;
+}
+
+.slds-theme--offline a:not(.slds-button--neutral):active {
+  color: var(--slds-g-color-neutral-100-opacity-50, rgba(255, 255, 255, 0.5)) !important;
+}
+
+.slds-theme--offline a:not(.slds-button--neutral)[disabled] {
+  color: var(--slds-g-color-neutral-100-opacity-10, rgba(255, 255, 255, 0.15)) !important;
+}
+.slds-theme_alert-texture {
+  background-image: linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.025) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.025) 50%,
+    rgba(0, 0, 0, 0.025) 75%,
+    transparent 75%,
+    transparent
+  ) !important;
+  background-size: 64px 64px !important;
+}
 
 /* Alert Support */
 /*! Lightning Design System 2.21.5 */

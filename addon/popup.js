@@ -1693,7 +1693,6 @@ class AlertBanner extends React.PureComponent {
     let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
     const theme = ["warning", "error", "offline"].includes(type) ? type : "info";
     const themeClass = `slds-theme_${theme}`;
-    const themeIcon = ` slds-icon-utility-${theme}`;
 
     return (
       h("div", {className: `slds-notify slds-notify_alert ${themeClass}`, role: "alert"},
@@ -1714,8 +1713,8 @@ class AlertBanner extends React.PureComponent {
           ),
               h("span", {className: "slds-assistive-text"}, "Close"),
             )
-          )
         )
+      )
     );
   }
 }

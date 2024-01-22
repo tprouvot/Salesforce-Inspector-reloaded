@@ -3213,6 +3213,31 @@ a.slds-button--inverse:focus{
   fill:var(--slds-c-icon-color-foreground, var(--sds-c-icon-color-foreground, var(--slds-g-color-neutral-base-100, white)));
 }
 
+.slds-icon_xx-small {
+  width: 0.875rem;
+  height: 0.875rem;
+  line-height: 1;
+}
+.slds-icon_x-small {
+  width: 1rem;
+  height: 1rem;
+  line-height: 1;
+}
+.slds-icon_small {
+  width: 1.5rem;
+  height: 1.5rem;
+  line-height: 1;
+}
+.slds-icon_neither-small-nor-x-small {
+  width: 1.3rem;
+  height: 1.3rem;
+  line-height: 1;
+}
+.slds-icon_large {
+  width: 3rem;
+  height: 3rem;
+}
+
 .slds-icon_container,
 .slds-icon__container{
   display:inline-block;

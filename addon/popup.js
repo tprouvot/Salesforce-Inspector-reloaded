@@ -1683,9 +1683,11 @@ class AllDataRecordDetails extends React.PureComponent {
   }
 }
 
-// SLDS Alert Banner - spec https://www.lightningdesignsystem.com/components/alert/
-// props: {style: "base"|"warning"|"error"|"offline", icon: any SVG, bannerText: "", linkOnClick: function}
+
+// props: {style: "base"|"warning"|"error"|"offline", icon: utility SVG name (without utility prefix),
+// bannerText: header, link: {text, props}, assistiveText: icon description, onClose: function}
 class AlertBanner extends React.PureComponent {
+  // From SLDS Alert Banner spec https://www.lightningdesignsystem.com/components/alert/
   constructor(props) {
     super(props);
   }
@@ -1694,12 +1696,11 @@ class AlertBanner extends React.PureComponent {
     let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
     const theme = ["warning", "error", "offline"].includes(type) ? type : "info";
     const themeClass = `slds-theme_${theme}`;
-
     return (
       h("div", {className: `slds-notify slds-notify_alert ${themeClass}`, role: "alert"},
         h("span", {className: "slds-assistive-text"}, assistiveText | "Notification"),
-        h("span", {className: "slds-icon_container slds-m-right_x-small", title: iconTitle},
-          h("svg", {className: "slds-icon slds-icon_small slds-icon-text-default", viewBox: "0 0 52 52"},
+        h("span", {className: "slds-icon_container slds-m-right_small", title: iconTitle},
+          h("svg", {className: "slds-icon slds-icon_neither-small-nor-x-small slds-icon-text-default", viewBox: "0 0 52 52"},
             h("use", {xlinkHref: `symbols.svg#${iconName}`})
           ),
         ),
@@ -1710,16 +1711,15 @@ class AlertBanner extends React.PureComponent {
         onClose && h("div", {className: "slds-notify__close"},
             h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},
             h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"},
-            h("use", {xlinkHref: "symbols.svg#close"})
-          ),
-              h("span", {className: "slds-assistive-text"}, "Close"),
-            )
+              h("use", {xlinkHref: "symbols.svg#close"})
+            ),
+            h("span", {className: "slds-assistive-text"}, "Close"),
+          )
         )
       )
     );
   }
 }
-
 class AllDataSearch extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -1732,8 +1732,8 @@ class AllDataSearch extends React.PureComponent {
     this.onAllDataFocus = this.onAllDataFocus.bind(this);
     this.onAllDataBlur = this.onAllDataBlur.bind(this);
     this.onAllDataKeyDown = this.onAllDataKeyDown.bind(this);
-    this.updateAllDataInput = this.updateAllDataInput.bind(this);
     this.onAllDataArrowClick = this.onAllDataArrowClick.bind(this);
+    this.updateAllDataInput = this.updateAllDataInput.bind(this);
   }
   componentDidMount() {
     let {queryString} = this.state;

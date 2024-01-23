@@ -17,7 +17,6 @@ let h = React.createElement;
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent) {
       if (e.data.insextInitResponse) {
-        //removeEventListener("message", initResponseHandler);
         init(e.data);
         initLinks(e.data);
       } else if (e.data.updateLocalStorage) {
@@ -183,6 +182,10 @@ class App extends React.PureComponent {
       e.preventDefault();
       this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickNewBtn();
     }
+    if (e.key == "p") {
+      e.preventDefault();
+      this.refs.optionsBtn.click();
+    }
   }
   onChangeApi(e) {
     localStorage.setItem("apiVersion", e.target.value + ".0");
@@ -317,7 +320,7 @@ class App extends React.PureComponent {
           ),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
             h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "options", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Options"))
+              h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
             ),
           )
         ),
@@ -1146,8 +1149,8 @@ class AllDataBoxOrg extends React.PureComponent {
     if (instanceStatusLocal == null){
       fetch(`https://api.status.salesforce.com/v1/instances/${instanceName}/status`).then(response => {
         response.json().then(result => {
-          //manually sort maintenance since list in not ordered by default
-          result.Maintenances.sort((a, b) => (a.plannedStartTime > b.plannedStartTime) ? 1 : ((b.plannedStartTime > a.plannedStartTime) ? -1 : 0));
+          //manually filter to get only the future releases (based on today's date) and sort maintenance since list in not ordered by default
+          result.Maintenances = result.Maintenances.filter(dt => dt.plannedEndTime >= new Date().toISOString()).sort((a, b) => (a.plannedStartTime > b.plannedStartTime) ? 1 : ((b.plannedStartTime > a.plannedStartTime) ? -1 : 0));
           this.setState({instanceStatus: result});
           sessionStorage.setItem(sfHost + "_instanceStatus", JSON.stringify(result));
         });
@@ -1410,7 +1413,7 @@ class UserDetails extends React.PureComponent {
               )
             )
           )),
-        h("div", {ref: "userButtons", className: "center small-font"},
+        h("div", {ref: "userButtons", className: "user-buttons center small-font"},
           h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Details"),
           h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
           h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),

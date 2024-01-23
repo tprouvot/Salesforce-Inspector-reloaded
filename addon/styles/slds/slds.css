@@ -507,7 +507,7 @@ img{
 .slds-button + .slds-button-group-list{
   margin-left:0.25rem;
 }
-.slds-button + .slds-button{
+.user-buttons>.slds-button + .slds-button{
   margin-left:0.25rem;
 }
 

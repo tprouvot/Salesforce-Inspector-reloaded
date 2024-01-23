@@ -48,7 +48,7 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
       inDevConsole,
       inLightning,
       inInspector,
-      addonVersion,
+      addonVersion
     }), document.getElementById("root"));
 
   });
@@ -77,12 +77,14 @@ class App extends React.PureComponent {
       isFieldsPresent: false,
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
-      limitsHref: "limits.html?" + hostArg
+      limitsHref: "limits.html?" + hostArg,
+      latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
+    this.updateReleaseNotesViewed = this.updateReleaseNotesViewed.bind(this);
   }
   onContextRecordChange(e) {
     let {sfHost} = this.props;
@@ -118,73 +120,43 @@ class App extends React.PureComponent {
       isFieldsPresent: e.data.isFieldsPresent
     });
   }
-
+  updateReleaseNotesViewed(version) {
+    localStorage.setItem("latestReleaseNotesVersionViewed", version);
+    this.setState({
+      latestNotesViewed: true
+    });
+  }
   onShortcutKey(e) {
-    if (e.key == "m") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickShowDetailsBtn();
+    const refs = this.refs;
+    const actionMap = {
+      "m": ["all", "clickShowDetailsBtn"],
+      "a": ["all", "clickAllDataBtn"],
+      "f": ["all", "clickShowFieldAPINameBtn"],
+      "n": ["all", "clickNewBtn"],
+      "e": ["click", "dataExportBtn"],
+      "i": ["click", "dataImportBtn"],
+      "l": ["click", "limitsBtn"],
+      "d": ["click", "metaRetrieveBtn"],
+      "x": ["click", "apiExploreBtn"],
+      "h": ["click", "homeBtn"],
+      "p": ["click", "optionsBtn"],
+      "o": ["tab", "objectTab"],
+      "u": ["tab", "userTab"],
+      "s": ["tab", "shortcutTab"],
+      "r": ["tab", "orgTab"]
+    };
+    if (!actionMap[e.key]) {
+      return;
     }
-    if (e.key == "a") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickAllDataBtn();
-    }
-    if (e.key == "e") {
-      e.preventDefault();
-      this.refs.dataExportBtn.target = getLinkTarget(e);
-      this.refs.dataExportBtn.click();
-    }
-    if (e.key == "i") {
-      e.preventDefault();
-      this.refs.dataImportBtn.target = getLinkTarget(e);
-      this.refs.dataImportBtn.click();
-    }
-    if (e.key == "l") {
-      e.preventDefault();
-      this.refs.limitsBtn.target = getLinkTarget(e);
-      this.refs.limitsBtn.click();
-    }
-    if (e.key == "d") {
-      e.preventDefault();
-      this.refs.metaRetrieveBtn.target = getLinkTarget(e);
-      this.refs.metaRetrieveBtn.click();
-    }
-    if (e.key == "x") {
-      e.preventDefault();
-      this.refs.apiExploreBtn.target = getLinkTarget(e);
-      this.refs.apiExploreBtn.click();
-    }
-    if (e.key == "h" && this.refs.homeBtn) {
-      e.preventDefault();
-      this.refs.homeBtn.target = getLinkTarget(e);
-      this.refs.homeBtn.click();
-    }
-    if (e.key == "o") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs.objectTab.click();
-    }
-    if (e.key == "u") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs.userTab.click();
-    }
-    if (e.key == "s") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs.shortcutTab.click();
-    }
-    if (e.key == "r") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs.orgTab.click();
-    }
-    if (e.key == "f") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickShowFieldAPINameBtn();
-    }
-    if (e.key == "n") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickNewBtn();
-    }
-    if (e.key == "p") {
-      e.preventDefault();
-      this.refs.optionsBtn.click();
+    e.preventDefault();
+    const [action, target] = actionMap[e.key];
+    if (action === "all") {
+      refs.showAllDataBox.refs?.showAllDataBoxSObject?.[target]();
+    } else if (action === "click" && refs[target]) {
+      refs[target].target = getLinkTarget(e);
+      refs[target].click();
+    } else if (action === "tab") {
+      refs.showAllDataBox.refs[target].click();
     }
   }
   onChangeApi(e) {
@@ -219,7 +191,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, limitsHref, isFieldsPresent} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -247,21 +219,36 @@ class App extends React.PureComponent {
             "Salesforce Inspector Reloaded"
           )
         ),
+        !latestNotesViewed && h(AlertBanner, {type: "base",
+          bannerText: `Current Version: ${addonVersion}`,
+          iconName: "notification",
+          iconTitle: "Notification",
+          assistiveTest: "Version Update Notification",
+          onClose: () => this.updateReleaseNotesViewed(addonVersion),
+          link: {
+            text: "See What's New",
+            props: {
+              href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/",
+              target: "_blank",
+              onClick: () => this.updateReleaseNotesViewed(addonVersion)
+            }
+          }
+        }),
         h("div", {id: "expiredTokenLink", className: "hide"},
-          h("div", {className: "slds-p-top_x-small slds-p-horizontal_x-small slds-text-align_center "},
-            h("span", {className: "text-error"}, "⚠ Access Token expired!"),
-          ),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-m-bottom_xx-small"},
-            h("a",
-              {
-                ref: "generateNewToken",
+          h(AlertBanner, {type: "warning",
+            bannerText: "Access Token Expired",
+            iconName: "warning",
+            iconTitle: "Warning",
+            assistiveTest: "Access Token Expired",
+            onClose: null,
+            link: {
+              text: "Generate New Token",
+              props: {
                 href: oauthAuthorizeUrl,
-                target: linkTarget,
-                className: !clientId ? "button hide" : "page-button slds-button slds-button_brand inverse"
-              },
-              "➔ Click here to generate new token"
-            ),
-          ),
+                target: linkTarget
+              }
+            }
+          })
         ),
         h("div", {className: "main", id: "mainTabs"},
           h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, onContextRecordChange: this.onContextRecordChange, isFieldsPresent}),
@@ -1700,6 +1687,40 @@ class AllDataRecordDetails extends React.PureComponent {
   }
 }
 
+
+// props: {style: "base"|"warning"|"error"|"offline", icon: utility SVG name (without utility prefix),
+// bannerText: header, link: {text, props}, assistiveText: icon description, onClose: function}
+class AlertBanner extends React.PureComponent {
+  // From SLDS Alert Banner spec https://www.lightningdesignsystem.com/components/alert/
+
+  render() {
+    let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
+    const theme = ["warning", "error", "offline"].includes(type) ? type : "info";
+    const themeClass = `slds-theme_${theme}`;
+    return (
+      h("div", {className: `slds-notify slds-notify_alert ${themeClass}`, role: "alert"},
+        h("span", {className: "slds-assistive-text"}, assistiveText | "Notification"),
+        h("span", {className: "slds-icon_container slds-m-right_small", title: iconTitle},
+          h("svg", {className: "slds-icon slds-icon_neither-small-nor-x-small slds-icon-text-default", viewBox: "0 0 52 52"},
+            h("use", {xlinkHref: `symbols.svg#${iconName}`})
+          ),
+        ),
+        h("h2", {}, bannerText,
+          h("p", {}, ""),
+          link && h("a", link.props, link.text)
+        ),
+        onClose && h("div", {className: "slds-notify__close"},
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},
+            h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"},
+              h("use", {xlinkHref: "symbols.svg#close"})
+            ),
+            h("span", {className: "slds-assistive-text"}, "Close"),
+          )
+        )
+      )
+    );
+  }
+}
 class AllDataSearch extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -1712,8 +1733,8 @@ class AllDataSearch extends React.PureComponent {
     this.onAllDataFocus = this.onAllDataFocus.bind(this);
     this.onAllDataBlur = this.onAllDataBlur.bind(this);
     this.onAllDataKeyDown = this.onAllDataKeyDown.bind(this);
-    this.updateAllDataInput = this.updateAllDataInput.bind(this);
     this.onAllDataArrowClick = this.onAllDataArrowClick.bind(this);
+    this.updateAllDataInput = this.updateAllDataInput.bind(this);
   }
   componentDidMount() {
     let {queryString} = this.state;

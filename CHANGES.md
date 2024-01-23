@@ -1,13 +1,10 @@
 # Release Notes
 
-## Version 1.23
-
-- Add the possibility to hide fields API names after users clicked "Show fields API names"
-- Add AlertBanner component for Alerts following [SLDS guidelines](https://www.lightningdesignsystem.com/components/alert/). Lost Session warning converted to AlertBanner (contribution by [Nathan Shulman](https://github.com/nshulman))
-- Add "New Version Notice" AlertBanner. "What's New" link opens release notes, close icon hides without opening notes. Notification reappears for new versions. Release notes are still always available by clicking the version number at bottom [issue 51](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/51) (contribution by [Nathan Shulman](https://github.com/nshulman))
-
 ## Version 1.22
 
+- Add AlertBanner component for Alerts following [SLDS guidelines](https://www.lightningdesignsystem.com/components/alert/) (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Add info banner when extension is updated and convert "Generate token" button to alert. [feature 51](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/51) (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Add "Hide fields API names" when users clicked "Show fields API names"
 - Add "Enable Logs" button in the User tab [feature 245](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/245) (contribution by [Antoine Leleu](https://github.com/AntoineLeleu-Salesforce))
 - Add default connected app setting and improve access token renew flow. Note: Due to the simplified redirect url, this is a BREAKING CHANGE for users who have created their own connected app: those users MUST update their connected app Callback URL to the new value before they can use this version of the extension (contribution by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
 - Allow users to define REST callout headers on showAllData page. The need is to prevent the auto assignation of Accounts, Cases and Leads. [feature 198](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/198) (issue by [SfdxDieter](https://github.com/SfdxDieter))

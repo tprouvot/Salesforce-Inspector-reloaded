@@ -86,12 +86,10 @@ class App extends React.PureComponent {
   }
   onContextRecordChange(e) {
     let {sfHost} = this.props;
-    let limitsArg = new URLSearchParams();
     let exportArg = new URLSearchParams();
     let importArg = new URLSearchParams();
     exportArg.set("host", sfHost);
     importArg.set("host", sfHost);
-    limitsArg.set("host", sfHost);
     if (e.contextSobject) {
       let query = "SELECT Id FROM " + e.contextSobject;
       if (e.contextRecordId && (e.contextRecordId.length == 15 || e.contextRecordId.length == 18)) {

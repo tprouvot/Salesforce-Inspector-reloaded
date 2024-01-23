@@ -73,7 +73,6 @@ class Model {
       this.queryAutocompleteHandler({newDescribe: true});
       this.didUpdate();
     });
-
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
@@ -118,8 +117,12 @@ class Model {
       this.initialQuery = this.queryHistory.list[0].query;
       this.queryTooling = this.queryHistory.list[0].useToolingApi;
     } else {
-      this.initialQuery = "SELECT Id FROM Account";
+      this.initialQuery = "SELECT Id FROM Account LIMIT 200";
       this.queryTooling = false;
+    }
+
+    if (args.has("error")) {
+      this.exportError = args.get("error") + " " + args.get("error_description");
     }
 
   }
@@ -225,7 +228,7 @@ class Model {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
     return this.exportedData
           && (this.exportedData.countOfVisibleRecords === null /* no filtering has been done yet*/ || this.exportedData.countOfVisibleRecords > 0)
-          && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
+          && this.exportedData.records.length < 20001 && !this.exportStatus.includes("Exporting") && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
   }
   copyAsExcel() {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
@@ -245,6 +248,7 @@ class Model {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
     args.set("data", encodedData);
+    if (this.queryTooling) args.set("apitype", 'Tooling');
 
     window.open("data-import.html?" + args, getLinkTarget(e));
   }
@@ -929,8 +933,7 @@ function RecordTable(vm) {
       if (vm.resultsFilter) {
         let filteredTable = [];
         for (let i = 0; i < rt.table.length; i++) {
-          if (rt.rowVisibilities[i])
-            filteredTable.push(rt.table[i]);
+          if (rt.rowVisibilities[i]) { filteredTable.push(rt.table[i]); }
         }
         return filteredTable;
       }
@@ -1283,7 +1286,7 @@ class App extends React.Component {
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
-            h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete. 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records"),
+            h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried, ", className: "delete-btn"}, "Delete Records"),
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
           h("span", {className: "result-status flex-right"},
@@ -1302,8 +1305,12 @@ class App extends React.Component {
 
 {
 
-  let args = new URLSearchParams(location.search.slice(1));
+  let args = new URLSearchParams(location.search);
   let sfHost = args.get("host");
+  let hash = new URLSearchParams(location.hash); //User-agent OAuth flow
+  if (!sfHost && hash) {
+    sfHost = decodeURIComponent(hash.get("instance_url")).replace(/^https?:\/\//i, "");
+  }
   initButton(sfHost, true);
   sfConn.getSession(sfHost).then(() => {
 

@@ -2,45 +2,48 @@ export let apiVersion = localStorage.getItem("apiVersion") == null ? "59.0" : lo
 export let sfConn = {
 
   async getSession(sfHost) {
-    let paramKey = "access_token";
-    let message = await new Promise(resolve =>
-      chrome.runtime.sendMessage({message: "getSession", sfHost}, resolve));
-    if (message) {
-      this.instanceHostname = message.hostname
-        .replace(/\.lightning\.force\./, ".my.salesforce.") //avoid HTTP redirect (that would cause Authorization header to be dropped)
-        .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
-      this.sessionId = message.key;
-      if (window.location.href.includes(paramKey)) {
-        let url = new URL(window.location.href);
-        let access = url.hash.split("&")[0].split(paramKey + "=")[1];
-        access = decodeURI(access);
-
-        if (access) {
-          this.sessionId = access;
-          localStorage.setItem(sfHost + "_" + paramKey, access);
-        }
-      } else if (localStorage.getItem(sfHost + "_" + paramKey) != null) {
-        let data = localStorage.getItem(sfHost + "_" + paramKey);
-        this.sessionId = data;
+    sfHost = getMyDomain(sfHost);
+    const ACCESS_TOKEN = "access_token";
+    const currentUrlIncludesToken = window.location.href.includes(ACCESS_TOKEN);
+    const oldToken = localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
+    this.instanceHostname = sfHost;
+    if (currentUrlIncludesToken){ //meaning OAuth flow just completed
+      if (window.location.href.includes(ACCESS_TOKEN)) {
+        const url = new URL(window.location.href);
+        const hashParams = new URLSearchParams(url.hash.substring(1)); //hash (#) used in user-agent flow
+        const accessToken = decodeURI(hashParams.get(ACCESS_TOKEN));
+        sfHost = decodeURI(hashParams.get("instance_url")).replace(/^https?:\/\//i, "");
+        this.sessionId = accessToken;
+        localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
       }
-      let isSandbox = "isSandbox";
-      if (localStorage.getItem(sfHost + "_" + isSandbox) == null) {
-        sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+FROM+Organization").then(res => {
-          localStorage.setItem(sfHost + "_" + isSandbox, res.records[0].IsSandbox);
-          localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
-        });
+    } else if (oldToken) {
+      this.sessionId = oldToken;
+    } else {
+      let message = await new Promise(resolve =>
+        chrome.runtime.sendMessage({message: "getSession", sfHost}, resolve));
+      if (message) {
+        this.instanceHostname = getMyDomain(message.hostname);
+        this.sessionId = message.key;
       }
+    }
+    const IS_SANDBOX = "isSandbox";
+    if (localStorage.getItem(sfHost + "_" + IS_SANDBOX) == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+FROM+Organization").then(res => {
+        localStorage.setItem(sfHost + "_" + IS_SANDBOX, res.records[0].IsSandbox);
+        localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
+      });
     }
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}) {
-    if (!this.instanceHostname || !this.sessionId) {
-      throw new Error("Session not found");
+    if (!this.instanceHostname) {
+      throw new Error("Instance Hostname not found");
     }
 
     let xhr = new XMLHttpRequest();
     url += (url.includes("?") ? "&" : "?") + "cache=" + Math.random();
-    xhr.open(method, "https://" + this.instanceHostname + url, true);
+    const sfHost = "https://" + this.instanceHostname;
+    xhr.open(method, sfHost + url, true);
 
     xhr.setRequestHeader("Accept", "application/json; charset=UTF-8");
 
@@ -92,6 +95,12 @@ export let sfConn = {
       let err = new Error();
       err.name = "SalesforceRestError";
       err.message = "Network error, offline or timeout";
+      throw err;
+    } else if (xhr.status == 401) {
+      showExpiredTokenLink();
+      let err = new Error();
+      err.name = "Unauthorized";
+      err.message = "New access token needed";
       throw err;
     } else {
       if (!logErrors) { console.error("Received error response from Salesforce REST API", xhr); }
@@ -174,7 +183,7 @@ export let sfConn = {
         "soapenv:Body": {[requestMethod]: args}
       }
     });
-    
+
     xhr.responseType = "document";
     await new Promise(resolve => {
       xhr.onreadystatechange = () => {
@@ -289,4 +298,22 @@ class XML {
     }
     return parseResponse(element);
   }
+
+}
+
+function getMyDomain(host) {
+  if (host) {
+    const myDomain = host
+      .replace(/\.lightning\.force\./, ".my.salesforce.") //avoid HTTP redirect (that would cause Authorization header to be dropped)
+      .replace(/\.mcas\.ms$/, ""); //remove trailing .mcas.ms if the client uses Microsoft Defender for Cloud Apps
+    return myDomain;
+  }
+  return host;
+}
+
+function showExpiredTokenLink() {
+  const expiredTokenLinkContainer = document.getElementById("expiredTokenLink");
+  if (expiredTokenLinkContainer) { expiredTokenLinkContainer.classList.remove("hide"); }
+  const mainContainer = document.getElementById("mainTabs");
+  if (mainContainer) { mainContainer.classList.add("mask"); }
 }

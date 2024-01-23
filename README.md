@@ -49,7 +49,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 - Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
 - Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)
 - Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34)
-- Control access to Salesforce Inspector reloaded with profiles / permissions (Implement Auth2 flow to generate access token for connected App) [how to](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
+- Control access to Salesforce Inspector reloaded with profiles / permissions (Implement OAuth2 flow to generate access token for connected App) [how to](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
 - Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3 (extensions using manifest v2 will be removed from the store)
 - New UI for Export / Import
 
@@ -64,7 +64,7 @@ To validate the accuracy of this description, inspect the source code, monitor t
 
 ## Use Salesforce Inspector with a Connected App
 
-Follow steps described in [how-to documentation](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#use-sf-inspector-with-a-connected-app)
+Follow steps described in [how-to documentation](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#use-sf-inspector-with-a-connected-app). Note: you must complete these steps to use the extension in orgs where "API Access Control" is enabled.
 
 ## Installation
 
@@ -80,7 +80,7 @@ Follow steps described in [how-to documentation](https://tprouvot.github.io/Sale
 2. Checkout the releaseCandidate branch.
 3. Open `chrome://extensions/`.
 4. Enable `Developer mode`.
-5. Click `Load unpacked extension...`.
+5. Click `Load unpacked`.
 6. Select the **`addon`** subdirectory of this repository.
 
 ## Troubleshooting
@@ -124,7 +124,7 @@ Linting : to assure indentation, formatting and best practices coherence, please
 ### Unit tests
 
 1. Set up an org (e.g. a Developer Edition) and apply the following customizations:
-   1. Everything described in metadata in `test/`. Push to org with `sfdx force:source:deploy -p test/ -u [your-test-org-alias]`.
+   1. Everything described in metadata in `test/`. Push to org with `sf deploy metadata -d test/ -o [your-test-org-alias]` or legacy `sfdx force:source:deploy -p test/ -u [your-test-org-alias]`.
    2. Make sure your user language is set to English.
    3. Ensure _Allow users to relate a contact to multiple accounts_ is enabled (Setup → Account Settings).
    4. Ensure the org has no _namespace prefix_ (Setup → Package Manager).

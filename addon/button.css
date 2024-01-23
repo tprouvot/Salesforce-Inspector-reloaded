@@ -2,76 +2,129 @@
     z-index: 1000;
     display: block;
     position: fixed;
-    top: 122px;
-    right: 0;
     vertical-align: middle;
 }
+
 #insext .insext-popup {
     box-sizing: border-box;
     width: 280px;
     height: 450px;
     position:absolute;
     background-color: #ffffff;
-    right: 0;
     border-radius: 4px;
-    border-top-right-radius: 0;
     z-index: 1;
-    box-shadow: 0 -2px 2px 0 rgba(0,0,0,.16);
     border: 1px solid #d8dde6;
     display: none;
 }
+
+#insext .insext-popup-vertical {
+    right: 0%;
+    border-top-right-radius: 0;
+    box-shadow: 0 -2px 2px 0 rgba(0,0,0,.16);
+}
+
+#insext .insext-popup-vertical-up {
+    bottom: 100%;
+}
+
+#insext .insext-popup-horizontal {
+    bottom: 20px;
+    box-shadow: 2px 0 2px 0 rgba(0,0,0,.16);
+}
+
+#insext .insext-popup-horizontal-left {
+    right: 0%;
+}
+
+#insext .insext-popup-horizontal-centered {
+    right: -380%;
+}
+
+#insext .insext-popup-horizontal-right {
+    left: 0%;
+}
+
 #insext.insext-active .insext-popup {
     display: block;
 }
 #insext .insext-btn {
     box-sizing: border-box;
-    width: 15px;
-    height: 33px;
-    padding: 3px 1px 2px 0;
     background-color: #226b86;
     border-width: 4px;
     border-style: solid;
-    border-right-style: none;
     border-color: #fff;
+    opacity: .4;
+}
+#insext .insext-btn-vertical {
+    width: 15px;
+    height: 33px;
+    padding: 3px 1px 2px 0;
+    border-right-style: none;
     border-top-left-radius: 5px;
     border-bottom-left-radius: 5px;
     box-shadow: -2px 0 2px #a0a6ab;
-    opacity: .4;
 }
-#insext .insext-btn:hover,
-#insext.insext-active .insext-btn {
+#insext .insext-btn-horizontal {
+    height: 15px;
+    width: 33px;
+    padding: 0 2px 1px 3px;
+    border-bottom-style: none;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    box-shadow: 0 -2px 2px #a0a6ab;
+}
+
+#insext .insext-btn-vertical:hover,
+#insext.insext-active .insext-btn-vertical {
     opacity: 1;
-    width: 20px; 
+    width: 20px;
 }
+
+#insext .insext-btn-horizontal:hover,
+#insext.insext-active .insext-btn-horizontal {
+    opacity: 1;
+    height: 20px;
+}
+
 #insext .insext-btn img {
     box-sizing: border-box;
+}
+
+#insext .insext-btn-vertical img {
     width: 10px;
     height: 15px;
     margin: 2px;
 }
+
+#insext .insext-btn-horizontal img {
+    width: 15px;
+    height: 10px;
+    margin: 2px;
+}
+
 .checkboxScrollSandbox {
     position: fixed;
     top: 10px;
     right: 78px;
-    z-index: 100;
+    z-index: 10000;
 }
 .checkboxScrollProd{
     position: fixed;
-    top: 21px; 
+    top: 21px;
     right: 78px;
-    z-index: 100;
+    z-index: 10000;
 }
 .labelCheckboxScrollSandbox{
     position: fixed;
-    top: 7px; 
-    right: 100px; 
+    top: 7px;
+    right: 100px;
     color: white;
-    z-index: 100;
+    z-index: 10000;
 }
 .labeCheckboxScrollProd{
     position: fixed;
     top: 15px;
     right: 100px;
     color: white;
-    z-index: 100;
+    z-index: 10000;
 }

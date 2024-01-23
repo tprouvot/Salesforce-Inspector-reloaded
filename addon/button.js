@@ -18,41 +18,30 @@ function initButton(sfHost, inInspector) {
   let rootEl = document.createElement("div");
   rootEl.id = "insext";
   let btn = document.createElement("div");
+  let iFrameLocalStorage = {};
   btn.className = "insext-btn";
   btn.tabIndex = 0;
   btn.accessKey = "i";
   btn.title = "Show Salesforce details (Alt+I / Shift+Alt+I)";
   rootEl.appendChild(btn);
-  let img = document.createElement("img");
-  img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAPCAYAAADd/14OAAAA40lEQVQoz2P4//8/AzpWzGj6L59U/V8urgxMg/g4FUn6J/+X9E38LxWc8V8htR67IpCkuGfMfxCQjSpENRFFkXvk/1+/foGxQloDSD0DVkVfvnyBY7hCdEVv3rxBwXCFIIdKh2WDFT1+/BgDo1qd2fL/1q1bWDFcoW5xz3/Xppn/oycu/X/x4kUMDFeoWdD136R8wn+f9rlgxSdOnEDBKFajK96/fz8coyjEpnj79u1gjKEQXXFE/+L/Gzdu/G9WMfG/am4HZlzDFAf3LPwfOWEJWBPIwwzYUg9MsXXNFDAN4gMAmASShdkS4AcAAAAASUVORK5CYII=";
-  btn.appendChild(img);
+  loadPopup();
   document.body.appendChild(rootEl);
-  btn.addEventListener("click", function clickListener() {
-    btn.removeEventListener("click", clickListener);
-    loadPopup();
-  });
 
   addFlowScrollability();
 
 
-  function addFlowScrollability() {
+  function addFlowScrollability(popupEl) {
     const currentUrl = window.location.href;
     // Check the current URL for the string "builder_platform_interaction"
     if (currentUrl.includes("builder_platform_interaction")) {
-      //add marging for the popup arrow to prevent overlap with standard close button in flow builder (Winter 24)
-      //temporary workaround, will be removed in next release when the popupArrow position will be updatable by users
-      const popupArrow = document.querySelector("#insext");
-      if (popupArrow){
-        popupArrow.style = "margin-top: 50px;";
-      }
       // Create a new checkbox element
       const headerFlow = document.querySelector("builder_platform_interaction-container-common");
       const overflowCheckbox = document.createElement("input");
       overflowCheckbox.type = "checkbox";
       overflowCheckbox.id = "overflow-checkbox";
-      const checkboxState = localStorage.getItem("scrollOnFlowBuilder");
+      const checkboxState = iFrameLocalStorage.scrollOnFlowBuilder;
       // Check local storage for the checkbox state
-      checkboxState ? overflowCheckbox.checked = JSON.parse(checkboxState) : overflowCheckbox.checked = true;
+      (checkboxState != null) ? (overflowCheckbox.checked = checkboxState) : (overflowCheckbox.checked = true);
       // Create a new label element for the checkbox
       const overflowLabel = document.createElement("label");
       overflowLabel.textContent = "Enable flow scrollability";
@@ -81,11 +70,33 @@ function initButton(sfHost, inInspector) {
       overflowCheckbox.addEventListener("change", function() {
         // Check if the checkbox is currently checked
         // Save the checkbox state to local storage
-        localStorage.setItem("scrollOnFlowBuilder", JSON.stringify(this.checked));
+        popupEl.contentWindow.postMessage({
+          updateLocalStorage: true,
+          key: "scrollOnFlowBuilder",
+          value: JSON.stringify(this.checked)
+        }, "*");
         // Set the overflow property to "auto"
         this.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
       });
     }
+  }
+
+  function setRootCSSProperties(rootElement, buttonElement) {
+    let popupArrowOrientation = iFrameLocalStorage.popupArrowOrientation ? iFrameLocalStorage.popupArrowOrientation : "vertical";
+    let popupArrowPosition = iFrameLocalStorage.popupArrowPosition ? (iFrameLocalStorage.popupArrowPosition + "%") : "122px";
+    let img = document.createElement("img");
+    if (popupArrowOrientation == "vertical") {
+      rootElement.style.right = 0;
+      rootElement.style.top = popupArrowPosition;
+      img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAPCAYAAADd/14OAAAA40lEQVQoz2P4//8/AzpWzGj6L59U/V8urgxMg/g4FUn6J/+X9E38LxWc8V8htR67IpCkuGfMfxCQjSpENRFFkXvk/1+/foGxQloDSD0DVkVfvnyBY7hCdEVv3rxBwXCFIIdKh2WDFT1+/BgDo1qd2fL/1q1bWDFcoW5xz3/Xppn/oycu/X/x4kUMDFeoWdD136R8wn+f9rlgxSdOnEDBKFajK96/fz8coyjEpnj79u1gjKEQXXFE/+L/Gzdu/G9WMfG/am4HZlzDFAf3LPwfOWEJWBPIwwzYUg9MsXXNFDAN4gMAmASShdkS4AcAAAAASUVORK5CYII=";
+      buttonElement.classList.add("insext-btn-vertical");
+    } else {
+      rootElement.style.bottom = "0px";
+      rootElement.style.right = popupArrowPosition;
+      img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAKCAYAAABrGwT5AAAAAXNSR0IArs4c6QAAAFBlWElmTU0AKgAAAAgAAgESAAMAAAABAAEAAIdpAAQAAAABAAAAJgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAD6ADAAQAAAABAAAACgAAAADdC3pnAAABWWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNi4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyI+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgoZXuEHAAABKElEQVQoFWNgwAI0C7r+6xb3/AdJKaTW/1fMaAKz0ZUyoguANHKzszEIcnMy3Hn+muHX2+cMLDwCDExs7Az3Z9ShqGdC1gzTKCHAyyDGz8OwszCM4c/Hdwy/P75l+PfrJwO6C+CakTXyc3EwlDnogM09M6eL4e+Xj1gNAGtG15hrrozsIIarSydjNYARXWOKnhQDJycnBubg4GBQDk5lYObhZ2DlFwaHARMocORFBRl4ONgYYtSEUGxE5zzevJDh77cvwEB8AQ4DJnZWFgY2FmaGSCU+dLVY+S+2LWZg+PeP4f+f3wwsP3//Yfj8/SdD6/G3DK/evceqAVkQFHiMwGhjZGFlYPn68xfDwzfvGX78+sPwYFYDSjwia4KxQdHF/JePgZGZmQEASqV1t0W3n+oAAAAASUVORK5CYII=";
+      buttonElement.classList.add("insext-btn-horizontal");
+    }
+    buttonElement.appendChild(img);
   }
 
   function loadPopup() {
@@ -100,12 +111,31 @@ function initButton(sfHost, inInspector) {
     let popupSrc = chrome.runtime.getURL("popup.html");
     let popupEl = document.createElement("iframe");
     popupEl.className = "insext-popup";
+    popupEl.classList.add(localStorage.getItem("popupArrowOrientation") == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
     popupEl.src = popupSrc;
     addEventListener("message", e => {
       if (e.source != popupEl.contentWindow) {
         return;
       }
       if (e.data.insextInitRequest) {
+        // Set CSS classes for arrow button position
+        iFrameLocalStorage = e.data.iFrameLocalStorage;
+        popupEl.classList.add(iFrameLocalStorage.popupArrowOrientation == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
+        if (iFrameLocalStorage.popupArrowOrientation == "horizontal") {
+          if (iFrameLocalStorage.popupArrowPosition < 8) {
+            popupEl.classList.add("insext-popup-horizontal-left");
+          } else if (iFrameLocalStorage.popupArrowPosition >= 90) {
+            popupEl.classList.add("insext-popup-horizontal-right");
+          } else {
+            popupEl.classList.add("insext-popup-horizontal-centered");
+          }
+        } else if (iFrameLocalStorage.popupArrowOrientation == "vertical") {
+          if (iFrameLocalStorage.popupArrowPosition >= 55) {
+            popupEl.classList.add("insext-popup-vertical-up");
+          }
+        }
+        setRootCSSProperties(rootEl, btn);
+        addFlowScrollability(popupEl);
         popupEl.contentWindow.postMessage({
           insextInitResponse: true,
           sfHost,
@@ -114,9 +144,6 @@ function initButton(sfHost, inInspector) {
           inInspector,
         }, "*");
       }
-      if (e.data.insextLoaded) {
-        openPopup();
-      }
       if (e.data.insextClosePopup) {
         closePopup();
       }
@@ -124,18 +151,23 @@ function initButton(sfHost, inInspector) {
         showStdPageDetails(e.data.insextData, e.data.insextAllFieldSetupLinks);
       }
       if (e.data.insextShowApiName) {
-        document.querySelectorAll("record_flexipage-record-field > div, records-record-layout-item > div, div .forcePageBlockItemView").forEach(field => {
-          let label = field.querySelector("span");
-          if (field.dataset.targetSelectionName && label.querySelector("mark") == null){
-            label.innerText = label.innerText + " ";
-            const fieldApiName = document.createElement("mark");
-            fieldApiName.className = "field-api-name";
-            fieldApiName.style.cursor = "copy";
-            fieldApiName.innerText = field.dataset.targetSelectionName.split(".")[2];
-            label.appendChild(fieldApiName);
-            document.addEventListener("click", copy);
-          }
-        });
+        let apiNamesClass = "field-api-name";
+        if (e.data.btnLabel.startsWith("Show")){
+          document.querySelectorAll("record_flexipage-record-field > div, records-record-layout-item > div, div .forcePageBlockItemView").forEach(field => {
+            let label = field.querySelector("span");
+            if (field.dataset.targetSelectionName && label.querySelector("mark") == null){
+              label.innerText = label.innerText + " ";
+              const fieldApiName = document.createElement("mark");
+              fieldApiName.className = apiNamesClass;
+              fieldApiName.style.cursor = "copy";
+              fieldApiName.innerText = field.dataset.targetSelectionName.split(".")[2];
+              label.appendChild(fieldApiName);
+              document.addEventListener("click", copy);
+            }
+          });
+        } else {
+          document.querySelectorAll(apiNamesClass).forEach(e => e.remove());
+        }
       }
     });
     rootEl.appendChild(popupEl);

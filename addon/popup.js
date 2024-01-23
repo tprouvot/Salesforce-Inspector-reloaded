@@ -100,8 +100,7 @@ class App extends React.PureComponent {
     }
     this.setState({
       exportHref: "data-export.html?" + exportArg,
-      importHref: "data-import.html?" + importArg,
-      limitsHref: "limits.html?" + limitsArg
+      importHref: "data-import.html?" + importArg
     });
   }
   onContextUrlMessage(e) {

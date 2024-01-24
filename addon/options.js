@@ -97,7 +97,7 @@ class OptionsTabSelector extends React.Component {
         title: "Data Export",
         content: [
           {option: CSVSeparatorOption, props: {key: 1}},
-          {option: CheckboxToggle, props: {title: "Display Query Execution Time", key: "displayQueryPerformance"}}
+          {option: CheckboxToggle, props: {title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}}
         ]
       },
       {
@@ -271,13 +271,19 @@ class RestHeaderOption extends React.Component {
     );
   }
 }
-// {storageKey: unique identifier for localStorage and rendered element, title: label for the toggle}
+// {storageKey: unique identifier for localStorage and rendered element, title: label for the toggle, default (optional): default value for the toggle (true or false, default is false)}
 class CheckboxToggle extends React.Component {
   constructor(props) {
     super(props);
     this.onChange = this.onChange.bind(this);
     this.key = props.storageKey;
-    this.state = {enabled: !!JSON.parse(localStorage.getItem(this.key))};
+    // storage will be string "true" or "false", prop must be actual boolean
+    let value = localStorage.getItem(this.key);
+    if (props.default !== undefined && value === null) {
+      value = JSON.stringify(props.default);
+      localStorage.setItem(this.key, value);
+    }
+    this.state = {enabled: !!JSON.parse(value)};
     this.title = props.title;
   }
 

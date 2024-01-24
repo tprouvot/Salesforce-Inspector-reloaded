@@ -93,7 +93,7 @@ class Model {
     this.expandAutocomplete = false;
     this.expandSavedOptions = false;
     this.resultsFilter = "";
-    this.displayPerformance = localStorage.getItem("displayQueryPerformance") == "true";
+    this.displayPerformance = localStorage.getItem("displayQueryPerformance") !== "false"; // default to true
     this.performancePoints = [];
     this.startTime = null;
     this.lastStartTime = null;

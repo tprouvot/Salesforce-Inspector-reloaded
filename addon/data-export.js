@@ -212,15 +212,19 @@ class Model {
     }
     else {
       let batchCalcs = "";
-      if (this.performancePoints.length > 1) {
+      const batches = this.performancePoints.length;
+      if (batches > 1) {        
         // average of performance points
-        let average = this.performancePoints.reduce((a, b) => a + b, 0) / this.performancePoints.length;
+        const avgTime = this.performancePoints.reduce((a, b) => a + b, 0) / batches;        
         // max of performance points
-        let max = Math.max(...this.performancePoints);
-        let min = Math.min(...this.performancePoints);
-        batchCalcs = `, batch avg: ${average.toFixed(1)} ms, min: ${min.toFixed(1)} ms, max: ${max.toFixed(2)} ms`;
+        const maxTime = Math.max(...this.performancePoints);
+        const minTime = Math.min(...this.performancePoints);
+        const avg = `Avg ${avgTime.toFixed(1)}ms`;
+        const max = `Max ${maxTime.toFixed(1)}ms`;
+        const min = `Min ${minTime.toFixed(1)}ms`;
+        batchCalcs = `, ${batches} Batches: ${avg}, ${min}, ${max}`;
       }
-      return `(${this.totalTime.toFixed(1)} ms${batchCalcs})`;
+      return `Total Time: ${this.totalTime.toFixed(1)}ms${batchCalcs}`;
     }
   }
   clearHistory() {
@@ -845,7 +849,7 @@ class Model {
         vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
         if (recs == 0) {
           vm.isWorking = false;
-          vm.exportStatus = "No data exported. " + total > 0 ? `${total} record${s(total)}` : "";
+          vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
           vm.exportError = null;
           vm.exportedData = exportedData;
           vm.markPerf();
@@ -853,7 +857,7 @@ class Model {
           return null;
         }
         vm.isWorking = false;
-        vm.exportStatus = `Exported ${recs} ${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
+        vm.exportStatus = `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
         vm.exportError = null;
         vm.exportedData = exportedData;
         vm.markPerf();
@@ -1342,10 +1346,10 @@ class App extends React.Component {
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
-            model.displayPerformance && h("em", {style:{marginLeft: "5px", fontStyle:"italics"}}, model.perfStatus()),
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
-          )
+          ),          
         ),
+        model.displayPerformance && h("span", {className: "result-status flex-right", style:{fontStyle:"italic", paddingRight: "20px", paddingBottom: "3px"}}, model.perfStatus()),
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null}
           /* the scroll table goes here */

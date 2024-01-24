@@ -153,6 +153,12 @@ textarea[hidden] {
   padding: 8px 12px;
 }
 
+.result-info {
+  font-style: italic;
+  margin-left: 9px;
+  color: #8c8c8c;
+}
+
 #result-text {
   flex: 1 1 0;
   resize: none;

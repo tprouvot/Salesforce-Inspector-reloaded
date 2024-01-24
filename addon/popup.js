@@ -202,23 +202,40 @@ class App extends React.PureComponent {
     const oauthAuthorizeUrl = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     return (
       h("div", {},
-        h("div", {className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom"},
-          h("div", {className: "header-logo"},
-            h("div", {className: "header-icon slds-icon_container"},
-              h("svg", {className: "slds-icon", viewBox: "0 0 24 24"},
-                h("path", {
-                  d: `
-                  M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
-                  m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
-                  M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
-                  m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
-                  M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
-                  `})
+        h("div", {className: "slds-page-header slds-theme_shade"},
+          h("div", {className: "slds-page-header__row"},
+            h("div", {className: "slds-page-header__col-title"},
+              h("div", {className: "slds-media"},
+                h("div", {className: "slds-media__figure"},
+                  h("span", {className: "slds-icon_container", title: "Salesforce Inspector Reloaded"},
+                    h("svg", {className: "slds-icon slds-page-header__icon", viewBox: "0 0 24 24"},
+                      h("path", {
+                        d: `
+                        M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
+                        m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
+                        M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
+                        m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
+                        M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
+                        `,
+                        fill: "#f3f3f3"
+                      })
+                    )
+                  )
+                ),
+                h("div", {className: "slds-media__body"},
+                  h("div", {className: "slds-page-header__name"},
+                    h("div", {className: "slds-page-header__name-title"},
+                      h("h1", {},
+                        h("span", {className: "slds-page-header__title slds-truncate", title: "Salesforce Inspector Reloaded"}, "Salesforce Inspector Reloaded")
+                      )
+                    )
+                  )
+                )
               )
-            ),
-            "Salesforce Inspector Reloaded"
+            )
           )
         ),
+
         !latestNotesViewed && h(AlertBanner, {type: "base",
           bannerText: `Current Version: ${addonVersion}`,
           iconName: "notification",

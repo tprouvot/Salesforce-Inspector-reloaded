@@ -208,10 +208,11 @@ class Model {
   }
   perfStatus() {
     if (!this.displayPerformance || !this.startTime || this.performancePoints.length === 0) {
-      return "";
+      return null;
     }
     const batches = this.performancePoints.length;
-    let batchCalcs = "";
+    let batchStats = "";
+    let batchCount = "";
     if (batches > 1) {
       const avgTime = this.performancePoints.reduce((a, b) => a + b, 0) / batches;
       const maxTime = Math.max(...this.performancePoints);
@@ -219,9 +220,10 @@ class Model {
       const avg = `Avg ${avgTime.toFixed(1)}ms`;
       const max = `Max ${maxTime.toFixed(1)}ms`;
       const min = `Min ${minTime.toFixed(1)}ms`;
-      batchCalcs = `, ${batches} Batches: ${avg}, ${min}, ${max}`;
+      batchStats = `Batch Performance: ${avg}, ${min}, ${max}`;
+      batchCount = `${batches} Batches / `;
     }
-    return `Total Time: ${this.totalTime.toFixed(1)}ms${batchCalcs}`;
+    return {text: `${batchCount}${this.totalTime.toFixed(1)}ms`, batchStats};
   }
   clearHistory() {
     this.queryHistory.clear();
@@ -1235,6 +1237,7 @@ class App extends React.Component {
   }
   render() {
     let {model} = this.props;
+    const perf = model.perfStatus();
     return h("div", {},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},
@@ -1342,10 +1345,10 @@ class App extends React.Component {
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
+            perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
           ),
         ),
-        model.displayPerformance && h("span", {className: "result-status flex-right", style: {fontStyle: "italic", paddingRight: "20px", paddingBottom: "3px"}}, model.perfStatus()),
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null}
           /* the scroll table goes here */

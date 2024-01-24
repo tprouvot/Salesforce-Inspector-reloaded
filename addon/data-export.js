@@ -94,6 +94,10 @@ class Model {
     this.expandSavedOptions = false;
     this.resultsFilter = "";
     this.displayPerformance = localStorage.getItem("displayQueryPerformance") == "true";
+    this.performancePoints = [];
+    this.startTime = null;
+    this.lastStartTime = null;
+    this.totalTime = 0;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
     this.exportProgress = {};
@@ -125,8 +129,8 @@ class Model {
     if (args.has("error")) {
       this.exportError = args.get("error") + " " + args.get("error_description");
     }
-
   }
+
   updatedExportedData() {
     this.resultTableCallback(this.exportedData);
   }
@@ -182,6 +186,41 @@ class Model {
     let indexPos = this.queryInput.value.toLowerCase().indexOf("from ");
     if (indexPos !== -1) {
       this.queryInput.setRangeText("", indexPos + 5, indexPos + 5, "end");
+    }
+  }
+  initPerf() {
+    if (!this.displayPerformance) {
+      return;
+    }
+    this.performancePoints = [];
+    this.startTime = performance.now();
+    this.lastStartTime = this.startTime;
+  }
+  markPerf() {
+    if (!this.displayPerformance) {
+      return;
+    }
+    const now = performance.now();
+    const perfPoint = now - this.lastStartTime;
+    this.lastStartTime = now;
+    this.performancePoints.push(perfPoint);
+    this.totalTime = now - this.startTime;
+  }
+  perfStatus() {
+    if (!this.displayPerformance || !this.startTime || this.performancePoints.length === 0) {
+      return "";
+    }
+    else {
+      let batchCalcs = "";
+      if (this.performancePoints.length > 1) {
+        // average of performance points
+        let average = this.performancePoints.reduce((a, b) => a + b, 0) / this.performancePoints.length;
+        // max of performance points
+        let max = Math.max(...this.performancePoints);
+        let min = Math.min(...this.performancePoints);
+        batchCalcs = `, batch avg: ${average.toFixed(1)} ms, min: ${min.toFixed(1)} ms, max: ${max.toFixed(2)} ms`;
+      }
+      return `(${this.totalTime.toFixed(1)} ms${batchCalcs})`;
     }
   }
   clearHistory() {
@@ -775,7 +814,7 @@ class Model {
     exportedData.isTooling = vm.queryTooling;
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
-    const startPerf = performance.now();
+    vm.initPerf();
     let query = vm.queryInput.value;
     let queryMethod = exportedData.isTooling ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
     function batchHandler(batch) {
@@ -795,9 +834,10 @@ class Model {
         if (!data.done) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));          
           vm.isWorking = true;
-          vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.${perf(startPerf, vm.displayPerformance)}`;
+          vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
           vm.exportError = null;
           vm.exportedData = exportedData;
+          vm.markPerf();
           vm.updatedExportedData();
           vm.didUpdate();
           return pr;
@@ -805,16 +845,18 @@ class Model {
         vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
         if (recs == 0) {
           vm.isWorking = false;
-          vm.exportStatus = "No data exported. " + total > 0 && `${total} record${s(total)}${perf(startPerf, vm.displayPerformance)}`;
+          vm.exportStatus = "No data exported. " + total > 0 ? `${total} record${s(total)}` : "";
           vm.exportError = null;
           vm.exportedData = exportedData;
+          vm.markPerf();
           vm.updatedExportedData();
           return null;
         }
         vm.isWorking = false;
-        vm.exportStatus = `Exported ${recs} ${recs !== total ? (" of " + total) : ""} record${s(recs)}.${perf(startPerf, vm.displayPerformance)}`;
+        vm.exportStatus = `Exported ${recs} ${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
         vm.exportError = null;
         vm.exportedData = exportedData;
+        vm.markPerf();
         vm.updatedExportedData();
         return null;
       }, err => {
@@ -830,6 +872,7 @@ class Model {
           vm.exportError = null;
           vm.exportedData = exportedData;
           vm.updatedExportedData();
+          vm.markPerf();
           return null;
         }
         vm.isWorking = false;
@@ -847,6 +890,7 @@ class Model {
         vm.exportStatus = "Error";
         vm.exportError = "UNEXPECTED EXCEPTION:" + error;
         vm.exportedData = null;
+        vm.markPerf();
         vm.updatedExportedData();
       }));
     vm.setResultsFilter("");
@@ -1298,6 +1342,7 @@ class App extends React.Component {
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
+            model.displayPerformance && h("em", {style:{marginLeft: "5px", fontStyle:"italics"}}, model.perfStatus()),
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
           )
         ),

@@ -19,16 +19,18 @@ body {
 
 [data-theme="light"] {
     --inspector-background: var(--inspector-white);
+    --inspector-text: var(--inspector-black);
     --inspector-primary: var(--inspector-light-blue);
-    --inspector-accent: var(--inspector-black);
+    --inspector-accent: var(--inspector-dark-blue);
     --inspector-error: var(--inspector-light-red);
     --inspector-success: var(--inspector-light-green);
 }
 
 [data-theme="dark"] {
-    --inspector-background: var(--inspector-white);
+    --inspector-background: var(--inspector-black);
+    --inspector-text: var(--inspector-white);
     --inspector-primary: var(--inspector-dark-blue);
-    --inspector-accent: var(--inspector-black);
+    --inspector-accent: var(--inspector-light-blue);
     --inspector-error: var(--inspector-dark-red);
     --inspector-success: var(--inspector-dark-green);
 }

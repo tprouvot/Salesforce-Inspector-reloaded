@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s, perf} from "./data-load.js";
+import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -213,9 +213,9 @@ class Model {
     else {
       let batchCalcs = "";
       const batches = this.performancePoints.length;
-      if (batches > 1) {        
+      if (batches > 1) {
         // average of performance points
-        const avgTime = this.performancePoints.reduce((a, b) => a + b, 0) / batches;        
+        const avgTime = this.performancePoints.reduce((a, b) => a + b, 0) / batches;
         // max of performance points
         const maxTime = Math.max(...this.performancePoints);
         const minTime = Math.min(...this.performancePoints);
@@ -827,7 +827,7 @@ class Model {
           return {records: [], done: true, totalSize: -1};
         }
         throw err;
-      }).then(data => {        
+      }).then(data => {
         exportedData.addToTable(data.records);
         let recs = exportedData.records.length;
         let total = exportedData.totalSize;
@@ -836,7 +836,7 @@ class Model {
           total = data.totalSize;
         }
         if (!data.done) {
-          let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));          
+          let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
           vm.isWorking = true;
           vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
           vm.exportError = null;
@@ -1347,7 +1347,7 @@ class App extends React.Component {
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
-          ),          
+          ),
         ),
         model.displayPerformance && h("span", {className: "result-status flex-right", style:{fontStyle:"italic", paddingRight: "20px", paddingBottom: "3px"}}, model.perfStatus()),
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),

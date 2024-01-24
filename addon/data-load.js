@@ -123,16 +123,9 @@ export function DescribeInfo(spinFor, didUpdate) {
   };
 }
 
-// Pluralize a numeric value by adding an s if it is not 1
-export function s(num) {
-  return num == 1 ? "" : "s";
-}
-
-// Display performance text
-export function perf(start, enabled) {
-  if (!enabled) return "";
-  const diff = performance.now() - start;
-  return ` (${diff.toFixed(1)} ms)`;
+// Pluralize a numeric value by adding an s (or optional suffix) if it is not 1
+export function s(num, suffix = "s") {
+  return num == 1 ? "" : suffix;
 }
 
 // Copy text to the clipboard, without rendering it, since rendering is slow.

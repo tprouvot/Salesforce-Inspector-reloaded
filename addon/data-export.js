@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
+import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s, perf} from "./data-load.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -93,6 +93,7 @@ class Model {
     this.expandAutocomplete = false;
     this.expandSavedOptions = false;
     this.resultsFilter = "";
+    this.displayPerformance = localStorage.getItem("displayQueryPerformance") == "true";
     this.autocompleteState = "";
     this.autocompleteProgress = {};
     this.exportProgress = {};
@@ -774,6 +775,7 @@ class Model {
     exportedData.isTooling = vm.queryTooling;
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
+    const startPerf = performance.now();
     let query = vm.queryInput.value;
     let queryMethod = exportedData.isTooling ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
     function batchHandler(batch) {
@@ -782,15 +784,18 @@ class Model {
           return {records: [], done: true, totalSize: -1};
         }
         throw err;
-      }).then(data => {
+      }).then(data => {        
         exportedData.addToTable(data.records);
+        let recs = exportedData.records.length;
+        let total = exportedData.totalSize;
         if (data.totalSize != -1) {
           exportedData.totalSize = data.totalSize;
+          total = data.totalSize;
         }
         if (!data.done) {
-          let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
+          let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));          
           vm.isWorking = true;
-          vm.exportStatus = "Exporting... Completed " + exportedData.records.length + " of " + exportedData.totalSize + " record(s)";
+          vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.${perf(startPerf, vm.displayPerformance)}`;
           vm.exportError = null;
           vm.exportedData = exportedData;
           vm.updatedExportedData();
@@ -798,16 +803,16 @@ class Model {
           return pr;
         }
         vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
-        if (exportedData.records.length == 0) {
+        if (recs == 0) {
           vm.isWorking = false;
-          vm.exportStatus = data.totalSize > 0 ? "No data exported. " + data.totalSize + " record(s)." : "No data exported.";
+          vm.exportStatus = "No data exported. " + total > 0 && `${total} record${s(total)}${perf(startPerf, vm.displayPerformance)}`;
           vm.exportError = null;
           vm.exportedData = exportedData;
           vm.updatedExportedData();
           return null;
         }
         vm.isWorking = false;
-        vm.exportStatus = "Exported " + exportedData.records.length + (exportedData.records.length != exportedData.totalSize ? " of " + exportedData.totalSize : "") + " record(s)";
+        vm.exportStatus = `Exported ${recs} ${recs !== total ? (" of " + total) : ""} record${s(recs)}.${perf(startPerf, vm.displayPerformance)}`;
         vm.exportError = null;
         vm.exportedData = exportedData;
         vm.updatedExportedData();
@@ -816,10 +821,12 @@ class Model {
         if (err.name != "SalesforceRestError") {
           throw err; // not a SalesforceRestError
         }
-        if (exportedData.totalSize != -1) {
+        let recs = exportedData.records.length;
+        let total = exportedData.totalSize;
+        if (total != -1) {
           // We already got some data. Show it, and indicate that not all data was exported
           vm.isWorking = false;
-          vm.exportStatus = "Exported " + exportedData.records.length + " of " + exportedData.totalSize + " record(s). Stopped by error.";
+          vm.exportStatus = `Exported ${recs} of ${total} record${s(total)}. Stopped by error.${perf(startPerf, vm.displayPerformance)}`;
           vm.exportError = null;
           vm.exportedData = exportedData;
           vm.updatedExportedData();

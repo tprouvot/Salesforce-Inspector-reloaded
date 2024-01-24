@@ -97,7 +97,7 @@ class OptionsTabSelector extends React.Component {
         title: "Data Export",
         content: [
           {option: CSVSeparatorOption, props: {key: 1}},
-          {option: CheckboxToggle, props: {title: "Display Query Execution Time", key: "displayQueryPerformanceOption"}}
+          {option: CheckboxToggle, props: {title: "Display Query Execution Time", key: "displayQueryPerformance"}}
         ]
       },
       {

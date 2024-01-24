@@ -3,7 +3,7 @@
 ## Version 1.23
 
 - Add the possibility to hide fields API names after users clicked "Show fields API names"
-
+- Add option to display query performance in Options/Data Export tab (contribution by [Nathan Shulman](https://github.com/nshulman))
 
 ## Version 1.22
 

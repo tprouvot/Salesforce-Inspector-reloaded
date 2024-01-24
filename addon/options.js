@@ -276,8 +276,8 @@ class CheckboxToggle extends React.Component {
   constructor(props) {
     super(props);
     this.onChange = this.onChange.bind(this);
-    this.key = props.storageKey;    
-    this.state = {enabled: !!JSON.parse(localStorage.getItem(this.key))};    
+    this.key = props.storageKey;
+    this.state = {enabled: !!JSON.parse(localStorage.getItem(this.key))};
     this.title = props.title;
   }
 
@@ -318,7 +318,6 @@ class APIKeyOption extends React.Component {
   }
 
   onChangeApiKey(e) {
-    let {model} = this.props;
     let apiKey = e.target.value;
     this.setState({apiKey});
     localStorage.setItem(this.sfHost + "_clientId", apiKey);

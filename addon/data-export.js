@@ -210,22 +210,18 @@ class Model {
     if (!this.displayPerformance || !this.startTime || this.performancePoints.length === 0) {
       return "";
     }
-    else {
-      let batchCalcs = "";
-      const batches = this.performancePoints.length;
-      if (batches > 1) {
-        // average of performance points
-        const avgTime = this.performancePoints.reduce((a, b) => a + b, 0) / batches;
-        // max of performance points
-        const maxTime = Math.max(...this.performancePoints);
-        const minTime = Math.min(...this.performancePoints);
-        const avg = `Avg ${avgTime.toFixed(1)}ms`;
-        const max = `Max ${maxTime.toFixed(1)}ms`;
-        const min = `Min ${minTime.toFixed(1)}ms`;
-        batchCalcs = `, ${batches} Batches: ${avg}, ${min}, ${max}`;
-      }
-      return `Total Time: ${this.totalTime.toFixed(1)}ms${batchCalcs}`;
+    const batches = this.performancePoints.length;
+    let batchCalcs = "";
+    if (batches > 1) {
+      const avgTime = this.performancePoints.reduce((a, b) => a + b, 0) / batches;
+      const maxTime = Math.max(...this.performancePoints);
+      const minTime = Math.min(...this.performancePoints);
+      const avg = `Avg ${avgTime.toFixed(1)}ms`;
+      const max = `Max ${maxTime.toFixed(1)}ms`;
+      const min = `Min ${minTime.toFixed(1)}ms`;
+      batchCalcs = `, ${batches} Batches: ${avg}, ${min}, ${max}`;
     }
+    return `Total Time: ${this.totalTime.toFixed(1)}ms${batchCalcs}`;
   }
   clearHistory() {
     this.queryHistory.clear();
@@ -292,7 +288,7 @@ class Model {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
     args.set("data", encodedData);
-    if (this.queryTooling) args.set("apitype", 'Tooling');
+    if (this.queryTooling) args.set("apitype", "Tooling");
 
     window.open("data-import.html?" + args, getLinkTarget(e));
   }
@@ -872,7 +868,7 @@ class Model {
         if (total != -1) {
           // We already got some data. Show it, and indicate that not all data was exported
           vm.isWorking = false;
-          vm.exportStatus = `Exported ${recs} of ${total} record${s(total)}. Stopped by error.${perf(startPerf, vm.displayPerformance)}`;
+          vm.exportStatus = `Exported ${recs} of ${total} record${s(total)}. Stopped by error.`;
           vm.exportError = null;
           vm.exportedData = exportedData;
           vm.updatedExportedData();
@@ -1200,7 +1196,7 @@ class App extends React.Component {
       }
     });
     addEventListener("keydown", e => {
-      if (e.ctrlKey && e.key == "Enter" || e.key == "F5") {
+      if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
         model.doExport();
         model.didUpdate();
@@ -1349,7 +1345,7 @@ class App extends React.Component {
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
           ),
         ),
-        model.displayPerformance && h("span", {className: "result-status flex-right", style:{fontStyle:"italic", paddingRight: "20px", paddingBottom: "3px"}}, model.perfStatus()),
+        model.displayPerformance && h("span", {className: "result-status flex-right", style: {fontStyle: "italic", paddingRight: "20px", paddingBottom: "3px"}}, model.perfStatus()),
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null}
           /* the scroll table goes here */

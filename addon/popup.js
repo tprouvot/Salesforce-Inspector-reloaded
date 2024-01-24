@@ -562,6 +562,23 @@ class AllDataBox extends React.PureComponent {
       });
   }
 
+  onThemeChange(e) {
+      const html = document.documentElement;
+      const theme = html.dataset.theme === "light" ? "dark" : "light";
+      html.dataset.theme = theme;
+      localStorage.setItem("theme", theme);
+
+      const int = setInterval(() => {
+          const light = document.getElementById("light-theme");
+          const dark = document.getElementById("dark-theme");
+          if(light == null || dark == null) return;
+          clearInterval(int);
+
+          light.classList.toggle("hide");
+          dark.classList.toggle("hide");
+      }, 500);
+  }
+
   render() {
     let {activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList} = this.state;
     let {sfHost, showDetailsSupported, linkTarget, onContextRecordChange, isFieldsPresent} = this.props;
@@ -572,7 +589,9 @@ class AllDataBox extends React.PureComponent {
           h("li", {ref: "objectTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : ""}, h("span", {}, h("u", {}, "O"), "bjects")),
           h("li", {ref: "userTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : ""}, h("span", {}, h("u", {}, "U"), "sers")),
           h("li", {ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : ""}, h("span", {}, h("u", {}, "S"), "hortcuts")),
-          h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g"))
+          h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g")),
+          h("li", {id: "light-theme", className: "hide"}, h("img", {src: "/sun.svg",  type: "image/svg+xml", onClick: this.onThemeChange, height: "20px", width: "20px"})),
+          h("li", {id: "dark-theme",  className: "hide"}, h("img", {src: "/moon.svg", type: "image/svg+xml", onClick: this.onThemeChange, height: "20px", width: "20px"}))
         ),
         (activeSearchAspect == this.SearchAspectTypes.sobject)
           ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, onContextRecordChange, isFieldsPresent})

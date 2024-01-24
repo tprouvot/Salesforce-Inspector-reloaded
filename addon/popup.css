@@ -333,7 +333,7 @@ ul.small-tabs li:hover {
 }
 
 .hide {
-    display: none;
+    display: none !important;
 }
 
 .mask {

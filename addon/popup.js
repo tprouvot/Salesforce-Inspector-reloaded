@@ -328,8 +328,8 @@ class App extends React.PureComponent {
             ),
           )
         ),
-        h("div", {className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top"},
-          h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
+        h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
+          h("div", {className: "slds-col slds-size_3-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
@@ -348,7 +348,14 @@ class App extends React.PureComponent {
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget}, "Doc")
-          )
+          ),
+          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Options"},
+            h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget},
+              h("svg", {className: "slds-button slds-icon_xx-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
+                h("use", {xlinkHref: "symbols.svg#settings", style: {fill: "#9c9c9c"}})
+              )
+            )
+          ),
         )
       )
     );

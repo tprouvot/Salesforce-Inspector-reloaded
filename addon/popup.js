@@ -202,13 +202,13 @@ class App extends React.PureComponent {
     const oauthAuthorizeUrl = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     return (
       h("div", {},
-        h("div", {className: "slds-page-header slds-theme_shade"},
+        h("div", {className: "slds-page-header slds-theme_shade popup-header"},
           h("div", {className: "slds-page-header__row"},
             h("div", {className: "slds-page-header__col-title"},
               h("div", {className: "slds-media"},
-                h("div", {className: "slds-media__figure slds-media-popup__figure"},
-                  h("span", {className: "slds-icon_container", title: "Salesforce Inspector Reloaded"},
-                    h("svg", {className: "slds-icon slds-page-header-popup__icon", viewBox: "0 0 24 24"},
+                h("div", {className: "slds-media__figure popup-media__figure"},
+                  h("span", {className: "popup-icon_container", title: "Salesforce Inspector Reloaded"},
+                    h("svg", {className: "slds-icon popup-header__icon", viewBox: "0 0 24 24"},
                       h("path", {
                         d: `
                         M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
@@ -223,11 +223,9 @@ class App extends React.PureComponent {
                   )
                 ),
                 h("div", {className: "slds-media__body"},
-                  h("div", {className: "slds-page-header__name"},
-                    h("div", {className: "slds-page-header__name-title"},
-                      h("h1", {},
-                        h("span", {className: "slds-page-header__title popup-title slds-truncate", title: "Salesforce Inspector Reloaded"}, "Salesforce Inspector Reloaded")
-                      )
+                  h("div", {className: "popup-header__name-title"},
+                    h("h1", {},
+                      h("span", {className: "popup-header__title popup-title slds-truncate", title: "Salesforce Inspector Reloaded"}, "Salesforce Inspector Reloaded")
                     )
                   )
                 )

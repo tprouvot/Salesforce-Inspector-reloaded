@@ -1833,6 +1833,9 @@ a.slds-button--inverse:focus{
   padding-left:var(--slds-c-card-footer-spacing-inline-start, var(--sds-c-card-footer-spacing-inline-start, var(--slds-c-card-footer-spacing-inline, var(--sds-c-card-footer-spacing-inline, 1rem))));
 }
 
+.slds-page-header__title .slds-icon {
+  fill: currentColor;
+}
 .slds-tabs_card .slds-page-header,
 .slds-card .slds-page-header{
   border:0;
@@ -5308,10 +5311,6 @@ a.slds-button--inverse:focus{
   width:2.25rem;
   height:2.25rem;
 }
-.slds-page-header-popup__icon{
-  width:1.75rem;
-  height:1.75rem;
-}
 
 .slds-media{
   display:-webkit-box;
@@ -5325,32 +5324,4 @@ a.slds-button--inverse:focus{
   -ms-flex-negative:0;
       flex-shrink:0;
   margin-right:0.75rem;
-}
-.slds-media-popup__figure{
-  padding-top:0.05rem;
-  padding-left:0.25rem;
-}
-.slds-page-header__name-title{
-  min-width:0;
-  font-weight: 500;
-  font-size: .9rem;
-  padding-top: .4rem;
-  color: #061c3f;
-}
-.slds-page-header__title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  line-height: 1.25;
-  display: block;
-}
-.popup-title {
-  font-size: .9rem !important;
-  padding-bottom: .6rem;
-}
-.slds-page-header__title .slds-icon {
-  fill: currentColor;
-}
-.slds-page-header_vertical .slds-page-header__name-title,
-.slds-page-header--vertical .slds-page-header__name-title{
-  margin-top:0.25rem;
 }

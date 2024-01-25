@@ -5283,7 +5283,7 @@ a.slds-button--inverse:focus{
   padding:.2rem .2rem;
   border-bottom:1px solid var(--slds-g-color-border-base-1, #c9c9c9);
   border-radius:0.25rem;
-  background: #061c3f;
+  background: #f3f3f3;
   background-clip:padding-box;
   -webkit-box-shadow:0 2px 2px 0 rgba(0, 0, 0, 0.1);
           box-shadow:0 2px 2px 0 rgba(0, 0, 0, 0.1);
@@ -5308,6 +5308,11 @@ a.slds-button--inverse:focus{
   width:2.25rem;
   height:2.25rem;
 }
+.slds-page-header-popup__icon{
+  width:1.75rem;
+  height:1.75rem;
+}
+
 .slds-media{
   display:-webkit-box;
   display:-ms-flexbox;
@@ -5321,12 +5326,29 @@ a.slds-button--inverse:focus{
       flex-shrink:0;
   margin-right:0.75rem;
 }
+.slds-media-popup__figure{
+  padding-top:0.05rem;
+  padding-left:0.25rem;
+}
 .slds-page-header__name-title{
   min-width:0;
   font-weight: 500;
   font-size: .9rem;
   padding-top: .4rem;
-  color: #f3f3f3;
+  color: #061c3f;
+}
+.slds-page-header__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  display: block;
+}
+.popup-title {
+  font-size: .9rem !important;
+  padding-bottom: .6rem;
+}
+.slds-page-header__title .slds-icon {
+  fill: currentColor;
 }
 .slds-page-header_vertical .slds-page-header__name-title,
 .slds-page-header--vertical .slds-page-header__name-title{

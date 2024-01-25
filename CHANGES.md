@@ -4,7 +4,7 @@
 
 - Add the possibility to hide fields API names after users clicked "Show fields API names"
 - Add performance On data export with option to disable in Options/Data Export tab (contribution by [Nathan Shulman](https://github.com/nshulman))
-- New popup header (contribution by [Nathan Shulman](https://github.com/nshulman))
+- New popup header and gear icon to open Options screen in footer (contribution by [Nathan Shulman](https://github.com/nshulman))
 
 ## Version 1.22
 

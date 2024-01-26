@@ -382,6 +382,32 @@ textarea[readonly] {
   color: #a12b2b;
 }
 
+.delete-btn {
+  background-color: #c23934;
+  border-color: #c23934;
+  color: white;
+  /* Allows to still show the title even when disabled as it contains useful information */
+  pointer-events: auto;
+}
+
+.delete-btn:not(:disabled):hover,
+.delete-btn:not(:disabled):focus {
+  background-color: #a61a14;
+  border-color: #c23934;
+  color: white;
+}
+
+.delete-btn:not(:disabled):active {
+  background-color: #870500;
+  border-color: #870500;
+}
+
+.delete-btn:disabled, .delete-btn:disabled:hover {
+  background-color: #c9c7c5;
+  border-color: #c9c7c5;
+  color: white;
+}
+
 .char-btn {
   color: white;
   text-decoration: none;

@@ -37,7 +37,7 @@ export async function dataExportTest(test) {
     return list.map(el => el.value);
   }
 
-  assertEquals("SELECT Id FROM Account", queryInput.value);
+  assertEquals("SELECT Id FROM Account LIMIT 200", queryInput.value);
   queryInput.selectionStart = queryInput.selectionEnd = "SELECT Id FROM Account".length; // When the cursor is placed after object name, we will try to autocomplete that once the global describe loads, and we will not try to load object field describes, so we can test loading those separately
   vm.queryAutocompleteHandler();
 
@@ -533,6 +533,38 @@ export async function dataExportTest(test) {
   assertEquals("select count() from Inspector_Test__c", queryInput.value);
   vm.clearHistory();
   assertEquals([], vm.queryHistory.list);
+
+  await anonApex(`
+    delete [select Id from Inspector_Test__c];
+    insert new Inspector_Test__c(Name = 'test1', Checkbox__c = false, Number__c = 100.01);
+    insert new Inspector_Test__c(Name = 'test2', Checkbox__c = true, Number__c = 200.02, Lookup__r = new Inspector_Test__c(Name = 'test1'));
+    insert new Inspector_Test__c(Name = 'test3', Checkbox__c = false, Number__c = 300.03);
+    insert new Inspector_Test__c(Name = 'test4', Checkbox__c = true, Number__c = 400.04, Lookup__r = new Inspector_Test__c(Name = 'test3'));
+  `);
+
+  // "Delete Records" button
+  queryInput.value = "select Name from Inspector_Test__c";
+  vm.doExport();
+  await waitForSpinner();
+  assert(!vm.canDelete(), "Delete button should be disabled as there is no Id field included in the query");
+
+  queryInput.value = "select Id, Name from Inspector_Test__c where Name = 'no such name'";
+  vm.doExport();
+  await waitForSpinner();
+  assert(!vm.canDelete(), "Delete button should be disabled as there are no records to delete"); //Id field is not included in the query
+
+  queryInput.value = "select Id, Name from Inspector_Test__c";
+  vm.doExport();
+  await waitForSpinner();
+  assert(vm.canDelete(), "The Delete button should be enabled");
+
+  vm.setResultsFilter("test3");
+  assert(vm.canDelete(), "The Delete button should be enabled");
+
+  vm.setResultsFilter("test5");
+  assert(!vm.canDelete(), "The Delete button should be disabled as there are no results after filtering");
+
+  vm.setResultsFilter("");
 
   // Autocomplete load errors
   let restOrig = sfConn.rest;

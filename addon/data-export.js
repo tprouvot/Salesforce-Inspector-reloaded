@@ -73,7 +73,6 @@ class Model {
       this.queryAutocompleteHandler({newDescribe: true});
       this.didUpdate();
     });
-
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
@@ -118,8 +117,12 @@ class Model {
       this.initialQuery = this.queryHistory.list[0].query;
       this.queryTooling = this.queryHistory.list[0].useToolingApi;
     } else {
-      this.initialQuery = "SELECT Id FROM Account";
+      this.initialQuery = "SELECT Id FROM Account LIMIT 200";
       this.queryTooling = false;
+    }
+
+    if (args.has("error")) {
+      this.exportError = args.get("error") + " " + args.get("error_description");
     }
 
   }
@@ -221,18 +224,33 @@ class Model {
   canCopy() {
     return this.exportedData != null;
   }
+  canDelete() {
+    //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
+    return this.exportedData
+          && (this.exportedData.countOfVisibleRecords === null /* no filtering has been done yet*/ || this.exportedData.countOfVisibleRecords > 0)
+          && this.exportedData.records.length < 20001 && !this.exportStatus.includes("Exporting") && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
+  }
   copyAsExcel() {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
   }
   copyAsCsv() {
-    let separator = ",";
-    if (localStorage.getItem("csvSeparator")) {
-      separator = localStorage.getItem("csvSeparator");
-    }
+    let separator = getSeparator();
     copyToClipboard(this.exportedData.csvSerialize(separator));
   }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
+  }
+  deleteRecords(e) {
+    let separator = getSeparator();
+    let data = this.exportedData.csvSerialize(separator);
+    let encodedData = btoa(data);
+
+    let args = new URLSearchParams();
+    args.set("host", this.sfHost);
+    args.set("data", encodedData);
+    if (this.queryTooling) args.set("apitype", 'Tooling');
+
+    window.open("data-import.html?" + args, getLinkTarget(e));
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -883,6 +901,7 @@ function RecordTable(vm) {
     table: [],
     rowVisibilities: [],
     colVisibilities: [true],
+    countOfVisibleRecords: null,
     isTooling: false,
     totalSize: -1,
     addToTable(expRecords) {
@@ -900,12 +919,25 @@ function RecordTable(vm) {
         discoverColumns(record, "", row);
       }
     },
-    csvSerialize: separator => rt.table.map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
+    csvSerialize: separator => rt.getVisibleTable().map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
     updateVisibility() {
       let filter = vm.resultsFilter;
+      let countOfVisibleRecords = 0;
       for (let r = 1/* always show header */; r < rt.table.length; r++) {
         rt.rowVisibilities[r] = isVisible(rt.table[r], filter);
+        if (isVisible(rt.table[r], filter)) countOfVisibleRecords++;
       }
+      this.countOfVisibleRecords = countOfVisibleRecords;
+    },
+    getVisibleTable() {
+      if (vm.resultsFilter) {
+        let filteredTable = [];
+        for (let i = 0; i < rt.table.length; i++) {
+          if (rt.rowVisibilities[i]) { filteredTable.push(rt.table[i]); }
+        }
+        return filteredTable;
+      }
+      return rt.table;
     }
   };
   return rt;
@@ -934,6 +966,7 @@ class App extends React.Component {
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
+    this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetClientId = this.onSetClientId.bind(this);
@@ -1057,6 +1090,11 @@ class App extends React.Component {
     model.copyAsJson();
     model.didUpdate();
   }
+  onDeleteRecords(e) {
+    let {model} = this.props;
+    model.deleteRecords(e);
+    model.didUpdate();
+  }
   onResultsFilterInput(e) {
     let {model} = this.props;
     model.setResultsFilter(e.target.value);
@@ -1082,6 +1120,10 @@ class App extends React.Component {
     let queryInput = this.refs.query;
 
     model.setQueryInput(queryInput);
+    //Set the cursor focus on query text area
+    if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
+      queryInput.focus();
+    }
 
     function queryAutocompleteEvent() {
       model.queryAutocompleteHandler();
@@ -1244,6 +1286,7 @@ class App extends React.Component {
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
+            h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried, ", className: "delete-btn"}, "Delete Records"),
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
           h("span", {className: "result-status flex-right"},
@@ -1262,8 +1305,12 @@ class App extends React.Component {
 
 {
 
-  let args = new URLSearchParams(location.search.slice(1));
+  let args = new URLSearchParams(location.search);
   let sfHost = args.get("host");
+  let hash = new URLSearchParams(location.hash); //User-agent OAuth flow
+  if (!sfHost && hash) {
+    sfHost = decodeURIComponent(hash.get("instance_url")).replace(/^https?:\/\//i, "");
+  }
   initButton(sfHost, true);
   sfConn.getSession(sfHost).then(() => {
 
@@ -1280,4 +1327,20 @@ class App extends React.Component {
 
   });
 
+}
+
+function getLinkTarget(e) {
+  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
+    return "_blank";
+  } else {
+    return "_top";
+  }
+}
+
+function getSeparator() {
+  let separator = ",";
+  if (localStorage.getItem("csvSeparator")) {
+    separator = localStorage.getItem("csvSeparator");
+  }
+  return separator;
 }

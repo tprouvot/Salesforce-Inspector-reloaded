@@ -11,3 +11,6 @@ yarn.lock
 .history/
 .sfdx/
 venv/
+.sf/
+.vscode/
+.DS_Store

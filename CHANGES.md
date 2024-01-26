@@ -2,6 +2,7 @@
 
 ## Version 1.22
 
+- Fix double "Show all data" button [issue 63](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63) (contribution by [Luca Bassani](https://github.com/baslu93))
 - Add AlertBanner component for Alerts following [SLDS guidelines](https://www.lightningdesignsystem.com/components/alert/) (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Add info banner when extension is updated and convert "Generate token" button to alert. [feature 51](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/51) (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Add "Hide fields API names" when users clicked "Show fields API names"

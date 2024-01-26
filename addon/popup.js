@@ -211,6 +211,31 @@ class App extends React.PureComponent {
       });
     }
   }
+  onThemeChange() {
+      const html = document.documentElement;
+      const theme = html.dataset.theme === "light" ? "dark" : "light";
+      html.dataset.theme = theme;
+      localStorage.setItem("theme", theme);
+      let int = undefined;
+      let changed = false;
+      const updateTheme = () => {
+          const light = document.getElementById("light-theme");
+          const dark = document.getElementById("dark-theme");
+          if(light == null || dark == null) return;
+          if(changed){
+              clearInterval(int);
+              return;
+          }
+          changed = true;
+          clearInterval(int);
+
+          light.classList.toggle("hide")
+          dark.classList.toggle("hide");
+      }
+
+      updateTheme()
+      int = setInterval(updateTheme, 500);
+  }
   render() {
     let {
       sfHost,
@@ -334,10 +359,18 @@ class App extends React.PureComponent {
               title: "Update api version",
               onChange: this.onChangeApi,
               value: apiVersionInput.split(".0")[0]
-            })
+            }),
+            h("svg", {id: "dark-theme", className: "hide", onClick: this.onThemeChange, height: "20px", width: "20px", viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg"},
+                h("path", {d: "M3.32031 11.6835C3.32031 16.6541 7.34975 20.6835 12.3203 20.6835C16.1075 20.6835 19.3483 18.3443 20.6768 15.032C19.6402 15.4486 18.5059 15.6834 17.3203 15.6834C12.3497 15.6834 8.32031 11.654 8.32031 6.68342C8.32031 5.50338 8.55165 4.36259 8.96453 3.32996C5.65605 4.66028 3.32031 7.89912 3.32031 11.6835Z", stroke: "#000000", 'stroke-width': "2", 'stroke-linecap': "round", 'stroke-linejoin':"round"})
+            ),
+            h("svg", {id: "light-theme", className: "hide", onClick:this.onThemeChange, height: "20px", width: "20px", style: {color: "#FFFFFF"}, viewBox: "0 0 30 30", xmlns:"http://www.w3.org/2000/svg", color:"#FFFFFF"},
+                h("path", {d:"M 14.984375 0.98632812 A 1.0001 1.0001 0 0 0 14 2 L 14 5 A 1.0001 1.0001 0 1 0 16 5 L 16 2 A 1.0001 1.0001 0 0 0 14.984375 0.98632812 z M 5.796875 4.7988281 A 1.0001 1.0001 0 0 0 5.1015625 6.515625 L 7.2226562 8.6367188 A 1.0001 1.0001 0 1 0 8.6367188 7.2226562 L 6.515625 5.1015625 A 1.0001 1.0001 0 0 0 5.796875 4.7988281 z M 24.171875 4.7988281 A 1.0001 1.0001 0 0 0 23.484375 5.1015625 L 21.363281 7.2226562 A 1.0001 1.0001 0 1 0 22.777344 8.6367188 L 24.898438 6.515625 A 1.0001 1.0001 0 0 0 24.171875 4.7988281 z M 15 8 A 7 7 0 0 0 8 15 A 7 7 0 0 0 15 22 A 7 7 0 0 0 22 15 A 7 7 0 0 0 15 8 z M 2 14 A 1.0001 1.0001 0 1 0 2 16 L 5 16 A 1.0001 1.0001 0 1 0 5 14 L 2 14 z M 25 14 A 1.0001 1.0001 0 1 0 25 16 L 28 16 A 1.0001 1.0001 0 1 0 28 14 L 25 14 z M 7.9101562 21.060547 A 1.0001 1.0001 0 0 0 7.2226562 21.363281 L 5.1015625 23.484375 A 1.0001 1.0001 0 1 0 6.515625 24.898438 L 8.6367188 22.777344 A 1.0001 1.0001 0 0 0 7.9101562 21.060547 z M 22.060547 21.060547 A 1.0001 1.0001 0 0 0 21.363281 22.777344 L 23.484375 24.898438 A 1.0001 1.0001 0 1 0 24.898438 23.484375 L 22.777344 21.363281 A 1.0001 1.0001 0 0 0 22.060547 21.060547 z M 14.984375 23.986328 A 1.0001 1.0001 0 0 0 14 25 L 14 28 A 1.0001 1.0001 0 1 0 16 28 L 16 25 A 1.0001 1.0001 0 0 0 14.984375 23.986328 z", stroke: "#FFFFFF"})
+            )
           ),
-          h("div", {className: "slds-col slds-size_3-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+          h("div", {className: "slds-col slds-size_3-of-12 slds-text-align_left slds-grid slds-grid_vertical slds-grid_vertical-align-center"},
+            h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]",
+                h("br")),
+            h("span", {className: "footer-small-text"}, "to open")
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right"},
             h("a", {href: "https://github.com/tprouvot/Salesforce-Inspector-reloaded#salesforce-inspector-reloaded", target: linkTarget}, "About")
@@ -562,23 +595,6 @@ class AllDataBox extends React.PureComponent {
       });
   }
 
-  onThemeChange(e) {
-      const html = document.documentElement;
-      const theme = html.dataset.theme === "light" ? "dark" : "light";
-      html.dataset.theme = theme;
-      localStorage.setItem("theme", theme);
-
-      const int = setInterval(() => {
-          const light = document.getElementById("light-theme");
-          const dark = document.getElementById("dark-theme");
-          if(light == null || dark == null) return;
-          clearInterval(int);
-
-          light.classList.toggle("hide");
-          dark.classList.toggle("hide");
-      }, 500);
-  }
-
   render() {
     let {activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList} = this.state;
     let {sfHost, showDetailsSupported, linkTarget, onContextRecordChange, isFieldsPresent} = this.props;
@@ -590,8 +606,6 @@ class AllDataBox extends React.PureComponent {
           h("li", {ref: "userTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : ""}, h("span", {}, h("u", {}, "U"), "sers")),
           h("li", {ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : ""}, h("span", {}, h("u", {}, "S"), "hortcuts")),
           h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g")),
-          h("li", {id: "light-theme", className: "hide"}, h("img", {src: "/sun.svg",  type: "image/svg+xml", onClick: this.onThemeChange, height: "20px", width: "20px"})),
-          h("li", {id: "dark-theme",  className: "hide"}, h("img", {src: "/moon.svg", type: "image/svg+xml", onClick: this.onThemeChange, height: "20px", width: "20px"}))
         ),
         (activeSearchAspect == this.SearchAspectTypes.sobject)
           ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, onContextRecordChange, isFieldsPresent})

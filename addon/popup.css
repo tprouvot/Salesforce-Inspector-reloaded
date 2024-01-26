@@ -45,7 +45,7 @@ html,
 body {
     white-space: normal;
     font-family: "Salesforce Sans", Arial, Helvetica, sans-serif;
-    background-color: white;
+    background-color: var(--inspector-background);
     margin: 0;
 }
 
@@ -66,7 +66,7 @@ body,
 }
 
 a:visited {
-    color: #0176d3;
+    color: var(--inspector-visited-link);
 }
 
 .main {
@@ -75,9 +75,9 @@ a:visited {
 }
 
 .header-logo {
-    background: #061c3f;
+    background: var(--inspector-primary);
     padding: 2px 1em 2px 2px;
-    color: white;
+    color: var(--inspector-inverted-text);
     display: flex;
     align-items: center;
     margin: 0 auto;
@@ -86,7 +86,7 @@ a:visited {
 
 .header-icon {
     margin-right: 12px;
-    background-color: #d8be5f;
+    background-color: var(--inspector-icon-logo);
     border-radius: 4px;
 }
 
@@ -94,7 +94,7 @@ a:visited {
     line-height: 1;
     width: 24px;
     height: 24px;
-    fill: white;
+    fill: var(--inspector-text);
     vertical-align: middle;
 }
 
@@ -108,6 +108,7 @@ input.api-input {
     font-size: inherit;
     border: none;
     background: transparent;
+    color: var(--inspector-text-neutral);
 }
 
 .page-button {
@@ -118,11 +119,11 @@ input.api-input {
     font-size: .9em;
     font-family: inherit;
     width: 100%;
-    background-color: white;
-    color: #16325c;
-    border: 1px solid #d8dde6;
+    background-color: var(--inspector-background);
+    color: var(--inspector-text);
+    border: 1px solid var(--inspector-neutral);
     border-radius: 0 .25rem .25rem .25rem;
-    transition: border .1s linear, background-color .1s linear;
+    /*transition: border 500ms linear;*/
     display: inline-block;
     padding: 0 2rem 0 .25rem;
     line-height: 1.875rem;
@@ -133,9 +134,9 @@ input.api-input {
 .all-data-input:active,
 .all-data-input:focus {
     outline: 0;
-    border-color: #1589ee;
-    background-color: #fff;
-    box-shadow: 0 0 3px #0070D2;
+    border-color: var(--inspector-primary);
+    background-color: var(--inspector-background);
+    box-shadow: 0 0 3px var(--inspector-primary);
 }
 
 .all-data-box-inner {
@@ -144,7 +145,7 @@ input.api-input {
     flex-direction: column;
     min-height: 12em;
     /* should be heigh enough so the buttons below don't jump around when the contents of this box loads */
-    color: #54698d;
+    color: var(--inspector-text-neutral);
     line-height: 1.5;
 }
 
@@ -170,7 +171,7 @@ input.api-input {
     right: 1rem;
     top: 50%;
     margin-top: -.375rem;
-    fill: #54698d;
+    fill: var(--inspector-neutral);
 }
 
 .autocomplete-container {
@@ -178,10 +179,10 @@ input.api-input {
 }
 
 .autocomplete {
-    border: 1px solid #d8dde6;
+    border: 1px solid var(--inspector-neutral);
     border-radius: .25rem;
     padding: .25rem 0;
-    background-color: white;
+    background-color: var(--inspector-background);
     max-height: 260px;
     position: absolute;
     width: 100%;
@@ -193,7 +194,7 @@ input.api-input {
 .autocomplete-item {
     display: block;
     padding: .25rem .5rem;
-    color: #16325c;
+    color: var(--inspector-accent);
     line-height: 1.5;
     cursor: pointer;
 }
@@ -208,7 +209,7 @@ input.api-input {
 
 .autocomplete-item-sub {
     font-size: .75rem;
-    color: #54698d;
+    color: var(--inspector-text-neutral);
     margin-top: -.25rem;
 }
 
@@ -218,13 +219,13 @@ input.api-input {
 }
 
 .autocomplete-item.selected {
-    background-color: #f4f6f9;
+    background-color: var(--inspector-background);
 }
 
 @keyframes bg-load {
     50% {
-        background-color: #EEF6F1;
-        color: #006B2D;
+        background-color: var(--inspector-background);
+        color: var(--inspector-success-background);
     }
 }
 
@@ -281,8 +282,8 @@ ul.small-tabs {
 
 ul.small-tabs li {
     display: inline;
-    border: solid 1px #d8dde6;
-    color: #0070d2;
+    border: solid 1px var(--inspector-neutral);
+    color: var(--inspector-primary);
     padding: 2px 6px;
     font-style: italic;
     cursor: pointer;
@@ -294,20 +295,20 @@ ul.small-tabs li:first-child {
 }
 
 ul.small-tabs li.active {
-    /*background-color: #d8dde6;*/
+    /*background-color: var(--inspector-background);*/
     font-style: normal;
     font-weight: bold;
-    color: rgb(112, 110, 107);
+    color: var(--inspector-text-neutral);
     padding-top: 6px;
     border-radius: 3px;
 }
 
 ul.small-tabs li:hover {
-    background-color: #f4f6f9;
+    background-color: var(--inspector-background);
 }
 
 .inactive {
-    color: #c0c0c0
+    color: var(--inspector-text-neutral);
 }
 
 .small-font {
@@ -344,7 +345,7 @@ a.icon {
     display: inline-block;
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-size: 0.95rem;
-    background-color: #706E6B;
+    background-color: var(--inspector-neutral);
     width: 16px;
     height: 16px;
 }

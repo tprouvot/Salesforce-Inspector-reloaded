@@ -260,7 +260,7 @@ th{
 }
 
 ::placeholder{
-  color:var(--slds-g-color-neutral-base-50, #747474);
+  color:var(--inspector-text-neutral,var(--slds-g-color-neutral-base-50, #747474));
   font-weight:400;
   opacity:1;
 }
@@ -341,14 +341,14 @@ ul{
 }
 
 a{
-  color:#0176d3;
+  color:var(--inspector-link,#0176d3);
   text-decoration:none;
-  -webkit-transition:color 0.1s linear;
-  transition:color 0.1s linear;
+  /*-webkit-transition:color 0.1s linear;*/
+  /*transition:color 0.1s linear;*/
 }
 
 a:active{
-  color:#014486;
+  color:var(--inspector-accent,#014486);
 }
 a:focus-visible{
   outline-color:var(--slds-g-color-palette-blue-50, #0176d3);
@@ -415,7 +415,7 @@ img{
 
 .slds-border_bottom,
 .slds-border--bottom{
-  border-bottom:1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+  border-bottom:1px solid var(--inspector-neutral, var(--slds-g-color-border-base-1, #e5e5e5));
 }
 .slds-border_left,
 .slds-border--left{
@@ -450,9 +450,9 @@ img{
   padding-bottom:var(--slds-c-button-spacing-block-end, var(--sds-c-button-spacing-block-end, 0));
   padding-left:var(--slds-c-button-spacing-inline-start, var(--sds-c-button-spacing-inline-start, 0));
   background:none;
-  background-color:var(--slds-c-button-color-background, var(--sds-c-button-color-background, transparent));
+  background-color:var(--inspector-background,var(--slds-c-button-color-background, var(--sds-c-button-color-background, transparent)));
   background-clip:border-box;
-  border-color:var(--slds-c-button-color-border, var(--sds-c-button-color-border, transparent));
+  border-color:var(--inspector-neutral,var(--slds-c-button-color-border, var(--sds-c-button-color-border, transparent)));
   border-style:solid;
   border-width:var(--slds-c-button-sizing-border, var(--sds-c-button-sizing-border, 1px));
   border-radius:var(--slds-c-button-radius-border, var(--sds-c-button-radius-border, 0.25rem));
@@ -460,7 +460,7 @@ img{
           box-shadow:var(--slds-c-button-shadow, var(--sds-c-button-shadow));
   line-height:var(--slds-c-button-line-height, var(--sds-c-button-line-height, 1.875rem));
   text-decoration:none;
-  color:var(--slds-c-button-text-color, var(--sds-c-button-text-color, #0176d3));
+  color:var(--inspector-text,var(--slds-c-button-text-color, var(--sds-c-button-text-color, #0176d3)));
   -webkit-appearance:none;
   white-space:normal;
   -webkit-user-select:none;
@@ -4746,5 +4746,5 @@ a.slds-button--inverse:focus{
 
 .slds-theme_shade,
 .slds-theme--shade{
-  background-color:var(--slds-g-color-neutral-base-95, #f3f3f3);
+  background-color:var(--inspector-shade, var(--slds-g-color-neutral-base-95, #f3f3f3));
 }

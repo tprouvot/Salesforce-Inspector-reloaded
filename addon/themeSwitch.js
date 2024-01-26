@@ -10,15 +10,18 @@ const reflectChanges = (theme) => {
 const savedTheme = localStorage.getItem("theme");
 if(savedTheme != null){
     html.dataset.theme = savedTheme;
-
-    const int = setInterval(() => {
+    let int = undefined;
+    const updateTheme = () => {
         const light = document.getElementById("light-theme");
         const dark = document.getElementById("dark-theme");
         if(light == null || dark == null) return;
         clearInterval(int);
 
         savedTheme == "dark" ? light.classList.remove("hide") : dark.classList.remove("hide");
-    }, 500);
+    }
+
+    updateTheme()
+    int = setInterval(updateTheme, 500);
 } else {
     prefersDarkScheme.matches ? reflectChanges("dark") : reflectChanges("light");
 }

@@ -1,36 +1,116 @@
-body {
+html {
     --inspector-black: #000000;
     --inspector-white: #FFFFFF;
 
-    --inspector-light-blue: #1789EE;
+    --inspector-dark-white: #F3F3F3;
+    --inspector-very-light-gray: #AFAFAF;
+
+    --inspector-light-blue: #1789EE;/*#0176d3*/
     --inspector-light-gray: #787878;
+    --inspector-light-green: #9BC53D;
+    --inspector-light-pink: #E0A4B5;
+    --inspector-light-purple: #990099;
     --inspector-light-red: #C3423F;
     --inspector-light-yellow: #FDE74C;
-    --inspector-light-purple: #990099;
-    --inspector-light-pink: #E0A4B5;
 
     --inspector-dark-blue: #00396B;
-    --inspector-dark-gray: #404E4D;
+    --inspector-dark-gray: #252525;/*#404E4D;*/
+    --inspector-dark-green: #018E42;
+    --inspector-dark-pink: #BD4F6C;
+    --inspector-dark-purple: #49416D;
     --inspector-dark-red: #A31914;
     --inspector-dark-yellow: #999900;
-    --inspector-dark-purple: #49416D;
-    --inspector-dark-pink: #BD4F6C;
+
+    --inspector-export-background: #B0C4DF;
+    --inspector-import-background: #E0A4B5;
 }
 
 [data-theme="light"] {
     --inspector-background: var(--inspector-white);
     --inspector-text: var(--inspector-black);
-    --inspector-primary: var(--inspector-light-blue);
-    --inspector-accent: var(--inspector-dark-blue);
-    --inspector-error: var(--inspector-light-red);
+    --inspector-inverted-text: var(--inspector-white);
+    --inspector-text-neutral: var(--inspector-light-gray);
+    --inspector-icon-logo: var(--inspector-light-yellow);
+
+    --inspector-primary: var(--inspector-dark-blue);
+    --inspector-accent: var(--inspector-light-blue);
+    --inspector-dark-neutral: var(--inspector-dark-gray);
+    --inspector-neutral: var(--inspector-light-gray);
+    --inspector-shade: var(--inspector-dark-white);
+
+    --inspector-link: var(--inspector-light-blue);
+    --inspector-visited-link: var(--inspector-light-purple);
+
     --inspector-success: var(--inspector-light-green);
+    --inspector-success-background: var(--inspector-dark-green);
+    --inspector-warning: var(--inspector-light-yellow);
+    --inspector-error: var(--inspector-light-red);
+
+    --inspector-object: var(--inspector-light-yellow);
+    --inspector-number: var(--inspector-light-pink);
+    --inspector-false-boolean: var(--inspector-light-red);
+    --inspector-true-boolean: var(--inspector-dark-blue);
+
+    --inspector-sf-csv: var(--inspector-light-pink);
 }
 
 [data-theme="dark"] {
     --inspector-background: var(--inspector-black);
     --inspector-text: var(--inspector-white);
-    --inspector-primary: var(--inspector-dark-blue);
-    --inspector-accent: var(--inspector-light-blue);
-    --inspector-error: var(--inspector-dark-red);
-    --inspector-success: var(--inspector-dark-green);
+    --inspector-inverted-text: var(--inspector-black);
+    --inspector-text-neutral: var(--inspector-very-light-gray);
+    --inspector-icon-logo: var(--inspector-dark-yellow);
+    
+    --inspector-primary: var(--inspector-light-blue);
+    --inspector-accent: var(--inspector-dark-blue);
+    --inspector-dark-neutral: var(--inspector-dark-gray);
+    --inspector-neutral: var(--inspector-light-gray);
+    --inspector-shade: var(--inspector-dark-gray);
+
+    --inspector-link: var(--inspector-light-blue);
+    --inspector-visited-link: var(--inspector-light-pink);
+
+    --inspector-success: var(--inspector-light-green);
+    --inspector-success-background: var(--inspector-dark-green);
+    --inspector-warning: var(--inspector-dark-yellow);
+    --inspector-error: var(--inspector-light-red);
+
+    --inspector-object: var(--inspector-light-yellow);
+    --inspector-number: var(--inspector-light-pink);
+    --inspector-false-boolean: var(--inspector-light-red);
+    --inspector-true-boolean: var(--inspector-light-blue);
+
+    --inspector-sf-csv: var(--inspector-dark-pink);
+}
+
+div:not(:has([style*=transparent])), body {
+    transition-property: background-color;
+    transition-duration: 500ms;
+    transition-timing-function: ease-in-out;
+}
+
+span:not(:has(> span)), svg {
+    transition-property: color !important;
+    transition-duration: 500ms !important;
+    transition-timing-function: ease-in-out !important;
+}
+
+a.slds-button, input {
+    transition-duration: 500ms;
+    transition-timing-function: ease-in-out;
+}
+a.slds-button:not(:has(> span)), input {
+    transition-property: color, background-color;
+}
+a.slds-button:has(> span) {
+    transition-property: background-color;
+}
+
+#light-theme, #dark-theme {
+    cursor: pointer;
+}
+
+body {
+    background-color: var(--inspector-background);
+    color: var(--inspector-text);
 }

@@ -43,8 +43,6 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 ## New features compared to original SF Inspector
 
-[List of changes](CHANGES.md)
-
 - Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
 - Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)
 - Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34)

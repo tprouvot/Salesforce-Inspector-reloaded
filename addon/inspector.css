@@ -114,3 +114,8 @@ body {
     background-color: var(--inspector-background);
     color: var(--inspector-text);
 }
+
+.hide {
+  display: none;
+  visibility: hidden;
+}

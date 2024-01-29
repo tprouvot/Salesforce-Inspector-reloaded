@@ -1376,15 +1376,15 @@ a.slds-button--inverse:focus{
   padding-right:var(--slds-c-card-spacing-inline-end, var(--sds-c-card-spacing-inline-end, var(--sds-c-card-spacing-inline, 0)));
   padding-bottom:var(--slds-c-card-spacing-block-end, var(--sds-c-card-spacing-block-end, var(--sds-c-card-spacing-block, 0)));
   padding-left:var(--slds-c-card-spacing-inline-start, var(--sds-c-card-spacing-inline-start, var(--sds-c-card-spacing-inline, 0)));
-  background:var(--slds-c-card-color-background, var(--sds-c-card-color-background, var(--slds-g-color-neutral-base-100, white)));
+  background:var(--inspector-background, var(--slds-c-card-color-background, var(--sds-c-card-color-background, var(--slds-g-color-neutral-base-100, white))));
   border-width:var(--slds-c-card-sizing-border, var(--sds-c-card-sizing-border, 1px));
   border-style:solid;
-  border-color:var(--slds-c-card-color-border, var(--sds-c-card-color-border, var(--slds-g-color-border-base-1, #c9c9c9)));
+  border-color:var(--inspector-neutral,var(--slds-c-card-color-border, var(--sds-c-card-color-border, var(--slds-g-color-border-base-1, #c9c9c9))));
   border-radius:var(--slds-c-card-radius-border, var(--sds-c-card-radius-border, 0.25rem));
   background-clip:padding-box;
   -webkit-box-shadow:var(--slds-c-card-shadow, var(--sds-c-card-shadow, 0 2px 2px 0 rgba(0, 0, 0, 0.1)));
           box-shadow:var(--slds-c-card-shadow, var(--sds-c-card-shadow, 0 2px 2px 0 rgba(0, 0, 0, 0.1)));
-  color:var(--slds-c-card-text-color, var(--sds-c-card-text-color));
+  color:var(--inspector-text,var(--slds-c-card-text-color, var(--sds-c-card-text-color)));
 }
 .slds-card + .slds-card{
   margin-top:1rem;

@@ -217,27 +217,27 @@ class App extends React.PureComponent {
   saveThemeChanges(theme) {
     const html = document.documentElement;
     html.dataset.theme = theme;
-    localStorage.setItem("theme", theme);
+    localStorage.setItem("preferredColorScheme", theme);
   }
 
-  updateTheme(theme, isSetup = false) {
+  updateTheme(theme, isSetup = false, callback = null) {
     const light = document.getElementById("light-theme");
     const dark = document.getElementById("dark-theme");
     if (light == null || dark == null) {
-      console.error({light, dark});
-      const callback = this.updateTheme;
-      setTimeout(() => callback(theme, isSetup), 500);
+      console.warn({light, dark});
+      setTimeout(() => this.updateTheme(theme, isSetup, this.saveThemeChanges), 500);
       return;
     }
+
+    callback = callback || this.saveThemeChanges;
+    callback(theme);
 
     if (isSetup) {
       theme === "dark" ? light.classList.remove("hide") : dark.classList.remove("hide");
-      return;
+    } else {
+      light.classList.toggle("hide");
+      dark.classList.toggle("hide");
     }
-
-    this.saveThemeChanges(theme);
-    light.classList.toggle("hide");
-    dark.classList.toggle("hide");
   }
 
   setupThemeChange() {
@@ -249,7 +249,7 @@ class App extends React.PureComponent {
       this.saveThemeChanges(theme);
     });
 
-    const savedTheme = localStorage.getItem("theme");
+    const savedTheme = localStorage.getItem("preferredColorScheme");
     if (savedTheme == null){
       prefersDarkScheme.matches ? this.saveThemeChanges("dark") : this.saveThemeChanges("light");
       return;

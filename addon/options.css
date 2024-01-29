@@ -45,7 +45,7 @@ body {
   margin: 0;
   height: 100%;
   display: flex;
-  background-color: #B0C4DF !important;
+  background-color: var(--inspector-neutral) !important;
   background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png') !important;
   background-repeat: no-repeat !important;
   background-size: contain !important;
@@ -67,7 +67,7 @@ body {
 }
 
 #user-info {
-  background: #f7f9fb;
+  background: var(--inspector-background);
   min-height: 48px;
   display: flex;
   align-items: center;
@@ -84,13 +84,13 @@ body {
 }
 
 .sf-link {
-  background-color: rgb(6, 28, 63);
+  background-color: var(--inspector-primary);
   border-radius: 3px;
   line-height: 1.8em;
   text-decoration: none;
   display: inline-block;
   padding: 2px;
-  color: white;
+  color: var(--inspector-inverted-text);
   padding-right: 1em;
 }
 
@@ -101,9 +101,9 @@ body {
   margin-left: 1px;
   margin-right: 1em;
   float: left;
-  background-color: #ef7ead;
+  background-color: var(--inspector-number);
   border-radius: 2px;
-  fill: white;
+  fill: var(--inspector-text);
 }
 
 .flex-right {
@@ -132,20 +132,20 @@ body {
 }
 
 .options-tab-container {
-    background-color: #f7f9fb;
+    background-color: var(--inspector-background);
 }
 
 .main-container {
-    background-color: #F8F8F8;
+    background-color: var(--inspector-background);
     padding: 8px 12px;
     border-radius: 5px;
-    border: 1px solid #DDDBDA;
+    border: 1px solid var(--inspector-neutral);
     margin: 12px 12px 0 12px;
     flex-grow: 1;
 }
 
 .prod {
-  background-color: #e0a4b5 !important;
+  background-color: var(--inspector-import-background) !important;
   background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png') !important;
   background-repeat: no-repeat !important;
   background-size: contain !important;

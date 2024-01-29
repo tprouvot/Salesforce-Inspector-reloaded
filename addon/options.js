@@ -78,7 +78,8 @@ class OptionsTabSelector extends React.Component {
           {option: OpenLinkNewTabOption, key: 4},
           {option: OpenPermSetSummaryOption, key: 5},
           {option: MdShortcutSearchOption, key: 6},
-          {option: QueryInputAutoFocusOption, key: 7}
+          {option: QueryInputAutoFocusOption, key: 7},
+          {option: ColorSchemeOption, key: 8}
         ]
       },
       {
@@ -475,6 +476,98 @@ class QueryInputAutoFocusOption extends React.Component {
   }
 }
 
+class ColorSchemeOption extends React.Component {
+  constructor(props) {
+    super(props);
+    this.setupThemeChange();
+    this.onThemeChange = this.onThemeChange.bind(this);
+    this.onThemeClick = this.onThemeClick.bind(this);
+    this.state = {preferredColorScheme: localStorage.getItem("preferredColorScheme")};
+  }
+
+  saveThemeChanges(theme, isSetup = false) {
+    const html = document.documentElement;
+    html.dataset.theme = theme;
+    //!isSetup ? this.setState({preferredColorScheme: theme}) : null;
+    localStorage.setItem("preferredColorScheme", theme);
+  }
+
+  updateTheme(theme, isSetup = false, callback = null) {
+    const light = document.getElementById("light-theme");
+    const dark = document.getElementById("dark-theme");
+    const inputField = document.getElementById("checkbox-toggle-themeChange");
+    if (light == null || dark == null || inputField == null) {
+      console.warn({light, dark, inputField});
+      setTimeout(() => this.updateTheme(theme, isSetup, this.saveThemeChanges), 500);
+      return;
+    }
+
+    callback = callback || this.saveThemeChanges;
+    callback(theme, isSetup);
+
+    if (isSetup) {
+      const isDarkTheme = theme === "dark";
+      isDarkTheme ? dark.classList.remove("hide") : light.classList.remove("hide");
+      inputField.checked = isDarkTheme;
+    } else {
+      light.classList.toggle("hide");
+      dark.classList.toggle("hide");
+    }
+  }
+
+  setupThemeChange() {
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+    // listen for changes to color scheme preference
+    prefersDarkScheme.addEventListener("change", mediaQuery => {
+      const theme = mediaQuery.matches ? "dark" : "light";
+      this.saveThemeChanges(theme);
+    });
+
+    const savedTheme = localStorage.getItem("preferredColorScheme");
+    if (savedTheme == null){
+      prefersDarkScheme.matches ? this.saveThemeChanges("dark") : this.saveThemeChanges("light");
+      return;
+    }
+
+    this.updateTheme(savedTheme, true);
+  }
+
+  onThemeChange() {
+    const html = document.documentElement;
+    const theme = html.dataset.theme === "light" ? "dark" : "light";
+    this.updateTheme(theme, false);
+  }
+
+  onThemeClick() {
+    const inputField = document.getElementById("checkbox-toggle-themeChange");
+    if (inputField == null) return;
+    inputField.checked = !inputField.checked;
+    this.onThemeChange();
+  }
+
+  render() {
+    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+      h("div", {className: "text-align-middle slds-grid slds-grid_vertical-align-center", style: {flexDirection: "row"}},
+        h("span", {style: {marginRight: "0.5rem"}}, "Set default theme to "),
+        h("img", {id: "dark-theme", src: "images/moon.svg", className: "hide", height: "20px", width: "20px", onClick: this.onThemeClick, style: {filter: "invert(100%)"}}),
+        h("img", {id: "light-theme", src: "images/sun.svg", className: "hide", height: "20px", width: "20px", onClick: this.onThemeClick})
+      ),
+      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
+        h("label", {className: "slds-checkbox_toggle slds-grid"},
+          h("input", {type: "checkbox", required: true, id: "checkbox-toggle-themeChange", "aria-describedby": "checkbox-toggle-themeDescription", className: "slds-input", onChange: this.onThemeChange}),
+          h("span", {id: "checkbox-toggle-themeDescription", className: "slds-checkbox_faux_container center-label"},
+            h("span", {className: "slds-checkbox_faux"}),
+            h("span", {className: "slds-checkbox_on"}, "Dark"),
+            h("span", {className: "slds-checkbox_off"}, "Light"),
+          )
+        )
+      )
+    );
+  }
+}
+
 class APIKeyOption extends React.Component {
 
   constructor(props) {
@@ -584,12 +677,6 @@ class enableLogsOption extends React.Component {
 let h = React.createElement;
 
 class App extends React.Component {
-
-  constructor(props) {
-    super(props);
-    this.foo = undefined;
-  }
-
   render() {
     let {model} = this.props;
     return h("div", {},

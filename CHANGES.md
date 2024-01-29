@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 1.23
+
+- Add the possibility to hide fields API names after users clicked "Show fields API names"
+- Add performance On data export with option to disable in Options/Data Export tab (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Clean up popup header and footer (contribution by [Nathan Shulman](https://github.com/nshulman))
+
 ## Version 1.22
 
 - Fix double "Show all data" button [issue 63](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63) (contribution by [Luca Bassani](https://github.com/baslu93))

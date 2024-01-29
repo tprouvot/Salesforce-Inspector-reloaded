@@ -123,6 +123,11 @@ export function DescribeInfo(spinFor, didUpdate) {
   };
 }
 
+// Pluralize a numeric value by adding an s (or optional suffix) if it is not 1
+export function s(num, suffix = "s") {
+  return num == 1 ? "" : suffix;
+}
+
 // Copy text to the clipboard, without rendering it, since rendering is slow.
 export function copyToClipboard(value) {
   if (parent && parent.isUnitTest) { // for unit tests

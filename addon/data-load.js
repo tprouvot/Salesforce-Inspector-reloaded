@@ -198,7 +198,7 @@ function renderCell(rt, cell, td) {
         aqueryIcon.className = "icon";
         pop.appendChild(aQuery);
         aQuery.prepend(aqueryIcon);
-  
+
         // If the recordId ends with 0000000000AAA it is a dummy ID such as the ID for the master record type 012000000000000AAA
         if (recordId && isRecordId(recordId) && !recordId.endsWith("0000000000AAA")) {
           let aView = document.createElement("a");
@@ -248,7 +248,7 @@ function renderCell(rt, cell, td) {
           });
         }
       }
-      if(objectTypes.length === 1){
+      if (objectTypes.length === 1){
         objectType = objectTypes[0];
         setLinks();
       } else {

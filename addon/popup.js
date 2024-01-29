@@ -243,7 +243,7 @@ class App extends React.PureComponent {
           link: {
             text: "See What's New",
             props: {
-              href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/",
+              href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""),
               target: "_blank",
               onClick: () => this.updateReleaseNotesViewed(addonVersion)
             }

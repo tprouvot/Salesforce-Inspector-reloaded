@@ -2,6 +2,7 @@
 
 ## Version 1.23
 
+- Display API version in Org tab [feature 293](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/293) (feature by [Camille Guillory](https://github.com/CamilleGuillory))
 - Add the possibility to hide fields API names after users clicked "Show fields API names"
 - Add performance On data export with option to disable in Options/Data Export tab (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Clean up popup header and footer (contribution by [Nathan Shulman](https://github.com/nshulman))

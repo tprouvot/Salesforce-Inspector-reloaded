@@ -1154,6 +1154,14 @@ class AllDataBoxOrg extends React.PureComponent {
     return null;
   }
 
+  getApiVersion(instanceStatus){
+    if (instanceStatus){
+      let apiVersion = (instanceStatus.releaseNumber.substring(0, 3) / 2) - 64;
+      return apiVersion;
+    }
+    return null;
+  }
+
   setInstanceStatus(instanceName, sfHost){
     let instanceStatusLocal = JSON.parse(sessionStorage.getItem(sfHost + "_instanceStatus"));
     if (instanceStatusLocal == null){
@@ -1204,6 +1212,10 @@ class AllDataBoxOrg extends React.PureComponent {
                 h("tr", {},
                   h("th", {}, "Location:"),
                   h("td", {}, this.state.instanceStatus?.location)
+                ),
+                h("tr", {},
+                  h("th", {}, "API version:"),
+                  h("td", {}, this.getApiVersion(this.state.instanceStatus))
                 ),
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),

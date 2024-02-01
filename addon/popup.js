@@ -218,6 +218,7 @@ class App extends React.PureComponent {
     const html = document.documentElement;
     html.dataset.theme = theme;
     localStorage.setItem("preferredColorScheme", theme);
+    window.parent.dispatchEvent(new Event("theme-update"));
   }
 
   updateTheme(theme, isSetup = false, callback = null) {
@@ -233,6 +234,7 @@ class App extends React.PureComponent {
     callback(theme);
 
     if (isSetup) {
+      // always show only one of light/dark toggles
       theme === "dark" ? light.classList.remove("hide") : dark.classList.remove("hide");
     } else {
       light.classList.toggle("hide");
@@ -241,21 +243,29 @@ class App extends React.PureComponent {
   }
 
   setupThemeChange() {
-    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
-
     // listen for changes to color scheme preference
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
     prefersDarkScheme.addEventListener("change", mediaQuery => {
       const theme = mediaQuery.matches ? "dark" : "light";
       this.saveThemeChanges(theme);
     });
 
+    // listen to possible updates from background page
+    const html = document.documentElement;
+    setTimeout(() => window.addEventListener("theme-update", () => {
+        const localTheme = localStorage.getItem("preferredColorScheme");
+        const htmlTheme = html.dataset.theme;
+        if (localTheme != htmlTheme) // avoid recursion
+            this.updateTheme(localTheme);
+    }), 1000); //delay action after Setup has finished;
+
     const savedTheme = localStorage.getItem("preferredColorScheme");
     if (savedTheme == null){
-      prefersDarkScheme.matches ? this.saveThemeChanges("dark") : this.saveThemeChanges("light");
-      return;
+      // if no theme saved, default to preferred scheme (or light if not available)
+      prefersDarkScheme.matches ? this.saveThemeChanges("dark", true) : this.saveThemeChanges("light", true);
+    } else {
+        this.updateTheme(savedTheme, true);
     }
-
-    this.updateTheme(savedTheme, true);
   }
 
   onThemeChange() {

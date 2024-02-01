@@ -78,8 +78,7 @@ class OptionsTabSelector extends React.Component {
           {option: OpenLinkNewTabOption, key: 4},
           {option: OpenPermSetSummaryOption, key: 5},
           {option: MdShortcutSearchOption, key: 6},
-          {option: QueryInputAutoFocusOption, key: 7},
-          {option: ColorSchemeOption, key: 8}
+          {option: QueryInputAutoFocusOption, key: 7}
         ]
       },
       {
@@ -106,6 +105,14 @@ class OptionsTabSelector extends React.Component {
         title: "Enable Logs",
         content: [
           {option: enableLogsOption, key: 1}
+        ]
+      },
+      {
+        id: 5,
+        tabTitle: "Tab5",
+        title: "User Interface",
+        content: [
+          {option: ColorSchemeOption, key: 1}
         ]
       }
     ];
@@ -485,11 +492,12 @@ class ColorSchemeOption extends React.Component {
     this.state = {preferredColorScheme: localStorage.getItem("preferredColorScheme")};
   }
 
-  saveThemeChanges(theme, isSetup = false) {
+  saveThemeChanges(theme) {
     const html = document.documentElement;
     html.dataset.theme = theme;
-    //!isSetup ? this.setState({preferredColorScheme: theme}) : null;
     localStorage.setItem("preferredColorScheme", theme);
+    const popup = document.querySelector("iframe");
+    popup.contentWindow.dispatchEvent(new Event("theme-update"));
   }
 
   updateTheme(theme, isSetup = false, callback = null) {
@@ -516,21 +524,29 @@ class ColorSchemeOption extends React.Component {
   }
 
   setupThemeChange() {
-    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
-
     // listen for changes to color scheme preference
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
     prefersDarkScheme.addEventListener("change", mediaQuery => {
       const theme = mediaQuery.matches ? "dark" : "light";
       this.saveThemeChanges(theme);
     });
 
+    // listen to possible updates from popup
+    const html = document.documentElement;
+    window.addEventListener("theme-update", () => {
+        const localTheme = localStorage.getItem("preferredColorScheme");
+        const htmlTheme = html.dataset.theme;
+        if (localTheme != htmlTheme) // avoid recursion
+            this.updateTheme(localTheme);
+    });
+
     const savedTheme = localStorage.getItem("preferredColorScheme");
     if (savedTheme == null){
-      prefersDarkScheme.matches ? this.saveThemeChanges("dark") : this.saveThemeChanges("light");
-      return;
+      // if no theme saved, default to preferred scheme (or light if not available)
+      prefersDarkScheme.matches ? this.saveThemeChanges("dark", true) : this.saveThemeChanges("light", true);
+    } else {
+      this.updateTheme(savedTheme, true);
     }
-
-    this.updateTheme(savedTheme, true);
   }
 
   onThemeChange() {

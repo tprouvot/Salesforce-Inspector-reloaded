@@ -90,7 +90,7 @@ body {
   text-decoration: none;
   display: inline-block;
   padding: 2px;
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-shade);
   padding-right: 1em;
 }
 

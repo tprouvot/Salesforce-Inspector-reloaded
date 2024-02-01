@@ -1829,7 +1829,7 @@ a.slds-button--inverse:focus{
   .slds-checkbox--toggle [type=checkbox] + .slds-checkbox_faux_container,
   .slds-checkbox--toggle [type=checkbox] + .slds-checkbox--faux_container{
     font-size:0.625rem;
-    color:#3e3e3c;
+    color:var(--inspector-text-neutral,#3e3e3c);
   }
   .slds-checkbox_toggle [type=checkbox] + .slds-checkbox_faux_container .slds-checkbox_off,
   .slds-checkbox_toggle [type=checkbox] + .slds-checkbox_faux_container .slds-checkbox--off,
@@ -3232,10 +3232,10 @@ a.slds-button--inverse:focus{
   width:100%;
   min-height:calc(1.875rem + (1px * 2));
   line-height:1.875rem;
-  border:1px solid var(--slds-c-input-color-border, var(--sds-c-input-color-border, var(--slds-g-color-border-base-4, #c9c9c9)));
+  border:1px solid var(--inspector-neutral,var(--slds-c-input-color-border, var(--sds-c-input-color-border, var(--slds-g-color-border-base-4, #c9c9c9))));
   border-radius:var(--slds-c-input-radius-border, var(--sds-c-input-radius-border, 0.25rem));
-  background-color:var(--slds-c-input-color-background, var(--sds-c-input-color-background, var(--slds-g-color-neutral-base-100, white)));
-  color:var(--slds-c-input-text-color, var(--sds-c-input-text-color));
+  background-color:var(--inspector-background,var(--slds-c-input-color-background, var(--sds-c-input-color-background, var(--slds-g-color-neutral-base-100, white))));
+  color:var(--inspector-text,var(--slds-c-input-text-color, var(--sds-c-input-text-color)));
   -webkit-box-shadow:var(--slds-c-input-shadow, var(--sds-c-input-shadow));
           box-shadow:var(--slds-c-input-shadow, var(--sds-c-input-shadow));
   -webkit-transition:border 0.1s linear, background-color 0.1s linear;
@@ -4443,7 +4443,7 @@ a.slds-button--inverse:focus{
 }
 .slds-tabs_default__item,
 .slds-tabs--default__item{
-  color:var(--slds-c-tabs-item-text-color, var(--sds-c-tabs-item-text-color, var(--slds-g-color-neutral-base-30, #444444)));
+  color:var(--inspector-neutral,var(--slds-c-tabs-item-text-color, var(--sds-c-tabs-item-text-color, var(--slds-g-color-neutral-base-30, #444444))));
   position:relative;
   padding-top:var(--slds-c-tabs-item-spacing-block-start, var(--sds-c-tabs-item-spacing-block-start, var(--sds-c-tabs-item-spacing-block, 0)));
   padding-right:var(--slds-c-tabs-item-spacing-inline-end, var(--sds-c-tabs-item-spacing-inline-end, var(--sds-c-tabs-item-spacing-inline, 0.75rem)));
@@ -4467,11 +4467,12 @@ a.slds-button--inverse:focus{
   /*! @css-var-fallback color */
   --slds-c-tabs-item-text-color:var(--slds-c-tabs-item-text-color-active,
     var(--sds-c-tabs-item-text-color-active, var(--slds-g-color-neutral-base-10, #181818)));
+  color: var(--inspctor-text);
 }
 .slds-tabs_default__item.slds-active:after, .slds-tabs_default__item.slds-is-active:after,
 .slds-tabs--default__item.slds-active:after,
 .slds-tabs--default__item.slds-is-active:after{
-  background-color:var(--slds-c-tabs-item-color-border-active, var(--sds-c-tabs-item-color-border-active, #1b96ff));
+  background-color:var(--inspector-primary,var(--slds-c-tabs-item-color-border-active, var(--sds-c-tabs-item-color-border-active, #1b96ff)));
   height:calc(var(--slds-c-tabs-list-sizing-border, var(--sds-c-tabs-list-sizing-border, 1px)) + 2px);
 }
 .slds-tabs_default__item.slds-active .slds-tabs_default__link,
@@ -4490,7 +4491,7 @@ a.slds-button--inverse:focus{
 .slds-tabs--default__item.slds-active .slds-tabs--default__link:hover,
 .slds-tabs--default__item.slds-is-active .slds-tabs_default__link:hover,
 .slds-tabs--default__item.slds-is-active .slds-tabs--default__link:hover{
-  color:currentColor;
+  color:var(--inspector-text,currentColor);
 }
 .slds-tabs_default__item:hover:after,
 .slds-tabs--default__item:hover:after{

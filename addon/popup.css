@@ -77,7 +77,7 @@ a:visited {
 .header-logo {
     background: var(--inspector-primary);
     padding: 2px 1em 2px 2px;
-    color: var(--inspector-inverted-text);
+    color: var(--inspector-shade);
     display: flex;
     align-items: center;
     margin: 0 auto;

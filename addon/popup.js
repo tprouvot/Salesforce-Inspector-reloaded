@@ -218,7 +218,11 @@ class App extends React.PureComponent {
     const html = document.documentElement;
     html.dataset.theme = theme;
     localStorage.setItem("preferredColorScheme", theme);
-    window.parent.dispatchEvent(new Event("theme-update"));
+
+    //window.parent.location.pathname is accessible if we're in an internal page
+    const bloc = Object.assign({}, window.parent.location);
+    if (bloc.hasOwnProperty("pathname"))
+        window.parent.dispatchEvent(new Event("theme-update"));
   }
 
   updateTheme(theme, isSetup = false, callback = null) {

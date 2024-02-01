@@ -47,7 +47,7 @@ body,
 [data-reactroot] {
   height: 100%;
   line-height: 1.5;
-  color: #16325c;
+  color: var(--inspector-text);
 }
 
 [data-reactroot] {
@@ -60,7 +60,7 @@ body {
   font-size: .8125rem;
   overflow: hidden;
   margin: 0;
-  background-color: #B0C4DF;
+  background-color: var(--inspector-export-background);
   background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png');
   background-repeat: no-repeat;
   background-size: contain;
@@ -68,7 +68,7 @@ body {
 }
 
 #user-info {
-  background: #f7f9fb;
+  background: var(--inspector-background);
   height: 48px;
   display: flex;
   align-items: center;
@@ -82,31 +82,30 @@ body {
 
 #user-info span {
   font-size: 1em;
+  color: var(--inspector-text);
 }
 
 .sf-link {
-  background-color: rgb(6, 28, 63);
+  background-color: var(--inspector-primary);
   border-radius: 3px;
   line-height: 1.8em;
   text-decoration: none;
   display: inline-block;
   padding: 2px;
-  color: white;
+  color: var(--inspector-shade);
   padding-right: 1em;
 }
 
 .sf-link svg {
   width: 1.8em;
-  ;
   height: 1.8em;
-  ;
   display: block;
   margin-left: 1px;
   margin-right: 1em;
   float: left;
-  background-color: #ef7ead;
+  background-color: var(--inspector-sf-svg);
   border-radius: 2px;
-  fill: white;
+  fill: var(--inspector-text);
 }
 
 textarea {
@@ -117,7 +116,7 @@ textarea {
   font-size: 0.9rem;
   padding: 8px 10px;
   border-radius: 0.25rem;
-  border: 1px solid #DDDBDA;
+  border: 1px solid var(--inspector-neutral);
 }
 
 textarea[hidden] {
@@ -125,8 +124,8 @@ textarea[hidden] {
 }
 
 .help-text {
-  background: #fff;
-  border: 1px solid #DDDBDA;
+  background: var(--inspector-background);
+  border: 1px solid var(--inspector-neutral);
   padding: 0 15px;
   border-radius: 0.25rem;
   margin-top: 10px;
@@ -136,6 +135,8 @@ textarea[hidden] {
 #query {
   height: 5em;
   min-height: 7em;
+  color: var(--inspector-text);
+  background-color: var(--inspector-background);
 }
 
 #result-area {
@@ -157,27 +158,29 @@ textarea[hidden] {
   flex: 1 1 0;
   resize: none;
   white-space: pre;
+  color: var(--inspector-text);
+  background-color: var(--inspector-background);
 }
 
 #result-table {
   overflow: auto;
   flex: 1 1 0;
-  background-color: #fff;
-  border-top: 1px solid #DDDBDA;
+  background-color: var(--inspector-background);
+  border-top: 1px solid var(--inspector-neutral);
 }
 
 .area {
-  background-color: #F8F8F8;
+  background-color: var(--inspector-background);
   padding: 8px 12px;
   border-radius: 5px;
-  border: 1px solid #DDDBDA;
+  border: 1px solid var(--inspector-neutral);
   margin: 12px 12px 0 12px;
 }
 
 h1 {
   font-size: 1rem;
   display: inline;
-  color: #080707;
+  color: var(--inspector-text);
   font-weight: 700;
   line-height: 1.25;
 }
@@ -227,10 +230,12 @@ input[type=default] {
   width: 8.5rem;
   font-family: inherit;
   padding: 5px 13px;
-  border: 1px solid #DDDBDA;
+  border: 1px solid var(--inspector-neutral);
   height: 32px;
   position: relative;
   border-radius: 0.25rem;
+  color: var(--inspector-text);
+  background-color: var(--inspector-background);
 }
 
 input[type=search] {
@@ -279,43 +284,43 @@ select:focus {
 
 button:active,
 button:focus {
-  background-color: rgb(238, 241, 246);
-  color: #005fb2;
+  background-color: var(--inspector-background);
+  color: var(--inspector-primary);
 }
 
 button:disabled,
 input:disabled {
-  color: #dddbda;
+  color: var(--inspector-neutral);
   cursor: default;
 }
 
 button:disabled:hover,
 input:disabled:hover {
-  background-color: #fff;
-  color: #dddbda;
+  background-color: var(--inspector-background);
+  color: var(--inspector-neutral);
 }
 
 .highlighted {
-  background-color: rgb(0, 112, 210);
-  border-color: rgb(0, 112, 210);
-  color: #fff;
+  background-color: var(--inspector-primary);
+  border-color: var(--inspector-primary);
+  color: var(--inspector-inverted-text);
 }
 
 .highlighted:hover,
 .highlighted:active {
-  background-color: rgb(0, 95, 178);
-  color: #fff;
+  background-color: var(--inspector-primary);
+  color: var(--inspector-inverted-text);
 }
 
 .highlighted:disabled {
-  background-color: #c9c7c5;
-  border-color: #c9c7c5;
-  color: #fff;
+  background-color: var(--inspector-neutral);
+  border-color: var(--inspector-neutral);
+  color: var(--inspector-inverted-text);
 }
 
 .highlighted:disabled:hover {
-  background-color: #c9c7c5;
-  color: #fff;
+  background-color: var(--inspector-neutral);
+  color: var(--inspector-inverted-text);
 }
 
 option[value="null"][disabled] {
@@ -326,7 +331,7 @@ textarea[readonly] {
   outline: none;
   border-radius: 0;
   border: none;
-  border-top: 1px solid #DDDBDA;
+  border-top: 1px solid var(--inspector-neutral);
 }
 
 #help-btn {
@@ -334,13 +339,13 @@ textarea[readonly] {
   text-decoration: none;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #919191;
+  color: var(--inspector-neutral);
   display: flex;
   align-items: center;
 }
 
 #help-btn:hover .icon {
-  background-color: #818181;
+  background-color: var(--inspector-neutral);
 }
 
 #help-btn .icon {
@@ -353,7 +358,7 @@ textarea[readonly] {
   ;
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
   -webkit-mask-position: center;
-  background-color: #919191;
+  background-color: var(--inspector-neutral);
 }
 
 #spinner {
@@ -373,45 +378,45 @@ textarea[readonly] {
 
 .cancel-btn {
   margin-left: 1em;
-  color: #c23934;
+  color: var(--inspector-error);
 }
 
 .cancel-btn:not(:disabled):hover,
 .cancel-btn:not(:disabled):active,
 .cancel-btn:not(:disabled):focus {
-  color: #a12b2b;
+  color: var(--inspector-strong-error);
 }
 
 .delete-btn {
-  background-color: #c23934;
-  border-color: #c23934;
-  color: white;
+  background-color: var(--inspector-error);
+  border-color: var(--inspector-error);
+  color: var(--inspector-inverted-text);
   /* Allows to still show the title even when disabled as it contains useful information */
   pointer-events: auto;
 }
 
 .delete-btn:not(:disabled):hover,
 .delete-btn:not(:disabled):focus {
-  background-color: #a61a14;
-  border-color: #c23934;
-  color: white;
+  background-color: var(--inspector-warning);
+  border-color: var(--inspector-error);
+  color: var(--inspector-inverted-text);
 }
 
 .delete-btn:not(:disabled):active {
-  background-color: #870500;
-  border-color: #870500;
+  background-color: var(--inspector-error);
+  border-color: var(--inspector-error);
 }
 
 .delete-btn:disabled, .delete-btn:disabled:hover {
-  background-color: #c9c7c5;
-  border-color: #c9c7c5;
-  color: white;
+  background-color: var(--inspector-neutral);
+  border-color: var(--inspector-neutral);
+  color: var(--inspector-inverted-text);
 }
 
 .char-btn {
-  color: white;
+  color: var(--inspector-inverted-text);
   text-decoration: none;
-  background-color: gray;
+  background-color: var(--inspector-neutral);
   display: inline-block;
   width: 14px;
   height: 14px;
@@ -458,13 +463,13 @@ button[hidden],
 
 button,
 .button {
-  border: 1px solid #DDDBDA;
+  border: 1px solid var(--inspector-neutral);
   height: 32px;
   display: inline-block;
   text-decoration: none;
-  background-color: white;
+  background-color: var(--inspector-inverted-text);
   padding: 0 16px;
-  color: #0070d2;
+  color: var(--inspector-primary);
   cursor: pointer;
   outline: none;
   position: relative;
@@ -476,8 +481,8 @@ button,
 
 button:hover,
 .button:hover {
-  background-color: #F4F6F9;
-  color: #005fb2;
+  background-color: var(--inspector-background);
+ color: var(--inspector-primary);
 }
 
 button.toggle {
@@ -488,7 +493,7 @@ button.toggle .button-toggle-icon,
 button.toggle .button-icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
-  background-color: #706E6B;
+  background-color: var(--inspector-neutral);
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -496,7 +501,7 @@ button.toggle .button-icon {
 
 button.toggle:hover .button-icon,
 button.toggle:hover .button-toggle-icon {
-  background-color: #004487;
+  background-color: var(--inspector-primary);
 }
 
 .flex-right button:last-child {
@@ -537,17 +542,17 @@ button.toggle .button-icon {
 }
 
 .autocomplete-results a {
-  border: 1px solid #DDDBDA;
+  border: 1px solid var(--inspector-neutral);
   border-radius: 0.25rem;
   padding: 0px 4px;
   text-decoration: none;
-  color: #006dcc;
+  color: var(--inspector-accent);
 }
 
 .autocomplete-results a:hover,
 .autocomplete-results a:active {
-  background-color: #eff1f5;
-  color: #005fb2;
+  background-color: var(--inspector-background);
+  color: var(--inspector-primary);
 }
 
 .autocomplete-result,
@@ -561,7 +566,7 @@ button.toggle .button-icon {
   margin: -1px 2px 0 1px;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 0.95rem;
-  background-color: #706E6B;
+  background-color: var(--inspector-neutral);
   width: 16px;
   height: 16px;
 }
@@ -572,12 +577,12 @@ button.toggle .button-icon {
 
 .relationshipName .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/relate.svg');
-  background-color: #0070d2;
+  background-color: var(--inspector-primary);
 }
 
 .object .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/sobject.svg');
-  background-color: #04844B;
+  background-color: var(--inspector-success-background);
 }
 
 .variable .autocomplete-icon {
@@ -684,4 +689,8 @@ button.toggle .button-icon {
   position: sticky;
   top: 0;
   z-index: 2;
+}
+
+.query-options {
+  align-self: center;
 }

@@ -101,7 +101,7 @@ body {
   margin-left: 1px;
   margin-right: 1em;
   float: left;
-  background-color: var(--inspector-number);
+  background-color: var(--inspector-sf-svg);
   border-radius: 2px;
   fill: var(--inspector-text);
 }

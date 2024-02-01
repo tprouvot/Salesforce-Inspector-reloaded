@@ -971,6 +971,7 @@ class App extends React.Component {
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetClientId = this.onSetClientId.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
+    this.setupThemeChange();
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1181,6 +1182,40 @@ class App extends React.Component {
   recalculateSize() {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     this.scrollTable.viewportChange();
+  }
+
+  saveThemeChanges(theme) {
+    const html = document.documentElement;
+    html.dataset.theme = theme;
+    localStorage.setItem("preferredColorScheme", theme);
+    const popup = document.querySelector("iframe");
+    popup.contentWindow.dispatchEvent(new Event("theme-update"));
+  }
+
+  setupThemeChange() {
+    // listen for changes to color scheme preference
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    prefersDarkScheme.addEventListener("change", mediaQuery => {
+      const theme = mediaQuery.matches ? "dark" : "light";
+      this.saveThemeChanges(theme);
+    });
+
+    // listen to possible updates from popup
+    const html = document.documentElement;
+    window.addEventListener("theme-update", () => {
+        const localTheme = localStorage.getItem("preferredColorScheme");
+        const htmlTheme = html.dataset.theme;
+        if (localTheme != htmlTheme) // avoid recursion
+            this.saveThemeChanges(localTheme);
+    });
+
+    const savedTheme = localStorage.getItem("preferredColorScheme");
+    if (savedTheme == null){
+      // if no theme saved, default to preferred scheme (or light if not available)
+      prefersDarkScheme.matches ? this.saveThemeChanges("dark", true) : this.saveThemeChanges("light", true);
+    } else {
+      this.saveThemeChanges(savedTheme, true);
+    }
   }
   render() {
     let {model} = this.props;

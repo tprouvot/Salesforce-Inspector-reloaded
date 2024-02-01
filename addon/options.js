@@ -489,7 +489,6 @@ class ColorSchemeOption extends React.Component {
     this.setupThemeChange();
     this.onThemeChange = this.onThemeChange.bind(this);
     this.onThemeClick = this.onThemeClick.bind(this);
-    this.state = {preferredColorScheme: localStorage.getItem("preferredColorScheme")};
   }
 
   saveThemeChanges(theme) {

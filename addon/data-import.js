@@ -889,6 +889,7 @@ class App extends React.Component {
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
     this.unloadListener = null;
+    this.setupThemeChange();
   }
   onApiTypeChange(e) {
     let { model } = this.props;
@@ -1045,6 +1046,40 @@ class App extends React.Component {
     } else if (this.unloadListener) {
       console.log("removed listener");
       removeEventListener("beforeunload", this.unloadListener);
+    }
+  }
+
+  saveThemeChanges(theme) {
+    const html = document.documentElement;
+    html.dataset.theme = theme;
+    localStorage.setItem("preferredColorScheme", theme);
+    const popup = document.querySelector("iframe");
+    popup.contentWindow.dispatchEvent(new Event("theme-update"));
+  }
+
+  setupThemeChange() {
+    // listen for changes to color scheme preference
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    prefersDarkScheme.addEventListener("change", mediaQuery => {
+      const theme = mediaQuery.matches ? "dark" : "light";
+      this.saveThemeChanges(theme);
+    });
+
+    // listen to possible updates from popup
+    const html = document.documentElement;
+    window.addEventListener("theme-update", () => {
+        const localTheme = localStorage.getItem("preferredColorScheme");
+        const htmlTheme = html.dataset.theme;
+        if (localTheme != htmlTheme) // avoid recursion
+            this.saveThemeChanges(localTheme);
+    });
+
+    const savedTheme = localStorage.getItem("preferredColorScheme");
+    if (savedTheme == null){
+      // if no theme saved, default to preferred scheme (or light if not available)
+      prefersDarkScheme.matches ? this.saveThemeChanges("dark", true) : this.saveThemeChanges("light", true);
+    } else {
+      this.saveThemeChanges(savedTheme, true);
     }
   }
   render() {

@@ -92,7 +92,7 @@ body {
   text-decoration: none;
   display: inline-block;
   padding: 2px;
-  color: var(--inspector-shade);
+  color: var(--inspector-text);
   padding-right: 1em;
 }
 
@@ -103,7 +103,7 @@ body {
   margin-left: 1px;
   margin-right: 1em;
   float: left;
-  background-color: var(--inspector-sf-svg);
+  background-color: var(--inspector-svg-picture);
   border-radius: 2px;
   fill: var(--inspector-text);
 }
@@ -170,7 +170,7 @@ textarea[hidden] {
 }
 
 .area {
-  background-color: var(--inspector-background);
+  background-color: var(--inspector-shade);
   padding: 8px 12px;
   border-radius: 5px;
   border: 1px solid var(--inspector-neutral);
@@ -290,7 +290,7 @@ button:focus {
 
 button:disabled,
 input:disabled {
-  color: var(--inspector-neutral);
+  color: var(--inspector-text-neutral);
   cursor: default;
 }
 
@@ -390,27 +390,27 @@ textarea[readonly] {
 .delete-btn {
   background-color: var(--inspector-error);
   border-color: var(--inspector-error);
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-shade);
   /* Allows to still show the title even when disabled as it contains useful information */
   pointer-events: auto;
 }
 
 .delete-btn:not(:disabled):hover,
 .delete-btn:not(:disabled):focus {
-  background-color: var(--inspector-warning);
-  border-color: var(--inspector-error);
-  color: var(--inspector-inverted-text);
+  background-color: var(--inspector-strong-error);
+  border-color: var(--inspector-strong-error);
+  color: var(--inspector-shade);
 }
 
 .delete-btn:not(:disabled):active {
-  background-color: var(--inspector-error);
-  border-color: var(--inspector-error);
+  background-color: var(--inspector-strong-error);
+  border-color: var(--inspector-strong-error);
 }
 
 .delete-btn:disabled, .delete-btn:disabled:hover {
-  background-color: var(--inspector-neutral);
+  background-color: var(--inspector-shade);
   border-color: var(--inspector-neutral);
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-shade);
 }
 
 .char-btn {

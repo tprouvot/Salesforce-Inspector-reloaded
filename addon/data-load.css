@@ -31,7 +31,7 @@
 
 .scrolltable-cell.header {
   font-weight: 700;
-  background-color: var(--inspector-background);
+  background-color: var(--inspector-shade);
   border-top: none;
   padding-top: 7px;
   padding-bottom: 7px;
@@ -41,7 +41,7 @@
 }
 
 .scrolltable-cell a {
-  color: var(--inspector-primary);
+  color: var(--inspector-link);
   text-decoration: underline;
   text-decoration-style: dotted;
 }
@@ -66,26 +66,6 @@
 .scrolltable-scrolled table {
   border-collapse: collapse;
   position: absolute;
-}
-
-.scrolltable-cell {
-  border: 1px solid var(--inspector-neutral);
-  overflow: hidden;
-  padding: 0 4px;
-  background-color: var(--inspector-background);
-  white-space: pre;
-  box-sizing: border-box;
-}
-
-.scrolltable-cell.header {
-  font-weight: 700;
-  background-color: var(--inspector-background);
-  border-top: none;
-  padding-top: 7px;
-  padding-bottom: 7px;
-  /* position: sticky; */
-  /* top: 0; */
-  /* z-index: 1; */
 }
 
 .pop-menu {

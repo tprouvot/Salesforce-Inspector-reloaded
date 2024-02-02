@@ -32,7 +32,7 @@ html {
     --inspector-text-neutral: var(--inspector-light-gray);
     --inspector-icon-logo: var(--inspector-light-yellow);
 
-    --inspector-primary: var(--inspector-dark-blue);
+    --inspector-primary: var(--inspector-light-blue);
     --inspector-accent: var(--inspector-light-blue);
     --inspector-dark-neutral: var(--inspector-dark-gray);
     --inspector-neutral: var(--inspector-light-gray);
@@ -52,7 +52,8 @@ html {
     --inspector-false-boolean: var(--inspector-light-red);
     --inspector-true-boolean: var(--inspector-dark-blue);
 
-    --inspector-sf-svg: var(--inspector-light-pink);
+    --inspector-svg-picture: var(--inspector-light-pink);
+    --inspector-svg-background: var(--inspector-light-blue);
 }
 
 [data-theme="dark"] {
@@ -82,7 +83,8 @@ html {
     --inspector-false-boolean: var(--inspector-light-red);
     --inspector-true-boolean: var(--inspector-light-blue);
 
-    --inspector-sf-svg: var(--inspector-dark-pink);
+    --inspector-svg-picture: var(--inspector-dark-pink);
+    --inspector-svg-background: var(--inspector-dark-blue);
 }
 
 body, :is(div, input, ul):not(:has([style*=transparent])) {
@@ -90,7 +92,7 @@ body, :is(div, input, ul):not(:has([style*=transparent])) {
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
 }
-div.header-logo, input, a.sf-link, select, button, textarea {
+div.header-logo, a.sf-link, :is(select, input):is(.slds-input, .query-history), button, textarea, td.scrolltable-cell, input::placeholder {
     transition-property: color, background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;

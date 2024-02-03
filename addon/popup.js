@@ -254,22 +254,22 @@ class App extends React.PureComponent {
       this.saveThemeChanges(theme);
     });
 
-    // listen to possible updates from background page
-    const html = document.documentElement;
-    setTimeout(() => window.addEventListener("theme-update", () => {
-        const localTheme = localStorage.getItem("preferredColorScheme");
-        const htmlTheme = html.dataset.theme;
-        if (localTheme != htmlTheme) // avoid recursion
-            this.updateTheme(localTheme);
-    }), 1000); //delay action after Setup has finished;
-
     const savedTheme = localStorage.getItem("preferredColorScheme");
     if (savedTheme == null){
       // if no theme saved, default to preferred scheme (or light if not available)
       prefersDarkScheme.matches ? this.saveThemeChanges("dark", true) : this.saveThemeChanges("light", true);
     } else {
-        this.updateTheme(savedTheme, true);
+      this.updateTheme(savedTheme, true);
     }
+
+    // listen to possible updates from background page
+    const html = document.documentElement;
+    window.addEventListener("theme-update", () => {
+      const localTheme = localStorage.getItem("preferredColorScheme");
+      const htmlTheme = html.dataset.theme;
+      if (localTheme != htmlTheme) // avoid recursion
+        this.updateTheme(localTheme);
+    });
   }
 
   onThemeChange() {

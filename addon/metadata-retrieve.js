@@ -326,7 +326,7 @@ class App extends React.Component {
               h("br", {}),
               model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model})),
               h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
-              h("button", {onClick: this.onStartClick}, "Download metadata")
+              h("span", {onClick: this.onStartClick, className: "button"}, "Download metadata")
             )
             : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
         )

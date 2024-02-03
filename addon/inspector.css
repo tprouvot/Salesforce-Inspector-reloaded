@@ -42,7 +42,6 @@ html {
     --inspector-visited-link: var(--inspector-light-purple);
 
     --inspector-success: var(--inspector-light-green);
-    --inspector-success-background: var(--inspector-dark-green);
     --inspector-warning: var(--inspector-light-yellow);
     --inspector-error: var(--inspector-light-red);
     --inspector-strong-error: var(--inspector-dark-red);
@@ -54,6 +53,8 @@ html {
 
     --inspector-svg-picture: var(--inspector-light-pink);
     --inspector-svg-background: var(--inspector-light-blue);
+
+    --inspector-working: var(--inspector-dark-pink);
 }
 
 [data-theme="dark"] {
@@ -72,8 +73,7 @@ html {
     --inspector-link: var(--inspector-light-blue);
     --inspector-visited-link: var(--inspector-light-pink);
 
-    --inspector-success: var(--inspector-light-green);
-    --inspector-success-background: var(--inspector-dark-green);
+    --inspector-success: var(--inspector-dark-green);
     --inspector-warning: var(--inspector-dark-yellow);
     --inspector-error: var(--inspector-light-red);
     --inspector-strong-error: var(--inspector-dark-red);
@@ -85,6 +85,8 @@ html {
 
     --inspector-svg-picture: var(--inspector-dark-pink);
     --inspector-svg-background: var(--inspector-dark-blue);
+
+    --inspector-working: var(--inspector-light-purple);
 }
 
 body, :is(div, input, ul, a):not(:has([style*=transparent])), .gauge::before, .gauge::after {
@@ -92,7 +94,7 @@ body, :is(div, input, ul, a):not(:has([style*=transparent])), .gauge::before, .g
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
 }
-div.header-logo, a.sf-link, :is(select, input):is(.slds-input, .query-history), button, textarea, td.scrolltable-cell, input::placeholder, .conf-value > :is(select, input) {
+div.header-logo, a.sf-link, :is(select, input):is(.slds-input, .query-history), button, textarea, td.scrolltable-cell, input::placeholder, .conf-value > :is(select, input), span:is(.button, .progress) {
     transition-property: color, background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;

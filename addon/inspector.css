@@ -105,7 +105,7 @@ div.header-logo svg, a:is(.sf-link, .button.field-info) svg {
     transition-timing-function: inherit;
 }
 
-:is(span, label):not(:has(> span)), svg.slds-icon, h1, figcaption, .meter-value {
+:is(span, label):not(:has(> span)), svg.slds-icon, h1, figcaption, .meter-value, #result-table > :not(div) {
     transition-property: color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
@@ -132,6 +132,10 @@ a:is(.slds-button, .slds-tabs_default__link), input, a.sf-link {
 body {
     background-color: var(--inspector-background);
     color: var(--inspector-text);
+}
+
+a {
+    color: var(--inspector-link);
 }
 
 .hide {

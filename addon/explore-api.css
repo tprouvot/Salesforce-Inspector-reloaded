@@ -16,9 +16,11 @@ textarea {
   resize: vertical;
   word-wrap: normal;
   font-size: 11px;
+  color: var(--inspector-text);
+  background-color: var(--inspector-background);
 }
 li:hover {
-  background-color: lightblue;
+  background-color: var(--inspector-background);
 }
 input[type=radio] {
   margin: 0;
@@ -45,19 +47,33 @@ td,th {
 }
 .status-error {
   font-weight: bold;
-  color: red;
+  color: var(--inspector-error);
 }
 
 #result-table table tr:first-child {
   font-weight: 700;
-  background-color: #FAFAF9;
+  background-color: var(--inspector-background);
   border-top: none;
   padding-top: 7px;
   padding-bottom: 7px;
 }
-pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
-.string { color: green; }
-.number { color: darkorange; }
-.boolean { color: blue; }
-.null { color: magenta; }
-.key { color: red; }
+pre {
+    outline: 1px solid var(--inspector-text-neutral);
+    padding: 5px;
+    margin: 5px;
+}
+.string {
+    color: var(--inspector-success);
+}
+.number {
+    color: var(--inspector-number);
+}
+.boolean {
+    color: var(--inspector-true-boolean);
+}
+.null {
+    color: var(--inspector-object);
+}
+.key {
+    color: var(--inspector-error);
+}

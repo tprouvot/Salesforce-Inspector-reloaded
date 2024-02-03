@@ -87,7 +87,7 @@ html {
     --inspector-svg-background: var(--inspector-dark-blue);
 }
 
-body, :is(div, input, ul, a):not(:has([style*=transparent])) {
+body, :is(div, input, ul, a):not(:has([style*=transparent])), .gauge::before, .gauge::after {
     transition-property: background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
@@ -103,7 +103,7 @@ div.header-logo svg, a:is(.sf-link, .button.field-info) svg {
     transition-timing-function: inherit;
 }
 
-:is(span, label):not(:has(> span)), svg.slds-icon, h1 {
+:is(span, label):not(:has(> span)), svg.slds-icon, h1, figcaption, .meter-value {
     transition-property: color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;

@@ -399,7 +399,7 @@ textarea[readonly] {
 .delete-btn:not(:disabled):focus {
   background-color: var(--inspector-strong-error);
   border-color: var(--inspector-strong-error);
-  color: var(--inspector-shade);
+  color: var(--inspector-text-neutral);
 }
 
 .delete-btn:not(:disabled):active {
@@ -410,7 +410,7 @@ textarea[readonly] {
 .delete-btn:disabled, .delete-btn:disabled:hover {
   background-color: var(--inspector-shade);
   border-color: var(--inspector-neutral);
-  color: var(--inspector-shade);
+  color: var(--inspector-text-neutral);
 }
 
 .char-btn {

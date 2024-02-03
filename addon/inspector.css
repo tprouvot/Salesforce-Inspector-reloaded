@@ -87,17 +87,17 @@ html {
     --inspector-svg-background: var(--inspector-dark-blue);
 }
 
-body, :is(div, input, ul):not(:has([style*=transparent])) {
+body, :is(div, input, ul, a):not(:has([style*=transparent])) {
     transition-property: background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
 }
-div.header-logo, a.sf-link, :is(select, input):is(.slds-input, .query-history), button, textarea, td.scrolltable-cell, input::placeholder {
+div.header-logo, a.sf-link, :is(select, input):is(.slds-input, .query-history), button, textarea, td.scrolltable-cell, input::placeholder, .conf-value > :is(select, input) {
     transition-property: color, background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
 }
-div.header-logo svg, a.sf-link svg {
+div.header-logo svg, a:is(.sf-link, .button.field-info) svg {
     transition-property: fill, background-color;
     transition-duration: inherit;
     transition-timing-function: inherit;

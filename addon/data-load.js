@@ -216,7 +216,7 @@ function renderCell(rt, cell, td) {
           pop.appendChild(aDownload);
           aDownload.prepend(aDownloadIcon);
           aDownload.addEventListener("click", e => {
-            sfConn.rest("/services/data/v60.0/tooling/sobjects/ApexLog/" + e.target.id + "/Body?_dc=1705483656182", {responseType: "text"}).then(data => {
+            sfConn.rest("/services/data/v" + apiVersion + "/tooling/sobjects/ApexLog/" + e.target.id + "/Body?_dc=1705483656182", {responseType: "text"}).then(data => {
               let downloadLink = document.createElement("a");
               downloadLink.download = e.target.id + ".txt";
               downloadLink.href = "data:text/plain;charset=utf-8," + data;

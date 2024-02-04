@@ -297,7 +297,6 @@ class Model {
 
   /**
    * APEX script autocomplete handling.
-   * TODO
    */
   scriptAutocompleteHandler(e = {}) {
     let vm = this; // eslint-disable-line consistent-this
@@ -495,7 +494,7 @@ class Model {
     let vm = this; // eslint-disable-line consistent-this
     this.executeStatus = "Polling finished";
     this.isWorking = false;
-    //TODO prompt resume or close + maj status
+
     if (confirm("Resume Polling of logs?")) {
       vm.enableLogs();
     }
@@ -559,7 +558,7 @@ class Model {
       console.log("handshake failed");
       return;
     }
-    //TODO get clientId from handshake
+
     let subResponse = await sfConn.rest("/cometd/" + apiVersion, {
       method: "POST",
       body: [

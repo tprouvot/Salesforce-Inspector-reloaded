@@ -5,8 +5,6 @@
   
   .line-numbers span {
     counter-increment: linenumber;
-    font-family: monospace;
-    font-size: 0.75rem;
   }
   
   .line-numbers span::before {

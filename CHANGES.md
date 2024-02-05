@@ -2,6 +2,7 @@
 
 ## Version 1.23
 
+- Download Metadata page restyling
 - Hide RecType and Name field from popup when field is not set [feature 298](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/298)
 - Display API version in Org tab [feature 293](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/293) (feature by [Camille Guillory](https://github.com/CamilleGuillory))
 - Add the possibility to hide fields API names after users clicked "Show fields API names"

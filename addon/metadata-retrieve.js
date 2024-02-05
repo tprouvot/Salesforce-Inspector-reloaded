@@ -14,12 +14,19 @@ class Model {
     this.layoutInfo = null;
 
     // Processed data and UI state
+    this.sfHost = sfHost;
     this.sfLink = "https://" + sfHost;
+    this.spinnerCount = 0;
+    this.userInfo = "...";
     this.logMessages = [];
     this.progress = "ready";
     this.downloadLink = null;
     this.statusLink = null;
     this.metadataObjects = null;
+
+    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
+      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
+    }));
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -33,6 +40,19 @@ class Model {
     if (this.reactCallback) {
       this.reactCallback(cb);
     }
+  }
+
+  spinFor(promise) {
+    this.spinnerCount++;
+    promise
+      .catch(err => {
+        console.error("spinFor", err);
+      })
+      .then(() => {
+        this.spinnerCount--;
+        this.didUpdate();
+      })
+      .catch(err => console.log("error handling failed", err));
   }
 
   title() {
@@ -62,6 +82,7 @@ class Model {
         for (let metadataObject of this.metadataObjects) {
           metadataObject.selected = true;
         }
+        this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
         this.progress = "ready";
         this.didUpdate();
       } catch (e) {
@@ -263,37 +284,43 @@ class App extends React.Component {
     document.title = model.title();
     return (
       h("div", {},
-        h("div", {className: "object-bar"},
+
+        h("div", {id: "user-info"},
           h("a", {href: model.sfLink, className: "sf-link"},
             h("svg", {viewBox: "0 0 24 24"},
               h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
             ),
             " Salesforce Home"
           ),
-          h("span", {className: "progress progress-" + model.progress},
-            model.progress == "ready" ? "Ready"
-            : model.progress == "working" ? "Downloading metadata..."
-            : model.progress == "done" ? "Finished"
-            : "Error!"
+          h("h1", {}, model.title()),
+          h("span", {}, " / " + model.userInfo),
+          h("div", {className: "flex-right"},
+            h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
+              h("span", {className: "slds-assistive-text"}),
+              h("div", {className: "slds-spinner__dot-a"}),
+              h("div", {className: "slds-spinner__dot-b"}),
+            ),
           ),
-          model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
-          model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null,
-          h("span", {className: "flex"}),
-          h("a", {href: "https://github.com/jesperkristensen/forcecmd"}, "Automate this with forcecmd")
         ),
-        h("div", {className: "body"},
-          model.metadataObjects
-            ? h("div", {},
-              h("label", {},
-                h("input", {type: "checkbox", checked: model.metadataObjects.every(metadataObject => metadataObject.selected), onChange: this.onSelectAllChange}),
-                "Select all"
-              ),
-              h("br", {}),
-              model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model})),
-              h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
-              h("button", {onClick: this.onStartClick}, "Download metadata")
-            )
-            : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
+        h("div", {className: "area", id: "result-area"},
+          h("div", {className: "result-bar"},
+            h("h1", {}, "Metadata Result"),
+            h("button", {onClick: this.onStartClick}, "Download metadata")
+          ),
+          h("div", {id: "result-table", ref: "scroller"},
+            model.metadataObjects
+              ? h("div", {className: "result"},
+                h("label", {},
+                  h("input", {type: "checkbox", checked: model.metadataObjects.every(metadataObject => metadataObject.selected), onChange: this.onSelectAllChange}),
+                  "Select all"
+                ),
+                h("br", {}),
+                model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model})),
+                h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
+                h("button", {onClick: this.onStartClick}, "Download metadata")
+              )
+              : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
+          )
         )
       )
     );
@@ -313,8 +340,8 @@ class ObjectSelector extends React.Component {
   render() {
     let {metadataObject} = this.props;
     return h("label", {title: metadataObject.xmlName},
-      h("input", {type: "checkbox", checked: metadataObject.selected, onChange: this.onChange}),
-      metadataObject.directoryName
+      h("input", {type: "checkbox", className: "metadata", checked: metadataObject.selected, onChange: this.onChange}),
+      metadataObject.xmlName
     );
   }
 }

@@ -306,7 +306,7 @@ label.statusGroupEmpty {
   right: 0;
   bottom: 0;
   left: 0;
-  background: var(--inspector-text,rgba(0,0,0,0.8));
+  background: var(--inspector-shade);
   z-index: 99999;
 }
 #confirm-dialog {

@@ -91,7 +91,7 @@ html {
 
 :is(div, input, ul, a):not(:has([style*=transparent])), 
 div.table-container > table > tbody > tr,
-.gauge::before, .gauge::after, .table-settings-button, th.th-filter-row {
+.gauge::before, .gauge::after, .table-settings-button, th.th-filter-row, #save-wrapper {
     transition-property: background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
@@ -102,14 +102,19 @@ div.table-container > table > tbody > tr,
 :is(span, button):is(.button, .progress),
 div:is(.header-logo, .object-name),
 div.all-data-box-data > table,
-a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], button.actions-button {
+div.flex-wrapper :is(button, input),
+div.button-group > button,
+div:is(.autocomplete-header, .conf-line) > div.flex-right > button,
+button:is(.actions-button, .cancel-btn),
+a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex] {
     transition-property: color, background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
 }
 
 div.header-logo svg,
-a:is(.sf-link, .button.field-info) svg {
+a:is(.sf-link, .button.field-info) svg,
+#save-wrapper svg {
     transition-property: fill, background-color;
     transition-duration: inherit;
     transition-timing-function: inherit;
@@ -118,6 +123,7 @@ a:is(.sf-link, .button.field-info) svg {
 :is(span, label):not(:has(> span)), 
 #result-table > :not(div),
 div:is(.value-text, .center, .all-data-box-inner.empty),
+#save-wrapper > input,
 svg.slds-icon, h1, figcaption, .meter-value {
     transition-property: color;
     transition-duration: 500ms;
@@ -157,6 +163,19 @@ a:is(.slds-button, .slds-tabs_default__link, .slds-button) {
     transition-timing-function: ease-in-out;
 }
 
+div.area > div.conf-value,
+#mainTabs {
+    transition-property: scrollbar-color;
+    transition-duration: 500ms;
+    transition-timing-function: ease-in-out;
+}
+
+#result-table {
+    transition-property: background-color, scrollbar-color;
+    transition-duration: 500ms;
+    transition-timing-function: ease-in-out;
+}
+
 div.object-name > span.quick-select {
     transition-property: none;
 }
@@ -174,6 +193,7 @@ body {
     transition-property: background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
+    scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
 }
 
 a {

@@ -225,7 +225,6 @@ h1 {
 
 select,
 input[type=search],
-input[type=save],
 input[type=default] {
   width: 8.5rem;
   font-family: inherit;
@@ -246,14 +245,6 @@ input[type=search] {
   padding-left: 35px;
 }
 
-input[type=save] {
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/save.svg');
-  background-repeat: no-repeat;
-  background-size: 1rem;
-  background-position: 10px 7px;
-  padding-left: 35px;
-}
-
 input[type="checkbox"] {
   width: 1rem;
   height: 1rem;
@@ -266,8 +257,8 @@ input:active,
 input:focus,
 select:active,
 select:focus {
-  border: 1px solid rgb(21, 137, 238);
-  box-shadow: rgb(6, 28, 63) 0px 0px 3px 0px;
+  border: 1px solid var(--inspector-primary);
+  box-shadow: var(--inspector-accent) 0px 0px 3px 0px;
   outline: none;
   z-index: 1;
 }
@@ -279,7 +270,7 @@ select:focus {
 .button-group select:focus:not(:first-child),
 .button-group select:focus:not(:first-child) {
   margin-left: -1px;
-  border: 1px solid rgb(21, 137, 238);
+  border: 1px solid var(--inspector-primary);
 }
 
 button:active,
@@ -554,7 +545,7 @@ button.toggle .button-icon {
   border-radius: 0.25rem;
   padding: 0px 4px;
   text-decoration: none;
-  color: var(--inspector-accent);
+  color: var(--inspector-primary);
 }
 
 .autocomplete-results a:hover,
@@ -729,4 +720,37 @@ button.toggle .button-icon {
 
 .query-options {
   align-self: center;
+}
+
+#save-wrapper {
+  border: 1px solid var(--inspector-neutral);
+  background-color: var(--inspector-background);
+  padding: 5px 13px;
+  width: 8.5rem;
+  display: inline-block;
+  overflow: hidden;
+
+  &:has(:active, :focus) {
+    border: 1px solid var(--inspector-primary);
+    box-shadow: var(--inspector-accent) 0px 0px 3px 0px;
+    outline: none;
+    z-index: 1;
+  }
+
+  & > svg {
+    width: 1rem;
+    fill: var(--inspector-text);
+  }
+
+  & > input {
+    color: var(--inspector-text);
+    background-color: transparent;
+    border: none;
+    padding-left: 15px;
+
+    &:active, &:focus {
+      border: none;
+      box-shadow: none;
+    }
+  }
 }

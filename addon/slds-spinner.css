@@ -71,7 +71,7 @@
 .slds-spinner__dot-b:before {
     content: "";
     position: absolute;
-    background: #0070d2;
+    background: var(--inspector-primary);
     border-radius: 50%;
     -webkit-animation-duration: 1s;
     animation-duration: 1s;

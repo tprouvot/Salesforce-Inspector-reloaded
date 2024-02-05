@@ -84,7 +84,7 @@ body {
   font-size: 1.2em;
 }
 .sf-link {
-  background-color: var(--inspector-accent);
+  background-color: var(--inspector-primary);
   border-radius: 3px;
   line-height: 1.8em;
   text-decoration: none;
@@ -100,7 +100,7 @@ body {
   margin-left: 1px;
   margin-right: 1em;
   float: left;
-  background-color: var(--inspector-svg-background);
+  background-color: var(--inspector-svg-picture);
   border-radius: 2px;
   fill: var(--inspector-text);
 }
@@ -114,7 +114,7 @@ body {
   align-items: center;
 }
 #help-btn:hover .icon{
-  background-color: #818181;
+  background-color: var(--inspector-neutral);
 }
 #help-btn .icon {
   display: inline-block;

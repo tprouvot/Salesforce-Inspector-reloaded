@@ -364,12 +364,12 @@ class App extends React.Component {
             )
           ),
           h("a", {href: "https://www.salesforce.com/us/developer/docs/api_rest/", target: "_blank"}, "REST API documentation"),
-            h("span", {},
-              " Open your browser's ",
-                h("b", {}, "F12 Developer Tools"),
-              " and select the ",
-                h("b", {}, "Console"),
-              " tab to make your own API calls.")
+          h("span", {},
+            " Open your browser's ",
+            h("b", {}, "F12 Developer Tools"),
+            " and select the ",
+            h("b", {}, "Console"),
+            " tab to make your own API calls.")
         ),
       )
     );

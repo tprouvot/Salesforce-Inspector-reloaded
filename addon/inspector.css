@@ -99,14 +99,14 @@ div.table-container > table > tbody > tr,
 
 :is(select, input):is(.slds-input, .query-history),
 .conf-value > :is(select, input),
-:is(span, button):is(.button, .progress),
+:is(span, button, a):is(.button, .progress),
 div:is(.header-logo, .object-name),
 div.all-data-box-data > table,
 div.flex-wrapper :is(button, input),
 div.button-group > button,
 div:is(.autocomplete-header, .conf-line) > div.flex-right > button,
 button:is(.actions-button, .cancel-btn),
-a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex] {
+a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], .slds-tabs_default__link {
     transition-property: color, background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
@@ -120,9 +120,9 @@ a:is(.sf-link, .button.field-info) svg,
     transition-timing-function: inherit;
 }
 
-:is(span, label):not(:has(> span)), 
+:is(span, label, li):not(:has(> span, > label)), 
 #result-table > :not(div),
-div:is(.value-text, .center, .all-data-box-inner.empty),
+div:is(.value-text, .center, .all-data-box-inner.empty, .log-info, .log-working),
 #save-wrapper > input,
 svg.slds-icon, h1, figcaption, .meter-value {
     transition-property: color;
@@ -150,7 +150,7 @@ th.th-filter-row > input {
     }
 }
 
-a:is(.slds-button, .slds-tabs_default__link, .slds-button) {
+a:is(.slds-button, .slds-button) {
     &:has(> span) {
       transition-property: background-color;
     }

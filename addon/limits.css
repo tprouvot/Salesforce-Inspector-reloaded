@@ -126,7 +126,7 @@ body {
 }
 .object-bar {
   position: fixed;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--inspector-shade);
   width: 100%;
   padding: 8px;
   box-sizing: border-box;
@@ -177,3 +177,9 @@ body {
   animation: spin 4s linear infinite;
 }
 
+html {
+  scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
+  transition-duration: 500ms;
+  transition-timing-function: ease-in-out;
+  scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
+}

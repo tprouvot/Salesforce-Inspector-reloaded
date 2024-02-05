@@ -57,6 +57,11 @@ td,th {
   padding-top: 7px;
   padding-bottom: 7px;
 }
+#result-table > div > ul > li:has(> label)::marker {
+  transition-property: color;
+  transition-duration: 500ms;
+  transition-timing-function: ease-in-out;
+}
 pre {
     outline: 1px solid var(--inspector-text-neutral);
     padding: 5px;

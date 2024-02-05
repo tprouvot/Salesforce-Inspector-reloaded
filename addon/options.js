@@ -565,8 +565,8 @@ class ColorSchemeOption extends React.Component {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "text-align-middle slds-grid slds-grid_vertical-align-center", style: {flexDirection: "row"}},
         h("span", {style: {marginRight: "0.5rem"}}, "Set default theme to "),
-        h("img", {id: "dark-theme", src: "images/moon.svg", className: "hide", height: "20px", width: "20px", onClick: this.onThemeClick, style: {filter: "invert(100%)"}}),
-        h("img", {id: "light-theme", src: "images/sun.svg", className: "hide", height: "20px", width: "20px", onClick: this.onThemeClick})
+        h("img", {id: "dark-theme", src: "images/moon.svg", className: "hide", height: "20px", width: "20px", onClick: this.onThemeClick, title: "Dark scheme selected.", style: {filter: "invert(100%)"}}),
+        h("img", {id: "light-theme", src: "images/sun.svg", className: "hide", height: "20px", width: "20px", onClick: this.onThemeClick, title: "Light scheme selected."})
       ),
       h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},

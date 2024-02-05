@@ -38,7 +38,7 @@ body {
 }
 .object-bar {
   position: fixed;
-  background-color: var(--inspector-background);
+  background-color: var(--inspector-shade);
   width: 100%;
   padding: 8px;
   box-sizing: border-box;
@@ -47,7 +47,7 @@ body {
   z-index: 1;
   align-items: center;
 }
-.object-bar > a:not(.sf-link) {
+.object-bar > a:last-child {
   color: var(--inspector-link);
 }
 .progress {
@@ -101,6 +101,13 @@ label {
 }
 div.body > div > p {
   transition-property: color;
-transition-duration: 500ms;
-transition-timing-function: ease-in-out;
+  transition-duration: 500ms;
+  transition-timing-function: ease-in-out;
+}
+
+html {
+  scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
+  transition-duration: 500ms;
+  transition-timing-function: ease-in-out;
+  scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
 }

@@ -14,7 +14,7 @@ class Model {
     this.userInfo = "...";
     // URL parameters
     this.recordId = null;
-    this.numberOfLines = 1;
+    this.lineCount = 1;
 
     //full log text data
     this.logData = "";
@@ -25,6 +25,7 @@ class Model {
     this.searchIndex = -1;
     this.winInnerHeight = 0;
     this.forceScroll = false;
+    this.logNode = null;
 
     if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
       //change background color for production
@@ -156,19 +157,321 @@ class Model {
     }
     this.spinFor(
       sfConn.rest("/services/data/v" + apiVersion + "/tooling/sobjects/ApexLog/" + this.recordId + "/Body?_dc=1705483656182", {responseType: "text"}).then(data => {
-        this.logData = data + Array(5000).fill(null).map(() => {
+        this.logData = data;
+        //for test only
+        /*+ Array(5000).fill(null).map(() => {
           let v = Math.floor(Math.random() * 30);
           if (v == 4) {
             return "\n";
           }
           return v.toString();
-        }).join("");
-        this.numberOfLines = this.logData.split("\n").length;
+        }).join("");*/
+        this.parseLog(data);
         //this.refs.editor.dataChange();
         this.didUpdate();
       }
       )
     );
+  }
+  parseLog(data) {
+    let lines = data.split("\n");
+    this.lineCount = lines.length;
+    let node = {index: 0, title: "Log", child: [], heap: 0};
+    this.parseLine(lines, node);
+    this.logNode = node;
+  }
+
+  parseLine(lines, node){
+    for (let i = node.index + 1; i < lines.length; i++) {
+      let line = lines[i];
+      let l = line.split("|");
+      if (l.length <= 1) {
+        continue;
+      } else {
+        let timestamp = l[0].split(/[:.]/);
+        let dt = null;
+        if (timestamp.length == 4){
+          let rawHour = Number(timestamp[0]);
+          let rawMin = Number(timestamp[1]);
+          let rawSec = Number(timestamp[2]);
+          let rawMil = Number(timestamp[3]);
+          if (!isNaN(rawHour) && !isNaN(rawMin) && !isNaN(rawSec) && !isNaN(rawMil)) {
+            dt = Date.now();
+            dt.setHours();
+            dt.setMinutes(Number(timestamp[1]));
+            dt.setSeconds(Number(timestamp[2]));
+            dt.setMilliseconds(Number(timestamp[3]) * 100);
+          }
+        }
+
+        switch (l[1]) {
+          //EXECUTION_STARTED EXECUTION_FINISHED
+          case "CODE_UNIT_STARTED": {
+            let child = {index: i, title: l.length > 3 ? l[3] : "code unit", child: [], start: dt, heap: 0};
+            i = this.parseLine(lines, child);
+            node.child.push(child);
+            break;
+          } case "CODE_UNIT_FINISHED": {
+            node.end = dt;
+            if (node.start) {
+              node.duration = dt - node.start;
+            }
+            return i;
+          } case "HEAP_ALLOCATE": {
+            if (l.length > 3 && l[3].startsWith("Bytes:")) {
+              let heap = Number(l[3].substring(6));
+              if (!isNaN(heap)) {
+                node.heap += heap;
+              }
+            }
+            break;
+          } case "HEAP_DEALLOCATE":
+          case "BULK_HEAP_ALLOCATE":{
+            //TODO
+            break;
+          }
+          case "SYSTEM_METHOD_ENTRY" :
+          case "METHOD_ENTRY":
+          case "SYSTEM_CONSTRUCTOR_ENTRY":
+          case "FLOW_CREATE_INTERVIEW_BEGIN":
+          case "VALIDATION_RULE":
+          case "SOQL_EXECUTE_BEGIN":
+          case "SOSL_EXECUTE_BEGIN":
+          case "CALLOUT_REQUEST":
+          case "FLOW_ELEMENT_BEGIN": {
+            let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0};
+            i = this.parseLine(lines, child);
+            node.child.push(child);
+            break;
+          } case "SYSTEM_METHOD_EXIT":
+          case "METHOD_EXIT":
+          case "SYSTEM_CONSTRUCTOR_EXIT":
+          case "SOQL_EXECUTE_END":
+          case "DML_END":
+          case "SOSL_EXECUTE_END":
+          case "CALLOUT_RESPONSE":
+          case "FLOW_ELEMENT_DEFERRED":
+          case "FLOW_ELEMENT_END":
+          case "FLOW_ELEMENT_ERROR": {
+            node.end = dt;
+            if (node.start) {
+              node.duration = dt - node.start;
+            }
+            return i;
+          } case "FLOW_INTERVIEW_FINISHED": {
+            node.end = dt;
+            if (node.start) {
+              node.duration = dt - node.start;
+            }
+            if (l.length > 3) {
+              node.title = l[3];
+            }
+            return i;
+          } case "VALIDATION_ERROR":
+          case "VALIDATION_FAIL":
+          case "VALIDATION_PASS": {
+            node.end = dt;
+            if (node.start) {
+              node.duration = dt - node.start;
+            }
+            node.status = l[1];
+            return i;
+          }
+          case "SOQL_EXECUTE_EXPLAIN": {
+            //Index on User : [Id], cardinality: 1, sobjectCardinality: 575, relativeCost 0.006
+            if (l.length > 3) {
+              l[3].split(",").map((p) => {
+                let pair = p.trim().split(/: /).filter(el => el);
+                if (pair.length > 2) {
+                  let val = pair.pop();
+                  pair = [pair.join(""), val];
+                }
+                node[pair[0]] = pair[1];
+              });
+            }
+            break;
+          } case "LIMIT_USAGE_FOR_NS": {
+            //TODO parse
+            /*
+            LIMIT_USAGE_FOR_NS|(default)|
+              Number of SOQL queries: 0 out of 100
+              Number of query rows: 0 out of 50000
+              Number of SOSL queries: 0 out of 20
+              Number of DML statements: 0 out of 150
+              Number of Publish Immediate DML: 0 out of 150
+              Number of DML rows: 0 out of 10000
+              Maximum CPU time: 0 out of 10000
+              Maximum heap size: 0 out of 6000000
+              Number of callouts: 0 out of 100
+              Number of Email Invocations: 0 out of 10
+              Number of future calls: 0 out of 50
+              Number of queueable jobs added to the queue: 0 out of 50
+              Number of Mobile Apex push calls: 0 out of 10
+            */
+            break;
+          } case "DML_BEGIN": {
+            //DML_BEGIN|[71]|Op:Update|Type:Account|Rows:1
+            let child = {index: i, title: l.length > 3 ? l[3] : "DML", child: [], start: dt, heap: 0};
+            i = this.parseLine(lines, child);
+            node.child.push(child);
+            break;
+          }
+          case "NAMED_CREDENTIAL_REQUEST":
+          case "NAMED_CREDENTIAL_RESPONSE":
+          case "NAMED_CREDENTIAL_RESPONSE_DETAIL":
+          case "CUMULATIVE_PROFILING":
+          case "CUMULATIVE_PROFILING_BEGIN":
+          case "CUMULATIVE_PROFILING_END":
+          case "EMAIL_QUEUE":
+          case "ENTERING_MANAGED_PKG":
+          case "EVENT_SERVICE_PUB_BEGIN":
+          case "FLOW_ELEMENT_FAULT": {
+            //TODO
+            break;
+          }
+          case "CUMULATIVE_LIMIT_USAGE":
+          case "CUMULATIVE_LIMIT_USAGE_END":
+          case "FLOW_CREATE_INTERVIEW_END":
+          case "FLOW_START_INTERVIEW_BEGIN":
+          case "FLOW_START_INTERVIEW_END":
+          case "FLOW_START_INTERVIEWS_BEGIN":
+          case "FLOW_START_INTERVIEWS_END":
+          case "VARIABLE_SCOPE_BEGIN":
+          case "VARIABLE_ASSIGNMENT":
+          case "USER_DEBUG":
+          case "SYSTEM_MODE_ENTER":
+          case "SYSTEM_MODE_EXIT":
+          case "STATEMENT_EXECUTE":
+          case "VALIDATION_FORMULA":
+          case "EVENT_SERVICE_PUB_DETAIL":
+          case "EVENT_SERVICE_PUB_END":
+          case "EVENT_SERVICE_SUB_BEGIN":
+          case "EVENT_SERVICE_SUB_DETAIL":
+          case "EVENT_SERVICE_SUB_END":
+          case "EXCEPTION_THROWN":
+          case "EXECUTION_FINISHED":
+          case "EXECUTION_STARTED":
+          case "FATAL_ERROR":
+          case "FLOW_ACTIONCALL_DETAIL":
+          case "FLOW_ASSIGNMENT_DETAIL":
+          case "FLOW_BULK_ELEMENT_BEGIN":
+          case "FLOW_BULK_ELEMENT_DETAIL":
+          case "FLOW_BULK_ELEMENT_END":
+          case "FLOW_BULK_ELEMENT_LIMIT_USAGE":
+          case "FLOW_BULK_ELEMENT_NOT_SUPPORTED":
+          case "FLOW_CREATE_INTERVIEW_ERROR":
+          case "FLOW_ELEMENT_LIMIT_USAGE":
+          case "FLOW_INTERVIEW_FINISHED_LIMIT_USAGE":
+          case "FLOW_INTERVIEW_PAUSED":
+          case "FLOW_INTERVIEW_RESUMED":
+          case "FLOW_LOOP_DETAIL":
+          case "FLOW_RULE_DETAIL":
+          case "FLOW_START_INTERVIEW_LIMIT_USAGE":
+          case "FLOW_START_INTERVIEWS_ERROR":
+          case "FLOW_START_SCHEDULED_RECORDS":
+          case "FLOW_SUBFLOW_DETAIL":
+          case "FLOW_VALUE_ASSIGNMENT":
+          case "FLOW_WAIT_EVENT_RESUMING_DETAIL":
+          case "FLOW_WAIT_EVENT_WAITING_DETAIL":
+          case "FLOW_WAIT_RESUMING_DETAIL":
+          case "FLOW_WAIT_WAITING_DETAIL":
+          case "IDEAS_QUERY_EXECUTE":
+          case "NBA_NODE_BEGIN":
+          case "NBA_NODE_DETAIL":
+          case "NBA_NODE_END":
+          case "NBA_NODE_ERROR":
+          case "NBA_OFFER_INVALID":
+          case "NBA_STRATEGY_BEGIN":
+          case "NBA_STRATEGY_END":
+          case "NBA_STRATEGY_ERROR":
+          case "POP_TRACE_FLAGS":
+          case "PUSH_NOTIFICATION_INVALID_APP":
+          case "PUSH_NOTIFICATION_INVALID_CERTIFICATE":
+          case "PUSH_NOTIFICATION_INVALID_NOTIFICATION":
+          case "PUSH_NOTIFICATION_NO_DEVICES":
+          case "PUSH_NOTIFICATION_NOT_ENABLED":
+          case "PUSH_NOTIFICATION_SENT":
+          case "PUSH_TRACE_FLAGS":
+          case "QUERY_MORE_BEGIN":
+          case "QUERY_MORE_END":
+          case "QUERY_MORE_ITERATIONS":
+          case "SAVEPOINT_ROLLBACK":
+          case "SAVEPOINT_SET":
+          case "SLA_END":
+          case "SLA_EVAL_MILESTONE":
+          case "SLA_NULL_START_DATE":
+          case "SLA_PROCESS_CASE":
+          case "STACK_FRAME_VARIABLE_LIST":
+          case "STATIC_VARIABLE_LIST":
+          case "TESTING_LIMITS":
+          case "TOTAL_EMAIL_RECIPIENTS_QUEUED":
+          case "USER_INFO":
+          case "VARIABLE_SCOPE_END":
+          case "VF_APEX_CALL_END":
+          case "VF_APEX_CALL_START":
+          case "VF_DESERIALIZE_VIEWSTATE_BEGIN":
+          case "VF_DESERIALIZE_VIEWSTATE_END":
+          case "VF_EVALUATE_FORMULA_BEGIN":
+          case "VF_EVALUATE_FORMULA_END":
+          case "VF_PAGE_MESSAGE":
+          case "VF_SERIALIZE_VIEWSTATE_BEGIN":
+          case "VF_SERIALIZE_VIEWSTATE_END":
+          case "WF_ACTION":
+          case "WF_ACTION_TASK":
+          case "WF_ACTIONS_END":
+          case "WF_APPROVAL":
+          case "WF_APPROVAL_REMOVE":
+          case "WF_APPROVAL_SUBMIT":
+          case "WF_APPROVAL_SUBMITTER":
+          case "WF_ASSIGN":
+          case "WF_CRITERIA_BEGIN":
+          case "WF_CRITERIA_END":
+          case "WF_EMAIL_ALERT":
+          case "WF_EMAIL_SENT":
+          case "WF_ENQUEUE_ACTIONS":
+          case "WF_ESCALATION_ACTION":
+          case "WF_ESCALATION_RULE":
+          case "WF_EVAL_ENTRY_CRITERIA":
+          case "WF_FIELD_UPDATE":
+          case "WF_FLOW_ACTION_BEGIN":
+          case "WF_FLOW_ACTION_DETAILflow variables":
+          case "WF_FLOW_ACTION_END":
+          case "WF_FLOW_ACTION_ERROR":
+          case "WF_FLOW_ACTION_ERROR_DETAIL":
+          case "WF_FORMULA":
+          case "WF_HARD_REJECT":
+          case "WF_NEXT_APPROVER":
+          case "WF_NO_PROCESS_FOUND":
+          case "WF_OUTBOUND_MSG":
+          case "WF_PROCESS_FOUND":
+          case "WF_PROCESS_NODE":
+          case "WF_REASSIGN_RECORD":
+          case "WF_RESPONSE_NOTIFY":
+          case "WF_RULE_ENTRY_ORDER":
+          case "WF_RULE_EVAL_BEGIN":
+          case "WF_RULE_EVAL_END":
+          case "WF_RULE_EVAL_VALUE":
+          case "WF_RULE_FILTER":
+          case "WF_RULE_INVOCATION":
+          case "WF_RULE_NOT_EVALUATED":
+          case "WF_SOFT_REJECT":
+          case "WF_SPOOL_ACTION_BEGIN":
+          case "WF_TIME_TRIGGER":
+          case "WF_TIME_TRIGGERS_BEGIN":
+          case "XDS_DETAIL":
+          case "XDS_RESPONSE":
+          case "XDS_RESPONSE_DETAIL":
+          case "XDS_RESPONSE_ERROR": {
+            //SKIP
+            break;
+          }
+          default:
+            break;
+        }
+
+      }
+    }
+    return null;
   }
 }
 
@@ -229,12 +532,121 @@ class App extends React.Component {
         h("div", {className: "area-header"},
         ),
         h("div", {className: "script-controls"},
-          h("h1", {}, "Execute Script"),
+          h("h1", {}, "Search"),
           h("div", {className: "script-history-controls"},
             h("input", {id: "search-text", ref: "search", placeholder: "Search a word", onKeyPress: this.onKeypress, type: "search", value: model.logSearch, onInput: this.onLogSearchInput})
           )
         ),
-        h(Editor, {model, ref: "editor"})
+        h(LogTabNavigation, {model})
+      )
+    );
+  }
+}
+class LogTabNavigation extends React.Component {
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+    this.state = {
+      selectedTabId: 1
+    };
+    this.tabs = [
+      {
+        id: 1,
+        tabTitle: "Tab1",
+        title: "Raw Log",
+        content: Editor
+      },
+      {
+        id: 2,
+        tabTitle: "Tab2",
+        title: "Profiler",
+        content: Profiler
+      }
+    ];
+    this.onTabSelect = this.onTabSelect.bind(this);
+  }
+
+  onTabSelect(e) {
+    e.preventDefault();
+    this.setState({selectedTabId: e.target.tabIndex});
+  }
+
+  componentDidMount() {
+
+  }
+  render() {
+    return h("div", {className: "slds-tabs_default"},
+      h("ul", {className: "options-tab-container slds-tabs_default__nav", role: "tablist"},
+        this.tabs.map((tab) => h(LogTab, {key: tab.id, id: tab.id, title: tab.title, content: tab.content, onTabSelect: this.onTabSelect, selectedTabId: this.state.selectedTabId, model: this.model}))
+      ),
+      this.tabs
+        .filter((tab) => tab.id == this.state.selectedTabId)
+        .map((tab) => h(tab.content, {key: tab.id, id: tab.id, model: this.model}))
+    );
+  }
+}
+class LogTab extends React.Component {
+
+  getClass() {
+    return "options-tab slds-text-align_center slds-tabs_default__item" + (this.props.selectedTabId === this.props.id ? " slds-is-active" : "");
+  }
+
+  render() {
+    return h("li", {key: this.props.id, className: this.getClass(), title: this.props.title, tabIndex: this.props.id, role: "presentation", onClick: this.props.onTabSelect},
+      h("a", {className: "slds-tabs_default__link", href: "#", role: "tab", tabIndex: this.props.id, id: "tab-default-" + this.props.id + "__item"},
+        this.props.title)
+    );
+  }
+}
+class LogTreeviewNode extends React.Component {
+  constructor(props) {
+    super(props);
+    this.node = props.node;
+    this.level = props.level;
+    this.state = {
+      expanded: false
+    };
+    this.onExpand = this.onExpand.bind(this);
+  }
+  onExpand(e) {
+    e.preventDefault();
+    this.setState({expanded: !this.state.expanded});
+  }
+  //TODO migrate to treegrid
+  //https://www.lightningdesignsystem.com/components/tree-grid/
+  render() {
+    let attributes = {"aria-level": this.level.toString(), role: "treeitem", tabIndex: this.tabindex};
+    if (this.node.child.length > 0) {
+      attributes["aria-label"] = this.node.title;
+      attributes["aria-expanded"] = this.state.expanded;
+    }
+    return h("li", attributes,
+      h("div", {className: "slds-tree__item"},
+        h("button", {className: "slds-button slds-button_icon slds-m-right_x-small", hidden: (this.node.child.length == 0), "aria-hidden": true, tabIndex: -1, title: "Expand", onClick: this.onExpand},
+          h("svg", {className: "slds-button__icon slds-button__icon_small", "aria-hidden": true},
+            h("use", {xlinkHref: "symbols.svg#chevronright"})
+          ),
+          h("span", {className: "slds-assistive-text"}, "Expand"),
+        ),
+        h("span", {className: "slds-has-flexi-truncate"},
+          h("span", {className: "slds-tree__item-label slds-truncate", title: this.node.title}, this.node.title + "|" + this.node.heap),
+        )
+      ),
+      this.node.child.length > 0 ? h("ul", {role: "group"}, this.node.child.map((c, i) => h(LogTreeviewNode, {node: c, key: "node" + i, tabindex: -1, level: (this.level + 1)}))) : ""
+    );
+  }
+}
+
+class Profiler extends React.Component {
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+  }
+  render() {
+    return h("div", {className: "slds-tree_container"},
+      h("h4", {className: "slds-tree__group-header", id: "treeheading"}, this.model.logNode.title),
+      h("ul", {className: "slds-tree", role: "tree", "aria-labelledby": "treeheading"},
+        this.model.logNode.child.map((c, i) => h(LogTreeviewNode, {node: c, key: "node" + i, level: 1, tabindex: 0}))
       )
     );
   }
@@ -272,8 +684,7 @@ class Editor extends React.Component {
     let currentSearchIdx = model.searchIndex;
     let rowHeight = 14;
     let scrollerOffsetHeight = 0;
-    let logLines = logView.split("\n");
-    let totalHeight = logLines.length * rowHeight;
+    let totalHeight = model.lineCount * rowHeight;
 
     if (this.scroller != null) {
       scrollerOffsetHeight = this.scroller.offsetHeight;
@@ -294,55 +705,19 @@ class Editor extends React.Component {
     let logData = model.logData;
     let logView = logData;
     let searchTerm = model.logSearch;
+    let lineCount = model.lineCount;
     let EnrichLog = [];
     let searchIdx = 0;
     let lastSearchIdx = 0;
-    let logLines = logData.split("\n");
 
     let rowHeight = 14; // constant: The initial estimated height of a row before it is rendered
-    let bufferHeight = 14; // constant: The number of pixels to render above and below the current viewport
-    let totalHeight = 0;
-    let firstRowIdx = 0;
-    let firstRowTop = 0;
-    let lastRowIdx = 0;
-    let lastRowTop = 0;
-    let colCount = 0;
     let scrollerOffsetHeight = 0;
     let scrollerScrollTop = 0;
-    /*
-    for (let l = 0; l < logLines.length; l++) {
-      if (colCount < logLines[l].length) {
-        colCount = logLines[l].length;
-      }
-    }*/
 
     if (this.scroller != null) {
       scrollerScrollTop = this.scroller.scrollTop;
       scrollerOffsetHeight = this.scroller.offsetHeight;
-    /*
-      firstRowTop = Math.min(scrollerScrollTop - bufferHeight, logLines.length * rowHeight);
-      firstRowTop = Math.max(firstRowTop, 0);
-      firstRowIdx = Math.floor(firstRowTop / rowHeight);
-      firstRowTop -= firstRowIdx * rowHeight;
-
-      //lastRowIdx = firstRowIdx;
-      //lastRowTop = firstRowTop;
-
-      lastRowTop = Math.min(scrollerScrollTop + scrollerOffsetHeight + bufferHeight, logLines.length * rowHeight);
-      lastRowTop = Math.max(lastRowTop, firstRowTop);
-      lastRowIdx = Math.floor(lastRowTop / rowHeight);
-      //lastRowTop = lastRowIdx * rowHeight;
-      */
     }
-    totalHeight = logLines.length * rowHeight;
-    /*
-
-    let scrolledHeight = totalHeight + "px";
-    let scrolledTop = firstRowTop + "px";
-
-    for (let r = firstRowIdx; r < lastRowIdx; r++) {
-      logView += logLines[r] + "\n";
-    }*/
 
     if (searchTerm) {
       searchIdx = logView.indexOf(searchTerm);
@@ -365,13 +740,12 @@ class Editor extends React.Component {
       model.didUpdate();
     }*/
 
-    // TODO component scrollable text  in order to have good row number
     //return h("div", {className: "editor", ref: "scroller", onScroll: onScrollerScroll, style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 160) + "px"}},
     return h("div", {className: "editor", ref: "scroller", style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 160) + "px"}},
       //h("div", {className: "scrolled"}, style: {height: scrolledHeight, top: scrolledTop}},
       h("div", {className: "line-numbers", style: {lineHeight: rowHeight + "px"}},
         //Array(lastRowIdx - firstRowIdx).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}, i + firstRowIdx))
-        Array(logLines.length).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}, i))
+        Array(lineCount).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}, i))
       ),
       h("div", {id: "log-text", ref: "log", style: {lineHeight: rowHeight + "px"}},
         EnrichLog.map((txtNode, i) => {

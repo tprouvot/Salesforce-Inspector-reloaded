@@ -5325,3 +5325,355 @@ a.slds-button--inverse:focus{
       flex-shrink:0;
   margin-right:0.75rem;
 }
+
+.slds-tree{
+}
+.slds-tree .slds-tree__item .slds-is-disabled{
+  visibility:hidden;
+}
+.slds-tree .slds-is-selected{
+  background:var(--slds-g-color-neutral-base-95, #f3f3f3);
+  -webkit-box-shadow:var(--slds-g-color-brand-base-50, #0176d3) 4px 0 0 inset;
+          box-shadow:var(--slds-g-color-brand-base-50, #0176d3) 4px 0 0 inset;
+}
+.slds-tree .slds-is-focused{
+  text-decoration:underline;
+}
+.slds-tree [aria-expanded=false] > .slds-tree__item > .slds-button[aria-controls] > .slds-button__icon,
+.slds-tree [aria-expanded=false] > .slds-tree__item > .slds-button[aria-controls] > span > .slds-button__icon{
+  -webkit-transition:0.2s -webkit-transform ease-in-out;
+  transition:0.2s -webkit-transform ease-in-out;
+  transition:0.2s transform ease-in-out;
+  transition:0.2s transform ease-in-out, 0.2s -webkit-transform ease-in-out;
+  -webkit-transform:rotate(0deg);
+          transform:rotate(0deg);
+}
+.slds-tree [aria-expanded=true] > .slds-tree__item > .slds-button[aria-controls] > .slds-button__icon,
+.slds-tree [aria-expanded=true] > .slds-tree__item > .slds-button[aria-controls] > span > .slds-button__icon{
+  -webkit-transition:0.2s -webkit-transform ease-in-out;
+  transition:0.2s -webkit-transform ease-in-out;
+  transition:0.2s transform ease-in-out;
+  transition:0.2s transform ease-in-out, 0.2s -webkit-transform ease-in-out;
+  -webkit-transform:rotate(90deg);
+          transform:rotate(90deg);
+}
+
+.slds-tree__item a{
+  color:var(--slds-g-color-neutral-base-10, #181818);
+}
+.slds-tree__item a:hover{
+  text-decoration:none;
+}
+.slds-tree__item a:focus{
+  outline:0;
+  text-decoration:underline;
+}
+.slds-tree-container,
+.slds-tree_container{
+  min-width:7.5rem;
+  max-width:var(--slds-c-tree-sizing-max-width, var(--sds-c-tree-sizing-max-width, 25rem));
+}
+.slds-tree-container > .slds-text-heading_label,
+.slds-tree-container > .slds-text-heading--label,
+.slds-tree_container > .slds-text-heading_label,
+.slds-tree_container > .slds-text-heading--label{
+  margin-bottom:0.5rem;
+}
+.slds-tree__item{
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+  padding:0.375rem 0 0.375rem 1rem;
+}
+.slds-tree__item.slds-is-hovered,
+.slds-tree__item:hover{
+  background:var(--slds-g-color-neutral-base-95, #f3f3f3);
+  cursor:pointer;
+}
+.slds-tree [role=treeitem]:focus{
+  outline:0;
+}
+.slds-tree [role=treeitem]:focus > .slds-tree__item{
+  background:var(--slds-g-color-neutral-base-95, #f3f3f3);
+  cursor:pointer;
+  text-decoration:underline;
+}
+
+.slds-tree [role=treeitem][aria-selected=true] > .slds-tree__item{
+  background:rgba(21, 137, 238, 0.1);
+  -webkit-box-shadow:#1b96ff 4px 0 0 inset;
+          box-shadow:#1b96ff 4px 0 0 inset;
+}
+[dir=rtl] .slds-tree [role=treeitem][aria-selected=true] > .slds-tree__item{
+  -webkit-box-shadow:#1b96ff -4px 0 0 inset;
+          box-shadow:#1b96ff -4px 0 0 inset;
+}
+
+.slds-tree [aria-disabled=true]{
+  color:var(--slds-g-color-neutral-base-80, #c9c9c9);
+}
+.slds-tree [aria-disabled=true] .slds-tree__item.slds-is-hovered,
+.slds-tree [aria-disabled=true] .slds-tree__item:hover{
+  background-color:transparent;
+  cursor:default;
+}
+.slds-tree [aria-disabled=true] .slds-tree__item-meta{
+  color:inherit;
+}
+
+.slds-tree [role=treeitem] > [role=group]{
+  display:none;
+}
+
+.slds-tree [role=treeitem][aria-expanded=true] > [role=group]{
+  display:block;
+}
+
+[aria-expanded=false] > .slds-tree__item .slds-button__icon{
+  -webkit-transition:0.2s -webkit-transform ease-in-out;
+  transition:0.2s -webkit-transform ease-in-out;
+  transition:0.2s transform ease-in-out;
+  transition:0.2s transform ease-in-out, 0.2s -webkit-transform ease-in-out;
+  -webkit-transform:rotate(0deg);
+          transform:rotate(0deg);
+}
+
+[aria-expanded=true] > .slds-tree__item .slds-button__icon{
+  -webkit-transition:0.2s -webkit-transform ease-in-out;
+  transition:0.2s -webkit-transform ease-in-out;
+  transition:0.2s transform ease-in-out;
+  transition:0.2s transform ease-in-out, 0.2s -webkit-transform ease-in-out;
+  -webkit-transform:rotate(90deg);
+          transform:rotate(90deg);
+}
+[dir=rtl] [aria-expanded=true] > .slds-tree__item .slds-button__icon{
+  -webkit-transform:rotate(-90deg);
+          transform:rotate(-90deg);
+}
+
+[aria-level="1"] > .slds-tree__item{
+  padding-left:1rem;
+}
+
+[aria-level="2"] > .slds-tree__item{
+  padding-left:2rem;
+}
+
+[aria-level="3"] > .slds-tree__item{
+  padding-left:3rem;
+}
+
+[aria-level="4"] > .slds-tree__item{
+  padding-left:4rem;
+}
+
+[aria-level="5"] > .slds-tree__item{
+  padding-left:5rem;
+}
+
+[aria-level="6"] > .slds-tree__item{
+  padding-left:6rem;
+}
+
+[aria-level="7"] > .slds-tree__item{
+  padding-left:7rem;
+}
+
+[aria-level="8"] > .slds-tree__item{
+  padding-left:8rem;
+}
+
+[aria-level="9"] > .slds-tree__item{
+  padding-left:9rem;
+}
+
+[aria-level="10"] > .slds-tree__item{
+  padding-left:10rem;
+}
+
+[aria-level="11"] > .slds-tree__item{
+  padding-left:11rem;
+}
+
+[aria-level="12"] > .slds-tree__item{
+  padding-left:12rem;
+}
+
+[aria-level="13"] > .slds-tree__item{
+  padding-left:13rem;
+}
+
+[aria-level="14"] > .slds-tree__item{
+  padding-left:14rem;
+}
+
+[aria-level="15"] > .slds-tree__item{
+  padding-left:15rem;
+}
+
+[aria-level="16"] > .slds-tree__item{
+  padding-left:16rem;
+}
+
+[aria-level="17"] > .slds-tree__item{
+  padding-left:17rem;
+}
+
+[aria-level="18"] > .slds-tree__item{
+  padding-left:18rem;
+}
+
+[aria-level="19"] > .slds-tree__item{
+  padding-left:19rem;
+}
+
+[aria-level="20"] > .slds-tree__item{
+  padding-left:20rem;
+}
+.slds-tree__item-label{
+  display:block;
+}
+.slds-tree__item-meta{
+  display:block;
+  color:var(--slds-g-color-neutral-base-30, #444444);
+}
+
+.slds-tree__item .slds-button{
+  -ms-flex-item-align:start;
+      align-self:flex-start;
+  margin-top:0.125rem;
+}
+
+.slds-tree__item .slds-pill{
+  margin-left:0.75rem;
+}
+.slds-tree__group-header{
+  font-size:0.875rem;
+  font-weight:700;
+}
+.slds-table_tree,
+.slds-table--tree{
+}
+.slds-table_tree .slds-tree__item,
+.slds-table--tree .slds-tree__item{
+  line-height:1.5rem;
+}
+.slds-table_tree .slds-tree__item a,
+.slds-table--tree .slds-tree__item a{
+  color:var(--slds-g-link-color, #0176d3);
+}
+.slds-table_tree .slds-tree__item a:hover,
+.slds-table--tree .slds-tree__item a:hover{
+  text-decoration:underline;
+}
+.slds-table_tree .slds-button,
+.slds-table--tree .slds-button{
+  -ms-flex-item-align:center;
+      align-self:center;
+}
+.slds-table_tree .slds-button:not(.slds-th__action-button),
+.slds-table--tree .slds-button:not(.slds-th__action-button){
+  margin-top:0;
+}
+.slds-table_tree [aria-level="1"] > .slds-tree__item,
+.slds-table--tree [aria-level="1"] > .slds-tree__item{
+  padding-left:1.5rem;
+}
+.slds-table_tree [aria-level="2"] > .slds-tree__item,
+.slds-table--tree [aria-level="2"] > .slds-tree__item{
+  padding-left:2.5rem;
+}
+.slds-table_tree [aria-level="3"] > .slds-tree__item,
+.slds-table--tree [aria-level="3"] > .slds-tree__item{
+  padding-left:3.5rem;
+}
+.slds-table_tree [aria-level="4"] > .slds-tree__item,
+.slds-table--tree [aria-level="4"] > .slds-tree__item{
+  padding-left:4.5rem;
+}
+.slds-table_tree [aria-level="5"] > .slds-tree__item,
+.slds-table--tree [aria-level="5"] > .slds-tree__item{
+  padding-left:5.5rem;
+}
+.slds-table_tree [aria-level="6"] > .slds-tree__item,
+.slds-table--tree [aria-level="6"] > .slds-tree__item{
+  padding-left:6.5rem;
+}
+.slds-table_tree [aria-level="7"] > .slds-tree__item,
+.slds-table--tree [aria-level="7"] > .slds-tree__item{
+  padding-left:7.5rem;
+}
+.slds-table_tree [aria-level="8"] > .slds-tree__item,
+.slds-table--tree [aria-level="8"] > .slds-tree__item{
+  padding-left:8.5rem;
+}
+.slds-table_tree [aria-level="9"] > .slds-tree__item,
+.slds-table--tree [aria-level="9"] > .slds-tree__item{
+  padding-left:9.5rem;
+}
+.slds-table_tree [aria-level="10"] > .slds-tree__item,
+.slds-table--tree [aria-level="10"] > .slds-tree__item{
+  padding-left:10.5rem;
+}
+.slds-table_tree [aria-level="11"] > .slds-tree__item,
+.slds-table--tree [aria-level="11"] > .slds-tree__item{
+  padding-left:11.5rem;
+}
+.slds-table_tree [aria-level="12"] > .slds-tree__item,
+.slds-table--tree [aria-level="12"] > .slds-tree__item{
+  padding-left:12.5rem;
+}
+.slds-table_tree [aria-level="13"] > .slds-tree__item,
+.slds-table--tree [aria-level="13"] > .slds-tree__item{
+  padding-left:13.5rem;
+}
+.slds-table_tree [aria-level="14"] > .slds-tree__item,
+.slds-table--tree [aria-level="14"] > .slds-tree__item{
+  padding-left:14.5rem;
+}
+.slds-table_tree [aria-level="15"] > .slds-tree__item,
+.slds-table--tree [aria-level="15"] > .slds-tree__item{
+  padding-left:15.5rem;
+}
+.slds-table_tree [aria-level="16"] > .slds-tree__item,
+.slds-table--tree [aria-level="16"] > .slds-tree__item{
+  padding-left:16.5rem;
+}
+.slds-table_tree [aria-level="17"] > .slds-tree__item,
+.slds-table--tree [aria-level="17"] > .slds-tree__item{
+  padding-left:17.5rem;
+}
+.slds-table_tree [aria-level="18"] > .slds-tree__item,
+.slds-table--tree [aria-level="18"] > .slds-tree__item{
+  padding-left:18.5rem;
+}
+.slds-table_tree [aria-level="19"] > .slds-tree__item,
+.slds-table--tree [aria-level="19"] > .slds-tree__item{
+  padding-left:19.5rem;
+}
+.slds-table_tree [aria-level="20"] > .slds-tree__item,
+.slds-table--tree [aria-level="20"] > .slds-tree__item{
+  padding-left:20.5rem;
+}
+.slds-assistive-text{
+  position:absolute !important;
+  margin:-1px !important;
+  border:0 !important;
+  padding:0 !important;
+  width:1px !important;
+  height:1px !important;
+  overflow:hidden !important;
+  clip:rect(0 0 0 0) !important;
+  text-transform:none !important;
+  white-space:nowrap !important;
+}
+.slds-assistive-text_focus:focus,
+.slds-assistive-text--focus:focus{
+  margin:inherit !important;
+  border:inherit !important;
+  padding:inherit !important;
+  width:auto !important;
+  height:auto !important;
+  overflow:visible !important;
+  clip:auto !important;
+}

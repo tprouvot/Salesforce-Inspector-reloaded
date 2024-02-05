@@ -200,3 +200,24 @@ You can update the debug level (configuration is per organization) and duration 
 
 > **Warning**
 > Increasing the default duration may lead to a high volume of logs generated.
+
+## Change Color Scheme
+There are two ways to set your preferred color scheme.
+
+### From the popup
+Be sure to have the popup open (click on the arrow to invoke it).
+#### Change to light theme
+Click on the Sun at the bottom of the popup to change the color scheme to light.
+![Change to light from the popup](./screenshots/color-scheme/popup-to-light.png)
+#### Change to dark theme
+Click on the Moon at the bottom of the popup to change the color scheme to dark.
+![Change to dark from the popup](./screenshots/color-scheme/popup-to-dark.png)
+
+### From the options page
+Navigate to the options page (open the popup > scroll down to "Options" > click on the "User Interface" tab)
+#### Change to light theme
+Deactivate the toggle corresponding to "Set default theme to"
+![Change to light from the options page](./screenshots/color-scheme/options-to-light.png)
+#### Change to dark theme
+Activate the toggle corresponding to "Set default theme to"
+![Change to dark from the options page](./screenshots/color-scheme/options-to-dark.png)

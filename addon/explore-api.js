@@ -253,8 +253,8 @@ let h = React.createElement;
 
 class App extends React.Component {
   constructor(props) {
-      super(props);
-      this.setupThemeChange();
+    super(props);
+    this.setupThemeChange();
   }
 
   saveThemeChanges(theme) {
@@ -276,10 +276,11 @@ class App extends React.Component {
     // listen to possible updates from popup
     const html = document.documentElement;
     window.addEventListener("theme-update", () => {
-        const localTheme = localStorage.getItem("preferredColorScheme");
-        const htmlTheme = html.dataset.theme;
-        if (localTheme != htmlTheme) // avoid recursion
-            this.saveThemeChanges(localTheme);
+      const localTheme = localStorage.getItem("preferredColorScheme");
+      const htmlTheme = html.dataset.theme;
+      if (localTheme != htmlTheme) { // avoid recursion
+        this.saveThemeChanges(localTheme);
+      }
     });
 
     const savedTheme = localStorage.getItem("preferredColorScheme");

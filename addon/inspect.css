@@ -259,6 +259,7 @@ thead{
   padding: 0;
   border-radius: .25rem;
   -webkit-appearance: none;
+  appearance: none;
   white-space: normal;
   cursor: pointer;
 }
@@ -288,12 +289,15 @@ thead{
 
 .table-settings-icon {
   -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
+  mask-size: 1rem;
   background-color: #706E6B;
   display: inline-block;
   width: 16px;
   height: 16px;
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/settings.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/settings.svg');
   margin: 3px 0px -3px 0px;
 }
 

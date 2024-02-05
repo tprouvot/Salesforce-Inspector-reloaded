@@ -279,10 +279,11 @@ class App extends React.Component {
     // listen to possible updates from popup
     const html = document.documentElement;
     window.addEventListener("theme-update", () => {
-        const localTheme = localStorage.getItem("preferredColorScheme");
-        const htmlTheme = html.dataset.theme;
-        if (localTheme != htmlTheme) // avoid recursion
-            this.saveThemeChanges(localTheme);
+      const localTheme = localStorage.getItem("preferredColorScheme");
+      const htmlTheme = html.dataset.theme;
+      if (localTheme != htmlTheme) { // avoid recursion
+        this.saveThemeChanges(localTheme);
+      }
     });
 
     const savedTheme = localStorage.getItem("preferredColorScheme");

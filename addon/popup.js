@@ -221,15 +221,15 @@ class App extends React.PureComponent {
 
     //window.parent.location.pathname is accessible if we're in an internal page
     const bloc = Object.assign({}, window.parent.location);
-    if (bloc.hasOwnProperty("pathname"))
-        window.parent.dispatchEvent(new Event("theme-update"));
+    if (Object.prototype.hasOwnProperty.call(bloc, "pathname")) {
+      window.parent.dispatchEvent(new Event("theme-update"));
+    }
   }
 
   updateTheme(theme, isSetup = false, callback = null) {
     const light = document.getElementById("light-theme");
     const dark = document.getElementById("dark-theme");
     if (light == null || dark == null) {
-      console.warn({light, dark});
       setTimeout(() => this.updateTheme(theme, isSetup, this.saveThemeChanges), 500);
       return;
     }
@@ -267,8 +267,9 @@ class App extends React.PureComponent {
     window.addEventListener("theme-update", () => {
       const localTheme = localStorage.getItem("preferredColorScheme");
       const htmlTheme = html.dataset.theme;
-      if (localTheme != htmlTheme) // avoid recursion
+      if (localTheme != htmlTheme) { // avoid recursion
         this.updateTheme(localTheme);
+      }
     });
   }
 

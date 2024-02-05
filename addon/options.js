@@ -504,7 +504,6 @@ class ColorSchemeOption extends React.Component {
     const dark = document.getElementById("dark-theme");
     const inputField = document.getElementById("checkbox-toggle-themeChange");
     if (light == null || dark == null || inputField == null) {
-      console.warn({light, dark, inputField});
       setTimeout(() => this.updateTheme(theme, isSetup, this.saveThemeChanges), 500);
       return;
     }
@@ -533,10 +532,11 @@ class ColorSchemeOption extends React.Component {
     // listen to possible updates from popup
     const html = document.documentElement;
     window.addEventListener("theme-update", () => {
-        const localTheme = localStorage.getItem("preferredColorScheme");
-        const htmlTheme = html.dataset.theme;
-        if (localTheme != htmlTheme) // avoid recursion
-            this.updateTheme(localTheme);
+      const localTheme = localStorage.getItem("preferredColorScheme");
+      const htmlTheme = html.dataset.theme;
+      if (localTheme != htmlTheme) { // avoid recursion
+        this.updateTheme(localTheme);
+      }
     });
 
     const savedTheme = localStorage.getItem("preferredColorScheme");

@@ -121,9 +121,13 @@ body {
   width: 1.4rem;
   height: 1.4rem;;
   -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   -webkit-mask-size: 1.4rem;;
+  mask-size: 1.4rem;;
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
   -webkit-mask-position: center;
+  mask-position: center;
   background-color: var(--inspector-neutral);
 }
 #spinner {
@@ -489,10 +493,6 @@ button.contract .button-toggle-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/up.svg');
   mask-image: url('chrome-extension://__MSG_@@extension_id__/images/up.svg');
 }
-/*.button.field-info .button-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce-inspector-logo.svg');
-  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce-inspector-logo.svg');
-}*/
 .cancel-btn {
   color: var(--inspector-error);
 }

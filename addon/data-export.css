@@ -354,10 +354,13 @@ textarea[readonly] {
   height: 1.4rem;
   ;
   -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   -webkit-mask-size: 1.4rem;
-  ;
+  mask-size: 1.4rem;
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
   -webkit-mask-position: center;
+  mask-position: center;
   background-color: var(--inspector-neutral);
 }
 
@@ -492,7 +495,9 @@ button.toggle {
 button.toggle .button-toggle-icon,
 button.toggle .button-icon {
   -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
+  mask-size: 1rem;
   background-color: var(--inspector-neutral);
   display: inline-block;
   width: 16px;
@@ -510,14 +515,17 @@ button.toggle:hover .button-toggle-icon {
 
 button.expand .button-toggle-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/down.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/down.svg');
 }
 
 button.contract .button-toggle-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/up.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/up.svg');
 }
 
 button.toggle .button-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/light_bulb.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/light_bulb.svg');
 }
 
 .autocomplete-header {
@@ -565,7 +573,9 @@ button.toggle .button-icon {
   display: inline-block;
   margin: -1px 2px 0 1px;
   -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   -webkit-mask-size: 0.95rem;
+  mask-size: 0.95rem;
   background-color: var(--inspector-neutral);
   width: 16px;
   height: 16px;
@@ -577,111 +587,137 @@ button.toggle .button-icon {
 
 .relationshipName .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/relate.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/relate.svg');
   background-color: var(--inspector-primary);
 }
 
 .object .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/sobject.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/sobject.svg');
   background-color: var(--inspector-success-background);
 }
 
 .variable .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/variable.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/variable.svg');
 }
 
 .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/quotation_marks.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/quotation_marks.svg');
 }
 
 .null .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/steps.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/steps.svg');
 }
 
 .fieldName .autocomplete-icon {
   /* default icon */
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/question_mark.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/question_mark.svg');
 }
 
 .fieldName.reference .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/record_lookup.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/record_lookup.svg');
 }
 
 .fieldName.string .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/string.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/string.svg');
 }
 
 .fieldName.id .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/anchor.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/anchor.svg');
 }
 
 .fieldName.picklist .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/picklist.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/picklist.svg');
 }
 
 .fieldName.multipicklist .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/multi-picklist.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/multi-picklist.svg');
 }
 
 .fieldName.boolean .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/boolean.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/boolean.svg');
 }
 
 .fieldName.phone .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/call.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/call.svg');
 }
 
 .fieldName.textarea .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/textarea.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/textarea.svg');
 }
 
 .fieldName.url .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/link.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/link.svg');
 }
 
 .fieldName.int .autocomplete-icon,
 .fieldName.double .autocomplete-icon,
 .fieldName.long .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/number.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/number.svg');
 }
 
 .fieldName.address .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/home.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/home.svg');
 }
 
 .fieldName.datetime .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/date-time.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/date-time.svg');
 }
 
 .fieldName.date .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/date.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/date.svg');
 }
 
 .fieldName.currency .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/currency.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/currency.svg');
 }
 
 .fieldName.email .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/email.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/email.svg');
 }
 
 .fieldName.location .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/checkin.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/checkin.svg');
 }
 
 .fieldName.percent .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/percent.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/percent.svg');
 }
 
 .fieldName.encryptedstring .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/lock.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/lock.svg');
 }
 
 .fieldName.time .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/clock.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/clock.svg');
 }
 
 .fieldName.complexvalue .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/advanced_function.svg');
+  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/advanced_function.svg');
 }
 
 .header {

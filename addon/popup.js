@@ -1701,12 +1701,12 @@ class AllDataRecordDetails extends React.PureComponent {
                 h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
               )
             ),
-            h("tr", {},
+            recordIdDetails.recordTypeName ? h("tr", {},
               h("th", {}, "RecType:"),
               h("td", {},
                 h("a", {href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: linkTarget}, recordIdDetails.recordTypeName)
               )
-            ),
+            ) : null,
             h("tr", {},
               h("th", {}, "Created:"),
               h("td", {}, recordIdDetails.created + " (" + recordIdDetails.createdBy + ")")

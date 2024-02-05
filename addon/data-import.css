@@ -90,7 +90,7 @@ body {
   text-decoration: none;
   display: inline-block;
   padding: 2px;
-  color: white;
+  color: var(--inspector-text);
   padding-right: 1em;
 }
 .sf-link svg {
@@ -102,7 +102,7 @@ body {
   float: left;
   background-color: var(--inspector-svg-background);
   border-radius: 2px;
-  fill: white;
+  fill: var(--inspector-text);
 }
 #help-btn {
   margin-left: auto;
@@ -283,16 +283,16 @@ h1 {
   white-space: nowrap;
 }
 label.statusGroupEmpty {
-  color: lightgray;
+  color: var(--inspector-neutral);
   font-weight: normal;
 }
 .batch-size {
   width: 3.4em;
 }
 .char-btn {
-  color: white;
+  color: var(--inspector-text);
   text-decoration: none;
-  background-color: gray;
+  background-color: var(--inspector-neutral);
   display: inline-block;
   width: 14px;
   height: 14px;

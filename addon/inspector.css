@@ -46,8 +46,8 @@ html {
     --inspector-error: var(--inspector-light-red);
     --inspector-strong-error: var(--inspector-dark-red);
 
-    --inspector-object: var(--inspector-light-yellow);
-    --inspector-number: var(--inspector-light-pink);
+    --inspector-object: var(--inspector-dark-yellow);
+    --inspector-number: var(--inspector-dark-pink);
     --inspector-false-boolean: var(--inspector-light-red);
     --inspector-true-boolean: var(--inspector-dark-blue);
 
@@ -90,7 +90,8 @@ html {
 }
 
 :is(div, input, ul, a):not(:has([style*=transparent])), 
-.gauge::before, .gauge::after {
+div.table-container > table > tbody > tr,
+.gauge::before, .gauge::after, .table-settings-button, th.th-filter-row {
     transition-property: background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
@@ -98,8 +99,10 @@ html {
 
 :is(select, input):is(.slds-input, .query-history),
 .conf-value > :is(select, input),
-span:is(.button, .progress),
-div.header-logo, a.sf-link, textarea, td.scrolltable-cell, input::placeholder {
+:is(span, button):is(.button, .progress),
+div:is(.header-logo, .object-name),
+div.all-data-box-data > table,
+a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], button.actions-button {
     transition-property: color, background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
@@ -114,10 +117,17 @@ a:is(.sf-link, .button.field-info) svg {
 
 :is(span, label):not(:has(> span)), 
 #result-table > :not(div),
+div:is(.value-text, .center, .all-data-box-inner.empty),
 svg.slds-icon, h1, figcaption, .meter-value {
     transition-property: color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
+}
+
+th.th-filter-row > input {
+    transition-property: color, border-color;
+    transition-duration: inherit;
+    transition-timing-function: inherit;
 }
 
 #insext {
@@ -134,7 +144,7 @@ svg.slds-icon, h1, figcaption, .meter-value {
     }
 }
 
-a:is(.slds-button, .slds-tabs_default__link) {
+a:is(.slds-button, .slds-tabs_default__link, .slds-button) {
     &:has(> span) {
       transition-property: background-color;
     }
@@ -145,6 +155,10 @@ a:is(.slds-button, .slds-tabs_default__link) {
 
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
+}
+
+div.object-name > span.quick-select {
+    transition-property: none;
 }
 
 #light-theme, #dark-theme {

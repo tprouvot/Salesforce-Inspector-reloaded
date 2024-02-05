@@ -30,7 +30,7 @@ table {
   border-collapse: collapse;
 }
 td,th {
-  border: 1px solid gray;
+  border: 1px solid var(--inspector-neutral);
   white-space: pre;
 }
 .edit-form label {

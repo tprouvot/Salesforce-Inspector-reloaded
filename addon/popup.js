@@ -1695,12 +1695,12 @@ class AllDataRecordDetails extends React.PureComponent {
       return (
         h("table", {className},
           h("tbody", {},
-            h("tr", {},
+            recordIdDetails.recordName ? h("tr", {},
               h("th", {}, "Name:"),
               h("td", {},
                 h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
               )
-            ),
+            ) : null,
             recordIdDetails.recordTypeName ? h("tr", {},
               h("th", {}, "RecType:"),
               h("td", {},

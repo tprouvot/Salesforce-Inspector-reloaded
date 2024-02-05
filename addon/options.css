@@ -155,3 +155,8 @@ body {
 .center-label {
     text-align: center;
 }
+
+.hide {
+  display: none;
+  visibility: hidden;
+}

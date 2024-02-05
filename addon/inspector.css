@@ -89,35 +89,46 @@ html {
     --inspector-working: var(--inspector-light-purple);
 }
 
-body, :is(div, input, ul, a):not(:has([style*=transparent])), .gauge::before, .gauge::after {
+:is(div, input, ul, a):not(:has([style*=transparent])), 
+.gauge::before, .gauge::after {
     transition-property: background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
 }
-div.header-logo, a.sf-link, :is(select, input):is(.slds-input, .query-history), button, textarea, td.scrolltable-cell, input::placeholder, .conf-value > :is(select, input), span:is(.button, .progress) {
+
+:is(select, input):is(.slds-input, .query-history),
+.conf-value > :is(select, input),
+span:is(.button, .progress),
+div.header-logo, a.sf-link, textarea, td.scrolltable-cell, input::placeholder {
     transition-property: color, background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
 }
-div.header-logo svg, a:is(.sf-link, .button.field-info) svg {
+
+div.header-logo svg,
+a:is(.sf-link, .button.field-info) svg {
     transition-property: fill, background-color;
     transition-duration: inherit;
     transition-timing-function: inherit;
 }
 
-:is(span, label):not(:has(> span)), svg.slds-icon, h1, figcaption, .meter-value, #result-table > :not(div) {
+:is(span, label):not(:has(> span)), 
+#result-table > :not(div),
+svg.slds-icon, h1, figcaption, .meter-value {
     transition-property: color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
 }
 
-a:is(.slds-button, .slds-tabs_default__link):not(:has(> span)) {
-    transition-property: color, background-color;
-}
-a:is(.slds-button, .slds-tabs_default__link):has(> span) {
-    transition-property: background-color;
-}
-a:is(.slds-button, .slds-tabs_default__link), input, a.sf-link {
+a:is(.slds-button, .slds-tabs_default__link) {
+    &:has(> span) {
+      transition-property: background-color;
+    }
+
+    &:not(:has(> span)) {
+      transition-property: color, background-color;
+    }
+
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
 }
@@ -132,13 +143,11 @@ a:is(.slds-button, .slds-tabs_default__link), input, a.sf-link {
 body {
     background-color: var(--inspector-background);
     color: var(--inspector-text);
+    transition-property: background-color;
+    transition-duration: 500ms;
+    transition-timing-function: ease-in-out;
 }
 
 a {
     color: var(--inspector-link);
-}
-
-.hide {
-  display: none;
-  visibility: hidden;
 }

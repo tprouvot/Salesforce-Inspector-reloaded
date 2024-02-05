@@ -348,16 +348,11 @@ class ObjectSelector extends React.Component {
         h("section", {className: "slds-accordion__section"},
           h("div", {className: "slds-accordion__summary"},
             h("h2", {className: "slds-accordion__summary-heading"},
-              h("button", {className: "slds-button slds-button_reset slds-accordion__summary-action"},
-                h("svg", {className: "slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left svg-icon"},
-                  h("use", {xlinkHref: "symbols.svg#arrowdown"})
-                )
-              ),
               h("span", {className: "slds-accordion__summary-content"},
                 h("label", {title: metadataObject.xmlName},
                   h("input", {type: "checkbox", className: "metadata", checked: metadataObject.selected, onChange: this.onChange}),
                   metadataObject.xmlName
-                ),
+                )
               )
             )
           )

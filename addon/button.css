@@ -10,17 +10,17 @@
     width: 280px;
     height: 450px;
     position:absolute;
-    background-color: #ffffff;
+    background-color: var(--inspector-background);
     border-radius: 4px;
     z-index: 1;
-    border: 1px solid #d8dde6;
+    border: 1px solid var(--inspector-neutral);
     display: none;
 }
 
 #insext .insext-popup-vertical {
     right: 0%;
     border-top-right-radius: 0;
-    box-shadow: 0 -2px 2px 0 rgba(0,0,0,.16);
+    box-shadow: 0 -2px 2px 0 var(--inspector-shade);
 }
 
 #insext .insext-popup-vertical-up {
@@ -29,7 +29,7 @@
 
 #insext .insext-popup-horizontal {
     bottom: 20px;
-    box-shadow: 2px 0 2px 0 rgba(0,0,0,.16);
+    box-shadow: 2px 0 2px 0 var(--inspector-shade);
 }
 
 #insext .insext-popup-horizontal-left {
@@ -49,10 +49,10 @@
 }
 #insext .insext-btn {
     box-sizing: border-box;
-    background-color: #226b86;
+    background-color: var(--inspector-accent);
     border-width: 4px;
     border-style: solid;
-    border-color: #fff;
+    border-color: var(--inspector-shade);
     opacity: .4;
 }
 #insext .insext-btn-vertical {
@@ -62,7 +62,7 @@
     border-right-style: none;
     border-top-left-radius: 5px;
     border-bottom-left-radius: 5px;
-    box-shadow: -2px 0 2px #a0a6ab;
+    box-shadow: -2px 0 2px var(--inspector-neutral);
 }
 #insext .insext-btn-horizontal {
     height: 15px;
@@ -71,7 +71,7 @@
     border-bottom-style: none;
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
-    box-shadow: 0 -2px 2px #a0a6ab;
+    box-shadow: 0 -2px 2px var(--inspector-neutral);
 }
 
 #insext .insext-btn-vertical:hover,

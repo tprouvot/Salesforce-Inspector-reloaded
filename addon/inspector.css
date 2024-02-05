@@ -120,6 +120,20 @@ svg.slds-icon, h1, figcaption, .meter-value {
     transition-timing-function: ease-in-out;
 }
 
+#insext {
+    & :is(.insext-popup-vertical, .insext-popup-horizontal) {
+        transition-property: box-shadow;
+        transition-duration: 500ms;
+        transition-timing-function: ease-in-out;
+    }
+
+    & :is(.insext-btn.insext-btn-vertical, .insext-btn.insext-btn-horizontal) {
+        transition-property: box-shadow, background-color, border-color;
+        transition-duration: 500ms;
+        transition-timing-function: ease-in-out;
+    }
+}
+
 a:is(.slds-button, .slds-tabs_default__link) {
     &:has(> span) {
       transition-property: background-color;

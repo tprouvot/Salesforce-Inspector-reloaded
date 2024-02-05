@@ -93,7 +93,27 @@ label {
   margin: 2px 20px;
   display: block;
 }
-.result{
+.result, .log-info{
   margin-left: 20px;
   margin-bottom: 20px;
+}
+.result-bar a:visited {
+  color: #0176d3;
+}
+h2{
+  font-size: 14px;
+}
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+.svg-icon {
+  left: 0.75rem;
+  width: 1rem;
+  height: 1rem;
+  position: absolute;
+  top: 50%;
+  margin-top: -.5rem;
+  fill: #9faab5;
 }

@@ -305,7 +305,11 @@ class App extends React.Component {
         h("div", {className: "area", id: "result-area"},
           h("div", {className: "result-bar"},
             h("h1", {}, "Metadata Result"),
-            h("button", {onClick: this.onStartClick}, "Download metadata")
+            h("button", {onClick: this.onStartClick}, "Download metadata"),
+            model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
+            model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null,
+            h("span", {className: "flex"}),
+            h("a", {href: "https://github.com/jesperkristensen/forcecmd"}, "Automate this with forcecmd")
           ),
           h("div", {id: "result-table", ref: "scroller"},
             model.metadataObjects
@@ -339,9 +343,26 @@ class ObjectSelector extends React.Component {
   }
   render() {
     let {metadataObject} = this.props;
-    return h("label", {title: metadataObject.xmlName},
-      h("input", {type: "checkbox", className: "metadata", checked: metadataObject.selected, onChange: this.onChange}),
-      metadataObject.xmlName
+    return h("ul", {className: "slds-accordion"},
+      h("li", {className: "slds-accordion__list-item"},
+        h("section", {className: "slds-accordion__section"},
+          h("div", {className: "slds-accordion__summary"},
+            h("h2", {className: "slds-accordion__summary-heading"},
+              h("button", {className: "slds-button slds-button_reset slds-accordion__summary-action"},
+                h("svg", {className: "slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left svg-icon"},
+                  h("use", {xlinkHref: "symbols.svg#arrowdown"})
+                )
+              ),
+              h("span", {className: "slds-accordion__summary-content"},
+                h("label", {title: metadataObject.xmlName},
+                  h("input", {type: "checkbox", className: "metadata", checked: metadataObject.selected, onChange: this.onChange}),
+                  metadataObject.xmlName
+                ),
+              )
+            )
+          )
+        )
+      ),
     );
   }
 }

@@ -388,7 +388,7 @@ div.mainContent > input {
   width: 20em;
   padding: 0 2.5rem;
   background-color: var(--inspector-background);
-  color: var(--inspector-accent);
+  color: var(--inspector-text-neutral);
   border: 1px solid var(--inspector-neutral);
   border-radius: .25rem;
   transition: border .1s linear, background-color .1s linear;

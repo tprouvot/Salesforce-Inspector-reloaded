@@ -106,7 +106,7 @@ div.flex-wrapper :is(button, input),
 div.button-group > button,
 div:is(.autocomplete-header, .conf-line) > div.flex-right > button,
 button:is(.actions-button, .cancel-btn),
-a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], .slds-tabs_default__link {
+a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], .slds-tabs_default__link, input.filter-input {
     transition-property: color, background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;

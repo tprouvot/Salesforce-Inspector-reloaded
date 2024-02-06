@@ -25,8 +25,82 @@ class Model {
     this.searchIndex = -1;
     this.winInnerHeight = 0;
     this.forceScroll = false;
-    this.logNode = null;
-
+    this.nodes = null;
+    this.resizeColumnIndex = null;
+    this.resizeColumnpageX = null;
+    this.resizeColumnWidth = null;
+    this.resizeNextColumnWidth = null;
+    this.column = [
+      {
+        id: 0,
+        title: "Item",
+        field: null,
+        width: 500
+      },
+      {
+        id: 1,
+        title: "Heap",
+        field: "heap",
+        width: 70
+      },
+      {
+        id: 2,
+        title: "Duration",
+        field: "duration",
+        width: 70
+      },
+      {
+        id: 3,
+        title: "DML",
+        field: "dml",
+        width: 70
+      },
+      {
+        id: 4,
+        title: "SOQL",
+        field: "soql",
+        width: 70
+      },
+      {
+        id: 5,
+        title: "SOSL",
+        field: "sosl",
+        width: 70
+      },
+      {
+        id: 6,
+        title: "Query rows",
+        field: "row",
+        width: 70
+      },
+      {
+        id: 7,
+        title: "DML rows",
+        field: "dmlRows",
+        width: 70
+      },
+      {
+        id: 8,
+        title: "Callouts",
+        field: "callout",
+        width: 70
+      },
+      {
+        id: 9,
+        title: "Futur calls",
+        field: "futur",
+        width: 70
+      },
+      {
+        id: 10,
+        title: "jobs enqueue",
+        field: "queue",
+        width: 70
+      }
+      /*Number of Publish Immediate DML: 0 out of 150
+      Number of Email Invocations: 0 out of 10
+      Number of Mobile Apex push calls: 0 out of 10*/
+    ];
     if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
       //change background color for production
       document.body.classList.add("prod");
@@ -178,7 +252,57 @@ class Model {
     this.lineCount = lines.length;
     let node = {index: 0, title: "Log", child: [], heap: 0};
     this.parseLine(lines, node);
-    this.logNode = node;
+    let result = [];
+    this.nodes = this.flatternNode(node.child, result, 1);
+  }
+  hideNode(node){
+    node.hidden = true;
+    if (!node.expanded){
+      //do not hide if sub node is already collapse
+      return;
+    }
+    for (let c = 0; c < node.child.length; c++){
+      this.hideNode(node.child[c]);
+    }
+  }
+  showNode(node){
+    node.hidden = false;
+    if (!node.expanded){
+      //do not show if sub node is collapse
+      return;
+    }
+    for (let c = 0; c < node.child.length; c++){
+      this.showNode(node.child[c]);
+    }
+  }
+  toggleExpand(i) {
+    let n = this.nodes[i];
+    if (n.expanded) { //collapse
+      for (let c = 0; c < n.child.length; c++){
+        this.hideNode(n.child[c]);
+      }
+    } else { //expand
+      for (let c = 0; c < n.child.length; c++){
+        this.showNode(n.child[c]);
+      }
+    }
+    n.expanded = n.expanded ? false : true;
+  }
+
+  flatternNode(child, result, lvl) {
+    for (let i = 0; i < child.length; i++) {
+      let c = child[i];
+      c.key = "node" + lvl + "." + (i + 1);
+      c.level = lvl;
+      c.position = i + 1;
+      c.tabIndex = -1;
+      c.index = result.length;
+      result.push(c);
+      if (c.child && c.child.length > 0) {
+        this.flatternNode(c.child, result, lvl + 1);
+      }
+    }
+    return result;
   }
 
   parseLine(lines, node){
@@ -207,7 +331,7 @@ class Model {
         switch (l[1]) {
           //EXECUTION_STARTED EXECUTION_FINISHED
           case "CODE_UNIT_STARTED": {
-            let child = {index: i, title: l.length > 3 ? l[3] : "code unit", child: [], start: dt, heap: 0};
+            let child = {index: i, title: l.length > 3 ? l[3] : "code unit", child: [], start: dt, heap: 0, expanded: true, hidden: false};
             i = this.parseLine(lines, child);
             node.child.push(child);
             break;
@@ -233,13 +357,13 @@ class Model {
           case "SYSTEM_METHOD_ENTRY" :
           case "METHOD_ENTRY":
           case "SYSTEM_CONSTRUCTOR_ENTRY":
-          case "FLOW_CREATE_INTERVIEW_BEGIN":
+          case "FLOW_START_INTERVIEW_BEGIN":
           case "VALIDATION_RULE":
           case "SOQL_EXECUTE_BEGIN":
           case "SOSL_EXECUTE_BEGIN":
           case "CALLOUT_REQUEST":
           case "FLOW_ELEMENT_BEGIN": {
-            let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0};
+            let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false};
             i = this.parseLine(lines, child);
             node.child.push(child);
             break;
@@ -252,19 +376,11 @@ class Model {
           case "CALLOUT_RESPONSE":
           case "FLOW_ELEMENT_DEFERRED":
           case "FLOW_ELEMENT_END":
-          case "FLOW_ELEMENT_ERROR": {
+          case "FLOW_ELEMENT_ERROR":
+          case "FLOW_INTERVIEW_FINISHED": {
             node.end = dt;
             if (node.start) {
               node.duration = dt - node.start;
-            }
-            return i;
-          } case "FLOW_INTERVIEW_FINISHED": {
-            node.end = dt;
-            if (node.start) {
-              node.duration = dt - node.start;
-            }
-            if (l.length > 3) {
-              node.title = l[3];
             }
             return i;
           } case "VALIDATION_ERROR":
@@ -311,7 +427,7 @@ class Model {
             break;
           } case "DML_BEGIN": {
             //DML_BEGIN|[71]|Op:Update|Type:Account|Rows:1
-            let child = {index: i, title: l.length > 3 ? l[3] : "DML", child: [], start: dt, heap: 0};
+            let child = {index: i, title: l.length > 3 ? l[3] : "DML", child: [], start: dt, heap: 0, expanded: true, hidden: false};
             i = this.parseLine(lines, child);
             node.child.push(child);
             break;
@@ -575,7 +691,7 @@ class LogTabNavigation extends React.Component {
 
   }
   render() {
-    return h("div", {className: "slds-tabs_default"},
+    return h("div", {className: "slds-tabs_default", style: {height: "inherit"}},
       h("ul", {className: "options-tab-container slds-tabs_default__nav", role: "tablist"},
         this.tabs.map((tab) => h(LogTab, {key: tab.id, id: tab.id, title: tab.title, content: tab.content, onTabSelect: this.onTabSelect, selectedTabId: this.state.selectedTabId, model: this.model}))
       ),
@@ -602,37 +718,36 @@ class LogTreeviewNode extends React.Component {
   constructor(props) {
     super(props);
     this.node = props.node;
-    this.level = props.level;
-    this.state = {
-      expanded: false
-    };
-    this.onExpand = this.onExpand.bind(this);
+    this.column = props.column;
+    this.model = props.model;
+    this.toggleExpand = this.toggleExpand.bind(this);
   }
-  onExpand(e) {
-    e.preventDefault();
-    this.setState({expanded: !this.state.expanded});
+  toggleExpand(){
+    this.model.toggleExpand(this.node.index);
+    this.model.didUpdate();
   }
-  //TODO migrate to treegrid
-  //https://www.lightningdesignsystem.com/components/tree-grid/
+
   render() {
-    let attributes = {"aria-level": this.level.toString(), role: "treeitem", tabIndex: this.tabindex};
+    let attributes = {"key": this.node.key, hidden: this.node.hidden, "aria-level": this.node.level.toString(), "aria-posinset": this.node.position.toString(), "aria-selected": "false", "aria-setsize": this.node.child.length.toString(), className: "slds-hint-parent", tabIndex: -1};
     if (this.node.child.length > 0) {
-      attributes["aria-label"] = this.node.title;
-      attributes["aria-expanded"] = this.state.expanded;
+      attributes["aria-expanded"] = this.node.expanded;
     }
-    return h("li", attributes,
-      h("div", {className: "slds-tree__item"},
-        h("button", {className: "slds-button slds-button_icon slds-m-right_x-small", hidden: (this.node.child.length == 0), "aria-hidden": true, tabIndex: -1, title: "Expand", onClick: this.onExpand},
+
+    return h("tr", attributes,
+      h("th", {className: "slds-tree__item", "data-label": "Item", scope: "row"},
+        h("button", {className: "slds-button slds-button_icon slds-button_icon-x-small slds-m-right_x-small", hidden: (this.node.child.length == 0), "aria-hidden": true, tabIndex: -1, title: "Expand", onClick: this.toggleExpand},
           h("svg", {className: "slds-button__icon slds-button__icon_small", "aria-hidden": true},
             h("use", {xlinkHref: "symbols.svg#chevronright"})
           ),
-          h("span", {className: "slds-assistive-text"}, "Expand"),
+          h("span", {className: "slds-assistive-text"}, "Expand " + this.node.title),
         ),
-        h("span", {className: "slds-has-flexi-truncate"},
-          h("span", {className: "slds-tree__item-label slds-truncate", title: this.node.title}, this.node.title + "|" + this.node.heap),
+        h("div", {className: "slds-truncate", title: this.node.title},
+          h("a", {href: "#", tabIndex: "-1"}, this.node.title)
         )
       ),
-      this.node.child.length > 0 ? h("ul", {role: "group"}, this.node.child.map((c, i) => h(LogTreeviewNode, {node: c, key: "node" + i, tabindex: -1, level: (this.level + 1)}))) : ""
+      this.column.filter(c => c.field).map((c, i) => h("td", {"data-label": c.title, role: "gridcell", key: "cell" + i},
+        h("div", {className: "slds-truncate", title: this.node[c.field] || ""}, this.node[c.field] || "")
+      ))
     );
   }
 }
@@ -641,12 +756,47 @@ class Profiler extends React.Component {
   constructor(props) {
     super(props);
     this.model = props.model;
+    this.column = props.model.column;
+    this.nodes = this.model.nodes;
+    this.onMouseDown = this.onMouseDown.bind(this);
+  }
+  onMouseDown(e, id) {
+    //let col = e.target.parentElement.parentElement;
+    this.model.resizeColumnIndex = id;
+    this.model.resizeColumnpageX = e.pageX;
+    this.resizeColumnWidth = null;
+    this.resizeNextColumnWidth = null;
+    //this.model.resizeColumnWidth = col.offsetWidth;
+    this.model.resizeColumnWidth = this.model.column[id].width;
+    if (id + 1 < this.model.column.length) {
+      this.model.resizeNextColumnWidth = this.model.column[id + 1].width;
+    }
   }
   render() {
-    return h("div", {className: "slds-tree_container"},
-      h("h4", {className: "slds-tree__group-header", id: "treeheading"}, this.model.logNode.title),
-      h("ul", {className: "slds-tree", role: "tree", "aria-labelledby": "treeheading"},
-        this.model.logNode.child.map((c, i) => h(LogTreeviewNode, {node: c, key: "node" + i, level: 1, tabindex: 0}))
+    return h("div", {style: {overflow: "scroll", height: "inherit"}}, //className: "slds-tree_container"},
+      h("h4", {className: "slds-tree__group-header", id: "treeheading"}, "Log"),
+      h("table", {className: "slds-table slds-table_bordered slds-table_edit slds-table_fixed-layout slds-table_resizable-cols slds-tree slds-table_tree", role: "treegrid", "aria-labelledby": "treeheading"},
+        h("thead", {},
+          h("tr", {className: "slds-line-height_reset"},
+            this.column.map((c, i) =>
+              h("th", {"aria-sort": "none", key: "column" + i, className: "slds-has-button-menu slds-is-resizable slds-is-sortable", scope: "col", style: {width: c.width + "px"}},
+                h("a", {className: "slds-th__action slds-text-link_reset", href: "#", role: "button", tabIndex: "-1"},
+                  h("div", {className: "slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate"},
+                    h("span", {className: "slds-truncate", title: c.title || ""}, c.title || "")
+                  )
+                ),
+                h("div", {className: "slds-resizable"},
+                  h("input", {type: "range", "aria-label": (c.title || "") + " column width", className: "slds-resizable__input slds-assistive-text", id: "cell-resize-handle-151", max: "1000", min: "20", tabIndex: "-1"}),
+                  h("span", {className: "slds-resizable__handle", onMouseDown: e => this.onMouseDown(e, c.id)},
+                    h("span", {className: "slds-resizable__divider"})
+                  )
+                )
+              ))
+          )
+        ),
+        h("tbody", {},
+          this.nodes.map((c) => h(LogTreeviewNode, {node: c, model: this.model, column: this.column}))
+        )
       )
     );
   }
@@ -776,6 +926,24 @@ class Editor extends React.Component {
     };
     ReactDOM.render(h(App, {model}), root);
 
+    document.body.onmousemove = e => {
+      if (model.resizeColumnIndex !== undefined) {
+        let col = model.column[model.resizeColumnIndex];
+        let diffX = e.pageX - model.resizeColumnpageX;
+        if (model.resizeNextColumnWidth !== undefined && model.resizeColumnIndex + 1 < model.column.length) {
+          model.column[model.resizeColumnIndex + 1].width = (model.resizeNextColumnWidth - diffX);
+        }
+        col.width = (model.resizeColumnWidth + diffX);
+        model.didUpdate();
+      }
+    };
+    document.body.onmouseup = () => {
+      model.resizeColumnpageX = undefined;
+      model.resizeColumnIndex = undefined;
+      model.resizeNextColumnWidth = undefined;
+      model.resizeColumnWidth = undefined;
+      model.didUpdate();
+    };
     if (parent && parent.isUnitTest) { // for unit tests
       parent.insextTestLoaded({model, sfConn});
     }

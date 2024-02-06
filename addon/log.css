@@ -175,16 +175,6 @@
     font-weight: 700;
     line-height: 1.25;
   }
-  textarea {
-    display: block;
-    width: 100%;
-    resize: vertical;
-    word-wrap: normal;
-    font-size: .8125rem;
-    padding: 8px 10px;
-    border-radius: 0.25rem;
-    border: 1px solid #DDDBDA;
-  }
   .line-numbers {
     text-align: right;
     padding: 8px 10px;
@@ -200,9 +190,9 @@
     overflow: auto;
     display: flex;
   }
-  .scrolled {
+  /*.scrolled {
     display: flex;
-  }
+  }*/
   #log-text {
     display: block;
     width: 100%;
@@ -220,3 +210,10 @@
     background: khaki;
     vertical-align: baseline;
   }
+  /*thead th {
+    resize: horizontal;
+    overflow: hidden;
+    position: sticky;
+    top: 0;
+  }*/
+  

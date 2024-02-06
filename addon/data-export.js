@@ -981,6 +981,7 @@ function RecordTable(vm) {
         if (isVisible(rt.table[r], filter)) countOfVisibleRecords++;
       }
       this.countOfVisibleRecords = countOfVisibleRecords;
+      vm.exportStatus = "Filtered " + countOfVisibleRecords + " records out of " + rt.records.length + " records";
     },
     getVisibleTable() {
       if (vm.resultsFilter) {

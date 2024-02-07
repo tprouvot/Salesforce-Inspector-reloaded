@@ -583,6 +583,41 @@ class ColorSchemeOption extends React.Component {
   }
 }
 
+class ColorAccentOption extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+          h("div", {className: "text-align-middle slds-grid slds-grid_vertical-align-center", style: {flexDirection: "row"}},
+            h("span", {style: {marginRight: "0.5rem"}}, "Pick your favourite color accent."),
+          ),
+
+          h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+
+          h("div", {className: "slds-col slds-size_1-of-12"},
+            h("label", {className: "slds-grid"},
+              h("div", {"aria-describedby": "accent-light-default", onClick: this.onLightDefault}),
+              h("span", {id: "accent-light-default"},
+                h("span", {}, "Default")
+              )
+            )
+          ),
+          h("div", {className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
+            h("label", {className: "slds-checkbox_toggle slds-grid"},
+              h("input", {type: "checkbox", required: true, id: "checkbox-toggle-themeChange", "aria-describedby": "checkbox-toggle-themeDescription", className: "slds-input", onChange: this.onThemeChange}),
+              h("span", {id: "checkbox-toggle-themeDescription", className: "slds-checkbox_faux_container center-label"},
+                h("span", {className: "slds-checkbox_faux"}),
+                h("span", {className: "slds-checkbox_on"}, "Dark"),
+                h("span", {className: "slds-checkbox_off"}, "Light"),
+              )
+            )
+          )
+        );
+    }
+}
+
 class APIKeyOption extends React.Component {
 
   constructor(props) {

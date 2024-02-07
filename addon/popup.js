@@ -83,8 +83,11 @@ class App extends React.PureComponent {
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
+
     this.setupThemeChange();
     this.onThemeChange = this.onThemeChange.bind(this);
+    this.saveThemeChanges = this.saveThemeChanges.bind(this);
+    this.setupAccentOption();
   }
   onContextRecordChange(e) {
     let {sfHost} = this.props;
@@ -214,10 +217,15 @@ class App extends React.PureComponent {
     }
   }
 
-  saveThemeChanges(theme) {
+  saveColorChanges(option, category) {
     const html = document.documentElement;
-    html.dataset.theme = theme;
-    localStorage.setItem("preferredColorScheme", theme);
+    html.dataset[category] = option;
+    const storageName = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
+    localStorage.setItem(storageName, option);
+  }
+
+  saveThemeChanges(theme) {
+    this.saveColorChanges(theme, "theme");
 
     //window.parent.location.pathname is accessible if we're in an internal page
     const bloc = Object.assign({}, window.parent.location);
@@ -277,6 +285,20 @@ class App extends React.PureComponent {
     const html = document.documentElement;
     const theme = html.dataset.theme === "light" ? "dark" : "light";
     this.updateTheme(theme, false);
+  }
+
+  setupAccentOption() {
+    const savedAccent = localStorage.getItem("preferredAccentScheme") || "default";
+    this.saveColorChanges(savedAccent, "accent");
+
+    const html = document.documentElement;
+    window.addEventListener("accent-update", () => {
+      const localAccent = localStorage.getItem("preferredAccentScheme");
+      const htmlAccent = html.dataset.accent;
+      if (htmlAccent != null && localAccent != htmlAccent) {
+        this.saveColorChanges(localAccent, "accent");
+      }
+    });
   }
 
   render() {

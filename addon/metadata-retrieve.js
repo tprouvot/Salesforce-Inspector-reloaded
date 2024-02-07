@@ -246,6 +246,7 @@ class App extends React.Component {
     this.onStartClick = this.onStartClick.bind(this);
     this.onSelectAllChange = this.onSelectAllChange.bind(this);
     this.setupThemeChange();
+    this.setupAccentOption();
   }
   onSelectAllChange(e) {
     let {model} = this.props;
@@ -264,8 +265,6 @@ class App extends React.Component {
     const html = document.documentElement;
     html.dataset.theme = theme;
     localStorage.setItem("preferredColorScheme", theme);
-    const popup = document.querySelector("iframe");
-    popup.contentWindow.dispatchEvent(new Event("theme-update"));
   }
 
   setupThemeChange() {
@@ -294,6 +293,13 @@ class App extends React.Component {
       this.saveThemeChanges(savedTheme, true);
     }
   }
+
+  setupAccentOption() {
+    const accent = localStorage.getItem("preferredAccentScheme") || "default";
+    const html = document.documentElement;
+    html.dataset.accent = accent;
+  }
+
   render() {
     let {model} = this.props;
     document.title = model.title();

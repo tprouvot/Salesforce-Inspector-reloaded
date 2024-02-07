@@ -255,14 +255,13 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.setupThemeChange();
+    this.setupAccentOption();
   }
 
   saveThemeChanges(theme) {
     const html = document.documentElement;
     html.dataset.theme = theme;
     localStorage.setItem("preferredColorScheme", theme);
-    const popup = document.querySelector("iframe");
-    popup.contentWindow.dispatchEvent(new Event("theme-update"));
   }
 
   setupThemeChange() {
@@ -290,6 +289,12 @@ class App extends React.Component {
     } else {
       this.saveThemeChanges(savedTheme, true);
     }
+  }
+
+  setupAccentOption() {
+    const accent = localStorage.getItem("preferredAccentScheme") || "default";
+    const html = document.documentElement;
+    html.dataset.accent = accent;
   }
 
   render() {

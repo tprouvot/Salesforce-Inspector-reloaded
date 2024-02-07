@@ -160,3 +160,48 @@ body {
   display: none;
   visibility: hidden;
 }
+
+#preview-holder {
+  display: flex;
+  width: calc(5/12);
+
+  & > label {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 4rem;
+    padding-right: 16px;
+
+    & > div {
+      border: 1px solid var(--inspector-neutral);
+      width: 5rem;
+      height: 80%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &.selected {
+        border: 2px solid var(--inspector-primary);
+      }
+
+      &.default {
+        background-color: var(--inspector-default-background-preview);
+
+        & > span {
+          color: var(--inspector-default-text-preview);
+        }
+      }
+
+      &.accent {
+        background-color: var(--inspector-accent-background-preview);
+
+        & > span {
+          color: var(--inspector-accent-text-preview);
+        }
+      }
+
+    }
+
+  }
+}
+

@@ -26,10 +26,12 @@ class Model {
     this.winInnerHeight = 0;
     this.forceScroll = false;
     this.nodes = null;
+    this.rootNode = null;
     this.resizeColumnIndex = null;
     this.resizeColumnpageX = null;
     this.resizeColumnWidth = null;
     this.resizeNextColumnWidth = null;
+
     this.column = [
       {
         id: 0,
@@ -40,7 +42,7 @@ class Model {
       {
         id: 1,
         title: "Heap",
-        field: "heap",
+        field: "heapTotal",
         width: 70
       },
       {
@@ -52,49 +54,49 @@ class Model {
       {
         id: 3,
         title: "DML",
-        field: "dml",
+        field: "dmlTotal",
         width: 70
       },
       {
         id: 4,
         title: "SOQL",
-        field: "soql",
+        field: "soqlTotal",
         width: 70
       },
       {
         id: 5,
         title: "SOSL",
-        field: "sosl",
+        field: "soslTotal",
         width: 70
       },
       {
         id: 6,
         title: "Query rows",
-        field: "row",
+        field: "rowTotal",
         width: 70
       },
       {
         id: 7,
         title: "DML rows",
-        field: "dmlRows",
+        field: "dmlRowTotal",
         width: 70
       },
       {
         id: 8,
         title: "Callouts",
-        field: "callout",
+        field: "calloutTotal",
         width: 70
       },
       {
         id: 9,
         title: "Futur calls",
-        field: "futur",
+        field: "futurTotal",
         width: 70
       },
       {
         id: 10,
         title: "jobs enqueue",
-        field: "queue",
+        field: "queueTotal",
         width: 70
       }
       /*Number of Publish Immediate DML: 0 out of 150
@@ -157,6 +159,7 @@ class Model {
     if (this.logData == null) {
       return;
     }
+    this.filterNodes(value);
     if (this.logSearch == null || this.logSearch.length == 0) {
       this.searchIndex = -1;
       return;
@@ -252,9 +255,39 @@ class Model {
     this.lineCount = lines.length;
     let node = {index: 0, title: "Log", child: [], heap: 0};
     this.parseLine(lines, node);
+    this.aggregate(node);
+    this.rootNode = node;
     let result = [];
     this.nodes = this.flatternNode(node.child, result, 1);
   }
+  filterNodes(searchTerm) {
+    if (!this.rootNode) {
+      return;
+    }
+    let searchRegEx = null;
+    if (searchTerm) {
+      searchRegEx = new RegExp(searchTerm, "i");
+    }
+    this.rootNode.hidden = this.filterNode(searchRegEx, this.rootNode);
+    this.didUpdate();
+  }
+  filterNode(searchRegEx, node) {
+    node.hidden = true;
+    if (!searchRegEx || (node.title && node.title.match(searchRegEx))) {
+      node.hidden = false;
+    }
+    if (!node.child) {
+      return node.hidden;
+    }
+    for (let i = 0; i < node.child.length; i++) {
+      const c = node.child[i];
+      if (!this.filterNode(searchRegEx, c)) {
+        node.hidden = false;
+      }
+    }
+    return node.hidden;
+  }
+
   hideNode(node){
     node.hidden = true;
     if (!node.expanded){
@@ -288,11 +321,32 @@ class Model {
     }
     n.expanded = n.expanded ? false : true;
   }
-
+  aggregate(node) {
+    node.heapTotal = node.heap;
+    //duration is done on each node so no aggregate
+    node.rowTotal = node.row || 0;
+    node.dmlRowTotal = node.dmlRow || 0;
+    node.dmlTotal = node.dml || 0;
+    node.soqlTotal = node.soql || 0;
+    node.soslTotal = node.sosl || 0;
+    node.calloutTotal = node.callout || 0;
+    //todo futur, queue
+    for (let i = 0; i < node.child.length; i++) {
+      let c = node.child[i];
+      this.aggregate(c);
+      node.heapTotal += c.heapTotal;
+      node.rowTotal += c.rowTotal;
+      node.dmlRowTotal += c.dmlRowTotal;
+      node.dmlTotal += c.dmlTotal;
+      node.soqlTotal += c.soqlTotal;
+      node.soslTotal += c.soslTotal;
+      node.calloutTotal += c.calloutTotal;
+    }
+  }
   flatternNode(child, result, lvl) {
     for (let i = 0; i < child.length; i++) {
       let c = child[i];
-      c.key = "node" + lvl + "." + (i + 1);
+      c.key = "node" + result.length;
       c.level = lvl;
       c.position = i + 1;
       c.tabIndex = -1;
@@ -311,281 +365,316 @@ class Model {
       let l = line.split("|");
       if (l.length <= 1) {
         continue;
-      } else {
-        let timestamp = l[0].split(/[:.]/);
-        let dt = null;
-        if (timestamp.length == 4){
-          let rawHour = Number(timestamp[0]);
-          let rawMin = Number(timestamp[1]);
-          let rawSec = Number(timestamp[2]);
-          let rawMil = Number(timestamp[3]);
-          if (!isNaN(rawHour) && !isNaN(rawMin) && !isNaN(rawSec) && !isNaN(rawMil)) {
-            dt = Date.now();
-            dt.setHours();
-            dt.setMinutes(Number(timestamp[1]));
-            dt.setSeconds(Number(timestamp[2]));
-            dt.setMilliseconds(Number(timestamp[3]) * 100);
-          }
-        }
-
-        switch (l[1]) {
-          //EXECUTION_STARTED EXECUTION_FINISHED
-          case "CODE_UNIT_STARTED": {
-            let child = {index: i, title: l.length > 3 ? l[3] : "code unit", child: [], start: dt, heap: 0, expanded: true, hidden: false};
-            i = this.parseLine(lines, child);
-            node.child.push(child);
-            break;
-          } case "CODE_UNIT_FINISHED": {
-            node.end = dt;
-            if (node.start) {
-              node.duration = dt - node.start;
-            }
-            return i;
-          } case "HEAP_ALLOCATE": {
-            if (l.length > 3 && l[3].startsWith("Bytes:")) {
-              let heap = Number(l[3].substring(6));
-              if (!isNaN(heap)) {
-                node.heap += heap;
-              }
-            }
-            break;
-          } case "HEAP_DEALLOCATE":
-          case "BULK_HEAP_ALLOCATE":{
-            //TODO
-            break;
-          }
-          case "SYSTEM_METHOD_ENTRY" :
-          case "METHOD_ENTRY":
-          case "SYSTEM_CONSTRUCTOR_ENTRY":
-          case "FLOW_START_INTERVIEW_BEGIN":
-          case "VALIDATION_RULE":
-          case "SOQL_EXECUTE_BEGIN":
-          case "SOSL_EXECUTE_BEGIN":
-          case "CALLOUT_REQUEST":
-          case "FLOW_ELEMENT_BEGIN": {
-            let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false};
-            i = this.parseLine(lines, child);
-            node.child.push(child);
-            break;
-          } case "SYSTEM_METHOD_EXIT":
-          case "METHOD_EXIT":
-          case "SYSTEM_CONSTRUCTOR_EXIT":
-          case "SOQL_EXECUTE_END":
-          case "DML_END":
-          case "SOSL_EXECUTE_END":
-          case "CALLOUT_RESPONSE":
-          case "FLOW_ELEMENT_DEFERRED":
-          case "FLOW_ELEMENT_END":
-          case "FLOW_ELEMENT_ERROR":
-          case "FLOW_INTERVIEW_FINISHED": {
-            node.end = dt;
-            if (node.start) {
-              node.duration = dt - node.start;
-            }
-            return i;
-          } case "VALIDATION_ERROR":
-          case "VALIDATION_FAIL":
-          case "VALIDATION_PASS": {
-            node.end = dt;
-            if (node.start) {
-              node.duration = dt - node.start;
-            }
-            node.status = l[1];
-            return i;
-          }
-          case "SOQL_EXECUTE_EXPLAIN": {
-            //Index on User : [Id], cardinality: 1, sobjectCardinality: 575, relativeCost 0.006
-            if (l.length > 3) {
-              l[3].split(",").map((p) => {
-                let pair = p.trim().split(/: /).filter(el => el);
-                if (pair.length > 2) {
-                  let val = pair.pop();
-                  pair = [pair.join(""), val];
-                }
-                node[pair[0]] = pair[1];
-              });
-            }
-            break;
-          } case "LIMIT_USAGE_FOR_NS": {
-            //TODO parse
-            /*
-            LIMIT_USAGE_FOR_NS|(default)|
-              Number of SOQL queries: 0 out of 100
-              Number of query rows: 0 out of 50000
-              Number of SOSL queries: 0 out of 20
-              Number of DML statements: 0 out of 150
-              Number of Publish Immediate DML: 0 out of 150
-              Number of DML rows: 0 out of 10000
-              Maximum CPU time: 0 out of 10000
-              Maximum heap size: 0 out of 6000000
-              Number of callouts: 0 out of 100
-              Number of Email Invocations: 0 out of 10
-              Number of future calls: 0 out of 50
-              Number of queueable jobs added to the queue: 0 out of 50
-              Number of Mobile Apex push calls: 0 out of 10
-            */
-            break;
-          } case "DML_BEGIN": {
-            //DML_BEGIN|[71]|Op:Update|Type:Account|Rows:1
-            let child = {index: i, title: l.length > 3 ? l[3] : "DML", child: [], start: dt, heap: 0, expanded: true, hidden: false};
-            i = this.parseLine(lines, child);
-            node.child.push(child);
-            break;
-          }
-          case "NAMED_CREDENTIAL_REQUEST":
-          case "NAMED_CREDENTIAL_RESPONSE":
-          case "NAMED_CREDENTIAL_RESPONSE_DETAIL":
-          case "CUMULATIVE_PROFILING":
-          case "CUMULATIVE_PROFILING_BEGIN":
-          case "CUMULATIVE_PROFILING_END":
-          case "EMAIL_QUEUE":
-          case "ENTERING_MANAGED_PKG":
-          case "EVENT_SERVICE_PUB_BEGIN":
-          case "FLOW_ELEMENT_FAULT": {
-            //TODO
-            break;
-          }
-          case "CUMULATIVE_LIMIT_USAGE":
-          case "CUMULATIVE_LIMIT_USAGE_END":
-          case "FLOW_CREATE_INTERVIEW_END":
-          case "FLOW_START_INTERVIEW_BEGIN":
-          case "FLOW_START_INTERVIEW_END":
-          case "FLOW_START_INTERVIEWS_BEGIN":
-          case "FLOW_START_INTERVIEWS_END":
-          case "VARIABLE_SCOPE_BEGIN":
-          case "VARIABLE_ASSIGNMENT":
-          case "USER_DEBUG":
-          case "SYSTEM_MODE_ENTER":
-          case "SYSTEM_MODE_EXIT":
-          case "STATEMENT_EXECUTE":
-          case "VALIDATION_FORMULA":
-          case "EVENT_SERVICE_PUB_DETAIL":
-          case "EVENT_SERVICE_PUB_END":
-          case "EVENT_SERVICE_SUB_BEGIN":
-          case "EVENT_SERVICE_SUB_DETAIL":
-          case "EVENT_SERVICE_SUB_END":
-          case "EXCEPTION_THROWN":
-          case "EXECUTION_FINISHED":
-          case "EXECUTION_STARTED":
-          case "FATAL_ERROR":
-          case "FLOW_ACTIONCALL_DETAIL":
-          case "FLOW_ASSIGNMENT_DETAIL":
-          case "FLOW_BULK_ELEMENT_BEGIN":
-          case "FLOW_BULK_ELEMENT_DETAIL":
-          case "FLOW_BULK_ELEMENT_END":
-          case "FLOW_BULK_ELEMENT_LIMIT_USAGE":
-          case "FLOW_BULK_ELEMENT_NOT_SUPPORTED":
-          case "FLOW_CREATE_INTERVIEW_ERROR":
-          case "FLOW_ELEMENT_LIMIT_USAGE":
-          case "FLOW_INTERVIEW_FINISHED_LIMIT_USAGE":
-          case "FLOW_INTERVIEW_PAUSED":
-          case "FLOW_INTERVIEW_RESUMED":
-          case "FLOW_LOOP_DETAIL":
-          case "FLOW_RULE_DETAIL":
-          case "FLOW_START_INTERVIEW_LIMIT_USAGE":
-          case "FLOW_START_INTERVIEWS_ERROR":
-          case "FLOW_START_SCHEDULED_RECORDS":
-          case "FLOW_SUBFLOW_DETAIL":
-          case "FLOW_VALUE_ASSIGNMENT":
-          case "FLOW_WAIT_EVENT_RESUMING_DETAIL":
-          case "FLOW_WAIT_EVENT_WAITING_DETAIL":
-          case "FLOW_WAIT_RESUMING_DETAIL":
-          case "FLOW_WAIT_WAITING_DETAIL":
-          case "IDEAS_QUERY_EXECUTE":
-          case "NBA_NODE_BEGIN":
-          case "NBA_NODE_DETAIL":
-          case "NBA_NODE_END":
-          case "NBA_NODE_ERROR":
-          case "NBA_OFFER_INVALID":
-          case "NBA_STRATEGY_BEGIN":
-          case "NBA_STRATEGY_END":
-          case "NBA_STRATEGY_ERROR":
-          case "POP_TRACE_FLAGS":
-          case "PUSH_NOTIFICATION_INVALID_APP":
-          case "PUSH_NOTIFICATION_INVALID_CERTIFICATE":
-          case "PUSH_NOTIFICATION_INVALID_NOTIFICATION":
-          case "PUSH_NOTIFICATION_NO_DEVICES":
-          case "PUSH_NOTIFICATION_NOT_ENABLED":
-          case "PUSH_NOTIFICATION_SENT":
-          case "PUSH_TRACE_FLAGS":
-          case "QUERY_MORE_BEGIN":
-          case "QUERY_MORE_END":
-          case "QUERY_MORE_ITERATIONS":
-          case "SAVEPOINT_ROLLBACK":
-          case "SAVEPOINT_SET":
-          case "SLA_END":
-          case "SLA_EVAL_MILESTONE":
-          case "SLA_NULL_START_DATE":
-          case "SLA_PROCESS_CASE":
-          case "STACK_FRAME_VARIABLE_LIST":
-          case "STATIC_VARIABLE_LIST":
-          case "TESTING_LIMITS":
-          case "TOTAL_EMAIL_RECIPIENTS_QUEUED":
-          case "USER_INFO":
-          case "VARIABLE_SCOPE_END":
-          case "VF_APEX_CALL_END":
-          case "VF_APEX_CALL_START":
-          case "VF_DESERIALIZE_VIEWSTATE_BEGIN":
-          case "VF_DESERIALIZE_VIEWSTATE_END":
-          case "VF_EVALUATE_FORMULA_BEGIN":
-          case "VF_EVALUATE_FORMULA_END":
-          case "VF_PAGE_MESSAGE":
-          case "VF_SERIALIZE_VIEWSTATE_BEGIN":
-          case "VF_SERIALIZE_VIEWSTATE_END":
-          case "WF_ACTION":
-          case "WF_ACTION_TASK":
-          case "WF_ACTIONS_END":
-          case "WF_APPROVAL":
-          case "WF_APPROVAL_REMOVE":
-          case "WF_APPROVAL_SUBMIT":
-          case "WF_APPROVAL_SUBMITTER":
-          case "WF_ASSIGN":
-          case "WF_CRITERIA_BEGIN":
-          case "WF_CRITERIA_END":
-          case "WF_EMAIL_ALERT":
-          case "WF_EMAIL_SENT":
-          case "WF_ENQUEUE_ACTIONS":
-          case "WF_ESCALATION_ACTION":
-          case "WF_ESCALATION_RULE":
-          case "WF_EVAL_ENTRY_CRITERIA":
-          case "WF_FIELD_UPDATE":
-          case "WF_FLOW_ACTION_BEGIN":
-          case "WF_FLOW_ACTION_DETAILflow variables":
-          case "WF_FLOW_ACTION_END":
-          case "WF_FLOW_ACTION_ERROR":
-          case "WF_FLOW_ACTION_ERROR_DETAIL":
-          case "WF_FORMULA":
-          case "WF_HARD_REJECT":
-          case "WF_NEXT_APPROVER":
-          case "WF_NO_PROCESS_FOUND":
-          case "WF_OUTBOUND_MSG":
-          case "WF_PROCESS_FOUND":
-          case "WF_PROCESS_NODE":
-          case "WF_REASSIGN_RECORD":
-          case "WF_RESPONSE_NOTIFY":
-          case "WF_RULE_ENTRY_ORDER":
-          case "WF_RULE_EVAL_BEGIN":
-          case "WF_RULE_EVAL_END":
-          case "WF_RULE_EVAL_VALUE":
-          case "WF_RULE_FILTER":
-          case "WF_RULE_INVOCATION":
-          case "WF_RULE_NOT_EVALUATED":
-          case "WF_SOFT_REJECT":
-          case "WF_SPOOL_ACTION_BEGIN":
-          case "WF_TIME_TRIGGER":
-          case "WF_TIME_TRIGGERS_BEGIN":
-          case "XDS_DETAIL":
-          case "XDS_RESPONSE":
-          case "XDS_RESPONSE_DETAIL":
-          case "XDS_RESPONSE_ERROR": {
-            //SKIP
-            break;
-          }
-          default:
-            break;
-        }
-
       }
+      let timestamp = l[0].split(/[:. ]/);
+      let dt = null;
+      if (timestamp.length == 5){
+        let rawHour = Number(timestamp[0]);
+        let rawMin = Number(timestamp[1]);
+        let rawSec = Number(timestamp[2]);
+        let rawMil = Number(timestamp[3]);
+        if (!isNaN(rawHour) && !isNaN(rawMin) && !isNaN(rawSec) && !isNaN(rawMil)) {
+          dt = new Date();
+          dt.setHours(rawHour);
+          dt.setMinutes(rawMin);
+          dt.setSeconds(rawSec);
+          dt.setMilliseconds(rawMil * 100);
+        }
+      }
+      //TODO l[2] =line number
+      //TODO l[3] =log level
+      switch (l[1]) {
+        //EXECUTION_STARTED EXECUTION_FINISHED
+        case "CODE_UNIT_STARTED": {
+          let child = {index: i, title: l.length > 3 ? l[3] : "code unit", child: [], start: dt, heap: 0, expanded: true, hidden: false};
+          i = this.parseLine(lines, child);
+          node.child.push(child);
+          break;
+        } case "CODE_UNIT_FINISHED": {
+          node.end = dt;
+          if (node.start && dt) {
+            node.duration = dt.getTime() - node.start.getTime();
+          }
+          return i;
+        } case "HEAP_ALLOCATE": {
+          if (l.length > 3 && l[3].startsWith("Bytes:")) {
+            let heap = Number(l[3].substring(6));
+            if (!isNaN(heap)) {
+              node.heap += heap;
+            }
+          }
+          break;
+        } case "HEAP_DEALLOCATE":
+        case "BULK_HEAP_ALLOCATE":{
+          //TODO
+          break;
+        }
+        case "SYSTEM_METHOD_ENTRY" :
+        case "METHOD_ENTRY":
+        case "SYSTEM_CONSTRUCTOR_ENTRY":
+        case "FLOW_START_INTERVIEW_BEGIN":
+        case "VALIDATION_RULE":{
+          let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false};
+          i = this.parseLine(lines, child);
+          node.child.push(child);
+          break;
+        }
+        case "SOQL_EXECUTE_BEGIN":{
+          let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false, soql: 1};
+          i = this.parseLine(lines, child);
+          node.child.push(child);
+          break;
+        }
+        case "SOSL_EXECUTE_BEGIN":{
+          let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false, sosl: 1};
+          i = this.parseLine(lines, child);
+          node.child.push(child);
+          break;
+        }
+        case "CALLOUT_REQUEST": {
+          let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false, callout: 1};
+          i = this.parseLine(lines, child);
+          node.child.push(child);
+          break;
+        }//TODO "futur", "queue",
+        case "FLOW_ELEMENT_BEGIN": {
+          let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false};
+          i = this.parseLine(lines, child);
+          node.child.push(child);
+          break;
+        } case "SYSTEM_METHOD_EXIT":
+        case "METHOD_EXIT":
+        case "SYSTEM_CONSTRUCTOR_EXIT":
+        case "DML_END":
+        case "CALLOUT_RESPONSE":
+        case "FLOW_ELEMENT_DEFERRED":
+        case "FLOW_ELEMENT_END":
+        case "FLOW_ELEMENT_ERROR":
+        case "FLOW_INTERVIEW_FINISHED": {
+          node.end = dt;
+          if (node.start && dt) {
+            node.duration = dt.getTime() - node.start.getTime();
+          }
+          return i;
+        } case "SOSL_EXECUTE_END":
+        case "SOQL_EXECUTE_END": {
+          node.end = dt;
+          if (node.start && dt) {
+            node.duration = dt.getTime() - node.start.getTime();
+          }
+          //Rows:1
+          let row = Number(l[3].substring(5));
+          if (!isNaN(row)){
+            node.row = row;
+          }
+          return i;
+        } case "VALIDATION_ERROR":
+        case "VALIDATION_FAIL":
+        case "VALIDATION_PASS": {
+          node.end = dt;
+          if (node.start && dt) {
+            node.duration = dt.getTime() - node.start.getTime();
+          }
+          node.status = l[1];
+          return i;
+        }
+        case "SOQL_EXECUTE_EXPLAIN": {
+          //Index on User : [Id], cardinality: 1, sobjectCardinality: 575, relativeCost 0.006
+          if (l.length > 3) {
+            l[3].split(",").map((p) => {
+              let pair = p.trim().split(/: /).filter(el => el);
+              if (pair.length > 2) {
+                let val = pair.pop();
+                pair = [pair.join(""), val];
+              }
+              node[pair[0]] = pair[1];
+            });
+          }
+          break;
+        } case "LIMIT_USAGE_FOR_NS": {
+          //TODO parse
+          /*
+          LIMIT_USAGE_FOR_NS|(default)|
+            Number of SOQL queries: 0 out of 100
+            Number of query rows: 0 out of 50000
+            Number of SOSL queries: 0 out of 20
+            Number of DML statements: 0 out of 150
+            Number of Publish Immediate DML: 0 out of 150
+            Number of DML rows: 0 out of 10000
+            Maximum CPU time: 0 out of 10000
+            Maximum heap size: 0 out of 6000000
+            Number of callouts: 0 out of 100
+            Number of Email Invocations: 0 out of 10
+            Number of future calls: 0 out of 50
+            Number of queueable jobs added to the queue: 0 out of 50
+            Number of Mobile Apex push calls: 0 out of 10
+          */
+          break;
+        } case "DML_BEGIN": {
+          //DML_BEGIN|[71]|Op:Update|Type:Account|Rows:1
+          let child = {index: i, title: l.length > 3 ? l[3] : "DML", child: [], start: dt, heap: 0, expanded: true, hidden: false, dml: 1};
+          if (l.length > 4){
+            let dmlRow = Number(l[5].substring());
+            if (!isNaN(dmlRow)){
+              child.dmlRow = dmlRow;
+            }
+          }
+          i = this.parseLine(lines, child);
+          node.child.push(child);
+          break;
+        }
+        case "NAMED_CREDENTIAL_REQUEST":
+        case "NAMED_CREDENTIAL_RESPONSE":
+        case "NAMED_CREDENTIAL_RESPONSE_DETAIL":
+        case "CUMULATIVE_PROFILING":
+        case "CUMULATIVE_PROFILING_BEGIN":
+        case "CUMULATIVE_PROFILING_END":
+        case "EMAIL_QUEUE":
+        case "ENTERING_MANAGED_PKG":
+        case "EVENT_SERVICE_PUB_BEGIN":
+        case "FLOW_ELEMENT_FAULT": {
+          //TODO
+          break;
+        }
+        case "CUMULATIVE_LIMIT_USAGE":
+        case "CUMULATIVE_LIMIT_USAGE_END":
+        case "FLOW_CREATE_INTERVIEW_END":
+        case "FLOW_START_INTERVIEW_END":
+        case "FLOW_START_INTERVIEWS_BEGIN":
+        case "FLOW_START_INTERVIEWS_END":
+        case "VARIABLE_SCOPE_BEGIN":
+        case "VARIABLE_ASSIGNMENT":
+        case "USER_DEBUG":
+        case "SYSTEM_MODE_ENTER":
+        case "SYSTEM_MODE_EXIT":
+        case "STATEMENT_EXECUTE":
+        case "VALIDATION_FORMULA":
+        case "EVENT_SERVICE_PUB_DETAIL":
+        case "EVENT_SERVICE_PUB_END":
+        case "EVENT_SERVICE_SUB_BEGIN":
+        case "EVENT_SERVICE_SUB_DETAIL":
+        case "EVENT_SERVICE_SUB_END":
+        case "EXCEPTION_THROWN":
+        case "EXECUTION_FINISHED":
+        case "EXECUTION_STARTED":
+        case "FATAL_ERROR":
+        case "FLOW_ACTIONCALL_DETAIL":
+        case "FLOW_ASSIGNMENT_DETAIL":
+        case "FLOW_BULK_ELEMENT_BEGIN":
+        case "FLOW_BULK_ELEMENT_DETAIL":
+        case "FLOW_BULK_ELEMENT_END":
+        case "FLOW_BULK_ELEMENT_LIMIT_USAGE":
+        case "FLOW_BULK_ELEMENT_NOT_SUPPORTED":
+        case "FLOW_CREATE_INTERVIEW_ERROR":
+        case "FLOW_ELEMENT_LIMIT_USAGE":
+        case "FLOW_INTERVIEW_FINISHED_LIMIT_USAGE":
+        case "FLOW_INTERVIEW_PAUSED":
+        case "FLOW_INTERVIEW_RESUMED":
+        case "FLOW_LOOP_DETAIL":
+        case "FLOW_RULE_DETAIL":
+        case "FLOW_START_INTERVIEW_LIMIT_USAGE":
+        case "FLOW_START_INTERVIEWS_ERROR":
+        case "FLOW_START_SCHEDULED_RECORDS":
+        case "FLOW_SUBFLOW_DETAIL":
+        case "FLOW_VALUE_ASSIGNMENT":
+        case "FLOW_WAIT_EVENT_RESUMING_DETAIL":
+        case "FLOW_WAIT_EVENT_WAITING_DETAIL":
+        case "FLOW_WAIT_RESUMING_DETAIL":
+        case "FLOW_WAIT_WAITING_DETAIL":
+        case "IDEAS_QUERY_EXECUTE":
+        case "NBA_NODE_BEGIN":
+        case "NBA_NODE_DETAIL":
+        case "NBA_NODE_END":
+        case "NBA_NODE_ERROR":
+        case "NBA_OFFER_INVALID":
+        case "NBA_STRATEGY_BEGIN":
+        case "NBA_STRATEGY_END":
+        case "NBA_STRATEGY_ERROR":
+        case "POP_TRACE_FLAGS":
+        case "PUSH_NOTIFICATION_INVALID_APP":
+        case "PUSH_NOTIFICATION_INVALID_CERTIFICATE":
+        case "PUSH_NOTIFICATION_INVALID_NOTIFICATION":
+        case "PUSH_NOTIFICATION_NO_DEVICES":
+        case "PUSH_NOTIFICATION_NOT_ENABLED":
+        case "PUSH_NOTIFICATION_SENT":
+        case "PUSH_TRACE_FLAGS":
+        case "QUERY_MORE_BEGIN":
+        case "QUERY_MORE_END":
+        case "QUERY_MORE_ITERATIONS":
+        case "SAVEPOINT_ROLLBACK":
+        case "SAVEPOINT_SET":
+        case "SLA_END":
+        case "SLA_EVAL_MILESTONE":
+        case "SLA_NULL_START_DATE":
+        case "SLA_PROCESS_CASE":
+        case "STACK_FRAME_VARIABLE_LIST":
+        case "STATIC_VARIABLE_LIST":
+        case "TESTING_LIMITS":
+        case "TOTAL_EMAIL_RECIPIENTS_QUEUED":
+        case "USER_INFO":
+        case "VARIABLE_SCOPE_END":
+        case "VF_APEX_CALL_END":
+        case "VF_APEX_CALL_START":
+        case "VF_DESERIALIZE_VIEWSTATE_BEGIN":
+        case "VF_DESERIALIZE_VIEWSTATE_END":
+        case "VF_EVALUATE_FORMULA_BEGIN":
+        case "VF_EVALUATE_FORMULA_END":
+        case "VF_PAGE_MESSAGE":
+        case "VF_SERIALIZE_VIEWSTATE_BEGIN":
+        case "VF_SERIALIZE_VIEWSTATE_END":
+        case "WF_ACTION":
+        case "WF_ACTION_TASK":
+        case "WF_ACTIONS_END":
+        case "WF_APPROVAL":
+        case "WF_APPROVAL_REMOVE":
+        case "WF_APPROVAL_SUBMIT":
+        case "WF_APPROVAL_SUBMITTER":
+        case "WF_ASSIGN":
+        case "WF_CRITERIA_BEGIN":
+        case "WF_CRITERIA_END":
+        case "WF_EMAIL_ALERT":
+        case "WF_EMAIL_SENT":
+        case "WF_ENQUEUE_ACTIONS":
+        case "WF_ESCALATION_ACTION":
+        case "WF_ESCALATION_RULE":
+        case "WF_EVAL_ENTRY_CRITERIA":
+        case "WF_FIELD_UPDATE":
+        case "WF_FLOW_ACTION_BEGIN":
+        case "WF_FLOW_ACTION_DETAILflow variables":
+        case "WF_FLOW_ACTION_END":
+        case "WF_FLOW_ACTION_ERROR":
+        case "WF_FLOW_ACTION_ERROR_DETAIL":
+        case "WF_FORMULA":
+        case "WF_HARD_REJECT":
+        case "WF_NEXT_APPROVER":
+        case "WF_NO_PROCESS_FOUND":
+        case "WF_OUTBOUND_MSG":
+        case "WF_PROCESS_FOUND":
+        case "WF_PROCESS_NODE":
+        case "WF_REASSIGN_RECORD":
+        case "WF_RESPONSE_NOTIFY":
+        case "WF_RULE_ENTRY_ORDER":
+        case "WF_RULE_EVAL_BEGIN":
+        case "WF_RULE_EVAL_END":
+        case "WF_RULE_EVAL_VALUE":
+        case "WF_RULE_FILTER":
+        case "WF_RULE_INVOCATION":
+        case "WF_RULE_NOT_EVALUATED":
+        case "WF_SOFT_REJECT":
+        case "WF_SPOOL_ACTION_BEGIN":
+        case "WF_TIME_TRIGGER":
+        case "WF_TIME_TRIGGERS_BEGIN":
+        case "XDS_DETAIL":
+        case "XDS_RESPONSE":
+        case "XDS_RESPONSE_DETAIL":
+        case "XDS_RESPONSE_ERROR": {
+          //SKIP
+          break;
+        }
+        default:
+          break;
+      }
+
     }
     return null;
   }
@@ -728,7 +817,7 @@ class LogTreeviewNode extends React.Component {
   }
 
   render() {
-    let attributes = {"key": this.node.key, hidden: this.node.hidden, "aria-level": this.node.level.toString(), "aria-posinset": this.node.position.toString(), "aria-selected": "false", "aria-setsize": this.node.child.length.toString(), className: "slds-hint-parent", tabIndex: -1};
+    let attributes = {hidden: this.node.hidden, "aria-level": this.node.level.toString(), "aria-posinset": this.node.position.toString(), "aria-selected": "false", "aria-setsize": this.node.child.length.toString(), className: "slds-hint-parent", tabIndex: -1};
     if (this.node.child.length > 0) {
       attributes["aria-expanded"] = this.node.expanded;
     }
@@ -795,7 +884,7 @@ class Profiler extends React.Component {
           )
         ),
         h("tbody", {},
-          this.nodes.map((c) => h(LogTreeviewNode, {node: c, model: this.model, column: this.column}))
+          this.nodes.map((c) => h(LogTreeviewNode, {node: c, key: c.key, model: this.model, column: this.column}))
         )
       )
     );
@@ -927,10 +1016,10 @@ class Editor extends React.Component {
     ReactDOM.render(h(App, {model}), root);
 
     document.body.onmousemove = e => {
-      if (model.resizeColumnIndex !== undefined) {
+      if (model.resizeColumnIndex !== null) {
         let col = model.column[model.resizeColumnIndex];
         let diffX = e.pageX - model.resizeColumnpageX;
-        if (model.resizeNextColumnWidth !== undefined && model.resizeColumnIndex + 1 < model.column.length) {
+        if (model.resizeNextColumnWidth !== null && model.resizeColumnIndex + 1 < model.column.length) {
           model.column[model.resizeColumnIndex + 1].width = (model.resizeNextColumnWidth - diffX);
         }
         col.width = (model.resizeColumnWidth + diffX);
@@ -938,10 +1027,10 @@ class Editor extends React.Component {
       }
     };
     document.body.onmouseup = () => {
-      model.resizeColumnpageX = undefined;
-      model.resizeColumnIndex = undefined;
-      model.resizeNextColumnWidth = undefined;
-      model.resizeColumnWidth = undefined;
+      model.resizeColumnpageX = null;
+      model.resizeColumnIndex = null;
+      model.resizeNextColumnWidth = null;
+      model.resizeColumnWidth = null;
       model.didUpdate();
     };
     if (parent && parent.isUnitTest) { // for unit tests

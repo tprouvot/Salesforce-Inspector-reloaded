@@ -52,7 +52,7 @@ html {
     --inspector-accent-import-background: #E0A4B5;*/
 }
 
-[data-theme="light"], [data-theme="light"][data-accent="default"] {
+#insext, :is(html, #insext)[data-theme="light"], :is(html, #insext)[data-theme="light"][data-accent="default"] {
     --inspector-background: var(--inspector-white);
     --inspector-text: var(--inspector-black);
     --inspector-inverted-text: var(--inspector-white);
@@ -89,7 +89,7 @@ html {
     --inspector-accent-text-preview: var(--inspector-accent-black);
 }
 
-[data-theme="dark"], [data-theme="dark"][data-accent="default"] {
+#insext, :is(html, #insext)[data-theme="dark"], :is(html, #insext)[data-theme="dark"][data-accent="default"] {
     --inspector-background: var(--inspector-black);
     --inspector-text: var(--inspector-white);
     --inspector-inverted-text: var(--inspector-black);
@@ -126,7 +126,7 @@ html {
     --inspector-accent-text-preview: var(--inspector-accent-white);
 }
 
-[data-theme="light"][data-accent="accent"] {
+#insext, :is(html, #insext)[data-theme="light"][data-accent="accent"] {
     --inspector-background: var(--inspector-accent-white);
     --inspector-text: var(--inspector-accent-black);
     --inspector-inverted-text: var(--inspector-accent-white);
@@ -163,7 +163,7 @@ html {
     --inspector-accent-text-preview: var(--inspector-text);
 }
 
-[data-theme="dark"][data-accent="accent"] {
+#insext, :is(html, #insext)[data-theme="dark"][data-accent="accent"] {
     --inspector-background: var(--inspector-accent-black);
     --inspector-text: var(--inspector-accent-white);
     --inspector-inverted-text: var(--inspector-accent-black);

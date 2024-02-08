@@ -28,7 +28,7 @@ function initButton(sfHost, inInspector) {
   document.body.appendChild(rootEl);
 
   addFlowScrollability();
-
+  setupColorChange();
 
   function addFlowScrollability(popupEl) {
     const currentUrl = window.location.href;
@@ -169,6 +169,15 @@ function initButton(sfHost, inInspector) {
           document.querySelectorAll(apiNamesClass).forEach(e => e.remove());
         }
       }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        const value = e.data.value;
+
+        const insextValue = rootEl.dataset[category];
+        if (insextValue != null && value != insextValue) {
+          updateInsextDataset(value, category);
+        }
+      }
     });
     rootEl.appendChild(popupEl);
     function copy(e){
@@ -199,4 +208,42 @@ function initButton(sfHost, inInspector) {
     }
   }
 
+  function updateInsextDataset(option, category) {
+    //rootEl is #insext
+    rootEl.dataset[category] = option;
+    const storageName = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
+    localStorage.setItem(storageName, option);
+  }
+  function setupThemeChange() {
+    // listen for changes to color scheme preference
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    prefersDarkScheme.addEventListener("change", mediaQuery => {
+      const theme = mediaQuery.matches ? "dark" : "light";
+      updateInsextDataset(theme, "theme");
+    });
+
+    const savedTheme = localStorage.getItem("preferredColorScheme");
+    if (savedTheme == null){
+      // if no theme saved, default to preferred scheme (or light if not available)
+      prefersDarkScheme.matches ? updateInsextDataset("dark", "theme") : updateInsextDataset("light", "theme");
+    } else {
+      updateInsextDataset(savedTheme, "theme");
+    }
+
+    window.addEventListener("theme-update", () => {
+    });
+  }
+  function setupAccentOption() {
+    const savedAccent = localStorage.getItem("preferredAccentScheme");
+    if (savedAccent != null){
+      updateInsextDataset(savedAccent, "accent");
+    }
+
+    window.addEventListener("accent-update", () => {
+    });
+  }
+  function setupColorChange() {
+    setupThemeChange();
+    setupAccentOption();
+  }
 }

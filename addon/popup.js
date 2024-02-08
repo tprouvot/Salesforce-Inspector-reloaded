@@ -86,7 +86,7 @@ class App extends React.PureComponent {
 
     this.setupThemeChange();
     this.onThemeChange = this.onThemeChange.bind(this);
-    this.saveThemeChanges = this.saveThemeChanges.bind(this);
+    this.saveColorChanges = this.saveColorChanges.bind(this);
     this.setupAccentOption();
   }
   onContextRecordChange(e) {
@@ -222,28 +222,26 @@ class App extends React.PureComponent {
     html.dataset[category] = option;
     const storageName = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
     localStorage.setItem(storageName, option);
-  }
-
-  saveThemeChanges(theme) {
-    this.saveColorChanges(theme, "theme");
 
     //window.parent.location.pathname is accessible if we're in an internal page
     const bloc = Object.assign({}, window.parent.location);
     if (Object.prototype.hasOwnProperty.call(bloc, "pathname")) {
-      window.parent.dispatchEvent(new Event("theme-update"));
+      window.parent.dispatchEvent(new Event(`${category}-update`));
     }
+    // sent message to button
+    parent.postMessage({category, value: option}, "*");
   }
 
   updateTheme(theme, isSetup = false, callback = null) {
     const light = document.getElementById("light-theme");
     const dark = document.getElementById("dark-theme");
     if (light == null || dark == null) {
-      setTimeout(() => this.updateTheme(theme, isSetup, this.saveThemeChanges), 500);
+      setTimeout(() => this.updateTheme(theme, isSetup, this.saveColorChanges), 500);
       return;
     }
 
-    callback = callback || this.saveThemeChanges;
-    callback(theme);
+    callback = callback || this.saveColorChanges;
+    callback(theme, "theme");
 
     if (isSetup) {
       // always show only one of light/dark toggles
@@ -259,13 +257,13 @@ class App extends React.PureComponent {
     const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
     prefersDarkScheme.addEventListener("change", mediaQuery => {
       const theme = mediaQuery.matches ? "dark" : "light";
-      this.saveThemeChanges(theme);
+      this.saveColorChanges(theme, "theme");
     });
 
     const savedTheme = localStorage.getItem("preferredColorScheme");
     if (savedTheme == null){
       // if no theme saved, default to preferred scheme (or light if not available)
-      prefersDarkScheme.matches ? this.saveThemeChanges("dark", true) : this.saveThemeChanges("light", true);
+      prefersDarkScheme.matches ? this.saveColorChanges("dark", "theme") : this.saveColorChanges("light", "theme");
     } else {
       this.updateTheme(savedTheme, true);
     }

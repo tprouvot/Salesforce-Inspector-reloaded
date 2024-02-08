@@ -223,12 +223,6 @@ class App extends React.PureComponent {
     const storageName = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
     localStorage.setItem(storageName, option);
 
-    //window.parent.location.pathname is accessible if we're in an internal page
-    const bloc = Object.assign({}, window.parent.location);
-    if (Object.prototype.hasOwnProperty.call(bloc, "pathname")) {
-      window.parent.dispatchEvent(new Event(`${category}-update`));
-    }
-    // sent message to button
     parent.postMessage({category, value: option}, "*");
   }
 
@@ -246,35 +240,51 @@ class App extends React.PureComponent {
     if (isSetup) {
       // always show only one of light/dark toggles
       theme === "dark" ? light.classList.remove("hide") : dark.classList.remove("hide");
-    } else {
+      return;
+    }
+
+    const lightHide = light.classList.contains("hide");
+    const darkHide = dark.classList.contains("hide");
+    if (lightHide ^ darkHide) {
       light.classList.toggle("hide");
       dark.classList.toggle("hide");
     }
   }
 
   setupThemeChange() {
-    // listen for changes to color scheme preference
     const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    function getTheme(mediaQuery) {
+      return mediaQuery.matches ? "dark" : "light";
+    }
+
+    // listen for changes to color scheme preference
     prefersDarkScheme.addEventListener("change", mediaQuery => {
-      const theme = mediaQuery.matches ? "dark" : "light";
+      const theme = getTheme(mediaQuery);
       this.saveColorChanges(theme, "theme");
     });
 
-    const savedTheme = localStorage.getItem("preferredColorScheme");
+    let savedTheme = localStorage.getItem("preferredColorScheme");
     if (savedTheme == null){
       // if no theme saved, default to preferred scheme (or light if not available)
-      prefersDarkScheme.matches ? this.saveColorChanges("dark", "theme") : this.saveColorChanges("light", "theme");
-    } else {
-      this.updateTheme(savedTheme, true);
+      savedTheme = getTheme(prefersDarkScheme);
     }
+    this.updateTheme(savedTheme, true);
 
     // listen to possible updates from background page
     const html = document.documentElement;
-    window.addEventListener("theme-update", () => {
-      const localTheme = localStorage.getItem("preferredColorScheme");
-      const htmlTheme = html.dataset.theme;
-      if (htmlTheme != null && localTheme != htmlTheme) { // avoid recursion
-        this.updateTheme(localTheme);
+    window.addEventListener("message", e => {
+      if (e.source != parent) {
+        return;
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        const value = e.data.value;
+        const isThemeCategory = category === "theme";
+
+        const htmlValue = html.dataset[category];
+        if (value != htmlValue) { // avoid recursion
+          isThemeCategory ? this.updateTheme(value) : this.saveColorChanges(value, category);
+        }
       }
     });
   }
@@ -288,15 +298,6 @@ class App extends React.PureComponent {
   setupAccentOption() {
     const savedAccent = localStorage.getItem("preferredAccentScheme") || "default";
     this.saveColorChanges(savedAccent, "accent");
-
-    const html = document.documentElement;
-    window.addEventListener("accent-update", () => {
-      const localAccent = localStorage.getItem("preferredAccentScheme");
-      const htmlAccent = html.dataset.accent;
-      if (htmlAccent != null && localAccent != htmlAccent) {
-        this.saveColorChanges(localAccent, "accent");
-      }
-    });
   }
 
   render() {

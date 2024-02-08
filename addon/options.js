@@ -498,7 +498,7 @@ class ColorSchemeOption extends React.Component {
     localStorage.setItem("preferredColorScheme", theme);
 
     const popup = document.querySelector("iframe");
-    popup.contentWindow.dispatchEvent(new Event("theme-update"));
+    popup.contentWindow.postMessage({category: "theme", value: theme}, "*");
   }
 
   updateTheme(theme, isSetup = false, callback = null) {
@@ -524,30 +524,43 @@ class ColorSchemeOption extends React.Component {
   }
 
   setupThemeChange() {
-    // listen for changes to color scheme preference
     const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    function getTheme(mediaQuery) {
+      return mediaQuery.matches ? "dark" : "light";
+    }
+    // listen for changes to color scheme preference
     prefersDarkScheme.addEventListener("change", mediaQuery => {
-      const theme = mediaQuery.matches ? "dark" : "light";
+      const theme = getTheme(mediaQuery);
       this.saveThemeChanges(theme);
     });
 
     // listen to possible updates from popup
     const html = document.documentElement;
-    window.addEventListener("theme-update", () => {
-      const localTheme = localStorage.getItem("preferredColorScheme");
-      const htmlTheme = html.dataset.theme;
-      if (localTheme != htmlTheme) { // avoid recursion
-        this.updateTheme(localTheme);
+    const popup = document.querySelector("#insext > iframe");
+    window.addEventListener("message", e => {
+      if (e.source != popup.contentWindow) {
+        return;
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        if (category !== "theme") {
+          return;
+        }
+        const value = e.data.value;
+
+        const htmlTheme = html.dataset[category];
+        if (value != htmlTheme) { // avoid recursion
+          this.updateTheme(value);
+        }
       }
     });
 
-    const savedTheme = localStorage.getItem("preferredColorScheme");
+    let savedTheme = localStorage.getItem("preferredColorScheme");
     if (savedTheme == null){
       // if no theme saved, default to preferred scheme (or light if not available)
-      prefersDarkScheme.matches ? this.saveThemeChanges("dark", true) : this.saveThemeChanges("light", true);
-    } else {
-      this.updateTheme(savedTheme, true);
+      savedTheme = getTheme(prefersDarkScheme);
     }
+    this.updateTheme(savedTheme, true);
   }
 
   onThemeChange() {
@@ -603,7 +616,7 @@ class ColorAccentOption extends React.Component {
     localStorage.setItem("preferredAccentScheme", accent);
 
     const popup = document.querySelector("iframe");
-    popup.contentWindow.dispatchEvent(new Event("accent-update"));
+    popup.contentWindow.postMessage({category: "accent", value: accent}, "*");
   }
 
   setupAccentOption() {
@@ -619,6 +632,26 @@ class ColorAccentOption extends React.Component {
 
     isDefault ? defPick.classList.add("selected") : accPick.classList.add("selected");
     this.updateDocument(isDefault);
+
+    const html = document.documentElement;
+    const popup = document.querySelector("#insext > iframe");
+    window.addEventListener("message", e => {
+      if (e.source != popup.contentWindow) {
+        return;
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        if (category !== "accent") {
+          return;
+        }
+        const value = e.data.value;
+
+        const htmlAccent = html.dataset[category];
+        if (value != htmlAccent) { // avoid recursion
+          this.updateDocument(value === "default");
+        }
+      }
+    });
   }
 
   updateTheme(isDefault) {

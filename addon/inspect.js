@@ -1071,30 +1071,40 @@ class App extends React.Component {
   }
 
   setupThemeChange() {
-    // listen for changes to color scheme preference
     const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    function getTheme(mediaQuery) {
+      return mediaQuery.matches ? "dark" : "light";
+    }
+    // listen for changes to color scheme preference
     prefersDarkScheme.addEventListener("change", mediaQuery => {
-      const theme = mediaQuery.matches ? "dark" : "light";
+      const theme = getTheme(mediaQuery);
       this.saveThemeChanges(theme);
     });
 
     // listen to possible updates from popup
     const html = document.documentElement;
-    window.addEventListener("theme-update", () => {
-      const localTheme = localStorage.getItem("preferredColorScheme");
-      const htmlTheme = html.dataset.theme;
-      if (localTheme != htmlTheme) { // avoid recursion
-        this.saveThemeChanges(localTheme);
+    const popup = document.querySelector("#insext > iframe");
+    window.addEventListener("message", e => {
+      if (e.source != popup.contentWindow) {
+        return;
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        const value = e.data.value;
+
+        const htmlValue = html.dataset[category];
+        if (value != htmlValue) { // avoid recursion
+          this.saveThemeChanges(value);
+        }
       }
     });
 
-    const savedTheme = localStorage.getItem("preferredColorScheme");
+    let savedTheme = localStorage.getItem("preferredColorScheme");
     if (savedTheme == null){
       // if no theme saved, default to preferred scheme (or light if not available)
-      prefersDarkScheme.matches ? this.saveThemeChanges("dark", true) : this.saveThemeChanges("light", true);
-    } else {
-      this.saveThemeChanges(savedTheme, true);
+      savedTheme = getTheme(prefersDarkScheme);
     }
+    this.saveThemeChanges(savedTheme, true);
   }
 
   setupAccentOption() {

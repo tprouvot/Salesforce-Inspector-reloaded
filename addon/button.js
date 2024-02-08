@@ -215,32 +215,31 @@ function initButton(sfHost, inInspector) {
     localStorage.setItem(storageName, option);
   }
   function setupThemeChange() {
+    function getTheme(mediaQuery) {
+      return mediaQuery.matches ? "dark" : "light";
+    }
+    function updateDataset(theme) {
+      updateInsextDataset(theme, "theme");
+    }
     // listen for changes to color scheme preference
     const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
     prefersDarkScheme.addEventListener("change", mediaQuery => {
-      const theme = mediaQuery.matches ? "dark" : "light";
-      updateInsextDataset(theme, "theme");
+      const theme = getTheme(mediaQuery);
+      updateDataset(theme);
     });
 
-    const savedTheme = localStorage.getItem("preferredColorScheme");
+    let savedTheme = localStorage.getItem("preferredColorScheme");
     if (savedTheme == null){
       // if no theme saved, default to preferred scheme (or light if not available)
-      prefersDarkScheme.matches ? updateInsextDataset("dark", "theme") : updateInsextDataset("light", "theme");
-    } else {
-      updateInsextDataset(savedTheme, "theme");
+      savedTheme = getTheme(prefersDarkScheme);
     }
-
-    window.addEventListener("theme-update", () => {
-    });
+    updateDataset(savedTheme);
   }
   function setupAccentOption() {
     const savedAccent = localStorage.getItem("preferredAccentScheme");
     if (savedAccent != null){
       updateInsextDataset(savedAccent, "accent");
     }
-
-    window.addEventListener("accent-update", () => {
-    });
   }
   function setupColorChange() {
     setupThemeChange();

@@ -148,12 +148,6 @@ class Model {
       .catch(err => console.log("error handling failed", err));
   }
 
-  downloadFile() {
-    let downloadLink = document.createElement("a");
-    downloadLink.download = this.recordId + ".txt";
-    downloadLink.href = "data:text/plain;charset=utf-8," + this.logData;
-    downloadLink.click();
-  }
   setLogSearch(value) {
     this.logSearch = value;
     if (this.logData == null) {
@@ -687,6 +681,7 @@ class App extends React.Component {
     super(props);
     this.onLogSearchInput = this.onLogSearchInput.bind(this);
     this.onKeypress = this.onKeypress.bind(this);
+    this.downloadFile = this.downloadFile.bind(this);
   }
   componentDidMount() {
     let {model} = this.props;
@@ -711,6 +706,13 @@ class App extends React.Component {
     let {model} = this.props;
     model.onKeypress(e.key, e.shiftKey);
     model.didUpdate();
+  }
+
+  downloadFile() {
+    let downloadLink = document.createElement("a");
+    downloadLink.download = model.recordId + ".txt";
+    downloadLink.href = "data:text/plain;charset=utf-8," + model.logData;
+    downloadLink.click();
   }
 
   render() {
@@ -740,7 +742,8 @@ class App extends React.Component {
           h("h1", {}, "Search"),
           h("div", {className: "script-history-controls"},
             h("input", {id: "search-text", ref: "search", placeholder: "Search a word", onKeyPress: this.onKeypress, type: "search", value: model.logSearch, onInput: this.onLogSearchInput})
-          )
+          ),
+          h("a", {href: "#", onClick: this.downloadFile, title: "Download Log"}, "Download Log"),
         ),
         h(LogTabNavigation, {model})
       )

@@ -373,6 +373,10 @@ console.log(`%cExample:
 %c  var myNewAccount = {Name: "test"};
   display(sfConn.rest("/services/data/v${apiVersion}/sobjects/Account", {method: "POST", body: myNewAccount}));
 
+%cExample GraphQL:
+%c  var myQuery = { "query": "query accounts { uiapi { query { Account { edges { node { Id  Name { value } } } } } } }" };
+  display(sfConn.rest("/services/data/v59.0/graphql", {method: "POST", body: myQuery}));
+
   https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_sobject_create.htm
 
 %cUsage:
@@ -393,6 +397,7 @@ console.log(`%cExample:
   REST: https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/
   Tooling: https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/
   Reports and Dashboards: https://developer.salesforce.com/docs/atlas.en-us.api_analytics.meta/api_analytics/
+  GraphQL: https://developer.salesforce.com/docs/platform/graphql/guide/requests-and-responses.html
 `,
 "font-weight: bold; font-style: italic",
 "",

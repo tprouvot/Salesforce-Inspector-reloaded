@@ -375,7 +375,7 @@ console.log(`%cExample:
 
 %cExample GraphQL:
 %c  var myQuery = { "query": "query accounts { uiapi { query { Account { edges { node { Id  Name { value } } } } } } }" };
-  display(sfConn.rest("/services/data/v59.0/graphql", {method: "POST", body: myQuery}));
+  display(sfConn.rest("/services/data/v${apiVersion}/graphql", {method: "POST", body: myQuery}));
 
   https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_sobject_create.htm
 

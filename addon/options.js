@@ -488,8 +488,10 @@ class ColorSchemeOption extends React.Component {
   constructor(props) {
     super(props);
     this.setupThemeChange();
+    this.setupThemeListeners();
     this.onThemeChange = this.onThemeChange.bind(this);
     this.onThemeClick = this.onThemeClick.bind(this);
+    this.setupThemeListeners = this.setupThemeListeners.bind(this);
   }
 
   saveThemeChanges(theme) {
@@ -499,6 +501,42 @@ class ColorSchemeOption extends React.Component {
 
     const popup = document.querySelector("iframe");
     popup.contentWindow.postMessage({category: "theme", value: theme}, "*");
+  }
+
+  setupThemeListeners() {
+    const html = document.documentElement;
+    const popup = document.querySelector("#insext > iframe");
+    const mainCategory = "theme";
+    const changeColor = (value) => {
+        const htmlValue = html.dataset[mainCategory];
+        if (value != htmlValue) { // avoid recursion
+          this.updateTheme(value, false);
+        }
+    };
+
+    // listen to possible updates from popup
+    window.addEventListener("message", e => {
+      if (e.source != popup.contentWindow) {
+        return;
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        if (category !== mainCategory) {
+          return;
+        }
+        const value = e.data.value;
+        changeColor(value);
+      }
+    });
+
+    // listen to changes on other pages of the inspector
+    window.addEventListener("storage", e => {
+        if (!e.isTrusted || e.key !== "preferredColorScheme") {
+            return;
+        }
+        const value = e.newValue;
+        changeColor(value);
+    });
   }
 
   updateTheme(theme, isSetup = false, callback = null) {
@@ -534,32 +572,7 @@ class ColorSchemeOption extends React.Component {
       this.saveThemeChanges(theme);
     });
 
-    // listen to possible updates from popup
-    const html = document.documentElement;
-    const popup = document.querySelector("#insext > iframe");
-    window.addEventListener("message", e => {
-      if (e.source != popup.contentWindow) {
-        return;
-      }
-      if (e.data.category && e.data.value) {
-        const category = e.data.category;
-        if (category !== "theme") {
-          return;
-        }
-        const value = e.data.value;
-
-        const htmlTheme = html.dataset[category];
-        if (value != htmlTheme) { // avoid recursion
-          this.updateTheme(value);
-        }
-      }
-    });
-
-    let savedTheme = localStorage.getItem("preferredColorScheme");
-    if (savedTheme == null){
-      // if no theme saved, default to preferred scheme (or light if not available)
-      savedTheme = getTheme(prefersDarkScheme);
-    }
+    const savedTheme = localStorage.getItem("preferredColorScheme") || getTheme(prefersDarkScheme);
     this.updateTheme(savedTheme, true);
   }
 
@@ -601,22 +614,57 @@ class ColorSchemeOption extends React.Component {
 class ColorAccentOption extends React.Component {
   constructor(props) {
     super(props);
-
     this.setupAccentOption();
-    this.setupAccentOption = this.setupAccentOption.bind(this);
-    this.updateTheme = this.updateTheme.bind(this);
+    this.setupAccentListeners();
+    this.setupAccentListeners = this.setupAccentListeners.bind(this);
+    this.updateAccent = this.updateAccent.bind(this);
     this.onDefault = this.onDefault.bind(this);
     this.onAccent = this.onAccent.bind(this);
   }
 
-  updateDocument(isDefault) {
+  updateDocument(accent) {
     const html = document.documentElement;
-    const accent = isDefault ? "default" : "accent";
     html.dataset.accent = accent;
     localStorage.setItem("preferredAccentScheme", accent);
 
     const popup = document.querySelector("iframe");
     popup.contentWindow.postMessage({category: "accent", value: accent}, "*");
+  }
+
+  setupAccentListeners() {
+    const html = document.documentElement;
+    const popup = document.querySelector("#insext > iframe");
+    const mainCategory = "accent";
+    const changeColor = (value) => {
+        const htmlValue = html.dataset[mainCategory];
+        if (value != htmlValue) { // avoid recursion
+          this.updateDocument(value);
+        }
+    };
+
+    // listen to possible updates from popup
+    window.addEventListener("message", e => {
+      if (e.source != popup.contentWindow) {
+        return;
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        if (category !== mainCategory) {
+          return;
+        }
+        const value = e.data.value;
+        changeColor(value);
+      }
+    });
+
+    // listen to changes on other pages of the inspector
+    window.addEventListener("storage", e => {
+        if (!e.isTrusted || e.key !== "preferredAccentScheme") {
+            return;
+        }
+        const value = e.newValue;
+        changeColor(value);
+    });
   }
 
   setupAccentOption() {
@@ -631,39 +679,20 @@ class ColorAccentOption extends React.Component {
     const isDefault = accent === "default";
 
     isDefault ? defPick.classList.add("selected") : accPick.classList.add("selected");
-    this.updateDocument(isDefault);
-
-    const html = document.documentElement;
-    const popup = document.querySelector("#insext > iframe");
-    window.addEventListener("message", e => {
-      if (e.source != popup.contentWindow) {
-        return;
-      }
-      if (e.data.category && e.data.value) {
-        const category = e.data.category;
-        if (category !== "accent") {
-          return;
-        }
-        const value = e.data.value;
-
-        const htmlAccent = html.dataset[category];
-        if (value != htmlAccent) { // avoid recursion
-          this.updateDocument(value === "default");
-        }
-      }
-    });
+    this.updateDocument(accent);
   }
 
-  updateTheme(isDefault) {
+  updateAccent(newAccent) {
     // change the classes of the previews below
     const defPick = document.getElementById("inspector-pick-default");
     const accPick = document.getElementById("inspector-pick-accent");
     if (defPick == null || accPick == null) {
-      setTimeout(() => this.updateTheme(isDefault), 500);
+      setTimeout(() => this.updateAccent(newAccent), 500);
       return;
     }
 
     const defSelected = defPick.classList.contains("selected");
+    const isDefault = newAccent === "default";
     if (isDefault == defSelected) {
       // the same preview has been clicked
       return;
@@ -671,15 +700,15 @@ class ColorAccentOption extends React.Component {
 
     defPick.classList.toggle("selected");
     accPick.classList.toggle("selected");
-    this.updateDocument(isDefault);
+    this.updateDocument(newAccent);
   }
 
   onDefault() {
-    this.updateTheme(true);
+    this.updateAccent("default");
   }
 
   onAccent() {
-    this.updateTheme(false);
+    this.updateAccent("accent");
   }
 
   render() {

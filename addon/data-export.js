@@ -948,6 +948,9 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
+    this.setupThemeChange();
+    this.setupAccentOption();
+    this.setupColorListeners()
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
@@ -971,8 +974,7 @@ class App extends React.Component {
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetClientId = this.onSetClientId.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
-    this.setupThemeChange();
-    this.setupAccentOption();
+    this.setupColorListeners = this.setupColorListeners.bind(this);
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1185,10 +1187,47 @@ class App extends React.Component {
     this.scrollTable.viewportChange();
   }
 
-  saveThemeChanges(theme) {
+  saveColorChanges(value, category) {
     const html = document.documentElement;
-    html.dataset.theme = theme;
-    localStorage.setItem("preferredColorScheme", theme);
+    html.dataset[category] = value;
+    const storage = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
+    localStorage.setItem(storage, value);
+
+    const popup = document.querySelector("iframe");
+    popup.contentWindow.postMessage({category, value}, "*");
+  }
+
+  setupColorListeners() {
+    const html = document.documentElement;
+    const popup = document.querySelector("#insext > iframe");
+    const changeColor = (value, category) => {
+        const htmlValue = html.dataset[category];
+        if (value != htmlValue) { // avoid recursion
+            this.saveColorChanges(value, category);
+        }
+    };
+
+    // listen to possible updates from popup
+    window.addEventListener("message", e => {
+      if (e.source != popup.contentWindow) {
+        return;
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        const value = e.data.value;
+        changeColor(value, category);
+      }
+    });
+
+    // listen to changes on other pages of the inspector
+    window.addEventListener("storage", e => {
+        if (!e.isTrusted || (e.key !== "preferredColorScheme" && e.key !== "preferredAccentScheme")) {
+            return;
+        }
+        const category = e.key === "preferredColorScheme" ? "theme" : "accent";
+        const value = e.newValue;
+        changeColor(value, category);
+    });
   }
 
   setupThemeChange() {
@@ -1199,39 +1238,16 @@ class App extends React.Component {
     // listen for changes to color scheme preference
     prefersDarkScheme.addEventListener("change", mediaQuery => {
       const theme = getTheme(mediaQuery);
-      this.saveThemeChanges(theme);
+      this.saveColorChanges(theme, "theme");
     });
 
-    // listen to possible updates from popup
-    const html = document.documentElement;
-    const popup = document.querySelector("#insext > iframe");
-    window.addEventListener("message", e => {
-      if (e.source != popup.contentWindow) {
-        return;
-      }
-      if (e.data.category && e.data.value) {
-        const category = e.data.category;
-        const value = e.data.value;
-
-        const htmlValue = html.dataset[category];
-        if (value != htmlValue) { // avoid recursion
-          this.saveThemeChanges(value);
-        }
-      }
-    });
-
-    let savedTheme = localStorage.getItem("preferredColorScheme");
-    if (savedTheme == null){
-      // if no theme saved, default to preferred scheme (or light if not available)
-      savedTheme = getTheme(prefersDarkScheme);
-    }
-    this.saveThemeChanges(savedTheme, true);
+    const savedTheme = localStorage.getItem("preferredColorScheme") || getTheme(prefersDarkScheme);
+    this.saveColorChanges(savedTheme, "theme");
   }
 
   setupAccentOption() {
     const accent = localStorage.getItem("preferredAccentScheme") || "default";
-    const html = document.documentElement;
-    html.dataset.accent = accent;
+    this.saveColorChanges(accent, "accent");
   }
 
   render() {

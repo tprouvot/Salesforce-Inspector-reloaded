@@ -79,15 +79,16 @@ class App extends React.PureComponent {
       importHref: "data-import.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg
     };
+    this.setupThemeChange();
+    this.setupAccentOption();
+    this.setupColorListeners();
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
-
-    this.setupThemeChange();
     this.onThemeChange = this.onThemeChange.bind(this);
     this.saveColorChanges = this.saveColorChanges.bind(this);
-    this.setupAccentOption();
+    this.setupColorListeners = this.setupColorListeners.bind(this);
   }
   onContextRecordChange(e) {
     let {sfHost} = this.props;
@@ -217,13 +218,46 @@ class App extends React.PureComponent {
     }
   }
 
-  saveColorChanges(option, category) {
+  saveColorChanges(value, category) {
     const html = document.documentElement;
-    html.dataset[category] = option;
+    html.dataset[category] = value;
     const storageName = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
-    localStorage.setItem(storageName, option);
+    localStorage.setItem(storageName, value);
 
-    parent.postMessage({category, value: option}, "*");
+    parent.postMessage({category, value}, "*");
+  }
+
+  setupColorListeners() {
+    const html = document.documentElement;
+    const changeColor = (value, category) => {
+        const htmlValue = html.dataset[category];
+        if (value != htmlValue) { // avoid recursion
+          const isThemeCategory = category === "theme";
+          isThemeCategory ? this.updateTheme(value) : this.saveColorChanges(value, category);
+        }
+    };
+
+    // listen to possible updates from background page
+    window.addEventListener("message", e => {
+      if (e.source != parent) {
+        return;
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        const value = e.data.value;
+        changeColor(value, category);
+      }
+    });
+
+    // listen to changes on other pages of the inspector
+    window.addEventListener("storage", e => {
+        if (!e.isTrusted || (e.key !== "preferredColorScheme" && e.key !== "preferredAccentScheme")) {
+            return;
+        }
+        const category = e.key === "preferredColorScheme" ? "theme" : "accent";
+        const value = e.newValue;
+        changeColor(value, category);
+    });
   }
 
   updateTheme(theme, isSetup = false, callback = null) {
@@ -263,30 +297,8 @@ class App extends React.PureComponent {
       this.saveColorChanges(theme, "theme");
     });
 
-    let savedTheme = localStorage.getItem("preferredColorScheme");
-    if (savedTheme == null){
-      // if no theme saved, default to preferred scheme (or light if not available)
-      savedTheme = getTheme(prefersDarkScheme);
-    }
+    const savedTheme = localStorage.getItem("preferredColorScheme") || getTheme(prefersDarkScheme);
     this.updateTheme(savedTheme, true);
-
-    // listen to possible updates from background page
-    const html = document.documentElement;
-    window.addEventListener("message", e => {
-      if (e.source != parent) {
-        return;
-      }
-      if (e.data.category && e.data.value) {
-        const category = e.data.category;
-        const value = e.data.value;
-        const isThemeCategory = category === "theme";
-
-        const htmlValue = html.dataset[category];
-        if (value != htmlValue) { // avoid recursion
-          isThemeCategory ? this.updateTheme(value) : this.saveColorChanges(value, category);
-        }
-      }
-    });
   }
 
   onThemeChange() {

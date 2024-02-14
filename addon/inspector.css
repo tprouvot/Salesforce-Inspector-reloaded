@@ -281,7 +281,7 @@ div.area > div.conf-value,
     transition-timing-function: ease-in-out;
 }
 
-#result-table {
+#result-table, div.table-container {
     transition-property: background-color, scrollbar-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;

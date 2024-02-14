@@ -71,9 +71,9 @@
 .pop-menu {
   position: absolute;
   padding: 7px 0;
-  background: rgb(255, 255, 255);
-  box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
-  border: 1px solid rgb(221, 219, 218);
+  background: var(--inspector-background);
+  box-shadow: 0 2px 3px 0 var(--inspector-text);
+  border: 1px solid var(--inspector-neutral)32;
   border-radius: 0.25rem;
 }
 
@@ -86,7 +86,7 @@
 .pop-menu a {
   display: block;
   text-decoration: none;
-  color: rgb(0, 112, 210);
+  color: var(--inspector-link);
   padding: 5px 15px;
   display: flex;
   align-items: center;

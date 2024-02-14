@@ -492,6 +492,7 @@ class ColorSchemeOption extends React.Component {
     this.onThemeChange = this.onThemeChange.bind(this);
     this.onThemeClick = this.onThemeClick.bind(this);
     this.setupThemeListeners = this.setupThemeListeners.bind(this);
+    this.updateTheme = this.updateTheme.bind(this);
   }
 
   saveThemeChanges(theme) {
@@ -510,6 +511,8 @@ class ColorSchemeOption extends React.Component {
     const changeColor = (value) => {
         const htmlValue = html.dataset[mainCategory];
         if (value != htmlValue) { // avoid recursion
+          const inputField = document.getElementById("checkbox-toggle-themeChange");
+          inputField.checked = !inputField.checked;
           this.updateTheme(value, false);
         }
     };
@@ -539,17 +542,15 @@ class ColorSchemeOption extends React.Component {
     });
   }
 
-  updateTheme(theme, isSetup = false, callback = null) {
+  updateTheme(theme, isSetup = false) {
     const light = document.getElementById("light-theme");
     const dark = document.getElementById("dark-theme");
     const inputField = document.getElementById("checkbox-toggle-themeChange");
     if (light == null || dark == null || inputField == null) {
-      setTimeout(() => this.updateTheme(theme, isSetup, this.saveThemeChanges), 500);
+      setTimeout(() => this.updateTheme(theme, isSetup), 500);
       return;
     }
-
-    callback = callback || this.saveThemeChanges;
-    callback(theme, isSetup);
+    this.saveThemeChanges(theme, isSetup);
 
     if (isSetup) {
       const isDarkTheme = theme === "dark";
@@ -569,7 +570,7 @@ class ColorSchemeOption extends React.Component {
     // listen for changes to color scheme preference
     prefersDarkScheme.addEventListener("change", mediaQuery => {
       const theme = getTheme(mediaQuery);
-      this.saveThemeChanges(theme);
+      this.updateTheme(theme, false);
     });
 
     const savedTheme = localStorage.getItem("preferredColorScheme") || getTheme(prefersDarkScheme);
@@ -585,7 +586,6 @@ class ColorSchemeOption extends React.Component {
   onThemeClick() {
     const inputField = document.getElementById("checkbox-toggle-themeChange");
     if (inputField == null) return;
-    inputField.checked = !inputField.checked;
     this.onThemeChange();
   }
 

@@ -11,9 +11,8 @@
       "strict_min_version": "60.0"
     }
   },
-  "minimum_chrome_version": "88",
-  "permissions": ["cookies"],
-  "host_permissions": [
+  "minimum_chrome_version": "61",
+  "permissions": [
     "https://*.salesforce.com/*",
     "https://*.force.com/*",
     "https://*.cloudforce.com/*",
@@ -53,8 +52,7 @@
     }
   ],
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "scripts": ["background.js"]
   },
   "web_accessible_resources": [
     {
@@ -73,5 +71,5 @@
     }
   ],
   "incognito": "replaced-at-build",
-  "manifest_version": 3
+  "manifest_version": 2
 }

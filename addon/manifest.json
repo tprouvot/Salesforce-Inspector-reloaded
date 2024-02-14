@@ -1,14 +1,17 @@
 {
   "name": "Salesforce Inspector reloaded",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.23",
-  "version_name": "1.23",
+  "version": "1.210",
   "icons": {
     "128": "icon128.png"
   },
-  "minimum_chrome_version": "88",
-  "permissions": ["cookies"],
-  "host_permissions": [
+  "applications": {
+    "gecko": {
+      "id": "salesforceinspector@reloaded",
+      "strict_min_version": "60.0"
+    }
+  },
+  "permissions": [
     "https://*.salesforce.com/*",
     "https://*.force.com/*",
     "https://*.cloudforce.com/*",
@@ -20,7 +23,8 @@
     "https://*.cloudforce.mil/*",
     "https://*.visualforce.mil/*",
     "https://*.crmforce.mil/*",
-    "https://*.force.com.mcas.ms/*"
+    "https://*.force.com.mcas.ms/*",
+    "cookies"
   ],
   "content_scripts": [
     {
@@ -43,19 +47,12 @@
         "https://*.lightning.force.com.mcas.ms/*"
       ],
       "all_frames": true,
-      "css": [
-        "button.css",
-        "inspect-inline.css"
-      ],
-      "js": [
-        "button.js",
-        "inspect-inline.js"
-      ]
+      "css": ["button.css", "inspect-inline.css"],
+      "js": ["button.js", "inspect-inline.js"]
     }
   ],
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "scripts": ["background.js"]
   },
   "web_accessible_resources": [
     {
@@ -69,12 +66,10 @@
         "limits.html",
         "options.html"
       ],
-      "matches": [
-        "https://*/*"
-      ],
+      "matches": ["https://*/*"],
       "extension_ids": []
     }
   ],
-  "incognito": "split",
-  "manifest_version": 3
+  "incognito": "spanning",
+  "manifest_version": 2
 }

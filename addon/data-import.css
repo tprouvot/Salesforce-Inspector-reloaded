@@ -46,14 +46,14 @@ body {
   height: 100%;
   display: flex;
   background-color: var(--inspector-export-background);
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png');
+  background-image: url('/images/lightning_blue_background.png');
   background-repeat: no-repeat;
   background-size: contain;
   background-position: 0px 48px;
 }
 .prod {
   background-color: var(--inspector-import-background);
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png');
+  background-image: url('/images/lightning_red_background.png');
 }
 #root {
   display: flex;
@@ -124,8 +124,8 @@ body {
   mask-repeat: no-repeat;
   -webkit-mask-size: 1.4rem;;
   mask-size: 1.4rem;;
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
-  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
+  -webkit-mask-image: url('/images/help.svg');
+  mask-image: url('/images/help.svg');
   -webkit-mask-position: center;
   mask-position: center;
   background-color: var(--inspector-neutral);
@@ -486,12 +486,12 @@ svg.slds-icon {
   margin-right: 0;
 }
 button.expand .button-toggle-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/down.svg');
-  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/down.svg');
+  -webkit-mask-image: url('/images/down.svg');
+  mask-image: url('/images/down.svg');
 }
 button.contract .button-toggle-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/up.svg');
-  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/up.svg');
+  -webkit-mask-image: url('/images/up.svg');
+  mask-image: url('/images/up.svg');
 }
 .cancel-btn {
   color: var(--inspector-error);

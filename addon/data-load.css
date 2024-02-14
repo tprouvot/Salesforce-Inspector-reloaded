@@ -110,30 +110,30 @@
 }
 
 .pop-menu a.view-salesforce .icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce1.svg');
-  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce1.svg');
+  -webkit-mask-image: url('/images/salesforce1.svg');
+  mask-image: url('/images/salesforce1.svg');
 }
 
 .pop-menu a.view-inspector .icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce-inspector-logo.svg');
-  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce-inspector-logo.svg');
+  -webkit-mask-image: url('/images/salesforce-inspector-logo.svg');
+  mask-image: url('/images/salesforce-inspector-logo.svg');
 }
 
 .pop-menu a.query-record .icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/record_lookup.svg');
-  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/record_lookup.svg');
+  -webkit-mask-image: url('/images/record_lookup.svg');
+  mask-image: url('/images/record_lookup.svg');
   background-color: var(--inspector-neutral);
 }
 
 .pop-menu a.copy-id .icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/copy.svg');
-  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/copy.svg');
+  -webkit-mask-image: url('/images/copy.svg');
+  mask-image: url('/images/copy.svg');
   background-color: var(--inspector-neutral);
 }
 
 .pop-menu a.download-salesforce .icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/down.svg');
-  mask-image: url('chrome-extension://__MSG_@@extension_id__/images/down.svg');
+  -webkit-mask-image: url('/images/down.svg');
+  mask-image: url('/images/down.svg');
 }
 
 .pop-menu a.download-salesforce .icon {

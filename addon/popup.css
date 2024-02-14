@@ -353,8 +353,8 @@ a.icon {
 }
 
  a.icon-url {
-    -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/link.svg');
-    mask-image: url('chrome-extension://__MSG_@@extension_id__/images/link.svg');
+    -webkit-mask-image: url('/images/link.svg');
+    mask-image: url('/images/link.svg');
 }
 .pointer {
     cursor: pointer;

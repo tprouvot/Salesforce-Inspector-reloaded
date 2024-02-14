@@ -46,7 +46,7 @@ body {
   height: 100%;
   display: flex;
   background-color: var(--inspector-neutral) !important;
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png') !important;
+  background-image: url('/images/lightning_blue_background.png') !important;
   background-repeat: no-repeat !important;
   background-size: contain !important;
   background-position: 0px 48px !important;
@@ -146,7 +146,7 @@ body {
 
 .prod {
   background-color: var(--inspector-import-background) !important;
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png') !important;
+  background-image: url('/images/lightning_red_background.png') !important;
   background-repeat: no-repeat !important;
   background-size: contain !important;
   background-position: 0px 48px !important;

@@ -1193,7 +1193,7 @@ class App extends React.Component {
     const storage = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
     localStorage.setItem(storage, value);
 
-    const popup = document.querySelector("iframe");
+    const popup = document.querySelector("#insext > iframe");
     popup.contentWindow.postMessage({category, value}, "*");
   }
 

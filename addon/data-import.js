@@ -1058,7 +1058,7 @@ class App extends React.Component {
     const storage = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
     localStorage.setItem(storage, value);
 
-    const popup = document.querySelector("iframe");
+    const popup = document.querySelector("#insext > iframe");
     popup.contentWindow.postMessage({category, value}, "*");
   }
 
@@ -1068,7 +1068,7 @@ class App extends React.Component {
     const changeColor = (value, category) => {
         const htmlValue = html.dataset[category];
         if (value != htmlValue) { // avoid recursion
-          this.saveColorChanges(value, category);
+            this.saveColorChanges(value, category);
         }
     };
 

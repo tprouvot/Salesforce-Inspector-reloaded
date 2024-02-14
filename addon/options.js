@@ -499,7 +499,7 @@ class ColorSchemeOption extends React.Component {
     html.dataset.theme = theme;
     localStorage.setItem("preferredColorScheme", theme);
 
-    const popup = document.querySelector("iframe");
+    const popup = document.querySelector("#insext > iframe");
     popup.contentWindow.postMessage({category: "theme", value: theme}, "*");
   }
 
@@ -627,7 +627,7 @@ class ColorAccentOption extends React.Component {
     html.dataset.accent = accent;
     localStorage.setItem("preferredAccentScheme", accent);
 
-    const popup = document.querySelector("iframe");
+    const popup = document.querySelector("#insext > iframe");
     popup.contentWindow.postMessage({category: "accent", value: accent}, "*");
   }
 

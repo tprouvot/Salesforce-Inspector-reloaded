@@ -49,7 +49,7 @@
       ],
       "all_frames": true,
       "css": ["inspector.css", "button.css", "inspect-inline.css"],
-      "js": ["button.js", "inspect-inline.js", "links.js"]
+      "js": ["button.js", "inspect-inline.js"]
     }
   ],
   "background": {

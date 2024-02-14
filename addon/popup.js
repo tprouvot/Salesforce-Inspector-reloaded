@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
-import {setupLinks} from "./links.js";
+import {setupLinks} from "./links.mjs";
 
 let h = React.createElement;
 
@@ -428,7 +428,7 @@ class App extends React.PureComponent {
             h("img", {id: "light-theme", src: "images/sun.svg", className: "hide", onClick: this.onThemeChange, height: "20px", width: "20px", title: "Set color theme to light."})
           ),
           h("div", {className: "slds-col slds-size_3-of-12 slds-text-align_left slds-grid slds-grid_vertical slds-grid_vertical-align-center"},
-            h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]",
+            h("span", {className: "footer-small-text"}, (navigator.userAgentData?.platform.indexOf("mac") > -1 || navigator.userAgent.indexOf("mac") > -1) ? "[ctrl+option+i]" : "[ctrl+alt+i]",
               h("br")),
             h("span", {className: "footer-small-text"}, "to open")
           ),

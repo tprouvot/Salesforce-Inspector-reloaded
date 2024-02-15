@@ -341,6 +341,11 @@ class ObjectSelector extends React.Component {
     metadataObject.selected = e.target.checked;
     model.didUpdate();
   }
+  onSelectMeta(metadataObject){
+    console.log(metadataObject);
+
+    let p = sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metadataObject.xmlName, folder: metadataObject.directoryName}});
+  }
   render() {
     let {metadataObject} = this.props;
     return h("ul", {className: "slds-accordion"},
@@ -349,7 +354,7 @@ class ObjectSelector extends React.Component {
           h("div", {className: "slds-accordion__summary"},
             h("h2", {className: "slds-accordion__summary-heading"},
               h("span", {className: "slds-accordion__summary-content"},
-                h("label", {title: metadataObject.xmlName},
+                h("label", {title: metadataObject.xmlName, onClick: this.onSelectMeta(metadataObject)},
                   h("input", {type: "checkbox", className: "metadata", checked: metadataObject.selected, onChange: this.onChange}),
                   metadataObject.xmlName
                 )

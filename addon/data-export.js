@@ -950,7 +950,7 @@ class App extends React.Component {
     super(props);
     this.setupThemeChange();
     this.setupAccentOption();
-    this.setupColorListeners()
+    this.setupColorListeners();
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
@@ -1201,10 +1201,10 @@ class App extends React.Component {
     const html = document.documentElement;
     const popup = document.querySelector("#insext > iframe");
     const changeColor = (value, category) => {
-        const htmlValue = html.dataset[category];
-        if (value != htmlValue) { // avoid recursion
-            this.saveColorChanges(value, category);
-        }
+      const htmlValue = html.dataset[category];
+      if (value != htmlValue) { // avoid recursion
+        this.saveColorChanges(value, category);
+      }
     };
 
     // listen to possible updates from popup
@@ -1221,12 +1221,12 @@ class App extends React.Component {
 
     // listen to changes on other pages of the inspector
     window.addEventListener("storage", e => {
-        if (!e.isTrusted || (e.key !== "preferredColorScheme" && e.key !== "preferredAccentScheme")) {
-            return;
-        }
-        const category = e.key === "preferredColorScheme" ? "theme" : "accent";
-        const value = e.newValue;
-        changeColor(value, category);
+      if (!e.isTrusted || (e.key !== "preferredColorScheme" && e.key !== "preferredAccentScheme")) {
+        return;
+      }
+      const category = e.key === "preferredColorScheme" ? "theme" : "accent";
+      const value = e.newValue;
+      changeColor(value, category);
     });
   }
 

@@ -509,12 +509,12 @@ class ColorSchemeOption extends React.Component {
     const popup = document.querySelector("#insext > iframe");
     const mainCategory = "theme";
     const changeColor = (value) => {
-        const htmlValue = html.dataset[mainCategory];
-        if (value != htmlValue) { // avoid recursion
-          const inputField = document.getElementById("checkbox-toggle-themeChange");
-          inputField.checked = !inputField.checked;
-          this.updateTheme(value, false);
-        }
+      const htmlValue = html.dataset[mainCategory];
+      if (value != htmlValue) { // avoid recursion
+        const inputField = document.getElementById("checkbox-toggle-themeChange");
+        inputField.checked = !inputField.checked;
+        this.updateTheme(value, false);
+      }
     };
 
     // listen to possible updates from popup
@@ -534,11 +534,11 @@ class ColorSchemeOption extends React.Component {
 
     // listen to changes on other pages of the inspector
     window.addEventListener("storage", e => {
-        if (!e.isTrusted || e.key !== "preferredColorScheme") {
-            return;
-        }
-        const value = e.newValue;
-        changeColor(value);
+      if (!e.isTrusted || e.key !== "preferredColorScheme") {
+        return;
+      }
+      const value = e.newValue;
+      changeColor(value);
     });
   }
 
@@ -636,10 +636,10 @@ class ColorAccentOption extends React.Component {
     const popup = document.querySelector("#insext > iframe");
     const mainCategory = "accent";
     const changeColor = (value) => {
-        const htmlValue = html.dataset[mainCategory];
-        if (value != htmlValue) { // avoid recursion
-          this.updateDocument(value);
-        }
+      const htmlValue = html.dataset[mainCategory];
+      if (value != htmlValue) { // avoid recursion
+        this.updateDocument(value);
+      }
     };
 
     // listen to possible updates from popup
@@ -659,11 +659,11 @@ class ColorAccentOption extends React.Component {
 
     // listen to changes on other pages of the inspector
     window.addEventListener("storage", e => {
-        if (!e.isTrusted || e.key !== "preferredAccentScheme") {
-            return;
-        }
-        const value = e.newValue;
-        changeColor(value);
+      if (!e.isTrusted || e.key !== "preferredAccentScheme") {
+        return;
+      }
+      const value = e.newValue;
+      changeColor(value);
     });
   }
 

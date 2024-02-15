@@ -230,11 +230,11 @@ class App extends React.PureComponent {
   setupColorListeners() {
     const html = document.documentElement;
     const changeColor = (value, category) => {
-        const htmlValue = html.dataset[category];
-        if (value != htmlValue) { // avoid recursion
-          const isThemeCategory = category === "theme";
-          isThemeCategory ? this.updateTheme(value) : this.saveColorChanges(value, category);
-        }
+      const htmlValue = html.dataset[category];
+      if (value != htmlValue) { // avoid recursion
+        const isThemeCategory = category === "theme";
+        isThemeCategory ? this.updateTheme(value) : this.saveColorChanges(value, category);
+      }
     };
 
     // listen to possible updates from background page
@@ -251,12 +251,12 @@ class App extends React.PureComponent {
 
     // listen to changes on other pages of the inspector
     window.addEventListener("storage", e => {
-        if (!e.isTrusted || (e.key !== "preferredColorScheme" && e.key !== "preferredAccentScheme")) {
-            return;
-        }
-        const category = e.key === "preferredColorScheme" ? "theme" : "accent";
-        const value = e.newValue;
-        changeColor(value, category);
+      if (!e.isTrusted || (e.key !== "preferredColorScheme" && e.key !== "preferredAccentScheme")) {
+        return;
+      }
+      const category = e.key === "preferredColorScheme" ? "theme" : "accent";
+      const value = e.newValue;
+      changeColor(value, category);
     });
   }
 

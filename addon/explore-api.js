@@ -276,9 +276,9 @@ class App extends React.Component {
     const changeColor = (value, category) => {
       const htmlValue = html.dataset[category];
       if (value != htmlValue) { // avoid recursion
-          this.saveColorChanges(value, category);
+        this.saveColorChanges(value, category);
       }
-   };
+    };
 
     // listen to possible updates from popup
     window.addEventListener("message", e => {

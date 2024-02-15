@@ -335,26 +335,33 @@ class ObjectSelector extends React.Component {
   constructor(props) {
     super(props);
     this.onChange = this.onChange.bind(this);
+    this.onSelectMeta = this.onSelectMeta.bind(this);
   }
   onChange(e) {
     let {metadataObject, model} = this.props;
     metadataObject.selected = e.target.checked;
     model.didUpdate();
   }
-  onSelectMeta(metadataObject){
-    console.log(metadataObject);
-
-    let p = sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metadataObject.xmlName, folder: metadataObject.directoryName}});
+  onSelectMeta(e){
+    console.log(e.target.title);
+    const element = e.target;
+    sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: this.props.metadataObject.xmlName, folder: this.props.metadataObject.directoryName}}).then(res => {
+      console.log(res);
+      res.forEach(elt => {
+        const newDiv = document.createElement("div").appendChild(document.createTextNode(elt.xmlName));
+        element.appendChild(newDiv);
+        //element.appendChild(React.createElement(this.createMetaElement, {metadataObject: elt}));
+      });
+    });
   }
-  render() {
-    let {metadataObject} = this.props;
+  createMetaElement(metadataObject){
     return h("ul", {className: "slds-accordion"},
       h("li", {className: "slds-accordion__list-item"},
         h("section", {className: "slds-accordion__section"},
           h("div", {className: "slds-accordion__summary"},
             h("h2", {className: "slds-accordion__summary-heading"},
               h("span", {className: "slds-accordion__summary-content"},
-                h("label", {title: metadataObject.xmlName, onClick: this.onSelectMeta(metadataObject)},
+                h("label", {title: metadataObject.xmlName, onClick: this.onSelectMeta},
                   h("input", {type: "checkbox", className: "metadata", checked: metadataObject.selected, onChange: this.onChange}),
                   metadataObject.xmlName
                 )
@@ -364,6 +371,10 @@ class ObjectSelector extends React.Component {
         )
       ),
     );
+  }
+  render() {
+    let {metadataObject} = this.props;
+    return this.createMetaElement(metadataObject);
   }
 }
 

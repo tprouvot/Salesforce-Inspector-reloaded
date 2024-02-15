@@ -90,7 +90,7 @@ body {
   text-decoration: none;
   display: inline-block;
   padding: 2px;
-  color: var(--inspector-text);
+  color: var(--inspector-svg-text);
   padding-right: 1em;
 }
 

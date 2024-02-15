@@ -92,7 +92,7 @@ body {
   text-decoration: none;
   display: inline-block;
   padding: 2px;
-  color: var(--inspector-text);
+  color: var(--inspector-svg-text);
   padding-right: 1em;
 }
 
@@ -294,13 +294,13 @@ input:disabled:hover {
 .highlighted {
   background-color: var(--inspector-primary);
   border-color: var(--inspector-primary);
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-text);
 }
 
 .highlighted:hover,
 .highlighted:active {
   background-color: var(--inspector-primary);
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-text);
 }
 
 .highlighted:disabled {
@@ -384,7 +384,7 @@ textarea[readonly] {
 .delete-btn {
   background-color: var(--inspector-error);
   border-color: var(--inspector-error);
-  color: var(--inspector-shade);
+  color: var(--inspector-text);
   /* Allows to still show the title even when disabled as it contains useful information */
   pointer-events: auto;
 }
@@ -408,7 +408,7 @@ textarea[readonly] {
 }
 
 .char-btn {
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-text);
   text-decoration: none;
   background-color: var(--inspector-neutral);
   display: inline-block;
@@ -463,7 +463,7 @@ button,
   text-decoration: none;
   background-color: var(--inspector-inverted-text);
   padding: 0 16px;
-  color: var(--inspector-primary);
+  color: var(--inspector-accent);
   cursor: pointer;
   outline: none;
   position: relative;

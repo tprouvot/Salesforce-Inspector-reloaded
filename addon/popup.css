@@ -77,7 +77,7 @@ a:visited {
 .header-logo {
     background: var(--inspector-primary);
     padding: 2px 1em 2px 2px;
-    color: var(--inspector-text);
+    color: var(--inspector-svg-text);
     display: flex;
     align-items: center;
     margin: 0 auto;
@@ -283,7 +283,7 @@ ul.small-tabs {
 ul.small-tabs li {
     display: inline;
     border: solid 1px var(--inspector-neutral);
-    color: var(--inspector-primary);
+    color: var(--inspector-link);
     padding: 2px 6px;
     font-style: italic;
     cursor: pointer;

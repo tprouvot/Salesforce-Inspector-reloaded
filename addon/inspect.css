@@ -78,19 +78,19 @@ body {
 }
 
 a {
-  color: var(--inspector-primary);
+  color: var(--inspector-link);
   text-decoration: none;
   transition: color .1s linear;
 }
 
 a:active {
-  color: var(--inspector-accent);
+  color: var(--inspector-primary);
 }
 
 a:focus,
 a:hover {
   text-decoration: underline;
-  color: var(--inspector-primary);
+  color: var(--inspector-accent);
 }
 
 a:active,
@@ -109,7 +109,7 @@ a:hover {
   text-decoration: none;
   display: inline-block;
   padding: 2px;
-  color: var(--inspector-text);
+  color: var(--inspector-svg-text);
   padding-right: 1em;
   margin-right: 4px;
 }
@@ -356,7 +356,7 @@ div.mainContent > input {
 
 .closeLnk {
   background: var(--inspector-neutral);
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-text);
   line-height: 25px;
   position: absolute;
   right: -12px;
@@ -489,11 +489,11 @@ div.mainContent > input {
 
 .object-tab:hover::after,
 .object-tab.active-tab::after {
-  background-color: var(--inspector-primary);
+  background-color: var(--inspector-accent);
 }
 
 .object-tab.active-tab a {
-  color: var(--inspector-primary);
+  color: var(--inspector-link);
 }
 
 .object-tab * {
@@ -541,7 +541,7 @@ div.mainContent > input {
 
 .button {
   background-color: var(--inspector-background);
-  color: var(--inspector-primary);
+  color: var(--inspector-accent);
   text-decoration: none;
   padding: 0 1rem;
   text-align: center;
@@ -559,7 +559,7 @@ div.mainContent > input {
   cursor: default;
   background-color: var(--slds-g-color-neutral-base-80, var(--inspector-neutral));
   border-color: var(--slds-g-color-neutral-base-80, var(--inspector-neutral));
-  color: var(--slds-g-color-neutral-base-100, var(--inspector-inverted-text));
+  color: var(--slds-g-color-neutral-base-100, var(--inspector-text));
 }
 
 .object-actions {
@@ -603,38 +603,38 @@ div.mainContent > input {
 .button-brand {
   background-color: var(--inspector-primary);
   border-color: var(--inspector-primary);
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-text);
 }
 
 .button-brand:focus:not([disabled]),
 .button-brand:hover:not([disabled]) {
   background-color: var(--inspector-primary);
   border-color: var(--inspector-primary);
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-text);
 }
 
 .button-brand:active:not([disabled]) {
   background-color: var(--inspector-primary);
   border-color: var(--inspector-primary);
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-text);
 }
 
 .button-destructive {
   background-color: var(--inspector-error);
   border-color: var(--inspector-error);
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-text);
 }
 
 .button-destructive:focus:not([disabled]),
 .button-destructive:hover:not([disabled]) {
   background-color: var(--inspector-warning);
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-text);
 }
 
 .button-destructive:active:not([disabled]) {
   background-color: var(--inspector-error);
   border-color: var(--inspector-error);
-  color: var(--inspector-inverted-text);
+  color: var(--inspector-text);
 }
 
 .column-button-outer {

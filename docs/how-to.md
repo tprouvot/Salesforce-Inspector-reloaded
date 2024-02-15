@@ -225,3 +225,17 @@ Deactivate the toggle corresponding to "Set default theme to".
 Activate the toggle corresponding to "Set default theme to".
 
 ![Change to dark from the options page](./screenshots/color-scheme/options-to-dark.png)
+
+## Change Accent of Theme
+You may change the accent of your preferred theme from the options page.
+The default accent is true-color and has great contrast, the other one is easier on the eyes.
+
+![Default light theme](./screenshots/accent-scheme/light-default.png)
+
+![Accent light theme](./screenshots/accent-scheme/light-accent.png)
+j
+![Default dark theme](./screenshots/accent-scheme/dark-default.png)
+
+![Accent dark theme](./screenshots/accent-scheme/dark-accent.png)
+
+

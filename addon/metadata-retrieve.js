@@ -23,6 +23,7 @@ class Model {
     this.downloadLink = null;
     this.statusLink = null;
     this.metadataObjects = null;
+    this.includeManagedPackage = false;
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -263,6 +264,7 @@ class App extends React.Component {
     super(props);
     this.onStartClick = this.onStartClick.bind(this);
     this.onSelectAllChange = this.onSelectAllChange.bind(this);
+    this.onUpdateManagedPackageSelection = this.onUpdateManagedPackageSelection.bind(this);
   }
   onSelectAllChange(e) {
     let {model} = this.props;
@@ -275,6 +277,11 @@ class App extends React.Component {
   onStartClick() {
     let {model} = this.props;
     model.startDownloading();
+  }
+  onUpdateManagedPackageSelection(e){
+    let {model} = this.props;
+    model.includeManagedPackage = e.target.checked;
+    model.didUpdate();
   }
   render() {
     let {model} = this.props;
@@ -305,6 +312,14 @@ class App extends React.Component {
             model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
             model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null,
             h("span", {className: "flex"}),
+            h("label", {className: "slds-checkbox_toggle"}, //TODO arrange design
+              h("input", {type: "checkbox", required: true, "aria-describedby": "toggle-namespace", className: "slds-input", checked: model.includeManagedPackage, onChange: this.onUpdateManagedPackageSelection}),
+              h("span", {className: "slds-checkbox_faux_container center-label"},
+                h("span", {className: "slds-checkbox_faux"}),
+                h("span", {className: "slds-checkbox_on"}, "Include managed package metadata"),
+                h("span", {className: "slds-checkbox_off"}, "Exclude managed packages metadata"),
+              )
+            ),
             h("a", {href: "https://github.com/jesperkristensen/forcecmd"}, "Automate this with forcecmd")
           ),
           h("div", {id: "result-table", ref: "scroller"},
@@ -341,24 +356,29 @@ class ObjectSelector extends React.Component {
     model.didUpdate();
   }
   onSelectMeta(e){
+    let {model} = this.props;
     if (e.target.checked){
       console.log(e.target.title);
       const element = e.target;
       sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: this.props.metadataObject.xmlName, folder: this.props.metadataObject.directoryName}}).then(res => {
+        res.sort((a, b) => a.manageableState > b.manageableState ? -1 : a.manageableState > b.manageableState ? 1
+          : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
         if (res){
           let div = document.createElement("div");
           div.className = "slds-accordion__content";
           let ul = document.createElement("ul");
           ul.className = "slds-accordion";
           res.forEach(elt => {
-            let clone = element.closest("li").cloneNode(true);
-            let label = clone.getElementsByTagName("label")[0];
-            let input = label.getElementsByTagName("input")[0];
-            label.title = elt.fullName;
-            label.textContent = "";
-            label.appendChild(input);
-            label.innerHTML += elt.fullName;
-            ul.appendChild(clone);
+            if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
+              let clone = element.closest("li").cloneNode(true);
+              let label = clone.getElementsByTagName("label")[0];
+              let input = label.getElementsByTagName("input")[0];
+              label.title = elt.fullName;
+              label.textContent = "";
+              label.appendChild(input);
+              label.innerHTML += elt.fullName;
+              ul.appendChild(clone);
+            }
           });
           div.appendChild(ul);
           element.closest("section").appendChild(div);
@@ -366,7 +386,8 @@ class ObjectSelector extends React.Component {
       });
     }
   }
-  createMetaElement(metadataObject){
+  render() {
+    let {metadataObject} = this.props;
     return h("li", {className: "slds-accordion__list-item"},
       h("section", {className: "slds-accordion__section slds-is-open"},
         h("div", {className: "slds-accordion__summary"},
@@ -381,10 +402,6 @@ class ObjectSelector extends React.Component {
         )
       )
     );
-  }
-  render() {
-    let {metadataObject} = this.props;
-    return this.createMetaElement(metadataObject);
   }
 }
 

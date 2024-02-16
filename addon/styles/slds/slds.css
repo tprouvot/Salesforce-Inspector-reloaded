@@ -2,9 +2,251 @@
   Salesforce Lightning Design System
 
   Only CSS classes currently used - feel free to add if new ones should be needed
+  See https://www.lightningdesignsystem.com/resources/downloads/ for latest version and archives
 
-  Current version used: 2.21.1
+  Current versions used: 2.21.1
+  - 2.21.5 for AlertBanner
 */
+
+.slds-wcag {
+  --slds-g-color-palette-blue-10: #001639;
+  --slds-g-color-palette-blue-15: #03234d;
+  --slds-g-color-palette-blue-20: #032d60;
+  --slds-g-color-palette-blue-30: #014486;
+  --slds-g-color-palette-blue-40: #0b5cab;
+  --slds-g-color-palette-blue-50: #0176d3;
+  --slds-g-color-palette-blue-60: #1b96ff;
+  --slds-g-color-palette-blue-65: #57a3fd;
+  --slds-g-color-palette-blue-70: #78b0fd;
+  --slds-g-color-palette-blue-80: #aacbff;
+  --slds-g-color-palette-blue-90: #d8e6fe;
+  --slds-g-color-palette-blue-95: #eef4ff;
+  --slds-g-color-palette-cloud-blue-10: #001a28;
+  --slds-g-color-palette-cloud-blue-15: #0a2636;
+  --slds-g-color-palette-cloud-blue-20: #023248;
+  --slds-g-color-palette-cloud-blue-30: #084968;
+  --slds-g-color-palette-cloud-blue-40: #05628a;
+  --slds-g-color-palette-cloud-blue-50: #107cad;
+  --slds-g-color-palette-cloud-blue-60: #0d9dda;
+  --slds-g-color-palette-cloud-blue-65: #08abed;
+  --slds-g-color-palette-cloud-blue-70: #1ab9ff;
+  --slds-g-color-palette-cloud-blue-80: #90d0fe;
+  --slds-g-color-palette-cloud-blue-90: #cfe9fe;
+  --slds-g-color-palette-cloud-blue-95: #eaf5fe;
+  --slds-g-color-palette-green-10: #071b12;
+  --slds-g-color-palette-green-15: #0c2912;
+  --slds-g-color-palette-green-20: #1c3326;
+  --slds-g-color-palette-green-30: #194e31;
+  --slds-g-color-palette-green-40: #396547;
+  --slds-g-color-palette-green-50: #2e844a;
+  --slds-g-color-palette-green-60: #3ba755;
+  --slds-g-color-palette-green-65: #41b658;
+  --slds-g-color-palette-green-70: #45c65a;
+  --slds-g-color-palette-green-80: #91db8b;
+  --slds-g-color-palette-green-90: #cdefc4;
+  --slds-g-color-palette-green-95: #ebf7e6;
+  --slds-g-color-palette-hot-orange-10: #281202;
+  --slds-g-color-palette-hot-orange-15: #421604;
+  --slds-g-color-palette-hot-orange-20: #4a2413;
+  --slds-g-color-palette-hot-orange-30: #7e2600;
+  --slds-g-color-palette-hot-orange-40: #aa3001;
+  --slds-g-color-palette-hot-orange-50: #d83a00;
+  --slds-g-color-palette-hot-orange-60: #ff5d2d;
+  --slds-g-color-palette-hot-orange-65: #ff784f;
+  --slds-g-color-palette-hot-orange-70: #ff906e;
+  --slds-g-color-palette-hot-orange-80: #feb9a5;
+  --slds-g-color-palette-hot-orange-90: #ffded5;
+  --slds-g-color-palette-hot-orange-95: #fef1ed;
+  --slds-g-color-palette-indigo-10: #200647;
+  --slds-g-color-palette-indigo-15: #1f0974;
+  --slds-g-color-palette-indigo-20: #321d71;
+  --slds-g-color-palette-indigo-30: #2f2cb7;
+  --slds-g-color-palette-indigo-40: #3a49da;
+  --slds-g-color-palette-indigo-50: #5867e8;
+  --slds-g-color-palette-indigo-60: #7f8ced;
+  --slds-g-color-palette-indigo-65: #8e9bef;
+  --slds-g-color-palette-indigo-70: #9ea9f1;
+  --slds-g-color-palette-indigo-80: #bec7f6;
+  --slds-g-color-palette-indigo-90: #e0e5f8;
+  --slds-g-color-palette-indigo-95: #f1f3fb;
+  --slds-g-color-palette-orange-10: #201600;
+  --slds-g-color-palette-orange-15: #371e03;
+  --slds-g-color-palette-orange-20: #3e2b02;
+  --slds-g-color-palette-orange-30: #5f3e02;
+  --slds-g-color-palette-orange-40: #825101;
+  --slds-g-color-palette-orange-50: #a96404;
+  --slds-g-color-palette-orange-60: #dd7a01;
+  --slds-g-color-palette-orange-65: #f38303;
+  --slds-g-color-palette-orange-70: #fe9339;
+  --slds-g-color-palette-orange-80: #ffba90;
+  --slds-g-color-palette-orange-90: #fedfd0;
+  --slds-g-color-palette-orange-95: #fff1ea;
+  --slds-g-color-palette-pink-10: #370114;
+  --slds-g-color-palette-pink-15: #4b0620;
+  --slds-g-color-palette-pink-20: #61022a;
+  --slds-g-color-palette-pink-30: #8a033e;
+  --slds-g-color-palette-pink-40: #b60554;
+  --slds-g-color-palette-pink-50: #e3066a;
+  --slds-g-color-palette-pink-60: #ff538a;
+  --slds-g-color-palette-pink-65: #fe7298;
+  --slds-g-color-palette-pink-70: #fe8aa7;
+  --slds-g-color-palette-pink-80: #fdb6c5;
+  --slds-g-color-palette-pink-90: #fddde3;
+  --slds-g-color-palette-pink-95: #fef0f3;
+  --slds-g-color-palette-purple-10: #240643;
+  --slds-g-color-palette-purple-15: #300b60;
+  --slds-g-color-palette-purple-20: #401075;
+  --slds-g-color-palette-purple-30: #5a1ba9;
+  --slds-g-color-palette-purple-40: #7526e3;
+  --slds-g-color-palette-purple-50: #9050e9;
+  --slds-g-color-palette-purple-60: #ad7bee;
+  --slds-g-color-palette-purple-65: #b78def;
+  --slds-g-color-palette-purple-70: #c29ef1;
+  --slds-g-color-palette-purple-80: #d7bff2;
+  --slds-g-color-palette-purple-90: #ece1f9;
+  --slds-g-color-palette-purple-95: #f6f2fb;
+  --slds-g-color-palette-red-10: #300c01;
+  --slds-g-color-palette-red-15: #4a0c04;
+  --slds-g-color-palette-red-20: #640103;
+  --slds-g-color-palette-red-30: #8e030f;
+  --slds-g-color-palette-red-40: #ba0517;
+  --slds-g-color-palette-red-50: #ea001e;
+  --slds-g-color-palette-red-60: #fe5c4c;
+  --slds-g-color-palette-red-65: #fe7765;
+  --slds-g-color-palette-red-70: #fe8f7d;
+  --slds-g-color-palette-red-80: #feb8ab;
+  --slds-g-color-palette-red-90: #feded8;
+  --slds-g-color-palette-red-95: #fef1ee;
+  --slds-g-color-palette-teal-10: #071b12;
+  --slds-g-color-palette-teal-15: #072825;
+  --slds-g-color-palette-teal-20: #023434;
+  --slds-g-color-palette-teal-30: #024d4c;
+  --slds-g-color-palette-teal-40: #056764;
+  --slds-g-color-palette-teal-50: #0b827c;
+  --slds-g-color-palette-teal-60: #06a59a;
+  --slds-g-color-palette-teal-65: #03b4a7;
+  --slds-g-color-palette-teal-70: #01c3b3;
+  --slds-g-color-palette-teal-80: #04e1cb;
+  --slds-g-color-palette-teal-90: #acf3e4;
+  --slds-g-color-palette-teal-95: #def9f3;
+  --slds-g-color-palette-violet-10: #2e0039;
+  --slds-g-color-palette-violet-15: #3d0157;
+  --slds-g-color-palette-violet-20: #481a54;
+  --slds-g-color-palette-violet-30: #730394;
+  --slds-g-color-palette-violet-40: #9602c7;
+  --slds-g-color-palette-violet-50: #ba01ff;
+  --slds-g-color-palette-violet-60: #cb65ff;
+  --slds-g-color-palette-violet-65: #d17dfe;
+  --slds-g-color-palette-violet-70: #d892fe;
+  --slds-g-color-palette-violet-80: #e5b9fe;
+  --slds-g-color-palette-violet-90: #f2defe;
+  --slds-g-color-palette-violet-95: #f9f0ff;
+  --slds-g-color-palette-yellow-10: #281202;
+  --slds-g-color-palette-yellow-15: #2e2204;
+  --slds-g-color-palette-yellow-20: #4f2100;
+  --slds-g-color-palette-yellow-30: #6f3400;
+  --slds-g-color-palette-yellow-40: #8c4b02;
+  --slds-g-color-palette-yellow-50: #a86403;
+  --slds-g-color-palette-yellow-60: #ca8501;
+  --slds-g-color-palette-yellow-65: #d79304;
+  --slds-g-color-palette-yellow-70: #e4a201;
+  --slds-g-color-palette-yellow-80: #fcc003;
+  --slds-g-color-palette-yellow-90: #f9e3b6;
+  --slds-g-color-palette-yellow-95: #fbf3e0;
+  --slds-g-color-palette-neutral-10: #181818;
+  --slds-g-color-palette-neutral-15: #242424;
+  --slds-g-color-palette-neutral-20: #2e2e2e;
+  --slds-g-color-palette-neutral-30: #444444;
+  --slds-g-color-palette-neutral-40: #5c5c5c;
+  --slds-g-color-palette-neutral-50: #747474;
+  --slds-g-color-palette-neutral-60: #939393;
+  --slds-g-color-palette-neutral-65: #a0a0a0;
+  --slds-g-color-palette-neutral-70: #aeaeae;
+  --slds-g-color-palette-neutral-80: #c9c9c9;
+  --slds-g-color-palette-neutral-90: #e5e5e5;
+  --slds-g-color-palette-neutral-95: #f3f3f3;
+  --slds-g-color-palette-neutral-100: #ffffff;
+}
+
+.slds-wcag {
+  --slds-g-color-neutral-base-100: #ffffff;
+  --slds-g-color-neutral-base-95: #f3f3f3;
+  --slds-g-color-neutral-base-90: #e5e5e5;
+  --slds-g-color-neutral-base-80: #c9c9c9;
+  --slds-g-color-neutral-base-70: #aeaeae;
+  --slds-g-color-neutral-base-65: #a0a0a0;
+  --slds-g-color-neutral-base-60: #939393;
+  --slds-g-color-neutral-base-50: #747474;
+  --slds-g-color-neutral-base-40: #5c5c5c;
+  --slds-g-color-neutral-base-30: #444444;
+  --slds-g-color-neutral-base-20: #2e2e2e;
+  --slds-g-color-neutral-base-15: #242424;
+  --slds-g-color-neutral-base-10: #181818;
+  --slds-g-color-brand-base-100: #ffffff;
+  --slds-g-color-brand-base-95: #eef4ff;
+  --slds-g-color-brand-base-90: #d8e6fe;
+  --slds-g-color-brand-base-80: #aacbff;
+  --slds-g-color-brand-base-70: #78b0fd;
+  --slds-g-color-brand-base-65: #57a3fd;
+  --slds-g-color-brand-base-60: #1b96ff;
+  --slds-g-color-brand-base-50: #0176d3;
+  --slds-g-color-brand-base-40: #0b5cab;
+  --slds-g-color-brand-base-30: #014486;
+  --slds-g-color-brand-base-20: #032d60;
+  --slds-g-color-brand-base-15: #03234d;
+  --slds-g-color-brand-base-10: #001639;
+  --slds-g-color-error-base-100: #ffffff;
+  --slds-g-color-error-base-90: #feded8;
+  --slds-g-color-error-base-80: #feb8ab;
+  --slds-g-color-error-base-70: #fe8f7d;
+  --slds-g-color-error-base-60: #fe5c4c;
+  --slds-g-color-error-base-50: #ea001e;
+  --slds-g-color-error-base-40: #ba0517;
+  --slds-g-color-error-base-30: #8e030f;
+  --slds-g-color-error-base-20: #640103;
+  --slds-g-color-error-base-10: #300c01;
+  --slds-g-color-warning-base-100: #ffffff;
+  --slds-g-color-warning-base-90: #fedfd0;
+  --slds-g-color-warning-base-80: #ffba90;
+  --slds-g-color-warning-base-70: #fe9339;
+  --slds-g-color-warning-base-60: #dd7a01;
+  --slds-g-color-warning-base-50: #a96404;
+  --slds-g-color-warning-base-40: #825101;
+  --slds-g-color-warning-base-30: #5f3e02;
+  --slds-g-color-warning-base-20: #3e2b02;
+  --slds-g-color-warning-base-10: #201600;
+  --slds-g-color-success-base-100: #ffffff;
+  --slds-g-color-success-base-90: #cdefc4;
+  --slds-g-color-success-base-80: #91db8b;
+  --slds-g-color-success-base-70: #45c65a;
+  --slds-g-color-success-base-60: #3ba755;
+  --slds-g-color-success-base-50: #2e844a;
+  --slds-g-color-success-base-40: #396547;
+  --slds-g-color-success-base-30: #194e31;
+  --slds-g-color-success-base-20: #1c3326;
+  --slds-g-color-success-base-10: #071b12;
+  --slds-g-color-border-base-1: #c9c9c9;
+  --slds-g-color-border-base-2: #aeaeae;
+  --slds-g-color-border-base-3: #939393;
+  --slds-g-color-border-base-4: #747474;
+  --slds-g-color-border-brand-1: #78b0fd;
+  --slds-g-color-border-brand-2: #1b96ff;
+  --slds-g-link-color: #0b5cab;
+  --slds-g-link-color-hover: #014486;
+  --slds-g-link-color-focus: #014486;
+  --slds-g-link-color-active: #032d60;
+}
+
+.slds-wcag {
+  --slds-g-color-neutral-10-opacity-10: rgba(24, 24, 24, 0.1);
+  --slds-g-color-neutral-10-opacity-25: rgba(24, 24, 24, 0.25);
+  --slds-g-color-neutral-10-opacity-50: rgba(24, 24, 24, 0.5);
+  --slds-g-color-neutral-10-opacity-75: rgba(24, 24, 24, 0.75);
+  --slds-g-color-neutral-100-opacity-10: rgba(255, 255, 255, 0.1);
+  --slds-g-color-neutral-100-opacity-25: rgba(255, 255, 255, 0.25);
+  --slds-g-color-neutral-100-opacity-50: rgba(255, 255, 255, 0.5);
+  --slds-g-color-neutral-100-opacity-75: rgba(255, 255, 255, 0.75);
+}
 
 /*! normalize.css v3.0.2 | MIT License | git.io/normalize */
 html{
@@ -507,7 +749,7 @@ img{
 .slds-button + .slds-button-group-list{
   margin-left:0.25rem;
 }
-.slds-button + .slds-button{
+.user-buttons>.slds-button + .slds-button{
   margin-left:0.25rem;
 }
 
@@ -1591,6 +1833,9 @@ a.slds-button--inverse:focus{
   padding-left:var(--slds-c-card-footer-spacing-inline-start, var(--sds-c-card-footer-spacing-inline-start, var(--slds-c-card-footer-spacing-inline, var(--sds-c-card-footer-spacing-inline, 1rem))));
 }
 
+.slds-page-header__title .slds-icon {
+  fill: currentColor;
+}
 .slds-tabs_card .slds-page-header,
 .slds-card .slds-page-header{
   border:0;
@@ -3211,6 +3456,31 @@ a.slds-button--inverse:focus{
   fill:var(--slds-c-icon-color-foreground, var(--sds-c-icon-color-foreground, var(--slds-g-color-neutral-base-100, white)));
 }
 
+.slds-icon_xx-small {
+  width: 0.875rem;
+  height: 0.875rem;
+  line-height: 1;
+}
+.slds-icon_x-small {
+  width: 1rem;
+  height: 1rem;
+  line-height: 1;
+}
+.slds-icon_small {
+  width: 1.5rem;
+  height: 1.5rem;
+  line-height: 1;
+}
+.slds-icon_neither-small-nor-x-small {
+  width: 1.3rem;
+  height: 1.3rem;
+  line-height: 1;
+}
+.slds-icon_large {
+  width: 3rem;
+  height: 3rem;
+}
+
 .slds-icon_container,
 .slds-icon__container{
   display:inline-block;
@@ -4744,8 +5014,315 @@ a.slds-button--inverse:focus{
 }
 
 /* Theme */
-
+.slds-theme {
+}
+.slds-theme_default {
+  background-color: var(--slds-g-color-neutral-base-100, white);
+  color: var(--slds-g-color-neutral-base-10, #181818);
+}
 .slds-theme_shade,
 .slds-theme--shade{
   background-color:var(--inspector-shade, var(--slds-g-color-neutral-base-95, #f3f3f3));
+}
+.slds-theme_info {
+  color: var(--slds-g-color-neutral-base-100, white);
+  background-color: var(--slds-g-color-neutral-base-50, #747474);
+}
+
+.slds-theme--info a:not(.slds-button--neutral) {
+  color: var(--slds-g-color-neutral-base-100, white);
+  text-decoration: underline;
+}
+
+.slds-theme--info a:not(.slds-button--neutral):visited {
+  color: var(--slds-g-color-neutral-base-100, white);
+}
+
+.slds-theme--info a:not(.slds-button--neutral):focus {
+  text-decoration: none;
+}
+
+.slds-theme--info a:not(.slds-button--neutral):active {
+  color: var(--slds-g-color-neutral-100-opacity-50, rgba(255, 255, 255, 0.5));
+}
+
+.slds-theme--info a:not(.slds-button--neutral)[disabled] {
+  color: var(--slds-g-color-neutral-100-opacity-10, rgba(255, 255, 255, 0.15));
+}
+.slds-theme_warning {
+  background-color: var(--slds-g-color-warning-base-60, #fe9339) !important;
+  color: var(--slds-g-color-neutral-base-10, #181818) !important;
+}
+.slds-theme_warning a {
+  color: var(--slds-g-color-neutral-base-10, #181818) !important;
+  text-decoration: underline !important;
+}
+.slds-theme_warning a:link,
+.slds-theme_warning a:visited {
+  color: var(--slds-g-color-neutral-base-10, #181818) !important;
+}
+.slds-theme_warning a:hover,
+.slds-theme_warning a:focus {
+  text-decoration: none !important;
+}
+.slds-theme_warning a:focus {
+  -webkit-box-shadow: 0 0 3px var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  box-shadow: 0 0 3px var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  border: 1px solid var(--slds-g-color-neutral-base-30, #514f4d) !important;
+}
+.slds-theme_warning a:active {
+  color: var(--slds-g-color-neutral-base-30, #514f4d) !important;
+}
+.slds-theme_warning a[disabled]a[disabled] {
+  color: var(--slds-g-color-neutral-base-30, #514f4d) !important;
+}
+.slds-theme_warning button {
+  color: var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  text-decoration: underline !important;
+}
+.slds-theme_warning button:hover {
+  color: var(--slds-g-color-neutral-base-50, #706e6b) !important;
+}
+.slds-theme_warning button:focus {
+  color: var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  -webkit-box-shadow: 0 0 3px var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  box-shadow: 0 0 3px var(--slds-g-color-neutral-base-30, #514f4d) !important;
+  border: 1px solid var(--slds-g-color-neutral-base-30, #514f4d) !important;
+}
+.slds-theme_warning button:active {
+  color: var(--slds-g-color-neutral-base-50, #706e6b) !important;
+}
+.slds-theme_warning .slds-icon,
+.slds-theme_warning .slds-button__icon {
+  fill: var(--slds-g-color-neutral-base-30, #514f4d) !important;
+}
+.slds-theme_error {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+  background-color: var(--slds-g-color-error-base-40, #ea001e) !important;
+}
+
+.slds-theme--error a:not(.slds-button--neutral) {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+  text-decoration: underline !important;
+}
+
+.slds-theme--error a:not(.slds-button--neutral):visited {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+}
+
+.slds-theme--error a:not(.slds-button--neutral):focus {
+  text-decoration: none !important;
+}
+
+.slds-theme--error a:not(.slds-button--neutral):active {
+  color: var(--slds-g-color-neutral-100-opacity-50, rgba(255, 255, 255, 0.5)) !important;
+}
+
+.slds-theme--error a:not(.slds-button--neutral)[disabled] {
+  color: var(--slds-g-color-neutral-100-opacity-10, rgba(255, 255, 255, 0.15)) !important;
+}
+.slds-theme_offline {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+  background-color: var(--slds-g-color-neutral-base-30, #444) !important;
+}
+
+.slds-theme--offline a:not(.slds-button--neutral) {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+  text-decoration: underline !important;
+}
+
+.slds-theme--offline a:not(.slds-button--neutral):visited {
+  color: var(--slds-g-color-neutral-base-100, white) !important;
+}
+
+.slds-theme--offline a:not(.slds-button--neutral):focus {
+  text-decoration: none !important;
+}
+
+.slds-theme--offline a:not(.slds-button--neutral):active {
+  color: var(--slds-g-color-neutral-100-opacity-50, rgba(255, 255, 255, 0.5)) !important;
+}
+
+.slds-theme--offline a:not(.slds-button--neutral)[disabled] {
+  color: var(--slds-g-color-neutral-100-opacity-10, rgba(255, 255, 255, 0.15)) !important;
+}
+.slds-theme_alert-texture {
+  background-image: linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.025) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.025) 50%,
+    rgba(0, 0, 0, 0.025) 75%,
+    transparent 75%,
+    transparent
+  ) !important;
+  background-size: 64px 64px !important;
+}
+
+/* Alert Support */
+/*! Lightning Design System 2.21.5 */
+
+.slds-notify_alert {
+  position: relative;
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  width: 100%;
+  padding-top: var(--slds-c-alert-spacing-block-start, var(--sds-c-alert-spacing-block-start, 0.5rem));
+  padding-right: var(--slds-c-alert-spacing-inline-end, var(--sds-c-alert-spacing-inline-end, 2rem));
+  padding-bottom: var(--slds-c-alert-spacing-block-end, var(--sds-c-alert-spacing-block-end, 0.5rem));
+  padding-left: var(--slds-c-alert-spacing-inline-start, var(--sds-c-alert-spacing-inline-start, 0.5rem));
+  color: var(--slds-c-alert-text-color, var(--sds-c-alert-text-color, var(--slds-g-color-neutral-base-100, white)));
+  font-weight: var(--slds-c-alert-font-weight, var(--sds-c-alert-font-weight));
+  text-align: center;
+  background-color: var(
+    --slds-c-alert-color-background,
+    var(--sds-c-alert-color-background, var(--slds-g-color-neutral-base-50, #747474))
+  );
+  background-image: var(
+    --slds-c-alert-image-background,
+    var(
+      --sds-c-alert-image-background,
+      linear-gradient(
+        45deg,
+        var(--slds-g-color-neutral-10-opacity-10, rgba(0, 0, 0, 0.025)) 25%,
+        transparent 25%,
+        transparent 50%,
+        var(--slds-g-color-neutral-10-opacity-10, rgba(0, 0, 0, 0.025)) 50%,
+        var(--slds-g-color-neutral-10-opacity-10, rgba(0, 0, 0, 0.025)) 75%,
+        transparent 75%,
+        transparent
+      )
+    )
+  );
+  background-size: var(--slds-c-alert-size-background, var(--sds-c-alert-size-background, 64px 64px));
+}
+.slds-notify_alert a {
+  color: currentColor !important;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  text-decoration: underline;
+}
+.slds-notify_alert a:hover,
+.slds-notify_alert a:visited,
+.slds-notify_alert a:focus {
+  text-decoration: none;
+  outline: 0;
+}
+.slds-notify_alert a:focus {
+  -webkit-box-shadow: var(--slds-c-alert-shadow, 0 0 3px var(--slds-g-color-neutral-base-100, #f3f3f3));
+  box-shadow: var(--slds-c-alert-shadow, 0 0 3px var(--slds-g-color-neutral-base-100, #f3f3f3));
+  border-width: var(--slds-c-alert-sizing-border, 1px);
+  border-style: solid;
+  border-color: var(--slds-c-alert-color-border, var(--slds-g-color-neutral-base-100, #f3f3f3));
+}
+.slds-notify_alert a:active {
+  color: var(
+    --slds-c-alert-text-color-active,
+    var(--sds-c-alert-text-color-active, var(--slds-g-color-neutral-100-opacity-50, rgba(255, 255, 255, 0.5)))
+  );
+}
+.slds-notify_alert a[disabled]a[disabled] {
+  color: var(--slds-g-color-neutral-100-opacity-10, rgba(255, 255, 255, 0.15));
+}
+.slds-notify {
+}
+.slds-alert_warning {
+  /*! @css-var-fallback background-color */
+  --slds-c-alert-color-background: var(--slds-g-color-warning-base-60, #fe9339);
+  color: var(--slds-g-color-neutral-base-10, #181818);
+}
+.slds-alert_warning .slds-icon,
+.slds-alert_warning .slds-button__icon {
+  fill: var(--slds-g-color-neutral-base-30, #514f4d);
+}
+.slds-alert_error {
+  /*! @css-var-fallback background-color */
+  --slds-c-alert-color-background: var(--slds-g-color-error-base-40, #ea001e);
+}
+.slds-alert_offline {
+  /*! @css-var-fallback background-color */
+  --slds-c-alert-color-background: var(--slds-g-color-neutral-base-30, #444444);
+}
+.slds-notify__close {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  margin-left: 0.25rem;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+
+.slds-assistive-text {
+  position: absolute !important;
+  margin: -1px !important;
+  border: 0 !important;
+  padding: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+}
+.slds-assistive-text_focus:focus {
+  margin: inherit !important;
+  border: inherit !important;
+  padding: inherit !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+  clip: auto !important;
+}
+/* Header support */
+/*! Lightning Design System 2.21.5 */
+.slds-page-header{
+  padding:.2rem .2rem;
+  border-bottom:1px solid var(--slds-g-color-border-base-1, #c9c9c9);
+  border-radius:0.25rem;
+  background: #f3f3f3;
+  background-clip:padding-box;
+  -webkit-box-shadow:0 2px 2px 0 rgba(0, 0, 0, 0.1);
+          box-shadow:0 2px 2px 0 rgba(0, 0, 0, 0.1);
+  border:1px solid var(--slds-g-color-border-base-1, #c9c9c9);
+}
+.slds-page-header__row{
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+}
+.slds-page-header__row_gutters{
+  margin-left:-1rem;
+  margin-right:-1rem;
+}
+.slds-page-header__col-title{
+  -webkit-box-flex:1;
+      -ms-flex:1 1 0%;
+          flex:1 1 0%;
+  min-width:0;
+}
+.slds-page-header__icon{
+  width:2.25rem;
+  height:2.25rem;
+}
+
+.slds-media{
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+  -webkit-box-align:start;
+      -ms-flex-align:start;
+          align-items:flex-start;
+}
+.slds-media__figure{
+  -ms-flex-negative:0;
+      flex-shrink:0;
+  margin-right:0.75rem;
 }

@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
+import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -93,6 +93,11 @@ class Model {
     this.expandAutocomplete = false;
     this.expandSavedOptions = false;
     this.resultsFilter = "";
+    this.displayPerformance = localStorage.getItem("displayQueryPerformance") !== "false"; // default to true
+    this.performancePoints = [];
+    this.startTime = null;
+    this.lastStartTime = null;
+    this.totalTime = 0;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
     this.exportProgress = {};
@@ -124,8 +129,8 @@ class Model {
     if (args.has("error")) {
       this.exportError = args.get("error") + " " + args.get("error_description");
     }
-
   }
+
   updatedExportedData() {
     this.resultTableCallback(this.exportedData);
   }
@@ -182,6 +187,43 @@ class Model {
     if (indexPos !== -1) {
       this.queryInput.setRangeText("", indexPos + 5, indexPos + 5, "end");
     }
+  }
+  initPerf() {
+    if (!this.displayPerformance) {
+      return;
+    }
+    this.performancePoints = [];
+    this.startTime = performance.now();
+    this.lastStartTime = this.startTime;
+  }
+  markPerf() {
+    if (!this.displayPerformance) {
+      return;
+    }
+    const now = performance.now();
+    const perfPoint = now - this.lastStartTime;
+    this.lastStartTime = now;
+    this.performancePoints.push(perfPoint);
+    this.totalTime = now - this.startTime;
+  }
+  perfStatus() {
+    if (!this.displayPerformance || !this.startTime || this.performancePoints.length === 0) {
+      return null;
+    }
+    const batches = this.performancePoints.length;
+    let batchStats = "";
+    let batchCount = "";
+    if (batches > 1) {
+      const avgTime = this.performancePoints.reduce((a, b) => a + b, 0) / batches;
+      const maxTime = Math.max(...this.performancePoints);
+      const minTime = Math.min(...this.performancePoints);
+      const avg = `Avg ${avgTime.toFixed(1)}ms`;
+      const max = `Max ${maxTime.toFixed(1)}ms`;
+      const min = `Min ${minTime.toFixed(1)}ms`;
+      batchStats = `Batch Performance: ${avg}, ${min}, ${max}`;
+      batchCount = `${batches} Batches / `;
+    }
+    return {text: `${batchCount}${this.totalTime.toFixed(1)}ms`, batchStats};
   }
   clearHistory() {
     this.queryHistory.clear();
@@ -248,7 +290,7 @@ class Model {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
     args.set("data", encodedData);
-    if (this.queryTooling) args.set("apitype", 'Tooling');
+    if (this.queryTooling) args.set("apitype", "Tooling");
 
     window.open("data-import.html?" + args, getLinkTarget(e));
   }
@@ -774,6 +816,7 @@ class Model {
     exportedData.isTooling = vm.queryTooling;
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
+    vm.initPerf();
     let query = vm.queryInput.value;
     let queryMethod = exportedData.isTooling ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
     function batchHandler(batch) {
@@ -784,45 +827,54 @@ class Model {
         throw err;
       }).then(data => {
         exportedData.addToTable(data.records);
+        let recs = exportedData.records.length;
+        let total = exportedData.totalSize;
         if (data.totalSize != -1) {
           exportedData.totalSize = data.totalSize;
+          total = data.totalSize;
         }
         if (!data.done) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
           vm.isWorking = true;
-          vm.exportStatus = "Exporting... Completed " + exportedData.records.length + " of " + exportedData.totalSize + " record(s)";
+          vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
           vm.exportError = null;
           vm.exportedData = exportedData;
+          vm.markPerf();
           vm.updatedExportedData();
           vm.didUpdate();
           return pr;
         }
         vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
-        if (exportedData.records.length == 0) {
+        if (recs == 0) {
           vm.isWorking = false;
-          vm.exportStatus = data.totalSize > 0 ? "No data exported. " + data.totalSize + " record(s)." : "No data exported.";
+          vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
           vm.exportError = null;
           vm.exportedData = exportedData;
+          vm.markPerf();
           vm.updatedExportedData();
           return null;
         }
         vm.isWorking = false;
-        vm.exportStatus = "Exported " + exportedData.records.length + (exportedData.records.length != exportedData.totalSize ? " of " + exportedData.totalSize : "") + " record(s)";
+        vm.exportStatus = `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
         vm.exportError = null;
         vm.exportedData = exportedData;
+        vm.markPerf();
         vm.updatedExportedData();
         return null;
       }, err => {
         if (err.name != "SalesforceRestError") {
           throw err; // not a SalesforceRestError
         }
-        if (exportedData.totalSize != -1) {
+        let recs = exportedData.records.length;
+        let total = exportedData.totalSize;
+        if (total != -1) {
           // We already got some data. Show it, and indicate that not all data was exported
           vm.isWorking = false;
-          vm.exportStatus = "Exported " + exportedData.records.length + " of " + exportedData.totalSize + " record(s). Stopped by error.";
+          vm.exportStatus = `Exported ${recs} of ${total} record${s(total)}. Stopped by error.`;
           vm.exportError = null;
           vm.exportedData = exportedData;
           vm.updatedExportedData();
+          vm.markPerf();
           return null;
         }
         vm.isWorking = false;
@@ -840,6 +892,7 @@ class Model {
         vm.exportStatus = "Error";
         vm.exportError = "UNEXPECTED EXCEPTION:" + error;
         vm.exportedData = null;
+        vm.markPerf();
         vm.updatedExportedData();
       }));
     vm.setResultsFilter("");
@@ -928,6 +981,7 @@ function RecordTable(vm) {
         if (isVisible(rt.table[r], filter)) countOfVisibleRecords++;
       }
       this.countOfVisibleRecords = countOfVisibleRecords;
+      vm.exportStatus = "Filtered " + countOfVisibleRecords + " records out of " + rt.records.length + " records";
     },
     getVisibleTable() {
       if (vm.resultsFilter) {
@@ -1149,7 +1203,7 @@ class App extends React.Component {
       }
     });
     addEventListener("keydown", e => {
-      if (e.ctrlKey && e.key == "Enter" || e.key == "F5") {
+      if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
         model.doExport();
         model.didUpdate();
@@ -1252,6 +1306,7 @@ class App extends React.Component {
 
   render() {
     let {model} = this.props;
+    const perf = model.perfStatus();
     return h("div", {},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},
@@ -1359,13 +1414,14 @@ class App extends React.Component {
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
-            h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried, ", className: "delete-btn"}, "Delete Records"),
+            h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records"),
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
+            perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
-          )
+          ),
         ),
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null}

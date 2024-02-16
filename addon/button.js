@@ -146,7 +146,7 @@ function initButton(sfHost, inInspector) {
       }
       if (e.data.insextClosePopup) {
         closePopup();
-      }
+      }"field-api-name";
       if (e.data.insextShowStdPageDetails) {
         showStdPageDetails(e.data.insextData, e.data.insextAllFieldSetupLinks);
       }
@@ -166,7 +166,7 @@ function initButton(sfHost, inInspector) {
             }
           });
         } else {
-          document.querySelectorAll(apiNamesClass).forEach(e => e.remove());
+          document.querySelectorAll("." + apiNamesClass).forEach(e => e.remove());
         }
       }
       if (e.data.category && e.data.value) {

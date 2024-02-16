@@ -48,7 +48,7 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
       inDevConsole,
       inLightning,
       inInspector,
-      addonVersion,
+      addonVersion
     }), document.getElementById("root"));
 
   });
@@ -77,7 +77,8 @@ class App extends React.PureComponent {
       isFieldsPresent: false,
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
-      limitsHref: "limits.html?" + hostArg
+      limitsHref: "limits.html?" + hostArg,
+      latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
     };
     this.setupThemeChange();
     this.setupAccentOption();
@@ -89,6 +90,7 @@ class App extends React.PureComponent {
     this.onThemeChange = this.onThemeChange.bind(this);
     this.saveColorChanges = this.saveColorChanges.bind(this);
     this.setupColorListeners = this.setupColorListeners.bind(this);
+    this.updateReleaseNotesViewed = this.updateReleaseNotesViewed.bind(this);
   }
   onContextRecordChange(e) {
     let {sfHost} = this.props;
@@ -124,73 +126,43 @@ class App extends React.PureComponent {
       isFieldsPresent: e.data.isFieldsPresent
     });
   }
-
+  updateReleaseNotesViewed(version) {
+    localStorage.setItem("latestReleaseNotesVersionViewed", version);
+    this.setState({
+      latestNotesViewed: true
+    });
+  }
   onShortcutKey(e) {
-    if (e.key == "m") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickShowDetailsBtn();
+    const refs = this.refs;
+    const actionMap = {
+      "m": ["all", "clickShowDetailsBtn"],
+      "a": ["all", "clickAllDataBtn"],
+      "f": ["all", "clickShowFieldAPINameBtn"],
+      "n": ["all", "clickNewBtn"],
+      "e": ["click", "dataExportBtn"],
+      "i": ["click", "dataImportBtn"],
+      "l": ["click", "limitsBtn"],
+      "d": ["click", "metaRetrieveBtn"],
+      "x": ["click", "apiExploreBtn"],
+      "h": ["click", "homeBtn"],
+      "p": ["click", "optionsBtn"],
+      "o": ["tab", "objectTab"],
+      "u": ["tab", "userTab"],
+      "s": ["tab", "shortcutTab"],
+      "r": ["tab", "orgTab"]
+    };
+    if (!actionMap[e.key]) {
+      return;
     }
-    if (e.key == "a") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickAllDataBtn();
-    }
-    if (e.key == "e") {
-      e.preventDefault();
-      this.refs.dataExportBtn.target = getLinkTarget(e);
-      this.refs.dataExportBtn.click();
-    }
-    if (e.key == "i") {
-      e.preventDefault();
-      this.refs.dataImportBtn.target = getLinkTarget(e);
-      this.refs.dataImportBtn.click();
-    }
-    if (e.key == "l") {
-      e.preventDefault();
-      this.refs.limitsBtn.target = getLinkTarget(e);
-      this.refs.limitsBtn.click();
-    }
-    if (e.key == "d") {
-      e.preventDefault();
-      this.refs.metaRetrieveBtn.target = getLinkTarget(e);
-      this.refs.metaRetrieveBtn.click();
-    }
-    if (e.key == "x") {
-      e.preventDefault();
-      this.refs.apiExploreBtn.target = getLinkTarget(e);
-      this.refs.apiExploreBtn.click();
-    }
-    if (e.key == "h" && this.refs.homeBtn) {
-      e.preventDefault();
-      this.refs.homeBtn.target = getLinkTarget(e);
-      this.refs.homeBtn.click();
-    }
-    if (e.key == "o") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs.objectTab.click();
-    }
-    if (e.key == "u") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs.userTab.click();
-    }
-    if (e.key == "s") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs.shortcutTab.click();
-    }
-    if (e.key == "r") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs.orgTab.click();
-    }
-    if (e.key == "f") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickShowFieldAPINameBtn();
-    }
-    if (e.key == "n") {
-      e.preventDefault();
-      this.refs.showAllDataBox.refs?.showAllDataBoxSObject?.clickNewBtn();
-    }
-    if (e.key == "p") {
-      e.preventDefault();
-      this.refs.optionsBtn.click();
+    e.preventDefault();
+    const [action, target] = actionMap[e.key];
+    if (action === "all") {
+      refs.showAllDataBox.refs?.showAllDataBoxSObject?.[target]();
+    } else if (action === "click" && refs[target]) {
+      refs[target].target = getLinkTarget(e);
+      refs[target].click();
+    } else if (action === "tab") {
+      refs.showAllDataBox.refs[target].click();
     }
   }
   onChangeApi(e) {
@@ -320,7 +292,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, limitsHref, isFieldsPresent} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -331,38 +303,68 @@ class App extends React.PureComponent {
     const oauthAuthorizeUrl = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     return (
       h("div", {},
-        h("div", {className: "slds-grid slds-theme_shade slds-p-vertical_x-small slds-border_bottom"},
-          h("div", {className: "header-logo"},
-            h("div", {className: "header-icon slds-icon_container"},
-              h("svg", {className: "slds-icon", viewBox: "0 0 24 24"},
-                h("path", {
-                  d: `
-                  M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
-                  m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
-                  M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
-                  m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
-                  M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
-                  `})
+        h("div", {className: "slds-page-header slds-theme_shade popup-header"},
+          h("div", {className: "slds-page-header__row"},
+            h("div", {className: "slds-page-header__col-title"},
+              h("div", {className: "slds-media"},
+                h("div", {className: "slds-media__figure popup-media__figure"},
+                  h("span", {className: "popup-icon_container", title: "Salesforce Inspector Reloaded"},
+                    h("svg", {className: "slds-icon popup-header__icon", viewBox: "0 0 24 24"},
+                      h("path", {
+                        d: `
+                        M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
+                        m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
+                        M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
+                        m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
+                        M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
+                        `,
+                        fill: "#061c3f"
+                      })
+                    )
+                  )
+                ),
+                h("div", {className: "slds-media__body"},
+                  h("div", {className: "popup-header__name-title"},
+                    h("h1", {},
+                      h("span", {className: "popup-header__title popup-title slds-truncate", title: "Salesforce Inspector Reloaded"}, "Salesforce Inspector Reloaded")
+                    )
+                  )
+                )
               )
-            ),
-            "Salesforce Inspector Reloaded"
+            )
           )
         ),
+
+        !latestNotesViewed && h(AlertBanner, {type: "base",
+          bannerText: `Current Version: ${addonVersion}`,
+          iconName: "notification",
+          iconTitle: "Notification",
+          assistiveTest: "Version Update Notification",
+          onClose: () => this.updateReleaseNotesViewed(addonVersion),
+          link: {
+            text: "See What's New",
+            props: {
+              href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""),
+              target: "_blank",
+              onClick: () => this.updateReleaseNotesViewed(addonVersion)
+            }
+          }
+        }),
         h("div", {id: "expiredTokenLink", className: "hide"},
-          h("div", {className: "slds-p-top_x-small slds-p-horizontal_x-small slds-text-align_center "},
-            h("span", {className: "text-error"}, "⚠ Access Token expired!"),
-          ),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-m-bottom_xx-small"},
-            h("a",
-              {
-                ref: "generateNewToken",
+          h(AlertBanner, {type: "warning",
+            bannerText: "Access Token Expired",
+            iconName: "warning",
+            iconTitle: "Warning",
+            assistiveTest: "Access Token Expired",
+            onClose: null,
+            link: {
+              text: "Generate New Token",
+              props: {
                 href: oauthAuthorizeUrl,
-                target: linkTarget,
-                className: !clientId ? "button hide" : "page-button slds-button slds-button_brand inverse"
-              },
-              "➔ Click here to generate new token"
-            ),
-          ),
+                target: linkTarget
+              }
+            }
+          })
         ),
         h("div", {className: "main", id: "mainTabs"},
           h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, onContextRecordChange: this.onContextRecordChange, isFieldsPresent}),
@@ -425,9 +427,9 @@ class App extends React.PureComponent {
             ),
           )
         ),
-        h("div", {className: "slds-grid slds-theme_shade slds-p-around_small slds-border_top"},
+        h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
-            h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/", title: "Release note", target: linkTarget}, "v" + addonVersion),
+            h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
               className: "api-input",
@@ -444,12 +446,20 @@ class App extends React.PureComponent {
               h("br")),
             h("span", {className: "footer-small-text"}, "to open")
           ),
-          h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right"},
-            h("a", {href: "https://github.com/tprouvot/Salesforce-Inspector-reloaded#salesforce-inspector-reloaded", target: linkTarget}, "About")
+          h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
+            h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
+              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
+                h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})
+              )
+            )
           ),
-          h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right"},
-            h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget}, "Doc")
-          )
+          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Options"},
+            h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget},
+              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
+                h("use", {xlinkHref: "symbols.svg#settings", style: {fill: "#9c9c9c"}})
+              )
+            )
+          ),
         )
       )
     );
@@ -1249,6 +1259,14 @@ class AllDataBoxOrg extends React.PureComponent {
     return null;
   }
 
+  getApiVersion(instanceStatus){
+    if (instanceStatus){
+      let apiVersion = (instanceStatus.releaseNumber.substring(0, 3) / 2) - 64;
+      return apiVersion;
+    }
+    return null;
+  }
+
   setInstanceStatus(instanceName, sfHost){
     let instanceStatusLocal = JSON.parse(sessionStorage.getItem(sfHost + "_instanceStatus"));
     if (instanceStatusLocal == null){
@@ -1299,6 +1317,10 @@ class AllDataBoxOrg extends React.PureComponent {
                 h("tr", {},
                   h("th", {}, "Location:"),
                   h("td", {}, this.state.instanceStatus?.location)
+                ),
+                h("tr", {},
+                  h("th", {}, "API version:"),
+                  h("td", {}, this.getApiVersion(this.state.instanceStatus))
                 ),
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
@@ -1518,13 +1540,13 @@ class UserDetails extends React.PureComponent {
               )
             )
           )),
-        h("div", {ref: "userButtons", className: "center small-font"},
+        h("div", {ref: "userButtons", className: "user-buttons center small-font"},
           h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Details"),
           h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
           h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
           h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs")
         ),
-        h("div", {ref: "userButtons", className: "center small-font top-space"},
+        h("div", {ref: "userButtons", className: "user-buttons center small-font top-space"},
           this.doSupportLoginAs(user) ? h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Try login as") : null,
           this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "Login to Experience") : null,
         )
@@ -1778,18 +1800,18 @@ class AllDataRecordDetails extends React.PureComponent {
       return (
         h("table", {className},
           h("tbody", {},
-            h("tr", {},
+            recordIdDetails.recordName ? h("tr", {},
               h("th", {}, "Name:"),
               h("td", {},
                 h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
               )
-            ),
-            h("tr", {},
+            ) : null,
+            recordIdDetails.recordTypeName ? h("tr", {},
               h("th", {}, "RecType:"),
               h("td", {},
                 h("a", {href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: linkTarget}, recordIdDetails.recordTypeName)
               )
-            ),
+            ) : null,
             h("tr", {},
               h("th", {}, "Created:"),
               h("td", {}, recordIdDetails.created + " (" + recordIdDetails.createdBy + ")")
@@ -1805,6 +1827,40 @@ class AllDataRecordDetails extends React.PureComponent {
   }
 }
 
+
+// props: {style: "base"|"warning"|"error"|"offline", icon: utility SVG name (without utility prefix),
+// bannerText: header, link: {text, props}, assistiveText: icon description, onClose: function}
+class AlertBanner extends React.PureComponent {
+  // From SLDS Alert Banner spec https://www.lightningdesignsystem.com/components/alert/
+
+  render() {
+    let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
+    const theme = ["warning", "error", "offline"].includes(type) ? type : "info";
+    const themeClass = `slds-theme_${theme}`;
+    return (
+      h("div", {className: `slds-notify slds-notify_alert ${themeClass}`, role: "alert"},
+        h("span", {className: "slds-assistive-text"}, assistiveText | "Notification"),
+        h("span", {className: "slds-icon_container slds-m-right_small", title: iconTitle},
+          h("svg", {className: "slds-icon slds-icon_neither-small-nor-x-small slds-icon-text-default", viewBox: "0 0 52 52"},
+            h("use", {xlinkHref: `symbols.svg#${iconName}`})
+          ),
+        ),
+        h("h2", {}, bannerText,
+          h("p", {}, ""),
+          link && h("a", link.props, link.text)
+        ),
+        onClose && h("div", {className: "slds-notify__close"},
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},
+            h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"},
+              h("use", {xlinkHref: "symbols.svg#close"})
+            ),
+            h("span", {className: "slds-assistive-text"}, "Close"),
+          )
+        )
+      )
+    );
+  }
+}
 class AllDataSearch extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -1817,8 +1873,8 @@ class AllDataSearch extends React.PureComponent {
     this.onAllDataFocus = this.onAllDataFocus.bind(this);
     this.onAllDataBlur = this.onAllDataBlur.bind(this);
     this.onAllDataKeyDown = this.onAllDataKeyDown.bind(this);
-    this.updateAllDataInput = this.updateAllDataInput.bind(this);
     this.onAllDataArrowClick = this.onAllDataArrowClick.bind(this);
+    this.updateAllDataInput = this.updateAllDataInput.bind(this);
   }
   componentDidMount() {
     let {queryString} = this.state;

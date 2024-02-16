@@ -2,10 +2,20 @@
 
 ## Version 1.23
 
+- Make data export suggestions scrollable [feature 301](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/301) (feature by Vranisimo(https://github.com/vranisimo))
+- Show the number of filtered records in data export [feature 300](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/300) (feature by Vranisimo(https://github.com/vranisimo))
+- Hide RecType and Name field from popup when field is not set [feature 298](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/298)
+- Display API version in Org tab [feature 293](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/293) (feature by [Camille Guillory](https://github.com/CamilleGuillory))
 - Add the possibility to hide fields API names after users clicked "Show fields API names"
+- Add performance On data export with option to disable in Options/Data Export tab (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Clean up popup header and footer (contribution by [Nathan Shulman](https://github.com/nshulman))
 
 ## Version 1.22
 
+- Fix double "Show all data" button [issue 63](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63) (contribution by [Luca Bassani](https://github.com/baslu93))
+- Add AlertBanner component for Alerts following [SLDS guidelines](https://www.lightningdesignsystem.com/components/alert/) (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Add info banner when extension is updated and convert "Generate token" button to alert. [feature 51](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/51) (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Add "Hide fields API names" when users clicked "Show fields API names"
 - Add "Enable Logs" button in the User tab [feature 245](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/245) (contribution by [Antoine Leleu](https://github.com/AntoineLeleu-Salesforce))
 - Add default connected app setting and improve access token renew flow. Note: Due to the simplified redirect url, this is a BREAKING CHANGE for users who have created their own connected app: those users MUST update their connected app Callback URL to the new value before they can use this version of the extension (contribution by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
 - Allow users to define REST callout headers on showAllData page. The need is to prevent the auto assignation of Accounts, Cases and Leads. [feature 198](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/198) (issue by [SfdxDieter](https://github.com/SfdxDieter))

@@ -201,6 +201,12 @@ You can update the debug level (configuration is per organization) and duration 
 > **Warning**
 > Increasing the default duration may lead to a high volume of logs generated.
 
+## Display query performance in Data Export
+
+To enable performance metrics for queries on the data export page, open the Options screen and select the Data Export tab,
+then set "Display Query Execution Time" to enabled.  Total time for the query to process and, when applicable, batch stats (Total Number of Batches, Min/Max/Avg Batch Time)
+are displayed.
+
 ## Change Color Scheme
 There are two ways to set your preferred color scheme.
 
@@ -237,5 +243,3 @@ j
 ![Default dark theme](./screenshots/accent-scheme/dark-default.png)
 
 ![Accent dark theme](./screenshots/accent-scheme/dark-accent.png)
-
-

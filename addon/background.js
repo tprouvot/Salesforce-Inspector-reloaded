@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // There is no straight forward way to unambiguously understand if the user authenticated against salesforce.com or cloudforce.com
     // (and thereby the domain of the relevant cookie) cookie domains are therefore tried in sequence.
     chrome.cookies.get({url: request.url, name: "sid", storeId: sender.tab.cookieStoreId}, cookie => {
-      if (!cookie) {
+      if (!cookie || currentDomain.endsWith(".mcas.ms")) { //Domain used by Microsoft Defender for Cloud Apps, where sid exists but cannot be read
         sendResponse(currentDomain);
         return;
       }
@@ -25,11 +25,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
           if (sessionCookie) {
             sendResponse(sessionCookie.domain);
-            return;
           }
         });
       });
-      sendResponse(currentDomain); //default
     });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }

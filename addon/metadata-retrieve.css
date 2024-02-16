@@ -5,6 +5,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
   margin: 0;
+  background-color: #B0C4DF !important;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png') !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  background-position: 0px 48px !important;
 }
 .sf-link {
   margin-right: 1em;

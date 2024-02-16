@@ -281,15 +281,14 @@ class App extends React.Component {
     document.title = model.title();
     return (
       h("div", {},
-
-        h("div", {id: "user-info"},
+        h("div", {id: "user-info", className: "slds-border_bottom"},
           h("a", {href: model.sfLink, className: "sf-link"},
             h("svg", {viewBox: "0 0 24 24"},
               h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
             ),
             " Salesforce Home"
           ),
-          h("h1", {}, model.title()),
+          h("h1", {className: "slds-text-title_bold"}, model.title()),
           h("span", {}, " / " + model.userInfo),
           h("div", {className: "flex-right"},
             h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
@@ -301,7 +300,7 @@ class App extends React.Component {
         ),
         h("div", {className: "area", id: "result-area"},
           h("div", {className: "result-bar"},
-            h("h1", {}, "Metadata Result"),
+            h("h1", {className: "slds-text-title_bold"}, "Metadata Result"),
             h("button", {onClick: this.onStartClick}, "Download metadata"),
             model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
             model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null,
@@ -347,11 +346,12 @@ class ObjectSelector extends React.Component {
       const element = e.target;
       sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: this.props.metadataObject.xmlName, folder: this.props.metadataObject.directoryName}}).then(res => {
         if (res){
+          let div = document.createElement("div");
+          div.className = "slds-accordion__content";
           let ul = document.createElement("ul");
-          ul.classList.add("slds-accordion");
+          ul.className = "slds-accordion";
           res.forEach(elt => {
             let clone = element.closest("li").cloneNode(true);
-            console.log(elt);
             let label = clone.getElementsByTagName("label")[0];
             let input = label.getElementsByTagName("input")[0];
             label.title = elt.fullName;
@@ -360,14 +360,15 @@ class ObjectSelector extends React.Component {
             label.innerHTML += elt.fullName;
             ul.appendChild(clone);
           });
-          element.closest("li").appendChild(ul);
+          div.appendChild(ul);
+          element.closest("section").appendChild(div);
         }
       });
     }
   }
   createMetaElement(metadataObject){
     return h("li", {className: "slds-accordion__list-item"},
-      h("section", {className: "slds-accordion__section"},
+      h("section", {className: "slds-accordion__section slds-is-open"},
         h("div", {className: "slds-accordion__summary"},
           h("h2", {className: "slds-accordion__summary-heading"},
             h("span", {className: "slds-accordion__summary-content"},

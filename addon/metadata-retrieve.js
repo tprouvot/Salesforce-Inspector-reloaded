@@ -79,9 +79,6 @@ class Model {
           .filter(metadataObject => metadataObject.xmlName != "InstalledPackage");
         // End of forcecmd code
         this.metadataObjects = availableMetadataObjects;
-        for (let metadataObject of this.metadataObjects) {
-          metadataObject.selected = true;
-        }
         this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
         this.progress = "ready";
         this.didUpdate();
@@ -319,7 +316,9 @@ class App extends React.Component {
                   "Select all"
                 ),
                 h("br", {}),
-                model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model})),
+                h("ul", {className: "slds-accordion"},
+                  model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model}))),
+                h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
                 h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
                 h("button", {onClick: this.onStartClick}, "Download metadata")
               )
@@ -343,33 +342,43 @@ class ObjectSelector extends React.Component {
     model.didUpdate();
   }
   onSelectMeta(e){
-    console.log(e.target.title);
-    const element = e.target;
-    sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: this.props.metadataObject.xmlName, folder: this.props.metadataObject.directoryName}}).then(res => {
-      console.log(res);
-      res.forEach(elt => {
-        const newDiv = document.createElement("div").appendChild(document.createTextNode(elt.xmlName));
-        element.appendChild(newDiv);
-        //element.appendChild(React.createElement(this.createMetaElement, {metadataObject: elt}));
+    if (e.target.checked){
+      console.log(e.target.title);
+      const element = e.target;
+      sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: this.props.metadataObject.xmlName, folder: this.props.metadataObject.directoryName}}).then(res => {
+        if (res){
+          let ul = document.createElement("ul");
+          ul.classList.add("slds-accordion");
+          res.forEach(elt => {
+            let clone = element.closest("li").cloneNode(true);
+            console.log(elt);
+            let label = clone.getElementsByTagName("label")[0];
+            let input = label.getElementsByTagName("input")[0];
+            label.title = elt.fullName;
+            label.textContent = "";
+            label.appendChild(input);
+            label.innerHTML += elt.fullName;
+            ul.appendChild(clone);
+          });
+          element.closest("li").appendChild(ul);
+        }
       });
-    });
+    }
   }
   createMetaElement(metadataObject){
-    return h("ul", {className: "slds-accordion"},
-      h("li", {className: "slds-accordion__list-item"},
-        h("section", {className: "slds-accordion__section"},
-          h("div", {className: "slds-accordion__summary"},
-            h("h2", {className: "slds-accordion__summary-heading"},
-              h("span", {className: "slds-accordion__summary-content"},
-                h("label", {title: metadataObject.xmlName, onClick: this.onSelectMeta},
-                  h("input", {type: "checkbox", className: "metadata", checked: metadataObject.selected, onChange: this.onChange}),
-                  metadataObject.xmlName
-                )
+    return h("li", {className: "slds-accordion__list-item"},
+      h("section", {className: "slds-accordion__section"},
+        h("div", {className: "slds-accordion__summary"},
+          h("h2", {className: "slds-accordion__summary-heading"},
+            h("span", {className: "slds-accordion__summary-content"},
+              h("label", {title: metadataObject.xmlName, onClick: this.onSelectMeta},
+                h("input", {type: "checkbox", className: "metadata", checked: metadataObject.selected, onChange: this.onChange}),
+                metadataObject.xmlName
               )
             )
           )
         )
-      ),
+      )
     );
   }
   render() {

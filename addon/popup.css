@@ -216,6 +216,7 @@ input.api-input {
 .autocomplete-item mark {
     font-weight: 700;
     background-color: transparent;
+    color: var(--inspector-accent);
 }
 
 .autocomplete-item.selected {
@@ -372,7 +373,7 @@ a.icon {
     min-width:0;
     font-size: .95rem;
     padding-top: .4rem;
-    color: #061c3f;
+    color: var(--inspector-text, #061c3f);
 }
 .popup-header__title {
     font-weight: 600;
@@ -401,4 +402,8 @@ a.icon {
   display:inline-block;
   line-height:1;
   background-color:var(--slds-c-icon-color-background, var(--sds-c-icon-color-background, transparent));
+}
+
+#root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg {
+    border: none;
 }

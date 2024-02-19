@@ -3453,7 +3453,7 @@ a.slds-button--inverse:focus{
 .slds-icon{
   width:2rem;
   height:2rem;
-  fill:var(--slds-c-icon-color-foreground, var(--sds-c-icon-color-foreground, var(--slds-g-color-neutral-base-100, white)));
+  fill:var(--inspector-text, var(--slds-c-icon-color-foreground, var(--sds-c-icon-color-foreground, var(--slds-g-color-neutral-base-100, white))));
 }
 
 .slds-icon_xx-small {
@@ -5287,7 +5287,7 @@ a.slds-button--inverse:focus{
   padding:.2rem .2rem;
   border-bottom:1px solid var(--slds-g-color-border-base-1, #c9c9c9);
   border-radius:0.25rem;
-  background: #f3f3f3;
+  background: var(--inspector-shade, #f3f3f3);
   background-clip:padding-box;
   -webkit-box-shadow:0 2px 2px 0 rgba(0, 0, 0, 0.1);
           box-shadow:0 2px 2px 0 rgba(0, 0, 0, 0.1);

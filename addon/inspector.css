@@ -229,6 +229,7 @@ div.button-group > :is(button, input),
 div:is(.autocomplete-header, .conf-line) > div.flex-right > button,
 button:is(.actions-button, .cancel-btn),
 div#result-area > div.result-bar input,
+#root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg,
 a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], .slds-tabs_default__link, input.filter-input, input.all-data-input {
     transition-property: color, background-color;
     transition-duration: 500ms;
@@ -249,7 +250,9 @@ div:is(.value-text, .center, .all-data-box-inner.empty, .log-info, .log-working)
 #save-wrapper > input,
 a.autocomplete-item span > mark,
 div.all-data-box-data > table :is(th, td > *),
-svg.slds-icon, h1, figcaption, .meter-value {
+#root > div > div:last-child > div.slds-size_5-of-12 > :is(a, span, input),
+h1:not(:has(> span)), 
+figcaption, .meter-value {
     transition-property: color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
@@ -259,6 +262,12 @@ th.th-filter-row > input {
     transition-property: color, border-color;
     transition-duration: inherit;
     transition-timing-function: inherit;
+}
+
+svg.slds-icon {
+    transition-property: color, fill;
+    transition-duration: 500ms;
+    transition-timing-function: ease-in-out;
 }
 
 #insext {

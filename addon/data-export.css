@@ -551,7 +551,7 @@ button.toggle .button-icon {
   border-radius: 0.25rem;
   padding: 0px 4px;
   text-decoration: none;
-  color: var(--inspector-primary);
+  color: var(--inspector-link);
 }
 
 .autocomplete-results a:hover,
@@ -585,7 +585,7 @@ button.toggle .button-icon {
 .relationshipName .autocomplete-icon {
   -webkit-mask-image: url('/images/relate.svg');
   mask-image: url('/images/relate.svg');
-  background-color: var(--inspector-primary);
+  background-color: var(--inspector-accent);
 }
 
 .object .autocomplete-icon {

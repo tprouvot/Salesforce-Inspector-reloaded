@@ -447,7 +447,7 @@ button, .button {
   text-decoration: none;
   background-color: var(--inspector-background);
   padding: 0 16px;
-  color: var(--inspector-primary);
+  color: var(--inspector-link);
   cursor: pointer;
   outline: none;
   position: relative;

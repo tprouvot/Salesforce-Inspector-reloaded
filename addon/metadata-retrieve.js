@@ -7,6 +7,7 @@ class Model {
     this.reactCallback = null;
 
     // Raw fetched data
+    this.spinnerCount = 0;
     this.globalDescribe = null;
     this.sobjectDescribePromise = null;
     this.objectData = null;
@@ -24,6 +25,7 @@ class Model {
     this.statusLink = null;
     this.metadataObjects = null;
     this.includeManagedPackage = false;
+    this.packageXml = "Package.xml goes here";
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -283,6 +285,28 @@ class App extends React.Component {
     model.includeManagedPackage = e.target.checked;
     model.didUpdate();
   }
+  getXml(){
+    //let package = JSON.parse(localStorage.getItem("package.xml"));
+    let packageXml = JSON.parse({"": [], "CustomLabel": ["AccountMap", "adobesign__Admin_Msg", "adobesign__Back"], "ApexPage": ["AnswersHome"]});
+    let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+              + '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
+    if (packageXml != null){
+      for (let metadataType in packageXml) {
+        let itemList = packageXml[metadataType];
+        if (itemList.length > 0) {
+          xml += "    <types>\n";
+          for (let i = 0; i < itemList.length; i++){
+            xml += "        <members>" + itemList[i] + "</members>\n";
+          }
+          xml += "        <name>" + metadataType + "</name>\n"
+                       + "    </types>\n";
+        }
+      }
+    }
+    xml += "    <version>" + apiVersion + "</version>\n" + "</Package>";
+    return xml;
+  }
+
   render() {
     let {model} = this.props;
     document.title = model.title();
@@ -298,11 +322,11 @@ class App extends React.Component {
           h("h1", {className: "slds-text-title_bold"}, model.title()),
           h("span", {}, " / " + model.userInfo),
           h("div", {className: "flex-right"},
-            h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
+            h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_large", hidden: model.spinnerCount == 0},
               h("span", {className: "slds-assistive-text"}),
               h("div", {className: "slds-spinner__dot-a"}),
               h("div", {className: "slds-spinner__dot-b"}),
-            ),
+            )
           ),
         ),
         h("div", {className: "area", id: "result-area"},
@@ -312,29 +336,37 @@ class App extends React.Component {
             model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
             model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null,
             h("span", {className: "flex"}),
-            h("label", {className: "slds-checkbox_toggle"}, //TODO arrange design
+            h("label", {className: "slds-checkbox_toggle max-width-small"},
               h("input", {type: "checkbox", required: true, "aria-describedby": "toggle-namespace", className: "slds-input", checked: model.includeManagedPackage, onChange: this.onUpdateManagedPackageSelection}),
               h("span", {className: "slds-checkbox_faux_container center-label"},
                 h("span", {className: "slds-checkbox_faux"}),
-                h("span", {className: "slds-checkbox_on"}, "Include managed package metadata"),
-                h("span", {className: "slds-checkbox_off"}, "Exclude managed packages metadata"),
+                h("span", {className: "slds-checkbox_on"}, "Exclude managed packages metadata"),
+                h("span", {className: "slds-checkbox_off"}, "Include managed package metadata"),
               )
             ),
             h("a", {href: "https://github.com/jesperkristensen/forcecmd"}, "Automate this with forcecmd")
           ),
           h("div", {id: "result-table", ref: "scroller"},
             model.metadataObjects
-              ? h("div", {className: "result"},
-                h("label", {},
-                  h("input", {type: "checkbox", checked: model.metadataObjects.every(metadataObject => metadataObject.selected), onChange: this.onSelectAllChange}),
-                  "Select all"
+              ? h("div", {className: "result slds-grid"},
+                h("div", {className: "slds-col"},
+                  h("label", {className: "slds-checkbox_toggle max-width-small"},
+                    h("input", {type: "checkbox", checked: model.metadataObjects.every(metadataObject => metadataObject.selected), onChange: this.onSelectAllChange}),
+                    h("span", {className: "slds-checkbox_faux_container center-label"},
+                      h("span", {className: "slds-checkbox_faux"}),
+                      h("span", {className: "slds-checkbox_on"}, "Unselect all"),
+                      h("span", {className: "slds-checkbox_off"}, "Select all"),
+                    )
+                  ),
+                  h("br", {}),
+                  h("ul", {className: "slds-accordion"},
+                    model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model}))),
+                  h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
+                  h("button", {onClick: this.onStartClick}, "Download metadata")
                 ),
-                h("br", {}),
-                h("ul", {className: "slds-accordion"},
-                  model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model}))),
-                h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
-                h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
-                h("button", {onClick: this.onStartClick}, "Download metadata")
+                h("div", {className: "slds-col"},
+                  h("textarea", {readOnly: true, value: model.packageXml})
+                )
               )
               : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
           )
@@ -357,34 +389,38 @@ class ObjectSelector extends React.Component {
   }
   onSelectMeta(e){
     let {model} = this.props;
-    if (e.target.checked){
-      console.log(e.target.title);
-      const element = e.target;
-      sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: this.props.metadataObject.xmlName, folder: this.props.metadataObject.directoryName}}).then(res => {
-        res.sort((a, b) => a.manageableState > b.manageableState ? -1 : a.manageableState > b.manageableState ? 1
-          : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
-        if (res){
-          let div = document.createElement("div");
-          div.className = "slds-accordion__content";
-          let ul = document.createElement("ul");
-          ul.className = "slds-accordion";
-          res.forEach(elt => {
-            if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
-              let clone = element.closest("li").cloneNode(true);
-              let label = clone.getElementsByTagName("label")[0];
-              let input = label.getElementsByTagName("input")[0];
-              label.title = elt.fullName;
-              label.textContent = "";
-              label.appendChild(input);
-              label.innerHTML += elt.fullName;
-              ul.appendChild(clone);
-            }
-          });
-          div.appendChild(ul);
-          element.closest("section").appendChild(div);
-        }
-      });
-    }
+    //TODO check input target instead of label
+    //if (e.target.checked){
+    console.log(e.target.title);
+    const element = e.target;
+    //model.spinFor( //TODO fix spinner
+    //"Getting child meta for " + e.target.title,
+    sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: this.props.metadataObject.xmlName, folder: this.props.metadataObject.directoryName}}).then(res => {
+      res.sort((a, b) => a.manageableState > b.manageableState ? -1 : a.manageableState > b.manageableState ? 1
+        : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
+      if (res){
+        let div = document.createElement("div");
+        div.className = "slds-accordion__content";
+        let ul = document.createElement("ul");
+        ul.className = "slds-accordion";
+        res.forEach(elt => {
+          if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
+            let clone = element.closest("li").cloneNode(true);
+            let label = clone.getElementsByTagName("label")[0];
+            let input = label.getElementsByTagName("input")[0];
+            label.title = elt.fullName;
+            label.textContent = "";
+            label.appendChild(input);
+            label.innerHTML += elt.fullName;
+            ul.appendChild(clone);
+          }
+        });
+        div.appendChild(ul);
+        element.closest("section").appendChild(div);
+      }
+    });
+    //);
+    //}
   }
   render() {
     let {metadataObject} = this.props;

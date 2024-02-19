@@ -2027,9 +2027,9 @@ a.slds-button--inverse:focus{
     height:1.5rem;
     border-width:1px;
     border-style:solid;
-    border-color:var(--sds-c-checkbox-toggle-color-border, #b0adab);
+    border-color:var(--inspector-neutral, var(--sds-c-checkbox-toggle-color-border, #b0adab));
     padding:0.125rem;
-    background-color:var(--sds-c-checkbox-toggle-color-background, #b0adab);
+    background-color:var(--inspector-neutral, var(--sds-c-checkbox-toggle-color-background, #b0adab));
     border-radius:var(--sds-c-checkbox-toggle-radius-border, 15rem);
     -webkit-box-shadow:var(--sds-c-checkbox-toggle-shadow);
             box-shadow:var(--sds-c-checkbox-toggle-shadow);
@@ -2056,7 +2056,7 @@ a.slds-button--inverse:focus{
     left:1px;
     width:1.25rem;
     height:1.25rem;
-    background-color:var(--sds-c-checkbox-toggle-switch-color-background, white);
+    background-color:var(--inspector-background, var(--sds-c-checkbox-toggle-switch-color-background, white));
     border-radius:var(--sds-c-checkbox-toggle-radius-border, 15rem);
   }
   .slds-checkbox_toggle [type=checkbox],
@@ -2138,8 +2138,8 @@ a.slds-button--inverse:focus{
   .slds-checkbox--toggle [type=checkbox]:checked ~ .slds-checkbox--faux,
   .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox_faux_container .slds-checkbox_faux,
   .slds-checkbox--toggle [type=checkbox]:checked + .slds-checkbox--faux_container .slds-checkbox--faux{
-    border-color:var(--sds-c-checkbox-toggle-color-border-checked, #0176d3);
-    background-color:var(--sds-c-checkbox-toggle-color-background-checked, #0176d3);
+    border-color:var(--inspector-primary, var(--sds-c-checkbox-toggle-color-border-checked, #0176d3));
+    background-color:var(--inspector-primary, var(--sds-c-checkbox-toggle-color-background-checked, #0176d3));
   }
   .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux:hover, .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox_faux:focus,
   .slds-checkbox_toggle [type=checkbox]:checked + .slds-checkbox--faux:hover,
@@ -2184,7 +2184,7 @@ a.slds-button--inverse:focus{
     right:1px;
     width:1.25rem;
     height:1.25rem;
-    background-color:var(--sds-c-checkbox-toggle-switch-color-background-checked, var(--sds-c-checkbox-toggle-switch-color-background, white));
+    background-color:var(--inspector-background, var(--sds-c-checkbox-toggle-switch-color-background-checked, var(--sds-c-checkbox-toggle-switch-color-background, white)));
     border-radius:var(--sds-c-checkbox-toggle-radius-border, 15rem);
     -webkit-transition:-webkit-transform 0.2s cubic-bezier(0.75, 0, 0.08, 1);
     transition:-webkit-transform 0.2s cubic-bezier(0.75, 0, 0.08, 1);

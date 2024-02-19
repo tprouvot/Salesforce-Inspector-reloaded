@@ -163,7 +163,6 @@ body {
 
 #preview-holder {
   display: flex;
-  width: calc(5/12);
 
   & > label {
     display: flex;
@@ -179,6 +178,7 @@ body {
       display: flex;
       align-items: center;
       justify-content: center;
+      transition-property: color, border-color, background-color;
 
       &.selected {
         border: 2px solid var(--inspector-primary);

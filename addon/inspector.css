@@ -226,6 +226,7 @@ html {
 
 :is(div, input, ul, a):not(:has([style*=transparent])), 
 div.table-container > table > tbody > tr,
+div.slds-tabs_default > ul.options-tab-container > li:after,
 .gauge::before, .gauge::after, .table-settings-button, th.th-filter-row, #save-wrapper {
     transition-property: background-color;
     transition-duration: 500ms;
@@ -325,8 +326,15 @@ div.area > div.conf-value,
 
 #mainTabs > div,
 #mainTabs ul.small-tabs > li,
-input.all-data-input {
+div.slds-show  div.slds-border_bottom,
+input.all-data-input, div#user-info, span.slds-checkbox_faux {
     transition-property: background-color, border-color;
+    transition-duration: 500ms;
+    transition-timing-function: ease-in-out;
+}
+
+span.slds-checkbox_faux:before, span.slds-checkbox_faux:after {
+    transition-property: background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
 }

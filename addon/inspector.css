@@ -5,6 +5,7 @@ html {
 
     --inspector-dark-white: #F3F3F3;
     --inspector-very-light-gray: #AFAFAF;
+    --inspector-subtle-gray: #C9C9C9;
 
     --inspector-light-blue: #1789EE;
     --inspector-light-gray: #787878;
@@ -67,6 +68,9 @@ html {
     --inspector-link: var(--inspector-primary);
     --inspector-visited-link: var(--inspector-light-purple);
 
+    --inspector-button-text: var(--inspector-link);
+    --inspector-button-border: var(--inspector-subtle-gray);
+
     --inspector-success: var(--inspector-light-green);
     --inspector-warning: var(--inspector-light-yellow);
     --inspector-error: var(--inspector-light-red);
@@ -107,6 +111,9 @@ html {
     --inspector-link: var(--inspector-accent);
     --inspector-visited-link: var(--inspector-light-pink);
 
+    --inspector-button-text: var(--inspector-link);
+    --inspector-button-border: var(--inspector-neutral);
+
     --inspector-success: var(--inspector-dark-green);
     --inspector-warning: var(--inspector-dark-yellow);
     --inspector-error: var(--inspector-light-red);
@@ -145,6 +152,9 @@ html {
 
     --inspector-link: var(--inspector-primary);
     --inspector-visited-link: var(--inspector-accent-light-purple);
+
+    --inspector-button-text: var(--inspector-link);
+    --inspector-button-border: var(--inspector-neutral);
 
     --inspector-success: var(--inspector-accent-light-green);
     --inspector-warning: var(--inspector-accent-light-yellow);
@@ -185,6 +195,9 @@ html {
 
     --inspector-link: var(--inspector-light-blue);
     --inspector-visited-link: var(--inspector-accent-light-pink);
+
+    --inspector-button-text: var(--inspector-link);
+    --inspector-button-border: var(--inspector-neutral);
 
     --inspector-success: var(--inspector-accent-dark-green);
     --inspector-warning: var(--inspector-accent-dark-yellow);
@@ -230,7 +243,7 @@ div:is(.autocomplete-header, .conf-line) > div.flex-right > button,
 button:is(.actions-button, .cancel-btn),
 div#result-area > div.result-bar input,
 #root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg,
-a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], .slds-tabs_default__link, input.filter-input, input.all-data-input {
+a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], .slds-tabs_default__link, input.filter-input {
     transition-property: color, background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
@@ -286,7 +299,7 @@ svg.slds-icon {
 
 a:is(.slds-button, .slds-button) {
     &:has(> span) {
-      transition-property: background-color;
+      transition-property: background-color, border-color;
     }
 
     &:not(:has(> span)) {
@@ -310,6 +323,14 @@ div.area > div.conf-value,
     transition-timing-function: ease-in-out;
 }
 
+#mainTabs > div,
+#mainTabs ul.small-tabs > li,
+input.all-data-input {
+    transition-property: background-color, border-color;
+    transition-duration: 500ms;
+    transition-timing-function: ease-in-out;
+}
+
 div.object-name > span.quick-select {
     transition-property: none;
 }
@@ -324,12 +345,8 @@ div.object-name > span.quick-select {
 body {
     background-color: var(--inspector-background);
     color: var(--inspector-text);
+    scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
     transition-property: background-color;
     transition-duration: 500ms;
     transition-timing-function: ease-in-out;
-    scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
-}
-
-a {
-    color: var(--inspector-link);
 }

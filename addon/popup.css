@@ -121,7 +121,7 @@ input.api-input {
     width: 100%;
     background-color: var(--inspector-background);
     color: var(--inspector-text);
-    border: 1px solid var(--inspector-neutral);
+    border: 1px solid var(--inspector-button-border);
     border-radius: 0 .25rem .25rem .25rem;
     /*transition: border 500ms linear;*/
     display: inline-block;
@@ -134,9 +134,9 @@ input.api-input {
 .all-data-input:active,
 .all-data-input:focus {
     outline: 0;
-    border-color: var(--inspector-primary);
+    border-color: var(--inspector-accent);
     background-color: var(--inspector-background);
-    box-shadow: 0 0 3px var(--inspector-primary);
+    box-shadow: 0 0 3px var(--inspector-accent);
 }
 
 .all-data-box-inner {
@@ -194,7 +194,7 @@ input.api-input {
 .autocomplete-item {
     display: block;
     padding: .25rem .5rem;
-    color: var(--inspector-link);
+    color: var(--inspector-text);
     line-height: 1.5;
     cursor: pointer;
 }
@@ -216,11 +216,11 @@ input.api-input {
 .autocomplete-item mark {
     font-weight: 700;
     background-color: transparent;
-    color: var(--inspector-accent);
+    color: var(--inspector-text);
 }
 
 .autocomplete-item.selected {
-    background-color: var(--inspector-background);
+    background-color: var(--inspector-shade);
 }
 
 @keyframes bg-load {
@@ -283,7 +283,7 @@ ul.small-tabs {
 
 ul.small-tabs li {
     display: inline;
-    border: solid 1px var(--inspector-neutral);
+    border: solid 1px var(--inspector-button-border);
     color: var(--inspector-link);
     padding: 2px 6px;
     font-style: italic;

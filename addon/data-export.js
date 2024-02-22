@@ -360,19 +360,23 @@ class Model {
       vm.autocompleteProgress.abort();
     }
 
-    vm.autocompleteClick = ({value, suffix}) => {
-      vm.queryInput.focus();
-      //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
-      let indexFrom = query.toLowerCase().indexOf("from");
-      if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
-        suffix = "";
+    vm.autocompleteClick = ({value, suffix, link}) => {
+      if (link){
+        window.open(link, "_blank");
+      } else {
+        vm.queryInput.focus();
+        //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
+        let indexFrom = query.toLowerCase().indexOf("from");
+        if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
+          suffix = "";
+        }
+        vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
+        //add query suffix if needed
+        if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
+          vm.queryInput.value += " LIMIT 200";
+        }
+        vm.queryAutocompleteHandler();
       }
-      vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
-      //add query suffix if needed
-      if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
-        vm.queryInput.value += " LIMIT 200";
-      }
-      vm.queryAutocompleteHandler();
     };
 
     // Find the token we want to autocomplete. This is the selected text, or the last word before the cursor.
@@ -905,6 +909,28 @@ class Model {
   stopExport() {
     this.exportProgress.abort();
   }
+  doQueryPlan(){
+    let vm = this; // eslint-disable-line consistent-this
+    let query = vm.queryInput.value;
+    let exportedData = new RecordTable(vm);
+
+    vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(query)).then(res => {
+      console.log(res);
+      exportedData.addToTable(res.plans);
+      vm.exportedData = exportedData;
+      vm.updatedExportedData();
+      vm.didUpdate();
+    }, () => {
+      vm.isWorking = false;
+    }));
+    vm.autocompleteResults = {
+      sobjectName: "",
+      title: "Query Plan Tool:",
+      results: [{value: "Developer Console Query Plan Tool FAQ", title: "Developer Console Query Plan Tool FAQ", rank: 1, autocompleteType: "fieldName", dataType: "", link: "https://help.salesforce.com/s/articleView?id=000386864&type=1"},
+        {value: "Get Feedback on Query Performance", title: "Get Feedback on Query Performance", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "", link: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_query_explain.htm"},
+      ]
+    };
+  }
 }
 
 function RecordTable(vm) {
@@ -1017,6 +1043,7 @@ class App extends React.Component {
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
+    this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
@@ -1127,6 +1154,11 @@ class App extends React.Component {
     url.search = searchParams.toString();
     navigator.clipboard.writeText(url.toString());
     navigator.clipboard.writeText(url.toString());
+    model.didUpdate();
+  }
+  onQueryPlan(){
+    let {model} = this.props;
+    model.doQueryPlan();
     model.didUpdate();
   }
   onCopyAsExcel() {
@@ -1313,8 +1345,9 @@ class App extends React.Component {
             h("div", {className: "flex-right"},
               h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Export"),
               h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query"),
-              h("a", {tabIndex: 3, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
-              h("button", {tabIndex: 4, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
+              h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
+              h("a", {tabIndex: 4, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
+              h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
                 h("div", {className: "button-icon"}),
                 h("div", {className: "button-toggle-icon"})
               )

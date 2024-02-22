@@ -915,8 +915,9 @@ class Model {
     let exportedData = new RecordTable(vm);
 
     vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(query)).then(res => {
-      console.log(res);
       exportedData.addToTable(res.plans);
+      vm.exportStatus = "";
+      vm.performancePoints = [];
       vm.exportedData = exportedData;
       vm.updatedExportedData();
       vm.didUpdate();

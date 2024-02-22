@@ -911,10 +911,9 @@ class Model {
   }
   doQueryPlan(){
     let vm = this; // eslint-disable-line consistent-this
-    let query = vm.queryInput.value;
     let exportedData = new RecordTable(vm);
 
-    vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(query)).then(res => {
+    vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(vm.queryInput.value)).then(res => {
       exportedData.addToTable(res.plans);
       vm.exportStatus = "";
       vm.performancePoints = [];

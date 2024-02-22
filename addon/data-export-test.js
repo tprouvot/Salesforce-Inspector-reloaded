@@ -236,6 +236,30 @@ export async function dataExportTest(test) {
   setQuery("select Id from Opportunity where AccountId in (select AccountId from Asset where Price = null) and StageName", "", " = 'Closed Won'");
   assertEquals("Opportunity fields suggestions:", vm.autocompleteResults.title);
 
+  // Autocomplete relation subquery
+  setQuery("select Id, (select Id from Contacts", "", ") from Account where AccountId");
+  await waitForSpinner();
+  assertEquals("Relations suggestions:", vm.autocompleteResults.title);
+  assertEquals("Contacts", getValues(vm.autocompleteResults.results)[0]);
+
+  // Autocomplete before subquery
+  setQuery("select Id, ", "", "(select Id from Contacts) from Account where AccountId");
+  await waitForSpinner();
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
+
+  // Autocomplete in subquery
+  setQuery("select Id, (select Id", "", " from Contacts) from Account where AccountId");
+  await waitForSpinner();
+  assertEquals("Contact fields suggestions:", vm.autocompleteResults.title);
+
+  // Autocomplete after subquery
+  setQuery("select Id, (select Id from Contacts), A ", "", " from Account where AccountId");
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
+
+  // Autocomplete after subquery
+  setQuery("select Id, (select Id from Contacts) from Account where ", "", "AccountId");
+  assertEquals("Account fields suggestions:", vm.autocompleteResults.title);
+
   // Autocomplete tooling API
   setQuery("select Id from LeadCon", "", "");
   vm.queryTooling = true;

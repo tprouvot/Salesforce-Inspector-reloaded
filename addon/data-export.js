@@ -588,7 +588,7 @@ class Model {
     }
     if (ctrlSpace) {
       let ar = new Enumerable(globalDescribe.sobjects)
-        .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
+        .filter(sobjectDescribe => sobjectDescribe.queryable && (sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase())))
         .map(sobjectDescribe => sobjectDescribe.name)
         .toArray();
       if (ar.length > 0) {
@@ -602,7 +602,7 @@ class Model {
       sobjectName: "",
       title: "Objects suggestions:",
       results: new Enumerable(globalDescribe.sobjects)
-        .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
+        .filter(sobjectDescribe => sobjectDescribe.queryable && (sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase())))
         .map(sobjectDescribe => ({value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: ""}))
         .toArray()
         .sort(this.resultsSort(searchTerm))
@@ -948,6 +948,81 @@ class Model {
     }
   }
 
+  autocompleteRelation(ctx, suggestRelation) {
+    let useToolingApi = ctx.vm.queryTooling;
+    let selStart = ctx.vm.queryInput.selectionStart;
+    let selEnd = ctx.vm.queryInput.selectionEnd;
+    let query = ctx.vm.queryInput.value;
+    let searchTerm = selStart != selEnd
+      ? query.substring(selStart, selEnd)
+      : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
+    selStart = selEnd - searchTerm.length;
+
+    let {sobjectStatus, sobjectDescribe} = ctx.vm.describeInfo.describeSobject(useToolingApi, ctx.parentSObjectName);
+    if (!sobjectDescribe) {
+      switch (sobjectStatus) {
+        case "loading":
+          ctx.vm.autocompleteResults = {
+            sobjectName: ctx.parentSObjectName,
+            title: "Loading " + ctx.parentSObjectName + " metadata...",
+            results: []
+          };
+          return;
+        case "loadfailed":
+          ctx.vm.autocompleteResults = {
+            sobjectName: ctx.parentSObjectName,
+            title: "Loading " + ctx.parentSObjectName + " metadata failed.",
+            results: [{value: "Retry", title: "Retry"}]
+          };
+          ctx.vm.autocompleteClick = ctx.vm.autocompleteReload.bind(ctx.vm);
+          return;
+        case "notfound":
+          ctx.vm.autocompleteResults = {
+            sobjectName: ctx.parentSObjectName,
+            title: "Unknown object: " + ctx.parentSObjectName,
+            results: []
+          };
+          return;
+        default:
+          ctx.vm.autocompleteResults = {
+            sobjectName: ctx.parentSObjectName,
+            title: "Unexpected error for object: " + ctx.parentSObjectName + ": " + sobjectStatus,
+            results: []
+          };
+          return;
+      }
+    }
+    let contextSobjectDescribes = new Enumerable([sobjectDescribe]);
+    let ar = contextSobjectDescribes
+      .flatMap(sobjectDescribe => sobjectDescribe.childRelationships)
+      .filter(relation => relation.relationshipName && (!ctx.fromObject || relation.relationshipName.toLowerCase().startsWith(ctx.fromObject.toLowerCase())))
+      .map(rel => ({value: rel.relationshipName, title: rel.relationshipName + "(" + rel.childSObject + "." + rel.field + ")", suffix: " ", rank: 1, autocompleteType: "object", dataType: rel.childSObject}))
+      .toArray()
+      .sort(this.resultsSort(searchTerm));
+    if (ctx.ctrlSpace) {
+      if (ar.length > 0) {
+        let rel = ar.shift();
+        ctx.sobjectName = rel.dataType;
+        ctx.vm.queryInput.focus();
+        ctx.vm.queryInput.setRangeText(rel.value, selStart, selEnd, "end");
+      }
+      ctx.vm.queryAutocompleteHandler();
+      return;
+    }
+    if (suggestRelation) {
+      ctx.vm.autocompleteResults = {
+        sobjectName: ctx.parentSObjectName,
+        title: "Relations suggestions:",
+        results: ar
+      };
+    } else {
+      ctx.sobjectName = ar
+        .filter(relation => relation.value && (ctx.fromObject && relation.value.toLowerCase() == ctx.fromObject.toLowerCase()))
+        .map(rel => rel.dataType).shift();
+    }
+    return;
+  }
+
   /**
    * SOQL query autocomplete handling.
    * Put caret at the end of a word or select some text to autocomplete it.
@@ -1009,45 +1084,99 @@ class Model {
       : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
     selStart = selEnd - searchTerm.length;
 
-    // If we are just after the "from" keyword, autocomplete the sobject name
-    if (query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
-      this.autocompleteObject(vm, false);
-      return;
-    }
-
     let sobjectName, isAfterFrom;
     // Find out what sobject we are querying, by using the word after the "from" keyword.
-    // Assuming no subqueries in the select clause, we should find the correct sobjectName. There should be only one "from" keyword, and strings (which may contain the word "from") are only allowed after the real "from" keyword.
-    let fromKeywordMatch = /(^|\s)from\s+([a-z0-9_]*)/i.exec(query);
+    let fromRegEx = /(^|\s)from\s+([a-z0-9_]*)/gi;
+    let fromKeywordMatch;
+    //skip subquery by checking that we have same number of open and close parenthesis before
+    while ((fromKeywordMatch = fromRegEx.exec(query)) !== null) {
+      let beforeFrom = query.substring(0, fromKeywordMatch.index);
+      let openParenthesisSplit = beforeFrom.split("(");
+      if (sobjectName //in sub query after from
+        && isAfterFrom
+        && selStart > beforeFrom.toLowerCase().lastIndexOf("select") // after start of subquery
+        && selStart <= fromKeywordMatch.index + query.substring(fromKeywordMatch.index).indexOf(")")) {
+        sobjectName = fromKeywordMatch[2];
+        isAfterFrom = selStart > fromKeywordMatch.index + 1;
+        break;
+      }
+      if (!beforeFrom
+        || (openParenthesisSplit.length == beforeFrom.split(")").length) // same number of open and close parenthesis = no more in subquery
+        || !openParenthesisSplit[openParenthesisSplit.length - 1].trim().toLowerCase().startsWith("select")) { // not a subquery
+        sobjectName = fromKeywordMatch[2];
+        isAfterFrom = selStart > fromKeywordMatch.index + 1;
+      }
+    }
+    // If we are just after the last "from" keyword, autocomplete the sobject name
+    fromRegEx = /(^|\s)from\s*$/gi;
+    fromKeywordMatch = fromRegEx.exec(query.substring(0, selStart));
     if (fromKeywordMatch) {
-      sobjectName = fromKeywordMatch[2];
-      isAfterFrom = selStart > fromKeywordMatch.index + 1;
-    } else {
-      // We still want to find the from keyword if the user is typing just before the keyword, and there is no space.
-      fromKeywordMatch = /^from\s+([a-z0-9_]*)/i.exec(query.substring(selEnd));
-      if (fromKeywordMatch) {
-        sobjectName = fromKeywordMatch[1];
-        isAfterFrom = false;
-      } else {
-        vm.autocompleteResults = {
-          sobjectName: "",
-          title: "\"from\" keyword not found",
-          results: []
-        };
+      let beforeFrom = query.substring(0, fromKeywordMatch.index);
+      let openParenthesisSplit = beforeFrom.split("(");
+      //not in subquery before main from
+      if (!beforeFrom //nothing before
+        || (beforeFrom.split("(").length == beforeFrom.split(")").length) //not in subquery before main from
+        || !openParenthesisSplit[openParenthesisSplit.length - 1].trim().toLocaleLowerCase().startsWith("select")
+        || isAfterFrom) { // after main from => Id IN (SELECT Id...)
+        this.autocompleteObject(vm, false);
         return;
       }
     }
+    if (!sobjectName) {
+      vm.autocompleteResults = {
+        sobjectName: "",
+        title: "\"from\" keyword not found",
+        results: []
+      };
+      return;
+    }
+    let ctx = {vm, ctrlSpace, query, selStart, sobjectName, isAfterFrom};
+    if (isAfterFrom || !this.parseSubQuery(ctx)) {
+      this.autocompleteField(vm, ctrlSpace, ctx.sobjectName, ctx.isAfterFrom);
+    }
+  }
+  parseSubQuery(ctx) {
     // If we are in a subquery, try to detect that.
-    fromKeywordMatch = /\(\s*select.*\sfrom\s+([a-z0-9_]*)/i.exec(query);
-    if (fromKeywordMatch && fromKeywordMatch.index < selStart) {
-      let subQuery = query.substring(fromKeywordMatch.index, selStart);
-      // Try to detect if the subquery ends before the selection
-      if (subQuery.split(")").length < subQuery.split("(").length) {
-        sobjectName = fromKeywordMatch[1];
-        isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
+    let subQueryRegExp = /\((\s*select.*)(\sfrom\s+)([a-z0-9_]*)(\s*.*)\)/gmi;
+    let subQuery = ctx.query;
+    let fromKeywordMatch;
+    while ((fromKeywordMatch = subQueryRegExp.exec(subQuery)) !== null) {
+      if (fromKeywordMatch
+        && fromKeywordMatch.index < ctx.selStart
+        && fromKeywordMatch.index + fromKeywordMatch[0].length > ctx.selStart) {
+        ctx.parentSObjectName = ctx.sobjectName;
+        ctx.fromObject = fromKeywordMatch[3];
+        ctx.isAfterFrom = false;
+        if (ctx.fromObject === undefined){
+          ctx.fromObject = "";
+        }
+
+        if (fromKeywordMatch.index + fromKeywordMatch[1].length > ctx.selStart){
+          //in select : grab relation link for ctx
+          this.autocompleteRelation(ctx, false);
+          subQueryRegExp = /\((\s*select.*\sfrom\s+)([a-z0-9_]*)(\s*.*)\)/gmi;
+          subQuery = ctx.query.substring(0, fromKeywordMatch.index) + "(" + fromKeywordMatch[1];
+          if (!ctx.sobjectName){
+            ctx.sobjectName = ctx.parentSObjectName;
+          }
+        } else if (fromKeywordMatch.index + fromKeywordMatch[1].length + fromKeywordMatch[2].length > ctx.selStart){
+          return true;
+        } else if (fromKeywordMatch.index + fromKeywordMatch[1].length + fromKeywordMatch[2].length + fromKeywordMatch[3].length >= ctx.selStart){
+          this.autocompleteRelation(ctx, true);
+          return true;
+        } else { // after from
+          this.autocompleteRelation(ctx, false);
+          if (!ctx.sobjectName){
+            ctx.sobjectName = ctx.parentSObjectName;
+            this.autocompleteRelation(ctx, true);
+            return true;
+          }
+          ctx.isAfterFrom = true;
+          return false;
+        }
       }
     }
-    this.autocompleteField(vm, ctrlSpace, sobjectName, isAfterFrom);
+    return false;
   }
   doExport() {
     let vm = this; // eslint-disable-line consistent-this

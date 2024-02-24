@@ -102,6 +102,8 @@ class Model {
     this.autocompleteProgress = {};
     this.exportProgress = {};
     this.queryName = "";
+    this.columnIndex = {fields: []};
+    this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
       "SELECT Id FROM ",
       "SELECT Id FROM WHERE",
@@ -1178,6 +1180,116 @@ class Model {
     }
     return false;
   }
+  nextWord(sentence, ctx) {
+    let regex = /^\s*([a-z0-9'.]+|,|\(|\))/i;
+    if (!sentence) {
+      ctx.value = "";
+      ctx.pos++;
+      return;
+    }
+    let match = regex.exec(sentence.substring(ctx.pos));
+    if (match) {
+      ctx.value = match[1];
+      ctx.pos += match.index + match[0].length;
+      return;
+    }
+    ctx.value = "";
+    ctx.pos++;
+    return;
+  }
+
+  /*
+  ['Id', 'Name', 'Contacts', 'Contacts.Id']
+
+
+  ]
+  {
+    fields: [
+      {
+        name: 'Id',
+        position : 1
+      },
+      {
+        name: 'Name',
+        position : 2},
+      {
+        name: 'Contacts',
+        position : 3,
+        fields : [
+          {name: 'Id', position : 1}
+        ]
+        //,objectName : 'Contact'
+      }
+    ],
+    objectName : 'Account'
+  }
+  */
+  extractColumnFromQuery(query, ctx) {
+    if (!ctx) {
+      ctx = {value: "", pos: 0};
+    }
+    this.nextWord(query, ctx);
+    let result = {fields: [], objectName: ""};
+    if (!ctx.value) {
+      return result;
+    }
+    if (ctx.value.toLowerCase() != "select") {
+      return result;
+    }
+    this.nextWord(query, ctx);
+    let expressionIndex = 0;
+    let fieldIndex = 0;
+    //parse field and subquery
+    while (ctx.value && ctx.value.toLowerCase() != "from") {
+      let field = {name: ctx.value, position: fieldIndex};
+      fieldIndex++;
+      if (ctx.value == "(") {
+        let subqry = this.extractColumnFromQuery(query, ctx);
+        subqry.name = subqry.objectName;
+        subqry.position = field.position;
+        field = subqry;
+        //skip end parenthesis
+        this.nextWord(query, ctx);
+      } else { //regular field
+        this.nextWord(query, ctx);
+        if (ctx.value == "(") { //function
+          while (ctx.value && ctx.value != ")") {
+            this.nextWord(query, ctx);
+          }
+          if (ctx.value != ",") { //alias
+            field.name = ctx.value;
+            this.nextWord(query, ctx);
+          } else {
+            field.name = "expr" + expressionIndex;
+            expressionIndex++;
+          }
+        }
+      }
+      if (ctx.value == ",") {
+        this.nextWord(query, ctx);
+      }
+      result.fields.push(field);
+    }
+    if (ctx.value.toLowerCase() == "from") {
+      this.nextWord(query, ctx);
+      result.objectName = ctx.value;
+    }
+    this.nextWord(query, ctx);
+    let deep = 0;
+    while (ctx.value) {
+      if (ctx.value == "(") {
+        deep++;
+      }
+      if (ctx.value == ")") {
+        if (deep == 0) {
+          return result;
+        }
+        deep--;
+      }
+      this.nextWord(query, ctx);
+    }
+    return result;
+  }
   doExport() {
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
@@ -1186,6 +1298,7 @@ class Model {
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
     let query = vm.queryInput.value;
+    vm.columnIndex = this.extractColumnFromQuery(query);
     let queryMethod = vm.isSearchMode() ? "search" : (exportedData.isTooling ? "tooling/query" : vm.queryAll ? "queryAll" : "query");
     function batchHandler(batch) {
       return batch.catch(err => {
@@ -1316,11 +1429,48 @@ function RecordTable(vm) {
   let columnIdx = new Map();
   let header = ["_"];
   function discoverColumns(record, prefix, row) {
+    if (prefix == ""){
+      for (let field of vm.columnIndex.fields) {
+        for (let f in record) {
+          if (f && field.name && f.toLowerCase() == field.name.toLowerCase()) {
+            field.name = f;
+            break;
+          }
+        }
+        if (!columnIdx.has(field.name)) {
+          let c = header.length;
+          columnIdx.set(field.name, c);
+          header[c] = field.name;
+          // hide object column
+          rt.colVisibilities.push((!field.fields));
+          if (field.name.includes(".")) {
+            let splittedField = field.name.split(".");
+            splittedField.slice(0, splittedField.length - 1).map(col => {
+              if (!columnIdx.has(col)) {
+                let c = header.length;
+                columnIdx.set(col, c);
+                header[c] = col;
+                //hide parent column
+                rt.colVisibilities.push((false));
+              }
+            });
+          }
+        }
+      }
+    }
     for (let field in record) {
       if (field == "attributes") {
         continue;
       }
+      //remove totalsize, done and records column
+      if (typeof record[field] == "object" && record[field] != null && record[field]["records"] != null) {
+        record[field] = record[field]["records"];
+      }
       let column = prefix + field;
+      if (Array.isArray(record[field])) {
+        discoverColumns(record[field], column + ".", row);
+        continue;
+      }
       let c;
       if (columnIdx.has(column)) {
         c = columnIdx.get(column);
@@ -1339,6 +1489,28 @@ function RecordTable(vm) {
       }
     }
   }
+  /*
+  {
+            "attributes": {
+                "type": "Contact",
+                "url": "/services/data/v60.0/sobjects/Contact/003AO0000039ZMMYA2"
+            },
+            "Id": "003AO0000039ZMMYA2",
+            "Cases": {
+                "totalSize": 1,
+                "done": true,
+                "records": [
+                    {
+                        "attributes": {
+                            "type": "Case",
+                            "url": "/services/data/v60.0/sobjects/Case/500AO000002SzopYAC"
+                        },
+                        "Id": "500AO000002SzopYAC"
+                    }
+                ]
+            }
+        },
+  */
   function cellToString(cell) {
     if (cell == null) {
       return "";

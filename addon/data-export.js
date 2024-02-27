@@ -1181,7 +1181,7 @@ class Model {
     return false;
   }
   nextWord(sentence, ctx) {
-    let regex = /^\s*([a-z0-9'.]+|,|\(|\))/i;
+    let regex = /^\s*([a-z0-9'_.]+|,|\(|\))/i;
     if (!sentence) {
       ctx.value = "";
       ctx.pos++;

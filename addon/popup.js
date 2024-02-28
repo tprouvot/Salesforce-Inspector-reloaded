@@ -1832,7 +1832,8 @@ class AllDataSearch extends React.PureComponent {
         h(Autocomplete, {
           ref: "autoComplete",
           updateInput: this.updateAllDataInput,
-          matchingResults: resultRender(matchingResults, queryString)
+          matchingResults: resultRender(matchingResults, queryString),
+          queryString
         }),
         h("svg", {viewBox: "0 0 24 24", onClick: this.onAllDataArrowClick},
           h("path", {d: "M3.8 6.5h16.4c.4 0 .8.6.4 1l-8 9.8c-.3.3-.9.3-1.2 0l-8-9.8c-.4-.4-.1-1 .4-1z"})
@@ -1862,7 +1863,8 @@ class Autocomplete extends React.PureComponent {
       scrollToSelectedIndex: 0, // Changed whenever selectedIndex is updated (even if updated to a value it already had). Used to scroll to the selected item.
       scrollTopIndex: 0, // Index of the first autocomplete item that is visible according to the current scroll position.
       itemHeight: 1, // The height of each autocomplete item. All items should have the same height. Measured on first render. 1 means not measured.
-      resultsMouseIsDown: false // Hide the autocomplete popup when the input field looses focus, except when clicking one of the autocomplete items.
+      resultsMouseIsDown: false, // Hide the autocomplete popup when the input field looses focus, except when clicking one of the autocomplete items.
+      recentItems: []
     };
     this.onResultsMouseDown = this.onResultsMouseDown.bind(this);
     this.onResultsMouseUp = this.onResultsMouseUp.bind(this);
@@ -1874,7 +1876,13 @@ class Autocomplete extends React.PureComponent {
     this.setState({showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
   }
   handleFocus() {
-    this.setState({showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
+    sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+50").then(res => {
+      let recentItems = [];
+      res.records.forEach(recentItem => {
+        recentItems.push({key: recentItem.Id, value: {recordId: recentItem.Id, sobject: {keyPrefix: recentItem.Id, label: recentItem.Type, name: recentItem.Name}}});
+      });
+      this.setState({recentItems, showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
+    });
   }
   handleBlur() {
     this.setState({showResults: false});
@@ -1965,29 +1973,32 @@ class Autocomplete extends React.PureComponent {
     }
   }
   render() {
-    let {matchingResults} = this.props;
+    let {matchingResults, queryString} = this.props;
     let {
       showResults,
       selectedIndex,
       scrollTopIndex,
       itemHeight,
       resultsMouseIsDown,
+      recentItems
     } = this.state;
     // For better performance only render the visible autocomplete items + at least one invisible item above and below (if they exist)
     const RENDERED_ITEMS_COUNT = 11;
+    let autocompleteResult = queryString.length > 0 ? matchingResults : recentItems;
     let firstIndex = 0;
-    let lastIndex = matchingResults.length - 1;
+    let lastIndex = autocompleteResult.length - 1;
     let firstRenderedIndex = Math.max(0, scrollTopIndex - 2);
     let lastRenderedIndex = Math.min(lastIndex, firstRenderedIndex + RENDERED_ITEMS_COUNT);
     let topSpace = (firstRenderedIndex - firstIndex) * itemHeight;
     let bottomSpace = (lastIndex - lastRenderedIndex) * itemHeight;
     let topSelected = (selectedIndex - firstIndex) * itemHeight;
+
     return (
-      h("div", {className: "autocomplete-container", style: {display: (showResults && matchingResults.length > 0) || resultsMouseIsDown ? "" : "none"}, onMouseDown: this.onResultsMouseDown, onMouseUp: this.onResultsMouseUp},
+      h("div", {className: "autocomplete-container", style: {display: (showResults && (autocompleteResult.length > 0)) || resultsMouseIsDown ? "" : "none"}, onMouseDown: this.onResultsMouseDown, onMouseUp: this.onResultsMouseUp},
         h("div", {className: "autocomplete", onScroll: this.onScroll, ref: "scrollBox"},
           h("div", {ref: "selectedItem", style: {position: "absolute", top: topSelected + "px", height: itemHeight + "px"}}),
           h("div", {style: {height: topSpace + "px"}}),
-          matchingResults.slice(firstRenderedIndex, lastRenderedIndex + 1)
+          autocompleteResult.slice(firstRenderedIndex, lastRenderedIndex + 1)
             .map(({key, value, element}, index) =>
               h("a", {
                 key,

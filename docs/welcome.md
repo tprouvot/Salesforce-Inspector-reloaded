@@ -1,6 +1,6 @@
 # Welcome to Salesforce Inspector Reloaded
 
-Thank you for installing **Salesforce Inspector Reloaded**, a chrome extension that helps you inspect, analyze, and optimize your Salesforce data and metadata.
+Thank you for installing **Salesforce Inspector Reloaded**, a Chrome extension that helps you inspect, analyze, and optimize your Salesforce data and metadata.
 
 With this extension, you can:
 
@@ -19,9 +19,9 @@ We hope you will enjoy using **Salesforce Inspector Reloaded** and find it usefu
 
 Happy inspecting! 😊
 
-## How to proceed if you already have 'Salesforce Inspector' legacy version ?
+## How to proceed if you already have 'Salesforce Inspector' legacy version?
 
-First thank you for migrating, I hope you will enjoy the new features and UI of this one !
+First, thank you for migrating. I hope you will enjoy the new features and UI of this one!
 
-I suggest you to disable the legacy version so that you'll be able to [migrate your saved queries](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#migrate-saved-queries-from-legacy-extension-to-salesforce-inspector-reloaded) from the previous one.
-Once migrated you can uninstall the legacy version you should not need it anymore.
+I suggest you disable the legacy version so that you'll be able to [migrate your saved queries](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#migrate-saved-queries-from-legacy-extension-to-salesforce-inspector-reloaded) from the previous one.
+Once migrated you can uninstall the legacy version, you should not need it anymore.

@@ -1,4 +1,4 @@
-# Welcome to Salesforce Inspector Reloaded
+# Welcome
 
 Thank you for installing **Salesforce Inspector Reloaded**, a Chrome extension that helps you inspect, analyze, and optimize your Salesforce data and metadata.
 

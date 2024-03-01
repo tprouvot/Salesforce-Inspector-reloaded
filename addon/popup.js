@@ -967,7 +967,7 @@ class AllDataBoxSObject extends React.PureComponent {
     let {selectedValue, recordIdDetails} = this.state;
     return (
       h("div", {},
-        h(AllDataSearch, {ref: "allDataSearch", onDataSelect: this.onDataSelect, sobjectsList, getMatches: this.getMatches, inputSearchDelay: 0, placeholderText: "Record id, id prefix or object name", title: "Click to show recent items", resultRender: this.resultRender}),
+        h(AllDataSearch, {ref: "allDataSearch", sfHost, onDataSelect: this.onDataSelect, sobjectsList, getMatches: this.getMatches, inputSearchDelay: 0, placeholderText: "Record id, id prefix or object name", title: "Click to show recent items", resultRender: this.resultRender}),
         selectedValue
           ? h(AllDataSelection, {ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId, isFieldsPresent})
           : h("div", {className: "all-data-box-inner empty"}, "No record to display")
@@ -1604,9 +1604,9 @@ class AllDataSelection extends React.PureComponent {
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent} = this.props;
     // Show buttons for the available APIs.
-    let buttons = Array.from(selectedValue.sobject.availableApis);
+    let buttons = selectedValue.sobject.availableApis ? Array.from(selectedValue.sobject.availableApis) : [];
     buttons.sort();
-    if (buttons.length == 0) {
+    if (buttons.length == 0 && !selectedValue.sobject.isRecent) {
       // If none of the APIs are available, show a button for the regular API, which will partly fail, but still show some useful metadata from the tooling API.
       buttons.push("noApi");
     }
@@ -1642,7 +1642,7 @@ class AllDataSelection extends React.PureComponent {
                   h("span", {}, (selectedValue.recordId) ? " / " + selectedValue.recordId : ""),
                 )
               ),
-              selectedValue.sobject.name.indexOf("__") == -1
+              selectedValue.sobject.name.indexOf("__") == -1 && selectedValue.sobject.availableApis
                 ? h("tr", {},
                   h("th", {}, "Doc:"),
                   h("td", {},
@@ -1817,7 +1817,7 @@ class AllDataSearch extends React.PureComponent {
   }
   render() {
     let {queryString, matchingResults, recentItems} = this.state;
-    let {placeholderText, resultRender} = this.props;
+    let {placeholderText, resultRender, sfHost} = this.props;
     return (
       h("div", {className: "input-with-dropdown"},
         h("input", {
@@ -1835,7 +1835,8 @@ class AllDataSearch extends React.PureComponent {
           updateInput: this.updateAllDataInput,
           matchingResults: resultRender(matchingResults, queryString),
           recentItems: resultRender(recentItems, queryString),
-          queryString
+          queryString,
+          sfHost
         }),
         h("svg", {viewBox: "0 0 24 24", onClick: this.onAllDataArrowClick},
           h("path", {d: "M3.8 6.5h16.4c.4 0 .8.6.4 1l-8 9.8c-.3.3-.9.3-1.2 0l-8-9.8c-.4-.4-.1-1 .4-1z"})
@@ -1880,7 +1881,26 @@ class Autocomplete extends React.PureComponent {
     let {recentItems} = this.props;
     sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+50").then(res => {
       res.records.forEach(recentItem => {
-        recentItems.push({key: recentItem.Id, value: {recordId: recentItem.Id, sobject: {keyPrefix: recentItem.Id, label: recentItem.Type, name: recentItem.Name}}});
+        recentItems.push({key: recentItem.Id,
+          value: {recordId: recentItem.Id, sobject: {keyPrefix: recentItem.Id.slice(0, 3), label: recentItem.Type, name: recentItem.Name, isRecent: true}},
+          element: [
+            h("div", {className: "autocomplete-item-main", key: "main"},
+              recentItem.Name,
+            ),
+            h("div", {className: "autocomplete-item-sub", key: "sub"},
+              h(MarkSubstring, {
+                text: recentItem.Type,
+                start: -1,
+                length: 0
+              }),
+              " • ",
+              h(MarkSubstring, {
+                text: recentItem.Id,
+                start: -1,
+                length: 0
+              })
+            )
+          ]});
       });
       this.setState({recentItems, showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
     });
@@ -1939,9 +1959,14 @@ class Autocomplete extends React.PureComponent {
   onResultsMouseUp() {
     this.setState({resultsMouseIsDown: false});
   }
-  onResultClick(value) {
-    this.props.updateInput(value);
-    this.setState({showResults: false, selectedIndex: 0});
+  onResultClick(e, value) {
+    let {sfHost} = this.props;
+    if (value.recordId){
+      window.open("https://" + sfHost + "/" + value.recordId, "_blank");
+    } else {
+      this.props.updateInput(value);
+      this.setState({showResults: false, selectedIndex: 0});
+    }
   }
   onResultMouseEnter(index) {
     this.setState({selectedIndex: index, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
@@ -1974,7 +1999,7 @@ class Autocomplete extends React.PureComponent {
     }
   }
   render() {
-    let {matchingResults, queryString, recentItems} = this.props;
+    let {matchingResults, recentItems} = this.props;
     let {
       showResults,
       selectedIndex,
@@ -1984,10 +2009,9 @@ class Autocomplete extends React.PureComponent {
     } = this.state;
     // For better performance only render the visible autocomplete items + at least one invisible item above and below (if they exist)
     const RENDERED_ITEMS_COUNT = 11;
-    let autocompleteResult = queryString.length > 0 ? matchingResults : recentItems;
-    //let autocompleteResult = matchingResults;
     let firstIndex = 0;
-    let lastIndex = autocompleteResult.length - 1;
+    let autocompleteResults = recentItems.length > 0 ? recentItems : matchingResults;
+    let lastIndex = autocompleteResults.length - 1;
     let firstRenderedIndex = Math.max(0, scrollTopIndex - 2);
     let lastRenderedIndex = Math.min(lastIndex, firstRenderedIndex + RENDERED_ITEMS_COUNT);
     let topSpace = (firstRenderedIndex - firstIndex) * itemHeight;
@@ -1995,16 +2019,16 @@ class Autocomplete extends React.PureComponent {
     let topSelected = (selectedIndex - firstIndex) * itemHeight;
 
     return (
-      h("div", {className: "autocomplete-container", style: {display: (showResults && (autocompleteResult.length > 0)) || resultsMouseIsDown ? "" : "none"}, onMouseDown: this.onResultsMouseDown, onMouseUp: this.onResultsMouseUp},
+      h("div", {className: "autocomplete-container", style: {display: (showResults && (autocompleteResults.length > 0)) || resultsMouseIsDown ? "" : "none"}, onMouseDown: this.onResultsMouseDown, onMouseUp: this.onResultsMouseUp},
         h("div", {className: "autocomplete", onScroll: this.onScroll, ref: "scrollBox"},
           h("div", {ref: "selectedItem", style: {position: "absolute", top: topSelected + "px", height: itemHeight + "px"}}),
           h("div", {style: {height: topSpace + "px"}}),
-          autocompleteResult.slice(firstRenderedIndex, lastRenderedIndex + 1)
+          autocompleteResults.slice(firstRenderedIndex, lastRenderedIndex + 1)
             .map(({key, value, element}, index) =>
               h("a", {
                 key,
                 className: "autocomplete-item " + (selectedIndex == index + firstRenderedIndex ? "selected" : ""),
-                onClick: () => this.onResultClick(value),
+                onClick: (e) => this.onResultClick(e, value),
                 onMouseEnter: () => this.onResultMouseEnter(index + firstRenderedIndex)
               }, element)
             ),

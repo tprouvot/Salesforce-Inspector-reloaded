@@ -967,7 +967,7 @@ class AllDataBoxSObject extends React.PureComponent {
     let {selectedValue, recordIdDetails} = this.state;
     return (
       h("div", {},
-        h(AllDataSearch, {ref: "allDataSearch", onDataSelect: this.onDataSelect, sobjectsList, getMatches: this.getMatches, inputSearchDelay: 0, placeholderText: "Record id, id prefix or object name", resultRender: this.resultRender}),
+        h(AllDataSearch, {ref: "allDataSearch", onDataSelect: this.onDataSelect, sobjectsList, getMatches: this.getMatches, inputSearchDelay: 0, placeholderText: "Record id, id prefix or object name", title: "Click to show recent items", resultRender: this.resultRender}),
         selectedValue
           ? h(AllDataSelection, {ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId, isFieldsPresent})
           : h("div", {className: "all-data-box-inner empty"}, "No record to display")
@@ -1762,6 +1762,7 @@ class AllDataSearch extends React.PureComponent {
     this.state = {
       queryString: "",
       matchingResults: [],
+      recentItems: [],
       queryDelayTimer: null
     };
     this.onAllDataInput = this.onAllDataInput.bind(this);
@@ -1815,7 +1816,7 @@ class AllDataSearch extends React.PureComponent {
     this.setState({queryDelayTimer});
   }
   render() {
-    let {queryString, matchingResults} = this.state;
+    let {queryString, matchingResults, recentItems} = this.state;
     let {placeholderText, resultRender} = this.props;
     return (
       h("div", {className: "input-with-dropdown"},
@@ -1833,6 +1834,7 @@ class AllDataSearch extends React.PureComponent {
           ref: "autoComplete",
           updateInput: this.updateAllDataInput,
           matchingResults: resultRender(matchingResults, queryString),
+          recentItems: resultRender(recentItems, queryString),
           queryString
         }),
         h("svg", {viewBox: "0 0 24 24", onClick: this.onAllDataArrowClick},
@@ -1863,8 +1865,7 @@ class Autocomplete extends React.PureComponent {
       scrollToSelectedIndex: 0, // Changed whenever selectedIndex is updated (even if updated to a value it already had). Used to scroll to the selected item.
       scrollTopIndex: 0, // Index of the first autocomplete item that is visible according to the current scroll position.
       itemHeight: 1, // The height of each autocomplete item. All items should have the same height. Measured on first render. 1 means not measured.
-      resultsMouseIsDown: false, // Hide the autocomplete popup when the input field looses focus, except when clicking one of the autocomplete items.
-      recentItems: []
+      resultsMouseIsDown: false // Hide the autocomplete popup when the input field looses focus, except when clicking one of the autocomplete items.
     };
     this.onResultsMouseDown = this.onResultsMouseDown.bind(this);
     this.onResultsMouseUp = this.onResultsMouseUp.bind(this);
@@ -1876,8 +1877,8 @@ class Autocomplete extends React.PureComponent {
     this.setState({showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
   }
   handleFocus() {
+    let {recentItems} = this.props;
     sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+50").then(res => {
-      let recentItems = [];
       res.records.forEach(recentItem => {
         recentItems.push({key: recentItem.Id, value: {recordId: recentItem.Id, sobject: {keyPrefix: recentItem.Id, label: recentItem.Type, name: recentItem.Name}}});
       });
@@ -1973,18 +1974,18 @@ class Autocomplete extends React.PureComponent {
     }
   }
   render() {
-    let {matchingResults, queryString} = this.props;
+    let {matchingResults, queryString, recentItems} = this.props;
     let {
       showResults,
       selectedIndex,
       scrollTopIndex,
       itemHeight,
-      resultsMouseIsDown,
-      recentItems
+      resultsMouseIsDown
     } = this.state;
     // For better performance only render the visible autocomplete items + at least one invisible item above and below (if they exist)
     const RENDERED_ITEMS_COUNT = 11;
     let autocompleteResult = queryString.length > 0 ? matchingResults : recentItems;
+    //let autocompleteResult = matchingResults;
     let firstIndex = 0;
     let lastIndex = autocompleteResult.length - 1;
     let firstRenderedIndex = Math.max(0, scrollTopIndex - 2);

@@ -635,13 +635,14 @@ class Model {
 
     // If we are on the right hand side of a comparison operator, autocomplete field values
     //opérator are = < > <= >= != includes() excludes() in like
-    let isFieldValue = query.substring(0, selStart).match(/\s*(=|<|>|<=|>=|!=|includes|excludes|like|in)\s*\(?('?[^'\s]*)$/i);
+    // \s*[<>=!]+\s*('?[^'\s]*)$
+    let isFieldValue = query.substring(0, selStart).match(/(\s*[<>=!]+|\s+(includes|excludes|in)\s*\(|\s+like)\s*\(?('?[^'\s]*)$/i);
     let fieldName = null;
     if (isFieldValue) {
       let fieldEnd = selStart - isFieldValue[0].length;
       fieldName = query.substring(0, fieldEnd).match(/[a-zA-Z0-9_]*$/)[0];
       contextEnd = fieldEnd - fieldName.length;
-      selStart -= isFieldValue[2].length;
+      selStart -= isFieldValue[3].length;
     }
     /*
     contextSobjectDescribes is a set of describe results for the relevant context sobjects.
@@ -1198,32 +1199,6 @@ class Model {
     return;
   }
 
-  /*
-  ['Id', 'Name', 'Contacts', 'Contacts.Id']
-
-
-  ]
-  {
-    fields: [
-      {
-        name: 'Id',
-        position : 1
-      },
-      {
-        name: 'Name',
-        position : 2},
-      {
-        name: 'Contacts',
-        position : 3,
-        fields : [
-          {name: 'Id', position : 1}
-        ]
-        //,objectName : 'Contact'
-      }
-    ],
-    objectName : 'Account'
-  }
-  */
   extractColumnFromQuery(query, ctx) {
     if (!ctx) {
       ctx = {value: "", pos: 0};
@@ -1421,43 +1396,48 @@ class Model {
 }
 
 function RecordTable(vm) {
-  /*
-  We don't want to build our own SOQL parser, so we discover the columns based on the data returned.
-  This means that we cannot find the columns of cross-object relationships, when the relationship field is null for all returned records.
-  We don't care, because we don't need a stable set of columns for our use case.
-  */
   let columnIdx = new Map();
   let header = ["_"];
-  function discoverColumns(record, prefix, row) {
-    if (prefix == ""){
-      for (let field of vm.columnIndex.fields) {
-        for (let f in record) {
-          if (f && field.name && f.toLowerCase() == field.name.toLowerCase()) {
-            field.name = f;
-            break;
-          }
-        }
-        if (!columnIdx.has(field.name)) {
-          let c = header.length;
-          columnIdx.set(field.name, c);
-          header[c] = field.name;
-          // hide object column
-          rt.colVisibilities.push((!field.fields));
-          if (field.name.includes(".")) {
-            let splittedField = field.name.split(".");
-            splittedField.slice(0, splittedField.length - 1).map(col => {
-              if (!columnIdx.has(col)) {
-                let c = header.length;
-                columnIdx.set(col, c);
-                header[c] = col;
-                //hide parent column
-                rt.colVisibilities.push((false));
-              }
-            });
+  // try to respect the right order of column by matching query column and record column
+  function discoverQueryColumns(record, fields) {
+    for (let field of fields) {
+      let fieldName = "";
+      if (field.name) {
+        let fieldNameSplitted = field.name.split(".");
+        let subRecord = record;
+        for (let i = 0; i < fieldNameSplitted.length; i++) {
+          const currentFieldName = fieldNameSplitted[i];
+          for (let f in subRecord) {
+            if (f && currentFieldName && f.toLowerCase() == currentFieldName.toLowerCase()) {
+              subRecord = subRecord[f];
+              fieldName = fieldName ? fieldName + "." + f : f;
+              break;
+            }
           }
         }
       }
+      if (fieldName && !columnIdx.has(fieldName)) {
+        let c = header.length;
+        columnIdx.set(fieldName, c);
+        header[c] = fieldName;
+        // hide object column
+        rt.colVisibilities.push((!field.fields));
+        if (fieldName.includes(".")) {
+          let splittedField = fieldName.split(".");
+          splittedField.slice(0, splittedField.length - 1).map(col => {
+            if (!columnIdx.has(col)) {
+              let c = header.length;
+              columnIdx.set(col, c);
+              header[c] = col;
+              //hide parent column
+              rt.colVisibilities.push((false));
+            }
+          });
+        }
+      }
     }
+  }
+  function discoverColumns(record, prefix, row) {
     for (let field in record) {
       if (field == "attributes") {
         continue;
@@ -1489,28 +1469,6 @@ function RecordTable(vm) {
       }
     }
   }
-  /*
-  {
-            "attributes": {
-                "type": "Contact",
-                "url": "/services/data/v60.0/sobjects/Contact/003AO0000039ZMMYA2"
-            },
-            "Id": "003AO0000039ZMMYA2",
-            "Cases": {
-                "totalSize": 1,
-                "done": true,
-                "records": [
-                    {
-                        "attributes": {
-                            "type": "Case",
-                            "url": "/services/data/v60.0/sobjects/Case/500AO000002SzopYAC"
-                        },
-                        "Id": "500AO000002SzopYAC"
-                    }
-                ]
-            }
-        },
-  */
   function cellToString(cell) {
     if (cell == null) {
       return "";
@@ -1541,6 +1499,7 @@ function RecordTable(vm) {
         row[0] = record;
         rt.table.push(row);
         rt.rowVisibilities.push(isVisible(row, filter));
+        discoverQueryColumns(record, vm.columnIndex.fields);
         discoverColumns(record, "", row);
       }
     },

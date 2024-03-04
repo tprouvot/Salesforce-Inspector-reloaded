@@ -1606,7 +1606,7 @@ class AllDataSelection extends React.PureComponent {
     // Show buttons for the available APIs.
     let buttons = selectedValue.sobject.availableApis ? Array.from(selectedValue.sobject.availableApis) : [];
     buttons.sort();
-    if (buttons.length == 0 && !selectedValue.sobject.isRecent) {
+    if (buttons.length == 0 && !selectedValue.isRecent) {
       // If none of the APIs are available, show a button for the regular API, which will partly fail, but still show some useful metadata from the tooling API.
       buttons.push("noApi");
     }
@@ -1882,7 +1882,7 @@ class Autocomplete extends React.PureComponent {
     sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+50").then(res => {
       res.records.forEach(recentItem => {
         recentItems.push({key: recentItem.Id,
-          value: {recordId: recentItem.Id, sobject: {keyPrefix: recentItem.Id.slice(0, 3), label: recentItem.Type, name: recentItem.Name, isRecent: true}},
+          value: {recordId: recentItem.Id, isRecent: true, sobject: {keyPrefix: recentItem.Id.slice(0, 3), label: recentItem.Type, name: recentItem.Name}},
           element: [
             h("div", {className: "autocomplete-item-main", key: "main"},
               recentItem.Name,
@@ -1961,7 +1961,7 @@ class Autocomplete extends React.PureComponent {
   }
   onResultClick(e, value) {
     let {sfHost} = this.props;
-    if (value.sobject.isRecent){
+    if (value.isRecent){
       window.open("https://" + sfHost + "/" + value.recordId, "_blank");
     } else {
       this.props.updateInput(value);

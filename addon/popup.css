@@ -65,7 +65,6 @@ body,
     flex-direction: column;
 }
 
-a:link,
 a:visited {
     color: #0176d3;
 }
@@ -158,8 +157,6 @@ input.api-input {
     flex: 1;
     font-size: 0.9em;
 }
-
-.data-element {}
 
 .input-with-dropdown {
     position: relative;
@@ -339,6 +336,10 @@ ul.small-tabs li:hover {
     display: none;
 }
 
+.mask {
+    visibility: hidden;
+}
+
 a.icon {
     display: inline-block;
     -webkit-mask-repeat: no-repeat;
@@ -353,4 +354,8 @@ a.icon {
 }
 .pointer {
     cursor: pointer;
+}
+
+.text-error{
+	color: red;
 }

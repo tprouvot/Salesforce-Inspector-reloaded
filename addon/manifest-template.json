@@ -1,7 +1,7 @@
 {
   "name": "Salesforce Inspector reloaded",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.21",
+  "version": "1.22",
   "icons": {
     "128": "icon128.png"
   },
@@ -18,6 +18,8 @@
     "https://*.force.com/*",
     "https://*.cloudforce.com/*",
     "https://*.visualforce.com/*",
+    "https://*.sfcrmapps.cn/*",
+    "https://*.sfcrmproducts.cn/*",
     "https://*.salesforce.mil/*",
     "https://*.force.mil/*",
     "https://*.cloudforce.mil/*",
@@ -34,6 +36,8 @@
         "https://*.lightning.force.com/*",
         "https://*.cloudforce.com/*",
         "https://*.visualforce.com/*",
+        "https://*.sfcrmapps.cn/*",
+        "https://*.sfcrmproducts.cn/*",
         "https://*.salesforce.mil/*",
         "https://*.visual.force.mil/*",
         "https://*.vf.force.mil/*",
@@ -61,7 +65,8 @@
         "inspect.html",
         "metadata-retrieve.html",
         "explore-api.html",
-        "limits.html"
+        "limits.html",
+        "options.html"
       ],
       "matches": ["https://*/*"],
       "extension_ids": []

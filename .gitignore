@@ -12,3 +12,5 @@ yarn.lock
 .sfdx/
 venv/
 .sf/
+.vscode/
+.DS_Store

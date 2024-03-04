@@ -1961,7 +1961,7 @@ class Autocomplete extends React.PureComponent {
   }
   onResultClick(e, value) {
     let {sfHost} = this.props;
-    if (value.recordId){
+    if (value.sobject.isRecent){
       window.open("https://" + sfHost + "/" + value.recordId, "_blank");
     } else {
       this.props.updateInput(value);

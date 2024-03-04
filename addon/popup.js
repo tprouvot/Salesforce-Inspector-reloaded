@@ -1191,7 +1191,7 @@ class AllDataBoxOrg extends React.PureComponent {
               h("tbody", {},
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget}, "Org Id:")),
-                  h("td", {}, orgInfo.Id)
+                  h("td", {}, orgInfo.Id.substring(0, 15))
                 ),
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName, title: "Instance status", target: linkTarget}, "Instance:")),

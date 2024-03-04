@@ -2,6 +2,7 @@
 
 ## Version 1.23
 
+- Load recently viewed records on popup [feature 321](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/321)
 - Open documentation when installing the extension [feature 322](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/322)
 - Add Query Plan to data export [feature 314](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/314)
 - Align show-all data 'Type' column with Salesforce's 'Data Type' field [issue 312](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/312) by [efcdilascio](https://github.com/efcdilascio)

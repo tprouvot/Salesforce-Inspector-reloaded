@@ -963,6 +963,9 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
+    this.setupThemeChange();
+    this.setupAccentOption();
+    this.setupColorListeners();
     this.onUseAllTab = this.onUseAllTab.bind(this);
     this.onUseFieldsTab = this.onUseFieldsTab.bind(this);
     this.onUseChildsTab = this.onUseChildsTab.bind(this);
@@ -976,6 +979,7 @@ class App extends React.Component {
     this.onDoSave = this.onDoSave.bind(this);
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onUpdateTableBorderSettings = this.onUpdateTableBorderSettings.bind(this);
+    this.setupColorListeners = this.setupColorListeners.bind(this);
   }
   componentDidMount() {
     this.refs.rowsFilter.focus();
@@ -1061,6 +1065,69 @@ class App extends React.Component {
     model.didUpdate();
     // Save to local storage
   }
+
+  saveColorChanges(value, category) {
+    const html = document.documentElement;
+    html.dataset[category] = value;
+    const storage = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
+    localStorage.setItem(storage, value);
+
+    const popup = document.querySelector("#insext > iframe");
+    popup.contentWindow.postMessage({category, value}, "*");
+  }
+
+  setupColorListeners() {
+    // listen to possible updates from popup
+    const html = document.documentElement;
+    const popup = document.querySelector("#insext > iframe");
+    const changeColor = (value, category) => {
+      const htmlValue = html.dataset[category];
+      if (value != htmlValue) { // avoid recursion
+        this.saveColorChanges(value, category);
+      }
+    };
+    window.addEventListener("message", e => {
+      if (e.source != popup.contentWindow) {
+        return;
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        const value = e.data.value;
+        changeColor(value, category);
+      }
+    });
+
+    // listen to changes on other pages of the inspector
+    window.addEventListener("storage", e => {
+      if (!e.isTrusted || (e.key !== "preferredColorScheme" && e.key !== "preferredAccentScheme")) {
+        return;
+      }
+      const category = e.key === "preferredColorScheme" ? "theme" : "accent";
+      const value = e.newValue;
+      changeColor(value, category);
+    });
+  }
+
+  setupThemeChange() {
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    function getTheme(mediaQuery) {
+      return mediaQuery.matches ? "dark" : "light";
+    }
+    // listen for changes to color scheme preference
+    prefersDarkScheme.addEventListener("change", mediaQuery => {
+      const theme = getTheme(mediaQuery);
+      this.saveColorChanges(theme, "theme");
+    });
+
+    const savedTheme = localStorage.getItem("preferredColorScheme") || getTheme(prefersDarkScheme);
+    this.saveColorChanges(savedTheme, "theme");
+  }
+
+  setupAccentOption() {
+    const accent = localStorage.getItem("preferredAccentScheme") || "default";
+    this.saveColorChanges(accent, "accent");
+  }
+
   render() {
     let {model} = this.props;
     document.title = model.title();

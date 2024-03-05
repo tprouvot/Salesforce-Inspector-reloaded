@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
-import {setupLinks} from "./links.js";
+import {setupLinks} from "./links.mjs";
 
 let h = React.createElement;
 
@@ -80,10 +80,16 @@ class App extends React.PureComponent {
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
     };
+    this.setupThemeChange();
+    this.setupAccentOption();
+    this.setupColorListeners();
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
+    this.onThemeChange = this.onThemeChange.bind(this);
+    this.saveColorChanges = this.saveColorChanges.bind(this);
+    this.setupColorListeners = this.setupColorListeners.bind(this);
     this.updateReleaseNotesViewed = this.updateReleaseNotesViewed.bind(this);
   }
   onContextRecordChange(e) {
@@ -183,6 +189,101 @@ class App extends React.PureComponent {
       });
     }
   }
+
+  saveColorChanges(value, category) {
+    const html = document.documentElement;
+    html.dataset[category] = value;
+    const storageName = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
+    localStorage.setItem(storageName, value);
+
+    parent.postMessage({category, value}, "*");
+  }
+
+  setupColorListeners() {
+    const html = document.documentElement;
+    const changeColor = (value, category) => {
+      const htmlValue = html.dataset[category];
+      if (value != htmlValue) { // avoid recursion
+        const isThemeCategory = category === "theme";
+        isThemeCategory ? this.updateTheme(value) : this.saveColorChanges(value, category);
+      }
+    };
+
+    // listen to possible updates from background page
+    window.addEventListener("message", e => {
+      if (e.source != parent) {
+        return;
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        const value = e.data.value;
+        changeColor(value, category);
+      }
+    });
+
+    // listen to changes on other pages of the inspector
+    window.addEventListener("storage", e => {
+      if (!e.isTrusted || (e.key !== "preferredColorScheme" && e.key !== "preferredAccentScheme")) {
+        return;
+      }
+      const category = e.key === "preferredColorScheme" ? "theme" : "accent";
+      const value = e.newValue;
+      changeColor(value, category);
+    });
+  }
+
+  updateTheme(theme, isSetup = false, callback = null) {
+    const light = document.getElementById("light-theme");
+    const dark = document.getElementById("dark-theme");
+    if (light == null || dark == null) {
+      setTimeout(() => this.updateTheme(theme, isSetup, this.saveColorChanges), 500);
+      return;
+    }
+
+    callback = callback || this.saveColorChanges;
+    callback(theme, "theme");
+
+    if (isSetup) {
+      // always show only one of light/dark toggles
+      theme === "dark" ? light.classList.remove("hide") : dark.classList.remove("hide");
+      return;
+    }
+
+    const lightHide = light.classList.contains("hide");
+    const darkHide = dark.classList.contains("hide");
+    if (lightHide ^ darkHide) {
+      light.classList.toggle("hide");
+      dark.classList.toggle("hide");
+    }
+  }
+
+  setupThemeChange() {
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    function getTheme(mediaQuery) {
+      return mediaQuery.matches ? "dark" : "light";
+    }
+
+    // listen for changes to color scheme preference
+    prefersDarkScheme.addEventListener("change", mediaQuery => {
+      const theme = getTheme(mediaQuery);
+      this.saveColorChanges(theme, "theme");
+    });
+
+    const savedTheme = localStorage.getItem("preferredColorScheme") || getTheme(prefersDarkScheme);
+    this.updateTheme(savedTheme, true);
+  }
+
+  onThemeChange() {
+    const html = document.documentElement;
+    const theme = html.dataset.theme === "light" ? "dark" : "light";
+    this.updateTheme(theme, false);
+  }
+
+  setupAccentOption() {
+    const savedAccent = localStorage.getItem("preferredAccentScheme") || "default";
+    this.saveColorChanges(savedAccent, "accent");
+  }
+
   render() {
     let {
       sfHost,
@@ -217,7 +318,6 @@ class App extends React.PureComponent {
                         m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
                         M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
                         `,
-                        fill: "#061c3f"
                       })
                     )
                   )
@@ -336,10 +436,14 @@ class App extends React.PureComponent {
               title: "Update api version",
               onChange: this.onChangeApi,
               value: apiVersionInput.split(".0")[0]
-            })
+            }),
+            h("img", {id: "dark-theme", src: "images/moon.svg", className: "hide", onClick: this.onThemeChange, height: "20px", width: "20px", title: "Set color theme to dark."}),
+            h("img", {id: "light-theme", src: "images/sun.svg", className: "hide", onClick: this.onThemeChange, height: "20px", width: "20px", title: "Set color theme to light."})
           ),
-          h("div", {className: "slds-col slds-size_4-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+          h("div", {className: "slds-col slds-size_3-of-12 slds-text-align_left slds-grid slds-grid_vertical slds-grid_vertical-align-center"},
+            h("span", {className: "footer-small-text"}, (navigator.userAgentData?.platform.indexOf("mac") > -1 || navigator.userAgent.indexOf("mac") > -1) ? "[ctrl+option+i]" : "[ctrl+alt+i]",
+              h("br")),
+            h("span", {className: "footer-small-text"}, "to open")
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
@@ -582,7 +686,7 @@ class AllDataBox extends React.PureComponent {
           h("li", {ref: "objectTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : ""}, h("span", {}, h("u", {}, "O"), "bjects")),
           h("li", {ref: "userTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : ""}, h("span", {}, h("u", {}, "U"), "sers")),
           h("li", {ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : ""}, h("span", {}, h("u", {}, "S"), "hortcuts")),
-          h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g"))
+          h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g")),
         ),
         (activeSearchAspect == this.SearchAspectTypes.sobject)
           ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, onContextRecordChange, isFieldsPresent})

@@ -2,6 +2,7 @@
 
 ## Version 1.23
 
+- Save default batch size and thread for data import [feature 329](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/329) (feature request by [ritterblau](https://github.com/ritterblau))
 - Load recently viewed records on popup [feature 321](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/321)
 - Open documentation when installing the extension [feature 322](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/322)
 - Add Query Plan to data export [feature 314](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/314)

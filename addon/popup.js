@@ -319,12 +319,12 @@ class App extends React.PureComponent {
                 },
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
             ),
-          ),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
-            h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
-            ),
           )
+        ),
+        h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
+          h("div", {className: "slds-m-bottom_xx-small"},
+            h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
+          ),
         ),
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},

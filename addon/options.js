@@ -63,6 +63,7 @@ class OptionsTabSelector extends React.Component {
   constructor(props) {
     super(props);
     this.model = props.model;
+    this.sfHost = this.model.sfHost;
     this.state = {
       selectedTabId: 1
     };
@@ -78,7 +79,8 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab"}},
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
           {option: Option, props: {type: "toggle", title: "Search metadata from Shortcut tab", key: "metadataShortcutSearch"}},
-          {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}}
+          {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
+          {option: Option, props: {type: "text", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", placeholder: "Available values : green, orange, pink, purple, red, yellow"}},
         ]
       },
       {

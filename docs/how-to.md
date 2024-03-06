@@ -204,5 +204,16 @@ You can update the debug level (configuration is per organization) and duration 
 ## Display query performance in Data Export
 
 To enable performance metrics for queries on the data export page, open the Options screen and select the Data Export tab,
-then set "Display Query Execution Time" to enabled.  Total time for the query to process and, when applicable, batch stats (Total Number of Batches, Min/Max/Avg Batch Time)
+then set "Display Query Execution Time" to enabled. Total time for the query to process and, when applicable, batch stats (Total Number of Batches, Min/Max/Avg Batch Time)
 are displayed.
+
+## Customize extension's favicon
+
+From the option page, you can customize the default favicon by:
+
+- a predefined color among those values (green, orange, pink, purple, red, yellow)
+- a custom favicon url (ie "https://stackoverflow.com/favicon.ico")
+
+The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
+
+<img width="901" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">

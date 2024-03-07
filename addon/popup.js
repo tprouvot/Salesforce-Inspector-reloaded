@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, sessionError} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 
@@ -183,6 +183,21 @@ class App extends React.PureComponent {
       });
     }
   }
+  getBannerUrlAction(sessionError, sfHost, clientId, browser) {
+    let url;
+    let title;
+    let text;
+    if (sessionError !== "Session expired or invalid"){
+      text = "Access Token Expired";
+      title = "Generate New Token";
+      url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
+    } else {
+      text = "Expired session";
+      title = "Return to login page";
+      url = `https://${sfHost}/`;
+    }
+    return {title, url, text};
+  }
   render() {
     let {
       sfHost,
@@ -199,7 +214,7 @@ class App extends React.PureComponent {
     const browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
     const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
     const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
-    const oauthAuthorizeUrl = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
+    const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
     return (
       h("div", {},
         h("div", {className: "slds-page-header slds-theme_shade popup-header"},
@@ -249,17 +264,17 @@ class App extends React.PureComponent {
             }
           }
         }),
-        h("div", {id: "expiredTokenLink", className: "hide"},
+        h("div", {id: "invalidTokenBanner", className: "hide"},
           h(AlertBanner, {type: "warning",
-            bannerText: "Access Token Expired",
+            bannerText: bannerUrlAction.text,
             iconName: "warning",
             iconTitle: "Warning",
-            assistiveTest: "Access Token Expired",
+            assistiveTest: bannerUrlAction.text,
             onClose: null,
             link: {
-              text: "Generate New Token",
+              text: bannerUrlAction.title,
               props: {
-                href: oauthAuthorizeUrl,
+                href: bannerUrlAction.url,
                 target: linkTarget
               }
             }

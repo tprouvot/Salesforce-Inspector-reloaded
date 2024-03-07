@@ -286,16 +286,6 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
             ),
-            h("div", {className: "slds-m-bottom_xx-small"},
-              h("a",
-                {
-                  ref: "generateToken",
-                  href: oauthAuthorizeUrl,
-                  target: linkTarget,
-                  className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
-                },
-                h("span", {}, h("u", {}, "G"), "enerate Access Token"))
-            ),
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
             inLightning && isInSetup && h("div", {className: "slds-m-bottom_xx-small"},
               h("a",

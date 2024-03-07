@@ -94,7 +94,7 @@ class App extends React.PureComponent {
     exportArg.set("host", sfHost);
     importArg.set("host", sfHost);
     limitsArg.set("host", sfHost);
-    if (e.contextSobject) {
+    if (e.contextSobject && localStorage.getItem("useSObjectContextOnDataImportLink") !== "false") {
       let query = "SELECT Id FROM " + e.contextSobject;
       if (e.contextRecordId && (e.contextRecordId.length == 15 || e.contextRecordId.length == 18)) {
         query += " WHERE Id = '" + e.contextRecordId + "'";

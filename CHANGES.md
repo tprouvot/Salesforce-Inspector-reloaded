@@ -2,6 +2,7 @@
 
 ## Version 1.23
 
+- Display correct banner when session is expired instead of "Generate new token" [feature 305](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/305)
 - Add an option to enable / disable SObject context on data export [issue 341](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/341)
 - Remove Consumer key input from data export [issue 338](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/338)
 - Customize extension's favicon [feature 197](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/197)

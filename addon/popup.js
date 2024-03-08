@@ -324,12 +324,12 @@ class App extends React.PureComponent {
                 },
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
             ),
-          )
-        ),
-        h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
-          h("div", {className: "slds-m-bottom_xx-small"},
-            h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
           ),
+          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
+            ),
+          )
         ),
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
@@ -353,7 +353,7 @@ class App extends React.PureComponent {
               )
             )
           ),
-          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Options"},
+          h("div", {id: "optionsBtn", className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Options"},
             h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget},
               h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
                 h("use", {xlinkHref: "symbols.svg#settings", style: {fill: "#9c9c9c"}})

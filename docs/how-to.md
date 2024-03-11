@@ -207,6 +207,17 @@ To enable performance metrics for queries on the data export page, open the Opti
 then set "Display Query Execution Time" to enabled. Total time for the query to process and, when applicable, batch stats (Total Number of Batches, Min/Max/Avg Batch Time)
 are displayed.
 
+## Test GraphQL query
+
+- Open popup and click on "Explore API" button.
+- Right click on the page and select "Inspect"
+- Execute the code in dev console:
+
+`var myQuery = { "query": "query accounts { uiapi { query { Account { edges { node { Id  Name { value } } } } } } }" };`
+`display(sfConn.rest("/services/data/v59.0/graphql", {method: "POST", body: myQuery}));`
+
+![2024-02-09_17-01-42 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6689fad3-9549-41b9-8371-55adae037793)
+
 ## Customize extension's favicon
 
 From the option page, you can customize the default favicon by:

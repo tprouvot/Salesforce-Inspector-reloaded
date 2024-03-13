@@ -171,8 +171,43 @@ function initButton(sfHost, inInspector) {
       }
     });
     rootEl.appendChild(popupEl);
+    // Function to display a toast notification for a copied field
+    function fieldCopiedToast(message, duration = 2000) {
+      // Check for an existing toast and remove if present
+      const existingToast = document.querySelector(".fieldCopiedToastNotification");
+      if (existingToast) {
+        existingToast.remove();
+      }
+
+      // Create a new div element to serve as the toast notification
+      const toast = document.createElement("div");
+      // Set the text of the toast to the passed message
+      toast.textContent = message;
+      // Assign a class name for styling the toast notification
+      toast.className = "fieldCopiedToastNotification";
+      toast.setAttribute("role", "alert");
+      toast.setAttribute("aria-live", "assertive");
+      // Append the toast element to the body of the document
+      document.body.appendChild(toast);
+
+      // Remove the toast notification after the specified duration (default 3000ms)
+      setTimeout(() => {
+        toast.remove();
+      }, duration);
+    }
+    // Function to copy text to clipboard and display a toast notification
     function copy(e){
-      navigator.clipboard.writeText(e.target.innerText);
+      const textToCopy = e.target.innerText;
+      copyTextAndNotify(textToCopy, `Field '${textToCopy}' copied.`, "Copy failed.");
+    }
+    // Function to copy text and show notification
+    function copyTextAndNotify(text, successMessage, failureMessage) {
+      navigator.clipboard.writeText(text).then(() => {
+        fieldCopiedToast(successMessage);
+      }).catch(err => {
+        console.error("Copy failed: ", err);
+        fieldCopiedToast(failureMessage);
+      });
     }
     function openPopup() {
       let activeContentElem = document.querySelector("div.windowViewMode-normal.active, section.oneConsoleTab div.windowViewMode-maximized.active.lafPageHost");

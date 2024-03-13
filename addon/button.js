@@ -162,7 +162,7 @@ function initButton(sfHost, inInspector) {
               fieldApiName.style.cursor = "copy";
               fieldApiName.innerText = field.dataset.targetSelectionName.split(".")[2];
               label.appendChild(fieldApiName);
-              document.addEventListener("click", copy);
+              label.addEventListener("click", copy);
             }
           });
         } else {

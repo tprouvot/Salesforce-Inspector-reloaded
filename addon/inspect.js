@@ -1446,7 +1446,7 @@ class FieldValueCell extends React.Component {
         h("div", {className: "pop-menu-container", onBlur: this.onBlurPopMenu},
           h("div", {className: "value-text quick-select"}, h("a", {href: row.idLink() /*used to show visited color*/, onClick: this.onRecordIdClick}, row.dataStringValue())),
           row.recordIdPop == null ? null : h("div", {className: "pop-menu"}, row.recordIdPop.map(link => h("a", {key: link.href, href: link.href, className: link.className, id: link.id, onClick: this.onLinkClick}, link.text)))
-      )
+        )
       );
     } else {
       return h("td", {className: col.className, onDoubleClick: this.onTryEdit},

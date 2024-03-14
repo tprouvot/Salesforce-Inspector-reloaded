@@ -805,6 +805,9 @@ class FieldRow extends TableRow {
     links.push({href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
     this.recordIdPop = links;
   }
+  cleanRecordIdPop(){
+    this.recordIdPop = null;
+  }
   showReferenceUrl(type) {
     let args = new URLSearchParams();
     args.set("host", this.rowList.model.sfHost);
@@ -1389,6 +1392,7 @@ class FieldValueCell extends React.Component {
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onRecordIdClick = this.onRecordIdClick.bind(this);
     this.onLinkClick = this.onLinkClick.bind(this);
+    this.onBlurPopMenu = this.onBlurPopMenu.bind(this);
   }
   onTryEdit(e) {
     let {row} = this.props;
@@ -1419,6 +1423,16 @@ class FieldValueCell extends React.Component {
       navigator.clipboard.writeText(e.target.id);
       this.onRecordIdClick(e);
     }
+    let {row} = this.props;
+    row.cleanRecordIdPop();
+    row.rowList.model.didUpdate();
+  }
+  onBlurPopMenu(e){
+    if(!e.currentTarget.contains(e.relatedTarget)){
+      let {row} = this.props;
+      row.cleanRecordIdPop();
+      row.rowList.model.didUpdate();
+    }
   }
   render() {
     let {row, col} = this.props;
@@ -1429,10 +1443,10 @@ class FieldValueCell extends React.Component {
       );
     } else if (row.isId()) {
       return h("td", {className: col.className, onDoubleClick: this.onTryEdit},
-        h("div", {className: "pop-menu-container"},
+        h("div", {className: "pop-menu-container", onBlur: this.onBlurPopMenu},
           h("div", {className: "value-text quick-select"}, h("a", {href: row.idLink() /*used to show visited color*/, onClick: this.onRecordIdClick}, row.dataStringValue())),
           row.recordIdPop == null ? null : h("div", {className: "pop-menu"}, row.recordIdPop.map(link => h("a", {key: link.href, href: link.href, className: link.className, id: link.id, onClick: this.onLinkClick}, link.text)))
-        )
+      )
       );
     } else {
       return h("td", {className: col.className, onDoubleClick: this.onTryEdit},

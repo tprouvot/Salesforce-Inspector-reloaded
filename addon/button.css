@@ -128,21 +128,21 @@
     color: white;
     z-index: 10000;
 }
-.fieldCopiedToastNotification {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #323232;
-    color: #fff;
-    padding: 10px;
-    border-radius: 5px;
-    z-index: 1000;
-    font-size: 14px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    text-align: center;
-    max-width: 80%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+.copiedText {
+    font-family: "Salesforce Sans", Arial, sans-serif;
+    color: #28a745; 
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    margin-left: 4px;
+    padding: 0;
+    display: inline-block;
+    vertical-align: middle;
+    animation: fadeOut 2s forwards;
+  }
+  
+  @keyframes fadeOut {
+    to {
+      opacity: 0;
+    }
+  }   

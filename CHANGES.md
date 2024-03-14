@@ -20,6 +20,7 @@
 - Clean up popup header and footer (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Fix double "Show all data" button [issue 63](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63) (contribution by [Luca Bassani](https://github.com/baslu93))
 - With this new update, whenever a user clicks on an API Name after enabling "Show Fields API Names," a notification will pop up confirming that the field has been successfully copied to the clipboard. This immediate feedback ensures users that the copy action was successful.
+- Refined UI feedback for field copy actions by transitioning from a toast message to an inline "copied ✓" indicator, delivering a smoother user experience. Indicator auto-removes after 2 seconds for unobtrusive interaction.
 
 ## Version 1.22
 

@@ -171,42 +171,36 @@ function initButton(sfHost, inInspector) {
       }
     });
     rootEl.appendChild(popupEl);
-    // Function to display a toast notification for a copied field
-    function fieldCopiedToast(message, duration = 2000) {
-      // Check for an existing toast and remove if present
-      const existingToast = document.querySelector(".fieldCopiedToastNotification");
-      if (existingToast) {
-        existingToast.remove();
-      }
+    // Function to handle copy action
+    function copy(e) {
+      // Retrieve the text content of the target element triggered by the event
+      const originalText = e.target.innerText; // Save the original text
+      // Attempt to copy the text to the clipboard
+      navigator.clipboard.writeText(originalText).then(() => {
+        // Create a new span element to show the copy success indicator
+        const copiedIndicator = document.createElement("span");
+        copiedIndicator.textContent = "copied ✓"; // Set the text content to indicate success
+        copiedIndicator.className = "copiedText"; // Assign a class for styling purposes
 
-      // Create a new div element to serve as the toast notification
-      const toast = document.createElement("div");
-      // Set the text of the toast to the passed message
-      toast.textContent = message;
-      // Assign a class name for styling the toast notification
-      toast.className = "fieldCopiedToastNotification";
-      toast.setAttribute("role", "alert");
-      toast.setAttribute("aria-live", "assertive");
-      // Append the toast element to the body of the document
-      document.body.appendChild(toast);
+        // Add the newly created span right after the clicked element in the DOM
+        if (e.target.nextSibling) {
+          // If the target has a sibling, insert the indicator before the sibling
+          e.target.parentNode.insertBefore(copiedIndicator, e.target.nextSibling);
+        } else {
+          // If no sibling, append the indicator as the last child of the parent
+          e.target.parentNode.appendChild(copiedIndicator);
+        }
 
-      // Remove the toast notification after the specified duration (default 3000ms)
-      setTimeout(() => {
-        toast.remove();
-      }, duration);
-    }
-    // Function to copy text to clipboard and display a toast notification
-    function copy(e){
-      const textToCopy = e.target.innerText;
-      copyTextAndNotify(textToCopy, `Field '${textToCopy}' copied.`, "Copy failed.");
-    }
-    // Function to copy text and show notification
-    function copyTextAndNotify(text, successMessage, failureMessage) {
-      navigator.clipboard.writeText(text).then(() => {
-        fieldCopiedToast(successMessage);
+        // Remove the indicator span after 2 seconds
+        setTimeout(() => {
+          if (copiedIndicator.parentNode) {
+            // Ensure the element still has a parent before removing
+            copiedIndicator.parentNode.removeChild(copiedIndicator);
+          }
+        }, 2000); // Set timeout for 2 seconds
       }).catch(err => {
+        // Log an error message if the copy action fails
         console.error("Copy failed: ", err);
-        fieldCopiedToast(failureMessage);
       });
     }
     function openPopup() {

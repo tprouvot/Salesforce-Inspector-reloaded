@@ -179,7 +179,7 @@ function initButton(sfHost, inInspector) {
       navigator.clipboard.writeText(originalText).then(() => {
         // Create a new span element to show the copy success indicator
         const copiedIndicator = document.createElement("span");
-        copiedIndicator.textContent = "copied ✓"; // Set the text content to indicate success
+        copiedIndicator.textContent = "Copied ✓"; // Set the text content to indicate success
         copiedIndicator.className = "copiedText"; // Assign a class for styling purposes
 
         // Add the newly created span right after the clicked element in the DOM

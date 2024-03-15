@@ -83,10 +83,12 @@ Add a new property `disableQueryInputAutoFocus` with `true`
 
 ## Add custom query templates
 
-Add a new property `queryTemplates` with your custom queries separated by "//" character.
+Enter value in "Query Templates" option with your custom queries separated by "//" character.
 Example:
 
 `SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE`
+
+<img width="895" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/16490965-ec4f-42d7-a534-8f24febe1ee3">
 
 ## Open links in a new tab
 

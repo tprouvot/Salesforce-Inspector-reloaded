@@ -2,6 +2,7 @@
 
 ## Version 1.23
 
+- Add query template customization in Option page [feature 349](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/349)
 - Display correct banner when session is expired instead of "Generate new token" [feature 305](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/305)
 - Add an option to enable / disable SObject context on data export [issue 341](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/341)
 - Remove Consumer key input from data export [issue 338](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/338)
@@ -20,7 +21,6 @@
 - Clean up popup header and footer (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Fix double "Show all data" button [issue 63](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63) (contribution by [Luca Bassani](https://github.com/baslu93))
 - Enhanced the user interface with a subtle inline "copied" indicator for field copy actions [feature 351](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/351) (contribution by [dyncan](https://github.com/dyncan))
-
 
 ## Version 1.22
 

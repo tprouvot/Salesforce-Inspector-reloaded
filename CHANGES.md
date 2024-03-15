@@ -19,6 +19,8 @@
 - Add performance On data export with option to disable in Options/Data Export tab (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Clean up popup header and footer (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Fix double "Show all data" button [issue 63](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63) (contribution by [Luca Bassani](https://github.com/baslu93))
+- Enhanced the user interface with a subtle inline "copied" indicator for field copy actions [feature 351](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/351) (contribution by [dyncan](https://github.com/dyncan))
+
 
 ## Version 1.22
 

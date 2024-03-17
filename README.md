@@ -40,11 +40,11 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 ## New features compared to original SF Inspector
 
-- SOQL intellisens improoved : subquery, in, like, excludes, includes
-- SOSL support in data export with intellisens
-- apex Runner
-- log profiler, analyze, search and download
-- respect order of column in data export
+- Improoved SOQL suggestions : subquery, in, like, excludes, includes
+- Add SOSL support in data export with suggestions
+- Add APEX script runner with history and log polling
+- Add Log support: profiler, search and download
+- Respect order of column in data export
 - Allow users to update API Version [feature 58](https://github.com/dufoli/Salesforce-Inspector-reloaded/issues/58)
 - Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/dufoli/Salesforce-Inspector-reloaded/issues/42)
 - Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/dufoli/Salesforce-Inspector-reloaded/issues/34)

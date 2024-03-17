@@ -7,7 +7,9 @@
     "128": "icon128.png"
   },
   "minimum_chrome_version": "88",
-  "permissions": ["cookies"],
+  "permissions": [
+    "cookies"
+  ],
   "host_permissions": [
     "https://*.salesforce.com/*",
     "https://*.force.com/*",
@@ -43,8 +45,15 @@
         "https://*.lightning.force.com.mcas.ms/*"
       ],
       "all_frames": true,
-      "css": ["button.css", "inspect-inline.css"],
-      "js": ["button.js", "inspect-inline.js"]
+      "css": [
+        "button.css",
+        "inspect-inline.css"
+      ],
+      "js": [
+        "button.js",
+        "inspect-inline.js",
+        "links.js"
+      ]
     }
   ],
   "background": {
@@ -65,7 +74,9 @@
         "limits.html",
         "options.html"
       ],
-      "matches": ["https://*/*"],
+      "matches": [
+        "https://*/*"
+      ],
       "extension_ids": []
     }
   ],

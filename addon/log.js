@@ -709,6 +709,7 @@ class App extends React.Component {
   }
 
   downloadFile() {
+    let {model} = this.props;
     let downloadLink = document.createElement("a");
     downloadLink.download = model.recordId + ".txt";
     downloadLink.href = "data:text/plain;charset=utf-8," + model.logData;

@@ -3,12 +3,12 @@ name: Bug report
 about: Create a report to help us improve
 title: ''
 labels: bug
-assignees: tprouvot
+assignees: dufoli
 
 ---
 **Make sure to read the troubleshooting section before creating an issue**
 
-- [ ] I've read the [common issues](https://tprouvot.github.io/Salesforce-Inspector-reloaded/troubleshooting/) and the one I'm about to create is not one of those documented.
+- [ ] I've read the [common issues](https://dufoli.github.io/Salesforce-Inspector-reloaded/troubleshooting/) and the one I'm about to create is not one of those documented.
 
 **Describe the bug**
 A clear and concise description of what the bug is.

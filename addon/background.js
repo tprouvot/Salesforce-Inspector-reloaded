@@ -47,7 +47,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.runtime.onInstalled.addListener(({reason}) => {
   if (reason === "install") {
     chrome.tabs.create({
-      url: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/welcome/"
+      url: "https://dufoli.github.io/Salesforce-Inspector-reloaded/welcome/"
     });
   }
 });

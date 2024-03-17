@@ -1,5 +1,13 @@
 # Release Notes
 
+## Advanced
+
+- SOQL intellisens improoved : subquery, in, like, excludes, includes
+- SOSL support in data export with intellisens
+- Apex Runner to execute batch, enqueue job or just anonymous code
+- Log profiler, analyze, search and download
+- Respect order of column in data export
+
 ## Version 1.23
 
 - Add query template customization in Option page [feature 349](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/349)

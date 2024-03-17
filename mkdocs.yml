@@ -1,7 +1,7 @@
-site_name: Salesforce Inspector reloaded
-site_url: https://tprouvot.github.io/Salesforce-Inspector-reloaded/
-repo_url: https://github.com/tprouvot/Salesforce-Inspector-reloaded
-site_author: Thomas Prouvot
+site_name: Salesforce Inspector Advanced
+site_url: https://dufoli.github.io/Salesforce-Inspector-reloaded/
+repo_url: https://github.com/dufoli/Salesforce-Inspector-reloaded
+site_author: Olivier Dufour
 theme:
   name: material
   logo: assets/images/icon128.png
@@ -34,7 +34,7 @@ theme:
 extra:
   social:
     - icon: fontawesome/brands/github-alt
-      link: https://github.com/tprouvot
+      link: https://github.com/dufoli
     - icon: fontawesome/brands/linkedin
       link: https://www.linkedin.com/in/thomasprouvot/
 
@@ -60,4 +60,4 @@ markdown_extensions:
       emoji_generator: !!python/name:materialx.emoji.to_svg
 
 copyright: |
-  &copy; 2024 <a href="https://github.com/tprouvot" target="_blank" rel="noopener">Thomas Prouvot</a>
+  &copy; 2024 <a href="https://github.com/dufoli" target="_blank" rel="noopener">Olivier Dufour</a>

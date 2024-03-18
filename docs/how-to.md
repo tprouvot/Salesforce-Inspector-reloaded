@@ -83,10 +83,12 @@ Add a new property `disableQueryInputAutoFocus` with `true`
 
 ## Add custom query templates
 
-Add a new property `queryTemplates` with your custom queries separated by "//" character.
+Enter value in "Query Templates" option with your custom queries separated by "//" character.
 Example:
 
 `SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE`
+
+<img width="895" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/16490965-ec4f-42d7-a534-8f24febe1ee3">
 
 ## Open links in a new tab
 
@@ -201,14 +203,30 @@ You can update the debug level (configuration is per organization) and duration 
 > **Warning**
 > Increasing the default duration may lead to a high volume of logs generated.
 
+## Display query performance in Data Export
+
+To enable performance metrics for queries on the data export page, open the Options screen and select the Data Export tab,
+then set "Display Query Execution Time" to enabled. Total time for the query to process and, when applicable, batch stats (Total Number of Batches, Min/Max/Avg Batch Time)
+are displayed.
+
 ## Test GraphQL query
 
 - Open popup and click on "Explore API" button.
 - Right click on the page and select "Inspect"
 - Execute the code in dev console:
+
 `var myQuery = { "query": "query accounts { uiapi { query { Account { edges { node { Id  Name { value } } } } } } }" };`
 `display(sfConn.rest("/services/data/v59.0/graphql", {method: "POST", body: myQuery}));`
+
 ![2024-02-09_17-01-42 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6689fad3-9549-41b9-8371-55adae037793)
 
+## Customize extension's favicon
 
+From the option page, you can customize the default favicon by:
 
+- a predefined color among those values (green, orange, pink, purple, red, yellow)
+- a custom favicon url (ie "https://stackoverflow.com/favicon.ico")
+
+The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
+
+<img width="901" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">

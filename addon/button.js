@@ -162,7 +162,7 @@ function initButton(sfHost, inInspector) {
               fieldApiName.style.cursor = "copy";
               fieldApiName.innerText = field.dataset.targetSelectionName.split(".")[2];
               label.appendChild(fieldApiName);
-              document.addEventListener("click", copy);
+              label.addEventListener("click", copy);
             }
           });
         } else {
@@ -171,8 +171,37 @@ function initButton(sfHost, inInspector) {
       }
     });
     rootEl.appendChild(popupEl);
-    function copy(e){
-      navigator.clipboard.writeText(e.target.innerText);
+    // Function to handle copy action
+    function copy(e) {
+      // Retrieve the text content of the target element triggered by the event
+      const originalText = e.target.innerText; // Save the original text
+      // Attempt to copy the text to the clipboard
+      navigator.clipboard.writeText(originalText).then(() => {
+        // Create a new span element to show the copy success indicator
+        const copiedIndicator = document.createElement("span");
+        copiedIndicator.textContent = "Copied ✓"; // Set the text content to indicate success
+        copiedIndicator.className = "copiedText"; // Assign a class for styling purposes
+
+        // Add the newly created span right after the clicked element in the DOM
+        if (e.target.nextSibling) {
+          // If the target has a sibling, insert the indicator before the sibling
+          e.target.parentNode.insertBefore(copiedIndicator, e.target.nextSibling);
+        } else {
+          // If no sibling, append the indicator as the last child of the parent
+          e.target.parentNode.appendChild(copiedIndicator);
+        }
+
+        // Remove the indicator span after 2 seconds
+        setTimeout(() => {
+          if (copiedIndicator.parentNode) {
+            // Ensure the element still has a parent before removing
+            copiedIndicator.parentNode.removeChild(copiedIndicator);
+          }
+        }, 2000); // Set timeout for 2 seconds
+      }).catch(err => {
+        // Log an error message if the copy action fails
+        console.error("Copy failed: ", err);
+      });
     }
     function openPopup() {
       let activeContentElem = document.querySelector("div.windowViewMode-normal.active, section.oneConsoleTab div.windowViewMode-maximized.active.lafPageHost");

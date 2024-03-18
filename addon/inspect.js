@@ -649,7 +649,7 @@ class FieldRow extends TableRow {
         ? "[" + fieldDescribe.referenceTo.join(", ") + "]"
         : (fieldDescribe.type || "")
         + (fieldDescribe.length ? " (" + fieldDescribe.length + ")" : "")
-        + (fieldDescribe.precision || fieldDescribe.scale ? " (" + fieldDescribe.precision + ", " + fieldDescribe.scale + ")" : "")
+        + (fieldDescribe.precision || fieldDescribe.scale ? " (" + (fieldDescribe.precision - fieldDescribe.scale) + ", " + fieldDescribe.scale + ")" : "")
         + (fieldDescribe.autoNumber ? ", auto number" : "")
         + (fieldDescribe.caseSensitive ? ", case sensitive" : "")
         + (fieldDescribe.dependentPicklist ? ", dependent" : "")
@@ -667,7 +667,7 @@ class FieldRow extends TableRow {
         ? "[" + particle.ReferenceTo.referenceTo.join(", ") + "]"
         : (particle.DataType || "")
         + (particle.Length ? " (" + particle.Length + ")" : "")
-        + (particle.Precision || particle.Scale ? " (" + particle.Precision + ", " + particle.Scale + ")" : "")
+        + (particle.Precision || particle.Scale ? " (" + (particle.Precision - particle.scale) + ", " + particle.Scale + ")" : "")
         + (particle.IsAutonumber ? ", auto number" : "")
         + (particle.IsCaseSensitive ? ", case sensitive" : "")
         + (particle.IsDependentPicklist ? ", dependent" : "")

@@ -22,8 +22,8 @@ class Model {
     this.updateAvailableActions();
     this.importType = "Account";
     this.externalId = "Id";
-    this.batchSize = "200";
-    this.batchConcurrency = "6";
+    this.batchSize = localStorage.getItem("defaultBatchSize") ? localStorage.getItem("defaultBatchSize") : "200";
+    this.batchConcurrency = localStorage.getItem("defaultThreadSize") ? localStorage.getItem("defaultThreadSize") : "6";
     this.confirmPopup = null;
     this.activeBatches = 0;
     this.isProcessingQueue = false;

@@ -147,7 +147,7 @@ export async function dataExportTest(test) {
   // Autocomplete object
   setQuery("select Id from OpportunityLi", "", "");
   assertEquals("Objects suggestions:", vm.autocompleteResults.title);
-  assertEquals(["OpportunityLineItem"], getValues(vm.autocompleteResults.results));
+  assertEquals(["OpportunityLineItem", "OpportunityLineItemChangeEvent"], getValues(vm.autocompleteResults.results));
 
   // Autocomplete unknown object
   setQuery("select Id from UnknownObj", "", "");
@@ -308,7 +308,7 @@ export async function dataExportTest(test) {
   // Filter results
   vm.setResultsFilter("TRU");
   assertEquals(false, vm.isWorking);
-  assertEquals("Exported 4 records", vm.exportStatus);
+  assertEquals("Filtered 2 records out of 4 records", vm.exportStatus);
   assertEquals([
     ["_", "Name", "Checkbox__c", "Number__c"],
     [{type: "Inspector_Test__c"}, "test1", false, 100.01],
@@ -323,7 +323,7 @@ export async function dataExportTest(test) {
   // Clear filter
   vm.setResultsFilter("");
   assertEquals(false, vm.isWorking);
-  assertEquals("Exported 4 records", vm.exportStatus);
+  assertEquals("Filtered 4 records out of 4 records", vm.exportStatus);
   assertEquals([
     ["_", "Name", "Checkbox__c", "Number__c"],
     [{type: "Inspector_Test__c"}, "test1", false, 100.01],

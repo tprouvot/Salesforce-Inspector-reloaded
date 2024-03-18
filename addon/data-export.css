@@ -691,3 +691,7 @@ button.toggle .button-icon {
   top: 0;
   z-index: 2;
 }
+.expanded{
+  overflow: auto;
+  height: 200px;
+}

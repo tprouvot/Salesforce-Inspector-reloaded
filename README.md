@@ -21,6 +21,8 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
     - [Chrome Web Store](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
     - [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
     - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
+  - [Beta Version](#beta-version)
+    - [Chrome Web Store](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf)
 - [Troubleshooting](#troubleshooting)
 - [Contributions](#contributions)
 - [Development](#development)
@@ -41,10 +43,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://tprouvot.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
 
-
 ## New features compared to original SF Inspector
-
-[List of changes](CHANGES.md)
 
 - Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
 - Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)
@@ -73,6 +72,20 @@ Follow steps described in [how-to documentation](https://tprouvot.github.io/Sale
 - [Chrome Web Store](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
 - [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
 - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
+
+### Beta Version
+
+Welcome to the beta testing phase! Your input is crucial for refining our extension. Here's why we need you:
+
+Why Beta Testing?
+
+- Diverse Testing: Identify issues across various setups.
+- Real-World Scenarios: Discover unforeseen issues in different user contexts.
+
+Report Bugs: If you discover a bug, please fill in an issue [here](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=bug,beta&projects=&template=bug_report.md&title=[BETA]). Detailed bug reports help us address issues quickly.
+
+To become a beta tester, [install the release candidate version](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf).
+Thank you for shaping our extension's future! Your feedback makes it better.
 
 ### Local Installation
 

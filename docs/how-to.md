@@ -200,3 +200,15 @@ You can update the debug level (configuration is per organization) and duration 
 
 > **Warning**
 > Increasing the default duration may lead to a high volume of logs generated.
+
+## Test GraphQL query
+
+- Open popup and click on "Explore API" button.
+- Right click on the page and select "Inspect"
+- Execute the code in dev console:
+`var myQuery = { "query": "query accounts { uiapi { query { Account { edges { node { Id  Name { value } } } } } } }" };`
+`display(sfConn.rest("/services/data/v59.0/graphql", {method: "POST", body: myQuery}));`
+![2024-02-09_17-01-42 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6689fad3-9549-41b9-8371-55adae037793)
+
+
+

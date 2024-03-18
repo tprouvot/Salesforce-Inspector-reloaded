@@ -215,15 +215,16 @@ class App extends React.PureComponent {
     const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
     const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
     const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
+    const popupTheme = localStorage.getItem("popupDarkTheme") == "true" ? " header-dark" : " header-light";
     return (
       h("div", {},
-        h("div", {className: "slds-page-header slds-theme_shade popup-header"},
+        h("div", {className: "slds-page-header slds-theme_shade popup-header" + popupTheme},
           h("div", {className: "slds-page-header__row"},
             h("div", {className: "slds-page-header__col-title"},
               h("div", {className: "slds-media"},
                 h("div", {className: "slds-media__figure popup-media__figure"},
                   h("span", {className: "popup-icon_container", title: "Salesforce Inspector Reloaded"},
-                    h("svg", {className: "slds-icon popup-header__icon", viewBox: "0 0 24 24"},
+                    h("svg", {className: "popup-header__icon", viewBox: "0 0 24 24"},
                       h("path", {
                         d: `
                         M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
@@ -231,8 +232,7 @@ class App extends React.PureComponent {
                         M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
                         m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
                         M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
-                        `,
-                        fill: "#061c3f"
+                        `
                       })
                     )
                   )

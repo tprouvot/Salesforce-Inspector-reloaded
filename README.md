@@ -105,6 +105,7 @@ Thank you for shaping our extension's future! Your feedback makes it better.
 
 Contributions are welcome!
 
+Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
 To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
 This branch will be merge into master when the new version is published on web store.
 

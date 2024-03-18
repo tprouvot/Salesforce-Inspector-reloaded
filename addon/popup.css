@@ -79,15 +79,15 @@ a:visited {
     color: #061c3f;
 }
 .header-light svg {
-    color : #f3f3f3;;
+    fill : #061c3f;
 }
 
 .header-dark{
     background: #061c3f;
     color: #f3f3f3;
 }
-.header-light svg {
-    color :#061c3f;
+.header-dark svg {
+    fill :#f3f3f3;
 }
 
 button,

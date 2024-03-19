@@ -270,7 +270,7 @@ class App extends React.PureComponent {
           link: {
             text: "See What's New",
             props: {
-              href: "https://dufoli.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""),
+              href: "https://dufoli.github.io/Salesforce-Inspector-Advanced/release-note/#version-" + addonVersion.replace(".", ""),
               target: "_blank",
               onClick: () => this.updateReleaseNotesViewed(addonVersion)
             }
@@ -348,7 +348,7 @@ class App extends React.PureComponent {
         ),
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
-            h("a", {href: "https://dufoli.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
+            h("a", {href: "https://dufoli.github.io/Salesforce-Inspector-Advanced/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
               className: "api-input",
@@ -362,7 +362,7 @@ class App extends React.PureComponent {
             h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
-            h("a", {href: "https://dufoli.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
+            h("a", {href: "https://dufoli.github.io/Salesforce-Inspector-Advanced/", target: linkTarget},
               h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
                 h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})
               )

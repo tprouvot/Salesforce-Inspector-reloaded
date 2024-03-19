@@ -1,6 +1,6 @@
 site_name: Salesforce Inspector Advanced
-site_url: https://dufoli.github.io/Salesforce-Inspector-reloaded/
-repo_url: https://github.com/dufoli/Salesforce-Inspector-reloaded
+site_url: https://dufoli.github.io/Salesforce-Inspector-Advanced/
+repo_url: https://github.com/dufoli/Salesforce-Inspector-Advanced
 site_author: Olivier Dufour
 theme:
   name: material

@@ -7,14 +7,14 @@
 You've just installed Salesforce Inspector Advanced and ... the popup is blank 😥
 Make sure that third party cookies are enabled in your browser:
 
-![image](https://github.com/dufoli/Salesforce-Inspector-reloaded/assets/35368290/503852db-37fd-48fb-9a83-f3008a1be9f1)
+![image](https://github.com/dufoli/Salesforce-Inspector-Advanced/assets/35368290/503852db-37fd-48fb-9a83-f3008a1be9f1)
 
 ### Salesforce Inspector Advanced is not working anymore
 
 One of the cause can be a domain update (Hyperforce migration, MyDomain change ...).
 What you need to do is to delete the sid cookie (and website associated cookies if sid did not worked).
 
-![image](https://github.com/dufoli/Salesforce-Inspector-reloaded/assets/35368290/637656f6-fcb0-4419-b2da-98853049c473)
+![image](https://github.com/dufoli/Salesforce-Inspector-Advanced/assets/35368290/637656f6-fcb0-4419-b2da-98853049c473)
 
 ### Unauthorized or Network error
 

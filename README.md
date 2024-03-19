@@ -1,12 +1,12 @@
-<img src="https://github.com/dufoli/Salesforce-Inspector-reloaded/blob/master/addon/icon128.png?raw=true" align="right">
+<img src="https://github.com/dufoli/Salesforce-Inspector-Advanced/blob/master/addon/icon128.png?raw=true" align="right">
 
 # Salesforce inspector advanced
 
 ![GitHub release](https://img.shields.io/github/v/release/dufoli/Salesforce-Inspector-reloaded?sort=semver)
 [![Chrome Web Store Installs](https://img.shields.io/chrome-web-store/users/hpijlohoihegkfehhibggnkbjhoemldh)](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
 [![Chrome Web Store Rating](https://img.shields.io/chrome-web-store/rating/hpijlohoihegkfehhibggnkbjhoemldh)](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
-[![GitHub stars](https://img.shields.io/github/stars/dufoli/Salesforce-Inspector-reloaded?cacheSeconds=3600)](https://github.com/dufoli/Salesforce-Inspector-reloaded/stargazers/)
-[![GitHub contributors](https://img.shields.io/github/contributors/dufoli/Salesforce-Inspector-reloaded.svg)](https://github.com/dufoli/Salesforce-Inspector-reloaded/graphs/contributors/)
+[![GitHub stars](https://img.shields.io/github/stars/dufoli/Salesforce-Inspector-reloaded?cacheSeconds=3600)](https://github.com/dufoli/Salesforce-Inspector-Advanced/stargazers/)
+[![GitHub contributors](https://img.shields.io/github/contributors/dufoli/Salesforce-Inspector-reloaded.svg)](https://github.com/dufoli/Salesforce-Inspector-Advanced/graphs/contributors/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 
 Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
@@ -36,7 +36,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 > User guide for using the extension.
 
-[![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://dufoli.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
+[![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://dufoli.github.io/Salesforce-Inspector-Advanced/ "Go to extension documentation")
 
 ## New features compared to original SF Inspector
 
@@ -45,10 +45,10 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 - Add APEX script runner with history and log polling
 - Add Log support: profiler, search and download
 - Respect order of column in data export
-- Allow users to update API Version [feature 58](https://github.com/dufoli/Salesforce-Inspector-reloaded/issues/58)
-- Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/dufoli/Salesforce-Inspector-reloaded/issues/42)
-- Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/dufoli/Salesforce-Inspector-reloaded/issues/34)
-- Control access to Salesforce Inspector Advanced with profiles / permissions (Implement OAuth2 flow to generate access token for connected App) [how to](https://github.com/dufoli/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
+- Allow users to update API Version [feature 58](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/58)
+- Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/42)
+- Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/34)
+- Control access to Salesforce Inspector Advanced with profiles / permissions (Implement OAuth2 flow to generate access token for connected App) [how to](https://github.com/dufoli/Salesforce-Inspector-Advanced/wiki/How-to#use-sf-inspector-with-a-connected-app)
 - Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3 (extensions using manifest v2 will be removed from the store)
 - New UI for Export / Import
 
@@ -63,7 +63,7 @@ To validate the accuracy of this description, inspect the source code, monitor t
 
 ## Use Salesforce Inspector with a Connected App
 
-Follow steps described in [how-to documentation](https://dufoli.github.io/Salesforce-Inspector-reloaded/how-to/#use-sf-inspector-with-a-connected-app). Note: you must complete these steps to use the extension in orgs where "API Access Control" is enabled.
+Follow steps described in [how-to documentation](https://dufoli.github.io/Salesforce-Inspector-Advanced/how-to/#use-sf-inspector-with-a-connected-app). Note: you must complete these steps to use the extension in orgs where "API Access Control" is enabled.
 
 ## Installation
 

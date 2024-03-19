@@ -13,9 +13,9 @@ With this extension, you can:
 
 You can enable the extension by clicking on the **Salesforce Inspector Advanced** icon in the toolbar, or by pressing `Ctrl+Shift+I` (Windows) / `Ctrl+Option+I` (Mac) on your keyboard.
 
-For more information, please read this [article](https://www.salesforceben.com/salesforce-inspector-reloaded/) or the [documentation page](https://dufoli.github.io/Salesforce-Inspector-reloaded/).
+For more information, please read this [article](https://www.salesforceben.com/salesforce-inspector-reloaded/) or the [documentation page](https://dufoli.github.io/Salesforce-Inspector-Advanced/).
 
-We hope you will enjoy using **Salesforce Inspector Advanced** and find it useful for your Salesforce development and administration tasks. If you have any feedback, questions, or issues, please feel free to [open an issue](https://github.com/dufoli/Salesforce-Inspector-reloaded/issues) on GitHub.
+We hope you will enjoy using **Salesforce Inspector Advanced** and find it useful for your Salesforce development and administration tasks. If you have any feedback, questions, or issues, please feel free to [open an issue](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues) on GitHub.
 
 Happy inspecting! 😊
 
@@ -23,5 +23,5 @@ Happy inspecting! 😊
 
 First, thank you for migrating. I hope you will enjoy the new features and UI of this one!
 
-I suggest you disable the legacy version so that you'll be able to [migrate your saved queries](https://dufoli.github.io/Salesforce-Inspector-reloaded/how-to/#migrate-saved-queries-from-legacy-extension-to-salesforce-inspector-reloaded) from the previous one.
+I suggest you disable the legacy version so that you'll be able to [migrate your saved queries](https://dufoli.github.io/Salesforce-Inspector-Advanced/how-to/#migrate-saved-queries-from-legacy-extension-to-salesforce-inspector-reloaded) from the previous one.
 Once migrated you can uninstall the legacy version, you should not need it anymore.

@@ -45,9 +45,9 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 - Add APEX script runner with history and log polling
 - Add Log support: profiler, search and download
 - Respect order of column in data export
-- Allow users to update API Version [feature 58](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/58)
-- Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/42)
-- Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/34)
+- Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
+- Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)
+- Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34)
 - Control access to Salesforce Inspector Advanced with profiles / permissions (Implement OAuth2 flow to generate access token for connected App) [how to](https://github.com/dufoli/Salesforce-Inspector-Advanced/wiki/How-to#use-sf-inspector-with-a-connected-app)
 - Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3 (extensions using manifest v2 will be removed from the store)
 - New UI for Export / Import

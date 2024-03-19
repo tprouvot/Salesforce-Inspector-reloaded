@@ -2,6 +2,7 @@
 
 ## Version 1.23
 
+- Format relations as expected in import process [feature 26](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/26) (contribution by [Olivier Dufour](https://github.com/dufoli))
 - Ability to choose header theme [feature 294](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/294)
 - Add query template customization in Option page [feature 349](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/349)
 - Display correct banner when session is expired instead of "Generate new token" [feature 305](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/305)

@@ -222,7 +222,9 @@ export async function dataImportTest(test) {
   vm.importAction = "update";
   vm.didUpdate();
   vm.copyOptions();
-  assertEquals("salesforce-inspector-import-options=&apiType=Enterprise&action=update&object=Inspector_Test__c&batchSize=200&threads=6", window.testClipboardValue);
+  let batchSize = localStorage.getItem("defaultBatchSize") ? localStorage.getItem("defaultBatchSize") : "200";
+  let threadsSize = localStorage.getItem("defaultThreadSize") ? localStorage.getItem("defaultThreadSize") : "6";
+  assertEquals("salesforce-inspector-import-options=&apiType=Enterprise&action=update&object=Inspector_Test__c&batchSize=" + batchSize + "&threads=" + threadsSize, window.testClipboardValue);
 
   // Restore import options
   vm.importAction = "create";
@@ -231,12 +233,12 @@ export async function dataImportTest(test) {
   vm.didUpdate();
   vm.dataFormat = "excel";
   vm.didUpdate();
-  vm.setData('"salesforce-inspector-import-options=&apiType=Enterprise&action=update&object=Inspector_Test__c&batchSize=200&threads=6"\t""\r\n"Name"\t"Number__c"\r\n"test"\t"100"\r\n"test"\t"200"\r\n');
+  vm.setData('"salesforce-inspector-import-options=&apiType=Enterprise&action=update&object=Inspector_Test__c&batchSize=' + batchSize + "&threads=" + threadsSize + '"\t""\r\n"Name"\t"Number__c"\r\n"test"\t"100"\r\n"test"\t"200"\r\n');
   assertEquals("Enterprise", vm.apiType);
   assertEquals("update", vm.importAction);
   assertEquals("Inspector_Test__c", vm.importType);
-  assertEquals("200", vm.batchSize);
-  assertEquals("6", vm.batchConcurrency);
+  assertEquals(batchSize, vm.batchSize);
+  assertEquals(threadsSize, vm.batchConcurrency);
   assertEquals({Queued: 2, Processing: 0, Succeeded: 0, Failed: 0}, vm.importCounts());
   assertEquals([["Name", "Number__c"], ["test", "100"], ["test", "200"]], vm.importTableResult.table);
 
@@ -397,7 +399,7 @@ export async function dataImportTest(test) {
   ]);
   args.set("apitype", "Tooling");
 
-  result = await loadPage("data-import.html", args)
+  result = await loadPage("data-import.html", args);
   importModel = result.model;
   assertEquals("Tooling", importModel.apiType);
 

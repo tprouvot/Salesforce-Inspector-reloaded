@@ -153,6 +153,12 @@ textarea[hidden] {
   padding: 8px 12px;
 }
 
+.result-info {
+  font-style: italic;
+  margin-left: 9px;
+  color: #8c8c8c;
+}
+
 #result-text {
   flex: 1 1 0;
   resize: none;
@@ -684,4 +690,8 @@ button.toggle .button-icon {
   position: sticky;
   top: 0;
   z-index: 2;
+}
+.expanded{
+  overflow: auto;
+  height: 200px;
 }

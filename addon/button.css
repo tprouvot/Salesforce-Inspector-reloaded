@@ -77,13 +77,13 @@
 #insext .insext-btn-vertical:hover,
 #insext.insext-active .insext-btn-vertical {
     opacity: 1;
-    width: 20px; 
+    width: 20px;
 }
 
 #insext .insext-btn-horizontal:hover,
 #insext.insext-active .insext-btn-horizontal {
     opacity: 1;
-    height: 20px; 
+    height: 20px;
 }
 
 #insext .insext-btn img {
@@ -110,14 +110,14 @@
 }
 .checkboxScrollProd{
     position: fixed;
-    top: 21px; 
+    top: 21px;
     right: 78px;
     z-index: 10000;
 }
 .labelCheckboxScrollSandbox{
     position: fixed;
-    top: 7px; 
-    right: 100px; 
+    top: 7px;
+    right: 100px;
     color: white;
     z-index: 10000;
 }
@@ -128,3 +128,21 @@
     color: white;
     z-index: 10000;
 }
+.copiedText {
+    font-family: "Salesforce Sans", Arial, sans-serif;
+    color: #28a745; 
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    margin-left: 4px;
+    padding: 0;
+    display: inline-block;
+    vertical-align: middle;
+    animation: fadeOut 2s forwards;
+  }
+  
+  @keyframes fadeOut {
+    to {
+      opacity: 0;
+    }
+  }   

@@ -45,7 +45,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 - Add APEX script runner with history and log polling
 - Add Log support: profiler, search and download
 - Respect order of column in data export
-
+- Remove total,done, index column for subquery result 
 
 ## Security and Privacy
 

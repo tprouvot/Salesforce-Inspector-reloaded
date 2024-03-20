@@ -1265,6 +1265,59 @@ class Model {
     }
     return result;
   }
+  cleanupQuery(query) {
+    // TODO we need real parsing because if comment is inside string we need to skip it
+    if (query && !query.includes("//") && !query.includes("/*")) {
+      return query;
+    }
+    let remaining = query;
+    let commentRegEx = /(\/\/|\/\*|')/g;
+    let commentMatch;
+    let finalQuery = "";
+    let endIndex;
+    //skip subquery by checking that we have same number of open and close parenthesis before
+    while ((commentMatch = commentRegEx.exec(remaining)) !== null) {
+      switch (commentMatch[1]) {
+        case "//":
+          finalQuery += remaining.substring(0, commentMatch.index);
+          remaining = remaining.substring(commentMatch.index + 2);
+          endIndex = remaining.indexOf("\n");
+          if (endIndex > 0) {
+            remaining = remaining.substring(endIndex + 1);
+          } else {
+            remaining = "";
+          }
+          break;
+        case "/*":
+          finalQuery += remaining.substring(0, commentMatch.index);
+          remaining = remaining.substring(commentMatch.index + 2);
+          endIndex = remaining.indexOf("*/");
+          if (endIndex > 0) {
+            remaining = remaining.substring(endIndex + 2);
+          } else {
+            remaining = "";
+          }
+          break;
+        case "'":
+          //TODO escape caracter in string
+          finalQuery += remaining.substring(0, commentMatch.index) + "'";
+          remaining = remaining.substring(commentMatch.index + 1);
+          endIndex = remaining.indexOf("'");
+          if (endIndex > 0) {
+            finalQuery += remaining.substring(0, endIndex) + "'";
+            remaining = remaining.substring(endIndex + 1);
+          } else {
+            remaining = "";
+          }
+          break;
+        default:
+          break;
+      }
+      //reset regex index
+      commentRegEx = /(\/\/|\/\*|')/g;
+    }
+    return finalQuery;
+  }
   doExport() {
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
@@ -1272,7 +1325,7 @@ class Model {
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
-    let query = vm.queryInput.value;
+    let query = this.cleanupQuery(vm.queryInput.value);
     vm.columnIndex = this.extractColumnFromQuery(query);
     let queryMethod = vm.isSearchMode() ? "search" : (exportedData.isTooling ? "tooling/query" : vm.queryAll ? "queryAll" : "query");
     function batchHandler(batch) {

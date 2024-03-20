@@ -3,8 +3,8 @@
 # Salesforce inspector advanced
 
 ![GitHub release](https://img.shields.io/github/v/release/dufoli/Salesforce-Inspector-reloaded?sort=semver)
-[![Chrome Web Store Installs](https://img.shields.io/chrome-web-store/users/hpijlohoihegkfehhibggnkbjhoemldh)](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
-[![Chrome Web Store Rating](https://img.shields.io/chrome-web-store/rating/hpijlohoihegkfehhibggnkbjhoemldh)](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
+[![Chrome Web Store Installs](https://img.shields.io/chrome-web-store/users/dbfimaflmomgldabcphgolbeoamjogji)](https://chromewebstore.google.com/detail/salesforce-inspector-adva/dbfimaflmomgldabcphgolbeoamjogji)
+[![Chrome Web Store Rating](https://img.shields.io/chrome-web-store/rating/dbfimaflmomgldabcphgolbeoamjogji)](https://chromewebstore.google.com/detail/salesforce-inspector-adva/dbfimaflmomgldabcphgolbeoamjogji)
 [![GitHub stars](https://img.shields.io/github/stars/dufoli/Salesforce-Inspector-reloaded?cacheSeconds=3600)](https://github.com/dufoli/Salesforce-Inspector-Advanced/stargazers/)
 [![GitHub contributors](https://img.shields.io/github/contributors/dufoli/Salesforce-Inspector-reloaded.svg)](https://github.com/dufoli/Salesforce-Inspector-Advanced/graphs/contributors/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
@@ -15,7 +15,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 - [Salesforce inspector advanced](#salesforce-inspector-advanced)
   - [Documentation](#documentation)
-  - [New features compared to original SF Inspector](#new-features-compared-to-original-sf-inspector)
+  - [New features compared to SF Inspector Reloaded](#new-features-compared-to-sf-inspector-reloaded)
   - [Security and Privacy](#security-and-privacy)
   - [Use Salesforce Inspector with a Connected App](#use-salesforce-inspector-with-a-connected-app)
   - [Installation](#installation)
@@ -38,19 +38,14 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://dufoli.github.io/Salesforce-Inspector-Advanced/ "Go to extension documentation")
 
-## New features compared to original SF Inspector
+## New features compared to SF Inspector Reloaded
 
-- Improoved SOQL suggestions : subquery, in, like, excludes, includes
+- Improved SOQL suggestions : subquery, in, like, excludes, includes
 - Add SOSL support in data export with suggestions
 - Add APEX script runner with history and log polling
 - Add Log support: profiler, search and download
 - Respect order of column in data export
-- Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
-- Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)
-- Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34)
-- Control access to Salesforce Inspector Advanced with profiles / permissions (Implement OAuth2 flow to generate access token for connected App) [how to](https://github.com/dufoli/Salesforce-Inspector-Advanced/wiki/How-to#use-sf-inspector-with-a-connected-app)
-- Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3 (extensions using manifest v2 will be removed from the store)
-- New UI for Export / Import
+
 
 ## Security and Privacy
 
@@ -69,14 +64,14 @@ Follow steps described in [how-to documentation](https://dufoli.github.io/Salesf
 
 ### Browser Stores
 
-- [Chrome Web Store](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
-- [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
-- [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
+- [Chrome Web Store](https://chromewebstore.google.com/detail/salesforce-inspector-adva/dbfimaflmomgldabcphgolbeoamjogji)
+- Firefox Browser Add-ons : Not supported
+- Edge Add-ons : Not supported
 
 ### Local Installation
 
 1. Download or clone the repo.
-2. Checkout the releaseCandidate branch.
+2. Checkout the master branch.
 3. Open `chrome://extensions/`.
 4. Enable `Developer mode`.
 5. Click `Load unpacked`.
@@ -152,7 +147,7 @@ Linting : to assure indentation, formatting and best practices coherence, please
 
 ## About
 
-By Olivier Dufour forked from Thomas Prouvot who forked from [Søren Krabbe and Jesper Kristensen](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector)
+By Olivier Dufour forked from [Thomas Prouvot](https://github.com/tprouvot/Salesforce-Inspector-reloaded) who forked from [Søren Krabbe and Jesper Kristensen](https://github.com/tprouvot/Salesforce-Inspector-reloaded)
 
 ## License
 

@@ -1265,24 +1265,7 @@ class Model {
     }
     return result;
   }
-  /*
-  SELECT Id, name, test, bar,
-         aaa, bbb, ccc,
-         (
-            SELECT aa, bb, cc
-            FROM Contacts
-            WHeRE
-         )
-  FROM Account
-  WHERE Name like '%test%'
-  AND Name like '%test%'
-  OR Name like '%test%'
-  AND
-  (
-    test = 1
-    OR toto = 2
-  )
-  */
+
   formatQuery(query) {
     let ctx = {value: "", pos: 0};
     let formatedQuery = "";
@@ -1312,17 +1295,26 @@ class Model {
             formatedQuery += ",\n" + "  ".repeat(indent);
             fieldCount = 0;
           } else {
-            formatedQuery += ", ";
+            formatedQuery += ",";
           }
           break;
         case "from":
           indent--;
-          formatedQuery += "\n" + "  ".repeat(indent) + ctx.value.toUpperCase() + " ";
+          //TO force space after from where ...
+          fieldCount = 1;
+          formatedQuery += "\n" + "  ".repeat(indent) + ctx.value.toUpperCase();
           break;
         case "and":
         case "or":
         case "where":
-          formatedQuery += "\n" + "  ".repeat(indent) + ctx.value.toUpperCase() + " ";
+        case "limit":
+        case "order":
+        case "group":
+        case "find":
+        case "returning":
+        case "offset":
+        case "with":
+          formatedQuery += "\n" + "  ".repeat(indent) + ctx.value.toUpperCase();
           break;
         default:
           formatedQuery += (fieldCount ? " " : "") + ctx.value;
@@ -1539,6 +1531,9 @@ function RecordTable(vm) {
       if (fieldName && !columnIdx.has(fieldName)) {
         let c = header.length;
         columnIdx.set(fieldName, c);
+        for (let row of rt.table) {
+          row.push(undefined);
+        }
         header[c] = fieldName;
         // hide object column
         rt.colVisibilities.push((!field.fields));
@@ -1548,6 +1543,9 @@ function RecordTable(vm) {
             if (!columnIdx.has(col)) {
               let c = header.length;
               columnIdx.set(col, c);
+              for (let row of rt.table) {
+                row.push(undefined);
+              }
               header[c] = col;
               //hide parent column
               rt.colVisibilities.push((false));

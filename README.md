@@ -147,7 +147,7 @@ Linting : to assure indentation, formatting and best practices coherence, please
 
 ## About
 
-By Olivier Dufour forked from [Thomas Prouvot](https://github.com/tprouvot/Salesforce-Inspector-reloaded) who forked from [Søren Krabbe and Jesper Kristensen](https://github.com/tprouvot/Salesforce-Inspector-reloaded)
+By Olivier Dufour forked from [Thomas Prouvot](https://github.com/tprouvot/Salesforce-Inspector-reloaded) who forked from [Søren Krabbe and Jesper Kristensen](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector)
 
 ## License
 

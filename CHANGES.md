@@ -4,7 +4,7 @@
 
 - Support comments in SOQL / SOSL
 - increase height of pannel and move it heigher
-- format query
+- format query SOQL/ SOSL
 
 ## Version 1.23
 

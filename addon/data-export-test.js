@@ -147,7 +147,7 @@ export async function dataExportTest(test) {
   // Autocomplete object
   setQuery("select Id from OpportunityLi", "", "");
   assertEquals("Objects suggestions:", vm.autocompleteResults.title);
-  assertEquals(["OpportunityLineItem", "OpportunityLineItemChangeEvent"], getValues(vm.autocompleteResults.results));
+  assertEquals(["OpportunityLineItem"], getValues(vm.autocompleteResults.results));
 
   // Autocomplete unknown object
   setQuery("select Id from UnknownObj", "", "");
@@ -639,6 +639,10 @@ export async function dataExportTest(test) {
   assertEquals(0, vm.autocompleteResults.results.length);
   await waitForSpinner();
   assertEquals("User fields suggestions:", vm.autocompleteResults.title);
+
+  assertEquals("SELECT Id, name, foo, bar,\n  tst\nFROM Account", vm.formatQuery("select Id,name,foo,bar,tst from Account"));
+  assertEquals("SELECT Id,\n  (\n    SELECT Id\n    FROM contacts\n  ),\n  (\n    SELECT Id\n    FROM cases\n  )\nFROM Account", vm.formatQuery("select Id, (select Id from contacts), (select Id from cases) from Account"));
+  assertEquals("SELECT Id\nFROM Account\nWHERE test = 1\nAND toto like '%A%'", vm.formatQuery("select Id from Account where test=1 and toto like '%A%'"));
 
   // Autocomplet find object name
   setQuery("find {test} returning Account", "", "");

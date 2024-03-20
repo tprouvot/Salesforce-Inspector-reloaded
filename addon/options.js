@@ -179,7 +179,7 @@ class ArrowButtonOption extends React.Component {
     this.onChangeArrowPosition = this.onChangeArrowPosition.bind(this);
     this.state = {
       arrowButtonOrientation: localStorage.getItem("popupArrowOrientation") ? localStorage.getItem("popupArrowOrientation") : "vertical",
-      arrowButtonPosition: localStorage.getItem("popupArrowPosition") ? localStorage.getItem("popupArrowPosition") : "20"
+      arrowButtonPosition: localStorage.getItem("popupArrowPosition") ? localStorage.getItem("popupArrowPosition") : "15"
     };
     this.timeout;
   }

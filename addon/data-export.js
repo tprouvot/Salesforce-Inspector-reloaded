@@ -1182,7 +1182,7 @@ class Model {
     return false;
   }
   nextWord(sentence, ctx) {
-    let regex = /^\s*([a-z0-9'_.]+|,|\(|\))/i;
+    let regex = /^\s*([a-z0-9_.]+|'[^']+'|,|\(|\)|[<>!]=?|=)/i;
     if (!sentence) {
       ctx.value = "";
       ctx.pos++;
@@ -1264,6 +1264,73 @@ class Model {
       this.nextWord(query, ctx);
     }
     return result;
+  }
+  /*
+  SELECT Id, name, test, bar,
+         aaa, bbb, ccc,
+         (
+            SELECT aa, bb, cc
+            FROM Contacts
+            WHeRE
+         )
+  FROM Account
+  WHERE Name like '%test%'
+  AND Name like '%test%'
+  OR Name like '%test%'
+  AND
+  (
+    test = 1
+    OR toto = 2
+  )
+  */
+  formatQuery(query) {
+    let ctx = {value: "", pos: 0};
+    let formatedQuery = "";
+    this.nextWord(query, ctx);
+    let fieldCount = 0;
+    let indent = 0;
+    while (ctx.value) {
+      switch (ctx.value.toLowerCase()){
+        case "select":
+          fieldCount = 0;
+          formatedQuery += "SELECT ";
+          indent++;
+          break;
+        case "(":
+          fieldCount = 0;
+          formatedQuery += "\n" + "  ".repeat(indent) + "(" + "\n" + "  ".repeat(indent + 1);
+          indent++;
+          break;
+        case ")":
+          fieldCount = 0;
+          indent--;
+          formatedQuery += "\n" + "  ".repeat(indent) + ")";
+          break;
+        case ",":
+          fieldCount++;
+          if (fieldCount >= 4) {
+            formatedQuery += ",\n" + "  ".repeat(indent);
+            fieldCount = 0;
+          } else {
+            formatedQuery += ", ";
+          }
+          break;
+        case "from":
+          indent--;
+          formatedQuery += "\n" + "  ".repeat(indent) + ctx.value.toUpperCase() + " ";
+          break;
+        case "and":
+        case "or":
+        case "where":
+          formatedQuery += "\n" + "  ".repeat(indent) + ctx.value.toUpperCase() + " ";
+          break;
+        default:
+          formatedQuery += (fieldCount ? " " : "") + ctx.value;
+          break;
+      }
+      this.nextWord(query, ctx);
+    }
+    return formatedQuery;
   }
   cleanupQuery(query) {
     // TODO we need real parsing because if comment is inside string we need to skip it
@@ -1599,6 +1666,7 @@ class App extends React.Component {
     this.onToggleExpand = this.onToggleExpand.bind(this);
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
+    this.onFormatQuery = this.onFormatQuery.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
     this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
@@ -1704,6 +1772,11 @@ class App extends React.Component {
     url.search = searchParams.toString();
     navigator.clipboard.writeText(url.toString());
     navigator.clipboard.writeText(url.toString());
+    model.didUpdate();
+  }
+  onFormatQuery() {
+    let {model} = this.props;
+    model.queryInput.value = model.formatQuery(model.queryInput.value);
     model.didUpdate();
   }
   onQueryPlan(){
@@ -1887,10 +1960,11 @@ class App extends React.Component {
             h("span", {}, model.autocompleteResults.title),
             h("div", {className: "flex-right"},
               h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Export"),
-              h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query"),
-              h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
-              h("a", {tabIndex: 4, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
-              h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
+              h("button", {tabIndex: 2, onClick: this.onFormatQuery, title: "Format query"}, "Format Query"),
+              h("button", {tabIndex: 3, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query"),
+              h("button", {tabIndex: 4, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
+              h("a", {tabIndex: 5, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
+              h("button", {tabIndex: 6, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
                 h("div", {className: "button-icon"}),
                 h("div", {className: "button-toggle-icon"})
               )

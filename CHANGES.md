@@ -23,6 +23,7 @@
 - Clean up popup header and footer (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Fix double "Show all data" button [issue 63](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63) (contribution by [Luca Bassani](https://github.com/baslu93))
 - Enhanced the user interface with a subtle inline "copied" indicator for field copy actions [feature 351](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/351) (contribution by [dyncan](https://github.com/dyncan))
+- Add a "Format Query" button to the [Data Export] section, allowing users to format their SOQL query for an enhanced view of the query's structure. [feature 359](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/359) (contribution by [dyncan](https://github.com/dyncan))
 
 ## Version 1.22
 

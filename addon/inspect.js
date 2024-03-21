@@ -1389,6 +1389,13 @@ class FieldValueCell extends React.Component {
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onRecordIdClick = this.onRecordIdClick.bind(this);
     this.onLinkClick = this.onLinkClick.bind(this);
+    this.onSuggestionClick = this.onSuggestionClick.bind(this);
+    this.onKeyDown = this.onKeyDown.bind(this);
+    this.state = {
+      activeSuggestion: 0,
+      filteredSuggestions: [],
+      showSuggestions: false
+    };
   }
   onTryEdit(e) {
     let {row} = this.props;
@@ -1399,7 +1406,21 @@ class FieldValueCell extends React.Component {
   }
   onDataEditValueInput(e) {
     let {row} = this.props;
-    row.dataEditValue = e.target.value;
+    const suggestions = row.fieldDescribe.picklistValues.map(pickval => pickval.value);
+    const userInput = e.target.value;
+
+    const filteredSuggestions = suggestions.filter(
+      suggestion =>
+        suggestion.toLowerCase().indexOf(userInput.toLowerCase()) > -1
+    );
+
+    this.setState({
+      activeSuggestion: 0,
+      filteredSuggestions,
+      showSuggestions: true
+    });
+
+    row.dataEditValue = userInput;
     row.rowList.model.didUpdate();
   }
   onCancelEdit(e) {
@@ -1420,12 +1441,58 @@ class FieldValueCell extends React.Component {
       this.onRecordIdClick(e);
     }
   }
+  onSuggestionClick(e) {
+    let {row} = this.props;
+    this.setState({
+      activeSuggestion: 0,
+      filteredSuggestions: [],
+      showSuggestions: false
+    });
+    row.dataEditValue = e.target.innerText;
+  }
+  onKeyDown(e){
+    const {activeSuggestion, filteredSuggestions} = this.state;
+    let {row} = this.props;
+    switch (e.keyCode) {
+      case 40:
+        if (activeSuggestion - 1 === filteredSuggestions.length) {
+          return;
+        }
+        this.setState({activeSuggestion: activeSuggestion + 1});
+        break;
+      case 38:
+        if (activeSuggestion === 0) {
+          return;
+        }
+        this.setState({activeSuggestion: activeSuggestion - 1});
+        break;
+      case 13:
+        this.setState({
+          activeSuggestion: 0,
+          showSuggestions: false
+        });
+        row.dataEditValue = filteredSuggestions[activeSuggestion];
+        e.preventDefault();
+        break;
+    }
+  }
   render() {
     let {row, col} = this.props;
+    let {activeSuggestion, filteredSuggestions, showSuggestions} = this.state;
     if (row.isEditing()) {
       return h("td", {className: col.className},
-        h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput}),
-        h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6")
+        h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
+        h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6"),
+        (showSuggestions && filteredSuggestions.length)
+          ? h("ul", {className: "suggestions"},
+            filteredSuggestions.map((suggestion, index) => {
+              let SuggestionClass;
+              if (index === activeSuggestion) {
+                SuggestionClass = "suggestion-active";
+              }
+              return h("li", {className: SuggestionClass, key: suggestion, onClick: this.onSuggestionClick}, suggestion);
+            })
+          ) : ""
       );
     } else if (row.isId()) {
       return h("td", {className: col.className, onDoubleClick: this.onTryEdit},

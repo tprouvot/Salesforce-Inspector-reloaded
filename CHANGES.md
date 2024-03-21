@@ -5,6 +5,7 @@
 - Support comments in SOQL / SOSL
 - increase height of pannel and move it heigher
 - format query SOQL/ SOSL
+- fix misc bugs (conecteed app,...)
 
 ## Version 1.23
 

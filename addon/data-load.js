@@ -546,8 +546,13 @@ export function initScrollTable(scroller) {
 
     let table = document.createElement("table");
     let cellsVisible = false;
-    for (let r = firstRowIdx; r < lastRowIdx; r++) {
+    for (let r = 0; r < lastRowIdx; r++) {
       if (rowVisible[r] == 0) {
+        continue;
+      }
+      //force display of heder then skip until data
+      if (r == headerRows && r <= firstRowIdx - 1) {
+        r = firstRowIdx - 1;
         continue;
       }
       let row = data.table[r];

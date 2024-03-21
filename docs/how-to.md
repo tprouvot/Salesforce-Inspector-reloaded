@@ -8,7 +8,7 @@ If you enabled "API client whitelisting" (a.k.a "API Access Control") in your or
 
 To secure the extension usage, you can use a OAuth 2.0 flow to get an access token, linked to a connected app installed in your org.
 
-To install the default "SF Inspector reloaded" connected app, navigate to Setup | Connected Apps OAuth Usage, and click "Install" on the Salesforce Inspector Advanced app.
+To install the default "SF Inspector Advanced" connected app, navigate to Setup | Connected Apps OAuth Usage, and click "Install" on the Salesforce Inspector Advanced app.
 
 > **Warning**
 > Don't forget to grant access to the users by selecting the related profile(s) or permission set(s).

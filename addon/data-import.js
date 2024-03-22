@@ -27,6 +27,7 @@ class Model {
     this.confirmPopup = null;
     this.activeBatches = 0;
     this.isProcessingQueue = false;
+    this.assignmentRule = false;
     this.importState = null;
     this.showStatus = {
       Queued: true,
@@ -833,7 +834,11 @@ class Model {
     setTimeout(this.executeBatch.bind(this), 2500);
 
     let wsdl = sfConn.wsdl(apiVersion, this.apiType);
-    this.spinFor(sfConn.soap(wsdl, importAction, importArgs).then(res => {
+    let soapheaders = {};
+    if (this.assignmentRule && (this.importType === "Case" || this.importType === "Lead" || this.importType === "Account")) {
+      soapheaders.headers = {"AssignmentRuleHeader": {"useDefaultRule": true}};
+    }
+    this.spinFor(sfConn.soap(wsdl, importAction, importArgs, soapheaders).then(res => {
 
       let results = sfConn.asArray(res);
       for (let i = 0; i < results.length; i++) {
@@ -909,6 +914,7 @@ class App extends React.Component {
     this.onDataPaste = this.onDataPaste.bind(this);
     this.onExternalIdChange = this.onExternalIdChange.bind(this);
     this.onBatchSizeChange = this.onBatchSizeChange.bind(this);
+    this.onAssignmentRuleChange = this.onAssignmentRuleChange.bind(this);
     this.onBatchConcurrencyChange = this.onBatchConcurrencyChange.bind(this);
     this.onToggleHelpClick = this.onToggleHelpClick.bind(this);
     this.onDoImportClick = this.onDoImportClick.bind(this);
@@ -967,6 +973,11 @@ class App extends React.Component {
     let {model} = this.props;
     model.batchSize = e.target.value;
     model.executeBatch();
+    model.didUpdate();
+  }
+  onAssignmentRuleChange(e) {
+    let {model} = this.props;
+    model.assignmentRule = e.target.checked;
     model.didUpdate();
   }
   onBatchConcurrencyChange(e) {
@@ -1184,6 +1195,14 @@ class App extends React.Component {
                   h("input", {type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, className: (model.batchConcurrencyError() ? "confError" : "") + " batch-size"}),
                   h("span", {hidden: !model.isWorking()}, model.activeBatches),
                   h("div", {className: "conf-error", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
+                )
+              )
+            ),
+            h("div", {className: "conf-line", hidden: (model.importType != "Case" && model.importType != "Lead" && model.importType != "Account")},
+              h("label", {className: "conf-input", title: "Uses the default (active) assignment rule for a Case or Lead. If true for an Account, all territory assignment rules are applied. If false for an Account, no territory assignment rules are applied."},
+                h("span", {className: "conf-label"}, "Assignment rule"),
+                h("span", {className: "conf-value"},
+                  h("input", {type: "checkbox", checked: model.assignmentRule, onChange: this.onAssignmentRuleChange})
                 )
               )
             ),

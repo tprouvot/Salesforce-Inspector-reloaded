@@ -11,7 +11,8 @@ let h = React.createElement;
     iFrameLocalStorage: {
       popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
       popupArrowPosition: JSON.parse(localStorage.getItem("popupArrowPosition")),
-      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder"))
+      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder")),
+      popupWidth: JSON.parse(localStorage.getItem("popupWidth"))
     }
   }, "*");
   addEventListener("message", function initResponseHandler(e) {
@@ -187,14 +188,16 @@ class App extends React.PureComponent {
     let url;
     let title;
     let text;
-    if (sessionError !== "Session expired or invalid"){
-      text = "Access Token Expired";
-      title = "Generate New Token";
-      url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
-    } else {
-      text = "Expired session";
-      title = "Return to login page";
-      url = `https://${sfHost}/`;
+    if (sessionError){
+      if (sessionError !== "Session expired or invalid"){
+        text = "Access Token Expired";
+        title = "Generate New Token";
+        url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
+      } else {
+        text = "Expired session";
+        title = "Return to login page";
+        url = `https://${sfHost}/`;
+      }
     }
     return {title, url, text};
   }

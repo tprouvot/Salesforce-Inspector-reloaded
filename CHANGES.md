@@ -2,6 +2,7 @@
 
 ## Version 1.23
 
+- Add configuration option for popup width [feature 368](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/368)
 - Add 'Flow Versions' button in popup when recordId is a flow [feature 362](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/362)
 - Format relations as expected in import process [feature 26](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/26) (contribution by [Olivier Dufour](https://github.com/dufoli))
 - Ability to choose header theme [feature 294](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/294)

@@ -1026,6 +1026,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         const flowSelect = "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const networkSelect = "SELECT Id, Name, Status, UrlPathPrefix FROM Network WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50";
         const compositeQuery = {
           "compositeRequest": [
             {
@@ -1040,6 +1041,10 @@ class AllDataBoxShortcut extends React.PureComponent {
               "method": "GET",
               "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(permSetSelect),
               "referenceId": "permSetSelect"
+            }, {
+              "method": "GET",
+              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(networkSelect),
+              "referenceId": "networkSelect"
             }
           ]
         };
@@ -1078,6 +1083,11 @@ class AllDataBoxShortcut extends React.PureComponent {
               }
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
+            } else if (rec.attributes.type === "Network"){
+              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=0DB26000000Ak2X" + rec.Id;
+              rec.label = rec.Name;
+              rec.name = rec.Id + " • " + rec.UrlPathPrefix;
+              rec.detail = rec.attributes.type + " (" + rec.Status + ") • Builder";
             }
             result.push(rec);
           });

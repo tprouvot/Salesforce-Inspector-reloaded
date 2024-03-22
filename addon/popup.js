@@ -1086,7 +1086,8 @@ class AllDataBoxShortcut extends React.PureComponent {
             } else if (rec.attributes.type === "Network"){
               rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=0DB26000000Ak2X" + rec.Id;
               rec.label = rec.Name;
-              rec.name = rec.Id + " • " + rec.UrlPathPrefix;
+              let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
+              rec.name = rec.Id + url;
               rec.detail = rec.attributes.type + " (" + rec.Status + ") • Builder";
             }
             result.push(rec);

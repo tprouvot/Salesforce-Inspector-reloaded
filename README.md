@@ -11,9 +11,14 @@
 
 Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
 
-We all know and love Salesforce Inspector: As the great Søren Krabbe did not have the time to maintain it anymore, I decided to take over so trailblazer community can keep asking for new features !
+We all know and love Salesforce Inspector: As the great Søren Krabbe did not have the time to maintain it anymore. Thomas Prouvot decided to take over and fork the original project but I do not share the same vision of him. So I decided to fork on a new project in a more collaborative way.
+
+The goal of this project is to focus on improving key features for administrator: export, import and inspect.
+Then add new features to make life easier and avoid API call.
+In order to rich this goal, I have take a closer look to the full backlog of original project and from collegues, friends who work on salesforce but I need feedback from community.
 
 - [Salesforce inspector advanced](#salesforce-inspector-advanced)
+  - [Roadmap](#roadmap)
   - [Documentation](#documentation)
   - [New features compared to SF Inspector Reloaded](#new-features-compared-to-sf-inspector-reloaded)
   - [Security and Privacy](#security-and-privacy)
@@ -32,20 +37,33 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
   - [About](#about)
   - [License](#license)
 
+## Roadmap
+
+> [!IMPORTANT]
+> Roadmap is here : https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/5
+
 ## Documentation
 
+> [!NOTE]
 > User guide for using the extension.
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://dufoli.github.io/Salesforce-Inspector-Advanced/ "Go to extension documentation")
 
 ## New features compared to SF Inspector Reloaded
 
-- Improved SOQL suggestions : subquery, in, like, excludes, includes
-- Add SOSL support in data export with suggestions
-- Add APEX script runner with history and log polling
-- Add Log support: profiler, search and download
-- Respect order of column in data export
-- Remove total,done, index column for subquery result 
+- Export SOQL: suggest field and related object link in subquery: SELECT Id, (SELECT Id from Contacts) FROM Account
+- Export SOQL: suggest field value with IN, LIKE, excludes(), includes()
+- Export SOQL: format query
+- Export SOQL: respect order of column
+- Export SOQL: Remove total, done, index column for subquery result 
+- Export SOSL: execution
+- Export SOSL: suggest keywords, field and object
+- Apex Runner: execute batch, enqueue job or just anonymous code
+- Apex Runner: poll log
+- Apex Runner: auto suggest className
+- Log: profiler
+- Log: search with autoscroll
+- Log: download
 
 ## Security and Privacy
 
@@ -149,6 +167,20 @@ Linting : to assure indentation, formatting and best practices coherence, please
 
 By Olivier Dufour forked from [Thomas Prouvot](https://github.com/tprouvot/Salesforce-Inspector-reloaded) who forked from [Søren Krabbe and Jesper Kristensen](https://github.com/sorenkrabbe/Chrome-Salesforce-inspector)
 
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tr>
+    <td align="center"><a href="https://github.com/dufoli"><img src="https://avatars0.githubusercontent.com/u/202057?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Olivier Dufour</b></sub></a><br /><a href="https://github.com/dufoli/Salesforce-Inspector-Advanced/commits?author=dufoli" title="Code"><img src="https://i.stack.imgur.com/tskMh.png" alt="github"></a> <a href="https://www.linkedin.com/in/dufourolivier" title="Linkedin"><img src="https://i.stack.imgur.com/gVE0j.png" alt="linkedin"></a></td>
+    </td>
+  </tr>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 ## License
 
 [MIT](./LICENSE)

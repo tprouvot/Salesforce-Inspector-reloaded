@@ -1,5 +1,5 @@
 export let apiVersion = localStorage.getItem("apiVersion") == null ? "60.0" : localStorage.getItem("apiVersion");
-export let sessionError;
+export let sessionError = "";
 export let sfConn = {
 
   async getSession(sfHost) {

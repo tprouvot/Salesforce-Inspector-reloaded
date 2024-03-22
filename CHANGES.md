@@ -2,16 +2,26 @@
 
 ## Version 1.24
 
-- Support comments in SOQL / SOSL
-- increase height of pannel and move it heigher
-- format query SOQL/ SOSL
-- fix misc bugs (conecteed app,...)
+- Export: Support comments in SOQL / SOSL
+- Export: format query SOQL/ SOSL
+- Export: keep header on top of result on scrolling
+- Inspect: suggest value for picklist
+- Import: assignment rule for Lead, Case and Account
+- Popup: increase height of pannel and move it heigher
+- Fix misc bugs (conecteed app,...)
 
 ## Version 1.23
 
-- SOQL intellisens improoved : subquery, in, like, excludes, includes
-- SOSL support in data export with intellisens
-- Apex Runner to execute batch, enqueue job or just anonymous code
-- Log profiler, analyze, search and download
+- Export SOQL: suggest field and related object link in subquery: SELECT Id, (SELECT Id from Contacts) FROM Account
+- Export SOQL: suggest field value with IN, LIKE, excludes(), includes()
+- Export SOQL: 
+- Export SOSL : execution
+- Export SOSL : suggest keywords, field and object
+- Apex Runner: execute batch, enqueue job or just anonymous code
+- Apex Runner: poll log
+- Apex Runner: auto suggest className
+- Log profiler
+- Log search with autoscroll
+- Log download
 - Respect order of column in data export
 - Remove total,done, index column for subquery result 

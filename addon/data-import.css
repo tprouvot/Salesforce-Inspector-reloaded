@@ -245,9 +245,16 @@ h1 {
   display: flex;
   align-items: center;
 }
-.columns-mapping label {
+.columns-mapping .column-label {
   display: block;
   margin-bottom: 2px;
+}
+.columns-mapping .format-label {
+  display: inline-block;
+  padding-right: 2em;
+}
+.format-line {
+  margin-top: 5px;
 }
 .columns-mapping .conf-label {
   display: block;

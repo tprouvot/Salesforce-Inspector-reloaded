@@ -11,6 +11,21 @@ class Model {
     this.importData = undefined;
     this.consecutiveFailures = 0;
 
+    this.allApis = [
+      {value: "Enterprise", label: "Enterprise (default)"},
+      {value: "Tooling", label: "Tooling"},
+      {value: "Metadata", label: "Metadata"}
+    ];
+    this.allActions = [
+      {value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling"]},
+      {value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling"]},
+      {value: "upsert", label: "Upsert", supportedApis: ["Enterprise", "Tooling"]},
+      {value: "delete", label: "Delete", supportedApis: ["Enterprise", "Tooling"]},
+      {value: "undelete", label: "Undelete", supportedApis: ["Enterprise", "Tooling"]},
+      {value: "upsertMetadata", label: "Upsert Metadata", supportedApis: ["Metadata"]},
+      {value: "deleteMetadata", label: "Delete Metadata", supportedApis: ["Metadata"]}
+    ];
+
     this.sfLink = "https://" + this.sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
@@ -35,20 +50,6 @@ class Model {
       Succeeded: true,
       Failed: true
     };
-    this.allApis = [
-      {value: "Enterprise", label: "Enterprise (default)"},
-      {value: "Tooling", label: "Tooling"},
-      {value: "Metadata", label: "Metadata"}
-    ];
-    this.allActions = [
-      {value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling"]},
-      {value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling"]},
-      {value: "upsert", label: "Upsert", supportedApis: ["Enterprise", "Tooling"]},
-      {value: "delete", label: "Delete", supportedApis: ["Enterprise", "Tooling"]},
-      {value: "undelete", label: "Undelete", supportedApis: ["Enterprise", "Tooling"]},
-      {value: "upsertMetadata", label: "Upsert Metadata", supportedApis: ["Metadata"]},
-      {value: "deleteMetadata", label: "Delete Metadata", supportedApis: ["Metadata"]}
-    ];
     if (args.has("sobject")) {
       this.importType = args.get("sobject");
     }
@@ -630,7 +631,7 @@ class Model {
       if (!c) {
         return c;
       }
-      c.columnValue = this.guessColumn(c.columnOriginalValue);
+      c.setColumnValue(this.guessColumn(c.columnOriginalValue));
       return c;
     });
 
@@ -642,9 +643,37 @@ class Model {
       columnIndex: index,
       columnValue: column.trim(),
       columnOriginalValue: column,
+      format: "",
       columnIgnore() { return columnVm.columnValue.startsWith("_"); },
       columnSkip() {
         columnVm.columnValue = "_" + columnVm.columnValue;
+        columnVm.format = "";
+      },
+      setColumnValue(colval) {
+        columnVm.columnValue = colval;
+        let fieldType = columnVm.getColumnType();
+        if (fieldType == "date") {
+          columnVm.format = "yyyy-MM-dd";
+        } else if (fieldType == "datetime") {
+          columnVm.format = "yyyy-MM-ddTHH:mm:ss.SSSZ";
+        } else {
+          columnVm.format = "";
+        }
+      },
+      getColumnType(){
+        let sobjectName = self.importType;
+        let sobjectDescribe = self.describeInfo.describeSobject(self.apiType == "Tooling", sobjectName).sobjectDescribe;
+        if (sobjectDescribe) {
+          let field = sobjectDescribe.fields.find(field => field.name.toLowerCase() === columnVm.columnValue.toLowerCase());
+          if (field) {
+            return field.type;
+          }
+        }
+        return null;
+      },
+      isDate() {
+        let fieldType = columnVm.getColumnType();
+        return (fieldType == "date" || fieldType == "datetime");
       },
       columnValid() {
         let columnName = columnVm.columnValue.split(":");
@@ -1295,11 +1324,17 @@ class ColumnMapper extends React.Component {
   constructor(props) {
     super(props);
     this.onColumnValueChange = this.onColumnValueChange.bind(this);
+    this.onColumnFormatChange = this.onColumnFormatChange.bind(this);
     this.onColumnSkipClick = this.onColumnSkipClick.bind(this);
   }
   onColumnValueChange(e) {
     let {model, column} = this.props;
-    column.columnValue = e.target.value;
+    column.setColumnValue(e.target.value);
+    model.didUpdate();
+  }
+  onColumnFormatChange(e) {
+    let {model, column} = this.props;
+    column.format = e.target.value;
     model.didUpdate();
   }
   onColumnSkipClick(e) {
@@ -1311,10 +1346,14 @@ class ColumnMapper extends React.Component {
   render() {
     let {model, column} = this.props;
     return h("div", {className: "conf-line"},
-      h("label", {htmlFor: "col-" + column.columnIndex}, column.columnOriginalValue),
+      h("label", {htmlFor: "col-" + column.columnIndex, className: "column-label"}, column.columnOriginalValue),
       h("div", {className: "flex-wrapper"},
         h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: column.columnError() ? "confError" : "", disabled: model.isWorking(), id: "col-" + column.columnIndex}),
         h("div", {className: "conf-error", hidden: !column.columnError()}, h("span", {}, column.columnError()), " ", h("button", {onClick: this.onColumnSkipClick, hidden: model.isWorking(), title: "Don't import this column"}, "Skip"))
+      ),
+      h("div", {hidden: !column.isDate(), className: "format-line"},
+        h("label", {htmlFor: "colformat-" + column.columnIndex, className: "format-label"}, "Format"),
+        h("input", {type: "text", value: column.format, onChange: this.onColumnFormatChange, disabled: model.isWorking(), id: "colformat-" + column.columnIndex})
       )
     );
   }

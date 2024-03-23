@@ -5,10 +5,12 @@
 - Export: Support comments in SOQL / SOSL
 - Export: format query SOQL/ SOSL
 - Export: keep header on top of result on scrolling
+- Export: Add download CSV
 - Inspect: suggest value for picklist
 - Import: assignment rule for Lead, Case and Account
 - Popup: increase height of pannel and move it heigher
 - Fix misc bugs (conecteed app,...)
+- Log: Fix encoding for log dowload
 
 ## Version 1.23
 

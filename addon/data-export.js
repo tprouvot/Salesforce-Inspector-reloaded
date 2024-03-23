@@ -274,6 +274,16 @@ class Model {
     let separator = getSeparator();
     copyToClipboard(this.exportedData.csvSerialize(separator));
   }
+  downloadCsv() {
+    let separator = getSeparator();
+    let downloadLink = document.createElement("a");
+    const date = new Date();
+    const timestamp = date.toISOString().replace(/[^0-9]/g, "");
+    downloadLink.download = `export${timestamp}.csv`;
+    let BOM = "\uFEFF";
+    downloadLink.href = "data:text/csv;charset=utf-8," + BOM + encodeURI(this.exportedData.csvSerialize(separator));
+    downloadLink.click();
+  }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
   }
@@ -1669,6 +1679,7 @@ class App extends React.Component {
     this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
+    this.onDownloadCsv = this.onDownloadCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
@@ -1790,6 +1801,11 @@ class App extends React.Component {
   onCopyAsCsv() {
     let {model} = this.props;
     model.copyAsCsv();
+    model.didUpdate();
+  }
+  onDownloadCsv() {
+    let {model} = this.props;
+    model.downloadCsv();
     model.didUpdate();
   }
   onCopyAsJson() {
@@ -1986,6 +2002,7 @@ class App extends React.Component {
         h("div", {className: "result-bar"},
           h("h1", {}, "Export Result"),
           h("div", {className: "button-group"},
+            h("button", {disabled: !model.canCopy(), onClick: this.onDownloadCsv, title: "Download csv file of exported data"}, "Download (CSV format)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),

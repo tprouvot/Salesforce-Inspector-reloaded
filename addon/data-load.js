@@ -247,7 +247,8 @@ function renderCell(rt, cell, td) {
             sfConn.rest(e.target.id, {responseType: "text/csv"}).then(data => {
               let downloadLink = document.createElement("a");
               downloadLink.download = recordId.split("/")[6];
-              downloadLink.href = "data:text/csv;charset=utf-8," + data;
+              let BOM = "\uFEFF";
+              downloadLink.href = "data:text/csv;charset=utf-8," + BOM + encodeURI(data);
               downloadLink.click();
             });
             td.removeChild(pop);

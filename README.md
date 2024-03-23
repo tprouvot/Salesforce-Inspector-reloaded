@@ -51,19 +51,12 @@ In order to rich this goal, I have take a closer look to the full backlog of ori
 
 ## New features compared to SF Inspector Reloaded
 
-- Export SOQL: suggest field and related object link in subquery: SELECT Id, (SELECT Id from Contacts) FROM Account
-- Export SOQL: suggest field value with IN, LIKE, excludes(), includes()
-- Export SOQL: format query
-- Export SOQL: respect order of column
-- Export SOQL: Remove total, done, index column for subquery result 
-- Export SOSL: execution
-- Export SOSL: suggest keywords, field and object
-- Apex Runner: execute batch, enqueue job or just anonymous code
-- Apex Runner: poll log
-- Apex Runner: auto suggest className
-- Log: profiler
-- Log: search with autoscroll
-- Log: download
+- Export SOQL: suggest in subquery, field valud with IN/LIKE, format query, respect order of column, Download CSV file
+- Export SOSL
+- Inspect: suggest value for picklist
+- Import: assignment rules
+- Apex Runner: execute batch, enqueue job or just anonymous code, poll log, auto suggest className, 
+- Log: profiler, search with autoscroll, download
 
 ## Security and Privacy
 

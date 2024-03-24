@@ -711,7 +711,97 @@ class Model {
     };
     return columnVm;
   }
-
+  calculateDateFormat(format) {
+    let remaining = format;
+    let regexStr = "";
+    let formatCtx = {};
+    let index = 1;
+    while (remaining) {
+      if (remaining.match(/^yyyy/i)) {
+        remaining = remaining.substring(4);
+        regexStr += "([0-9]{4})";
+        formatCtx.yearIdx = index;
+        index++;
+      } else if (remaining.match(/^mm/i)) {
+        remaining = remaining.substring(2);
+        regexStr += "([0-9]{2})";
+        formatCtx.monthIdx = index;
+        index++;
+      } else if (remaining.match(/^dd/i)) {
+        remaining = remaining.substring(2);
+        regexStr += "([0-9]{2})";
+        formatCtx.dayIdx = index;
+        index++;
+      } else {
+        regexStr += remaining[0];
+        remaining = remaining.substring(1);
+      }
+    }
+    formatCtx.convertRegEx = new RegExp(regexStr, "");
+    return formatCtx;
+  }
+  convertDate(rowValue, format) {
+    let convertMatch = format.convertRegEx.exec(rowValue);
+    return `${convertMatch[format.yearIdx]}-${convertMatch[format.monthIdx]}-${convertMatch[format.dayIdx]}`;
+  }
+  calculateDatetimeFormat(format) {
+    let remaining = format;
+    let regexStr = "";
+    let formatCtx = {};
+    let index = 1;
+    while (remaining) {
+      if (remaining.match(/^yyyy/i)) {
+        remaining = remaining.substring(4);
+        regexStr += "([0-9]{4})";
+        formatCtx.yearIdx = index;
+        index++;
+      } else if (remaining.match(/^MM/)) {
+        remaining = remaining.substring(2);
+        regexStr += "([0-9]{2})";
+        formatCtx.monthIdx = index;
+        index++;
+      } else if (remaining.match(/^dd/i)) {
+        remaining = remaining.substring(2);
+        regexStr += "([0-9]{2})";
+        formatCtx.dayIdx = index;
+        index++;
+      } else if (remaining.match(/^HH/)) {
+        remaining = remaining.substring(2);
+        regexStr += "([0-9]{2})";
+        formatCtx.hourIdx = index;
+        index++;
+      } else if (remaining.match(/^mm/)) {
+        remaining = remaining.substring(2);
+        regexStr += "([0-9]{2})";
+        formatCtx.minuteIdx = index;
+        index++;
+      } else if (remaining.match(/^ss/)) {
+        remaining = remaining.substring(2);
+        regexStr += "([0-9]{2})";
+        formatCtx.secondIdx = index;
+        index++;
+      } else if (remaining.match(/^SSS/)) {
+        remaining = remaining.substring(3);
+        regexStr += "([0-9]{3})";
+        formatCtx.milliIdx = index;
+        index++;
+      } else {
+        regexStr += remaining[0];
+        remaining = remaining.substring(1);
+      }
+    }
+    formatCtx.convertRegEx = new RegExp(regexStr, "");
+    return formatCtx;
+  }
+  convertDatetime(rowValue, format) {
+    //TODO timezone yyyy-MM-ddTHH:mm:ss.SSS+FF:ff
+    let convertMatch = format.convertRegEx.exec(rowValue);
+    if (format.milliIdx){
+      return `${convertMatch[format.yearIdx]}-${convertMatch[format.monthIdx]}-${convertMatch[format.dayIdx]}T${convertMatch[format.hourIdx]}:${convertMatch[format.minuteIdx]}:${convertMatch[format.secondIdx]}.${convertMatch[format.milliIdx]}Z`;
+    } else {
+      return `${convertMatch[format.yearIdx]}-${convertMatch[format.monthIdx]}-${convertMatch[format.dayIdx]}T${convertMatch[format.hourIdx]}:${convertMatch[format.minuteIdx]}:${convertMatch[format.secondIdx]}Z`;
+    }
+  }
   // Called once whenever any value is changed such that a new batch might be started (this.isProcessingQueue, this.batchSize, this.batchConcurrency, this.activeBatches or this.importData/updateResult)
   executeBatch() {
     if (!this.isProcessingQueue) {
@@ -735,6 +825,16 @@ class Model {
     let {statusColumnIndex, resultIdColumnIndex, actionColumnIndex, errorColumnIndex, importAction, sobjectType, idFieldName, inputIdColumnIndex} = this.importState;
     let data = this.importData.importTable.data;
     let header = this.importData.importTable.header.map(c => c.columnValue);
+    let self = this;
+    let format = this.importData.importTable.header.map(c => {
+      if (c.getColumnType() == "date") {
+        return self.calculateDateFormat(c.format);
+      } else if (c.getColumnType() == "datetime") {
+        return self.calculateDatetimeFormat(c.format);
+      } else {
+        return null;
+      }
+    });
     let batchRows = [];
     let importArgs = {};
     if (importAction == "upsert") {
@@ -779,7 +879,14 @@ class Model {
         for (let c = 0; c < row.length; c++) {
           let fieldName = header[c];
           let fieldValue = row[c];
-
+          if ((fieldTypes[fieldName] == "Date")
+            && format[c] != "yyyy-MM-dd") {
+            fieldValue = this.convertDate(fieldValue, format[c]);
+          } else if ((fieldTypes[fieldName] == "DateTime")
+            && format[c] != "yyyy-MM-ddTHH:mm:ss.SSS+/-HH:mm"
+            && format[c] != "yyyy-MM-ddTHH:mm:ss.SSSZ") {
+            fieldValue = this.convertDatetime(fieldValue, format[c]);
+          }
           if (fieldName.startsWith("_")) {
             continue;
           }
@@ -813,6 +920,13 @@ class Model {
         let sobject = {};
         sobject["$xsi:type"] = sobjectType;
         sobject.fieldsToNull = [];
+
+        let fieldTypes = {};
+        let selectedObjectFields = this.describeInfo.describeSobject(this.apiType == "Tooling", sobjectType).sobjectDescribe?.fields || [];
+        selectedObjectFields.forEach(field => {
+          fieldTypes[field.name] = field.type;
+        });
+
         for (let c = 0; c < row.length; c++) {
           if (header[c][0] != "_") {
             let columnName = header[c].split(":");
@@ -829,7 +943,16 @@ class Model {
               }
             } else if (columnName.length == 1) { // Our validation ensures there are always one or three elements in the array
               let [fieldName] = columnName;
-              sobject[fieldName] = row[c];
+              if ((fieldTypes[fieldName] == "date")
+                  && format[c] != "yyyy-MM-dd") {
+                sobject[fieldName] = this.convertDate(row[c], format[c]);
+              } else if ((fieldTypes[fieldName] == "datetime")
+                  && format[c] != "yyyy-MM-ddTHH:mm:ss.SSS+/-HH:mm"
+                  && format[c] != "yyyy-MM-ddTHH:mm:ss.SSSZ") {
+                sobject[fieldName] = this.convertDatetime(row[c], format[c]);
+              } else {
+                sobject[fieldName] = row[c];
+              }
             } else {
               let [fieldName, typeName, subFieldName] = columnName;
               sobject[fieldName] = {

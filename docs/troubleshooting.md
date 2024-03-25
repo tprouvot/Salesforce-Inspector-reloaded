@@ -39,3 +39,7 @@ let tokens = Object.keys(localStorage).filter((localKey) =>
 );
 tokens.forEach((element) => localStorage.removeItem(element));
 ```
+
+### Managed Application Installation Error
+
+When installing the default connected app when `API Access Control` is enabled, if you face the error `Managed Application Installation Error` you may have an existing connected app named `Salesforce Inspector reloaded`.

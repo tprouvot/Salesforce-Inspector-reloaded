@@ -108,6 +108,16 @@ export let sfConn = {
       err.name = "Unauthorized";
       err.message = error;
       throw err;
+    } else if (xhr.status == 431) {
+      let err = new Error();
+      err.name = "Bad Message";
+      err.message = "Request Header Fields Too Large";
+      throw err;
+    } else if (xhr.status == 414) {
+      let err = new Error();
+      err.name = "Bad Message";
+      err.message = "URI Too Long";
+      throw err;
     } else {
       if (!logErrors) { console.error("Received error response from Salesforce REST API", xhr); }
       let err = new Error();

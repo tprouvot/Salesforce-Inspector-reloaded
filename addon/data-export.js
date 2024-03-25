@@ -1419,8 +1419,6 @@ class Model {
             total = data.totalSize;
           }
         }
-
-
         if (!vm.isSearchMode() && !data.done) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
           vm.isWorking = true;

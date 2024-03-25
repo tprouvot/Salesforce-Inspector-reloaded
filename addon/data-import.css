@@ -520,3 +520,7 @@ button.contract .button-toggle-icon {
   margin: 0;
   height: 100%;
 }
+.help-format {
+  color: #4a4a56;
+  padding-left: 7px;
+}

@@ -644,10 +644,14 @@ class Model {
       columnValue: column.trim(),
       columnOriginalValue: column,
       format: "",
+      isFormatDisplayed: false,
       columnIgnore() { return columnVm.columnValue.startsWith("_"); },
       columnSkip() {
         columnVm.columnValue = "_" + columnVm.columnValue;
         columnVm.format = "";
+      },
+      toggleFormatDisplay() {
+        columnVm.isFormatDisplayed = !this.isFormatDisplayed;
       },
       setColumnValue(colval) {
         columnVm.columnValue = colval;
@@ -1449,6 +1453,7 @@ class ColumnMapper extends React.Component {
     this.onColumnValueChange = this.onColumnValueChange.bind(this);
     this.onColumnFormatChange = this.onColumnFormatChange.bind(this);
     this.onColumnSkipClick = this.onColumnSkipClick.bind(this);
+    this.onToggleFormatDisplay = this.onToggleFormatDisplay.bind(this);
   }
   onColumnValueChange(e) {
     let {model, column} = this.props;
@@ -1466,17 +1471,25 @@ class ColumnMapper extends React.Component {
     column.columnSkip();
     model.didUpdate();
   }
+  onToggleFormatDisplay(e) {
+    let {model, column} = this.props;
+    e.preventDefault();
+    column.toggleFormatDisplay();
+    model.didUpdate();
+  }
   render() {
     let {model, column} = this.props;
     return h("div", {className: "conf-line"},
       h("label", {htmlFor: "col-" + column.columnIndex, className: "column-label"}, column.columnOriginalValue),
       h("div", {className: "flex-wrapper"},
         h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: column.columnError() ? "confError" : "", disabled: model.isWorking(), id: "col-" + column.columnIndex}),
+        h("button", {className: column.isFormatDisplayed ? "toggle contract" : "toggle expand", hidden: !column.isDate(), title: "Show Format", onClick: this.onToggleFormatDisplay}, h("div", {className: "button-toggle-icon"})),
         h("div", {className: "conf-error", hidden: !column.columnError()}, h("span", {}, column.columnError()), " ", h("button", {onClick: this.onColumnSkipClick, hidden: model.isWorking(), title: "Don't import this column"}, "Skip"))
       ),
-      h("div", {hidden: !column.isDate(), className: "format-line"},
+      h("div", {hidden: !column.isFormatDisplayed, className: "format-line"},
         h("label", {htmlFor: "colformat-" + column.columnIndex, className: "format-label"}, "Format"),
-        h("input", {type: "text", value: column.format, onChange: this.onColumnFormatChange, disabled: model.isWorking(), id: "colformat-" + column.columnIndex})
+        h("input", {type: "text", value: column.format, onChange: this.onColumnFormatChange, disabled: model.isWorking(), id: "colformat-" + column.columnIndex}),
+        h("span", {className: "help-format"}, column.getColumnType() == "date" ? "yyyy-MM-dd" : "yyyy-MM-ddTHH:mm:ss.SSSZ")
       )
     );
   }

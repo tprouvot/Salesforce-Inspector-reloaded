@@ -2,6 +2,7 @@
 
 ## Version 1.23
 
+- On inspect page, when double clicking on a picklist field, iterate through available values [feature 366](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/366)
 - Integrate Experience Cloud builder link to shortcut search in popup [feature 365](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/365)
 - Add configuration option for popup width [feature 368](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/368)
 - Add 'Flow Versions' button in popup when recordId is a flow [feature 362](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/362)

@@ -1391,6 +1391,8 @@ class FieldValueCell extends React.Component {
     this.onLinkClick = this.onLinkClick.bind(this);
     this.onSuggestionClick = this.onSuggestionClick.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
+    this.onFocus = this.onFocus.bind(this);
+    this.onBlur = this.onBlur.bind(this);
     this.state = {
       activeSuggestion: 0,
       filteredSuggestions: [],
@@ -1403,6 +1405,33 @@ class FieldValueCell extends React.Component {
       let td = e.currentTarget;
       row.rowList.model.didUpdate(() => td.querySelector("textarea").focus());
     }
+  }
+  onFocus() {
+    let {row} = this.props;
+    const suggestions = row.fieldDescribe.picklistValues.map(pickval => pickval.value);
+
+    this.setState({
+      activeSuggestion: 0,
+      filteredSuggestions: suggestions,
+      showSuggestions: true
+    });
+
+    row.rowList.model.didUpdate();
+  }
+  onBlur() {
+    let {row} = this.props;
+    setTimeout(() => {
+      //no need to refresh if already refresh by click on value
+      if (!this.state || !this.state.showSuggestions) {
+        return;
+      }
+      this.setState({
+        activeSuggestion: 0,
+        filteredSuggestions: [],
+        showSuggestions: false
+      });
+      row.rowList.model.didUpdate();
+    }, 100); // Set timeout for 500ms
   }
   onDataEditValueInput(e) {
     let {row} = this.props;
@@ -1481,7 +1510,7 @@ class FieldValueCell extends React.Component {
     let {activeSuggestion, filteredSuggestions, showSuggestions} = this.state;
     if (row.isEditing()) {
       return h("td", {className: col.className},
-        h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
+        h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onFocus: this.onFocus, onBlur: this.onBlur, onKeyDown: this.onKeyDown}),
         h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6"),
         (showSuggestions && filteredSuggestions.length)
           ? h("ul", {className: "suggestions"},

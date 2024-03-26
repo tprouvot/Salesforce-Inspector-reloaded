@@ -139,13 +139,6 @@ class Model {
   toggleSavedOptions() {
     this.expandSavedOptions = !this.expandSavedOptions;
   }
-  //TODO switch describeurl to analyse logs/ download log
-  showDescribeUrl() {
-    let args = new URLSearchParams();
-    args.set("host", this.sfHost);
-    args.set("objectType", this.autocompleteResults.sobjectName);
-    return "inspect.html?" + args;
-  }
   selectHistoryEntry() {
     if (this.selectedHistoryEntry != null) {
       this.scriptInput.value = this.selectedHistoryEntry.script;
@@ -313,7 +306,13 @@ class Model {
       vm.numberOfLines = numberOfLines;
       vm.didUpdate();
     }
-    //TODO https://phuoc.ng/collection/mirror-a-text-area/add-autocomplete-to-your-text-area/
+    //TODO place suggstion over the text area with miroring text with span
+    //advantage is that we can provide color highlight thanks to that.
+    /*
+    const rect = caretEle.getBoundingClientRect();
+    suggestionsEle.style.top = `${rect.top + rect.height}px`;
+    suggestionsEle.style.left = `${rect.left}px`;
+    */
     // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
     let newAutocompleteState = [script, selStart, selEnd].join("$");
     if (newAutocompleteState == vm.autocompleteState && !ctrlSpace && !e.newDescribe) {
@@ -967,8 +966,7 @@ class App extends React.Component {
             h("span", {}, model.autocompleteResults.title),
             h("div", {className: "flex-right"},
               h("button", {tabIndex: 1, onClick: this.onExecute, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Execute"),
-              h("button", {tabIndex: 2, onClick: this.onCopyScript, title: "Copy script url", className: "copy-id"}, "Execute Script"),
-              h("a", {tabIndex: 3, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info")
+              h("button", {tabIndex: 2, onClick: this.onCopyScript, title: "Copy script url", className: "copy-id"}, "Export Script")
             ),
           ),
           h("div", {className: "autocomplete-results"},

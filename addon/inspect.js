@@ -735,7 +735,7 @@ class FieldRow extends TableRow {
       return this.fieldName + "\n"
         + (fieldDescribe.calculatedFormula ? "Formula: " + fieldDescribe.calculatedFormula + "\n" : "")
         + (fieldDescribe.inlineHelpText ? "Help text: " + fieldDescribe.inlineHelpText + "\n" : "")
-        + (fieldDescribe.picklistValues && fieldDescribe.picklistValues.length > 0 ? "Picklist values: " + fieldDescribe.picklistValues.map(pickval => pickval.value).join(", ") + "\n" : "")
+        + (fieldDescribe.picklistValues && fieldDescribe.picklistValues.length > 0 ? "Values: (iterate with ↑ & ↓) " + fieldDescribe.picklistValues.map(pickval => pickval.value).join(", ") + "\n" : "")
       ;
     }
     // Entity particle does not contain any of this information
@@ -1442,6 +1442,9 @@ class FieldValueCell extends React.Component {
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onRecordIdClick = this.onRecordIdClick.bind(this);
     this.onLinkClick = this.onLinkClick.bind(this);
+    this.onKeyDown = this.onKeyDown.bind(this);
+
+    this.state = {picklistValueIndex: -1};
     this.closePopMenu = this.closePopMenu.bind(this);
   }
   onTryEdit(e) {
@@ -1474,6 +1477,19 @@ class FieldValueCell extends React.Component {
       this.onRecordIdClick(e);
     }
   }
+  onKeyDown(e) {
+    let {row} = this.props;
+    let {picklistValueIndex} = this.state;
+    if (row.entityParticle.DataType == "picklist" && (e.key == "ArrowDown" || e.key == "ArrowUp")) {
+      let down = e.key == "ArrowDown" ? true : false;
+      down ? picklistValueIndex++ : picklistValueIndex--;
+      if (0 <= picklistValueIndex && picklistValueIndex < row.fieldDescribe.picklistValues.length){
+        e.currentTarget.value = row.fieldDescribe.picklistValues[picklistValueIndex].value;
+        row.dataEditValue = e.target.value;
+        this.setState({picklistValueIndex});
+      }
+    }
+  }
   closePopMenu(){
     const {row} = this.props;
     row.toggleRecordIdPop();
@@ -1483,7 +1499,7 @@ class FieldValueCell extends React.Component {
     let {row, col} = this.props;
     if (row.isEditing()) {
       return h("td", {className: col.className},
-        h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput}),
+        h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
         h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6")
       );
     } else if (row.isId()) {

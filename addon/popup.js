@@ -11,7 +11,8 @@ let h = React.createElement;
     iFrameLocalStorage: {
       popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
       popupArrowPosition: JSON.parse(localStorage.getItem("popupArrowPosition")),
-      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder"))
+      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder")),
+      popupWidth: JSON.parse(localStorage.getItem("popupWidth"))
     }
   }, "*");
   addEventListener("message", function initResponseHandler(e) {
@@ -187,14 +188,16 @@ class App extends React.PureComponent {
     let url;
     let title;
     let text;
-    if (sessionError !== "Session expired or invalid"){
-      text = "Access Token Expired";
-      title = "Generate New Token";
-      url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
-    } else {
-      text = "Expired session";
-      title = "Return to login page";
-      url = `https://${sfHost}/`;
+    if (sessionError){
+      if (sessionError !== "Session expired or invalid"){
+        text = "Access Token Expired";
+        title = "Generate New Token";
+        url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
+      } else {
+        text = "Expired session";
+        title = "Return to login page";
+        url = `https://${sfHost}/`;
+      }
     }
     return {title, url, text};
   }
@@ -1020,9 +1023,10 @@ class AllDataBoxShortcut extends React.PureComponent {
 
       //search for metadata if user did not disabled it
       if (metadataShortcutSearch == "true"){
-        const flowSelect = "SELECT LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const flowSelect = "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const networkSelect = "SELECT Id, Name, Status, UrlPathPrefix FROM Network WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50";
         const compositeQuery = {
           "compositeRequest": [
             {
@@ -1037,6 +1041,10 @@ class AllDataBoxShortcut extends React.PureComponent {
               "method": "GET",
               "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(permSetSelect),
               "referenceId": "permSetSelect"
+            }, {
+              "method": "GET",
+              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(networkSelect),
+              "referenceId": "networkSelect"
             }
           ]
         };
@@ -1049,7 +1057,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         results.forEach(element => {
           element.body.records.forEach(rec => {
             if (rec.attributes.type === "FlowDefinitionView"){
-              rec.link = "/builder_platform_interaction/flowBuilder.app?flowId=" + rec.LatestVersionId;
+              rec.link = "/builder_platform_interaction/flowBuilder.app?flowDefId=" + rec.DurableId + "&flowId=" + rec.LatestVersionId;
               rec.label = rec.Label;
               rec.name = rec.ApiName;
               rec.detail = rec.attributes.type + " • " + rec.ProcessType;
@@ -1075,6 +1083,12 @@ class AllDataBoxShortcut extends React.PureComponent {
               }
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
+            } else if (rec.attributes.type === "Network"){
+              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=0DB26000000Ak2X" + rec.Id;
+              rec.label = rec.Name;
+              let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
+              rec.name = rec.Id + url;
+              rec.detail = rec.attributes.type + " (" + rec.Status + ") • Builder";
             }
             result.push(rec);
           });
@@ -1512,6 +1526,13 @@ class ShowDetailsButton extends React.PureComponent {
 
 
 class AllDataSelection extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      flowDefinitionId: null
+    };
+  }
+
   clickShowDetailsBtn() {
     this.refs.showDetailsBtn.onDetailsClick();
   }
@@ -1551,6 +1572,9 @@ class AllDataSelection extends React.PureComponent {
     args.set("host", sfHost);
     args.set("checkDeployStatus", selectedValue.recordId);
     return "explore-api.html?" + args;
+  }
+  redirectToFlowVersions(){
+    return "https://" + this.props.sfHost + "/lightning/setup/Flows/page?address=%2F" + this.state.flowDefinitionId;
   }
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
@@ -1606,11 +1630,26 @@ class AllDataSelection extends React.PureComponent {
   getNewObjectUrl(sfHost, newUrl){
     return "https://" + sfHost + newUrl;
   }
+  setFlowDefinitionId(recordId){
+    if (recordId && !this.state.flowDefinitionId){
+      if (recordId.startsWith("301")){
+        sfConn.rest("/services/data/v" + apiVersion + "/tooling/query/?q=SELECT+DefinitionId+FROM+Flow+WHERE+Id='" + recordId + "'", {method: "GET"}).then(res => {
+          res.records.forEach(recentItem => {
+            this.setState({flowDefinitionId: recentItem.DefinitionId});
+          });
+        });
+      } else if (recordId.startsWith("300")){
+        this.setState({flowDefinitionId: recordId});
+      }
+    }
+  }
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent} = this.props;
+    let {flowDefinitionId} = this.state;
     // Show buttons for the available APIs.
     let buttons = selectedValue.sobject.availableApis ? Array.from(selectedValue.sobject.availableApis) : [];
     buttons.sort();
+    this.setFlowDefinitionId(selectedValue ? selectedValue.recordId : contextRecordId);
     if (buttons.length == 0 && !selectedValue.isRecent) {
       // If none of the APIs are available, show a button for the regular API, which will partly fail, but still show some useful metadata from the tooling API.
       buttons.push("noApi");
@@ -1664,6 +1703,8 @@ class AllDataSelection extends React.PureComponent {
         h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
           ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+        flowDefinitionId
+          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
         buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
           {
             key: button,

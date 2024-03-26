@@ -281,14 +281,18 @@ class Model {
     selStart = selEnd - searchTerm.length;
 
     if (ctrlSpace) {
-      //TODO if item selected => write it
-      //return;
+      if (vm.autocompleteResults && vm.autocompleteResults.results && vm.autocompleteResults.results.length > 0) {
+        let ar = vm.autocompleteResults.results;
+        vm.scriptInput.focus();
+        vm.scriptInput.setRangeText(ar[0].value, selStart, selEnd, "end");
+      }
+      return;
     }
     vm.autocompleteResults = {
       sobjectName: "ApexClass",
       title: "Class suggestions:",
       results: new Enumerable(vm.apexClasses.records)
-        .filter(c => (c.Name.toLowerCase().includes(searchTerm.toLowerCase())))
+        .filter(c => (c.Name.toLowerCase().startsWith(searchTerm.toLowerCase())))
         .map((c) => ({"value": (c.NamespacePrefix ? c.NamespacePrefix + "." : "") + c.Name, "title": (c.NamespacePrefix ? c.NamespacePrefix + "." : "") + c.Name, "suffix": " ", "rank": 1, "autocompleteType": "fieldName"}))
         .toArray()
         .sort(vm.resultsSort(searchTerm))
@@ -334,7 +338,7 @@ class Model {
       : script.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
     selStart = selEnd - searchTerm.length;
 
-    this.autocompleteClass(vm, false);
+    this.autocompleteClass(vm, ctrlSpace);
   }
 
   batchHandler(batch, vm, logs, onData) {

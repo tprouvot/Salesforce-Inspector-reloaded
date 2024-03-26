@@ -264,7 +264,7 @@ class Model {
           .then(setupLinks => this.objectSetupLinks = setupLinks)
       );
     }
-    if(this.objectActionsOpen){
+    if (this.objectActionsOpen){
       this.onOpenPopup(elem);
     }
   }
@@ -722,7 +722,7 @@ class FieldRow extends TableRow {
           .then(setupLinks => this.fieldSetupLinks = setupLinks)
       );
     }
-    if(this.fieldActionsOpen){
+    if (this.fieldActionsOpen){
       elem.props.onOpenPopup(elem);
     }
   }
@@ -933,7 +933,7 @@ class ChildRow extends TableRow {
           .then(setupLinks => this.childSetupLinks = setupLinks)
       );
     }
-    if(this.childActionsOpen){
+    if (this.childActionsOpen){
       elem.props.onOpenPopup(elem);
     }
   }
@@ -1081,14 +1081,14 @@ class App extends React.Component {
   }
   handleClick(e){
     const {model} = this.props;
-    if(model.popupReactElement){ // There is a popup
-      const popups = document.getElementsByClassName('pop-menu');
-      if(popups && popups[0] && !popups[0].contains(e.target)){
+    if (model.popupReactElement){ // There is a popup
+      const popups = document.getElementsByClassName("pop-menu");
+      if (popups && popups[0] && !popups[0].contains(e.target)){
         model.popupReactElement.closePopMenu(); // Dynamic components implementing closePopMenu
         model.popupReactElement = undefined;
       }
     }
-    if(model.popupTmpReactElement){ // First click
+    if (model.popupTmpReactElement){ // First click
       model.popupReactElement = model.popupTmpReactElement;
       model.popupTmpReactElement = undefined;
     }
@@ -1106,7 +1106,7 @@ class App extends React.Component {
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
     let linkTarget = linkInNewTab ? "_blank" : "_top";
     return (
-      h("div",{ onClick: this.handleClick},
+      h("div", {onClick: this.handleClick},
         h("div", {className: "object-bar"},
           h("div", {className: "flex-right"},
             h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_large", hidden: model.spinnerCount == 0},
@@ -1322,7 +1322,7 @@ class RowTable extends React.Component {
     };
     this.tableSettingsOpen = !this.tableSettingsOpen;
     this.props.model.didUpdate();
-    if(this.tableSettingsOpen){
+    if (this.tableSettingsOpen){
       this.props.onOpenPopup(this);
     }
   }

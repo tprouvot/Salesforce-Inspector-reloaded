@@ -924,6 +924,20 @@ class Model {
       ]
     };
   }
+  // Format the input SOQL query
+  doQueryFormat() {
+    // Get the value of the query input field
+    const query = this.queryInput.value;
+    // Parse the input query and format it using the soql-parser-js library
+    const formattedSoql = window.soqlParserJs.formatQuery(query, {
+      fieldMaxLineLength: 30,
+      fieldSubqueryParensOnOwnLine: false,
+      whereClauseOperatorsIndented: true,
+      newLineAfterKeywords: true
+    });
+    // Update the query input field with the formatted SOQL query
+    this.queryInput.value = formattedSoql;
+  }
 }
 
 function RecordTable(vm) {
@@ -1036,6 +1050,7 @@ class App extends React.Component {
     this.onExport = this.onExport.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
     this.onQueryPlan = this.onQueryPlan.bind(this);
+    this.onFormatQuery = this.onFormatQuery.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
@@ -1144,6 +1159,11 @@ class App extends React.Component {
   onQueryPlan(){
     let {model} = this.props;
     model.doQueryPlan();
+    model.didUpdate();
+  }
+  onFormatQuery(){
+    let {model} = this.props;
+    model.doQueryFormat();
     model.didUpdate();
   }
   onCopyAsExcel() {
@@ -1325,7 +1345,8 @@ class App extends React.Component {
               h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query"),
               h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
               h("a", {tabIndex: 4, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
-              h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
+              h("button", {tabIndex: 5, onClick: this.onFormatQuery, title: "Format Query"}, "Format Query"),
+              h("button", {tabIndex: 6, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
                 h("div", {className: "button-icon"}),
                 h("div", {className: "button-toggle-icon"})
               )

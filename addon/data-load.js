@@ -33,6 +33,13 @@ Enumerable.prototype = {
     }
     return false;
   },
+  groupBy(f) {
+    const mapEnum = new Map();
+    for (let e of this) {
+      mapEnum.set(f(e), e);
+    }
+    return new Enumerable(mapEnum.values());
+  },
   toArray() {
     return Array.from(this);
   }

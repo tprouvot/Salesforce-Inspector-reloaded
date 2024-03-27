@@ -131,6 +131,7 @@ class Model {
   setScriptInput(scriptInput) {
     this.scriptInput = scriptInput;
     scriptInput.value = this.initialScript;
+    this.numberOfLines = this.initialScript.split("\n").length;
     this.initialScript = null;
   }
   toggleHelp() {
@@ -270,7 +271,7 @@ class Model {
     let selEnd = vm.scriptInput.selectionEnd;
     let searchTerm = selStart != selEnd
       ? script.substring(selStart, selEnd)
-      : script.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
+      : script.substring(0, selStart).match(/[a-zA-Z0-9_.]*$/)[0];
     selStart = selEnd - searchTerm.length;
 
     if (ctrlSpace) {
@@ -281,13 +282,31 @@ class Model {
       }
       return;
     }
+    //isue duplicate namespace because need group by
     vm.autocompleteResults = {
       sobjectName: "ApexClass",
       title: "Class suggestions:",
       results: new Enumerable(vm.apexClasses.records)
-        .filter(c => (c.Name.toLowerCase().startsWith(searchTerm.toLowerCase())))
-        .map((c) => ({"value": (c.NamespacePrefix ? c.NamespacePrefix + "." : "") + c.Name, "title": (c.NamespacePrefix ? c.NamespacePrefix + "." : "") + c.Name, "suffix": " ", "rank": 1, "autocompleteType": "fieldName"}))
+        .flatMap(function* (c) {
+          if (searchTerm && searchTerm.includes(".")) {
+            let [namespace, cls] = searchTerm.split(".", 2);
+            if (c.NamespacePrefix && c.NamespacePrefix.toLowerCase() == namespace.toLowerCase()
+            && c.Name.toLowerCase().includes(cls.toLowerCase())) {
+              yield {"value": c.NamespacePrefix + "." + c.Name, "title": c.NamespacePrefix + "." + c.Name, "suffix": " ", "rank": 1, "autocompleteType": "fieldName"};
+            }
+          } else if (!c.NamespacePrefix && c.Name.toLowerCase().includes(searchTerm.toLowerCase())) {
+            yield {"value": c.Name, "title": c.Name, "suffix": " ", "rank": 1, "autocompleteType": "fieldName"};
+          }
+        })
+        .concat(
+          new Enumerable(vm.apexClasses.records)
+            .map(c => c.NamespacePrefix)
+            .filter(n => (n && n.toLowerCase().includes(searchTerm.toLowerCase())))
+            .groupBy(n => n)
+            .map(n => ({"value": n, "title": n, "suffix": ".", "rank": 1, "autocompleteType": "fieldName"}))
+        )
         .toArray()
+        .slice(0, 10) //only 10 first result
         .sort(vm.resultsSort(searchTerm))
     };
   }
@@ -306,7 +325,7 @@ class Model {
       vm.numberOfLines = numberOfLines;
       vm.didUpdate();
     }
-    //TODO place suggstion over the text area with miroring text with span
+    //TODO place suggestion over the text area with miroring text with span
     //advantage is that we can provide color highlight thanks to that.
     /*
     const rect = caretEle.getBoundingClientRect();
@@ -334,7 +353,7 @@ class Model {
     // Find the token we want to autocomplete. This is the selected text, or the last word before the cursor.
     let searchTerm = selStart != selEnd
       ? script.substring(selStart, selEnd)
-      : script.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
+      : script.substring(0, selStart).match(/[a-zA-Z0-9_.]*$/)[0];
     selStart = selEnd - searchTerm.length;
 
     this.autocompleteClass(vm, ctrlSpace);
@@ -630,12 +649,6 @@ class Model {
   }
 }
 
-/*
-TODO
-detail log view:
-https://domain/servlet/debug/apex/ApexCSIJsonServlet?log=07LAY000003tnkp2AA&extent=steps&_=
-Id, Application, Status, Operation, StartTime, LogLength, LogUserId, LogUser.Name
-*/
 function RecordTable() {
   /*
   We don't want to build our own SOQL parser, so we discover the columns based on the data returned.
@@ -819,7 +832,6 @@ class App extends React.Component {
   componentDidMount() {
     let {model} = this.props;
     let scriptInput = this.refs.script;
-    //TODO SELECT NamespacePrefix FROM ApexClass GROUP BY NamespacePrefix
     let queryApexClass = "SELECT Id, Name, NamespacePrefix FROM ApexClass";
     model.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryApexClass), {}), model, model.apexClasses, (isFinished) => {
       if (!isFinished){
@@ -831,8 +843,8 @@ class App extends React.Component {
       });
 
     model.setScriptInput(scriptInput);
-    //Set the cursor focus on script text area
-    if (localStorage.getItem("disableScriptInputAutoFocus") !== "true"){
+    //Set the cursor focus on script text area use the same than query
+    if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
       scriptInput.focus();
     }
 

@@ -504,7 +504,6 @@ class Model {
       }
     }
     if (beforeSel.toUpperCase().startsWith("WITH")) {
-      //TODO detailed all case of intellisens around WITH
       vm.autocompleteResults = {
         sobjectName: "",
         title: "Suggestions:",
@@ -1335,7 +1334,6 @@ class Model {
     return formatedQuery;
   }
   cleanupQuery(query) {
-    // TODO we need real parsing because if comment is inside string we need to skip it
     if (query && !query.includes("//") && !query.includes("/*")) {
       return query;
     }

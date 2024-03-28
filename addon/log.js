@@ -376,7 +376,7 @@ class Model {
         }
       }
       //TODO l[2] =line number
-      //TODO l[3] =log level
+      //l[3] =log level
       switch (l[1]) {
         //EXECUTION_STARTED EXECUTION_FINISHED
         case "CODE_UNIT_STARTED": {
@@ -486,7 +486,7 @@ class Model {
           }
           break;
         } case "LIMIT_USAGE_FOR_NS": {
-          //TODO parse
+          //for human read only
           /*
           LIMIT_USAGE_FOR_NS|(default)|
             Number of SOQL queries: 0 out of 100

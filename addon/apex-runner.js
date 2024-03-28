@@ -936,9 +936,9 @@ class App extends React.Component {
       h("div", {className: "area"},
         h("div", {className: "area-header"},
         ),
-        h("div", {className: "script-controls"},
+        h("div", {className: "query-controls"},
           h("h1", {}, "Execute Script"),
-          h("div", {className: "script-history-controls"},
+          h("div", {className: "query-history-controls"},
             h("select", {value: "", onChange: this.onSelectScriptTemplate, className: "script-history", title: "Check documentation to customize templates"},
               h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
               model.scriptTemplates.map(q => h("option", {key: q, value: q}, q))

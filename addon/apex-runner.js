@@ -278,36 +278,77 @@ class Model {
       if (vm.autocompleteResults && vm.autocompleteResults.results && vm.autocompleteResults.results.length > 0) {
         let ar = vm.autocompleteResults.results;
         vm.scriptInput.focus();
-        vm.scriptInput.setRangeText(ar[0].value, selStart, selEnd, "end");
+        vm.scriptInput.setRangeText(ar[0].value + ar[0].suffix, selStart, selEnd, "end");
+        vm.scriptAutocompleteHandler();
       }
       return;
     }
+    let keywords = [
+      {value: "Blob", title: "Blob", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "double"},
+      {value: "Boolean", title: "Boolean", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "boolean"},
+      {value: "Date", title: "Date", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "date"},
+      {value: "Datetime", title: "Datetime", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "datetime"},
+      {value: "Decimal", title: "Decimal", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "double"},
+      {value: "Double", title: "Double", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "double"},
+      {value: "ID", title: "ID", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "id"},
+      {value: "Integer", title: "Integer", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "int"},
+      {value: "Long", title: "Long", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "long"},
+      {value: "Object", title: "Object", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "reference"},
+      {value: "String", title: "String", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "string"},
+      {value: "Time", title: "Time", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "time"},
+
+      {value: "List", title: "List", suffix: " ", rank: 1, autocompleteType: "class", dataType: ""},
+      {value: "Map", title: "Map", suffix: " ", rank: 1, autocompleteType: "class", dataType: ""},
+      {value: "Set", title: "Set", suffix: " ", rank: 1, autocompleteType: "class", dataType: ""},
+      {value: "Enum", title: "Enum", suffix: " ", rank: 1, autocompleteType: "class", dataType: ""},
+
+      {value: "while", title: "while", suffix: " {}", rank: 2, autocompleteType: "snippet", dataType: ""},
+      {value: "for", key: "foreach", title: "foreach", suffix: "(Object item:lists) {}", rank: 2, autocompleteType: "snippet", dataType: ""},
+      {value: "for", key: "fori", title: "fori", suffix: "(Integer i = 0; i<length; i++) {}", rank: 2, autocompleteType: "snippet", dataType: ""},
+      {value: "try", title: "try", suffix: " {} catch (Exception e) {}", rank: 2, autocompleteType: "snippet", dataType: ""},
+      {value: "if", title: "if", suffix: " {}", rank: 2, autocompleteType: "snippet", dataType: ""},
+      {value: "else", title: "else", suffix: " {}", rank: 2, autocompleteType: "snippet", dataType: ""},
+      {value: "Database.executeBatch(", title: "Database.executeBatch();", suffix: "new batchable(), 200);", rank: 2, autocompleteType: "snippet", dataType: ""},
+      {value: "System.enqueueJob(", title: "System.enqueueJob()", suffix: "new job());", rank: 2, autocompleteType: "snippet", dataType: ""},
+      {value: "System.debug(", title: "System.enqueueJob()", suffix: "new job());", rank: 2, autocompleteType: "snippet", dataType: ""}
+    ];
+    let {globalDescribe, globalStatus} = vm.describeInfo.describeGlobal(false);
     //isue duplicate namespace because need group by
     vm.autocompleteResults = {
       sobjectName: "ApexClass",
       title: "Class suggestions:",
-      results: new Enumerable(vm.apexClasses.records)
+      results: new Enumerable(vm.apexClasses.records) // custom class
         .flatMap(function* (c) {
           if (searchTerm && searchTerm.includes(".")) {
             let [namespace, cls] = searchTerm.split(".", 2);
             if (c.NamespacePrefix && c.NamespacePrefix.toLowerCase() == namespace.toLowerCase()
             && c.Name.toLowerCase().includes(cls.toLowerCase())) {
-              yield {"value": c.NamespacePrefix + "." + c.Name, "title": c.NamespacePrefix + "." + c.Name, "suffix": " ", "rank": 1, "autocompleteType": "fieldName"};
+              yield {"value": c.NamespacePrefix + "." + c.Name, "title": c.NamespacePrefix + "." + c.Name, "suffix": " ", "rank": 4, "autocompleteType": "class"};
             }
           } else if (!c.NamespacePrefix && c.Name.toLowerCase().includes(searchTerm.toLowerCase())) {
-            yield {"value": c.Name, "title": c.Name, "suffix": " ", "rank": 1, "autocompleteType": "fieldName"};
+            yield {"value": c.Name, "title": c.Name, "suffix": " ", "rank": 4, "autocompleteType": "class"};
           }
         })
-        .concat(
+        .concat(//customm class namespaces
           new Enumerable(vm.apexClasses.records)
             .map(c => c.NamespacePrefix)
             .filter(n => (n && n.toLowerCase().includes(searchTerm.toLowerCase())))
             .groupBy(n => n)
-            .map(n => ({"value": n, "title": n, "suffix": ".", "rank": 1, "autocompleteType": "fieldName"}))
+            .map(n => ({"value": n, "title": n, "suffix": " ", "rank": 5, "autocompleteType": "namespace"}))
+        )
+        .concat(//SOBJECT
+          new Enumerable(globalStatus == "ready" ? globalDescribe.sobjects : [])
+            .filter(sobjectDescribe => (sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase())))
+            .map(sobjectDescribe => sobjectDescribe.name)
+            .map(n => ({"value": n, "title": n, "suffix": " ", "rank": 6, "autocompleteType": "object"}))
+        )
+        .concat(
+          new Enumerable(keywords) //keywords
+            .filter(keyword => keyword.title.toLowerCase().includes(searchTerm.toLowerCase()))
         )
         .toArray()
-        .slice(0, 10) //only 10 first result
         .sort(vm.resultsSort(searchTerm))
+        .slice(0, 20) //only 10 first result
     };
   }
 
@@ -841,6 +882,8 @@ class App extends React.Component {
       .catch(error => {
         console.error(error);
       });
+    //call to get all Sobject during load
+    model.describeInfo.describeGlobal(false);
 
     model.setScriptInput(scriptInput);
     //Set the cursor focus on script text area use the same than query
@@ -983,7 +1026,7 @@ class App extends React.Component {
           ),
           h("div", {className: "autocomplete-results"},
             model.autocompleteResults.results.map(r =>
-              h("div", {className: "autocomplete-result", key: r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.value), " ")
+              h("div", {className: "autocomplete-result", key: r.key ? r.key : r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.title), " ")
             )
           ),
         ),

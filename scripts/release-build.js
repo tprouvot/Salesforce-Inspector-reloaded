@@ -38,11 +38,11 @@ fs.copySync("addon", target, {
 // Use minified versions of React. The development versions contain extra checks and validations, which gives better error messages when developing, but are slower.
 replace.sync({
   files: target + "/*.html",
-  replace: [
+  from: [
     '<script src="react.js"></script>',
     '<script src="react-dom.js"></script>'
   ],
-  with: [
+  to: [
     '<script src="react.min.js"></script>',
     '<script src="react-dom.min.js"></script>'
   ]

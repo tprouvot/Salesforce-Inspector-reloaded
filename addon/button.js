@@ -134,9 +134,6 @@ function initButton(sfHost, inInspector) {
             popupEl.classList.add("insext-popup-vertical-up");
           }
         }
-        if (iFrameLocalStorage.popupWidth){
-          popupEl.width = iFrameLocalStorage.popupWidth;
-        }
         setRootCSSProperties(rootEl, btn);
         addFlowScrollability(popupEl);
         popupEl.contentWindow.postMessage({

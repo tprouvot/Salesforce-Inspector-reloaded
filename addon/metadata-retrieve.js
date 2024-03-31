@@ -1,6 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
+import {Enumerable} from "./data-load.js";
 
 class Model {
   constructor(sfHost) {
@@ -42,11 +43,67 @@ class Model {
   setSelectAll(selec) {
     this.selectAll = selec;
   }
+
   title() {
     if (this.progress == "working") {
       return "(Loading) Download Metadata";
     }
     return "Download Metadata";
+  }
+
+  async batchHandler(batch, options) {
+    let self = this;
+    return batch.catch(err => {
+      if (err.name == "AbortError") {
+        return {records: [], done: true, totalSize: -1};
+      }
+      throw err;
+    }).then(data => {
+      options.rows = options.rows.concat(data.records);
+      if (!data.done) {
+        let pr = this.batchHandler(sfConn.rest(data.nextRecordsUrl, {}), options);
+        return pr;
+      }
+      return null;
+    }, err => {
+      if (err.name != "SalesforceRestError") {
+        throw err; // not a SalesforceRestError
+      }
+      self.logError(err);
+      return null;
+    });
+  }
+
+  csvSerialize(table, separator) {
+    return table.map(row => row.map(text => "\"" + ("" + (text == null ? "" : text)).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n");
+  }
+  async downloadDataModel() {
+    let query = "SELECT QualifiedApiName FROM EntityDefinition ORDER BY QualifiedApiName";
+    let result = {rows: []};
+    await this.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(query), {}), result)
+      .catch(error => {
+        self.logError(error);
+      });
+    let fieldsFesult = {rows: []};
+    query = "SELECT Id, DeveloperName, QualifiedApiName, EntityDefinition.QualifiedApiName, DataType, Length, Precision, NamespacePrefix, IsCalculated, IsHighScaleNumber, IsHtmlFormatted, IsNameField, IsNillable, IsWorkflowFilterable, IsCompactLayoutable, IsFieldHistoryTracked, IsIndexed, IsApiFilterable, IsApiSortable, IsListFilterable, IsListSortable, IsApiGroupable, IsListVisible, PublisherId, IsCompound, IsSearchPrefilterable, IsPolymorphicForeignKey, IsAiPredictionField, Description, ExtraTypeInfo, Label FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName in ([RANGE])";
+    for (let index = 0; index < result.rows.length; index += 50) {
+      let entityNames = result.rows.slice(index, index + 50).map(e => "'" + e.QualifiedApiName + "'");
+      await this.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(query.replace("[RANGE]", entityNames.join(", "))), {}), fieldsFesult)
+        .catch(error => {
+          self.logError(error);
+        });
+    }
+    let separator = ",";
+    if (localStorage.getItem("csvSeparator")) {
+      separator = localStorage.getItem("csvSeparator");
+    }
+    let downloadLink = document.createElement("a");
+    downloadLink.download = "datamodel.csv";
+    let BOM = "\uFEFF";
+    let rt = new RecordTable();
+    rt.addToTable(fieldsFesult.rows);
+    downloadLink.href = "data:text/csv;charset=utf-8," + BOM + encodeURI(this.csvSerialize(rt.table, separator));
+    downloadLink.click();
   }
 
   filterMetadata(searchKeyword) {
@@ -269,6 +326,7 @@ class App extends React.Component {
     this.onSelectAllChange = this.onSelectAllChange.bind(this);
     this.onSearchInput = this.onSearchInput.bind(this);
     this.onDownloadAutoChange = this.onDownloadAutoChange.bind(this);
+    this.onClickDataModel = this.onClickDataModel.bind(this);
   }
   onSelectAllChange(e) {
     let {model} = this.props;
@@ -293,6 +351,11 @@ class App extends React.Component {
   onDownloadAutoChange(e) {
     let {model} = this.props;
     model.downloadAuto = e.target.checked;
+    model.didUpdate();
+  }
+  onClickDataModel() {
+    let {model} = this.props;
+    model.downloadDataModel();
     model.didUpdate();
   }
   componentDidMount() {
@@ -322,7 +385,7 @@ class App extends React.Component {
           model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
           model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null,
           h("span", {className: "flex"}),
-          h("a", {href: "https://github.com/jesperkristensen/forcecmd"}, "Automate this with forcecmd")
+          h("button", {onClick: this.onClickDataModel}, "Download Data Model")
         ),
         h("div", {className: "body", hidden: !model.metadataObjects},
           h("label", {htmlFor: "search-text"}, "Search"),
@@ -370,6 +433,63 @@ class ObjectSelector extends React.Component {
       h("input", {type: "checkbox", checked: metadataObject.selected, onChange: this.onChange}),
       metadataObject.directoryName
     ));
+  }
+}
+
+class RecordTable {
+  /*
+  We don't want to build our own SOQL parser, so we discover the columns based on the data returned.
+  This means that we cannot find the columns of cross-object relationships, when the relationship field is null for all returned records.
+  We don't care, because we don't need a stable set of columns for our use case.
+  */
+  constructor() {
+    this.columnIdx = new Map();
+    this.header = ["_"];
+    this.records = [];
+    this.table = [];
+    this.rowVisibilities = [];
+    this.colVisibilities = [true];
+    this.countOfVisibleRecords = null;
+    this.isTooling = false;
+    this.totalSize = -1;
+  }
+  discoverColumns(record, prefix, row) {
+    for (let field in record) {
+      if (field == "attributes") {
+        continue;
+      }
+      let column = prefix + field;
+      let c;
+      if (this.columnIdx.has(column)) {
+        c = this.columnIdx.get(column);
+      } else {
+        c = this.header.length;
+        this.columnIdx.set(column, c);
+        for (let row of this.table) {
+          row.push(undefined);
+        }
+        this.header[c] = column;
+        this.colVisibilities.push(true);
+      }
+      row[c] = record[field];
+      if (typeof record[field] == "object" && record[field] != null) {
+        this.discoverColumns(record[field], column + ".", row);
+      }
+    }
+  }
+  addToTable(expRecords) {
+    this.records = this.records.concat(expRecords);
+    if (this.table.length == 0 && expRecords.length > 0) {
+      this.table.push(this.header);
+      this.rowVisibilities.push(true);
+    }
+    for (let record of expRecords) {
+      let row = new Array(this.header.length);
+      row[0] = record;
+      this.table.push(row);
+      this.rowVisibilities.push(true);
+      this.discoverColumns(record, "", row);
+    }
   }
 }
 

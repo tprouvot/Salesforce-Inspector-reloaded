@@ -20,6 +20,10 @@ class Model {
     this.downloadLink = null;
     this.statusLink = null;
     this.metadataObjects = null;
+    this.searchValue = "";
+    this.filteredMetadataObjects = null;
+    this.selectAll = null;
+    this.downloadAuto = false;
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -35,11 +39,21 @@ class Model {
     }
   }
 
+  setSelectAll(selec) {
+    this.selectAll = selec;
+  }
   title() {
     if (this.progress == "working") {
       return "(Loading) Download Metadata";
     }
     return "Download Metadata";
+  }
+
+  filterMetadata(searchKeyword) {
+    this.searchValue = searchKeyword;
+    this.filteredMetadataObjects = this.metadataObjects
+      .filter(metadataObject => metadataObject.xmlName.toLowerCase().includes(searchKeyword)
+      || metadataObject.directoryName.toLowerCase().includes(searchKeyword));
   }
 
   startLoading() {
@@ -59,6 +73,7 @@ class Model {
           .filter(metadataObject => metadataObject.xmlName != "InstalledPackage");
         // End of forcecmd code
         this.metadataObjects = availableMetadataObjects;
+        this.filteredMetadataObjects = availableMetadataObjects;
         for (let metadataObject of this.metadataObjects) {
           metadataObject.selected = true;
         }
@@ -95,6 +110,7 @@ class Model {
       try {
         let metadataObjects = this.metadataObjects;
         this.metadataObjects = null;
+        this.filteredMetadataObjects = null;
         this.progress = "working";
         this.didUpdate();
 
@@ -197,6 +213,12 @@ class Model {
         let zipBin = Uint8Array.from(atob(res.zipFile), c => c.charCodeAt(0));
         this.downloadLink = URL.createObjectURL(new Blob([zipBin], {type: "application/zip"}));
         this.statusLink = URL.createObjectURL(new Blob([statusJson], {type: "application/json"}));
+        if (this.downloadAuto) {
+          let downloadATag = document.createElement("a");
+          downloadATag.download = "metadata.csv";
+          downloadATag.href = this.downloadLink;
+          downloadATag.click();
+        }
         this.progress = "done";
         this.didUpdate();
       } catch (e) {
@@ -245,12 +267,17 @@ class App extends React.Component {
     super(props);
     this.onStartClick = this.onStartClick.bind(this);
     this.onSelectAllChange = this.onSelectAllChange.bind(this);
+    this.onSearchInput = this.onSearchInput.bind(this);
+    this.onDownloadAutoChange = this.onDownloadAutoChange.bind(this);
   }
   onSelectAllChange(e) {
     let {model} = this.props;
     let checked = e.target.checked;
-    for (let metadataObject of model.metadataObjects) {
+    for (let metadataObject of model.filteredMetadataObjects) {
       metadataObject.selected = checked;
+    }
+    if (model.selectAll && model.filteredMetadataObjects) {
+      model.selectAll.indeterminate = (model.filteredMetadataObjects.some(metadataObject => metadataObject.selected) && model.filteredMetadataObjects.some(metadataObject => !metadataObject.selected));
     }
     model.didUpdate();
   }
@@ -258,9 +285,25 @@ class App extends React.Component {
     let {model} = this.props;
     model.startDownloading();
   }
+  onSearchInput(e) {
+    let {model} = this.props;
+    model.filterMetadata(e.target.value);
+    model.didUpdate();
+  }
+  onDownloadAutoChange(e) {
+    let {model} = this.props;
+    model.downloadAuto = e.target.checked;
+    model.didUpdate();
+  }
+  componentDidMount() {
+    let {model} = this.props;
+    let selectAll = this.refs.selectref;
+    model.setSelectAll(selectAll);
+  }
   render() {
     let {model} = this.props;
     document.title = model.title();
+    let selectAllChecked = model.filteredMetadataObjects && model.filteredMetadataObjects.every(metadataObject => metadataObject.selected);
     return (
       h("div", {},
         h("div", {className: "object-bar"},
@@ -281,17 +324,25 @@ class App extends React.Component {
           h("span", {className: "flex"}),
           h("a", {href: "https://github.com/jesperkristensen/forcecmd"}, "Automate this with forcecmd")
         ),
-        h("div", {className: "body"},
+        h("div", {className: "body", hidden: !model.metadataObjects},
+          h("label", {htmlFor: "search-text"}, "Search"),
+          h("input", {id: "searchText", name: "searchText", ref: "searchText", placeholder: "Filter metadata", type: "search", value: model.searchValue, onInput: this.onSearchInput}),
+          h("label", {},
+            h("input", {type: "checkbox", ref: "selectref", checked: selectAllChecked, onChange: this.onSelectAllChange}),
+            "Select all"
+          ),
+          h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
+          h("button", {onClick: this.onStartClick}, "Create metadata package"),
+          h("label", {},
+            h("input", {type: "checkbox", checked: model.downloadAuto, onChange: this.onDownloadAutoChange}),
+            "Download package when ready"
+          ),
+          h("br", {}),
           model.metadataObjects
             ? h("div", {},
-              h("label", {},
-                h("input", {type: "checkbox", checked: model.metadataObjects.every(metadataObject => metadataObject.selected), onChange: this.onSelectAllChange}),
-                "Select all"
-              ),
-              h("br", {}),
-              model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model})),
-              h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
-              h("button", {onClick: this.onStartClick}, "Download metadata")
+              h("div", {className: "slds-grid slds-wrap"},
+                model.filteredMetadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model}))
+              )
             )
             : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
         )
@@ -308,14 +359,17 @@ class ObjectSelector extends React.Component {
   onChange(e) {
     let {metadataObject, model} = this.props;
     metadataObject.selected = e.target.checked;
+    if (model.selectAll && model.filteredMetadataObjects) {
+      model.selectAll.indeterminate = (model.filteredMetadataObjects.some(metadataObject => metadataObject.selected) && model.filteredMetadataObjects.some(metadataObject => !metadataObject.selected));
+    }
     model.didUpdate();
   }
   render() {
     let {metadataObject} = this.props;
-    return h("label", {title: metadataObject.xmlName},
+    return h("div", {className: "slds-col slds-size_3-of-12"}, h("label", {title: metadataObject.xmlName},
       h("input", {type: "checkbox", checked: metadataObject.selected, onChange: this.onChange}),
       metadataObject.directoryName
-    );
+    ));
   }
 }
 

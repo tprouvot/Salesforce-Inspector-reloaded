@@ -199,15 +199,9 @@ class App extends React.PureComponent {
     let url;
     let title;
     let text;
-    if (sessionError !== "Session expired or invalid"){
-      text = "Access Token Expired";
-      title = "Generate New Token";
-      url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
-    } else {
-      text = "Expired session";
-      title = "Return to login page";
-      url = `https://${sfHost}/`;
-    }
+    text = "Access Token Expired";
+    title = "Generate New Token";
+    url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     return {title, url, text};
   }
   render() {

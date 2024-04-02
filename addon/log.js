@@ -31,6 +31,8 @@ class Model {
     this.resizeColumnpageX = null;
     this.resizeColumnWidth = null;
     this.resizeNextColumnWidth = null;
+    this.EnrichLog = [];
+    this.timeout = null;
 
     this.column = [
       {
@@ -147,13 +149,43 @@ class Model {
       })
       .catch(err => console.log("error handling failed", err));
   }
-
+  recalculculSearch() {
+    let searchIdx = 0;
+    let lastSearchIdx = 0;
+    if (this.logSearch) {
+      this.EnrichLog = [];
+      searchIdx = this.logData.indexOf(this.logSearch);
+      while (searchIdx >= 0) {
+        if (lastSearchIdx < this.logData.length && lastSearchIdx != searchIdx) {
+          this.EnrichLog.push({value: this.logData.substring(lastSearchIdx, searchIdx)});
+        }
+        //handle case sensitive or not later but use substring instead model.logSearch to be sure to respect the case.
+        this.EnrichLog.push({value: this.logData.substring(searchIdx, searchIdx + this.logSearch.length), cls: "highlight"});
+        lastSearchIdx = searchIdx + this.logSearch.length;
+        searchIdx = this.logData.indexOf(this.logSearch, searchIdx + this.logSearch.length);
+      }
+      if (lastSearchIdx < this.logData.length && lastSearchIdx != searchIdx) {
+        this.EnrichLog.push({value: this.logData.substring(lastSearchIdx)});
+      }
+    } else {
+      this.EnrichLog = [{value: this.logData}];
+    }
+  }
   setLogSearch(value) {
     this.logSearch = value;
     if (this.logData == null) {
       return;
     }
-    this.filterNodes(value);
+    let self = this;
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+    }
+    this.timeout = setTimeout(() => {
+      self.recalculculSearch();
+      this.filterNodes(value);
+      this.didUpdate();
+    }, 500);
+
     if (this.logSearch == null || this.logSearch.length == 0) {
       this.searchIndex = -1;
       return;
@@ -229,6 +261,8 @@ class Model {
     this.spinFor(
       sfConn.rest("/services/data/v" + apiVersion + "/tooling/sobjects/ApexLog/" + this.recordId + "/Body?_dc=1705483656182", {responseType: "text"}).then(data => {
         this.logData = data;
+        this.EnrichLog = [{value: data}];
+
         //for test only
         /*+ Array(5000).fill(null).map(() => {
           let v = Math.floor(Math.random() * 30);
@@ -946,13 +980,7 @@ class Editor extends React.Component {
 
   render() {
     let {model} = this.props;
-    let logData = model.logData;
-    let logView = logData;
-    let searchTerm = model.logSearch;
     let lineCount = model.lineCount;
-    let EnrichLog = [];
-    let searchIdx = 0;
-    let lastSearchIdx = 0;
 
     let rowHeight = 14; // constant: The initial estimated height of a row before it is rendered
     let scrollerOffsetHeight = 0;
@@ -961,24 +989,6 @@ class Editor extends React.Component {
     if (this.scroller != null) {
       scrollerScrollTop = this.scroller.scrollTop;
       scrollerOffsetHeight = this.scroller.offsetHeight;
-    }
-
-    if (searchTerm) {
-      searchIdx = logView.indexOf(searchTerm);
-      while (searchIdx >= 0) {
-        if (lastSearchIdx < logView.length && lastSearchIdx != searchIdx) {
-          EnrichLog.push({value: logView.substring(lastSearchIdx, searchIdx)});
-        }
-        //handle case sensitive or not later but use substring instead searchTerm to be sure to respect the case.
-        EnrichLog.push({value: logView.substring(searchIdx, searchIdx + searchTerm.length), cls: "highlight"});
-        lastSearchIdx = searchIdx + searchTerm.length;
-        searchIdx = logView.indexOf(searchTerm, searchIdx + searchTerm.length);
-      }
-      if (lastSearchIdx < logView.length && lastSearchIdx != searchIdx) {
-        EnrichLog.push({value: logView.substring(lastSearchIdx)});
-      }
-    } else {
-      EnrichLog.push({value: logView});
     }
     /*function onScrollerScroll() {
       model.didUpdate();
@@ -992,7 +1002,7 @@ class Editor extends React.Component {
         Array(lineCount).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}, i))
       ),
       h("div", {id: "log-text", ref: "log", style: {lineHeight: rowHeight + "px"}},
-        EnrichLog.map((txtNode, i) => {
+        model.EnrichLog.map((txtNode, i) => {
           if (txtNode.cls) {
             return h("span", {key: "TxtNode" + i, className: txtNode.cls}, txtNode.value);
           } else {

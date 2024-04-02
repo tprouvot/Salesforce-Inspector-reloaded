@@ -106,6 +106,10 @@ class Model {
     ];
     this.propertyTypes = new Map();
     this.typeProperties = new Map();
+    this.typeProperties.set("List", ["add(", "addAll(", "clear(", "clone(", "contains(", "deepClone(", "equals(", "get(", "getSObjectType(", "hashCode(", "indexOf(", "isEmpty(", "iterator(", "remove(", "set(", "size(", "sort(", "toString("]);
+    this.typeProperties.set("Map", ["clear(", "clone(", "containsKey(", "deepClone(", "equals(", "get(", "getSObjectType(", "hashCode(", "isEmpty(", "keySet(", "put(", "putAll(", "putAll(", "remove(", "size(", "toString(", "values("]);
+    this.typeProperties.set("Set", ["add(", "addAll(", "addAll(", "clear(", "clone(", "contains(", "containsAll(", "containsAll(", "equals(", "hashCode(", "isEmpty(", "remove(", "removeAll(", "removeAll(", "retainAll(", "retainAll(", "size("]);
+    this.typeProperties.set("Database", ["convertLead(", "countQuery(", "countQueryWithBinds(", "delete(", "deleteAsync(", "deleteImmediate(", "emptyRecycleBin(", "executeBatch(", "getAsyncDeleteResult(", "getAsyncLocator(", "getAsyncSaveResult(", "getDeleted(", "getQueryLocator(", "getQueryLocatorWithBinds(", "getUpdated(", "insert(", "insertAsync(", "insertImmediate(", "merge(", "query(", "queryWithBinds(", "releaseSavepoint(", "rollback(", "setSavepoint(", "undelete(", "update(", "upsert(", "updateAsync(", "updateImmediate("]);
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -373,6 +377,9 @@ class Model {
     if (!source) {
       return;
     }
+    this.propertyTypes.clear();
+    //TODO ugly hack for static class
+    this.propertyTypes.set("Database", "Database");
     source.replaceAll(/\/\/.*\n/g, "\n").replaceAll(/\/\*(.|\r|\n)*\*\//g, "\n").split(";").forEach(statement => {
       let line = statement.trim() + ";";
       let forMatch = line.match(/^for\s*\(/);
@@ -485,7 +492,7 @@ class Model {
     let cleanedSource = source.replaceAll(/\/\/.*\n/g, "\n").replaceAll(/\/\*(.|\r|\n)*?\*\//g, "");
     // type name
     //let fieldRE = /(public|global)\s+(static\s*)?([a-zA-Z][a-zA-Z0-9_<>]+)\s+([a-zA-Z][a-zA-Z0-9_]+)\s*(;|=|\(|\{)/g;
-    let fieldRE = /(public|global)\s+(static\s*)?([a-zA-Z][a-zA-Z0-9_<>]+)\s+([a-zA-Z][a-zA-Z0-9_]+)/g;
+    let fieldRE = /(public|global)\s+(static\s*)?([a-zA-Z0-9_<>.]+)\s+([a-zA-Z][a-zA-Z0-9_]+)/g;
     //let methodRE = /(public|public static|global|global static)\s*([a-zA-Z][a-zA-Z0-9_<>]+)\s+([a-zA-Z][a-zA-Z0-9_]+)\s*(\([^\{]*\))\{/g;
     let fieldMatch = null;
     let fields = [];

@@ -71,6 +71,7 @@ class Model {
     this.initialScript = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
       this.scriptAutocompleteHandler({newDescribe: true});
+      //TODO refresh list of field
       this.didUpdate();
     });
 
@@ -103,6 +104,8 @@ class Model {
       "Id batchId= Database.executeBatch(new BatchExample(), 200);",
       "ID jobID = System.enqueueJob(new AsyncExecutionExample());"
     ];
+    this.propertyTypes = new Map();
+    this.typeProperties = new Map();
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -283,6 +286,11 @@ class Model {
       }
       return;
     }
+    let contextPath;
+    if (searchTerm && searchTerm.includes(".")) {
+      [contextPath, searchTerm] = searchTerm.split(".", 2);
+
+    }
     let keywords = [
       {value: "Blob", title: "Blob", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "double"},
       {value: "Boolean", title: "Boolean", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "boolean"},
@@ -319,10 +327,9 @@ class Model {
       title: "Class suggestions:",
       results: new Enumerable(vm.apexClasses.records) // custom class
         .flatMap(function* (c) {
-          if (searchTerm && searchTerm.includes(".")) {
-            let [namespace, cls] = searchTerm.split(".", 2);
-            if (c.NamespacePrefix && c.NamespacePrefix.toLowerCase() == namespace.toLowerCase()
-            && c.Name.toLowerCase().includes(cls.toLowerCase())) {
+          if (contextPath) {
+            if (c.NamespacePrefix && c.NamespacePrefix.toLowerCase() == contextPath.toLowerCase()
+            && c.Name.toLowerCase().includes(searchTerm.toLowerCase())) {
               yield {"value": c.NamespacePrefix + "." + c.Name, "title": c.NamespacePrefix + "." + c.Name, "suffix": " ", "rank": 4, "autocompleteType": "class"};
             }
           } else if (!c.NamespacePrefix && c.Name.toLowerCase().includes(searchTerm.toLowerCase())) {
@@ -346,10 +353,154 @@ class Model {
           new Enumerable(keywords) //keywords
             .filter(keyword => keyword.title.toLowerCase().includes(searchTerm.toLowerCase()))
         )
+        .concat(
+          new Enumerable(this.propertyTypes.keys())
+            .filter(prop => contextPath && prop.toLowerCase().includes(contextPath.toLowerCase()))
+            .map(k => this.propertyTypes.get(k))
+            .filter(k => k)
+            .flatMap(typ => this.typeProperties.get(typ))
+            .filter(f => f && f.toLowerCase().startsWith(searchTerm.toLowerCase()))
+            .map(n => ({"value": n, "title": n, "suffix": " ", "rank": 0, "autocompleteType": "variable"}))
+        )
         .toArray()
         .sort(vm.resultsSort(searchTerm))
         .slice(0, 20) //only 10 first result
     };
+  }
+
+  //basic parser
+  parseAnonApex(source) {
+    if (!source) {
+      return;
+    }
+    source.replaceAll(/\/\/.*\n/g, "\n").replaceAll(/\/\*(.|\r|\n)*\*\//g, "\n").split(";").forEach(statement => {
+      let line = statement.trim() + ";";
+      let forMatch = line.match(/^for\s*\(/);
+      if (forMatch) {
+        line = line.substring(forMatch[0].length);
+      }
+      let whileMatch = line.match(/^while\s*\(/);
+      if (whileMatch) {
+        line = line.substring(whileMatch[0].length);
+      }
+      line = line.trim();
+      //[public | private | protected | global]
+      if (line.startsWith("public ")){
+        line = line.substring(7);
+        line = line.trim();
+      } else if (line.startsWith("private ")){
+        line = line.substring(8);
+        line = line.trim();
+      } else if (line.startsWith("protected ")){
+        line = line.substring(10);
+        line = line.trim();
+      } else if (line.startsWith("global ")){
+        line = line.substring(7);
+        line = line.trim();
+      }
+      //[final | override]
+      if (line.startsWith("final ")){
+        line = line.substring(6);
+        line = line.trim();
+      } else if (line.startsWith("override ")){
+        line = line.substring(9);
+        line = line.trim();
+      }
+
+      if (line.startsWith("static ")){
+        line = line.substring(7);
+        line = line.trim();
+      }
+
+      // type name
+      let fieldRE = /^([a-zA-Z][a-zA-Z0-9_]+)\s+([a-zA-Z][a-zA-Z0-9_]+)(\s*[=(;{]?)/;
+      let fieldMatch = fieldRE.exec(line);
+      if (fieldMatch) {
+        this.propertyTypes.set(fieldMatch[2], fieldMatch[1]);
+      }
+    });
+    //TODO Set and remove primitive
+    let {globalDescribe, globalStatus} = this.describeInfo.describeGlobal(false);
+    let classes = new Set();
+    for (let dataType of this.propertyTypes.values()) {
+      //SObject field
+      //TODO describeInfo.DidUpdate must do the same when ready so move it to external method
+      if (globalStatus == "ready") {
+        let sobj = globalDescribe.sobjects.find(sobjectDescribe => (sobjectDescribe.name == dataType));
+        if (sobj) {
+          let {sobjectStatus, sobjectDescribe} = this.describeInfo.describeSobject(false, dataType);
+          if (sobjectStatus == "ready") {
+            let fields = sobjectDescribe.fields.map(field => field.Name);
+            fields.push("addError(");
+            fields.push("clear(");
+            fields.push("clone(");
+            fields.push("get(");
+            fields.push("getCloneSourceId(");
+            fields.push("getErrors(");
+            fields.push("getOptions(");
+            fields.push("getPopulatedFieldsAsMap(");
+            fields.push("getSObject(");
+            fields.push("getSObjects(");
+            fields.push("getSObjectType(");
+            fields.push("getQuickActionName(");
+            fields.push("hasErrors(");
+            fields.push("isClone(");
+            fields.push("isSet(");
+            fields.push("put(");
+            fields.push("putSObject(");
+            fields.push("setOptions(");
+            this.typeProperties.set(dataType, fields);
+          }
+          continue;
+        }
+      }
+      //potential class
+      if (this.apexClasses.records.some(cls => cls.Name == dataType)){
+        classes.add(dataType);
+      }
+    }
+    if (!classes || classes.size == 0) {
+      return;
+    }
+    let queryApexClass = "SELECT Id, Name, NamespacePrefix, Body FROM ApexClass WHERE Name in (" + Array.from(classes).map(c => "'" + c + "'").join(",") + ")";
+    let apexClassesSource = new RecordTable();
+    this.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryApexClass), {}), this, apexClassesSource, (isFinished) => {
+      if (!isFinished){
+        return;
+      }
+      apexClassesSource.records.forEach(cls => {
+        this.parseClass(cls.Body, cls.Name);
+      });
+    })
+      .catch(error => {
+        console.error(error);
+      });
+  }
+  parseClass(source, clsName){
+    //todo build hierarchy of block List<Block> with startPosition, endPosition and context
+    //for moment simple list
+    if (!source) {
+      return;
+    }
+    let cleanedSource = source.replaceAll(/\/\/.*\n/g, "\n").replaceAll(/\/\*(.|\r|\n)*?\*\//g, "");
+    // type name
+    //let fieldRE = /(public|global)\s+(static\s*)?([a-zA-Z][a-zA-Z0-9_<>]+)\s+([a-zA-Z][a-zA-Z0-9_]+)\s*(;|=|\(|\{)/g;
+    let fieldRE = /(public|global)\s+(static\s*)?([a-zA-Z][a-zA-Z0-9_<>]+)\s+([a-zA-Z][a-zA-Z0-9_]+)/g;
+    //let methodRE = /(public|public static|global|global static)\s*([a-zA-Z][a-zA-Z0-9_<>]+)\s+([a-zA-Z][a-zA-Z0-9_]+)\s*(\([^\{]*\))\{/g;
+    let fieldMatch = null;
+    let fields = [];
+    while ((fieldMatch = fieldRE.exec(cleanedSource)) !== null) {
+      if (fieldMatch[3] == "class") {
+        continue;
+      }
+      //if (fieldMatch[5] == "(") {
+      //  fields.push(fieldMatch[4] + "(");
+      //} else {
+      fields.push(fieldMatch[4]);
+      //}
+    }
+    //TODO inner class
+    this.typeProperties.set(clsName, fields);
   }
 
   /**
@@ -362,6 +513,7 @@ class Model {
     let selEnd = vm.scriptInput.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
     let numberOfLines = script.split("\n").length;
+    this.parseAnonApex(script);
     if (vm.numberOfLines != numberOfLines) {
       vm.numberOfLines = numberOfLines;
       vm.didUpdate();

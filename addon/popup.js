@@ -187,14 +187,10 @@ class App extends React.PureComponent {
     let url;
     let title;
     let text;
-    if (sessionError !== "Session expired or invalid"){
+    if (sessionError){
       text = "Access Token Expired";
       title = "Generate New Token";
       url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
-    } else {
-      text = "Expired session";
-      title = "Return to login page";
-      url = `https://${sfHost}/`;
     }
     return {title, url, text};
   }
@@ -215,15 +211,16 @@ class App extends React.PureComponent {
     const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
     const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
     const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
+    const popupTheme = localStorage.getItem("popupDarkTheme") == "true" ? " header-dark" : " header-light";
     return (
       h("div", {},
-        h("div", {className: "slds-page-header slds-theme_shade popup-header"},
+        h("div", {className: "slds-page-header slds-theme_shade popup-header" + popupTheme},
           h("div", {className: "slds-page-header__row"},
             h("div", {className: "slds-page-header__col-title"},
               h("div", {className: "slds-media"},
                 h("div", {className: "slds-media__figure popup-media__figure"},
                   h("span", {className: "popup-icon_container", title: "Salesforce Inspector Reloaded"},
-                    h("svg", {className: "slds-icon popup-header__icon", viewBox: "0 0 24 24"},
+                    h("svg", {className: "popup-header__icon", viewBox: "0 0 24 24"},
                       h("path", {
                         d: `
                         M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
@@ -231,8 +228,7 @@ class App extends React.PureComponent {
                         M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
                         m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
                         M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
-                        `,
-                        fill: "#061c3f"
+                        `
                       })
                     )
                   )
@@ -1020,9 +1016,10 @@ class AllDataBoxShortcut extends React.PureComponent {
 
       //search for metadata if user did not disabled it
       if (metadataShortcutSearch == "true"){
-        const flowSelect = "SELECT LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const flowSelect = "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const networkSelect = "SELECT Id, Name, Status, UrlPathPrefix FROM Network WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50";
         const compositeQuery = {
           "compositeRequest": [
             {
@@ -1037,6 +1034,10 @@ class AllDataBoxShortcut extends React.PureComponent {
               "method": "GET",
               "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(permSetSelect),
               "referenceId": "permSetSelect"
+            }, {
+              "method": "GET",
+              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(networkSelect),
+              "referenceId": "networkSelect"
             }
           ]
         };
@@ -1049,7 +1050,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         results.forEach(element => {
           element.body.records.forEach(rec => {
             if (rec.attributes.type === "FlowDefinitionView"){
-              rec.link = "/builder_platform_interaction/flowBuilder.app?flowId=" + rec.LatestVersionId;
+              rec.link = "/builder_platform_interaction/flowBuilder.app?flowDefId=" + rec.DurableId + "&flowId=" + rec.LatestVersionId;
               rec.label = rec.Label;
               rec.name = rec.ApiName;
               rec.detail = rec.attributes.type + " • " + rec.ProcessType;
@@ -1075,6 +1076,12 @@ class AllDataBoxShortcut extends React.PureComponent {
               }
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
+            } else if (rec.attributes.type === "Network"){
+              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=0DB26000000Ak2X" + rec.Id;
+              rec.label = rec.Name;
+              let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
+              rec.name = rec.Id + url;
+              rec.detail = rec.attributes.type + " (" + rec.Status + ") • Builder";
             }
             result.push(rec);
           });
@@ -1512,6 +1519,13 @@ class ShowDetailsButton extends React.PureComponent {
 
 
 class AllDataSelection extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      flowDefinitionId: null
+    };
+  }
+
   clickShowDetailsBtn() {
     this.refs.showDetailsBtn.onDetailsClick();
   }
@@ -1551,6 +1565,9 @@ class AllDataSelection extends React.PureComponent {
     args.set("host", sfHost);
     args.set("checkDeployStatus", selectedValue.recordId);
     return "explore-api.html?" + args;
+  }
+  redirectToFlowVersions(){
+    return "https://" + this.props.sfHost + "/lightning/setup/Flows/page?address=%2F" + this.state.flowDefinitionId;
   }
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
@@ -1606,11 +1623,26 @@ class AllDataSelection extends React.PureComponent {
   getNewObjectUrl(sfHost, newUrl){
     return "https://" + sfHost + newUrl;
   }
+  setFlowDefinitionId(recordId){
+    if (recordId && !this.state.flowDefinitionId){
+      if (recordId.startsWith("301")){
+        sfConn.rest("/services/data/v" + apiVersion + "/tooling/query/?q=SELECT+DefinitionId+FROM+Flow+WHERE+Id='" + recordId + "'", {method: "GET"}).then(res => {
+          res.records.forEach(recentItem => {
+            this.setState({flowDefinitionId: recentItem.DefinitionId});
+          });
+        });
+      } else if (recordId.startsWith("300")){
+        this.setState({flowDefinitionId: recordId});
+      }
+    }
+  }
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent} = this.props;
+    let {flowDefinitionId} = this.state;
     // Show buttons for the available APIs.
     let buttons = selectedValue.sobject.availableApis ? Array.from(selectedValue.sobject.availableApis) : [];
     buttons.sort();
+    this.setFlowDefinitionId(selectedValue ? selectedValue.recordId : contextRecordId);
     if (buttons.length == 0 && !selectedValue.isRecent) {
       // If none of the APIs are available, show a button for the regular API, which will partly fail, but still show some useful metadata from the tooling API.
       buttons.push("noApi");
@@ -1664,6 +1696,8 @@ class AllDataSelection extends React.PureComponent {
         h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
           ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+        flowDefinitionId
+          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
         buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
           {
             key: button,

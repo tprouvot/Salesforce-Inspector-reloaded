@@ -1383,6 +1383,7 @@ class Model {
       //reset regex index
       commentRegEx = /(\/\/|\/\*|')/g;
     }
+    finalQuery += remaining;
     return finalQuery;
   }
   doExport() {

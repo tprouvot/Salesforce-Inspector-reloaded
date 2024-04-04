@@ -1433,10 +1433,10 @@ class UserDetails extends React.PureComponent {
                     : h("em", {className: "inactive"}, "unknown")
                 )
               ),
-              h("tr", {},
+              user.UserRole ? h("tr", {},
                 h("th", {}, "Role:"),
-                h("td", {className: "oneliner"}, (user.UserRole) ? user.UserRole.Name : "")
-              ),
+                h("td", {className: "oneliner"}, user.UserRole.Name)
+              ) : null,
               h("tr", {},
                 h("th", {}, "Language:"),
                 h("td", {},

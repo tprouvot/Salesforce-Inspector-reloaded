@@ -51,8 +51,7 @@
       ],
       "js": [
         "button.js",
-        "inspect-inline.js",
-        "links.js"
+        "inspect-inline.js"
       ]
     }
   ],

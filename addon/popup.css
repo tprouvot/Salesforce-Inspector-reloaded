@@ -84,21 +84,6 @@ a:visited {
     border-radius: 3px;
 }
 
-:is(.header-icon, .header-dark, .header-light) {
-    margin-right: 12px;
-    background-color: var(--inspector-icon-logo);
-    border-radius: 4px;
-    color: var(--inspector-text);
-}
-
-:is(.header-icon, .header-dark, .header-light) > svg {
-    line-height: 1;
-    width: 24px;
-    height: 24px;
-    fill: var(--inspector-text);
-    vertical-align: middle;
-}
-
 button,
 input {
     width: 100%;
@@ -375,6 +360,7 @@ a.icon {
     font-size: .95rem;
     padding-top: .4rem;
     color: var(--inspector-text, #061c3f);
+    margin-top:0.25rem;
 }
 .popup-header__title {
     font-weight: 600;
@@ -389,13 +375,19 @@ a.icon {
     border: 0 !important;
     border-radius: 0 !important;
 }
-.popup-header__name-title,
-.popup-header__name-title{
-    margin-top:0.25rem;
-}
+
 .popup-header__icon{
     width:1.75rem;
     height:1.75rem;
+    margin-right: 12px;
+    /*background-color: var(--inspector-icon-logo);*/
+    border-radius: 4px;
+    color: var(--inspector-text);
+    line-height: 1;
+    width: 24px;
+    height: 24px;
+    fill: var(--inspector-text);
+    vertical-align: middle;
 }
 
 .popup-icon_container,
@@ -407,4 +399,8 @@ a.icon {
 
 #root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg {
     border: none;
+}
+
+.popup-footer__no-background-color {
+    background-color: unset;
 }

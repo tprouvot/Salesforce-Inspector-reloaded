@@ -236,7 +236,7 @@ div.slds-tabs_default > ul.options-tab-container > li:after,
 :is(select, input):is(.slds-input, .query-history),
 .conf-value > :is(select, input),
 :is(span, button, a):is(.button, .progress),
-div:is(.header-logo, .object-name),
+div:.object-name,
 div.all-data-box-data > table,
 div.flex-wrapper :is(button, input),
 div.button-group > :is(button, input),
@@ -250,7 +250,7 @@ a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], .sld
     transition-timing-function: ease-in-out;
 }
 
-div.header-logo svg,
+.popup-header__icon,
 a:is(.sf-link, .button.field-info) svg,
 #save-wrapper svg {
     transition-property: fill, background-color;

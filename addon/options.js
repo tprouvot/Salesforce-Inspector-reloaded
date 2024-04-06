@@ -127,7 +127,6 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Tab6",
         title: "User Interface",
         content: [
-          {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
           {option: ColorSchemeOption, key: 1},
           {option: ColorAccentOption, key: 2}
         ]

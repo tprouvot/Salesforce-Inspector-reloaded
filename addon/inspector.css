@@ -66,10 +66,12 @@ html {
     --inspector-dark-neutral: var(--inspector-dark-gray);
 
     --inspector-link: var(--inspector-primary);
-    --inspector-visited-link: var(--inspector-light-purple);
+    --inspector-visited-link: var(--inspector-link);
 
+    --inspector-button: var(--inspector-accent);
     --inspector-button-text: var(--inspector-link);
     --inspector-button-border: var(--inspector-subtle-gray);
+    --inspector-button-active-border: var(--inspector-primary);
 
     --inspector-success: var(--inspector-light-green);
     --inspector-warning: var(--inspector-light-yellow);
@@ -81,10 +83,8 @@ html {
     --inspector-false-boolean: var(--inspector-error);
     --inspector-true-boolean: var(--inspector-accent);
 
-    --inspector-icon-logo: var(--inspector-warning);
     --inspector-svg-text: var(--inspector-shade);
     --inspector-svg-picture: var(--inspector-light-pink);
-    --inspector-svg-background: var(--inspector-primary);
 
     --inspector-working: var(--inspector-number);
 
@@ -92,8 +92,6 @@ html {
     --inspector-default-text-preview: var(--inspector-text);
     --inspector-accent-background-preview: var(--inspector-accent-white);
     --inspector-accent-text-preview: var(--inspector-accent-black);
-
-    --inspector-button: var(--inspector-accent);
 }
 
 #insext, :is(html, #insext)[data-theme="dark"] {
@@ -109,10 +107,12 @@ html {
     --inspector-dark-neutral: var(--inspector-shade);
 
     --inspector-link: var(--inspector-accent);
-    --inspector-visited-link: var(--inspector-light-pink);
+    --inspector-visited-link: var(--inspector-link);
 
+    --inspector-button: var(--inspector-primary);
     --inspector-button-text: var(--inspector-link);
     --inspector-button-border: var(--inspector-neutral);
+    --inspector-button-active-border: var(--inspector-accent);
 
     --inspector-success: var(--inspector-dark-green);
     --inspector-warning: var(--inspector-dark-yellow);
@@ -124,10 +124,8 @@ html {
     --inspector-false-boolean: var(--inspector-error);
     --inspector-true-boolean: var(--inspector-accent);
 
-    --inspector-icon-logo: var(--inspector-warning);
     --inspector-svg-text: var(--inspector-text);
     --inspector-svg-picture: var(--inspector-dark-pink);
-    --inspector-svg-background: var(--inspector-primary);
 
     --inspector-working: var(--inspector-light-purple);
 
@@ -135,8 +133,6 @@ html {
     --inspector-default-text-preview: var(--inspector-text);
     --inspector-accent-background-preview: var(--inspector-accent-black);
     --inspector-accent-text-preview: var(--inspector-accent-white);
-
-    --inspector-button: var(--inspector-primary);
 }
 
 #insext, :is(html, #insext)[data-theme="light"][data-accent="accent"] {
@@ -151,10 +147,12 @@ html {
     --inspector-shade: var(--inspector-accent-dark-white);
 
     --inspector-link: var(--inspector-primary);
-    --inspector-visited-link: var(--inspector-accent-light-purple);
+    --inspector-visited-link: var(--inspector-link);
 
+    --inspector-button: var(--inspector-accent);
     --inspector-button-text: var(--inspector-link);
     --inspector-button-border: var(--inspector-neutral);
+    --inspector-button-active-border: var(--inspector-primary);
 
     --inspector-success: var(--inspector-accent-light-green);
     --inspector-warning: var(--inspector-accent-light-yellow);
@@ -166,10 +164,8 @@ html {
     --inspector-false-boolean: var(--inspector-error);
     --inspector-true-boolean: var(--inspector-accent-dark-blue);
 
-    --inspector-icon-logo: var(--inspector-warning);
     --inspector-svg-text: var(--inspector-dark-white);
     --inspector-svg-picture: var(--inspector-accent-light-pink);
-    --inspector-svg-background: var(--inspector-primary);
 
     --inspector-working: var(--inspector-number);
 
@@ -177,8 +173,6 @@ html {
     --inspector-default-text-preview: var(--inspector-black);
     --inspector-accent-background-preview: var(--inspector-background);
     --inspector-accent-text-preview: var(--inspector-text);
-
-    --inspector-button: var(--inspector-accent);
 }
 
 #insext, :is(html, #insext)[data-theme="dark"][data-accent="accent"] {
@@ -194,10 +188,12 @@ html {
     --inspector-shade: var(--inspector-accent-dark-gray);
 
     --inspector-link: var(--inspector-light-blue);
-    --inspector-visited-link: var(--inspector-accent-light-pink);
+    --inspector-visited-link: var(--inspector-link);
 
+    --inspector-button: var(--inspector-primary);
     --inspector-button-text: var(--inspector-link);
     --inspector-button-border: var(--inspector-neutral);
+    --inspector-button-active-border: var(--inspector-accent);
 
     --inspector-success: var(--inspector-accent-dark-green);
     --inspector-warning: var(--inspector-accent-dark-yellow);
@@ -209,10 +205,8 @@ html {
     --inspector-false-boolean: var(--inspector-error);
     --inspector-true-boolean: var(--inspector-accent);
 
-    --inspector-icon-logo: var(--inspector-warning);
     --inspector-svg-text: var(--inspector-text);
     --inspector-svg-picture: var(--inspector-accent-dark-pink);
-    --inspector-svg-background: var(--inspector-primary);
 
     --inspector-working: var(--inspector-accent-light-purple);
 
@@ -220,8 +214,6 @@ html {
     --inspector-default-text-preview: var(--inspector-white);
     --inspector-accent-background-preview: var(--inspector-background);
     --inspector-accent-text-preview: var(--inspector-text);
-
-    --inspector-button: var(--inspector-primary);
 }
 
 :is(div, input, ul, a):not(:has([style*=transparent])), 

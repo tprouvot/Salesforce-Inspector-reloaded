@@ -120,9 +120,9 @@ input.api-input {
 .all-data-input:active,
 .all-data-input:focus {
     outline: 0;
-    border-color: var(--inspector-accent);
+    border-color: var(--inspector-button-active-border);
     background-color: var(--inspector-background);
-    box-shadow: 0 0 3px var(--inspector-accent);
+    box-shadow: 0 0 3px var(--inspector-button-active-border);
 }
 
 .all-data-box-inner {
@@ -380,7 +380,6 @@ a.icon {
     width:1.75rem;
     height:1.75rem;
     margin-right: 12px;
-    /*background-color: var(--inspector-icon-logo);*/
     border-radius: 4px;
     color: var(--inspector-text);
     line-height: 1;

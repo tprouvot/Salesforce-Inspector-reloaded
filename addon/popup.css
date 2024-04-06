@@ -84,13 +84,14 @@ a:visited {
     border-radius: 3px;
 }
 
-.header-icon {
+:is(.header-icon, .header-dark, .header-light) {
     margin-right: 12px;
     background-color: var(--inspector-icon-logo);
     border-radius: 4px;
+    color: var(--inspector-text);
 }
 
-.header-icon>svg {
+:is(.header-icon, .header-dark, .header-light) > svg {
     line-height: 1;
     width: 24px;
     height: 24px;

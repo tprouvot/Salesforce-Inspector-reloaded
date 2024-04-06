@@ -63,6 +63,7 @@ class OptionsTabSelector extends React.Component {
   constructor(props) {
     super(props);
     this.model = props.model;
+    this.sfHost = this.model.sfHost;
     this.state = {
       selectedTabId: 1
     };
@@ -73,12 +74,14 @@ class OptionsTabSelector extends React.Component {
         title: "User Experience",
         content: [
           {option: ArrowButtonOption, props: {key: 1}},
-          {option: CheckboxToggle, props: {title: "Flow Scrollability", key: "scrollOnFlowBuilder"}},
-          {option: CheckboxToggle, props: {title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
-          {option: CheckboxToggle, props: {title: "Always open links in a new tab", key: "openLinksInNewTab"}},
-          {option: CheckboxToggle, props: {title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
-          {option: CheckboxToggle, props: {title: "Search metadata from Shortcut tab", key: "metadataShortcutSearch"}},
-          {option: CheckboxToggle, props: {title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}}
+          {option: Option, props: {type: "toggle", title: "Flow Scrollability", key: "scrollOnFlowBuilder"}},
+          {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
+          {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab"}},
+          {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
+          {option: Option, props: {type: "toggle", title: "Search metadata from Shortcut tab", key: "metadataShortcutSearch"}},
+          {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
+          {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
+          {option: Option, props: {type: "text", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", placeholder: "Available values : green, orange, pink, purple, red, yellow"}}
         ]
       },
       {
@@ -97,12 +100,24 @@ class OptionsTabSelector extends React.Component {
         title: "Data Export",
         content: [
           {option: CSVSeparatorOption, props: {key: 1}},
-          {option: CheckboxToggle, props: {title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}}
+          {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
+          {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
+          {option: Option, props: {type: "toggle", title: "Show 'Delete Records' button ", key: "showDeleteRecordsButton", default: true}},
+          {option: Option, props: {type: "text", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}}
         ]
       },
       {
         id: 4,
         tabTitle: "Tab4",
+        title: "Data Import",
+        content: [
+          {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200"}},
+          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6"}}
+        ]
+      },
+      {
+        id: 5,
+        tabTitle: "Tab5",
         title: "Enable Logs",
         content: [
           {option: enableLogsOption, props: {key: 1}}
@@ -280,46 +295,67 @@ class RestHeaderOption extends React.Component {
     );
   }
 }
-// {storageKey: unique identifier for localStorage and rendered element, title: label for the toggle, default (optional): default value for the toggle (true or false, default is false)}
-class CheckboxToggle extends React.Component {
+class Option extends React.Component {
   constructor(props) {
     super(props);
     this.onChange = this.onChange.bind(this);
+    this.onChangeToggle = this.onChangeToggle.bind(this);
     this.key = props.storageKey;
-    // storage will be string "true" or "false", prop must be actual boolean
+    this.type = props.type;
+    this.label = props.label;
+    this.placeholder = props.placeholder;
     let value = localStorage.getItem(this.key);
     if (props.default !== undefined && value === null) {
       value = JSON.stringify(props.default);
       localStorage.setItem(this.key, value);
     }
-    this.state = {enabled: !!JSON.parse(value)};
+    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value) : value};
     this.title = props.title;
   }
 
-  onChange(e) {
+  onChangeToggle(e) {
     const enabled = e.target.checked;
-    this.setState({enabled});
+    this.setState({[this.key]: enabled});
     localStorage.setItem(this.key, JSON.stringify(enabled));
+  }
+
+  onChange(e) {
+    let inputValue = e.target.value;
+    this.setState({[this.key]: inputValue});
+    localStorage.setItem(this.key, inputValue);
   }
 
   render() {
     const id = this.key;
-    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-        h("span", {}, this.title)
-      ),
-      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
-        h("label", {className: "slds-checkbox_toggle slds-grid"},
-          h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state.enabled, onChange: this.onChange}),
-          h("span", {id, className: "slds-checkbox_faux_container center-label"},
-            h("span", {className: "slds-checkbox_faux"}),
-            h("span", {className: "slds-checkbox_on"}, "Enabled"),
-            h("span", {className: "slds-checkbox_off"}, "Disabled"),
+    if (this.type == "text"){
+      return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+          h("span", {}, this.title)
+        ),
+        h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+          h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
+            h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: this.placeholder, value: this.state[this.key], onChange: this.onChange}),
           )
         )
-      )
-    );
+      );
+    } else {
+      return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+          h("span", {}, this.title)
+        ),
+        h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+        h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
+          h("label", {className: "slds-checkbox_toggle slds-grid"},
+            h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
+            h("span", {id, className: "slds-checkbox_faux_container center-label"},
+              h("span", {className: "slds-checkbox_faux"}),
+              h("span", {className: "slds-checkbox_on"}, "Enabled"),
+              h("span", {className: "slds-checkbox_off"}, "Disabled"),
+            )
+          )
+        )
+      );
+    }
   }
 }
 
@@ -692,7 +728,7 @@ class App extends React.Component {
           ),
           " Salesforce Home"
         ),
-        h("h1", {className: "slds-text-title_bold"}, "Salesforce Inspector Options"),
+        h("h1", {className: "slds-text-title_bold"}, "Options"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"})),
       h("div", {className: "main-container slds-card slds-m-around_small"},

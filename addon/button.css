@@ -128,3 +128,21 @@
     color: white;
     z-index: 10000;
 }
+.copiedText {
+    font-family: "Salesforce Sans", Arial, sans-serif;
+    color: #28a745; 
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    margin-left: 4px;
+    padding: 0;
+    display: inline-block;
+    vertical-align: middle;
+    animation: fadeOut 2s forwards;
+  }
+  
+  @keyframes fadeOut {
+    to {
+      opacity: 0;
+    }
+  }   

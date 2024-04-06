@@ -102,7 +102,6 @@ class Model {
     this.autocompleteProgress = {};
     this.exportProgress = {};
     this.queryName = "";
-    this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
       "SELECT Id FROM ",
       "SELECT Id FROM WHERE",
@@ -145,9 +144,6 @@ class Model {
   }
   setQueryName(value) {
     this.queryName = value;
-  }
-  setClientId(value) {
-    this.clientId = value;
   }
   setQueryInput(queryInput) {
     this.queryInput = queryInput;
@@ -250,9 +246,6 @@ class Model {
   }
   addToHistory() {
     this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
-  }
-  saveClientId() {
-    localStorage.setItem(this.sfHost + "_clientId", this.clientId);
   }
   removeFromHistory() {
     this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
@@ -360,19 +353,23 @@ class Model {
       vm.autocompleteProgress.abort();
     }
 
-    vm.autocompleteClick = ({value, suffix}) => {
-      vm.queryInput.focus();
-      //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
-      let indexFrom = query.toLowerCase().indexOf("from");
-      if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
-        suffix = "";
+    vm.autocompleteClick = ({value, suffix, link}) => {
+      if (link){
+        window.open(link, "_blank");
+      } else {
+        vm.queryInput.focus();
+        //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
+        let indexFrom = query.toLowerCase().indexOf("from");
+        if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
+          suffix = "";
+        }
+        vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
+        //add query suffix if needed
+        if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
+          vm.queryInput.value += " LIMIT 200";
+        }
+        vm.queryAutocompleteHandler();
       }
-      vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
-      //add query suffix if needed
-      if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
-        vm.queryInput.value += " LIMIT 200";
-      }
-      vm.queryAutocompleteHandler();
     };
 
     // Find the token we want to autocomplete. This is the selected text, or the last word before the cursor.
@@ -905,6 +902,28 @@ class Model {
   stopExport() {
     this.exportProgress.abort();
   }
+  doQueryPlan(){
+    let vm = this; // eslint-disable-line consistent-this
+    let exportedData = new RecordTable(vm);
+
+    vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(vm.queryInput.value)).then(res => {
+      exportedData.addToTable(res.plans);
+      vm.exportStatus = "";
+      vm.performancePoints = [];
+      vm.exportedData = exportedData;
+      vm.updatedExportedData();
+      vm.didUpdate();
+    }, () => {
+      vm.isWorking = false;
+    }));
+    vm.autocompleteResults = {
+      sobjectName: "",
+      title: "Query Plan Tool:",
+      results: [{value: "Developer Console Query Plan Tool FAQ", title: "Developer Console Query Plan Tool FAQ", rank: 1, autocompleteType: "fieldName", dataType: "", link: "https://help.salesforce.com/s/articleView?id=000386864&type=1"},
+        {value: "Get Feedback on Query Performance", title: "Get Feedback on Query Performance", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "", link: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_query_explain.htm"},
+      ]
+    };
+  }
 }
 
 function RecordTable(vm) {
@@ -1012,7 +1031,6 @@ class App extends React.Component {
     this.onClearHistory = this.onClearHistory.bind(this);
     this.onSelectSavedEntry = this.onSelectSavedEntry.bind(this);
     this.onAddToHistory = this.onAddToHistory.bind(this);
-    this.onSaveClientId = this.onSaveClientId.bind(this);
     this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
@@ -1020,13 +1038,13 @@ class App extends React.Component {
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
+    this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
-    this.onSetClientId = this.onSetClientId.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
     this.setupColorListeners = this.setupColorListeners.bind(this);
   }
@@ -1072,12 +1090,6 @@ class App extends React.Component {
     e.preventDefault();
     let {model} = this.props;
     model.addToHistory();
-    model.didUpdate();
-  }
-  onSaveClientId(e) {
-    e.preventDefault();
-    let {model} = this.props;
-    model.saveClientId();
     model.didUpdate();
   }
   onRemoveFromHistory(e) {
@@ -1133,6 +1145,11 @@ class App extends React.Component {
     navigator.clipboard.writeText(url.toString());
     model.didUpdate();
   }
+  onQueryPlan(){
+    let {model} = this.props;
+    model.doQueryPlan();
+    model.didUpdate();
+  }
   onCopyAsExcel() {
     let {model} = this.props;
     model.copyAsExcel();
@@ -1161,11 +1178,6 @@ class App extends React.Component {
   onSetQueryName(e) {
     let {model} = this.props;
     model.setQueryName(e.target.value);
-    model.didUpdate();
-  }
-  onSetClientId(e) {
-    let {model} = this.props;
-    model.setClientId(e.target.value);
     model.didUpdate();
   }
   onStopExport() {
@@ -1361,9 +1373,7 @@ class App extends React.Component {
                 h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
               ),
               h("button", {onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
-              h("button", {className: model.expandSavedOptions ? "toggle contract" : "toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"})),
-              h("input", {placeholder: "Consumer Key", type: "default", value: model.clientId, onInput: this.onSetClientId}),
-              h("button", {onClick: this.onSaveClientId, title: "Save Consumer Key"}, "Save"),
+              h("button", {className: model.expandSavedOptions ? "toggle contract" : "toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"}))
             ),
           ),
           h("div", {className: "query-options"},
@@ -1386,8 +1396,9 @@ class App extends React.Component {
             h("div", {className: "flex-right"},
               h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Export"),
               h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query"),
-              h("a", {tabIndex: 3, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
-              h("button", {tabIndex: 4, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
+              h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
+              h("a", {tabIndex: 4, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
+              h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
                 h("div", {className: "button-icon"}),
                 h("div", {className: "button-toggle-icon"})
               )
@@ -1414,7 +1425,8 @@ class App extends React.Component {
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
-            h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records"),
+            localStorage.getItem("showDeleteRecordsButton") !== "false"
+              ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
           h("span", {className: "result-status flex-right"},

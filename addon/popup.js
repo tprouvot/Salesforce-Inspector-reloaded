@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, sessionError} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.mjs";
 
@@ -100,7 +100,7 @@ class App extends React.PureComponent {
     exportArg.set("host", sfHost);
     importArg.set("host", sfHost);
     limitsArg.set("host", sfHost);
-    if (e.contextSobject) {
+    if (e.contextSobject && localStorage.getItem("useSObjectContextOnDataImportLink") !== "false") {
       let query = "SELECT Id FROM " + e.contextSobject;
       if (e.contextRecordId && (e.contextRecordId.length == 15 || e.contextRecordId.length == 18)) {
         query += " WHERE Id = '" + e.contextRecordId + "'";
@@ -284,6 +284,19 @@ class App extends React.PureComponent {
     this.saveColorChanges(savedAccent, "accent");
   }
 
+
+  getBannerUrlAction(sessionError, sfHost, clientId, browser) {
+    let url;
+    let title;
+    let text;
+    if (sessionError){
+      text = "Access Token Expired";
+      title = "Generate New Token";
+      url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
+    }
+    return {title, url, text};
+  }
+
   render() {
     let {
       sfHost,
@@ -300,16 +313,17 @@ class App extends React.PureComponent {
     const browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
     const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
     const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
-    const oauthAuthorizeUrl = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
+    const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
+    const popupTheme = localStorage.getItem("popupDarkTheme") == "true" ? " header-dark" : " header-light";
     return (
       h("div", {},
-        h("div", {className: "slds-page-header slds-theme_shade popup-header"},
+        h("div", {className: "slds-page-header slds-theme_shade popup-header" + popupTheme},
           h("div", {className: "slds-page-header__row"},
             h("div", {className: "slds-page-header__col-title"},
               h("div", {className: "slds-media"},
                 h("div", {className: "slds-media__figure popup-media__figure"},
                   h("span", {className: "popup-icon_container", title: "Salesforce Inspector Reloaded"},
-                    h("svg", {className: "slds-icon popup-header__icon", viewBox: "0 0 24 24"},
+                    h("svg", {className: "popup-header__icon", viewBox: "0 0 24 24"},
                       h("path", {
                         d: `
                         M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
@@ -317,7 +331,7 @@ class App extends React.PureComponent {
                         M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
                         m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
                         M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
-                        `,
+                        `
                       })
                     )
                   )
@@ -349,17 +363,17 @@ class App extends React.PureComponent {
             }
           }
         }),
-        h("div", {id: "expiredTokenLink", className: "hide"},
+        h("div", {id: "invalidTokenBanner", className: "hide"},
           h(AlertBanner, {type: "warning",
-            bannerText: "Access Token Expired",
+            bannerText: bannerUrlAction.text,
             iconName: "warning",
             iconTitle: "Warning",
-            assistiveTest: "Access Token Expired",
+            assistiveTest: bannerUrlAction.text,
             onClose: null,
             link: {
-              text: "Generate New Token",
+              text: bannerUrlAction.title,
               props: {
-                href: oauthAuthorizeUrl,
+                href: bannerUrlAction.url,
                 target: linkTarget
               }
             }
@@ -385,16 +399,6 @@ class App extends React.PureComponent {
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
-            ),
-            h("div", {className: "slds-m-bottom_xx-small"},
-              h("a",
-                {
-                  ref: "generateToken",
-                  href: oauthAuthorizeUrl,
-                  target: linkTarget,
-                  className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
-                },
-                h("span", {}, h("u", {}, "G"), "enerate Access Token"))
             ),
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
             inLightning && isInSetup && h("div", {className: "slds-m-bottom_xx-small"},
@@ -452,7 +456,7 @@ class App extends React.PureComponent {
               )
             )
           ),
-          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Options"},
+          h("div", {id: "optionsBtn", className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Options"},
             h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget},
               h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
                 h("use", {xlinkHref: "symbols.svg#settings", style: {fill: "#9c9c9c"}})
@@ -1071,7 +1075,7 @@ class AllDataBoxSObject extends React.PureComponent {
     let {selectedValue, recordIdDetails} = this.state;
     return (
       h("div", {},
-        h(AllDataSearch, {ref: "allDataSearch", onDataSelect: this.onDataSelect, sobjectsList, getMatches: this.getMatches, inputSearchDelay: 0, placeholderText: "Record id, id prefix or object name", resultRender: this.resultRender}),
+        h(AllDataSearch, {ref: "allDataSearch", sfHost, onDataSelect: this.onDataSelect, sobjectsList, getMatches: this.getMatches, inputSearchDelay: 0, placeholderText: "Record id, id prefix or object name", title: "Click to show recent items", resultRender: this.resultRender}),
         selectedValue
           ? h(AllDataSelection, {ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId, isFieldsPresent})
           : h("div", {className: "all-data-box-inner empty"}, "No record to display")
@@ -1119,9 +1123,10 @@ class AllDataBoxShortcut extends React.PureComponent {
 
       //search for metadata if user did not disabled it
       if (metadataShortcutSearch == "true"){
-        const flowSelect = "SELECT LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const flowSelect = "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const networkSelect = "SELECT Id, Name, Status, UrlPathPrefix FROM Network WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50";
         const compositeQuery = {
           "compositeRequest": [
             {
@@ -1136,6 +1141,10 @@ class AllDataBoxShortcut extends React.PureComponent {
               "method": "GET",
               "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(permSetSelect),
               "referenceId": "permSetSelect"
+            }, {
+              "method": "GET",
+              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(networkSelect),
+              "referenceId": "networkSelect"
             }
           ]
         };
@@ -1148,7 +1157,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         results.forEach(element => {
           element.body.records.forEach(rec => {
             if (rec.attributes.type === "FlowDefinitionView"){
-              rec.link = "/builder_platform_interaction/flowBuilder.app?flowId=" + rec.LatestVersionId;
+              rec.link = "/builder_platform_interaction/flowBuilder.app?flowDefId=" + rec.DurableId + "&flowId=" + rec.LatestVersionId;
               rec.label = rec.Label;
               rec.name = rec.ApiName;
               rec.detail = rec.attributes.type + " • " + rec.ProcessType;
@@ -1174,6 +1183,12 @@ class AllDataBoxShortcut extends React.PureComponent {
               }
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
+            } else if (rec.attributes.type === "Network"){
+              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=0DB26000000Ak2X" + rec.Id;
+              rec.label = rec.Name;
+              let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
+              rec.name = rec.Id + url;
+              rec.detail = rec.attributes.type + " (" + rec.Status + ") • Builder";
             }
             result.push(rec);
           });
@@ -1295,7 +1310,7 @@ class AllDataBoxOrg extends React.PureComponent {
               h("tbody", {},
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget}, "Org Id:")),
-                  h("td", {}, orgInfo.Id)
+                  h("td", {}, orgInfo.Id.substring(0, 15))
                 ),
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName, title: "Instance status", target: linkTarget}, "Instance:")),
@@ -1611,6 +1626,13 @@ class ShowDetailsButton extends React.PureComponent {
 
 
 class AllDataSelection extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      flowDefinitionId: null
+    };
+  }
+
   clickShowDetailsBtn() {
     this.refs.showDetailsBtn.onDetailsClick();
   }
@@ -1650,6 +1672,9 @@ class AllDataSelection extends React.PureComponent {
     args.set("host", sfHost);
     args.set("checkDeployStatus", selectedValue.recordId);
     return "explore-api.html?" + args;
+  }
+  redirectToFlowVersions(){
+    return "https://" + this.props.sfHost + "/lightning/setup/Flows/page?address=%2F" + this.state.flowDefinitionId;
   }
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
@@ -1705,12 +1730,27 @@ class AllDataSelection extends React.PureComponent {
   getNewObjectUrl(sfHost, newUrl){
     return "https://" + sfHost + newUrl;
   }
+  setFlowDefinitionId(recordId){
+    if (recordId && !this.state.flowDefinitionId){
+      if (recordId.startsWith("301")){
+        sfConn.rest("/services/data/v" + apiVersion + "/tooling/query/?q=SELECT+DefinitionId+FROM+Flow+WHERE+Id='" + recordId + "'", {method: "GET"}).then(res => {
+          res.records.forEach(recentItem => {
+            this.setState({flowDefinitionId: recentItem.DefinitionId});
+          });
+        });
+      } else if (recordId.startsWith("300")){
+        this.setState({flowDefinitionId: recordId});
+      }
+    }
+  }
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent} = this.props;
+    let {flowDefinitionId} = this.state;
     // Show buttons for the available APIs.
-    let buttons = Array.from(selectedValue.sobject.availableApis);
+    let buttons = selectedValue.sobject.availableApis ? Array.from(selectedValue.sobject.availableApis) : [];
     buttons.sort();
-    if (buttons.length == 0) {
+    this.setFlowDefinitionId(selectedValue ? selectedValue.recordId : contextRecordId);
+    if (buttons.length == 0 && !selectedValue.isRecent) {
       // If none of the APIs are available, show a button for the regular API, which will partly fail, but still show some useful metadata from the tooling API.
       buttons.push("noApi");
     }
@@ -1746,7 +1786,7 @@ class AllDataSelection extends React.PureComponent {
                   h("span", {}, (selectedValue.recordId) ? " / " + selectedValue.recordId : ""),
                 )
               ),
-              selectedValue.sobject.name.indexOf("__") == -1
+              selectedValue.sobject.name.indexOf("__") == -1 && selectedValue.sobject.availableApis
                 ? h("tr", {},
                   h("th", {}, "Doc:"),
                   h("td", {},
@@ -1763,6 +1803,8 @@ class AllDataSelection extends React.PureComponent {
         h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
           ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+        flowDefinitionId
+          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
         buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
           {
             key: button,
@@ -1866,6 +1908,7 @@ class AllDataSearch extends React.PureComponent {
     this.state = {
       queryString: "",
       matchingResults: [],
+      recentItems: [],
       queryDelayTimer: null
     };
     this.onAllDataInput = this.onAllDataInput.bind(this);
@@ -1919,8 +1962,8 @@ class AllDataSearch extends React.PureComponent {
     this.setState({queryDelayTimer});
   }
   render() {
-    let {queryString, matchingResults} = this.state;
-    let {placeholderText, resultRender} = this.props;
+    let {queryString, matchingResults, recentItems} = this.state;
+    let {placeholderText, resultRender, sfHost} = this.props;
     return (
       h("div", {className: "input-with-dropdown"},
         h("input", {
@@ -1936,7 +1979,10 @@ class AllDataSearch extends React.PureComponent {
         h(Autocomplete, {
           ref: "autoComplete",
           updateInput: this.updateAllDataInput,
-          matchingResults: resultRender(matchingResults, queryString)
+          matchingResults: resultRender(matchingResults, queryString),
+          recentItems: resultRender(recentItems, queryString),
+          queryString,
+          sfHost
         }),
         h("svg", {viewBox: "0 0 24 24", onClick: this.onAllDataArrowClick},
           h("path", {d: "M3.8 6.5h16.4c.4 0 .8.6.4 1l-8 9.8c-.3.3-.9.3-1.2 0l-8-9.8c-.4-.4-.1-1 .4-1z"})
@@ -1978,7 +2024,32 @@ class Autocomplete extends React.PureComponent {
     this.setState({showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
   }
   handleFocus() {
-    this.setState({showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
+    let {recentItems} = this.props;
+    sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+50").then(res => {
+      res.records.forEach(recentItem => {
+        recentItems.push({key: recentItem.Id,
+          value: {recordId: recentItem.Id, isRecent: true, sobject: {keyPrefix: recentItem.Id.slice(0, 3), label: recentItem.Type, name: recentItem.Name}},
+          element: [
+            h("div", {className: "autocomplete-item-main", key: "main"},
+              recentItem.Name,
+            ),
+            h("div", {className: "autocomplete-item-sub", key: "sub"},
+              h(MarkSubstring, {
+                text: recentItem.Type,
+                start: -1,
+                length: 0
+              }),
+              " • ",
+              h(MarkSubstring, {
+                text: recentItem.Id,
+                start: -1,
+                length: 0
+              })
+            )
+          ]});
+      });
+      this.setState({recentItems, showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
+    });
   }
   handleBlur() {
     this.setState({showResults: false});
@@ -2034,9 +2105,14 @@ class Autocomplete extends React.PureComponent {
   onResultsMouseUp() {
     this.setState({resultsMouseIsDown: false});
   }
-  onResultClick(value) {
-    this.props.updateInput(value);
-    this.setState({showResults: false, selectedIndex: 0});
+  onResultClick(e, value) {
+    let {sfHost} = this.props;
+    if (value.isRecent){
+      window.open("https://" + sfHost + "/" + value.recordId, getLinkTarget(e));
+    } else {
+      this.props.updateInput(value);
+      this.setState({showResults: false, selectedIndex: 0});
+    }
   }
   onResultMouseEnter(index) {
     this.setState({selectedIndex: index, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
@@ -2069,34 +2145,36 @@ class Autocomplete extends React.PureComponent {
     }
   }
   render() {
-    let {matchingResults} = this.props;
+    let {matchingResults, recentItems} = this.props;
     let {
       showResults,
       selectedIndex,
       scrollTopIndex,
       itemHeight,
-      resultsMouseIsDown,
+      resultsMouseIsDown
     } = this.state;
     // For better performance only render the visible autocomplete items + at least one invisible item above and below (if they exist)
     const RENDERED_ITEMS_COUNT = 11;
     let firstIndex = 0;
-    let lastIndex = matchingResults.length - 1;
+    let autocompleteResults = recentItems.length > 0 ? recentItems : matchingResults;
+    let lastIndex = autocompleteResults.length - 1;
     let firstRenderedIndex = Math.max(0, scrollTopIndex - 2);
     let lastRenderedIndex = Math.min(lastIndex, firstRenderedIndex + RENDERED_ITEMS_COUNT);
     let topSpace = (firstRenderedIndex - firstIndex) * itemHeight;
     let bottomSpace = (lastIndex - lastRenderedIndex) * itemHeight;
     let topSelected = (selectedIndex - firstIndex) * itemHeight;
+
     return (
-      h("div", {className: "autocomplete-container", style: {display: (showResults && matchingResults.length > 0) || resultsMouseIsDown ? "" : "none"}, onMouseDown: this.onResultsMouseDown, onMouseUp: this.onResultsMouseUp},
+      h("div", {className: "autocomplete-container", style: {display: (showResults && (autocompleteResults.length > 0)) || resultsMouseIsDown ? "" : "none"}, onMouseDown: this.onResultsMouseDown, onMouseUp: this.onResultsMouseUp},
         h("div", {className: "autocomplete", onScroll: this.onScroll, ref: "scrollBox"},
           h("div", {ref: "selectedItem", style: {position: "absolute", top: topSelected + "px", height: itemHeight + "px"}}),
           h("div", {style: {height: topSpace + "px"}}),
-          matchingResults.slice(firstRenderedIndex, lastRenderedIndex + 1)
+          autocompleteResults.slice(firstRenderedIndex, lastRenderedIndex + 1)
             .map(({key, value, element}, index) =>
               h("a", {
                 key,
                 className: "autocomplete-item " + (selectedIndex == index + firstRenderedIndex ? "selected" : ""),
-                onClick: () => this.onResultClick(value),
+                onClick: (e) => this.onResultClick(e, value),
                 onMouseEnter: () => this.onResultMouseEnter(index + firstRenderedIndex)
               }, element)
             ),

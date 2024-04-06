@@ -132,7 +132,7 @@ body {
 }
 
 .options-tab-container {
-    background-color: var(--inspector-background);
+    background-color: var(--inspector-shade);
 }
 
 .main-container {

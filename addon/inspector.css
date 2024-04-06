@@ -6,6 +6,8 @@ html {
     --inspector-dark-white: #F3F3F3;
     --inspector-very-light-gray: #AFAFAF;
     --inspector-subtle-gray: #C9C9C9;
+    --inspector-half-gray: #444444;
+    --inspector-other-half-gray: #BBBBBB;
 
     --inspector-light-blue: #1789EE;
     --inspector-light-gray: #787878;
@@ -64,7 +66,7 @@ html {
     --inspector-accent: var(--inspector-dark-blue);
     --inspector-neutral: var(--inspector-light-gray);
     --inspector-shade: var(--inspector-dark-white);
-    --inspector-dark-neutral: var(--inspector-dark-gray);
+    --inspector-dark-neutral: var(--inspector-half-gray);
     --inspector-subtle-neutral: var(--inspector-subtle-gray);
 
     --inspector-link: var(--inspector-primary);
@@ -106,7 +108,7 @@ html {
     --inspector-accent: var(--inspector-light-blue);
     --inspector-neutral: var(--inspector-light-gray);
     --inspector-shade: var(--inspector-dark-gray);
-    --inspector-dark-neutral: var(--inspector-shade);
+    --inspector-dark-neutral: var(--inspector-other-half-gray);
     --inspector-subtle-neutral: var(--inspector-subtle-gray);
 
     --inspector-link: var(--inspector-accent);
@@ -148,7 +150,7 @@ html {
     --inspector-accent: var(--inspector-light-blue);
     --inspector-neutral: var(--inspector-accent-light-gray);
     --inspector-shade: var(--inspector-accent-dark-white);
-    --inspector-dark-neutral: var(--inspector-shade);
+    --inspector-dark-neutral: var(--inspector-half-gray);
     --inspector-subtle-neutral: var(--inspector-subtle-gray);
 
     --inspector-link: var(--inspector-primary);
@@ -190,7 +192,7 @@ html {
     --inspector-accent: var(--inspector-accent-light-blue);
     --inspector-neutral: var(--inspector-accent-light-gray);
     --inspector-shade: var(--inspector-accent-dark-gray);
-    --inspector-dark-neutral: var(--inspector-shade);
+    --inspector-dark-neutral: var(--inspector-other-half-gray);
     --inspector-subtle-neutral: var(--inspector-subtle-gray);
 
     --inspector-link: var(--inspector-light-blue);
@@ -264,6 +266,7 @@ a.autocomplete-item span > mark,
 div.all-data-box-data > table :is(th, td > *),
 #root > div > div:last-child > div.slds-size_5-of-12 > :is(a, span, input),
 h1:not(:has(> span)), 
+input::placeholder, /* will work in future broswer developments */
 figcaption, .meter-value {
     transition-property: color;
     transition-duration: var(--inspector-transition-time-slow);

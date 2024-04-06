@@ -2027,9 +2027,9 @@ a.slds-button--inverse:focus{
     height:1.5rem;
     border-width:1px;
     border-style:solid;
-    border-color:var(--inspector-neutral, var(--sds-c-checkbox-toggle-color-border, #b0adab));
+    border-color:var(--inspector-subtle-neutral, var(--sds-c-checkbox-toggle-color-border, #b0adab));
     padding:0.125rem;
-    background-color:var(--inspector-neutral, var(--sds-c-checkbox-toggle-color-background, #b0adab));
+    background-color:var(--inspector-subtle-neutral, var(--sds-c-checkbox-toggle-color-background, #b0adab));
     border-radius:var(--sds-c-checkbox-toggle-radius-border, 15rem);
     -webkit-box-shadow:var(--sds-c-checkbox-toggle-shadow);
             box-shadow:var(--sds-c-checkbox-toggle-shadow);
@@ -2302,9 +2302,6 @@ a.slds-button--inverse:focus{
   .slds-checkbox--toggle [type=checkbox][disabled]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:after,
   .slds-checkbox--toggle [type=checkbox][disabled]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:after{
     background-color:transparent;
-  }
-  .slds-checkbox_add-button,
-  .slds-checkbox--add-button{
   }
   .slds-checkbox_add-button .slds-checkbox_faux,
   .slds-checkbox_add-button .slds-checkbox--faux,
@@ -3503,7 +3500,7 @@ a.slds-button--inverse:focus{
   width:100%;
   min-height:calc(1.875rem + (1px * 2));
   line-height:1.875rem;
-  border:1px solid var(--inspector-neutral,var(--slds-c-input-color-border, var(--sds-c-input-color-border, var(--slds-g-color-border-base-4, #c9c9c9))));
+  border:1px solid var(--inspector-subtle-gray,var(--slds-c-input-color-border, var(--sds-c-input-color-border, var(--slds-g-color-border-base-4, #c9c9c9))));
   border-radius:var(--slds-c-input-radius-border, var(--sds-c-input-radius-border, 0.25rem));
   background-color:var(--inspector-background,var(--slds-c-input-color-background, var(--sds-c-input-color-background, var(--slds-g-color-neutral-base-100, white))));
   color:var(--inspector-text,var(--slds-c-input-text-color, var(--sds-c-input-text-color)));
@@ -4714,7 +4711,7 @@ a.slds-button--inverse:focus{
 }
 .slds-tabs_default__item,
 .slds-tabs--default__item{
-  color:var(--inspector-neutral,var(--slds-c-tabs-item-text-color, var(--sds-c-tabs-item-text-color, var(--slds-g-color-neutral-base-30, #444444))));
+  color:var(--inspector-dark-neutral,var(--slds-c-tabs-item-text-color, var(--sds-c-tabs-item-text-color, var(--slds-g-color-neutral-base-30, #444444))));
   position:relative;
   padding-top:var(--slds-c-tabs-item-spacing-block-start, var(--sds-c-tabs-item-spacing-block-start, var(--sds-c-tabs-item-spacing-block, 0)));
   padding-right:var(--slds-c-tabs-item-spacing-inline-end, var(--sds-c-tabs-item-spacing-inline-end, var(--sds-c-tabs-item-spacing-inline, 0.75rem)));
@@ -4738,7 +4735,7 @@ a.slds-button--inverse:focus{
   /*! @css-var-fallback color */
   --slds-c-tabs-item-text-color:var(--slds-c-tabs-item-text-color-active,
     var(--sds-c-tabs-item-text-color-active, var(--slds-g-color-neutral-base-10, #181818)));
-  color: var(--inspctor-text);
+  color: var(--inspector-text);
 }
 .slds-tabs_default__item.slds-active:after, .slds-tabs_default__item.slds-is-active:after,
 .slds-tabs--default__item.slds-active:after,

@@ -49,8 +49,9 @@ html {
     --inspector-accent-dark-red: #B9141F;
     --inspector-accent-dark-yellow: #AF940B;
 
-    /*--inspector-accent-export-background: #B0C4DF;
-    --inspector-accent-import-background: #E0A4B5;*/
+    --inspector-transition-time-fast: 1ms;
+    --inspector-transition-time-slow: 500ms;
+    --inspector-transition-function: ease-in-out;
 }
 
 #insext, :is(html, #insext)[data-theme="light"] {
@@ -64,6 +65,7 @@ html {
     --inspector-neutral: var(--inspector-light-gray);
     --inspector-shade: var(--inspector-dark-white);
     --inspector-dark-neutral: var(--inspector-dark-gray);
+    --inspector-subtle-neutral: var(--inspector-subtle-gray);
 
     --inspector-link: var(--inspector-primary);
     --inspector-visited-link: var(--inspector-link);
@@ -105,6 +107,7 @@ html {
     --inspector-neutral: var(--inspector-light-gray);
     --inspector-shade: var(--inspector-dark-gray);
     --inspector-dark-neutral: var(--inspector-shade);
+    --inspector-subtle-neutral: var(--inspector-subtle-gray);
 
     --inspector-link: var(--inspector-accent);
     --inspector-visited-link: var(--inspector-link);
@@ -145,6 +148,8 @@ html {
     --inspector-accent: var(--inspector-light-blue);
     --inspector-neutral: var(--inspector-accent-light-gray);
     --inspector-shade: var(--inspector-accent-dark-white);
+    --inspector-dark-neutral: var(--inspector-shade);
+    --inspector-subtle-neutral: var(--inspector-subtle-gray);
 
     --inspector-link: var(--inspector-primary);
     --inspector-visited-link: var(--inspector-link);
@@ -184,8 +189,9 @@ html {
     --inspector-primary: var(--inspector-accent-dark-blue);
     --inspector-accent: var(--inspector-accent-light-blue);
     --inspector-neutral: var(--inspector-accent-light-gray);
-    --inspector-dark-neutral: var(--inspector-shade);
     --inspector-shade: var(--inspector-accent-dark-gray);
+    --inspector-dark-neutral: var(--inspector-shade);
+    --inspector-subtle-neutral: var(--inspector-subtle-gray);
 
     --inspector-link: var(--inspector-light-blue);
     --inspector-visited-link: var(--inspector-link);
@@ -221,8 +227,8 @@ div.table-container > table > tbody > tr,
 div.slds-tabs_default > ul.options-tab-container > li:after,
 .gauge::before, .gauge::after, .table-settings-button, th.th-filter-row, #save-wrapper {
     transition-property: background-color;
-    transition-duration: 500ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }
 
 :is(select, input):is(.slds-input, .query-history),
@@ -238,8 +244,8 @@ div#result-area > div.result-bar input,
 #root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg,
 a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], .slds-tabs_default__link, input.filter-input {
     transition-property: color, background-color;
-    transition-duration: 500ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }
 
 .popup-header__icon,
@@ -260,8 +266,14 @@ div.all-data-box-data > table :is(th, td > *),
 h1:not(:has(> span)), 
 figcaption, .meter-value {
     transition-property: color;
-    transition-duration: 500ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+.autocomplete-item {
+    transition-property: color;
+    transition-duration: var(--inspector-transition-time-fast);
+    transition-timing-function: var(--inspector-transition-function);
 }
 
 th.th-filter-row > input {
@@ -272,21 +284,21 @@ th.th-filter-row > input {
 
 svg.slds-icon {
     transition-property: color, fill;
-    transition-duration: 500ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }
 
 #insext {
     & :is(.insext-popup-vertical, .insext-popup-horizontal) {
         transition-property: box-shadow;
-        transition-duration: 500ms;
-        transition-timing-function: ease-in-out;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
     }
 
     & :is(.insext-btn.insext-btn-vertical, .insext-btn.insext-btn-horizontal) {
         transition-property: box-shadow, background-color, border-color;
-        transition-duration: 500ms;
-        transition-timing-function: ease-in-out;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
     }
 }
 
@@ -299,37 +311,43 @@ a:is(.slds-button, .slds-button) {
       transition-property: color, background-color;
     }
 
-    transition-duration: 500ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }
 
 div.area > div.conf-value,
 #mainTabs {
     transition-property: scrollbar-color;
-    transition-duration: 500ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }
 
 #result-table, div.table-container {
     transition-property: background-color, scrollbar-color;
-    transition-duration: 500ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }
 
 #mainTabs > div,
 #mainTabs ul.small-tabs > li,
 div.slds-show  div.slds-border_bottom,
-input.all-data-input, div#user-info, span.slds-checkbox_faux {
+div#user-info, span.slds-checkbox_faux {
     transition-property: background-color, border-color;
-    transition-duration: 500ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }
 
-span.slds-checkbox_faux:before, span.slds-checkbox_faux:after {
+span.slds-checkbox_faux:before, span.slds-checkbox_faux:after /* options.js */ {
     transition-property: background-color;
-    transition-duration: 500ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }
+
+input.all-data-input /* popup.js */ {
+    transition-property: color, background-color, border-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+} 
 
 div.object-name > span.quick-select {
     transition-property: none;
@@ -338,8 +356,8 @@ div.object-name > span.quick-select {
 #light-theme, #dark-theme {
     cursor: pointer;
     transition-property: display, visibility;
-    transition-duration: 500ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }
 
 body {
@@ -347,6 +365,6 @@ body {
     color: var(--inspector-text);
     scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
     transition-property: background-color;
-    transition-duration: 500ms;
-    transition-timing-function: ease-in-out;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }

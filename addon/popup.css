@@ -109,7 +109,6 @@ input.api-input {
     color: var(--inspector-text);
     border: 1px solid var(--inspector-button-border);
     border-radius: 0 .25rem .25rem .25rem;
-    /*transition: border 500ms linear;*/
     display: inline-block;
     padding: 0 2rem 0 .25rem;
     line-height: 1.875rem;

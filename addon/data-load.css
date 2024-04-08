@@ -190,3 +190,6 @@
 .pop-menu a:active {
   background-color: #ECEBEA;
 }
+.scrolltable-cell textarea {
+  width: auto;
+}

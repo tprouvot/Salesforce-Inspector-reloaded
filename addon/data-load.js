@@ -630,6 +630,7 @@ let h = React.createElement;
 export class TableModel {
   constructor(sfHost, reactCallback) {
     this.reactCallback = reactCallback;
+    this.headerCallout = localStorage.getItem("createUpdateRestCalloutHeaders") ? JSON.parse(localStorage.getItem("createUpdateRestCalloutHeaders")) : "{}";
     this.sfHost = sfHost;
     this.data = null;
     this.initialRowHeight = 15; // constant: The initial estimated height of a row before it is rendered
@@ -727,8 +728,60 @@ export class TableModel {
     }
   }
 
-  editCell(rowid, cellid) {
-    //TODO
+  doSave(rowId) {
+    let row = this.rows[rowId];
+    let record = {};
+    row.cells.filter(c => c.dataEditValue).forEach(c => {
+      record[this.header[c.id]] = c.dataEditValue;
+    });
+    let recordId = "";
+    let objectType = "";
+    row.cells.filter(c => this.header[c.id] == "Id").forEach(h => {
+      recordId = h.label;
+      objectType = h.objectTypes[0];
+    });
+    let recordUrl = `/services/data/v${apiVersion}/sobjects/${objectType}/${recordId}`;
+    //TODO spinfor
+    sfConn.rest(recordUrl, {method: "PATCH", body: record, headers: this.headerCallout}).then(() => {
+      //do not refresh trigger data update because too complicated.
+      this.endEdit(rowId);
+    }).catch(error => {
+      row.error = error.message;
+      console.log(error);
+      this.didUpdate();
+    });
+  }
+  endEdit(rowId) {
+    this.rows[rowId].cells.filter(c => c.dataEditValue).forEach(c => {
+      c.label = c.dataEditValue;
+      c.dataEditValue = null;
+      c.isEditing = false;
+    });
+    this.didUpdate();
+  }
+  cancelEditCell(rowId, cellId) {
+    let cell = this.rows[rowId].cells[cellId];
+    cell.dataEditValue = cell.label;
+    cell.isEditing = false;
+    this.didUpdate();
+  }
+  editCell(rowId, cellId) {
+    let cell = this.rows[rowId].cells[cellId];
+    //do not allow edit of id
+    if (this.header[cellId] && this.header[cellId].toLowerCase() == "Id") {
+      return;
+    }
+    //do not allow edit of object column
+    if (cell.linkable && !this.isRecordId(cell.label)){
+      return;
+    }
+    // not sub record for moment
+    if (this.header[cell.id].includes(".")){
+      return;
+    }
+    cell.dataEditValue = cell.label;
+    cell.isEditing = true;
+    this.didUpdate();
   }
   renderData({force}) {
     this.scrollTop = this.scroller.scrollTop;
@@ -827,7 +880,7 @@ export class TableModel {
           }
         } else if (typeof cell == "string" && this.isEventLogFile(cell)) {
           dataCell.recordId = cell;
-          dataCell.bjectTypes = [];
+          dataCell.objectTypes = [];
           dataCell.label = cell;
           dataCell.linkable = true;
         } else if (cell == null) {
@@ -998,6 +1051,8 @@ class ScrollTableCell extends React.Component {
     this.onClick = this.onClick.bind(this);
     this.downloadFile = this.downloadFile.bind(this);
     this.copyToClipboard = this.copyToClipboard.bind(this);
+    this.onCancelEdit = this.onCancelEdit.bind(this);
+    this.onDataEditValueInput = this.onDataEditValueInput.bind(this);
   }
   onTryEdit() {
     let {model} = this.props;
@@ -1025,25 +1080,68 @@ class ScrollTableCell extends React.Component {
     e.preventDefault();
     this.model.toggleMenu(this.row.id, this.cell.id);
   }
+  onDataEditValueInput(e) {
+    let {model, cell} = this.props;
+    const userInput = e.target.value;
+    //TODO state
+    cell.dataEditValue = userInput;
+    model.didUpdate();
+  }
+  onCancelEdit(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.cancelEditCell(this.row.id, this.cell.id);
+  }
   render() {
     let {cell, row, width} = this.props;
-    return h("td", {className: "scrolltable-cell", style: {minWidth: width + "px", height: row.height + "px"}},
-      cell.linkable ? h("a", {href: "about:blank", title: "Show all data", onClick: this.onClick}, cell.label) : h("div", {onClick: this.onTryEdit}, cell.label),
-      cell.showMenu ? h("div", {className: "pop-menu"},
-        cell.links.map((l, idx) => {
-          let arr = [];
-          if (l.withIcon) {
-            arr.push(h("div", {className: "icon"}));
-          }
-          arr.push(l.label);
-          let attributes = {href: l.href, target: "_blank", className: l.className, key: "link" + idx};
-          if (l.action == "copy") {
-            attributes.onClick = this.copyToClipboard;
-          } else if (l.action == "download") {
-            attributes.onClick = this.downloadFile;
-          }
-          return h("a", attributes, arr);
-        })) : ""
+    if (cell.isEditing){
+      return h("td", {className: "scrolltable-cell", style: {minWidth: width + "px", height: row.height + "px"}},
+        h("textarea", {value: cell.dataEditValue, onChange: this.onDataEditValueInput}),
+        h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6"));
+    } else {
+      return h("td", {className: "scrolltable-cell", style: {minWidth: width + "px", height: row.height + "px"}},
+        cell.linkable ? h("a", {href: "about:blank", title: "Show all data", onClick: this.onClick, onDoubleClick: this.onTryEdit}, cell.label) : h("div", {onDoubleClick: this.onTryEdit}, cell.label),
+        cell.showMenu ? h("div", {className: "pop-menu"},
+          cell.links.map((l, idx) => {
+            let arr = [];
+            if (l.withIcon) {
+              arr.push(h("div", {className: "icon"}));
+            }
+            arr.push(l.label);
+            let attributes = {href: l.href, target: "_blank", className: l.className, key: "link" + idx};
+            if (l.action == "copy") {
+              attributes.onClick = this.copyToClipboard;
+            } else if (l.action == "download") {
+              attributes.onClick = this.downloadFile;
+            }
+            return h("a", attributes, arr);
+          })) : ""
+      );
+    }
+  }
+}
+export class ScrollTableRow extends React.Component {
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+    this.row = props.row;
+    this.onDoSave = this.onDoSave.bind(this);
+  }
+  onDoSave(){
+    let {model} = this.props;
+    model.doSave(this.row.id);
+  }
+  render() {
+    let {model, row} = this.props;
+    return h("tr", {},
+      row.cells.map((cell, c) => h(ScrollTableCell, {key: "cell" + c, model, cell, row, width: model.colWidths[c]})),
+      row.cells.some(c => c.isEditing) ? h("td", {}, h("button", {
+        name: "saveBtn",
+        key: "saveBtn" + row.id,
+        title: "Save the values of this record",
+        className: "button button-brand",
+        onClick: this.onDoSave
+      }, "Save"), row.error ? row.error : "") : ""
     );
   }
 }
@@ -1080,9 +1178,8 @@ export class ScrollTable extends React.Component {
           ),
           h("tbody", {},
             model.rows.map((row, r) =>
-              h("tr", {key: "row" + r},
-                row.cells.map((cell, c) => h(ScrollTableCell, {key: "cell" + r + "-" + c, model, cell, row, width: model.colWidths[c]}))
-              ))
+              h(ScrollTableRow, {key: "row" + r, model, row, rowId: r})
+            )
           )
         )
       )

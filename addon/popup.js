@@ -292,8 +292,8 @@ class App extends React.PureComponent {
     if (sessionError){
       text = "Access Token Expired";
       title = "Generate New Token";
-      url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     }
+    url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     return {title, url, text};
   }
 
@@ -399,6 +399,17 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
             ),
+            localStorage.getItem("popupGenerateTokenButton") !== "false" ? h("div", {className: "slds-m-bottom_xx-small"},
+              h("a",
+                {
+                  ref: "generateToken",
+                  href: bannerUrlAction.url,
+                  target: linkTarget,
+                  className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
+                },
+                h("span", {}, h("u", {}, "G"), "enerate Access Token"))
+            ) : null,
+
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
             inLightning && isInSetup && h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
@@ -1539,10 +1550,10 @@ class UserDetails extends React.PureComponent {
                     : h("em", {className: "inactive"}, "unknown")
                 )
               ),
-              h("tr", {},
+              user.UserRole ? h("tr", {},
                 h("th", {}, "Role:"),
-                h("td", {className: "oneliner"}, (user.UserRole) ? user.UserRole.Name : "")
-              ),
+                h("td", {className: "oneliner"}, user.UserRole.Name)
+              ) : null,
               h("tr", {},
                 h("th", {}, "Language:"),
                 h("td", {},

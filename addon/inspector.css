@@ -243,7 +243,6 @@ div.button-group > :is(button, input),
 div:is(.autocomplete-header, .conf-line) > div.flex-right > button,
 button:is(.actions-button, .cancel-btn),
 div#result-area > div.result-bar input,
-#root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg,
 a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], .slds-tabs_default__link, input.filter-input {
     transition-property: color, background-color;
     transition-duration: var(--inspector-transition-time-slow);
@@ -285,6 +284,7 @@ th.th-filter-row > input {
     transition-timing-function: inherit;
 }
 
+#root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg > use,
 svg.slds-icon {
     transition-property: color, fill;
     transition-duration: var(--inspector-transition-time-slow);

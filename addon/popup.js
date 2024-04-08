@@ -450,15 +450,15 @@ class App extends React.PureComponent {
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
-              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small popup-footer__no-background-color", viewBox: "0 0 52 52"},
-                h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})
+              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small popup-footer-icon", viewBox: "0 0 52 52"},
+                h("use", {xlinkHref: "symbols.svg#info_alt"}),
               )
             )
           ),
           h("div", {id: "optionsBtn", className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Options"},
             h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget},
-              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small popup-footer__no-background-color", viewBox: "0 0 52 52"},
-                h("use", {xlinkHref: "symbols.svg#settings", style: {fill: "#9c9c9c"}})
+              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small popup-footer-icon", viewBox: "0 0 52 52"},
+                h("use", {xlinkHref: "symbols.svg#settings"})
               )
             )
           ),

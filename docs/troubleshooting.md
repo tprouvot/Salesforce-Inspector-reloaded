@@ -26,8 +26,7 @@ When redirected to the "Data Export" tab at the end of the OAuth flow, check the
 ![image](screenshots/oauthError.png)
 
 ### Generate new token error
-
-## If you did not enabled 'API Access Control' and continuously see the banner generate token
+If you did not enabled 'API Access Control' and continuously see the banner generate token
 
 You may have seen this message because of an expired token, and since this was the only available option clicked on 'Generate new Token'.
 

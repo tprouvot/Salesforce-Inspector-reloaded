@@ -27,6 +27,7 @@
 - Clean up popup header and footer (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Fix double "Show all data" button [issue 63](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63) (contribution by [Luca Bassani](https://github.com/baslu93))
 - Enhanced the user interface with a subtle inline "copied" indicator for field copy actions [feature 351](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/351) (contribution by [dyncan](https://github.com/dyncan))
+- Add a button to login-as a user in an new incognito window [issue 381](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/381) (contribution by [Alan Jaouen](https://github.com/alanjaouen))
 
 ## Version 1.22
 

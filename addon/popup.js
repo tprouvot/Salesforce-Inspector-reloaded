@@ -1374,6 +1374,21 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/servlet/servlet.su" + "?oid=" + encodeURIComponent(contextOrgId) + "&suorgadminid=" + encodeURIComponent(userId) + "&retURL=" + encodeURIComponent(retUrl) + "&targetURL=" + encodeURIComponent(targetUrl);
   }
 
+  loginAsInIncognito(userId) {
+    const targetUrl = "https://" + this.sfHost + "/secur/frontdoor.jsp?sid=" + sfConn.sessionId + "&retURL=" + encodeURIComponent(this.getLoginAsLink(userId));
+    chrome.extension.isAllowedIncognitoAccess((isAllowedAccess) => {
+      if (!isAllowedAccess) {
+        alert("Incognito access is not allowed. Please enable it in the extension settings.");
+        return;
+      }
+      chrome.windows.create({
+        url: targetUrl,
+        type: "normal",
+        incognito: true
+      });
+    });
+  }
+
   getLoginAsPortalLink(user){
     let {sfHost, contextOrgId, contextPath} = this.props;
     const retUrl = contextPath || "/";
@@ -1466,6 +1481,7 @@ class UserDetails extends React.PureComponent {
         ),
         h("div", {ref: "userButtons", className: "user-buttons center small-font top-space"},
           this.doSupportLoginAs(user) ? h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Try login as") : null,
+          this.doSupportLoginAs(user) ? h("a", {onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Try login as (Incognito)") : null,
           this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "Login to Experience") : null,
         )
       )

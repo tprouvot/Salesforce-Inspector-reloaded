@@ -2,13 +2,15 @@
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {csvParse} from "./csv-parse.js";
-import {DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
+import {DescribeInfo, copyToClipboard, ScrollTable, TableModel} from "./data-load.js";
 
 class Model {
 
   constructor(sfHost, args) {
     this.sfHost = sfHost;
     this.importData = undefined;
+    this.tableModel = new TableModel(sfHost, this.didUpdate.bind(this));
+    this.resultTableCallback = (d) => this.tableModel.dataChange(d);
     this.consecutiveFailures = 0;
 
     this.allApis = [
@@ -1083,6 +1085,13 @@ class App extends React.Component {
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
     this.unloadListener = null;
+    this.onClick = this.onClick.bind(this);
+  }
+  onClick(){
+    let {model} = this.props;
+    if (model && model.tableModel) {
+      model.tableModel.onClick();
+    }
   }
   onApiTypeChange(e) {
     let {model} = this.props;
@@ -1147,7 +1156,7 @@ class App extends React.Component {
     let {model} = this.props;
     model.showHelp = !model.showHelp;
     model.didUpdate(() => {
-      this.scrollTable.viewportChange();
+      model.tableModel.viewportChange();
     });
   }
   onDoImportClick(e) {
@@ -1221,10 +1230,8 @@ class App extends React.Component {
   componentDidMount() {
     let {model} = this.props;
 
-    addEventListener("resize", () => { this.scrollTable.viewportChange(); });
+    addEventListener("resize", () => { model.tableModel.viewportChange(); });
 
-    this.scrollTable = initScrollTable(this.refs.scroller);
-    model.resultTableCallback = this.scrollTable.dataChange;
     model.updateImportTableResult();
   }
   componentDidUpdate() {
@@ -1250,7 +1257,7 @@ class App extends React.Component {
   render() {
     let {model} = this.props;
     //console.log(model);
-    return h("div", {},
+    return h("div", {onClick: this.onClick},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},
           h("svg", {viewBox: "0 0 24 24"},
@@ -1428,7 +1435,7 @@ class App extends React.Component {
         ),
       ),
       h("div", {className: "area result-area"},
-        h("div", {id: "result-table", ref: "scroller"}),
+        h(ScrollTable, {model: model.tableModel}),
         model.confirmPopup ? h("div", {},
           h("div", {id: "confirm-background"},
             h("div", {id: "confirm-dialog"},

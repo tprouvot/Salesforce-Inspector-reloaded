@@ -1,13 +1,13 @@
-#result-table table {
+.result-table table {
   border: none;
 }
 
-#result-table table tr td:first-child {
+.result-table table tr td:first-child {
   border-left: none;
   padding-left: 8px;
 }
 
-#result-table table tr:hover>td {
+.result-table table tr:hover>td {
   background-color: #F3F2F2;
 }
 
@@ -46,16 +46,16 @@
   text-decoration-style: dotted;
 }
 
-#result-table table {
+.result-table table {
   border: none;
 }
 
-#result-table table tr td:first-child {
+.result-table table tr td:first-child {
   border-left: none;
   padding-left: 8px;
 }
 
-#result-table table tr:hover>td {
+.result-table table tr:hover>td {
   background-color: #F3F2F2;
 }
 

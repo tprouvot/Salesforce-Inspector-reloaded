@@ -165,7 +165,7 @@ textarea[hidden] {
   white-space: pre;
 }
 
-#result-table {
+.result-table {
   overflow: auto;
   flex: 1 1 0;
   background-color: #fff;

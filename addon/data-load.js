@@ -1,3 +1,4 @@
+/* global React */
 import {sfConn, apiVersion} from "./inspector.js";
 
 // Inspired by C# System.Linq.Enumerable
@@ -623,4 +624,468 @@ export function initScrollTable(scroller) {
     viewportChange,
     dataChange
   };
+}
+let h = React.createElement;
+
+export class TableModel {
+  constructor(sfHost, reactCallback) {
+    this.reactCallback = reactCallback;
+    this.sfHost = sfHost;
+    this.data = null;
+    this.initialRowHeight = 15; // constant: The initial estimated height of a row before it is rendered
+    this.initialColWidth = 50; // constant: The initial estimated width of a column before it is rendered
+    this.bufferHeight = 500; // constant: The number of pixels to render above and below the current viewport
+    this.bufferWidth = 500; // constant: The number of pixels to render to the left and right of the current viewport
+    this.headerRows = 1; // constant: The number of header rows
+    this.headerCols = 0; // constant: The number of header columns
+    this.rowHeights = []; // The height in pixels of each row
+    this.rowVisible = []; // The visibility of each row. 0 = hidden, 1 = visible
+    this.rowCount = 0;
+    this.totalHeight = 0; // The sum of heights of visible cells
+    this.firstRowIdx = 0; // The index of the first rendered row
+    this.firstRowTop = 0; // The distance from the top of the table to the top of the first rendered row
+    this.lastRowIdx = 0; // The index of the row below the last rendered row
+    this.lastRowTop = 0; // The distance from the top of the table to the bottom of the last rendered row (the top of the row below the last rendered row)
+    this.colWidths = []; // The width in pixels of each column
+    this.colVisible = []; // The visibility of each column. 0 = hidden, 1 = visible
+    this.colCount = 0;
+    this.totalWidth = 0; // The sum of widths of visible cells
+    this.firstColIdx = 0; // The index of the first rendered column
+    this.firstColLeft = 0; // The distance from the left of the table to the left of the first rendered column
+    this.lastColIdx = 0; // The index of the column to the right of the last rendered column
+    this.lastColLeft = 0; // The distance from the left of the table to the right of the last rendered column (the left of the column after the last rendered column)
+    this.cellMenuOpened = null;
+    this.cellMenuToClose = null;
+    this.scrollTop = 0;
+    this.scrollLeft = 0;
+    this.offsetHeight = 0;
+    this.offsetWidth = 0;
+    this.scrolled = null;
+    this.scroller = null;
+    this.header = [];
+    this.rows = [];
+    this.scrolledHeight = 0;
+    this.scrolledWidth = 0;
+  }
+  setScrollerElement(scroller, scrolled) {
+    this.scrolled = scrolled;
+    this.scroller = scroller;
+    this.dataChange(null);
+  }
+  //called after render
+  viewportChange() {
+    if (this.scrollTop == this.scroller.scrollTop
+      && this.scrollLeft == this.scroller.scrollLeft
+      && this.offsetHeight == this.scroller.offsetHeight
+      && this.offsetWidth == this.scroller.offsetWidth
+    ) {
+      return;
+    }
+    this.renderData({force: false});
+    // Before this point we invalidate style and layout. After this point we recalculate style and layout, and we do not invalidate them again.
+    if (this.rows.length > 0) {
+      //thead
+      let thead = this.scrolled.firstElementChild.firstElementChild;
+      if (thead){
+        let tr = thead.firstElementChild;
+        let rowRect = tr.firstElementChild.getBoundingClientRect();
+        let oldHeight = this.rowHeights[0];
+        let newHeight = Math.max(oldHeight, rowRect.height);
+        this.rowHeights[0] = newHeight;
+        this.totalHeight += newHeight - oldHeight;
+        this.lastRowTop += newHeight - oldHeight;
+      }
+      let tbody = this.scrolled.firstElementChild.lastElementChild;
+      let tr = tbody.firstElementChild;
+      for (let r = (this.firstRowIdx > 0 ? this.firstRowIdx : 1); r < this.lastRowIdx; r++) {
+        //display happend after model refresh so tr can be null
+        if (this.rowVisible[r] == 0 || tr == null) {
+          continue;
+        }
+        let rowRect = tr.firstElementChild.getBoundingClientRect();
+        let oldHeight = this.rowHeights[r];
+        let newHeight = Math.max(oldHeight, rowRect.height);
+        this.rowHeights[r] = newHeight;
+        this.totalHeight += newHeight - oldHeight;
+        this.lastRowTop += newHeight - oldHeight;
+        tr = tr.nextElementSibling;
+      }
+      let td = tbody.firstElementChild.firstElementChild;
+      for (let c = this.firstColIdx; c < this.lastColIdx; c++) {
+        //display happend after model refresh so td can be null
+        if (this.colVisible[c] == 0 || td == null) {
+          continue;
+        }
+        let colRect = td.getBoundingClientRect();
+        let oldWidth = this.colWidths[c];
+        let newWidth = Math.max(oldWidth, colRect.width);
+        this.colWidths[c] = newWidth;
+        this.totalWidth += newWidth - oldWidth;
+        this.lastColLeft += newWidth - oldWidth;
+        td = td.nextElementSibling;
+      }
+    }
+  }
+
+  editCell(rowid, cellid) {
+    //TODO
+  }
+  renderData({force}) {
+    this.scrollTop = this.scroller.scrollTop;
+    this.scrollLeft = this.scroller.scrollLeft;
+    this.offsetHeight = this.scroller.offsetHeight;
+    this.offsetWidth = this.scroller.offsetWidth;
+
+    if (this.rowCount == 0 || this.colCount == 0) {
+      this.header = [];
+      this.rows = [];
+      this.scrolledHeight = 0;
+      this.scrolledWidth = 0;
+      return;
+    }
+
+    if (!force && this.firstRowTop <= this.scrollTop && (this.lastRowTop >= this.scrollTop + this.offsetHeight || this.lastRowIdx == this.rowCount)
+     && this.firstColLeft <= this.scrollLeft && (this.lastColLeft >= this.scrollLeft + this.offsetWidth || this.lastColIdx == this.colCount)) {
+      return;
+    }
+    console.log("render");
+
+    while (this.firstRowTop < this.scrollTop - this.bufferHeight && this.firstRowIdx < this.rowCount - 1) {
+      this.firstRowTop += this.rowVisible[this.firstRowIdx] * this.rowHeights[this.firstRowIdx];
+      this.firstRowIdx++;
+    }
+    while (this.firstRowTop > this.scrollTop - this.bufferHeight && this.firstRowIdx > 0) {
+      this.firstRowIdx--;
+      this.firstRowTop -= this.rowVisible[this.firstRowIdx] * this.rowHeights[this.firstRowIdx];
+    }
+    while (this.firstColLeft < this.scrollLeft - this.bufferWidth && this.firstColIdx < this.colCount - 1) {
+      this.firstColLeft += this.colVisible[this.firstColIdx] * this.colWidths[this.firstColIdx];
+      this.firstColIdx++;
+    }
+    while (this.firstColLeft > this.scrollLeft - this.bufferWidth && this.firstColIdx > 0) {
+      this.firstColIdx--;
+      this.firstColLeft -= this.colVisible[this.firstColIdx] * this.colWidths[this.firstColIdx];
+    }
+
+    this.lastRowIdx = this.firstRowIdx;
+    this.lastRowTop = this.firstRowTop;
+    while (this.lastRowTop < this.scrollTop + this.offsetHeight + this.bufferHeight && this.lastRowIdx < this.rowCount) {
+      this.lastRowTop += this.rowVisible[this.lastRowIdx] * this.rowHeights[this.lastRowIdx];
+      this.lastRowIdx++;
+    }
+    this.lastColIdx = this.firstColIdx;
+    this.lastColLeft = this.firstColLeft;
+    while (this.lastColLeft < this.scrollLeft + this.offsetWidth + this.bufferWidth && this.lastColIdx < this.colCount) {
+      this.lastColLeft += this.colVisible[this.lastColIdx] * this.colWidths[this.lastColIdx];
+      this.lastColIdx++;
+    }
+    //first calculate header
+    this.header = [];
+    let head = this.data.table[0];
+    for (let c = this.firstColIdx; c < this.lastColIdx; c++) {
+      if (this.colVisible[c] == 0) {
+        continue;
+      }
+      this.header.push(head[c]);
+    }
+    this.rows = [];
+    this.scrolledHeight = this.totalHeight;
+    this.scrolledWidth = this.totalWidth;
+
+    for (let r = (this.firstRowIdx > 0 ? this.firstRowIdx : 1); r < this.lastRowIdx; r++) {
+      if (this.rowVisible[r] == 0) {
+        continue;
+      }
+
+      let row = this.data.table[r];
+      let dataRow = {cells: [], height: 0};
+      for (let c = this.firstColIdx; c < this.lastColIdx; c++) {
+        if (this.colVisible[c] == 0) {
+          continue;
+        }
+        let cell = row[c];
+        let dataCell = {linkable: false, label: "", showMenu: false, links: []};
+
+        //row.height
+        if (typeof cell == "object" && cell != null && cell.attributes && cell.attributes.type) {
+          if (cell.attributes.url) {
+            dataCell.recordId = cell.attributes.url.replace(/.*\//, "");
+          }
+          dataCell.objectTypes = [cell.attributes.type];
+          dataCell.label = cell.attributes.type;
+          dataCell.linkable = true;
+        } else if (typeof cell == "string" && this.isRecordId(cell)) {
+          dataCell.recordId = cell;
+          dataCell.label = cell;
+          dataCell.linkable = true;
+          let {globalDescribe} = this.data.describeInfo.describeGlobal(this.data.isTooling);
+          if (globalDescribe) {
+            let keyPrefix = dataCell.recordId.substring(0, 3);
+            dataCell.objectTypes = globalDescribe.sobjects.filter(sobject => sobject.keyPrefix == keyPrefix).map(sobject => sobject.name);
+          } else {
+            dataCell.objectTypes = [];
+          }
+        } else if (typeof cell == "string" && this.isEventLogFile(cell)) {
+          dataCell.recordId = cell;
+          dataCell.bjectTypes = [];
+          dataCell.label = cell;
+          dataCell.linkable = true;
+        } else if (cell == null) {
+          dataCell.label = "";
+        } else {
+          dataCell.label = cell;
+        }
+        dataCell.id = dataRow.cells.length;
+        dataRow.cells.push(dataCell);
+      }
+      dataRow.id = this.rows.length;
+      this.rows.push(dataRow);
+    }
+    this.didUpdate();
+  }
+
+  dataChange(newData) {
+    this.data = newData;
+    if (this.data == null || this.data.rowVisibilities.length == 0 || this.data.colVisibilities.length == 0) {
+      // First render, or table was cleared
+      this.rowHeights = [];
+      this.rowVisible = [];
+      this.rowCount = 0;
+      this.totalHeight = 0;
+      this.firstRowIdx = 0;
+      this.firstRowTop = 0;
+      this.lastRowIdx = 0;
+      this.lastRowTop = 0;
+      this.colWidths = [];
+      this.colVisible = [];
+      this.colCount = 0;
+      this.totalWidth = 0;
+      this.firstColIdx = 0;
+      this.firstColLeft = 0;
+      this.lastColIdx = 0;
+      this.lastColLeft = 0;
+      this.renderData({force: true});
+    } else {
+      // Data or visibility was changed
+      let newRowCount = this.data.rowVisibilities.length;
+      for (let r = this.rowCount; r < newRowCount; r++) {
+        this.rowHeights[r] = this.initialRowHeight;
+        this.rowVisible[r] = 0;
+      }
+      this.rowCount = newRowCount;
+      for (let r = 0; r < this.rowCount; r++) {
+        let newVisible = Number(this.data.rowVisibilities[r]);
+        let visibilityChange = newVisible - this.rowVisible[r];
+        this.totalHeight += visibilityChange * this.rowHeights[r];
+        if (r < this.firstRowIdx) {
+          this.firstRowTop += visibilityChange * this.rowHeights[r];
+        }
+        this.rowVisible[r] = newVisible;
+      }
+      let newColCount = this.data.colVisibilities.length;
+      for (let c = this.colCount; c < newColCount; c++) {
+        this.colWidths[c] = this.initialColWidth;
+        this.colVisible[c] = 0;
+      }
+      this.colCount = newColCount;
+      for (let c = 0; c < this.colCount; c++) {
+        let newVisible = Number(this.data.colVisibilities[c]);
+        let visibilityChange = newVisible - this.colVisible[c];
+        this.totalWidth += visibilityChange * this.colWidths[c];
+        if (c < this.firstColIdx) {
+          this.firstColLeft += visibilityChange * this.colWidths[c];
+        }
+        this.colVisible[c] = newVisible;
+      }
+      this.renderData({force: true});
+    }
+  }
+  didUpdate(cb) {
+    if (this.reactCallback) {
+      this.reactCallback(cb);
+    }
+  }
+  isRecordId(recordId) {
+    // We assume a string is a Salesforce ID if it is 18 characters,
+    // contains only alphanumeric characters,
+    // the record part (after the 3 character object key prefix and 2 character instance id) starts with at least four zeroes,
+    // and the 3 character object key prefix is not all zeroes.
+    return /^[a-z0-9]{5}0000[a-z0-9]{9}$/i.exec(recordId) && !recordId.startsWith("000");
+  }
+  isEventLogFile(text) {
+    // test the text to identify if this is a path to an eventLogFile
+    return /^\/services\/data\/v[0-9]{2,3}.[0-9]{1}\/sobjects\/EventLogFile\/[a-z0-9]{5}0000[a-z0-9]{9}\/LogFile$/i.exec(text);
+  }
+  toggleMenu(rowId, cellId) {
+    let cell = this.rows[rowId].cells[cellId];
+    cell.showMenu = !cell.showMenu;
+    let self = this;
+    function setLinks(){
+      cell.links = [];
+      let args = new URLSearchParams();
+      args.set("host", self.sfHost);
+      args.set("objectType", cell.objectType);
+      if (self.data.isTooling) {
+        args.set("useToolingApi", "1");
+      }
+      if (cell.recordId) {
+        args.set("recordId", cell.recordId);
+      }
+      cell.links.push({withIcon: true, href: "inspect.html?" + args, label: "Show all data", className: "view-inspector", action: ""});
+
+      let query = "SELECT Id FROM " + cell.objectType + " WHERE Id = '" + cell.recordId + "'";
+      let queryArgs = new URLSearchParams();
+      queryArgs.set("host", self.sfHost);
+      queryArgs.set("query", query);
+      cell.links.push({withIcon: true, href: "data-export.html?" + queryArgs, label: "Query Record", className: "query-record", action: ""});
+
+      if (cell.objectType == "ApexLog") {
+        let queryLogArgs = new URLSearchParams();
+        queryLogArgs.set("host", self.sfHost);
+        queryLogArgs.set("recordId", cell.recordId);
+        cell.links.push({withIcon: true, href: "log.html?" + queryLogArgs, label: "View Log", className: "view-inspector", action: ""});
+      }
+
+      // If the recordId ends with 0000000000AAA it is a dummy ID such as the ID for the master record type 012000000000000AAA
+      if (cell.recordId && self.isRecordId(cell.recordId) && !cell.recordId.endsWith("0000000000AAA")) {
+        cell.links.push({withIcon: true, href: "https://" + self.sfHost + "/" + cell.recordId, label: "View in Salesforce", className: "view-salesforce", action: ""});
+      }
+
+      //Download event logFile
+      if (self.isEventLogFile(cell.recordId)) {
+        cell.links.push({withIcon: true, href: cell.recordId, label: "Download File", className: "download-salesforce", action: "download"});
+      } else {
+        cell.links.push({withIcon: true, href: cell.recordId, label: "Copy Id", className: "copy-id", action: "copy"});
+      }
+      self.didUpdate();
+    }
+    if (cell.showMenu) {
+      this.cellMenuOpened = {cellId, rowId};
+      if (!cell.links || cell.links.length === 0) {
+        if (cell.objectTypes.length === 1){
+          cell.objectType = cell.objectTypes[0];
+          setLinks();
+        } else {
+          sfConn.rest(`/services/data/v${apiVersion}/ui-api/records/${cell.recordId}?layoutTypes=Compact`).then(res => {
+            cell.objectType = res.apiName;
+            setLinks();
+          });
+        }
+      }
+    }
+    // refresh to hide menu
+    this.didUpdate();
+  }
+
+  onClick(){
+    //bubble event so handle it after
+    if (this.cellMenuToClose){
+      //close menu
+      this.toggleMenu(this.cellMenuToClose.rowId, this.cellMenuToClose.cellId);
+    }
+    this.cellMenuToClose = this.cellMenuOpened;
+    this.cellMenuOpened = null;
+  }
+}
+class ScrollTableCell extends React.Component {
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+    this.cell = props.cell;
+    this.width = props.width;
+    this.row = props.row;
+    this.onTryEdit = this.onTryEdit.bind(this);
+    this.onClick = this.onClick.bind(this);
+    this.downloadFile = this.downloadFile.bind(this);
+    this.copyToClipboard = this.copyToClipboard.bind(this);
+  }
+  onTryEdit() {
+    let {model} = this.props;
+    model.editCell(this.row.id, this.cell.id);
+  }
+  componentDidMount() {
+
+  }
+
+  downloadFile(e){
+    sfConn.rest(e.target.href, {responseType: "text/csv"}).then(data => {
+      let downloadLink = document.createElement("a");
+      downloadLink.download = e.target.href.split("/")[6];
+      let BOM = "\uFEFF";
+      downloadLink.href = "data:text/csv;charset=utf-8," + BOM + encodeURI(data);
+      downloadLink.click();
+    });
+  }
+  copyToClipboard(e){
+    e.preventDefault();
+    navigator.clipboard.writeText(e.target.href);
+    this.model.toggleMenu(this.row.id, this.cell.id);
+  }
+  onClick(e) {
+    e.preventDefault();
+    this.model.toggleMenu(this.row.id, this.cell.id);
+  }
+  render() {
+    let {cell, row, width} = this.props;
+    return h("td", {className: "scrolltable-cell", style: {minWidth: width + "px", height: row.height + "px"}},
+      cell.linkable ? h("a", {href: "about:blank", title: "Show all data", onClick: this.onClick}, cell.label) : h("div", {onClick: this.onTryEdit}, cell.label),
+      cell.showMenu ? h("div", {className: "pop-menu"},
+        cell.links.map((l, idx) => {
+          let arr = [];
+          if (l.withIcon) {
+            arr.push(h("div", {className: "icon"}));
+          }
+          arr.push(l.label);
+          let attributes = {href: l.href, target: "_blank", className: l.className, key: "link" + idx};
+          if (l.action == "copy") {
+            attributes.onClick = this.copyToClipboard;
+          } else if (l.action == "download") {
+            attributes.onClick = this.downloadFile;
+          }
+          return h("a", attributes, arr);
+        })) : ""
+    );
+  }
+}
+export class ScrollTable extends React.Component {
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+    this.onScroll = this.onScroll.bind(this);
+  }
+
+  onScroll(){
+    let {model} = this.props;
+    model.viewportChange();
+  }
+  componentDidMount() {
+    let {model} = this.props;
+    let scroller = this.refs.scroller;
+    let scrolled = this.refs.scrolled;
+    model.setScrollerElement(scroller, scrolled);
+  }
+  componentDidUpdate() {
+    //let {model} = this.props;
+    //model.viewportChange();
+  }
+  render() {
+    let {model} = this.props;
+    return h("div", {className: "result-table", onScroll: this.onScroll, ref: "scroller"},
+      h("div", {className: "scrolltable-scrolled", ref: "scrolled", style: {height: model.scrolledHeight + "px", width: model.scrolledWidth + "px"}},
+        h("table", {style: {top: model.firstRowTop + "px", left: model.firstColLeft + "px"}},
+          h("thead", {},
+            h("tr", {},
+              model.header.map((cell, c) => h("td", {key: "head" + c, className: "scrolltable-cell header", style: {minWidth: model.colWidths[c] + "px", height: model.headerHeight + "px"}}, cell))
+            )
+          ),
+          h("tbody", {},
+            model.rows.map((row, r) =>
+              h("tr", {key: "row" + r},
+                row.cells.map((cell, c) => h(ScrollTableCell, {key: "cell" + r + "-" + c, model, cell, row, width: model.colWidths[c]}))
+              ))
+          )
+        )
+      )
+    );
+  }
 }

@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
+import {Enumerable, DescribeInfo, copyToClipboard, ScrollTable, TableModel, s} from "./data-load.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -67,6 +67,8 @@ class QueryHistory {
 class Model {
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
+    this.tableModel = new TableModel(sfHost, this.didUpdate.bind(this));
+    this.resultTableCallback = (d) => this.tableModel.dataChange(d);
     this.queryInput = null;
     this.initialQuery = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
@@ -1682,6 +1684,13 @@ class App extends React.Component {
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
+    this.onClick = this.onClick.bind(this);
+  }
+  onClick(){
+    let {model} = this.props;
+    if (model && model.tableModel) {
+      model.tableModel.onClick();
+    }
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1867,9 +1876,6 @@ class App extends React.Component {
       }
     });
 
-    this.scrollTable = initScrollTable(this.refs.scroller);
-    model.resultTableCallback = this.scrollTable.dataChange;
-
     let recalculateHeight = this.recalculateSize.bind(this);
     if (!window.webkitURL) {
       // Firefox
@@ -1894,13 +1900,14 @@ class App extends React.Component {
     this.recalculateSize();
   }
   recalculateSize() {
+    let {model} = this.props;
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
-    this.scrollTable.viewportChange();
+    model.tableModel.viewportChange();
   }
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
-    return h("div", {},
+    return h("div", {onClick: this.onClick},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},
           h("svg", {viewBox: "0 0 24 24"},
@@ -2013,9 +2020,7 @@ class App extends React.Component {
           ),
         ),
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
-        h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null}
-          /* the scroll table goes here */
-        )
+        h(ScrollTable, {model: model.tableModel, hidden: model.exportError != null})
       )
     );
   }

@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable, DescribeInfo, initScrollTable} from "./data-load.js";
+import {Enumerable, DescribeInfo, ScrollTable, TableModel} from "./data-load.js";
 
 class ScriptHistory {
   constructor(storageKey, max) {
@@ -67,6 +67,8 @@ class ScriptHistory {
 class Model {
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
+    this.tableModel = new TableModel(sfHost, this.didUpdate.bind(this));
+    this.resultTableCallback = (d) => this.tableModel.dataChange(d);
     this.scriptInput = null;
     this.initialScript = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
@@ -927,6 +929,13 @@ class App extends React.Component {
     this.onSetscriptName = this.onSetscriptName.bind(this);
     this.onSetClientId = this.onSetClientId.bind(this);
     this.onStopExecute = this.onStopExecute.bind(this);
+    this.onClick = this.onClick.bind(this);
+  }
+  onClick(){
+    let {model} = this.props;
+    if (model && model.tableModel) {
+      model.tableModel.onClick();
+    }
   }
   onSelectHistoryEntry(e) {
     let {model} = this.props;
@@ -1076,10 +1085,6 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
-    //TODO create a component dedicated without dom but react for table of result
-    // move data to state
-    this.scrollTable = initScrollTable(this.refs.scroller);
-    model.resultTableCallback = this.scrollTable.dataChange;
 
     let recalculateHeight = this.recalculateSize.bind(this);
     if (!window.webkitURL) {
@@ -1109,12 +1114,13 @@ class App extends React.Component {
     model.disableLogs();
   }
   recalculateSize() {
+    let {model} = this.props;
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
-    this.scrollTable.viewportChange();
+    model.tableModel.viewportChange();
   }
   render() {
     let {model} = this.props;
-    return h("div", {},
+    return h("div", {onClick: this.onClick},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},
           h("svg", {viewBox: "0 0 24 24"},
@@ -1205,9 +1211,7 @@ class App extends React.Component {
           )
         ),
         h("textarea", {id: "result-text", readOnly: true, value: model.executeError || "", hidden: model.executeError == null}),
-        h("div", {id: "result-table", ref: "scroller", hidden: model.executeError != null}
-          /* the scroll table goes here */
-        )
+        h(ScrollTable, {model: model.tableModel, hidden: model.executeError != null})
       )
     );
   }

@@ -143,7 +143,7 @@ body {
   margin-top: 10px;
   margin-bottom: 5px;
 }
-#result-table {
+.result-table {
   margin-top: 3px;
   overflow: auto;
   flex-basis: 0;
@@ -514,7 +514,7 @@ button.contract .button-toggle-icon {
   padding: 0;
   height: 40%;
 }
-#result-table {
+.result-table {
   overflow: auto;
   background-color: #fff;
   margin: 0;

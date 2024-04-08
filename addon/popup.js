@@ -1255,6 +1255,20 @@ class UserDetails extends React.PureComponent {
     this.sfHost = props.sfHost;
     this.enableDebugLog = this.enableDebugLog.bind(this);
   }
+  
+  openUrlInIncognito(targetUrl) {
+    chrome.extension.isAllowedIncognitoAccess((isAllowedAccess) => {
+      if (!isAllowedAccess) {
+        alert("Incognito access is not allowed. Please enable it in the extension settings.");
+        return;
+      }
+      chrome.windows.create({
+        url: targetUrl,
+        type: "normal",
+        incognito: true
+      });
+    });
+  }
 
   async enableDebugLog() {
 
@@ -1376,17 +1390,7 @@ class UserDetails extends React.PureComponent {
 
   loginAsInIncognito(userId) {
     const targetUrl = "https://" + this.sfHost + "/secur/frontdoor.jsp?sid=" + sfConn.sessionId + "&retURL=" + encodeURIComponent(this.getLoginAsLink(userId));
-    chrome.extension.isAllowedIncognitoAccess((isAllowedAccess) => {
-      if (!isAllowedAccess) {
-        alert("Incognito access is not allowed. Please enable it in the extension settings.");
-        return;
-      }
-      chrome.windows.create({
-        url: targetUrl,
-        type: "normal",
-        incognito: true
-      });
-    });
+    this.openUrlInIncognito(targetUrl);
   }
 
   getLoginAsPortalLink(user){

@@ -9,8 +9,6 @@ class Model {
   constructor(sfHost, args) {
     this.sfHost = sfHost;
     this.importData = undefined;
-    this.tableModel = new TableModel(sfHost, this.didUpdate.bind(this));
-    this.resultTableCallback = (d) => this.tableModel.dataChange(d);
     this.consecutiveFailures = 0;
 
     this.allApis = [
@@ -61,6 +59,8 @@ class Model {
     }
     this.importTableResult = null;
     this.updateResult(null);
+    this.tableModel = new TableModel(sfHost, this.didUpdate.bind(this));
+    this.resultTableCallback = (d) => this.tableModel.dataChange(d);
 
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { this.refreshColumn(); });
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {

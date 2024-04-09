@@ -78,8 +78,10 @@ class Model {
     return table.map(row => row.map(text => "\"" + ("" + (text == null ? "" : text)).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n");
   }
   async downloadDataModel() {
+    this.progress = "working";
     let query = "SELECT QualifiedApiName FROM EntityDefinition ORDER BY QualifiedApiName";
     let result = {rows: []};
+    this.didUpdate();
     await this.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(query), {}), result)
       .catch(error => {
         self.logError(error);
@@ -104,6 +106,8 @@ class Model {
     rt.addToTable(fieldsFesult.rows);
     downloadLink.href = "data:text/csv;charset=utf-8," + BOM + encodeURI(this.csvSerialize(rt.table, separator));
     downloadLink.click();
+    this.progress = "done";
+    this.didUpdate();
   }
 
   filterMetadata(searchKeyword) {
@@ -378,16 +382,18 @@ class App extends React.Component {
           ),
           h("span", {className: "progress progress-" + model.progress},
             model.progress == "ready" ? "Ready"
-            : model.progress == "working" ? "Downloading metadata..."
+            : model.progress == "working" ? "Downloading..."
             : model.progress == "done" ? "Finished"
             : "Error!"
-          ),
-          model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
-          model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null,
-          h("span", {className: "flex"}),
-          h("button", {onClick: this.onClickDataModel}, "Download Data Model")
+          )
         ),
         h("div", {className: "body", hidden: !model.metadataObjects},
+          h("h1", {}, "Data Model"),
+          h("button", {onClick: this.onClickDataModel, disabled: (model.progress == "working")}, "Download Data Model"),
+          h("h1", {}, "Metadata"),
+          model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
+          model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null,
+          h("div", {className: "flex"}),
           h("label", {htmlFor: "search-text"}, "Search"),
           h("input", {id: "searchText", name: "searchText", ref: "searchText", placeholder: "Filter metadata", type: "search", value: model.searchValue, onInput: this.onSearchInput}),
           h("label", {},
@@ -395,7 +401,7 @@ class App extends React.Component {
             "Select all"
           ),
           h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
-          h("button", {onClick: this.onStartClick}, "Create metadata package"),
+          h("button", {onClick: this.onStartClick, disabled: (model.progress == "working")}, "Create metadata package"),
           h("label", {},
             h("input", {type: "checkbox", checked: model.downloadAuto, onChange: this.onDownloadAutoChange}),
             "Download package when ready"

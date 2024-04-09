@@ -1,5 +1,5 @@
 export let apiVersion = localStorage.getItem("apiVersion") == null ? "60.0" : localStorage.getItem("apiVersion");
-export let sessionError = "";
+export let sessionError;
 export let sfConn = {
 
   async getSession(sfHost) {
@@ -100,8 +100,11 @@ export let sfConn = {
       throw err;
     } else if (xhr.status == 401) {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
-      sessionError = error;
-      showInvalidTokenBanner();
+      //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
+      if (localStorage.getItem(this.instanceHostname + "_access_token")){
+        sessionError = error;
+        showInvalidTokenBanner();
+      }
       let err = new Error();
       err.name = "Unauthorized";
       err.message = error;

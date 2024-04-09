@@ -170,9 +170,11 @@ class Model {
 
       try {
         let metadataObjects = this.metadataObjects;
-        this.metadataObjects = null;
-        this.filteredMetadataObjects = null;
+        //this.metadataObjects = null;
+        //this.filteredMetadataObjects = null;
         this.progress = "working";
+        this.downloadLink = null;
+        this.statusLink = null;
         this.didUpdate();
 
         let metadataApi = sfConn.wsdl(apiVersion, "Metadata");
@@ -387,33 +389,35 @@ class App extends React.Component {
             : "Error!"
           )
         ),
-        h("div", {className: "body", hidden: !model.metadataObjects},
+        h("div", {className: "body"},
           h("h1", {}, "Data Model"),
           h("button", {onClick: this.onClickDataModel, disabled: (model.progress == "working")}, "Download Data Model"),
           h("h1", {}, "Metadata"),
-          model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
-          model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null,
-          h("div", {className: "flex"}),
-          h("label", {htmlFor: "search-text"}, "Search"),
-          h("input", {id: "searchText", name: "searchText", ref: "searchText", placeholder: "Filter metadata", type: "search", value: model.searchValue, onInput: this.onSearchInput}),
-          h("label", {},
-            h("input", {type: "checkbox", ref: "selectref", checked: selectAllChecked, onChange: this.onSelectAllChange}),
-            "Select all"
-          ),
-          h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
-          h("button", {onClick: this.onStartClick, disabled: (model.progress == "working")}, "Create metadata package"),
-          h("label", {},
-            h("input", {type: "checkbox", checked: model.downloadAuto, onChange: this.onDownloadAutoChange}),
-            "Download package when ready"
-          ),
-          h("br", {}),
-          model.metadataObjects
-            ? h("div", {},
-              h("div", {className: "slds-grid slds-wrap"},
-                model.filteredMetadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model}))
+          h("div", {hidden: !model.metadataObjects},
+            model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
+            model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null,
+            h("div", {className: "flex"}),
+            h("label", {htmlFor: "search-text"}, "Search"),
+            h("input", {id: "searchText", name: "searchText", ref: "searchText", placeholder: "Filter metadata", type: "search", value: model.searchValue, onInput: this.onSearchInput}),
+            h("label", {},
+              h("input", {type: "checkbox", ref: "selectref", checked: selectAllChecked, onChange: this.onSelectAllChange}),
+              "Select all"
+            ),
+            h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
+            h("button", {onClick: this.onStartClick, disabled: (model.progress == "working")}, "Create metadata package"),
+            h("label", {},
+              h("input", {type: "checkbox", checked: model.downloadAuto, onChange: this.onDownloadAutoChange}),
+              "Download package when ready"
+            ),
+            h("br", {}),
+            model.metadataObjects
+              ? h("div", {},
+                h("div", {className: "slds-grid slds-wrap"},
+                  model.filteredMetadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model}))
+                )
               )
-            )
-            : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
+              : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
+          )
         )
       )
     );

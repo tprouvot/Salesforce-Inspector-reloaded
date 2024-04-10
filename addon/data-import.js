@@ -59,8 +59,6 @@ class Model {
     }
     this.importTableResult = null;
     this.updateResult(null);
-    this.tableModel = new TableModel(sfHost, this.didUpdate.bind(this));
-    this.resultTableCallback = (d) => this.tableModel.dataChange(d);
 
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { this.refreshColumn(); });
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
@@ -80,6 +78,8 @@ class Model {
       this.skipAllUnknownFields();
       console.log(this.importData);
     }
+    this.tableModel = new TableModel(sfHost, this.didUpdate.bind(this));
+    this.resultTableCallback = (d) => this.tableModel.dataChange(d);
   }
 
   // set available actions based on api type, and set the first one as the default

@@ -42,6 +42,16 @@ class Model {
       //change background color for production
       document.body.classList.add("prod");
     }
+    this.closeMenu = null;
+    this.closeMenuHandler = null;
+  }
+  onClick(){
+    //bubble event so handle it after
+    if (this.closeMenu){
+      this.closeMenu();
+    }
+    this.closeMenu = this.closeMenuHandler;
+    this.closeMenuHandler = null;
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -262,6 +272,12 @@ class Model {
           .then(setupLinks => this.objectSetupLinks = setupLinks)
       );
     }
+    if (this.objectActionsOpen){
+      this.closeMenuHandler = () => {
+        this.objectActionsOpen = false;
+      };
+    }
+
   }
   setRecordData(recordDataPromise) {
     this.spinFor("retrieving record", recordDataPromise.then(res => {
@@ -459,6 +475,10 @@ class RowList {
       }
     }
     this.availableColumns = Array.from(cols);
+    let self = this;
+    this.model.closeMenuHandler = () => {
+      self.availableColumns = null;
+    };
   }
   showColumn(col, filterValue) {
     let value = filterValue == null ? "" : "" + filterValue;
@@ -714,6 +734,12 @@ class FieldRow extends TableRow {
           .then(setupLinks => this.fieldSetupLinks = setupLinks)
       );
     }
+    let self = this;
+    if (this.fieldActionsOpen){
+      this.rowList.model.closeMenuHandler = () => {
+        self.fieldActionsOpen = false;
+      };
+    }
   }
   showFieldMetadata() {
     this.rowList.model.showDetailsBox(this.fieldName, this.rowProperties(), this.rowList);
@@ -804,6 +830,10 @@ class FieldRow extends TableRow {
     links.push({href: this.idLink(), text: "View in Salesforce"});
     links.push({href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
     this.recordIdPop = links;
+    let self = this;
+    this.rowList.model.closeMenuHandler = () => {
+      self.recordIdPop = null;
+    };
   }
   showReferenceUrl(type) {
     let args = new URLSearchParams();
@@ -921,6 +951,12 @@ class ChildRow extends TableRow {
           .then(setupLinks => this.childSetupLinks = setupLinks)
       );
     }
+    let self = this;
+    if (this.childActionsOpen){
+      this.rowList.model.closeMenuHandler = () => {
+        self.childActionsOpen = false;
+      };
+    }
   }
   showChildMetadata() {
     this.rowList.model.showDetailsBox(this.childName, this.rowProperties(), this.rowList);
@@ -976,6 +1012,12 @@ class App extends React.Component {
     this.onDoSave = this.onDoSave.bind(this);
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onUpdateTableBorderSettings = this.onUpdateTableBorderSettings.bind(this);
+    this.onClick = this.onClick.bind(this);
+  }
+  onClick(){
+    let {model} = this.props;
+    model.onClick();
+    model.didUpdate();
   }
   componentDidMount() {
     this.refs.rowsFilter.focus();
@@ -1067,7 +1109,7 @@ class App extends React.Component {
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
     let linkTarget = linkInNewTab ? "_blank" : "_top";
     return (
-      h("div", {},
+      h("div", {onClick: this.onClick},
         h("div", {className: "object-bar"},
           h("div", {className: "flex-right"},
             h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_large", hidden: model.spinnerCount == 0},
@@ -1279,6 +1321,12 @@ class RowTable extends React.Component {
     };
     this.tableSettingsOpen = !this.tableSettingsOpen;
     this.props.model.didUpdate();
+    let self = this;
+    if (this.tableSettingsOpen){
+      this.props.model.closeMenuHandler = () => {
+        self.tableSettingsOpen = false;
+      };
+    }
   }
   onClickTableBorderSettings() {
     this.setState({
@@ -1286,6 +1334,7 @@ class RowTable extends React.Component {
     });
     this.props.onUpdateTableBorderSettings();
     this.tableSettingsOpen = false;
+    this.props.model.didUpdate();
   }
   render() {
     let {rowList, actionsColumn, classNameForRow} = this.props;

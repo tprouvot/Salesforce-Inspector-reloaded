@@ -308,13 +308,13 @@ export class TableModel {
   doSave(rowId) {
     let row = this.rows[rowId];
     let record = {};
-    row.cells.filter(c => c.dataEditValue).forEach(c => {
+    row.cells.filter(c => c.dataEditValue !== undefined).forEach(c => {
       record[this.header[c.id]] = c.dataEditValue;
     });
     let recordId = "";
     let objectType = "";
     row.cells.filter(c => this.header[c.id] == "Id").forEach(h => {
-      recordId = h.label;
+      recordId = h.label == "" ? null : h.label;
       objectType = h.objectTypes[0];
     });
     let recordUrl = `/services/data/v${apiVersion}/sobjects/${objectType}/${recordId}`;
@@ -329,9 +329,9 @@ export class TableModel {
     });
   }
   endEdit(rowId) {
-    this.rows[rowId].cells.filter(c => c.dataEditValue).forEach(c => {
+    this.rows[rowId].cells.filter(c => c.dataEditValue !== undefined).forEach(c => {
       c.label = c.dataEditValue;
-      c.dataEditValue = null;
+      c.dataEditValue = undefined;
       c.isEditing = false;
     });
     this.didUpdate();

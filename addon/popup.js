@@ -1833,7 +1833,10 @@ class AllDataSearch extends React.PureComponent {
     this.setState({queryString: val});
   }
   onAllDataFocus() {
-    this.refs.autoComplete.handleFocus();
+    //show recently viewed records only on Object tab
+    if (this.props.sobjectsList){
+      this.refs.autoComplete.handleFocus();
+    }
   }
   onAllDataBlur() {
     this.refs.autoComplete.handleBlur();

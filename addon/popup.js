@@ -1255,7 +1255,7 @@ class UserDetails extends React.PureComponent {
     this.sfHost = props.sfHost;
     this.enableDebugLog = this.enableDebugLog.bind(this);
   }
-  
+
   openUrlInIncognito(targetUrl) {
     chrome.extension.isAllowedIncognitoAccess((isAllowedAccess) => {
       if (!isAllowedAccess) {
@@ -1489,12 +1489,14 @@ class UserDetails extends React.PureComponent {
           h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs")
         ),
         h("div", {ref: "userButtons", className: "user-buttons center small-font top-space"},
-          this.doSupportLoginAs(user) ? h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Login as") : null,
-          this.doSupportLoginAs(user) ? h("a", {onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Login as (Incognito)") : null,
-        ),
-        h("div", {ref: "userButtons", className: "user-buttons center small-font top-space"},
-          this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "Login to Experience") : null,
-          this.canLoginAsPortal(user) ? h("a", {onClick: () => this.loginAsPortalInIncognito(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Login to Experience (Incognito)") : null,
+          this.doSupportLoginAs(user) ? h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs") : null,
+          this.doSupportLoginAs(user) ? h("a", {onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, title: "LoginAs (Incognito)"}, h("svg", {className: "slds-icon_x-small slds-icon-text-default", viewBox: "0 0 52 52"},
+            h("use", {xlinkHref: "symbols.svg#privately_shared", style: {fill: "#9c9c9c"}})
+          )) : null,
+          this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs Portal") : null,
+          this.canLoginAsPortal(user) ? h("a", {onClick: () => this.loginAsPortalInIncognito(user.Id), target: linkTarget, title: "LoginAs Portal (Incognito)"}, h("svg", {className: "slds-icon_x-small slds-icon-text-default", viewBox: "0 0 52 52"},
+            h("use", {xlinkHref: "symbols.svg#privately_shared", style: {fill: "#9c9c9c"}})
+          )) : null
         )
       )
     );

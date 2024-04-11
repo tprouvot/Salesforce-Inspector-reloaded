@@ -902,6 +902,9 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
+    this.setupThemeChange();
+    this.setupAccentOption();
+    this.setupColorListeners();
     this.onApiTypeChange = this.onApiTypeChange.bind(this);
     this.onImportActionChange = this.onImportActionChange.bind(this);
     this.onImportTypeChange = this.onImportTypeChange.bind(this);
@@ -920,6 +923,7 @@ class App extends React.Component {
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
+    this.setupColorListeners = this.setupColorListeners.bind(this);
     this.unloadListener = null;
   }
   onApiTypeChange(e) {
@@ -1080,6 +1084,70 @@ class App extends React.Component {
       removeEventListener("beforeunload", this.unloadListener);
     }
   }
+
+  saveColorChanges(value, category) {
+    const html = document.documentElement;
+    html.dataset[category] = value;
+    const storage = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
+    localStorage.setItem(storage, value);
+
+    const popup = document.querySelector("#insext > iframe");
+    popup.contentWindow.postMessage({category, value}, "*");
+  }
+
+  setupColorListeners() {
+    const html = document.documentElement;
+    const popup = document.querySelector("#insext > iframe");
+    const changeColor = (value, category) => {
+        const htmlValue = html.dataset[category];
+        if (value != htmlValue) { // avoid recursion
+            this.saveColorChanges(value, category);
+        }
+    };
+
+    // listen to possible updates from popup
+    window.addEventListener("message", e => {
+      if (e.source != popup.contentWindow) {
+        return;
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        const value = e.data.value;
+        changeColor(value, category);
+      }
+    });
+
+    // listen to changes on other pages of the inspector
+    window.addEventListener("storage", e => {
+        if (!e.isTrusted || (e.key !== "preferredColorScheme" && e.key !== "preferredAccentScheme")) {
+            return;
+        }
+        const category = e.key === "preferredColorScheme" ? "theme" : "accent";
+        const value = e.newValue;
+        changeColor(value, category);
+    });
+  }
+
+  setupThemeChange() {
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    function getTheme(mediaQuery) {
+      return mediaQuery.matches ? "dark" : "light";
+    }
+    // listen for changes to color scheme preference
+    prefersDarkScheme.addEventListener("change", mediaQuery => {
+      const theme = getTheme(mediaQuery);
+      this.saveColorChanges(theme, "theme");
+    });
+
+    const savedTheme = localStorage.getItem("preferredColorScheme") || getTheme(prefersDarkScheme);
+    this.saveColorChanges(savedTheme, "theme");
+  }
+
+  setupAccentOption(accentIn = null) {
+    const accent = accentIn || localStorage.getItem("preferredAccentScheme") || "default";
+    this.saveColorChanges(accent, "accent");
+  }
+
   render() {
     let {model} = this.props;
     //console.log(model);
@@ -1139,7 +1207,18 @@ class App extends React.Component {
                 )
               ),
               h("a", {className: "button field-info", href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the selected object"},
-                h("div", {className: "button-icon"}),
+                h("div", {className: "button-icon"},
+                  h("svg", {className: "slds-icon", viewBox: "0 0 24 24"},
+                    h("path", {
+                      d: `
+                      M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
+                      m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
+                      M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
+                      m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
+                      M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
+                      `})
+                  )
+                )
               )
             ),
             h("div", {className: "conf-line radio-buttons"},

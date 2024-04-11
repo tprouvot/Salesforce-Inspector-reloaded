@@ -33,7 +33,7 @@
 }
 .insext-unchecked {
 	text-decoration: line-through;
-	color: gray;
+	color: var(--inspector-neutral);
 }
 .insext-formula {
 	text-align: left;

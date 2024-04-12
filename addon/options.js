@@ -82,6 +82,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
+          {option: Option, props: {type: "toggle", title: "Use custom favicon for Salesforce", key: "useCustomFavicon"}},
           {option: Option, props: {type: "text", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", placeholder: "Available values : green, orange, pink, purple, red, yellow"}}
         ]
       },

@@ -2,6 +2,7 @@
 /* global showStdPageDetails */
 "use strict";
 
+
 // sfdcBody = normal Salesforce page
 // ApexCSIPage = Developer Console
 // auraLoadingBox = Lightning / Salesforce1
@@ -28,7 +29,6 @@ function initButton(sfHost, inInspector) {
   document.body.appendChild(rootEl);
 
   addFlowScrollability();
-
 
   function addFlowScrollability(popupEl) {
     const currentUrl = window.location.href;
@@ -99,6 +99,25 @@ function initButton(sfHost, inInspector) {
     buttonElement.appendChild(img);
   }
 
+  function setFavicon(){
+    let fav = iFrameLocalStorage.customFavicon;
+    if (fav){
+      let sfRel = "apple-touch-icon";
+      let link = document.querySelector("link[rel~='" + sfRel + "']");
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = sfRel;
+        document.head.appendChild(link);
+      }
+      //check if custom favicon from the extension or web
+      if (fav.indexOf("http") == -1){
+        fav = "./images/favicons/" + fav + ".png";
+      }
+      //link.href = fav;
+      link.href = "https://github.com/fluidicon.png";
+    }
+  }
+
   function loadPopup() {
     btn.addEventListener("click", () => {
       if (!rootEl.classList.contains("insext-active")) {
@@ -136,6 +155,7 @@ function initButton(sfHost, inInspector) {
         }
         setRootCSSProperties(rootEl, btn);
         addFlowScrollability(popupEl);
+        setFavicon(sfHost);
         popupEl.contentWindow.postMessage({
           insextInitResponse: true,
           sfHost,
@@ -227,5 +247,4 @@ function initButton(sfHost, inInspector) {
       }
     }
   }
-
 }

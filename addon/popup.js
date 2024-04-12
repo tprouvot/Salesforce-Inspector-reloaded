@@ -11,7 +11,9 @@ let h = React.createElement;
     iFrameLocalStorage: {
       popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
       popupArrowPosition: JSON.parse(localStorage.getItem("popupArrowPosition")),
-      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder"))
+      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder")),
+      customFavicon: "orange",
+      useCustomFavicon: JSON.parse(localStorage.getItem("useCustomFavicon"))
     }
   }, "*");
   addEventListener("message", function initResponseHandler(e) {

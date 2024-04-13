@@ -323,8 +323,8 @@ class Model {
       {value: "if", title: "if", suffix: " {}", rank: 2, autocompleteType: "snippet", dataType: ""},
       {value: "else", title: "else", suffix: " {}", rank: 2, autocompleteType: "snippet", dataType: ""},
       {value: "Database.executeBatch(", title: "Database.executeBatch();", suffix: "new batchable(), 200);", rank: 2, autocompleteType: "snippet", dataType: ""},
-      {value: "System.enqueueJob(", title: "System.enqueueJob()", suffix: "new job());", rank: 2, autocompleteType: "snippet", dataType: ""},
-      {value: "System.debug(", title: "System.enqueueJob()", suffix: "new job());", rank: 2, autocompleteType: "snippet", dataType: ""}
+      {value: "System.enqueueJob(", title: "System.enqueueJob();", suffix: "new job());", rank: 2, autocompleteType: "snippet", dataType: ""},
+      {value: "System.debug(", title: "System.debug();", suffix: ");", rank: 2, autocompleteType: "snippet", dataType: ""}
     ];
     let {globalDescribe, globalStatus} = vm.describeInfo.describeGlobal(false);
     //isue duplicate namespace because need group by

@@ -428,7 +428,7 @@ export class TableModel {
       }
 
       let row = this.data.table[r];
-      let dataRow = {cells: [], height: 0};
+      let dataRow = {cells: []};
       for (let c = this.firstColIdx; c < this.lastColIdx; c++) {
         if (this.colVisible[c] == 0) {
           continue;
@@ -622,7 +622,7 @@ class ScrollTableCell extends React.Component {
     super(props);
     this.model = props.model;
     this.cell = props.cell;
-    this.width = props.width;
+    this.colWidth = props.colWidth;
     this.row = props.row;
     this.onTryEdit = this.onTryEdit.bind(this);
     this.onClick = this.onClick.bind(this);
@@ -670,13 +670,13 @@ class ScrollTableCell extends React.Component {
     model.cancelEditCell(this.row.id, this.cell.id);
   }
   render() {
-    let {cell, row, width} = this.props;
+    let {cell, rowHeight, colWidth} = this.props;
     if (cell.isEditing){
-      return h("td", {className: "scrolltable-cell", style: {minWidth: width + "px", height: row.height + "px"}},
+      return h("td", {className: "scrolltable-cell", style: {minWidth: colWidth + "px", height: rowHeight + "px"}},
         h("textarea", {value: cell.dataEditValue, onChange: this.onDataEditValueInput}),
         h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6"));
     } else {
-      return h("td", {className: "scrolltable-cell", style: {minWidth: width + "px", height: row.height + "px"}},
+      return h("td", {className: "scrolltable-cell", style: {minWidth: colWidth + "px", height: rowHeight + "px"}},
         cell.linkable ? h("a", {href: "about:blank", title: "Show all data", onClick: this.onClick, onDoubleClick: this.onTryEdit}, cell.label) : h("div", {onDoubleClick: this.onTryEdit}, cell.label),
         cell.showMenu ? h("div", {className: "pop-menu"},
           cell.links.map((l, idx) => {
@@ -709,9 +709,9 @@ export class ScrollTableRow extends React.Component {
     model.doSave(this.row.id);
   }
   render() {
-    let {model, row} = this.props;
+    let {model, row, rowHeight} = this.props;
     return h("tr", {},
-      row.cells.map((cell, c) => h(ScrollTableCell, {key: "cell" + c, model, cell, row, width: model.colWidths[c]})),
+      row.cells.map((cell, c) => h(ScrollTableCell, {key: "cell" + c, model, cell, rowHeight, colWidth: model.colWidths[model.firstColIdx + c]})),
       row.cells.some(c => c.isEditing) ? h("td", {}, h("button", {
         name: "saveBtn",
         key: "saveBtn" + row.id,
@@ -745,17 +745,18 @@ export class ScrollTable extends React.Component {
   }
   render() {
     let {model} = this.props;
+    let firstRowIdx = model.firstRowIdx > 0 ? model.firstRowIdx : 1;
     return h("div", {className: "result-table", onScroll: this.onScroll, ref: "scroller"},
       h("div", {className: "scrolltable-scrolled", ref: "scrolled", style: {height: model.scrolledHeight + "px", width: model.scrolledWidth + "px"}},
         h("table", {style: {top: model.firstRowTop + "px", left: model.firstColLeft + "px"}},
           h("thead", {},
             h("tr", {},
-              model.header.map((cell, c) => h("td", {key: "head" + c, className: "scrolltable-cell header", style: {minWidth: model.colWidths[c] + "px", height: model.headerHeight + "px"}}, cell))
+              model.header.map((cell, c) => h("td", {key: "head" + c, className: "scrolltable-cell header", style: {minWidth: model.colWidths[model.firstColIdx + c] + "px", height: model.headerHeight + "px"}}, cell))
             )
           ),
           h("tbody", {},
             model.rows.map((row, r) =>
-              h(ScrollTableRow, {key: "row" + r, model, row, rowId: r})
+              h(ScrollTableRow, {key: "row" + r, model, row, rowHeight: model.rowHeights[firstRowIdx + r], rowId: r})
             )
           )
         )

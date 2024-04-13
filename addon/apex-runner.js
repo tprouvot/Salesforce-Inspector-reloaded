@@ -839,7 +839,7 @@ class Model {
         advice = arsp.advice;
       }
       if (response.find(rsp => rsp != null && rsp.data != null && rsp.channel == "/systemTopic/Logging")) {
-        let queryLogs = "SELECT Id, Application, Status, Operation, StartTime, LogLength, LogUserId, LogUser.Name FROM ApexLog ORDER BY StartTime DESC";
+        let queryLogs = "SELECT Id, Application, Status, Operation, StartTime, LogLength, LogUser.Name FROM ApexLog ORDER BY StartTime DESC";
         //logs.resetTable();
         logs = new RecordTable();
         logs.describeInfo = vm.describeInfo;
@@ -871,6 +871,17 @@ function RecordTable() {
   */
   let columnIdx = new Map();
   let header = ["_"];
+  function makeReadableSize(size) {
+    let isize = parseInt(size);
+    if (isNaN(isize)){
+      return size + " kb";
+    } else if (isize > 1000000) {
+      return (isize / 1000000).toFixed(2) + " Mb";
+    } else if (isize > 1000) {
+      return (isize / 1000).toFixed(2) + " kb";
+    }
+    return isize + " b";
+  }
   function discoverColumns(record, prefix, row) {
     for (let field in record) {
       if (field == "attributes") {
@@ -886,10 +897,25 @@ function RecordTable() {
         for (let row of rt.table) {
           row.push(undefined);
         }
-        header[c] = column;
-        rt.colVisibilities.push(true);
+        //TODO move it elswhere is complicated but dirty to put it here so find better solution !
+        if (column == "StartTime") {
+          header[c] = "Start time";
+        } else if (column == "LogLength") {
+          header[c] = "Length";
+        } else if (column == "LogUser.Name") {
+          header[c] = "User";
+        } else {
+          header[c] = column;
+        }
+
+        //skip LogUser collumn for logs
+        rt.colVisibilities.push(column != "LogUser");
       }
-      row[c] = record[field];
+      if (column == "LogLength") {
+        row[c] = makeReadableSize(record[field]);
+      } else {
+        row[c] = record[field];
+      }
       if (typeof record[field] == "object" && record[field] != null) {
         discoverColumns(record[field], column + ".", row);
       }

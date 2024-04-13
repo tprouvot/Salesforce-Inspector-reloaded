@@ -875,10 +875,10 @@ function RecordTable() {
     let isize = parseInt(size);
     if (isNaN(isize)){
       return size + " kb";
-    } else if (isize > 1000000) {
-      return (isize / 1000000).toFixed(2) + " Mb";
-    } else if (isize > 1000) {
-      return (isize / 1000).toFixed(2) + " kb";
+    } else if (isize > 1048576) {
+      return (isize / 1048576).toFixed(2) + " Mb";
+    } else if (isize > 1024) {
+      return (isize / 1024).toFixed(2) + " kb";
     }
     return isize + " b";
   }

@@ -1431,7 +1431,8 @@ class Model {
           vm.didUpdate();
           return pr;
         }
-        vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
+        //save query with comments
+        vm.queryHistory.add({query: vm.queryInput.value, useToolingApi: exportedData.isTooling});
         if (recs == 0) {
           vm.isWorking = false;
           vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");

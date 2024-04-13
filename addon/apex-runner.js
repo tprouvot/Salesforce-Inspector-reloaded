@@ -988,7 +988,7 @@ class App extends React.Component {
   }
   onClearSavedHistory(e) {
     e.preventDefault();
-    let r = confirm("Are you sure you want to remove all saved queries?");
+    let r = confirm("Are you sure you want to remove all saved scripts?");
     let {model} = this.props;
     if (r == true) {
       model.clearSavedHistory();
@@ -1160,11 +1160,11 @@ class App extends React.Component {
             ),
             h("div", {className: "pop-menu saveOptions", hidden: !model.expandSavedOptions},
               h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove script from saved history"}, "Remove Saved Script"),
-              h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+              h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Scripts")
             ),
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "script-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
+                h("option", {value: JSON.stringify(null), disabled: true}, "Saved Scripts"),
                 model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.script.substring(0, 300)))
               ),
               h("input", {placeholder: "Script Label", type: "save", value: model.scriptName, onInput: this.onSetscriptName}),

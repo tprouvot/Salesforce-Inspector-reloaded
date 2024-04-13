@@ -651,8 +651,9 @@ class Model {
           vm.logs = null;
           vm.updatedLogs();
           return;
+        } else {
+          vm.scriptHistory.add({script});
         }
-
       }));
   }
   stopExecute() {

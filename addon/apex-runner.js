@@ -370,7 +370,7 @@ class Model {
         )
         .toArray()
         .sort(vm.resultsSort(searchTerm))
-        .slice(0, 20) //only 10 first result
+        .slice(0, 20) //only 20 first result
     };
   }
 
@@ -820,19 +820,30 @@ class Model {
       });
       pollId++;
       if (response == null || !Array.isArray(response)) {
+        vm.executeStatus = "Error";
+        vm.executeError = "Polling failed with empty response.";
+        vm.isWorking = false;
         console.log("polling failed");
         return;
       }
-      if (response.find(rsp => rsp == null || (rsp.data == null && !rsp.successful))) {
-        console.log("polling failed");
+      let rspFailed = response.find(rsp => rsp == null || (rsp.data == null && !rsp.successful))
+      if (rspFailed) {
+        vm.executeStatus = "Error";
+        vm.executeError = rspFailed.error;
+        vm.isWorking = false;
+        console.log("polling failed:" + rspFailed.error);
+        return;
       }
       let arsp = response.find(rsp => rsp != null && rsp.successful);
       if (arsp) {
         advice = arsp.advice;
       }
       if (response.find(rsp => rsp != null && rsp.data != null && rsp.channel == "/systemTopic/Logging")) {
-        console.log("fill logs");
         let queryLogs = "SELECT Id, Application, Status, Operation, StartTime, LogLength, LogUserId, LogUser.Name FROM ApexLog ORDER BY StartTime DESC";
+        //logs.resetTable();
+        logs = new RecordTable();
+        logs.describeInfo = vm.describeInfo;
+        logs.sfHost = vm.sfHost;
         await vm.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryLogs), {}), vm, logs, () => {
           vm.updatedLogs();
         })
@@ -905,6 +916,14 @@ function RecordTable() {
         rt.rowVisibilities.push(true);
         discoverColumns(record, "", row);
       }
+    },
+    resetTable() {
+      rt.records = [];
+      rt.table = [];
+      columnIdx = new Map();
+      header = ["_"];
+      rt.rowVisibilities = [];
+      rt.totalSize = -1;
     }
   };
   return rt;

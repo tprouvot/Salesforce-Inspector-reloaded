@@ -655,7 +655,7 @@ class Model {
 
       }));
   }
-  stopExecut() {
+  stopExecute() {
     this.disableLogs();
   }
   disableLogs() {

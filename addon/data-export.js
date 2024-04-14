@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable, DescribeInfo, copyToClipboard, ScrollTable, TableModel, s} from "./data-load.js";
+import {Enumerable, DescribeInfo, copyToClipboard, ScrollTable, TableModel, s, handleIndent} from "./data-load.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -1862,6 +1862,7 @@ class App extends React.Component {
       model.queryAutocompleteHandler(e);
       model.didUpdate();
     }
+
     queryInput.addEventListener("input", queryAutocompleteEvent);
     queryInput.addEventListener("select", queryAutocompleteEvent);
     // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
@@ -1871,6 +1872,7 @@ class App extends React.Component {
     // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
     // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50
     queryInput.addEventListener("keydown", e => {
+      handleIndent(e, queryInput);
       if (e.ctrlKey && e.key == " ") {
         e.preventDefault();
         model.queryAutocompleteHandler({ctrlSpace: true});

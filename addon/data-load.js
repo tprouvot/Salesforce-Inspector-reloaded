@@ -164,6 +164,46 @@ export function copyToClipboard(value) {
     document.body.removeChild(temp);
   }
 }
+export function handleIndent(e, textarea) {
+  const {value, selectionStart, selectionEnd} = e.currentTarget;
+  if (e.key === "Tab") {
+    const tabChar = "  ";//default is 2 spaces
+    //TODO option to select 2 spaces, 4 spaces or tab \t
+    let selectedText = value.substring(selectionStart, selectionEnd);
+    let mod = 0;
+    if (e.shiftKey) {
+      e.preventDefault();
+      //unindent
+      let lineStart = value.substring(0, selectionStart + 1).lastIndexOf("\n") + 1;
+      if (value.substring(lineStart).startsWith(tabChar)) {
+        textarea.setRangeText("", lineStart, lineStart + 2, "preserve");
+        mod -= tabChar.length;
+      }
+      let breakLineRegEx = /\n/gmi;
+      let breakLineMatch;
+      while ((breakLineMatch = breakLineRegEx.exec(selectedText)) !== null) {
+        lineStart = selectionStart + breakLineMatch.index + breakLineMatch[0].length;
+        if (value.substring(lineStart).startsWith(tabChar)) {
+          textarea.setRangeText("", lineStart + mod, lineStart + 2 + mod, "preserve");
+          mod -= tabChar.length;
+        }
+      }
+    } else if (selectionStart !== selectionEnd) {
+      e.preventDefault();
+      //indent
+      let lineStart = value.substring(0, selectionStart + 1).lastIndexOf("\n") + 1;
+      textarea.setRangeText(tabChar, lineStart, lineStart, "preserve");
+      mod += tabChar.length;
+      let breakLineRegEx = /\n/gmi;
+      let breakLineMatch;
+      while ((breakLineMatch = breakLineRegEx.exec(selectedText)) !== null) {
+        lineStart = selectionStart + breakLineMatch.index + breakLineMatch[0].length;
+        textarea.setRangeText(tabChar, lineStart + mod, lineStart + mod, "preserve");
+        mod += tabChar.length;
+      }
+    }
+  }
+}
 
 /*
 A table that contains millions of records will freeze the browser if we try to render the entire table at once.

@@ -1050,16 +1050,24 @@ class Model {
    * Supports subqueries in where clauses, but not in select clauses.
    */
   queryAutocompleteHandler(e = {}) {
-    if (this.isSearchMode()) {
-      this.searchAutocompleteHandler(e);
-      return;
-    }
     let vm = this; // eslint-disable-line consistent-this
     let useToolingApi = vm.queryTooling;
     let query = vm.queryInput.value;
     let selStart = vm.queryInput.selectionStart;
     let selEnd = vm.queryInput.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
+    if (e.inputType == "insertLineBreak") {
+      let lastLine = query.substring(0, selStart - 1);//remove inserted break
+      lastLine = lastLine.substring(lastLine.lastIndexOf("\n") + 1);
+      let m = lastLine.match(/^\s+/);
+      if (m) {
+        vm.queryInput.setRangeText(m[0], selStart, selEnd, "end");
+      }
+    }
+    if (this.isSearchMode()) {
+      this.searchAutocompleteHandler(e);
+      return;
+    }
 
     // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
     let newAutocompleteState = [useToolingApi, query, selStart, selEnd].join("$");
@@ -1850,8 +1858,8 @@ class App extends React.Component {
       queryInput.focus();
     }
 
-    function queryAutocompleteEvent() {
-      model.queryAutocompleteHandler();
+    function queryAutocompleteEvent(e) {
+      model.queryAutocompleteHandler(e);
       model.didUpdate();
     }
     queryInput.addEventListener("input", queryAutocompleteEvent);

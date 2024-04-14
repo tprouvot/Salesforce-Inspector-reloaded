@@ -557,7 +557,14 @@ class Model {
       ? script.substring(selStart, selEnd)
       : script.substring(0, selStart).match(/[a-zA-Z0-9_.]*$/)[0];
     selStart = selEnd - searchTerm.length;
-
+    if (e.inputType == "insertLineBreak") {
+      let lastLine = script.substring(0, selStart - 1);
+      lastLine = lastLine.substring(lastLine.lastIndexOf("\n") + 1);
+      let m = lastLine.match(/^\s+/);
+      if (m) {
+        vm.scriptInput.setRangeText(m[0], selStart, selEnd, "end");
+      }
+    }
     this.autocompleteClass(vm, ctrlSpace);
   }
 
@@ -826,7 +833,7 @@ class Model {
         console.log("polling failed");
         return;
       }
-      let rspFailed = response.find(rsp => rsp == null || (rsp.data == null && !rsp.successful))
+      let rspFailed = response.find(rsp => rsp == null || (rsp.data == null && !rsp.successful));
       if (rspFailed) {
         vm.executeStatus = "Error";
         vm.executeError = rspFailed.error;
@@ -1105,8 +1112,8 @@ class App extends React.Component {
       scriptInput.focus();
     }
 
-    function scriptAutocompleteEvent() {
-      model.scriptAutocompleteHandler();
+    function scriptAutocompleteEvent(e) {
+      model.scriptAutocompleteHandler(e);
       model.didUpdate();
     }
     scriptInput.addEventListener("input", scriptAutocompleteEvent);

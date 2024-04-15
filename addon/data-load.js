@@ -164,10 +164,10 @@ export function copyToClipboard(value) {
     document.body.removeChild(temp);
   }
 }
-export function handleIndent(e, textarea) {
+export function handlekeyDown(e, textarea) {
   const {value, selectionStart, selectionEnd} = e.currentTarget;
+  const tabChar = "  ";//default is 2 spaces
   if (e.key === "Tab") {
-    const tabChar = "  ";//default is 2 spaces
     //TODO option to select 2 spaces, 4 spaces or tab \t
     let selectedText = value.substring(selectionStart, selectionEnd);
     let mod = 0;
@@ -201,7 +201,30 @@ export function handleIndent(e, textarea) {
         textarea.setRangeText(tabChar, lineStart + mod, lineStart + mod, "preserve");
         mod += tabChar.length;
       }
+    } else {
+      e.preventDefault();
+      textarea.setRangeText(tabChar, selectionStart, selectionStart, "preserve");
     }
+  } else if (e.key == "[" || e.key == "(" || e.key == "{" || e.key == "'" || e.key == "\"") {
+    e.preventDefault();
+    const openToCloseChar = new Map([
+      ["[", "]"],
+      ["(", ")"],
+      ["{", "}"],
+      ["'", "'"],
+      ["\"", "\""],
+    ]);
+    const closeChar = openToCloseChar.get(e.key);
+    textarea.setRangeText(e.key, selectionStart, selectionStart, "end");
+    textarea.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
+  } else if (e.key === "Backspace") {
+    const textBeforeCaret = value.substring(0, selectionStart);
+    let indentRgEx = new RegExp("\n(" + tabChar + ")+$", "g");
+    if (textBeforeCaret.match(indentRgEx) && selectionStart == selectionEnd) {
+      e.preventDefault();
+      textarea.setRangeText("", selectionStart, selectionStart - tabChar.length, "preserve");
+    }
+    //TODO if previous input without other keydown (even move)is openChar then delete open and closeChar
   }
 }
 

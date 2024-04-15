@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable, DescribeInfo, ScrollTable, TableModel, handleIndent} from "./data-load.js";
+import {Enumerable, DescribeInfo, ScrollTable, TableModel, handlekeyDown} from "./data-load.js";
 
 class ScriptHistory {
   constructor(storageKey, max) {
@@ -1125,7 +1125,7 @@ class App extends React.Component {
     // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
     // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50
     scriptInput.addEventListener("keydown", e => {
-      handleIndent(e, scriptInput);
+      handlekeyDown(e, scriptInput);
       if (e.ctrlKey && e.key == " ") {
         e.preventDefault();
         model.scriptAutocompleteHandler({ctrlSpace: true});

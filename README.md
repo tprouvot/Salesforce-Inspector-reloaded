@@ -117,8 +117,6 @@ Linting : to assure indentation, formatting and best practices coherence, please
 
 ## Development
 
-1. Install Node.js with npm
-2. `npm install`
 
 ### Chrome
 
@@ -130,8 +128,8 @@ Linting : to assure indentation, formatting and best practices coherence, please
 
 ### Firefox
 
-1. `npm run firefox-dev-build`
-2. In Firefox, open `about:debugging`.
+1. Checkout branch [firefoxAddon](https://github.com/tprouvot/Salesforce-Inspector-reloaded/tree/firefoxAddon) and enter addon directory.
+2. Click on the cog icon and select `Debug Add-ons`
 3. Click `Load Temporary Add-on…`.
 4. Select the file `addon/manifest.json`.
 

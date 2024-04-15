@@ -90,6 +90,7 @@ export let setupLinks = [
   {label: "Themes", link: "/lightning/setup/CommunityThemeDefinitionList/home", section: "Platform Tools > Feature Settings > Digital Experiences", prod: false},
 
   //Platform Tools > Feature Settings
+  {label: "Field History Tracking", link: "/lightning/setup/FieldHistoryTracking/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Functions", link: "/lightning/setup/Functions/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Home", link: "/lightning/setup/Home/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Quip (Salesforce Anywhere)", link: "/lightning/setup/SalesforceAnywhereSetupPage/home", section: "Platform Tools > Feature Settings", prod: false},

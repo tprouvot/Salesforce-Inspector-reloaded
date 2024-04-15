@@ -1409,6 +1409,11 @@ class UserDetails extends React.PureComponent {
     return "inspect.html?" + args;
   }
 
+  getUserSummaryLink(userId){
+    let {sfHost} = this.props;
+    return "https://" + sfHost + "/lightning/setup/ManageUsers/" + userId + "/summary";
+  }
+
   render() {
     let {user, linkTarget, sfHost} = this.props;
     return (
@@ -1418,9 +1423,12 @@ class UserDetails extends React.PureComponent {
             h("tbody", {},
               h("tr", {},
                 h("th", {}, "Name:"),
-                h("td", {},
+                h("td", {className: "oneliner"},
                   (user.IsActive) ? "" : h("span", {title: "User is inactive"}, "⚠ "),
-                  user.Name + " (" + user.Alias + ")"
+                  //user.Name + " (" + user.Alias + ")"
+                  h("a", {href: this.getUserSummaryLink(user.Id), target: linkTarget, title: "View summary"}, user.Name)
+                  ,
+                  " (" + user.Alias + ")"
                 )
               ),
               h("tr", {},

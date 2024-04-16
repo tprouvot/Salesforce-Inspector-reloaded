@@ -210,5 +210,10 @@ You can update the debug level (configuration is per organization) and duration 
 `display(sfConn.rest("/services/data/v59.0/graphql", {method: "POST", body: myQuery}));`
 ![2024-02-09_17-01-42 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6689fad3-9549-41b9-8371-55adae037793)
 
+## Select all fields in a query
 
+This functionality already exists in the legacy version but since many users don't know about it, I would like to document it.
+When on the export page, put the cursor between `SaELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
+If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM`.
 
+![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)

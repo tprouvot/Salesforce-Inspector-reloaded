@@ -770,20 +770,57 @@ export class Editor extends React.Component {
   constructor(props) {
     super(props);
     this.model = props.model;
+    this.keywordColor = props.keywordColor;
+    this.keywordCaseSensitive = props.keywordCaseSensitive;
     this.handlekeyDown = this.handlekeyDown.bind(this);
     this.editorAutocompleteEvent = this.editorAutocompleteEvent.bind(this);
+    this.onScroll = this.onScroll.bind(this);
+    this.processText = this.processText.bind(this);
   }
 
   componentDidMount() {
     let {model} = this.props;
     let editorInput = this.refs.editor;
-
+    let editorMirror = this.refs.editorMirror;
+    model.editorMirror = editorMirror;
     model.setEditor(editorInput);
+    const textareaStyles = window.getComputedStyle(editorInput);
+    [
+      "border",
+      "boxSizing",
+      "fontFamily",
+      "fontSize",
+      "fontWeight",
+      "letterSpacing",
+      "lineHeight",
+      "padding",
+      "textDecoration",
+      "textIndent",
+      "textTransform",
+      "whiteSpace",
+      "wordSpacing",
+      "wordWrap",
+    ].forEach((property) => {
+      editorMirror.style[property] = textareaStyles[property];
+    });
+    editorMirror.style.borderColor = "transparent";
+
+    const parseValue = (v) => v.endsWith("px") ? parseInt(v.slice(0, -2), 10) : 0;
+    //const borderWidth = parseValue(textareaStyles.borderWidth);
+
     //Set the cursor focus on script text area use the same than query
     if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
       editorInput.focus();
     }
     let recalculateHeight = model.recalculateSize.bind(model);
+    const ro = new ResizeObserver(() => {
+      editorInput.getBoundingClientRect().height;
+      editorMirror.style.height = `${editorInput.getBoundingClientRect().height}px`;
+      recalculateHeight();
+    });
+    ro.observe(editorInput);
+
+    /*
     if (!window.webkitURL) {
       // Firefox
       // Firefox does not fire a resize event. The next best thing is to listen to when the browser changes the style.height attribute.
@@ -796,12 +833,20 @@ export class Editor extends React.Component {
       editorInput.addEventListener("mousemove", recalculateHeight);
       addEventListener("mouseup", recalculateHeight);
     }
+    */
     function resize() {
       model.winInnerHeight = innerHeight;
       model.didUpdate(); // Will call recalculateSize
     }
     addEventListener("resize", resize);
     resize();
+  }
+
+  onScroll() {
+    let {model} = this.props;
+    if (model.editorMirror && model.editor) {
+      model.editorMirror.scrollTop = model.editor.scrollTop;
+    }
   }
   editorAutocompleteEvent(e) {
     let {model} = this.props;
@@ -888,10 +933,71 @@ export class Editor extends React.Component {
   componentDidUpdate() {
     //let {model} = this.props;
     //TODO
-  }
+    //const rect = caretEle.getBoundingClientRect();
+    //coordinatesButton.innerHTML = `Coordinates: (${rect.left}, ${rect.top})`;
 
+  }
+  processText(src) {
+    let {keywordColor, keywordCaseSensitive, model} = this.props;
+    let remaining = src;
+    let keywordMatch;
+    let highlighted = [];
+    let selStart = model.editor ? model.editor.selectionStart : 0;
+    //let endIndex;
+    let keywords = [];
+    for (let keyword of keywordColor.keys()) {
+      keywords.push(keyword);
+    }
+    let keywordRegEx = new RegExp("\\b(" + keywords.join("|") + ")\\b", "g" + (keywordCaseSensitive ? "" : "i"));
+
+    while ((keywordMatch = keywordRegEx.exec(remaining)) !== null) {
+      let color = keywordColor.get(keywordMatch[1].toLocaleLowerCase());
+      if (selStart <= keywordMatch.index && selStart >= 0) { // sel before keyword
+        if (selStart > 0) {
+          highlighted.push({value: remaining.substring(0, selStart), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
+        }
+        highlighted.push({value: "\u00A0", attributes: {className: "editor_caret", key: "hl" + highlighted.length}});
+        if (selStart < keywordMatch.index) {
+          highlighted.push({value: remaining.substring(selStart, keywordMatch.index), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
+        }
+        highlighted.push({value: keywordMatch[1], attributes: {style: {color}, key: "hl" + highlighted.length}});
+      } else if (selStart <= keywordMatch.index + keywordMatch[1].length && selStart >= 0) { // sel on keyword
+        if (keywordMatch.index != 0) {
+          highlighted.push({value: remaining.substring(0, keywordMatch.index), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
+        }
+        if (keywordMatch.index < selStart) {
+          highlighted.push({value: remaining.substring(keywordMatch.index, selStart), attributes: {style: {color}, key: "hl" + highlighted.length}});
+        }
+        highlighted.push({value: "\u00A0", attributes: {className: "editor_caret", key: "hl" + highlighted.length}});
+        if (selStart < keywordMatch.index + keywordMatch[1].length) {
+          highlighted.push({value: remaining.substring(selStart, keywordMatch.index + keywordMatch[1].length), attributes: {style: {color}, key: "hl" + highlighted.length}});
+        }
+      } else { //sel after keyword
+        if (keywordMatch.index != 0) {
+          highlighted.push({value: remaining.substring(0, keywordMatch.index), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
+        }
+        highlighted.push({value: keywordMatch[1], attributes: {style: {color}, key: "hl" + highlighted.length}});
+      }
+      remaining = remaining.substring(keywordMatch.index + keywordMatch[1].length);
+      selStart -= keywordMatch.index + keywordMatch[1].length;
+      keywordRegEx = new RegExp("\\b(" + keywords.join("|") + ")\\b", "g" + (keywordCaseSensitive ? "" : "i"));
+    }
+    if (selStart > 0) {
+      highlighted.push({value: remaining.substring(0, selStart), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
+      highlighted.push({value: "\u00A0", attributes: {className: "editor_caret", key: "hl" + highlighted.length}});
+      remaining = remaining.substring(selStart);
+    }
+    if (remaining) {
+      highlighted.push({value: remaining, attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
+    }
+    return highlighted;
+  }
   render() {
     let {model} = this.props;
-    return h("textarea", {id: "editor", ref: "editor", onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.editorAutocompleteEvent, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeydown: this.handlekeyDown, style: {maxHeight: (model.winInnerHeight - 200) + "px"}});
+    let highlighted = this.processText(model.editor ? model.editor.value : "");
+    return h("div", {className: "editor_container"},
+      h("div", {ref: "editorMirror", className: "editor_container_mirror"}, highlighted.map(s => h("span", s.attributes, s.value))),
+      h("textarea", {id: "editor", autoComplete: "off", autoCorrect: "off", spellCheck: "false", autoCapitalize: "off", className: "editor_textarea", ref: "editor", onScroll: this.onScroll, onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.editorAutocompleteEvent, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeyDown: this.handlekeyDown, style: {maxHeight: (model.winInnerHeight - 200) + "px"}})
+    );
   }
 }

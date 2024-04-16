@@ -695,3 +695,68 @@ button.toggle .button-icon {
   overflow: auto;
   height: 200px;
 }
+.editor_container {
+  position: relative;
+  text-align: 'left';
+  box-sizing: 'border-box';
+  padding: 0px;
+  overflow: 'hidden';
+}
+.editor_textarea {
+  position: relative;
+  word-wrap:  break-word;
+  background: transparent;
+  border: 1px solid #DDDBDA;
+  color: transparent;
+  caret-color: black;
+  line-height: 2em;
+}
+.editor_container_mirror span {
+  vertical-align: top;
+}
+.editor_container_mirror {
+  position: absolute;
+  border: 1px solid #DDDBDA;
+  vertical-align: top;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  resize: vertical;
+  overflow-wrap: break-word;
+  font-size: 0.9rem;
+  padding: 8px 10px;
+  border-radius: 0.25rem;
+  font-family: monospace, Arial, Helvetica, sans-serif;
+  box-sizing: border-box;
+  letter-spacing: normal;
+  line-height: 2em;
+  word-spacing: normal;
+  overflow: hidden;
+  background-color: white;
+  color: transparent;
+  white-space: pre-wrap;
+  bottom: 0;
+  /*
+  font-weight: 400;
+  text-indent: 0;
+  text-decoration: none;
+  text-transform: none;
+  */
+
+    margin: 0;
+}
+.editor_caret {
+  background-color: rgb(15 23 42);
+  width: 2px;
+  animation: blink 1s infinite;
+  position: absolute;
+}
+@keyframes blink {
+  0%, 100% {
+      background-color: transparent;
+  }
+  50% {
+      background-color: rgb(15 23 42);
+  }
+}

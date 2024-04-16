@@ -1876,6 +1876,7 @@ class App extends React.Component {
   }
   render() {
     let {model} = this.props;
+    let keywordColor = new Map([["select", "blue"], ["from", "blue"], ["where", "blue"], ["group", "blue"], ["by", "blue"], ["order", "blue"], ["limit", "blue"]]);
     const perf = model.perfStatus();
     return h("div", {onClick: this.onClick},
       h("div", {id: "user-info"},
@@ -1942,7 +1943,7 @@ class App extends React.Component {
             ),
           ),
         ),
-        h(Editor, {model}),
+        h(Editor, {model, keywordColor, keywordCaseSensitive: false}),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),

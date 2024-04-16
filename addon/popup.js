@@ -13,7 +13,8 @@ let h = React.createElement;
       popupArrowPosition: JSON.parse(localStorage.getItem("popupArrowPosition")),
       scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder")),
       customFavicon: "orange",
-      useCustomFavicon: JSON.parse(localStorage.getItem("useCustomFavicon"))
+      useCustomFavicon: JSON.parse(localStorage.getItem("useCustomFavicon")),
+      extensionId: chrome.i18n.getMessage("@@extension_id")
     }
   }, "*");
   addEventListener("message", function initResponseHandler(e) {

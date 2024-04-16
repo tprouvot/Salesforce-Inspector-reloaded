@@ -88,7 +88,7 @@ function initButton(sfHost, inInspector) {
     if (popupArrowOrientation == "vertical") {
       rootElement.style.right = 0;
       rootElement.style.top = popupArrowPosition;
-      img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAPCAYAAADd/14OAAAA40lEQVQoz2P4//8/AzpWzGj6L59U/V8urgxMg/g4FUn6J/+X9E38LxWc8V8htR67IpCkuGfMfxCQjSpENRFFkXvk/1+/foGxQloDSD0DVkVfvnyBY7hCdEVv3rxBwXCFIIdKh2WDFT1+/BgDo1qd2fL/1q1bWDFcoW5xz3/Xppn/oycu/X/x4kUMDFeoWdD136R8wn+f9rlgxSdOnEDBKFajK96/fz8coyjEpnj79u1gjKEQXXFE/+L/Gzdu/G9WMfG/am4HZlzDFAf3LPwfOWEJWBPIwwzYUg9MsXXNFDAN4gMAmASShdkS4AcAAAAASUVORK5CYII=";
+      img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAPCAYAAADd/14OAAAA40lEQVQoz2P4//8/AzpWzGj6L59U/V•8urgxMg/g4FUn6J/+X9E38LxWc8V8htR67IpCkuGfMfxCQjSpENRFFkXvk/1+/foGxQloDSD0DVkVfvnyBY7hCdEVv3rxBwXCFIIdKh2WDFT1+/BgDo1qd2fL/1q1bWDFcoW5xz3/Xppn/oycu/X/x4kUMDFeoWdD136R8wn+f9rlgxSdOnEDBKFajK96/fz8coyjEpnj79u1gjKEQXXFE/+L/Gzdu/G9WMfG/am4HZlzDFAf3LPwfOWEJWBPIwwzYUg9MsXXNFDAN4gMAmASShdkS4AcAAAAASUVORK5CYII=";
       buttonElement.classList.add("insext-btn-vertical");
     } else {
       rootElement.style.bottom = "0px";
@@ -100,21 +100,17 @@ function initButton(sfHost, inInspector) {
   }
 
   function setFavicon(){
-    let fav = iFrameLocalStorage.customFavicon;
-    if (fav){
-      let sfRel = "apple-touch-icon";
-      let link = document.querySelector("link[rel~='" + sfRel + "']");
-      if (!link) {
-        link = document.createElement("link");
-        link.rel = sfRel;
-        document.head.appendChild(link);
-      }
-      //check if custom favicon from the extension or web
+    if (iFrameLocalStorage.useCustomFavicon){
+      let fav = iFrameLocalStorage.customFavicon;
+      let link = document.createElement("link");
+      link.setAttribute("rel", "icon");
+      link.orgType = "image/x-icon";
+      //link.href = "https://github.githubassets.com/favicons/favicon.svg";
       if (fav.indexOf("http") == -1){
-        fav = "./images/favicons/" + fav + ".png";
+        fav = "https://github.com/tprouvot/Salesforce-Inspector-reloaded/tree/releaseCandidate/addon/images/favicons/" + fav + ".png?raw=true";
       }
-      //link.href = fav;
-      link.href = "https://github.com/fluidicon.png";
+      link.href = fav;
+      document.head.appendChild(link);
     }
   }
 

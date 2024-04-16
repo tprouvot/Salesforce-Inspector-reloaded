@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable, DescribeInfo, ScrollTable, TableModel, handlekeyDown} from "./data-load.js";
+import {Enumerable, DescribeInfo, ScrollTable, TableModel, Editor} from "./data-load.js";
 
 class ScriptHistory {
   constructor(storageKey, max) {
@@ -69,10 +69,10 @@ class Model {
     this.sfHost = sfHost;
     this.tableModel = new TableModel(sfHost, this.didUpdate.bind(this));
     this.resultTableCallback = (d) => this.tableModel.dataChange(d);
-    this.scriptInput = null;
+    this.editor = null;
     this.initialScript = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
-      this.scriptAutocompleteHandler({newDescribe: true});
+      this.editorAutocompleteHandler({newDescribe: true});
       //TODO refresh list of field
       this.didUpdate();
     });
@@ -137,9 +137,9 @@ class Model {
   setClientId(value) {
     this.clientId = value;
   }
-  setScriptInput(scriptInput) {
-    this.scriptInput = scriptInput;
-    scriptInput.value = this.initialScript;
+  setEditor(editor) {
+    this.editor = editor;
+    editor.value = this.initialScript;
     this.numberOfLines = this.initialScript.split("\n").length;
     this.initialScript = null;
   }
@@ -151,17 +151,17 @@ class Model {
   }
   selectHistoryEntry() {
     if (this.selectedHistoryEntry != null) {
-      this.scriptInput.value = this.selectedHistoryEntry.script;
-      this.scriptAutocompleteHandler();
+      this.editor.value = this.selectedHistoryEntry.script;
+      this.editorAutocompleteHandler();
       this.selectedHistoryEntry = null;
     }
   }
   selectScriptTemplate() {
-    this.scriptInput.value = this.selectedScriptTemplate.trimStart();
-    this.scriptInput.focus();
-    let indexPos = this.scriptInput.value.toLowerCase().indexOf("from ");
+    this.editor.value = this.selectedScriptTemplate.trimStart();
+    this.editor.focus();
+    let indexPos = this.editor.value.toLowerCase().indexOf("from ");
     if (indexPos !== -1) {
-      this.scriptInput.setRangeText("", indexPos + 5, indexPos + 5, "end");
+      this.editor.setRangeText("", indexPos + 5, indexPos + 5, "end");
     }
   }
   clearHistory() {
@@ -178,8 +178,8 @@ class Model {
       } else {
         scriptStr = this.selectedSavedEntry.script;
       }
-      this.scriptInput.value = scriptStr;
-      this.scriptAutocompleteHandler();
+      this.editor.value = scriptStr;
+      this.editorAutocompleteHandler();
       this.selectedSavedEntry = null;
     }
   }
@@ -196,7 +196,7 @@ class Model {
     this.savedHistory.remove({script: this.getScriptToSave()});
   }
   getScriptToSave() {
-    return this.scriptName != "" ? this.scriptName + ":" + this.scriptInput.value : this.scriptInput.value;
+    return this.scriptName != "" ? this.scriptName + ":" + this.editor.value : this.editor.value;
   }
   autocompleteReload() {
     this.describeInfo.reloadAll();
@@ -275,9 +275,9 @@ class Model {
   }
 
   autocompleteClass(vm, ctrlSpace) {
-    let script = vm.scriptInput.value;
-    let selStart = vm.scriptInput.selectionStart;
-    let selEnd = vm.scriptInput.selectionEnd;
+    let script = vm.editor.value;
+    let selStart = vm.editor.selectionStart;
+    let selEnd = vm.editor.selectionEnd;
     let searchTerm = selStart != selEnd
       ? script.substring(selStart, selEnd)
       : script.substring(0, selStart).match(/[a-zA-Z0-9_.]*$/)[0];
@@ -286,9 +286,9 @@ class Model {
     if (ctrlSpace) {
       if (vm.autocompleteResults && vm.autocompleteResults.results && vm.autocompleteResults.results.length > 0) {
         let ar = vm.autocompleteResults.results;
-        vm.scriptInput.focus();
-        vm.scriptInput.setRangeText(ar[0].value + ar[0].suffix, selStart, selEnd, "end");
-        vm.scriptAutocompleteHandler();
+        vm.editor.focus();
+        vm.editor.setRangeText(ar[0].value + ar[0].suffix, selStart, selEnd, "end");
+        vm.editorAutocompleteHandler();
       }
       return;
     }
@@ -515,11 +515,11 @@ class Model {
   /**
    * APEX script autocomplete handling.
    */
-  scriptAutocompleteHandler(e = {}) {
+  editorAutocompleteHandler(e = {}) {
     let vm = this; // eslint-disable-line consistent-this
-    let script = vm.scriptInput.value;
-    let selStart = vm.scriptInput.selectionStart;
-    let selEnd = vm.scriptInput.selectionEnd;
+    let script = vm.editor.value;
+    let selStart = vm.editor.selectionStart;
+    let selEnd = vm.editor.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
     let numberOfLines = script.split("\n").length;
     this.parseAnonApex(script);
@@ -547,9 +547,9 @@ class Model {
     }
 
     vm.autocompleteClick = ({value, suffix}) => {
-      vm.scriptInput.focus();
-      vm.scriptInput.setRangeText(value + suffix, selStart, selEnd, "end");
-      vm.scriptAutocompleteHandler();
+      vm.editor.focus();
+      vm.editor.setRangeText(value + suffix, selStart, selEnd, "end");
+      vm.editorAutocompleteHandler();
     };
 
     // Find the token we want to autocomplete. This is the selected text, or the last word before the cursor.
@@ -562,7 +562,7 @@ class Model {
       lastLine = lastLine.substring(lastLine.lastIndexOf("\n") + 1);
       let m = lastLine.match(/^\s+/);
       if (m) {
-        vm.scriptInput.setRangeText(m[0], selStart, selEnd, "end");
+        vm.editor.setRangeText(m[0], selStart, selEnd, "end");
       }
     }
     this.autocompleteClass(vm, ctrlSpace);
@@ -622,7 +622,7 @@ class Model {
     if (!vm.isWorking) {
       this.enableLogs();
     }
-    let script = vm.scriptInput.value;
+    let script = vm.editor.value;
     vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/tooling/executeAnonymous/?anonymousBody=" + encodeURIComponent(script), {})
       .catch(error => {
         console.error(error);
@@ -868,6 +868,10 @@ class Model {
 
     }
   }
+  recalculateSize() {
+    // Investigate if we can use the IntersectionObserver API here instead, once it is available.
+    this.tableModel.viewportChange();
+  }
 }
 
 function RecordTable() {
@@ -1070,7 +1074,7 @@ class App extends React.Component {
     let {model} = this.props;
     let url = new URL(window.location.href);
     let searchParams = url.searchParams;
-    searchParams.set("script", model.scriptInput.value);
+    searchParams.set("script", model.editor.value);
     url.search = searchParams.toString();
     navigator.clipboard.writeText(url.toString());
     navigator.clipboard.writeText(url.toString());
@@ -1093,7 +1097,6 @@ class App extends React.Component {
   }
   componentDidMount() {
     let {model} = this.props;
-    let scriptInput = this.refs.script;
     let queryApexClass = "SELECT Id, Name, NamespacePrefix FROM ApexClass";
     model.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryApexClass), {}), model, model.apexClasses, (isFinished) => {
       if (!isFinished){
@@ -1106,32 +1109,6 @@ class App extends React.Component {
     //call to get all Sobject during load
     model.describeInfo.describeGlobal(false);
 
-    model.setScriptInput(scriptInput);
-    //Set the cursor focus on script text area use the same than query
-    if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
-      scriptInput.focus();
-    }
-
-    function scriptAutocompleteEvent(e) {
-      model.scriptAutocompleteHandler(e);
-      model.didUpdate();
-    }
-    scriptInput.addEventListener("input", scriptAutocompleteEvent);
-    scriptInput.addEventListener("select", scriptAutocompleteEvent);
-    // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
-    scriptInput.addEventListener("keyup", scriptAutocompleteEvent);
-    scriptInput.addEventListener("mouseup", scriptAutocompleteEvent);
-
-    // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
-    // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50
-    scriptInput.addEventListener("keydown", e => {
-      handlekeyDown(e, scriptInput);
-      if (e.ctrlKey && e.key == " ") {
-        e.preventDefault();
-        model.scriptAutocompleteHandler({ctrlSpace: true});
-        model.didUpdate();
-      }
-    });
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
@@ -1140,19 +1117,7 @@ class App extends React.Component {
       }
     });
 
-    let recalculateHeight = this.recalculateSize.bind(this);
-    if (!window.webkitURL) {
-      // Firefox
-      // Firefox does not fire a resize event. The next best thing is to listen to when the browser changes the style.height attribute.
-      new MutationObserver(recalculateHeight).observe(scriptInput, {attributes: true});
-    } else {
-      // Chrome
-      // Chrome does not fire a resize event and does not allow us to get notified when the browser changes the style.height attribute.
-      // Instead we listen to a few events which are often fired at the same time.
-      // This is not required in Firefox, and Mozilla reviewers don't like it for performance reasons, so we only do this in Chrome via browser detection.
-      scriptInput.addEventListener("mousemove", recalculateHeight);
-      addEventListener("mouseup", recalculateHeight);
-    }
+
     function resize() {
       model.winInnerHeight = innerHeight;
       model.didUpdate(); // Will call recalculateSize
@@ -1161,17 +1126,14 @@ class App extends React.Component {
     resize();
   }
   componentDidUpdate() {
-    this.recalculateSize();
+    let {model} = this.props;
+    model.recalculateSize();
   }
   componentWillUnmount() {
     let {model} = this.props;
     model.disableLogs();
   }
-  recalculateSize() {
-    let {model} = this.props;
-    // Investigate if we can use the IntersectionObserver API here instead, once it is available.
-    model.tableModel.viewportChange();
-  }
+
   render() {
     let {model} = this.props;
     return h("div", {onClick: this.onClick},
@@ -1233,7 +1195,7 @@ class App extends React.Component {
           h("div", {className: "line-numbers"},
             Array(model.numberOfLines).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}))
           ),
-          h("textarea", {id: "script", ref: "script", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
+          h(Editor, {model}),
         ),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},

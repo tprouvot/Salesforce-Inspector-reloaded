@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable, DescribeInfo, copyToClipboard, ScrollTable, TableModel, s, handlekeyDown} from "./data-load.js";
+import {Enumerable, DescribeInfo, copyToClipboard, ScrollTable, TableModel, s, Editor} from "./data-load.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -69,10 +69,10 @@ class Model {
     this.sfHost = sfHost;
     this.tableModel = new TableModel(sfHost, this.didUpdate.bind(this));
     this.resultTableCallback = (d) => this.tableModel.dataChange(d);
-    this.queryInput = null;
+    this.editor = null;
     this.initialQuery = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
-      this.queryAutocompleteHandler({newDescribe: true});
+      this.editorAutocompleteHandler({newDescribe: true});
       this.didUpdate();
     });
     this.sfLink = "https://" + sfHost;
@@ -149,9 +149,9 @@ class Model {
   setQueryName(value) {
     this.queryName = value;
   }
-  setQueryInput(queryInput) {
-    this.queryInput = queryInput;
-    queryInput.value = this.initialQuery;
+  setEditor(editor) {
+    this.editor = editor;
+    editor.value = this.initialQuery;
     this.initialQuery = null;
   }
   toggleHelp() {
@@ -174,18 +174,18 @@ class Model {
   }
   selectHistoryEntry() {
     if (this.selectedHistoryEntry != null) {
-      this.queryInput.value = this.selectedHistoryEntry.query;
+      this.editor.value = this.selectedHistoryEntry.query;
       this.queryTooling = this.selectedHistoryEntry.useToolingApi;
-      this.queryAutocompleteHandler();
+      this.editorAutocompleteHandler();
       this.selectedHistoryEntry = null;
     }
   }
   selectQueryTemplate() {
-    this.queryInput.value = this.selectedQueryTemplate.trimStart();
-    this.queryInput.focus();
-    let indexPos = this.queryInput.value.toLowerCase().indexOf("from ");
+    this.editor.value = this.selectedQueryTemplate.trimStart();
+    this.editor.focus();
+    let indexPos = this.editor.value.toLowerCase().indexOf("from ");
     if (indexPos !== -1) {
-      this.queryInput.setRangeText("", indexPos + 5, indexPos + 5, "end");
+      this.editor.setRangeText("", indexPos + 5, indexPos + 5, "end");
     }
   }
   initPerf() {
@@ -239,9 +239,9 @@ class Model {
       } else {
         queryStr = this.selectedSavedEntry.query;
       }
-      this.queryInput.value = queryStr;
+      this.editor.value = queryStr;
       this.queryTooling = this.selectedSavedEntry.useToolingApi;
-      this.queryAutocompleteHandler();
+      this.editorAutocompleteHandler();
       this.selectedSavedEntry = null;
     }
   }
@@ -255,7 +255,7 @@ class Model {
     this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
   }
   getQueryToSave() {
-    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value : this.queryInput.value;
+    return this.queryName != "" ? this.queryName + ":" + this.editor.value : this.editor.value;
   }
   autocompleteReload() {
     this.describeInfo.reloadAll();
@@ -303,7 +303,7 @@ class Model {
   }
   isSearchMode() {
     //if query start with "f" like "find" instead of "select"
-    return this.queryInput.value != null ? this.queryInput.value.trim().toLowerCase().startsWith("f") : false;
+    return this.editor.value != null ? this.editor.value.trim().toLowerCase().startsWith("f") : false;
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -374,9 +374,9 @@ class Model {
     *
     */
     let vm = this; // eslint-disable-line consistent-this
-    let query = vm.queryInput.value;
-    let selStart = vm.queryInput.selectionStart;
-    let selEnd = vm.queryInput.selectionEnd;
+    let query = vm.editor.value;
+    let selStart = vm.editor.selectionStart;
+    let selEnd = vm.editor.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
     let beforeSel = query.substring(0, selStart);
     let searchTerm = selStart != selEnd
@@ -387,9 +387,9 @@ class Model {
       if (link){
         window.open(link, "_blank");
       } else {
-        vm.queryInput.focus();
-        vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
-        vm.queryAutocompleteHandler();
+        vm.editor.focus();
+        vm.editor.setRangeText(value + suffix, selStart, selEnd, "end");
+        vm.editorAutocompleteHandler();
       }
     };
 
@@ -565,9 +565,9 @@ class Model {
   }
   autocompleteObject(vm, ctrlSpace) {
     let {globalStatus, globalDescribe} = vm.describeInfo.describeGlobal(vm.queryTooling);
-    let query = vm.queryInput.value;
-    let selStart = vm.queryInput.selectionStart;
-    let selEnd = vm.queryInput.selectionEnd;
+    let query = vm.editor.value;
+    let selStart = vm.editor.selectionStart;
+    let selEnd = vm.editor.selectionEnd;
     let searchTerm = selStart != selEnd
       ? query.substring(selStart, selEnd)
       : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
@@ -605,10 +605,10 @@ class Model {
         .map(sobjectDescribe => sobjectDescribe.name)
         .toArray();
       if (ar.length > 0) {
-        vm.queryInput.focus();
-        vm.queryInput.setRangeText(ar.join(", "), selStart, selEnd, "end");
+        vm.editor.focus();
+        vm.editor.setRangeText(ar.join(", "), selStart, selEnd, "end");
       }
-      vm.queryAutocompleteHandler();
+      vm.editorAutocompleteHandler();
       return;
     }
     vm.autocompleteResults = {
@@ -624,9 +624,9 @@ class Model {
 
   autocompleteField(vm, ctrlSpace, sobjectName, isAfterWhere) {
     let useToolingApi = vm.queryTooling;
-    let selStart = vm.queryInput.selectionStart;
-    let selEnd = vm.queryInput.selectionEnd;
-    let query = vm.queryInput.value;
+    let selStart = vm.editor.selectionStart;
+    let selEnd = vm.editor.selectionEnd;
+    let query = vm.editor.value;
     let searchTerm = selStart != selEnd
       ? query.substring(selStart, selEnd)
       : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
@@ -926,10 +926,10 @@ class Model {
           .map(field => contextPath + field.name)
           .toArray();
         if (ar.length > 0) {
-          vm.queryInput.focus();
-          vm.queryInput.setRangeText(ar.join(", ") + (isAfterWhere ? " " : ""), selStart - contextPath.length, selEnd, "end");
+          vm.editor.focus();
+          vm.editor.setRangeText(ar.join(", ") + (isAfterWhere ? " " : ""), selStart - contextPath.length, selEnd, "end");
         }
-        vm.queryAutocompleteHandler();
+        vm.editorAutocompleteHandler();
         return;
       }
       vm.autocompleteResults = {
@@ -964,9 +964,9 @@ class Model {
 
   autocompleteRelation(ctx, suggestRelation) {
     let useToolingApi = ctx.vm.queryTooling;
-    let selStart = ctx.vm.queryInput.selectionStart;
-    let selEnd = ctx.vm.queryInput.selectionEnd;
-    let query = ctx.vm.queryInput.value;
+    let selStart = ctx.vm.editor.selectionStart;
+    let selEnd = ctx.vm.editor.selectionEnd;
+    let query = ctx.vm.editor.value;
     let searchTerm = selStart != selEnd
       ? query.substring(selStart, selEnd)
       : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
@@ -1017,10 +1017,10 @@ class Model {
       if (ar.length > 0) {
         let rel = ar.shift();
         ctx.sobjectName = rel.dataType;
-        ctx.vm.queryInput.focus();
-        ctx.vm.queryInput.setRangeText(rel.value, selStart, selEnd, "end");
+        ctx.vm.editor.focus();
+        ctx.vm.editor.setRangeText(rel.value, selStart, selEnd, "end");
       }
-      ctx.vm.queryAutocompleteHandler();
+      ctx.vm.editorAutocompleteHandler();
       return;
     }
     if (suggestRelation) {
@@ -1049,19 +1049,19 @@ class Model {
    * Inserts all autocomplete field suggestions when Ctrl+Space is pressed.
    * Supports subqueries in where clauses, but not in select clauses.
    */
-  queryAutocompleteHandler(e = {}) {
+  editorAutocompleteHandler(e = {}) {
     let vm = this; // eslint-disable-line consistent-this
     let useToolingApi = vm.queryTooling;
-    let query = vm.queryInput.value;
-    let selStart = vm.queryInput.selectionStart;
-    let selEnd = vm.queryInput.selectionEnd;
+    let query = vm.editor.value;
+    let selStart = vm.editor.selectionStart;
+    let selEnd = vm.editor.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
     if (e.inputType == "insertLineBreak") {
       let lastLine = query.substring(0, selStart - 1);//remove inserted break
       lastLine = lastLine.substring(lastLine.lastIndexOf("\n") + 1);
       let m = lastLine.match(/^\s+/);
       if (m) {
-        vm.queryInput.setRangeText(m[0], selStart, selEnd, "end");
+        vm.editor.setRangeText(m[0], selStart, selEnd, "end");
       }
     }
     if (this.isSearchMode()) {
@@ -1085,18 +1085,18 @@ class Model {
       if (link){
         window.open(link, "_blank");
       } else {
-        vm.queryInput.focus();
+        vm.editor.focus();
         //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
         let indexFrom = query.toLowerCase().indexOf("from");
         if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
           suffix = "";
         }
-        vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
+        vm.editor.setRangeText(value + suffix, selStart, selEnd, "end");
         //add query suffix if needed
         if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
-          vm.queryInput.value += " LIMIT 200";
+          vm.editor.value += " LIMIT 200";
         }
-        vm.queryAutocompleteHandler();
+        vm.editorAutocompleteHandler();
       }
     };
 
@@ -1403,7 +1403,7 @@ class Model {
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
-    let query = this.cleanupQuery(vm.queryInput.value);
+    let query = this.cleanupQuery(vm.editor.value);
     vm.columnIndex = this.extractColumnFromQuery(query);
     let queryMethod = vm.isSearchMode() ? "search" : (exportedData.isTooling ? "tooling/query" : vm.queryAll ? "queryAll" : "query");
     function batchHandler(batch) {
@@ -1440,7 +1440,7 @@ class Model {
           return pr;
         }
         //save query with comments
-        vm.queryHistory.add({query: vm.queryInput.value, useToolingApi: exportedData.isTooling});
+        vm.queryHistory.add({query: vm.editor.value, useToolingApi: exportedData.isTooling});
         if (recs == 0) {
           vm.isWorking = false;
           vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
@@ -1505,7 +1505,7 @@ class Model {
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
 
-    vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(vm.queryInput.value)).then(res => {
+    vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(vm.editor.value)).then(res => {
       exportedData.addToTable(res.plans);
       vm.exportStatus = "";
       vm.performancePoints = [];
@@ -1522,6 +1522,10 @@ class Model {
         {value: "Get Feedback on Query Performance", title: "Get Feedback on Query Performance", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "", link: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_query_explain.htm"},
       ]
     };
+  }
+  recalculateSize() {
+    // Investigate if we can use the IntersectionObserver API here instead, once it is available.
+    this.tableModel.viewportChange();
   }
 }
 
@@ -1709,7 +1713,7 @@ class App extends React.Component {
   onQueryToolingChange(e) {
     let {model} = this.props;
     model.queryTooling = e.target.checked;
-    model.queryAutocompleteHandler();
+    model.editorAutocompleteHandler();
     model.didUpdate();
   }
   onSelectHistoryEntry(e) {
@@ -1792,7 +1796,7 @@ class App extends React.Component {
     let {model} = this.props;
     let url = new URL(window.location.href);
     let searchParams = url.searchParams;
-    searchParams.set("query", model.queryInput.value);
+    searchParams.set("query", model.editor.value);
     url.search = searchParams.toString();
     navigator.clipboard.writeText(url.toString());
     navigator.clipboard.writeText(url.toString());
@@ -1800,7 +1804,7 @@ class App extends React.Component {
   }
   onFormatQuery() {
     let {model} = this.props;
-    model.queryInput.value = model.formatQuery(model.queryInput.value);
+    model.editor.value = model.formatQuery(model.editor.value);
     model.didUpdate();
   }
   onQueryPlan(){
@@ -1850,35 +1854,7 @@ class App extends React.Component {
   }
   componentDidMount() {
     let {model} = this.props;
-    let queryInput = this.refs.query;
 
-    model.setQueryInput(queryInput);
-    //Set the cursor focus on query text area
-    if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
-      queryInput.focus();
-    }
-
-    function queryAutocompleteEvent(e) {
-      model.queryAutocompleteHandler(e);
-      model.didUpdate();
-    }
-
-    queryInput.addEventListener("input", queryAutocompleteEvent);
-    queryInput.addEventListener("select", queryAutocompleteEvent);
-    // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
-    queryInput.addEventListener("keyup", queryAutocompleteEvent);
-    queryInput.addEventListener("mouseup", queryAutocompleteEvent);
-
-    // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
-    // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50
-    queryInput.addEventListener("keydown", e => {
-      handlekeyDown(e, queryInput);
-      if (e.ctrlKey && e.key == " ") {
-        e.preventDefault();
-        model.queryAutocompleteHandler({ctrlSpace: true});
-        model.didUpdate();
-      }
-    });
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
@@ -1887,19 +1863,6 @@ class App extends React.Component {
       }
     });
 
-    let recalculateHeight = this.recalculateSize.bind(this);
-    if (!window.webkitURL) {
-      // Firefox
-      // Firefox does not fire a resize event. The next best thing is to listen to when the browser changes the style.height attribute.
-      new MutationObserver(recalculateHeight).observe(queryInput, {attributes: true});
-    } else {
-      // Chrome
-      // Chrome does not fire a resize event and does not allow us to get notified when the browser changes the style.height attribute.
-      // Instead we listen to a few events which are often fired at the same time.
-      // This is not required in Firefox, and Mozilla reviewers don't like it for performance reasons, so we only do this in Chrome via browser detection.
-      queryInput.addEventListener("mousemove", recalculateHeight);
-      addEventListener("mouseup", recalculateHeight);
-    }
     function resize() {
       model.winInnerHeight = innerHeight;
       model.didUpdate(); // Will call recalculateSize
@@ -1908,12 +1871,8 @@ class App extends React.Component {
     resize();
   }
   componentDidUpdate() {
-    this.recalculateSize();
-  }
-  recalculateSize() {
     let {model} = this.props;
-    // Investigate if we can use the IntersectionObserver API here instead, once it is available.
-    model.tableModel.viewportChange();
+    model.recalculateSize();
   }
   render() {
     let {model} = this.props;
@@ -1983,7 +1942,7 @@ class App extends React.Component {
             ),
           ),
         ),
-        h("textarea", {id: "query", ref: "query", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
+        h(Editor, {model}),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),

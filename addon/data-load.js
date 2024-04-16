@@ -164,69 +164,6 @@ export function copyToClipboard(value) {
     document.body.removeChild(temp);
   }
 }
-export function handlekeyDown(e, textarea) {
-  const {value, selectionStart, selectionEnd} = e.currentTarget;
-  const tabChar = "  ";//default is 2 spaces
-  if (e.key === "Tab") {
-    //TODO option to select 2 spaces, 4 spaces or tab \t
-    let selectedText = value.substring(selectionStart, selectionEnd);
-    let mod = 0;
-    if (e.shiftKey) {
-      e.preventDefault();
-      //unindent
-      let lineStart = value.substring(0, selectionStart + 1).lastIndexOf("\n") + 1;
-      if (value.substring(lineStart).startsWith(tabChar)) {
-        textarea.setRangeText("", lineStart, lineStart + 2, "preserve");
-        mod -= tabChar.length;
-      }
-      let breakLineRegEx = /\n/gmi;
-      let breakLineMatch;
-      while ((breakLineMatch = breakLineRegEx.exec(selectedText)) !== null) {
-        lineStart = selectionStart + breakLineMatch.index + breakLineMatch[0].length;
-        if (value.substring(lineStart).startsWith(tabChar)) {
-          textarea.setRangeText("", lineStart + mod, lineStart + 2 + mod, "preserve");
-          mod -= tabChar.length;
-        }
-      }
-    } else if (selectionStart !== selectionEnd) {
-      e.preventDefault();
-      //indent
-      let lineStart = value.substring(0, selectionStart + 1).lastIndexOf("\n") + 1;
-      textarea.setRangeText(tabChar, lineStart, lineStart, "preserve");
-      mod += tabChar.length;
-      let breakLineRegEx = /\n/gmi;
-      let breakLineMatch;
-      while ((breakLineMatch = breakLineRegEx.exec(selectedText)) !== null) {
-        lineStart = selectionStart + breakLineMatch.index + breakLineMatch[0].length;
-        textarea.setRangeText(tabChar, lineStart + mod, lineStart + mod, "preserve");
-        mod += tabChar.length;
-      }
-    } else {
-      e.preventDefault();
-      textarea.setRangeText(tabChar, selectionStart, selectionStart, "preserve");
-    }
-  } else if (e.key == "[" || e.key == "(" || e.key == "{" || e.key == "'" || e.key == "\"") {
-    e.preventDefault();
-    const openToCloseChar = new Map([
-      ["[", "]"],
-      ["(", ")"],
-      ["{", "}"],
-      ["'", "'"],
-      ["\"", "\""],
-    ]);
-    const closeChar = openToCloseChar.get(e.key);
-    textarea.setRangeText(e.key, selectionStart, selectionStart, "end");
-    textarea.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
-  } else if (e.key === "Backspace") {
-    const textBeforeCaret = value.substring(0, selectionStart);
-    let indentRgEx = new RegExp("\n(" + tabChar + ")+$", "g");
-    if (textBeforeCaret.match(indentRgEx) && selectionStart == selectionEnd) {
-      e.preventDefault();
-      textarea.setRangeText("", selectionStart, selectionStart - tabChar.length, "preserve");
-    }
-    //TODO if previous input without other keydown (even move)is openChar then delete open and closeChar
-  }
-}
 
 /*
 A table that contains millions of records will freeze the browser if we try to render the entire table at once.
@@ -826,5 +763,135 @@ export class ScrollTable extends React.Component {
         )
       )
     );
+  }
+}
+
+export class Editor extends React.Component {
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+    this.handlekeyDown = this.handlekeyDown.bind(this);
+    this.editorAutocompleteEvent = this.editorAutocompleteEvent.bind(this);
+  }
+
+  componentDidMount() {
+    let {model} = this.props;
+    let editorInput = this.refs.editor;
+
+    model.setEditor(editorInput);
+    //Set the cursor focus on script text area use the same than query
+    if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
+      editorInput.focus();
+    }
+    let recalculateHeight = model.recalculateSize.bind(model);
+    if (!window.webkitURL) {
+      // Firefox
+      // Firefox does not fire a resize event. The next best thing is to listen to when the browser changes the style.height attribute.
+      new MutationObserver(recalculateHeight).observe(editorInput, {attributes: true});
+    } else {
+      // Chrome
+      // Chrome does not fire a resize event and does not allow us to get notified when the browser changes the style.height attribute.
+      // Instead we listen to a few events which are often fired at the same time.
+      // This is not required in Firefox, and Mozilla reviewers don't like it for performance reasons, so we only do this in Chrome via browser detection.
+      editorInput.addEventListener("mousemove", recalculateHeight);
+      addEventListener("mouseup", recalculateHeight);
+    }
+    function resize() {
+      model.winInnerHeight = innerHeight;
+      model.didUpdate(); // Will call recalculateSize
+    }
+    addEventListener("resize", resize);
+    resize();
+  }
+  editorAutocompleteEvent(e) {
+    let {model} = this.props;
+    model.editorAutocompleteHandler(e);
+    model.didUpdate();
+  }
+  handlekeyDown(e) {
+    // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
+    // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50
+    let {model} = this.props;
+    if (e.ctrlKey && e.key == " ") {
+      e.preventDefault();
+      model.editorAutocompleteHandler({ctrlSpace: true});
+      model.didUpdate();
+      return;
+    }
+    const {value, selectionStart, selectionEnd} = e.currentTarget;
+    const tabChar = "  ";//default is 2 spaces
+    if (e.key === "Tab") {
+      //TODO option to select 2 spaces, 4 spaces or tab \t
+      let selectedText = value.substring(selectionStart, selectionEnd);
+      let mod = 0;
+      if (e.shiftKey) {
+        e.preventDefault();
+        //unindent
+        let lineStart = value.substring(0, selectionStart + 1).lastIndexOf("\n") + 1;
+        if (value.substring(lineStart).startsWith(tabChar)) {
+          model.editor.setRangeText("", lineStart, lineStart + 2, "preserve");
+          mod -= tabChar.length;
+        }
+        let breakLineRegEx = /\n/gmi;
+        let breakLineMatch;
+        while ((breakLineMatch = breakLineRegEx.exec(selectedText)) !== null) {
+          lineStart = selectionStart + breakLineMatch.index + breakLineMatch[0].length;
+          if (value.substring(lineStart).startsWith(tabChar)) {
+            model.editor.setRangeText("", lineStart + mod, lineStart + 2 + mod, "preserve");
+            mod -= tabChar.length;
+          }
+        }
+      } else if (selectionStart !== selectionEnd) {
+        e.preventDefault();
+        //indent
+        let lineStart = value.substring(0, selectionStart + 1).lastIndexOf("\n") + 1;
+        model.editor.setRangeText(tabChar, lineStart, lineStart, "preserve");
+        mod += tabChar.length;
+        let breakLineRegEx = /\n/gmi;
+        let breakLineMatch;
+        while ((breakLineMatch = breakLineRegEx.exec(selectedText)) !== null) {
+          lineStart = selectionStart + breakLineMatch.index + breakLineMatch[0].length;
+          model.editor.setRangeText(tabChar, lineStart + mod, lineStart + mod, "preserve");
+          mod += tabChar.length;
+        }
+      } else {
+        e.preventDefault();
+        model.editor.setRangeText(tabChar, selectionStart, selectionStart, "preserve");
+      }
+    } else if (e.key == "[" || e.key == "(" || e.key == "{" || e.key == "'" || e.key == "\"") {
+      e.preventDefault();
+      const openToCloseChar = new Map([
+        ["[", "]"],
+        ["(", ")"],
+        ["{", "}"],
+        ["'", "'"],
+        ["\"", "\""],
+      ]);
+      const closeChar = openToCloseChar.get(e.key);
+      model.editor.setRangeText(e.key, selectionStart, selectionStart, "end");
+      model.editor.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
+    } else if (e.key === "Backspace") {
+      const textBeforeCaret = value.substring(0, selectionStart);
+      let indentRgEx = new RegExp("\n(" + tabChar + ")+$", "g");
+      if (textBeforeCaret.match(indentRgEx) && selectionStart == selectionEnd) {
+        e.preventDefault();
+        model.editor.setRangeText("", selectionStart, selectionStart - tabChar.length, "preserve");
+      }
+      //TODO if previous input without other keydown (even move)is openChar then delete open and closeChar
+    }
+  }
+  componentWillUnmount() {
+    //let {model} = this.props;
+    //TODO
+  }
+
+  componentDidUpdate() {
+    //let {model} = this.props;
+    //TODO
+  }
+
+  render() {
+    let {model} = this.props;
+    return h("textarea", {id: "editor", ref: "editor", onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.editorAutocompleteEvent, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeydown: this.handlekeyDown, style: {maxHeight: (model.winInnerHeight - 200) + "px"}});
   }
 }

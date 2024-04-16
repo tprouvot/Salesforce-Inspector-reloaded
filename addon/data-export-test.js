@@ -10,15 +10,15 @@ export async function dataExportTest(test) {
   let {model, sfConn} = await loadPage("data-export.html");
   let vm = model;
   let queryInput = model.queryInput;
-  function queryAutocompleteEvent() {
-    model.queryAutocompleteHandler();
+  function editorAutocompleteEvent() {
+    model.editorAutocompleteHandler();
   }
 
   function setQuery(a, b, c) {
     queryInput.value = a + b + c;
     queryInput.selectionStart = a.length;
     queryInput.selectionEnd = a.length + b.length;
-    queryAutocompleteEvent();
+    editorAutocompleteEvent();
   }
 
   function waitForSpinner() {

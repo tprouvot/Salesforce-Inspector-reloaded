@@ -241,3 +241,11 @@ From the option page, you can customize the default favicon by:
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
 
 <img width="901" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
+
+## Select all fields in a query
+
+This functionality already exists in the legacy version but since many users don't know about it, I would like to document it.
+When on the export page, put the cursor between `SaELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
+If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM`.
+
+![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)

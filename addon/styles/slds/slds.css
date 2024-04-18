@@ -5726,7 +5726,6 @@ a.slds-button--inverse:focus{
   max-height:calc((1.5rem + 1rem) * 10);
   overflow-y:auto;
 }
-
 [dir=rtl] .slds-dropdown_center,
 [dir=rtl] .slds-dropdown--center{
   left:auto;
@@ -5734,7 +5733,6 @@ a.slds-button--inverse:focus{
   -webkit-transform:translateX(calc(50% - (0.875rem / 2)));
           transform:translateX(calc(50% - (0.875rem / 2)));
 }
-
 .slds-dropdown_actions a,
 .slds-dropdown--actions a{
   color:#0176d3;
@@ -5783,4 +5781,61 @@ a.slds-button--inverse:focus{
 }
 .slds-icon-text-default.slds-is-disabled{
   fill:var(--slds-g-color-neutral-base-80, #c9c9c9);
+}
+/* Button Group */
+.slds-button-group-row .slds-button-group-item + .slds-button-group-item{
+  margin-left:0.25rem;
+}
+.slds-button-group-row .slds-button-group-item .slds-button{
+  margin:0;
+}
+.slds-button-group,
+.slds-button-group-list{
+  display:-webkit-inline-box;
+  display:-ms-inline-flexbox;
+  display:inline-flex;
+}
+.slds-button-group .slds-button,
+.slds-button-group-list .slds-button{
+  border-radius:0;
+  border-width:1px;
+}
+.slds-button-group .slds-button:focus,
+.slds-button-group-list .slds-button:focus{
+  z-index:1;
+}
+
+.slds-button-group .slds-button + .slds-button,
+.slds-button-group .slds-button + .slds-button_last .slds-button,
+.slds-button-group .slds-button + .slds-button--last .slds-button,
+.slds-button-group-list li + li .slds-button{
+  margin-left:-1px;
+}
+
+.slds-button-group .slds-button_brand + .slds-button_last .slds-button_icon-brand,
+.slds-button-group .slds-button_brand + .slds-button--last .slds-button_icon-brand,
+.slds-button-group-list li:last-child .slds-button_icon-brand{
+  -webkit-box-shadow:inset 1px 0 0 var(--slds-g-color-neutral-base-100, white);
+          box-shadow:inset 1px 0 0 var(--slds-g-color-neutral-base-100, white);
+}
+
+.slds-button-group-list li:first-child .slds-button,
+.slds-button-group .slds-button:first-child{
+  border-radius:0.25rem 0 0 0.25rem;
+}
+.slds-button-group .slds-button:last-child,
+.slds-button-group-list li:last-child .slds-button,
+.slds-button-group .slds-button_last .slds-button,
+.slds-button-group .slds-button--last .slds-button,
+.slds-button-group .slds-button.slds-button_last,
+.slds-button-group .slds-button.slds-button--last,
+.slds-button-group .slds-button_last .slds-button:only-child,
+.slds-button-group .slds-button--last .slds-button:only-child,
+.slds-button-group .slds-button.slds-button_last,
+.slds-button-group .slds-button.slds-button--last{
+  border-radius:0 0.25rem 0.25rem 0;
+}
+.slds-button-group .slds-button:only-child,
+.slds-button-group-list li:only-child .slds-button{
+  border-radius:0.25rem;
 }

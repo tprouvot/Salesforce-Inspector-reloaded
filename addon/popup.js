@@ -1487,7 +1487,7 @@ class UserDetails extends React.PureComponent {
           h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
           h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs")
         ),
-        this.doSupportLoginAs(user) ? h("div", {className: "user-buttons center small-font slds-button-group top-space", role: "group"},
+        this.doSupportLoginAs(user) ? h("div", {className: "user-buttons justify-center small-font slds-button-group top-space", role: "group"},
           h("a", {href: this.getLoginAsLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs"),
           h("div", {ref: "buttonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
             h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.openMenu(), title: "Show other LoginAs options"},

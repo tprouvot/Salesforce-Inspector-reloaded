@@ -264,7 +264,9 @@ input.api-input {
 .center {
     text-align: center;
 }
-
+.justify-center{
+    justify-content: center;
+}
 ul.small-tabs {
     margin: 0;
     padding: 0;

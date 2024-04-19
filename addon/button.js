@@ -99,15 +99,14 @@ function initButton(sfHost, inInspector) {
     buttonElement.appendChild(img);
   }
 
-  function setFavicon(){
+  function setFavicon(sfHost){
     if (iFrameLocalStorage.useCustomFavicon){
-      let fav = iFrameLocalStorage.customFavicon;
+      let fav = iFrameLocalStorage[sfHost + "_customFavicon"];
       let link = document.createElement("link");
       link.setAttribute("rel", "icon");
       link.orgType = "image/x-icon";
-      //link.href = "https://github.githubassets.com/favicons/favicon.svg";
       if (fav.indexOf("http") == -1){
-        fav = "https://github.com/tprouvot/Salesforce-Inspector-reloaded/tree/releaseCandidate/addon/images/favicons/" + fav + ".png?raw=true";
+        fav = "https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/releaseCandidate/addon/images/favicons/" + fav + ".png";
       }
       link.href = fav;
       document.head.appendChild(link);

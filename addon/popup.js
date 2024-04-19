@@ -8,14 +8,7 @@ let h = React.createElement;
 {
   parent.postMessage({
     insextInitRequest: true,
-    iFrameLocalStorage: {
-      popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
-      popupArrowPosition: JSON.parse(localStorage.getItem("popupArrowPosition")),
-      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder")),
-      customFavicon: "orange",
-      useCustomFavicon: JSON.parse(localStorage.getItem("useCustomFavicon")),
-      extensionId: chrome.i18n.getMessage("@@extension_id")
-    }
+    iFrameLocalStorage: JSON.parse(JSON.stringify(localStorage))
   }, "*");
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent) {

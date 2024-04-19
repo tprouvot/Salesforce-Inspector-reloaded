@@ -29,7 +29,6 @@ function initButton(sfHost, inInspector) {
 
   addFlowScrollability();
 
-
   function addFlowScrollability(popupEl) {
     const currentUrl = window.location.href;
     // Check the current URL for the string "builder_platform_interaction"
@@ -99,6 +98,20 @@ function initButton(sfHost, inInspector) {
     buttonElement.appendChild(img);
   }
 
+  function setFavicon(sfHost){
+    if (iFrameLocalStorage.useCustomFavicon){
+      let fav = iFrameLocalStorage[sfHost + "_customFavicon"];
+      let link = document.createElement("link");
+      link.setAttribute("rel", "icon");
+      link.orgType = "image/x-icon";
+      if (fav.indexOf("http") == -1){
+        fav = "https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/releaseCandidate/addon/images/favicons/" + fav + ".png";
+      }
+      link.href = fav;
+      document.head.appendChild(link);
+    }
+  }
+
   function loadPopup() {
     btn.addEventListener("click", () => {
       if (!rootEl.classList.contains("insext-active")) {
@@ -136,6 +149,7 @@ function initButton(sfHost, inInspector) {
         }
         setRootCSSProperties(rootEl, btn);
         addFlowScrollability(popupEl);
+        setFavicon(sfHost);
         popupEl.contentWindow.postMessage({
           insextInitResponse: true,
           sfHost,
@@ -227,5 +241,4 @@ function initButton(sfHost, inInspector) {
       }
     }
   }
-
 }

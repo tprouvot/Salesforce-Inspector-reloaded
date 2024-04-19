@@ -2,6 +2,8 @@
 
 ## Version 1.24
 
+- Add option to customize org favicon [feature 180](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/180)
+
 ## Version 1.23
 
 - Add new [setup pages](https://help.salesforce.com/s/articleView?id=release-notes.rn_general_setup_domain_prepare.htm&release=246&type=5) domain [feature 389](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/389) (by [akalatksy](https://github.com/akalatksy))

@@ -139,13 +139,18 @@ class App extends React.PureComponent {
       "o": ["tab", "objectTab"],
       "u": ["tab", "userTab"],
       "s": ["tab", "shortcutTab"],
-      "r": ["tab", "orgTab"]
+      "r": ["tab", "orgTab"],
+      "Escape": ["", "quit"]
     };
     if (!actionMap[e.key]) {
       return;
     }
     e.preventDefault();
     const [action, target] = actionMap[e.key];
+    if (target === 'quit') {
+      closePopup();
+      return;
+    }
     if (action === "all") {
       refs.showAllDataBox.refs?.showAllDataBoxSObject?.[target]();
     } else if (action === "click" && refs[target]) {

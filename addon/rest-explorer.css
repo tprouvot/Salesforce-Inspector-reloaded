@@ -336,6 +336,10 @@ textarea[readonly] {
   border-radius: 0;
   border: none;
   border-top: 1px solid #DDDBDA;
+  resize: vertical;
+  word-wrap: normal;
+  font-size: 11px;
+  height: 40em;
 }
 
 #help-btn {

@@ -101,6 +101,7 @@ class Model {
     this.autocompleteProgress = {};
     this.exportProgress = {};
     this.queryName = "";
+    this.apiResponse = null;
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
       "SELECT Id FROM ",
       "SELECT Id FROM WHERE",
@@ -228,23 +229,10 @@ class Model {
           && this.exportedData.records.length < 20001 && !this.exportStatus.includes("Exporting") && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
   }
   copyAsCsv() {
-    let separator = getSeparator();
-    copyToClipboard(this.exportedData.csvSerialize(separator));
+    copyToClipboard(this.exportedData.csvSerialize(","));
   }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
-  }
-  deleteRecords(e) {
-    let separator = getSeparator();
-    let data = this.exportedData.csvSerialize(separator);
-    let encodedData = btoa(data);
-
-    let args = new URLSearchParams();
-    args.set("host", this.sfHost);
-    args.set("data", encodedData);
-    if (this.queryTooling) args.set("apitype", "Tooling");
-
-    window.open("data-import.html?" + args, getLinkTarget(e));
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -767,31 +755,24 @@ class Model {
     }
   }
   doSend() {
-    let vm = this; // eslint-disable-line consistent-this
-    //TODO send request
-
-
-
-    vm.spinFor(sfConn.rest(vm.sfLink + vm.queryInput.value, {progressHandler: vm.autocompleteProgress})
+    this.spinFor(sfConn.rest(this.queryInput.value, {progressHandler: this.autocompleteProgress})
       .catch(err => {
         if (err.name != "AbortError") {
-          vm.autocompleteResults = {
+          this.autocompleteResults = {
             title: "Error: " + err.message,
             results: []
           };
         }
         return null;
       })
-      .then(result => {
-        vm.autocompleteProgress = {};
+      .then((result) => {
         if (!result) {
           return;
         }
+        this.parseResponse(result, "Success");
         console.log(result);
       }));
 
-    //let apiPromise = sfConn.rest(vm.sfLink + vm.queryInput.value);
-    //this.performRequest(apiPromise);
 
     /*
     let exportedData = new RecordTable(vm);
@@ -879,20 +860,13 @@ class Model {
     vm.updatedExportedData();*/
   }
 
-  performRequest(apiPromise) {
-    this.spinFor(apiPromise.then(result => {
-      this.parseResponse(result, "Success");
-    }, err => {
-      this.parseResponse(err.detail || err.message, "Error");
-    }));
-  }
-
   parseResponse(result, status) {
+
     // Recursively explore the JSON structure, discovering tables and their rows and columns.
     let apiSubUrls = [];
     let groupUrls = {};
     let textViews = [
-      {name: "Raw JSON", value: JSON.stringify(result, null, "    ")}
+      {name: "Raw JSON", checked: true, value: JSON.stringify(result, null, "    ")}
     ];
     let tRow = {value: result, cells: null, parent: null}; // The root row
     let tViews = {
@@ -1267,7 +1241,7 @@ class App extends React.Component {
   }
   recalculateSize() {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
-    this.scrollTable.viewportChange();
+    //this.scrollTable.viewportChange();
   }
   render() {
     let {model} = this.props;
@@ -1364,13 +1338,56 @@ class App extends React.Component {
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy")
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
-          h("span", {className: "result-status flex-right"},
-            h("span", {}, model.exportStatus),
+          model.apiResponse && h("span", {className: "result-status flex-right"},
+            h("span", {}, model.apiResponse.status),
           ),
         ),
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
-        h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null}
-          /* the scroll table goes here */
+        h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null},
+          model.apiResponse && h("div", {},
+            h("ul", {className: "slds-m-left_medium"},
+              model.apiResponse.textViews.map(textView =>
+                h("li", {key: textView.name},
+                  h("label", {},
+                    h("input", {type: "radio", name: "textView", checked: model.selectedTextView == textView, onChange: () => { model.selectedTextView = textView; model.didUpdate(); }}),
+                    " " + textView.name
+                  )
+                )
+              )
+            ),
+            model.selectedTextView && !model.selectedTextView.table && h("div", {},
+              h("textarea", {readOnly: true, value: model.selectedTextView.value})
+            ),
+            model.selectedTextView && model.selectedTextView.table && h("div", {},
+              h("table", {className: "scrolltable-scrolled"},
+                h("tbody", {},
+                  model.selectedTextView.table.map((row, key) =>
+                    h("tr", {key},
+                      row.map((cell, key) =>
+                        h("td", {key, className: "scrolltable-cell"}, "" + cell)
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+            model.apiResponse.apiGroupUrls && h("ul", {},
+              model.apiResponse.apiGroupUrls.map((apiGroupUrl, key) =>
+                h("li", {key},
+                  h("a", {href: model.openGroupUrl(apiGroupUrl)}, apiGroupUrl.jsonPath),
+                  " - " + apiGroupUrl.label
+                )
+              )
+            ),
+            model.apiResponse.apiSubUrls && h("ul", {},
+              model.apiResponse.apiSubUrls.map((apiSubUrl, key) =>
+                h("li", {key},
+                  h("a", {href: model.openSubUrl(apiSubUrl)}, apiSubUrl.jsonPath),
+                  " - " + apiSubUrl.label
+                )
+              )
+            )
+          )
         )
       )
     );
@@ -1398,7 +1415,6 @@ class App extends React.Component {
     if (parent && parent.isUnitTest) { // for unit tests
       parent.insextTestLoaded({model, sfConn});
     }
-
   });
 
 }
@@ -1409,12 +1425,4 @@ function getLinkTarget(e) {
   } else {
     return "_top";
   }
-}
-
-function getSeparator() {
-  let separator = ",";
-  if (localStorage.getItem("csvSeparator")) {
-    separator = localStorage.getItem("csvSeparator");
-  }
-  return separator;
 }

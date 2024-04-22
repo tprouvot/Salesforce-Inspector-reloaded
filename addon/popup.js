@@ -1941,28 +1941,32 @@ class Autocomplete extends React.PureComponent {
   }
   handleFocus() {
     let {recentItems} = this.props;
-    sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+50").then(res => {
+    sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+100").then(res => {
+      let itemsIds = new Set();
       res.records.forEach(recentItem => {
-        recentItems.push({key: recentItem.Id,
-          value: {recordId: recentItem.Id, isRecent: true, sobject: {keyPrefix: recentItem.Id.slice(0, 3), label: recentItem.Type, name: recentItem.Name}},
-          element: [
-            h("div", {className: "autocomplete-item-main", key: "main"},
-              recentItem.Name,
-            ),
-            h("div", {className: "autocomplete-item-sub", key: "sub"},
-              h(MarkSubstring, {
-                text: recentItem.Type,
-                start: -1,
-                length: 0
-              }),
-              " • ",
-              h(MarkSubstring, {
-                text: recentItem.Id,
-                start: -1,
-                length: 0
-              })
-            )
-          ]});
+        if (!itemsIds.has(recentItem.Id)){
+          recentItems.push({key: recentItem.Id,
+            value: {recordId: recentItem.Id, isRecent: true, sobject: {keyPrefix: recentItem.Id.slice(0, 3), label: recentItem.Type, name: recentItem.Name}},
+            element: [
+              h("div", {className: "autocomplete-item-main", key: "main"},
+                recentItem.Name,
+              ),
+              h("div", {className: "autocomplete-item-sub", key: "sub"},
+                h(MarkSubstring, {
+                  text: recentItem.Type,
+                  start: -1,
+                  length: 0
+                }),
+                " • ",
+                h(MarkSubstring, {
+                  text: recentItem.Id,
+                  start: -1,
+                  length: 0
+                })
+              )
+            ]});
+          itemsIds.add(recentItem.Id);
+        }
       });
       this.setState({recentItems, showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
     });

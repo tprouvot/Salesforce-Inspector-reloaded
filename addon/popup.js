@@ -147,7 +147,7 @@ class App extends React.PureComponent {
     }
     e.preventDefault();
     const [action, target] = actionMap[e.key];
-    if (target === 'quit') {
+    if (target === "quit") {
       closePopup();
       return;
     }

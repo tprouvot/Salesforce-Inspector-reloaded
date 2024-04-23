@@ -175,11 +175,11 @@ function initButton(sfHost, inInspector) {
       updateButtonCSSPropertiesIfNeeded(rootEl, btn, popupEl, popupArrowOrientation, popupArrowPosition);
 
     }
-    function endmove(event) {
+    function endmove() {
       window.removeEventListener("mousemove", onbuttonmove);
       window.removeEventListener("mouseup", endmove);
     }
-    btn.addEventListener("mousedown", (event) => {
+    btn.addEventListener("mousedown", () => {
       window.addEventListener("mousemove", onbuttonmove);
       window.addEventListener("mouseup", endmove);
     });
@@ -195,7 +195,7 @@ function initButton(sfHost, inInspector) {
       if (e.data.insextInitRequest) {
         // Set CSS classes for arrow button position
         iFrameLocalStorage = e.data.iFrameLocalStorage;
-        
+
         updateButtonCSSPropertiesFromStorage(rootEl, btn, popupEl);
         addFlowScrollability(popupEl);
         popupEl.contentWindow.postMessage({

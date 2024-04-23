@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable} from "./data-load.js";
+
 
 class Model {
   constructor(sfHost) {

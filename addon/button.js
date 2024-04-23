@@ -99,8 +99,8 @@ function initButton(sfHost, inInspector) {
   }
 
   function setFavicon(sfHost){
-    if (iFrameLocalStorage.useCustomFavicon){
-      let fav = iFrameLocalStorage[sfHost + "_customFavicon"];
+    let fav = iFrameLocalStorage[sfHost + "_customFavicon"];
+    if (iFrameLocalStorage.useCustomFavicon && fav){
       let link = document.createElement("link");
       link.setAttribute("rel", "icon");
       link.orgType = "image/x-icon";

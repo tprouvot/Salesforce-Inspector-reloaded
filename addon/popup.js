@@ -191,7 +191,6 @@ class App extends React.PureComponent {
 
     // listen to changes from the options page
     window.addEventListener("storage", e => {
-      console.log(e.key,e.isTrusted)
       if (!e.isTrusted || (e.key !== "prefersLightColorScheme" && e.key !== "prefersPureAccentScheme"))
         return;
 
@@ -203,10 +202,8 @@ class App extends React.PureComponent {
       const htmlValue = html.dataset[category];
 
       if (value != htmlValue) { // avoid recursion
-        const html = document.documentElement;
         html.dataset[category] = value;
-
-        parent.postMessage({category, value}, "*"); //update #insext
+        parent.postMessage({category, value}, "*"); //update #insext (button.js)
       }
     });
   }

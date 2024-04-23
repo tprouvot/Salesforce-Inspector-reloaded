@@ -172,10 +172,11 @@ function initButton(sfHost, inInspector) {
       if (e.data.category && e.data.value) {
         const category = e.data.category;
         const value = e.data.value;
-
+        //rootEl is #insext
         const insextValue = rootEl.dataset[category];
-        if (insextValue != null && value != insextValue) {
-          updateInsextDataset(value, category);
+
+        if (insextValue == null || value != insextValue) {
+            rootEl.dataset[category] = value;
         }
       }
     });
@@ -237,41 +238,15 @@ function initButton(sfHost, inInspector) {
     }
   }
 
-  function updateInsextDataset(option, category) {
-    //rootEl is #insext
-    rootEl.dataset[category] = option;
-    const storageName = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
-    localStorage.setItem(storageName, option);
-  }
-  function setupThemeChange() {
-    function getTheme(mediaQuery) {
-      return mediaQuery.matches ? "dark" : "light";
-    }
-    function updateDataset(theme) {
-      updateInsextDataset(theme, "theme");
-    }
-    // listen for changes to color scheme preference
-    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
-    prefersDarkScheme.addEventListener("change", mediaQuery => {
-      const theme = getTheme(mediaQuery);
-      updateDataset(theme);
-    });
-
-    let savedTheme = localStorage.getItem("preferredColorScheme");
-    if (savedTheme == null){
-      // if no theme saved, default to preferred scheme (or light if not available)
-      savedTheme = getTheme(prefersDarkScheme);
-    }
-    updateDataset(savedTheme);
-  }
-  function setupAccentOption() {
-    const savedAccent = localStorage.getItem("preferredAccentScheme");
-    if (savedAccent != null){
-      updateInsextDataset(savedAccent, "accent");
-    }
-  }
   function setupColorChange() {
-    setupThemeChange();
-    setupAccentOption();
+    const savedTheme = localStorage.getItem("prefersLightColorScheme");
+    const themeValue = savedTheme === "true" ? "light" : "dark";
+    if(savedTheme != null)
+        rootEl.dataset.theme = themeValue; //rootEl is #insext
+
+    const savedAccent = localStorage.getItem("prefersPureAccentScheme");
+    const accentValue = savedAccent === "false" ? "accent" : "";
+    if(savedAccent != null)
+        rootEl.dataset.accent = accentValue; //rootEl is #insext
   }
 }

@@ -128,7 +128,7 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Tab6",
         title: "User Interface",
         content: [
-          {option: Option, props: {type: "toggle", title: "Set default theme to light", storageKey: "prefersLightColorScheme", default: true}},
+          {option: Option, props: {type: "toggle", title: "Use light theme", storageKey: "prefersLightColorScheme", default: true}},
           {option: Option, props: {type: "toggle", title: "Use pure colors", storageKey: "prefersPureAccentScheme", default: true}},
         ]
       }
@@ -322,9 +322,6 @@ class Option extends React.Component {
     const value = isThemeKey ? (enabled ? "light" : "dark") : (enabled ? "default" : "accent");
     const html = document.documentElement;
     html.dataset[category] = value;
-    // update old localStorage [to be removed]
-    const oldCategory = isThemeKey ? "preferredColorScheme" : "preferredAccentScheme";
-    localStorage.setItem(oldCategory, value);
   }
 
   onChangeToggle(e) {

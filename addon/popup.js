@@ -80,15 +80,11 @@ class App extends React.PureComponent {
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
     };
-    this.setupThemeChange();
-    this.setupAccentOption();
     this.setupColorListeners();
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
-    this.onThemeChange = this.onThemeChange.bind(this);
-    this.saveColorChanges = this.saveColorChanges.bind(this);
     this.setupColorListeners = this.setupColorListeners.bind(this);
     this.updateReleaseNotesViewed = this.updateReleaseNotesViewed.bind(this);
   }
@@ -190,98 +186,29 @@ class App extends React.PureComponent {
     }
   }
 
-  saveColorChanges(value, category) {
-    const html = document.documentElement;
-    html.dataset[category] = value;
-    const storageName = category === "theme" ? "preferredColorScheme" : "preferredAccentScheme";
-    localStorage.setItem(storageName, value);
-
-    parent.postMessage({category, value}, "*");
-  }
-
   setupColorListeners() {
     const html = document.documentElement;
-    const changeColor = (value, category) => {
-      const htmlValue = html.dataset[category];
-      if (value != htmlValue) { // avoid recursion
-        const isThemeCategory = category === "theme";
-        isThemeCategory ? this.updateTheme(value) : this.saveColorChanges(value, category);
-      }
-    };
 
-    // listen to possible updates from background page
-    window.addEventListener("message", e => {
-      if (e.source != parent) {
-        return;
-      }
-      if (e.data.category && e.data.value) {
-        const category = e.data.category;
-        const value = e.data.value;
-        changeColor(value, category);
-      }
-    });
-
-    // listen to changes on other pages of the inspector
+    // listen to changes from the options page
     window.addEventListener("storage", e => {
-      if (!e.isTrusted || (e.key !== "preferredColorScheme" && e.key !== "preferredAccentScheme")) {
+      console.log(e.key,e.isTrusted)
+      if (!e.isTrusted || (e.key !== "prefersLightColorScheme" && e.key !== "prefersPureAccentScheme"))
         return;
+
+      const isThemeKey = e.key === "prefersLightColorScheme";
+      const newValueBool = e.newValue === "true";
+
+      const category = isThemeKey ? "theme" : "accent";
+      const value = isThemeKey ? (newValueBool ?  "light" : "dark") : (newValueBool ? "default" : "accent");
+      const htmlValue = html.dataset[category];
+
+      if (value != htmlValue) { // avoid recursion
+        const html = document.documentElement;
+        html.dataset[category] = value;
+
+        parent.postMessage({category, value}, "*"); //update #insext
       }
-      const category = e.key === "preferredColorScheme" ? "theme" : "accent";
-      const value = e.newValue;
-      changeColor(value, category);
     });
-  }
-
-  updateTheme(theme, isSetup = false, callback = null) {
-    const light = document.getElementById("light-theme");
-    const dark = document.getElementById("dark-theme");
-    if (light == null || dark == null) {
-      setTimeout(() => this.updateTheme(theme, isSetup, this.saveColorChanges), 500);
-      return;
-    }
-
-    callback = callback || this.saveColorChanges;
-    callback(theme, "theme");
-
-    if (isSetup) {
-      // always show only one of light/dark toggles
-      theme === "dark" ? light.classList.remove("hide") : dark.classList.remove("hide");
-      return;
-    }
-
-    const lightHide = light.classList.contains("hide");
-    const darkHide = dark.classList.contains("hide");
-    if (lightHide ^ darkHide) {
-      light.classList.toggle("hide");
-      dark.classList.toggle("hide");
-    }
-  }
-
-  setupThemeChange() {
-    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
-    function getTheme(mediaQuery) {
-      return mediaQuery.matches ? "dark" : "light";
-    }
-
-    // listen for changes to color scheme preference
-    prefersDarkScheme.addEventListener("change", mediaQuery => {
-      const theme = getTheme(mediaQuery);
-      this.saveColorChanges(theme, "theme");
-    });
-
-    const savedTheme = localStorage.getItem("preferredColorScheme") || getTheme(prefersDarkScheme);
-    this.updateTheme(savedTheme, true);
-  }
-
-  onThemeChange() {
-    const html = document.documentElement;
-    const theme = html.dataset.theme === "light" ? "dark" : "light";
-    this.updateTheme(theme, false);
-  }
-
-  setupAccentOption() {
-    const savedAccent = localStorage.getItem("preferredAccentScheme") || "default";
-    this.saveColorChanges(savedAccent, "accent");
   }
 
 
@@ -450,9 +377,7 @@ class App extends React.PureComponent {
               title: "Update api version",
               onChange: this.onChangeApi,
               value: apiVersionInput.split(".0")[0]
-            }),
-            h("img", {id: "dark-theme", src: "images/moon.svg", className: "hide", onClick: this.onThemeChange, height: "20px", width: "20px", title: "Set color theme to dark."}),
-            h("img", {id: "light-theme", src: "images/sun.svg", className: "hide", onClick: this.onThemeChange, height: "20px", width: "20px", title: "Set color theme to light."})
+            })
           ),
           h("div", {className: "slds-col slds-size_3-of-12 slds-text-align_left slds-grid slds-grid_vertical slds-grid_vertical-align-center"},
             h("span", {className: "footer-small-text"}, (navigator.userAgentData?.platform.indexOf("mac") > -1 || navigator.userAgent.indexOf("mac") > -1) ? "[ctrl+option+i]" : "[ctrl+alt+i]",

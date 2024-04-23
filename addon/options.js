@@ -317,13 +317,14 @@ class Option extends React.Component {
   updateUI(key, enabled){
     if(key !== "prefersLightColorScheme" && key !== "prefersPureAccentScheme")
       return;
-    const category = key === "prefersLightColorScheme" ? "theme" : "accent";
-    const value = category === "theme" ? (enabled ? "light" : "dark") : (enabled ? "default" : "accent");
+    const isThemeKey = key === "prefersLightColorScheme";
+    const category = isThemeKey ? "theme" : "accent";
+    const value = isThemeKey ? (enabled ? "light" : "dark") : (enabled ? "default" : "accent");
     const html = document.documentElement;
     html.dataset[category] = value;
-    // send mesage to popup
-    const popup = document.querySelector("#insext > iframe");
-    popup.contentWindow.postMessage({category, value}, "*");
+    // update old localStorage [to be removed]
+    const oldCategory = isThemeKey ? "preferredColorScheme" : "preferredAccentScheme";
+    localStorage.setItem(oldCategory, value);
   }
 
   onChangeToggle(e) {

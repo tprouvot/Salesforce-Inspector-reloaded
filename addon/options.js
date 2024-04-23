@@ -128,8 +128,8 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Tab6",
         title: "User Interface",
         content: [
-          {option: ColorSchemeOption, key: 1},
-          {option: ColorAccentOption, key: 2}
+          {option: Option, props: {type: "toggle", title: "Set default theme to light", storageKey: "prefersLightColorScheme", default: true}},
+          {option: Option, props: {type: "toggle", title: "Use pure colors", storageKey: "prefersPureAccentScheme", default: true}},
         ]
       }
     ];
@@ -313,10 +313,24 @@ class Option extends React.Component {
     this.title = props.title;
   }
 
+  // change Theme or Accent
+  updateUI(key, enabled){
+    if(key !== "prefersLightColorScheme" && key !== "prefersPureAccentScheme")
+      return;
+    const category = key === "prefersLightColorScheme" ? "theme" : "accent";
+    const value = category === "theme" ? (enabled ? "light" : "dark") : (enabled ? "default" : "accent");
+    const html = document.documentElement;
+    html.dataset[category] = value;
+    // send mesage to popup
+    const popup = document.querySelector("#insext > iframe");
+    popup.contentWindow.postMessage({category, value}, "*");
+  }
+
   onChangeToggle(e) {
     const enabled = e.target.checked;
     this.setState({[this.key]: enabled});
     localStorage.setItem(this.key, JSON.stringify(enabled));
+    this.updateUI(this.key, enabled);
   }
 
   onChange(e) {
@@ -356,257 +370,6 @@ class Option extends React.Component {
         )
       );
     }
-  }
-}
-
-class ColorSchemeOption extends React.Component {
-  constructor(props) {
-    super(props);
-    this.setupThemeChange();
-    this.setupThemeListeners();
-    this.onThemeChange = this.onThemeChange.bind(this);
-    this.onThemeClick = this.onThemeClick.bind(this);
-    this.setupThemeListeners = this.setupThemeListeners.bind(this);
-    this.updateTheme = this.updateTheme.bind(this);
-  }
-
-  saveThemeChanges(theme) {
-    const html = document.documentElement;
-    html.dataset.theme = theme;
-    localStorage.setItem("preferredColorScheme", theme);
-
-    const popup = document.querySelector("#insext > iframe");
-    popup.contentWindow.postMessage({category: "theme", value: theme}, "*");
-  }
-
-  setupThemeListeners() {
-    const html = document.documentElement;
-    const popup = document.querySelector("#insext > iframe");
-    const mainCategory = "theme";
-    const changeColor = (value) => {
-      const htmlValue = html.dataset[mainCategory];
-      if (value != htmlValue) { // avoid recursion
-        const inputField = document.getElementById("checkbox-toggle-themeChange");
-        inputField.checked = !inputField.checked;
-        this.updateTheme(value, false);
-      }
-    };
-
-    // listen to possible updates from popup
-    window.addEventListener("message", e => {
-      if (e.source != popup.contentWindow) {
-        return;
-      }
-      if (e.data.category && e.data.value) {
-        const category = e.data.category;
-        if (category !== mainCategory) {
-          return;
-        }
-        const value = e.data.value;
-        changeColor(value);
-      }
-    });
-
-    // listen to changes on other pages of the inspector
-    window.addEventListener("storage", e => {
-      if (!e.isTrusted || e.key !== "preferredColorScheme") {
-        return;
-      }
-      const value = e.newValue;
-      changeColor(value);
-    });
-  }
-
-  updateTheme(theme, isSetup = false) {
-    const light = document.getElementById("light-theme");
-    const dark = document.getElementById("dark-theme");
-    const inputField = document.getElementById("checkbox-toggle-themeChange");
-    if (light == null || dark == null || inputField == null) {
-      setTimeout(() => this.updateTheme(theme, isSetup), 500);
-      return;
-    }
-    this.saveThemeChanges(theme, isSetup);
-
-    if (isSetup) {
-      const isDarkTheme = theme === "dark";
-      isDarkTheme ? dark.classList.remove("hide") : light.classList.remove("hide");
-      inputField.checked = isDarkTheme;
-    } else {
-      light.classList.toggle("hide");
-      dark.classList.toggle("hide");
-    }
-  }
-
-  setupThemeChange() {
-    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
-    function getTheme(mediaQuery) {
-      return mediaQuery.matches ? "dark" : "light";
-    }
-    // listen for changes to color scheme preference
-    prefersDarkScheme.addEventListener("change", mediaQuery => {
-      const theme = getTheme(mediaQuery);
-      this.updateTheme(theme, false);
-    });
-
-    const savedTheme = localStorage.getItem("preferredColorScheme") || getTheme(prefersDarkScheme);
-    this.updateTheme(savedTheme, true);
-  }
-
-  onThemeChange() {
-    const html = document.documentElement;
-    const theme = html.dataset.theme === "light" ? "dark" : "light";
-    this.updateTheme(theme, false);
-  }
-
-  onThemeClick() {
-    const inputField = document.getElementById("checkbox-toggle-themeChange");
-    if (inputField == null) return;
-    this.onThemeChange();
-  }
-
-  render() {
-    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "text-align-middle slds-grid slds-grid_vertical-align-center", style: {flexDirection: "row"}},
-        h("span", {style: {marginRight: "0.5rem"}}, "Set default theme to "),
-        h("img", {id: "dark-theme", src: "images/moon.svg", className: "hide", height: "20px", width: "20px", onClick: this.onThemeClick, title: "Dark scheme selected.", style: {filter: "invert(100%)"}}),
-        h("img", {id: "light-theme", src: "images/sun.svg", className: "hide", height: "20px", width: "20px", onClick: this.onThemeClick, title: "Light scheme selected."})
-      ),
-      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
-        h("label", {className: "slds-checkbox_toggle slds-grid"},
-          h("input", {type: "checkbox", required: true, id: "checkbox-toggle-themeChange", "aria-describedby": "checkbox-toggle-themeDescription", className: "slds-input", onChange: this.onThemeChange}),
-          h("span", {id: "checkbox-toggle-themeDescription", className: "slds-checkbox_faux_container center-label"},
-            h("span", {className: "slds-checkbox_faux"}),
-            h("span", {className: "slds-checkbox_on"}, "Dark"),
-            h("span", {className: "slds-checkbox_off"}, "Light"),
-          )
-        )
-      )
-    );
-  }
-}
-
-class ColorAccentOption extends React.Component {
-  constructor(props) {
-    super(props);
-    this.setupAccentOption();
-    this.setupAccentListeners();
-    this.setupAccentListeners = this.setupAccentListeners.bind(this);
-    this.updateAccent = this.updateAccent.bind(this);
-    this.onDefault = this.onDefault.bind(this);
-    this.onAccent = this.onAccent.bind(this);
-  }
-
-  updateDocument(accent) {
-    const html = document.documentElement;
-    html.dataset.accent = accent;
-    localStorage.setItem("preferredAccentScheme", accent);
-
-    const popup = document.querySelector("#insext > iframe");
-    popup.contentWindow.postMessage({category: "accent", value: accent}, "*");
-  }
-
-  setupAccentListeners() {
-    const html = document.documentElement;
-    const popup = document.querySelector("#insext > iframe");
-    const mainCategory = "accent";
-    const changeColor = (value) => {
-      const htmlValue = html.dataset[mainCategory];
-      if (value != htmlValue) { // avoid recursion
-        this.updateDocument(value);
-      }
-    };
-
-    // listen to possible updates from popup
-    window.addEventListener("message", e => {
-      if (e.source != popup.contentWindow) {
-        return;
-      }
-      if (e.data.category && e.data.value) {
-        const category = e.data.category;
-        if (category !== mainCategory) {
-          return;
-        }
-        const value = e.data.value;
-        changeColor(value);
-      }
-    });
-
-    // listen to changes on other pages of the inspector
-    window.addEventListener("storage", e => {
-      if (!e.isTrusted || e.key !== "preferredAccentScheme") {
-        return;
-      }
-      const value = e.newValue;
-      changeColor(value);
-    });
-  }
-
-  setupAccentOption() {
-    const defPick = document.getElementById("inspector-pick-default");
-    const accPick = document.getElementById("inspector-pick-accent");
-    if (defPick == null || accPick == null) {
-      setTimeout(() => this.setupAccentOption(), 500);
-      return;
-    }
-
-    const accent = localStorage.getItem("preferredAccentScheme") || "default";
-    const isDefault = accent === "default";
-
-    isDefault ? defPick.classList.add("selected") : accPick.classList.add("selected");
-    this.updateDocument(accent);
-  }
-
-  updateAccent(newAccent) {
-    // change the classes of the previews below
-    const defPick = document.getElementById("inspector-pick-default");
-    const accPick = document.getElementById("inspector-pick-accent");
-    if (defPick == null || accPick == null) {
-      setTimeout(() => this.updateAccent(newAccent), 500);
-      return;
-    }
-
-    const defSelected = defPick.classList.contains("selected");
-    const isDefault = newAccent === "default";
-    if (isDefault == defSelected) {
-      // the same preview has been clicked
-      return;
-    }
-
-    defPick.classList.toggle("selected");
-    accPick.classList.toggle("selected");
-    this.updateDocument(newAccent);
-  }
-
-  onDefault() {
-    this.updateAccent("default");
-  }
-
-  onAccent() {
-    this.updateAccent("accent");
-  }
-
-  render() {
-    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "text-align-middle slds-grid slds-grid_vertical-align-center", style: {flexDirection: "row"}},
-        h("span", {style: {marginRight: "0.5rem"}}, "Pick your favourite color accent."),
-      ),
-
-      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-
-      h("div", {id: "preview-holder"},
-        h("label", {},
-          h("div", {id: "inspector-pick-default", className: "default", "aria-describedby": "accent-default", onClick: this.onDefault},
-            h("span", {id: "accent-default"}, "Default")
-          )
-        ),
-        h("label", {},
-          h("div", {id: "inspector-pick-accent", className: "accent", "aria-describedby": "accent-accent", onClick: this.onAccent},
-            h("span", {id: "accent-accent"}, "Accent")
-          )
-        )
-      )
-    );
   }
 }
 

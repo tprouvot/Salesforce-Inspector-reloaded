@@ -105,7 +105,8 @@ function initButton(sfHost, inInspector) {
       link.setAttribute("rel", "icon");
       link.orgType = "image/x-icon";
       if (fav.indexOf("http") == -1){
-        fav = "https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/releaseCandidate/addon/images/favicons/" + fav + ".png";
+        fav = chrome.runtime.getURL("images/favicons/" + fav + ".png");
+        //fav = "https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/releaseCandidate/addon/images/favicons/" + fav + ".png";
       }
       link.href = fav;
       document.head.appendChild(link);

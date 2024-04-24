@@ -56,7 +56,7 @@ html {
     --inspector-transition-function: ease-in-out;
 }
 
-#insext, :is(html, #insext)[data-theme="light"] {
+:is(html, #insext)[data-theme="light"] {
     --inspector-background: var(--inspector-white);
     --inspector-text: var(--inspector-black);
     --inspector-inverted-text: var(--inspector-background);
@@ -98,7 +98,7 @@ html {
     --inspector-accent-text-preview: var(--inspector-accent-black);
 }
 
-#insext, :is(html, #insext)[data-theme="dark"] {
+:is(html, #insext)[data-theme="dark"] {
     --inspector-background: var(--inspector-black);
     --inspector-text: var(--inspector-white);
     --inspector-inverted-text: var(--inspector-background);
@@ -140,7 +140,7 @@ html {
     --inspector-accent-text-preview: var(--inspector-accent-white);
 }
 
-#insext, :is(html, #insext)[data-theme="light"][data-accent="accent"] {
+:is(html, #insext)[data-theme="light"][data-accent="accent"] {
     --inspector-background: var(--inspector-accent-white);
     --inspector-text: var(--inspector-accent-black);
     --inspector-inverted-text: var(--inspector-background);
@@ -182,7 +182,7 @@ html {
     --inspector-accent-text-preview: var(--inspector-text);
 }
 
-#insext, :is(html, #insext)[data-theme="dark"][data-accent="accent"] {
+:is(html, #insext)[data-theme="dark"][data-accent="accent"] {
     --inspector-background: var(--inspector-accent-black);
     --inspector-text: var(--inspector-accent-white);
     --inspector-inverted-text: var(--inspector-background);

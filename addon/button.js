@@ -238,15 +238,23 @@ function initButton(sfHost, inInspector) {
     }
   }
 
-  function setupColorChange() {
-    const savedTheme = localStorage.getItem("prefersLightColorScheme");
-    const themeValue = savedTheme === "true" ? "light" : "dark";
-    if(savedTheme != null)
-        rootEl.dataset.theme = themeValue; //rootEl is #insext
+  function setupColorChange(error = 0) {
+    const storage = window[0].localStorage;
+    if(error > 5)
+      return console.error("Didn't find Inspector's storage");
+    if(!window[0].location.pathname.endsWith("popup.html"))
+      return setTimeout(() => setupColorChange(error+=1), 500);
 
-    const savedAccent = localStorage.getItem("prefersPureAccentScheme");
-    const accentValue = savedAccent === "false" ? "accent" : "";
-    if(savedAccent != null)
+    const savedTheme = storage.getItem("prefersLightColorScheme");
+    if(savedTheme != null){
+        const themeValue = savedTheme === "true" ? "light" : "dark";
+        rootEl.dataset.theme = themeValue; //rootEl is #insext
+    }
+
+    const savedAccent = storage.getItem("prefersPureAccentScheme");
+    if(savedAccent != null){
+        const accentValue = savedAccent === "false" ? "accent" : "";
         rootEl.dataset.accent = accentValue; //rootEl is #insext
+    }
   }
 }

@@ -245,15 +245,15 @@ function initButton(sfHost, inInspector) {
     if(!window[0].location.pathname.endsWith("popup.html"))
       return setTimeout(() => setupColorChange(error+=1), 500);
 
-    const savedTheme = storage.getItem("prefersLightColorScheme");
+    const savedTheme = storage.getItem("enableDarkMode");
     if(savedTheme != null){
-        const themeValue = savedTheme === "true" ? "light" : "dark";
+        const themeValue = savedTheme === "true" ? "dark" : "light";
         rootEl.dataset.theme = themeValue; //rootEl is #insext
     }
 
-    const savedAccent = storage.getItem("prefersPureAccentScheme");
+    const savedAccent = storage.getItem("enableAccentColors");
     if(savedAccent != null){
-        const accentValue = savedAccent === "false" ? "accent" : "";
+        const accentValue = savedAccent === "true" ? "accent" : "default";
         rootEl.dataset.accent = accentValue; //rootEl is #insext
     }
   }

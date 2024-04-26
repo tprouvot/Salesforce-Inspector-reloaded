@@ -128,8 +128,8 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Tab6",
         title: "User Interface",
         content: [
-          {option: Option, props: {type: "toggle", title: "Use light theme", storageKey: "prefersLightColorScheme", default: true}},
-          {option: Option, props: {type: "toggle", title: "Use pure colors", storageKey: "prefersPureAccentScheme", default: true}},
+          {option: Option, props: {type: "toggle", title: "Use light theme", storageKey: "enableDarkMode", default: true}},
+          {option: Option, props: {type: "toggle", title: "Use pure colors", storageKey: "enableAccentColors", default: true}},
         ]
       }
     ];
@@ -315,11 +315,13 @@ class Option extends React.Component {
 
   // change Theme or Accent
   updateUI(key, enabled){
-    if(key !== "prefersLightColorScheme" && key !== "prefersPureAccentScheme")
+    if (e.key !== "enableDarkMode" && e.key !== "enableAccentColors")
       return;
-    const isThemeKey = key === "prefersLightColorScheme";
+
+    const isThemeKey = key === "enableDarkMode";
+
     const category = isThemeKey ? "theme" : "accent";
-    const value = isThemeKey ? (enabled ? "light" : "dark") : (enabled ? "default" : "accent");
+    const value = isThemeKey ? (enabled ?  "dark" : "light") : (enabled ? "accent" : "default");
     const html = document.documentElement;
     html.dataset[category] = value;
   }

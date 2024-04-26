@@ -1,12 +1,10 @@
 const html = document.documentElement;
-const setThemeHtml = themeBool => html.dataset.theme = (themeBool === "true" ? "light" : "dark");
-const setAccentHtml = accentBool => html.dataset.accent = (accentBool === "false" ? "accent" : "");
 
-let savedTheme = localStorage.getItem("prefersLightColorScheme");
+let savedTheme = localStorage.getItem("enableDarkMode");
 if (savedTheme == null){
-  savedTheme = window.matchMedia("(prefers-color-scheme: light)").matches;
+  savedTheme = window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
-setThemeHtml(savedTheme);
+html.dataset.theme = (savedTheme === "true" ? "dark" : "light");
 
-const savedAccent = localStorage.getItem("prefersPureAccentScheme");
-setAccentHtml(savedAccent);
+const savedAccent = localStorage.getItem("enableAccentColors");
+html.dataset.accent = (accentBool === "true" ? "accent" : "default");

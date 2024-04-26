@@ -191,14 +191,14 @@ class App extends React.PureComponent {
 
     // listen to changes from the options page
     window.addEventListener("storage", e => {
-      if (!e.isTrusted || (e.key !== "prefersLightColorScheme" && e.key !== "prefersPureAccentScheme"))
+      if (!e.isTrusted || (e.key !== "enableDarkMode" && e.key !== "enableAccentColors"))
         return;
 
-      const isThemeKey = e.key === "prefersLightColorScheme";
+      const isThemeKey = e.key === "enableDarkMode";
       const newValueBool = e.newValue === "true";
 
       const category = isThemeKey ? "theme" : "accent";
-      const value = isThemeKey ? (newValueBool ?  "light" : "dark") : (newValueBool ? "default" : "accent");
+      const value = isThemeKey ? (newValueBool ?  "dark" : "light") : (newValueBool ? "accent" : "default");
       const htmlValue = html.dataset[category];
 
       if (value != htmlValue) { // avoid recursion

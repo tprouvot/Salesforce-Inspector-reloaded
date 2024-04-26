@@ -49,7 +49,7 @@ body,
 }
 
 .prod {
-  background-color: var(--inspector-import-background);
+  background-color: var(--inspector-prod-background);
   background-image: url('/images/lightning_red_background.png');
 }
 
@@ -70,7 +70,7 @@ body {
   font-family: "Salesforce Sans", Arial, sans-serif;
   font-size: .8125rem;
   margin: 0;
-  background-color: var(--inspector-export-background);
+  background-color: var(--inspector-sand-background);
   background-image: url('/images/lightning_blue_background.png');
   background-repeat: no-repeat;
   background-size: contain;

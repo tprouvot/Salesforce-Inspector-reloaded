@@ -25,8 +25,8 @@ html {
     --inspector-dark-red: #A31914;
     --inspector-dark-yellow: #999900;
 
-    --inspector-export-background: #B0C4DF;
-    --inspector-import-background: #E0A4B5;
+    --inspector-sand-background: #B0C4DF;
+    --inspector-prod-background: #E0A4B5;
 
     /* accent */ 
     --inspector-accent-black: #2B2A33;

@@ -60,7 +60,7 @@ body {
   font-size: .8125rem;
   overflow: hidden;
   margin: 0;
-  background-color: var(--inspector-export-background);
+  background-color: var(--inspector-sand-background);
   background-image: url('/images/lightning_blue_background.png');
   background-repeat: no-repeat;
   background-size: contain;

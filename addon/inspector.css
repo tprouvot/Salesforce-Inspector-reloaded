@@ -356,15 +356,7 @@ div.object-name > span.quick-select {
     transition-property: none;
 }
 
-#light-theme, #dark-theme {
-    cursor: pointer;
-    transition-property: display, visibility;
-    transition-duration: var(--inspector-transition-time-slow);
-    transition-timing-function: var(--inspector-transition-function);
-}
-
 body {
-    background-color: var(--inspector-background);
     color: var(--inspector-text);
     scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
     transition-property: background-color;

@@ -315,13 +315,14 @@ class Option extends React.Component {
 
   // change Theme or Accent
   updateUI(key, enabled){
-    if (e.key !== "enableDarkMode" && e.key !== "enableAccentColors")
+    if (key !== "enableDarkMode" && key !== "enableAccentColors") {
       return;
+    }
 
     const isThemeKey = key === "enableDarkMode";
 
     const category = isThemeKey ? "theme" : "accent";
-    const value = isThemeKey ? (enabled ?  "dark" : "light") : (enabled ? "accent" : "default");
+    const value = isThemeKey ? (enabled ? "dark" : "light") : (enabled ? "accent" : "default");
     const html = document.documentElement;
     html.dataset[category] = value;
   }

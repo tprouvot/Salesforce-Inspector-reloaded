@@ -84,7 +84,7 @@ body {
   font-size: 1.2em;
 }
 .sf-link {
-  background-color: var(--inspector-primary);
+  background-color: var(--inspector-svg-background);
   border-radius: 3px;
   line-height: 1.8em;
   text-decoration: none;
@@ -102,7 +102,7 @@ body {
   float: left;
   background-color: var(--inspector-svg-picture);
   border-radius: 2px;
-  fill: var(--inspector-text);
+  fill: var(--inspector-svg-text);
 }
 #help-btn {
   margin-left: auto;

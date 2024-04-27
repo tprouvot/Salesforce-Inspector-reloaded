@@ -103,7 +103,7 @@ a:hover {
 .sf-link:focus,
 .sf-link:hover {
   margin-right: 1em;
-  background-color: var(--inspector-primary);
+  background-color: var(--inspector-svg-background);
   border-radius: 3px;
   line-height: 1.8em;
   text-decoration: none;
@@ -123,7 +123,7 @@ a:hover {
   float: left;
   background-color: var(--inspector-svg-picture);
   border-radius: 2px;
-  fill: var(--inspector-text);
+  fill: var(--inspector-svg-text);
 }
 
 table {

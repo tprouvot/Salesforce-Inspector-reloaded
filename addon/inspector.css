@@ -89,6 +89,7 @@ html {
 
     --inspector-svg-text: var(--inspector-shade);
     --inspector-svg-picture: var(--inspector-light-pink);
+    --inspector-svg-background: var(--inspector-accent);
 
     --inspector-working: var(--inspector-number);
 
@@ -131,6 +132,7 @@ html {
 
     --inspector-svg-text: var(--inspector-text);
     --inspector-svg-picture: var(--inspector-dark-pink);
+    --inspector-svg-background: var(--inspector-primary);
 
     --inspector-working: var(--inspector-light-purple);
 
@@ -147,7 +149,7 @@ html {
     --inspector-text-neutral: var(--inspector-neutral);
 
     --inspector-primary: var(--inspector-accent-light-blue);
-    --inspector-accent: var(--inspector-light-blue);
+    --inspector-accent: var(--inspector-accent-dark-blue);
     --inspector-neutral: var(--inspector-accent-light-gray);
     --inspector-shade: var(--inspector-accent-dark-white);
     --inspector-dark-neutral: var(--inspector-half-gray);
@@ -173,6 +175,7 @@ html {
 
     --inspector-svg-text: var(--inspector-dark-white);
     --inspector-svg-picture: var(--inspector-accent-light-pink);
+    --inspector-svg-background: var(--inspector-accent);
 
     --inspector-working: var(--inspector-number);
 
@@ -215,6 +218,7 @@ html {
 
     --inspector-svg-text: var(--inspector-text);
     --inspector-svg-picture: var(--inspector-accent-dark-pink);
+    --inspector-svg-background: var(--inspector-primary);
 
     --inspector-working: var(--inspector-accent-light-purple);
 

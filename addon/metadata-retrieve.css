@@ -8,7 +8,7 @@ body {
 }
 .sf-link {
   margin-right: 1em;
-  background-color: var(--inspector-primary);
+  background-color: var(--inspector-svg-background);
   border-radius: 3px;
   line-height: 2em;
   text-decoration: none;
@@ -26,7 +26,7 @@ body {
   float: left;
   background-color: var(--inspector-svg-picture);
   border-radius: 2px;
-  fill: var(--inspector-text);
+  fill: var(--inspector-svg-text);
 }
 .log-error {
   color: var(--inspector-error);

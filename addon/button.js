@@ -240,21 +240,20 @@ function initButton(sfHost, inInspector) {
 
   function setupColorChange(error = 0) {
     const storage = window[0].localStorage;
-    if(error > 5)
+    console.log({error});
+    if (error > 5) {
       return console.error("Didn't find Inspector's storage");
-    if(!window[0].location.pathname.endsWith("popup.html"))
-      return setTimeout(() => setupColorChange(error+=1), 500);
+    }
+    if (!window[0].location.pathname.endsWith("popup.html")) {
+      return setTimeout(() => setupColorChange(error += 1), 500);
+    }
 
     const savedTheme = storage.getItem("enableDarkMode");
-    if(savedTheme != null){
-        const themeValue = savedTheme === "true" ? "dark" : "light";
-        rootEl.dataset.theme = themeValue; //rootEl is #insext
-    }
+    const themeValue = savedTheme === "true" ? "dark" : "light";
+    rootEl.dataset.theme = themeValue; //rootEl is #insext
 
     const savedAccent = storage.getItem("enableAccentColors");
-    if(savedAccent != null){
-        const accentValue = savedAccent === "true" ? "accent" : "default";
-        rootEl.dataset.accent = accentValue; //rootEl is #insext
-    }
+    const accentValue = savedAccent === "true" ? "accent" : "default";
+    rootEl.dataset.accent = accentValue; //rootEl is #insext
   }
 }

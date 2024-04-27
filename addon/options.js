@@ -128,8 +128,8 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Tab6",
         title: "User Interface",
         content: [
-          {option: Option, props: {type: "toggle", title: "Use light theme", storageKey: "enableDarkMode", default: true}},
-          {option: Option, props: {type: "toggle", title: "Use pure colors", storageKey: "enableAccentColors", default: true}},
+          {option: Option, props: {type: "toggle", title: "Enable Dark Mode", storageKey: "enableDarkMode", default: false}},
+          {option: Option, props: {type: "toggle", title: "Enable Accent colors", storageKey: "enableAccentColors", default: false}},
         ]
       }
     ];

@@ -1,7 +1,13 @@
 # Release Notes
 
+## Version 1.24
+
+- Add a button to login-as a user in an new incognito window [issue 381](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/381) (contribution by [Alan Jaouen](https://github.com/alanjaouen))
+
 ## Version 1.23
 
+- Add new [setup pages](https://help.salesforce.com/s/articleView?id=release-notes.rn_general_setup_domain_prepare.htm&release=246&type=5) domain [feature 389](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/389) (by [akalatksy](https://github.com/akalatksy))
+- Add "View summary" link on User tab [feature 386](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/386)
 - Add option to hide 'Delete Records' button from Data Export page
 - Fix popup not closing in inspect page [issue 159](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/159) (contribution by [Luca Bassani](https://github.com/baslu93))
 - On inspect page, when double clicking on a picklist field, iterate through available values [feature 366](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/366)
@@ -27,7 +33,6 @@
 - Clean up popup header and footer (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Fix double "Show all data" button [issue 63](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63) (contribution by [Luca Bassani](https://github.com/baslu93))
 - Enhanced the user interface with a subtle inline "copied" indicator for field copy actions [feature 351](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/351) (contribution by [dyncan](https://github.com/dyncan))
-- Add a button to login-as a user in an new incognito window [issue 381](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/381) (contribution by [Alan Jaouen](https://github.com/alanjaouen))
 
 ## Version 1.22
 

@@ -1399,11 +1399,6 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/servlet/servlet.su" + "?oid=" + encodeURIComponent(contextOrgId) + "&retURL=" + encodeURIComponent(retUrl) + "&sunetworkid=" + encodeURIComponent(user.NetworkId) + "&sunetworkuserid=" + encodeURIComponent(user.Id);
   }
 
-  loginAsPortalInIncognito(user) {
-    const targetUrl = "https://" + this.sfHost + "/secur/frontdoor.jsp?sid=" + sfConn.sessionId + "&retURL=" + encodeURIComponent(this.getLoginAsPortalLink(user));
-    this.openUrlInIncognito(targetUrl);
-  }
-
   getUserDetailLink(userId) {
     let {sfHost} = this.props;
     return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1";
@@ -1433,6 +1428,15 @@ class UserDetails extends React.PureComponent {
     return "inspect.html?" + args;
   }
 
+  getUserSummaryLink(userId){
+    let {sfHost} = this.props;
+    return "https://" + sfHost + "/lightning/setup/ManageUsers/" + userId + "/summary";
+  }
+
+  openMenu(){
+    this.refs.buttonMenu.classList.toggle("slds-is-open");
+  }
+
   render() {
     let {user, linkTarget, sfHost} = this.props;
     return (
@@ -1442,9 +1446,12 @@ class UserDetails extends React.PureComponent {
             h("tbody", {},
               h("tr", {},
                 h("th", {}, "Name:"),
-                h("td", {},
+                h("td", {className: "oneliner"},
                   (user.IsActive) ? "" : h("span", {title: "User is inactive"}, "⚠ "),
-                  user.Name + " (" + user.Alias + ")"
+                  //user.Name + " (" + user.Alias + ")"
+                  h("a", {href: this.getUserSummaryLink(user.Id), target: linkTarget, title: "View summary"}, user.Name)
+                  ,
+                  " (" + user.Alias + ")"
                 )
               ),
               h("tr", {},
@@ -1488,16 +1495,31 @@ class UserDetails extends React.PureComponent {
           h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
           h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs")
         ),
-        h("div", {ref: "userButtons", className: "user-buttons center small-font top-space"},
-          this.doSupportLoginAs(user) ? h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs") : null,
-          this.doSupportLoginAs(user) ? h("a", {onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, title: "LoginAs (Incognito)"}, h("svg", {className: "slds-icon_x-small slds-icon-text-default", viewBox: "0 0 52 52"},
-            h("use", {xlinkHref: "symbols.svg#privately_shared", style: {fill: "#9c9c9c"}})
-          )) : null,
-          this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs Portal") : null,
-          this.canLoginAsPortal(user) ? h("a", {onClick: () => this.loginAsPortalInIncognito(user.Id), target: linkTarget, title: "LoginAs Portal (Incognito)"}, h("svg", {className: "slds-icon_x-small slds-icon-text-default", viewBox: "0 0 52 52"},
-            h("use", {xlinkHref: "symbols.svg#privately_shared", style: {fill: "#9c9c9c"}})
-          )) : null
-        )
+        this.doSupportLoginAs(user) ? h("div", {className: "user-buttons justify-center small-font slds-button-group top-space", role: "group"},
+          h("a", {href: this.getLoginAsLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs"),
+          h("div", {ref: "buttonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.openMenu(), title: "Show other LoginAs options"},
+              h("svg", {className: "slds-button__icon"},
+                h("use", {xlinkHref: "symbols.svg#down"})
+              ),
+              h("span", {className: "slds-assistive-text"}, "Show other LoginAs options")
+            ),
+            h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.openMenu()},
+              h("ul", {className: "slds-dropdown__list", role: "menu"},
+                h("li", {className: "slds-dropdown__item", role: "presentation"},
+                  h("a", {href: "#", onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, tabIndex: "0"},
+                    h("span", {className: "slds-truncate", title: "Incognito"},
+                      h("span", {className: "slds-truncate", title: "Incognito"}, "Incognito")
+                    )
+                  ),
+                  this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, tabIndex: "1"},
+                    h("span", {className: "slds-truncate", title: "Portal"}, "Portal")
+                  ) : null
+                )
+              )
+            )
+          ),
+        ) : null
       )
     );
   }
@@ -1863,7 +1885,10 @@ class AllDataSearch extends React.PureComponent {
     this.setState({queryString: val});
   }
   onAllDataFocus() {
-    this.refs.autoComplete.handleFocus();
+    //show recently viewed records only on Object tab
+    if (this.props.sobjectsList){
+      this.refs.autoComplete.handleFocus();
+    }
   }
   onAllDataBlur() {
     this.refs.autoComplete.handleBlur();

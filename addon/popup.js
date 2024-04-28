@@ -1507,7 +1507,7 @@ class UserDetails extends React.PureComponent {
             h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.openMenu()},
               h("ul", {className: "slds-dropdown__list", role: "menu"},
                 h("li", {className: "slds-dropdown__item", role: "presentation"},
-                  h("a", {href: "#", onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, tabIndex: "0"},
+                  h("a", {onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, tabIndex: "0"},
                     h("span", {className: "slds-truncate", title: "Incognito"},
                       h("span", {className: "slds-truncate", title: "Incognito"}, "Incognito")
                     )

@@ -1,4 +1,9 @@
 "use strict";
+
+if (typeof browser === "undefined") {
+  var browser = chrome;
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Perform cookie operations in the background page, because not all foreground pages have access to the cookie API.
   // Firefox does not support incognito split mode, so we use sender.tab.cookieStoreId to select the right cookie store.
@@ -41,6 +46,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse(session);
     });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
+  }
+  if (request.message == "createWindow") {
+    browser.windows.create({
+      url: request.url,
+      incognito: request.incognito ?? false
+    });
   }
   return false;
 });

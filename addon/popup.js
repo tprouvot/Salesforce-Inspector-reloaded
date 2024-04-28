@@ -4,6 +4,9 @@ import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 
 let h = React.createElement;
+if (typeof browser === "undefined") {
+  var browser = chrome;
+}
 
 {
   parent.postMessage({
@@ -1257,16 +1260,10 @@ class UserDetails extends React.PureComponent {
   }
 
   openUrlInIncognito(targetUrl) {
-    chrome.extension.isAllowedIncognitoAccess((isAllowedAccess) => {
-      if (!isAllowedAccess) {
-        alert("Incognito access is not allowed. Please enable it in the extension settings.");
-        return;
-      }
-      chrome.windows.create({
-        url: targetUrl,
-        type: "normal",
-        incognito: true
-      });
+    browser.runtime.sendMessage({
+      message: "createWindow",
+      url: targetUrl,
+      incognito: true,
     });
   }
 

@@ -1778,7 +1778,7 @@ class AllDataRecordDetails extends React.PureComponent {
     }
   }
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
-    return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
+    return URLBuilder.getRecordTypeLink(sfHost, sobjectName, recordtypeId);
   }
 
   render() {
@@ -1801,7 +1801,11 @@ class AllDataRecordDetails extends React.PureComponent {
             recordIdDetails.recordTypeName ? h("tr", {},
               h("th", {}, "RecType:"),
               h("td", {},
-                h("a", {href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: linkTarget}, recordIdDetails.recordTypeName)
+                h("a", {
+                  href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId),
+                  target: linkTarget,
+                  onClick: handleLightningLinkClick
+                }, recordIdDetails.recordTypeName)
               )
             ) : null,
             h("tr", {},
@@ -2302,5 +2306,9 @@ class URLBuilder {
 
   static getNewObjectUrl(sfHost, newUrl){
     return `https://${sfHost}${newUrl}`;
+  }
+
+  static getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
+    return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectName}/RecordTypes/${recordtypeId}/view`;
   }
 }

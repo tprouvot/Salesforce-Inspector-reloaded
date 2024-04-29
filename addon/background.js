@@ -42,6 +42,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
+  if (request.message == "lightningNavigate") {
+    const requestDetails = JSON.parse(JSON.stringify(request.details));
+    chrome.tabs.query({ currentWindow: true, active: true }, (tabs) => {
+      const tab = tabs[0];
+      if (!tab?.id) {
+        sendResponse({ success: false, message: "No active tab found" });
+        return;
+      }
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: handleLightningNavigation,
+        args: [requestDetails],
+        world: 'MAIN',
+        injectImmediately: true
+      })
+        .then(res => {sendResponse(res[0].result)})
+        .catch(err => {sendResponse({ success: false, message: err.message })});
+    });
+    return true;
+  }
   return false;
 });
 chrome.runtime.onInstalled.addListener(({reason}) => {
@@ -52,3 +72,25 @@ chrome.runtime.onInstalled.addListener(({reason}) => {
   }
 });
 chrome.runtime.setUninstallURL("https://forms.gle/y7LbTNsFqEqSrtyc6");
+
+function handleLightningNavigation(details) {
+  console.log("background.js: handling lightning-navigation", details);
+  try {
+    switch (details.navigationType) {
+      case "recordId":
+        navigateToSObject(details.recordId);
+        break;
+      default:
+        throw new Error("Invalid navigation type");
+    }
+    return { success: true, message: "Success" };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+
+  function navigateToSObject(recordId) {
+    const e = $A.get("e.force:navigateToSObject");
+    e.setParams({ "recordId": recordId });
+    e.fire();
+  }
+}

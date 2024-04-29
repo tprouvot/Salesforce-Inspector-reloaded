@@ -7,7 +7,11 @@
     "128": "icon128.png"
   },
   "minimum_chrome_version": "88",
-  "permissions": ["cookies"],
+  "permissions": [
+    "cookies",
+    "scripting",
+    "activeTab"
+  ],
   "host_permissions": [
     "https://*.salesforce.com/*",
     "https://*.salesforce-setup.com/*",

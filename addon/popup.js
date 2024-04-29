@@ -1628,12 +1628,11 @@ class AllDataSelection extends React.PureComponent {
   }
   getObjectListLink(sobjectName, keyPrefix, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
-      return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + keyPrefix;
+      return URLBuilder.getCustomeMetadataListUrl(this.props.sfHost, keyPrefix);
     } else if (isCustomSetting) {
-      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2Fsetup%2Fui%2FlistCustomSettingsData.apexp?id=" + keyPrefix;
-
+      return URLBuilder.getCustomSettingListUrl(this.props.sfHost, keyPrefix);
     } else {
-      return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
+      return URLBuilder.getObjectListUrl(this.props.sfHost, sobjectName);
     }
   }
   getRecordTypesLink(sfHost, sobjectName, durableId) {
@@ -1707,7 +1706,11 @@ class AllDataSelection extends React.PureComponent {
                     onClick: this.handleLightningLinkClick
                   }, "Record Types"),
                   h("span", {}, " / "),
-                  h("a", {href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Object List")
+                  h("a", {
+                    href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting),
+                    target: linkTarget,
+                    onClick: this.handleLightningLinkClick
+                  }, "Object List")
                 ),
               ),
               h("tr", {},
@@ -2275,5 +2278,17 @@ class URLBuilder {
 
   static getObjectRecordTypesUrl(sfHost, sobjectNameOrDurId) {
     return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectNameOrDurId}/RecordTypes/view`;
+  }
+
+  static getCustomeMetadataListUrl(sfHost, keyPrefix) {
+    return `https://${sfHost}/lightning/setup/CustomMetadata/page?address=%2F${keyPrefix}`;
+  }
+
+  static getCustomSettingListUrl(sfHost, keyPrefix) {
+    return `https://${sfHost}/lightning/setup/CustomSettings/page?address=%2Fsetup%2Fui%2FlistCustomSettingsData.apexp?id=${keyPrefix}`;
+  }
+
+  static getObjectListUrl(sfHost, sobjectName) {
+    return `https://${sfHost}/lightning/o/${sobjectName}/list`;
   }
 }

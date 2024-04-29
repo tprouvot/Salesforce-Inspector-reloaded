@@ -1638,9 +1638,9 @@ class AllDataSelection extends React.PureComponent {
   }
   getRecordTypesLink(sfHost, sobjectName, durableId) {
     if (sobjectName.endsWith("__c") || sobjectName.endsWith("__kav")) {
-      return "https://" + sfHost + "/lightning/setup/ObjectManager/" + durableId + "/RecordTypes/view";
+      return URLBuilder.getObjectRecordTypesUrl(sfHost, durableId);
     } else {
-      return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
+      return URLBuilder.getObjectRecordTypesUrl(sfHost, sobjectName);
     }
   }
   getObjectDocLink(sobject, api){
@@ -1700,7 +1700,12 @@ class AllDataSelection extends React.PureComponent {
                     onClick: this.handleLightningLinkClick
                   }, "Fields"),
                   h("span", {}, " / "),
-                  h("a", {href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget}, "Record Types"),
+                  h("a", {
+                    // TODO add check for record type support (such as custom metadata types and custom settings)
+                    href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId),
+                    target: linkTarget,
+                    onClick: this.handleLightningLinkClick
+                  }, "Record Types"),
                   h("span", {}, " / "),
                   h("a", {href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Object List")
                 ),
@@ -2266,5 +2271,9 @@ class URLBuilder {
 
   static getObjectFieldsSetupUrl(sfHost, sobjectNameOrDurId) {
     return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectNameOrDurId}/FieldsAndRelationships/view`;
+  }
+
+  static getObjectRecordTypesUrl(sfHost, sobjectNameOrDurId) {
+    return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectNameOrDurId}/RecordTypes/view`;
   }
 }

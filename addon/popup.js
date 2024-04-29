@@ -131,6 +131,7 @@ class App extends React.PureComponent {
   onShortcutKey(e) {
     const refs = this.refs;
     const actionMap = {
+      "Escape": ["closePopup", ""],
       "m": ["all", "clickShowDetailsBtn"],
       "a": ["all", "clickAllDataBtn"],
       "f": ["all", "clickShowFieldAPINameBtn"],
@@ -152,14 +153,24 @@ class App extends React.PureComponent {
     }
     e.preventDefault();
     const [action, target] = actionMap[e.key];
-    if (action === "all") {
-      refs.showAllDataBox.refs?.showAllDataBoxSObject?.[target]();
-    } else if (action === "click" && refs[target]) {
-      refs[target].target = getLinkTarget(e);
-      refs[target].click();
-    } else if (action === "tab") {
-      refs.showAllDataBox.refs[target].click();
+    switch (action) {
+      case "closePopup":
+        closePopup();
+        return;
+      case "all":
+        refs.showAllDataBox.refs?.showAllDataBoxSObject?.[target]();
+        break;
+      case "click":
+        if (refs[target]) {
+          refs[target].target = getLinkTarget(e);
+          refs[target].click();
+        }
+        break;
+      case "tab":
+        refs.showAllDataBox.refs[target].click();
+        break;
     }
+
     if (e.key == "p") {
       e.preventDefault();
       this.refs.apexRunnerBtn.target = getLinkTarget(e);

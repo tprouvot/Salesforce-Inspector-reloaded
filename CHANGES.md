@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.26
+
+- Escape to close popup [issue 71](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/71)
+
 ## Version 1.25
 
 - Metadata: download data model by @dufoli in [issue 11](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/11)

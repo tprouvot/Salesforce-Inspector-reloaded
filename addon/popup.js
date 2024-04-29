@@ -2028,7 +2028,14 @@ class Autocomplete extends React.PureComponent {
   onResultClick(e, value) {
     let {sfHost} = this.props;
     if (value.isRecent){
-      window.open("https://" + sfHost + "/" + value.recordId, getLinkTarget(e));
+      const linkTarget = getLinkTarget(e);
+      const recordURL = URLBuilder.getRecordUrl(sfHost, value.recordId);
+      closePopup();
+      if (linkTarget == "_blank") {
+        window.open(recordURL, linkTarget);
+      } else {
+        lightningNavigate({navigationType: "recordId", recordId: value.recordId}, recordURL);
+      }
     } else {
       this.props.updateInput(value);
       this.setState({showResults: false, selectedIndex: 0});
@@ -2181,7 +2188,9 @@ function sfLocaleKeyToCountryCode(localeKey) {
 }
 
 function getLinkTarget(e) {
-  if (JSON.parse(localStorage.getItem("openLinksInNewTab")) || (e.ctrlKey || e.metaKey)) {
+  const openLinksInNewTabPref = JSON.parse(localStorage.getItem("openLinksInNewTab") || "false");
+  // TODO add check for inDevConsole
+  if (openLinksInNewTabPref || (e.ctrlKey || e.metaKey)) {
     return "_blank";
   } else {
     return "_top";
@@ -2189,3 +2198,23 @@ function getLinkTarget(e) {
 }
 
 window.getRecordId = getRecordId; // for unit tests
+
+function lightningNavigate(details, fallbackURL) {
+  chrome.runtime.sendMessage({message: "lightningNavigate", details}).then(response => {
+    if (response.success) {
+      console.log("Lightning navigation successful");
+    } else {
+      console.log("Lightning navigation failed, falling back to default navigation", response.message);
+      window.open(fallbackURL, "_top");
+    }
+  }).catch(error => {
+    console.error("Lightning navigation failed, falling back to default navigation", error.message);
+    window.open(fallbackURL, "_top");
+  });
+}
+
+class URLBuilder {
+  static getRecordUrl(sfHost, recordId) {
+    return `https://${sfHost}/${recordId}`;
+  }
+}

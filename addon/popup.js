@@ -1607,7 +1607,7 @@ class AllDataSelection extends React.PureComponent {
   handleLightningLinkClick(e) {
     e.preventDefault(); // Prevent the default link behavior (href navigation)
     closePopup();
-    const url = e.target.href;
+    const url = e.currentTarget.href;
     const target = getLinkTarget(e);
     if (target === "_blank") {
       window.open(url, target);
@@ -1649,7 +1649,8 @@ class AllDataSelection extends React.PureComponent {
     return "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_" + sobject.name.toLowerCase() + ".htm";
   }
   getNewObjectUrl(sfHost, newUrl){
-    return "https://" + sfHost + newUrl;
+    // TODO add support for creating new custom settings
+    return URLBuilder.getNewObjectUrl(sfHost, newUrl);
   }
   setFlowDefinitionId(recordId){
     if (recordId && !this.state.flowDefinitionId){
@@ -1758,7 +1759,13 @@ class AllDataSelection extends React.PureComponent {
           : " (Not readable)"
         ))),
         isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
-        selectedValue.sobject.isEverCreatable ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
+        selectedValue.sobject.isEverCreatable ? h("a", {
+          ref: "showNewBtn",
+          href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
+          target: linkTarget,
+          onClick: this.handleLightningLinkClick,
+          className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"
+        }, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
       )
     );
   }
@@ -2290,5 +2297,9 @@ class URLBuilder {
 
   static getObjectListUrl(sfHost, sobjectName) {
     return `https://${sfHost}/lightning/o/${sobjectName}/list`;
+  }
+
+  static getNewObjectUrl(sfHost, newUrl){
+    return `https://${sfHost}${newUrl}`;
   }
 }

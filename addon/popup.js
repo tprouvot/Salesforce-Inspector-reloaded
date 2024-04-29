@@ -1604,17 +1604,6 @@ class AllDataSelection extends React.PureComponent {
       return URLBuilder.getObjectSetupUrl(this.props.sfHost, sobjectName);
     }
   }
-  handleLightningLinkClick(e) {
-    e.preventDefault(); // Prevent the default link behavior (href navigation)
-    closePopup();
-    const url = e.currentTarget.href;
-    const target = getLinkTarget(e);
-    if (target === "_blank") {
-      window.open(url, target);
-    } else {
-      lightningNavigate({navigationType: "url", url}, url);
-    }
-  }
   getObjectFieldsSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
       return URLBuilder.getCustomMetadataSetupUrl(this.props.sfHost, durableId);
@@ -1687,7 +1676,7 @@ class AllDataSelection extends React.PureComponent {
                   h("a", {
                     href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
                     target: linkTarget,
-                    onClick: this.handleLightningLinkClick
+                    onClick: handleLightningLinkClick
                   }, selectedValue.sobject.name)
                 )
               ),
@@ -1697,20 +1686,20 @@ class AllDataSelection extends React.PureComponent {
                   h("a", {
                     href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
                     target: linkTarget,
-                    onClick: this.handleLightningLinkClick
+                    onClick: handleLightningLinkClick
                   }, "Fields"),
                   h("span", {}, " / "),
                   h("a", {
                     // TODO add check for record type support (such as custom metadata types and custom settings)
                     href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId),
                     target: linkTarget,
-                    onClick: this.handleLightningLinkClick
+                    onClick: handleLightningLinkClick
                   }, "Record Types"),
                   h("span", {}, " / "),
                   h("a", {
                     href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting),
                     target: linkTarget,
-                    onClick: this.handleLightningLinkClick
+                    onClick: handleLightningLinkClick
                   }, "Object List")
                 ),
               ),
@@ -1763,7 +1752,7 @@ class AllDataSelection extends React.PureComponent {
           ref: "showNewBtn",
           href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
           target: linkTarget,
-          onClick: this.handleLightningLinkClick,
+          onClick: handleLightningLinkClick,
           className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"
         }, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
       )
@@ -2260,6 +2249,18 @@ function lightningNavigate(details, fallbackURL) {
     console.error("Lightning navigation failed, falling back to default navigation", error.message);
     window.open(fallbackURL, "_top");
   });
+}
+
+function handleLightningLinkClick(e) {
+  e.preventDefault(); // Prevent the default link behavior (href navigation)
+  closePopup();
+  const url = e.currentTarget.href;
+  const target = getLinkTarget(e);
+  if (target === "_blank") {
+    window.open(url, target);
+  } else {
+    lightningNavigate({navigationType: "url", url}, url);
+  }
 }
 
 class URLBuilder {

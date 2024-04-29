@@ -523,7 +523,8 @@ class AllDataBox extends React.PureComponent {
     function getObjects(url, api) {
       return sfConn.rest(url).then(describe => {
         for (let sobject of describe.sobjects) {
-          addEntity(sobject, api);
+          // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
+          addEntity({...sobject, isCustomSetting: sobject.customSetting}, api);
         }
       }).catch(err => {
         console.error("list " + api + " sobjects", err);

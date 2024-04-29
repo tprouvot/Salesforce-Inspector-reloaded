@@ -1742,7 +1742,19 @@ class AllDataSelection extends React.PureComponent {
 class AllDataRecordDetails extends React.PureComponent {
 
   getRecordLink(sfHost, recordId) {
-    return "https://" + sfHost + "/" + recordId;
+    return URLBuilder.getRecordUrl(sfHost, recordId);
+  }
+  openRecordLink(e) {
+    e.preventDefault();
+    closePopup();
+    const url = e.target.href;
+    const target = getLinkTarget(e);
+    const recordId = e.target.dataset.recordId;
+    if (target === "_blank") {
+      window.open(url, target);
+    } else {
+      lightningNavigate({navigationType: "recordId", recordId}, url);
+    }
   }
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
@@ -1757,7 +1769,12 @@ class AllDataRecordDetails extends React.PureComponent {
             recordIdDetails.recordName ? h("tr", {},
               h("th", {}, "Name:"),
               h("td", {},
-                h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
+                h("a", {
+                  href: this.getRecordLink(sfHost, selectedValue.recordId),
+                  target: linkTarget,
+                  "data-record-id": selectedValue.recordId,
+                  onClick: this.openRecordLink
+                }, recordIdDetails.recordName)
               )
             ) : null,
             recordIdDetails.recordTypeName ? h("tr", {},

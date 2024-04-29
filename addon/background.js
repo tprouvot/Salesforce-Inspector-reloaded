@@ -80,6 +80,9 @@ function handleLightningNavigation(details) {
       case "recordId":
         navigateToSObject(details.recordId);
         break;
+      case "url":
+        navigateToURL(details.url);
+        break;
       default:
         throw new Error("Invalid navigation type");
     }
@@ -91,6 +94,12 @@ function handleLightningNavigation(details) {
   function navigateToSObject(recordId) {
     const e = $A.get("e.force:navigateToSObject");
     e.setParams({ "recordId": recordId });
+    e.fire();
+  }
+
+  function navigateToURL(url) {
+    const e = $A.get("e.force:navigateToURL");
+    e.setParams({url: url});
     e.fire();
   }
 }

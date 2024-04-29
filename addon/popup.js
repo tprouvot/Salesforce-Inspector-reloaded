@@ -1594,15 +1594,27 @@ class AllDataSelection extends React.PureComponent {
    */
   getObjectSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
-      return this.getCustomMetadataLink(durableId);
+      return URLBuilder.getCustomMetadataSetupUrl(this.props.sfHost, durableId);
     } else if (isCustomSetting) {
-      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
+      return URLBuilder.getCustomSettingSetupUrl(this.props.sfHost, durableId);
     } else if (sobjectName.endsWith("__c")) {
-      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/Details/view";
+      return URLBuilder.getObjectSetupUrl(this.props.sfHost, durableId);
     } else {
-      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
+      return URLBuilder.getObjectSetupUrl(this.props.sfHost, sobjectName);
     }
   }
+  handleLightningLinkClick(e) {
+    e.preventDefault(); // Prevent the default link behavior (href navigation)
+    closePopup();
+    const url = e.target.href;
+    const target = getLinkTarget(e);
+    if (target === "_blank") {
+      window.open(url, target);
+    } else {
+      lightningNavigate({navigationType: "url", url}, url);
+    }
+  }
+  // TODO - remove this method and use getObjectSetupLink instead
   getCustomMetadataLink(durableId) {
     return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + durableId + "%3Fsetupid%3DCustomMetadata";
   }
@@ -1675,7 +1687,11 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name)
+                  h("a", {
+                    href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
+                    target: linkTarget,
+                    onClick: this.handleLightningLinkClick
+                  }, selectedValue.sobject.name)
                 )
               ),
               h("tr", {},
@@ -2233,5 +2249,17 @@ function lightningNavigate(details, fallbackURL) {
 class URLBuilder {
   static getRecordUrl(sfHost, recordId) {
     return `https://${sfHost}/${recordId}`;
+  }
+
+  static getCustomMetadataSetupUrl(sfHost, durableId) {
+    return `https://${sfHost}/lightning/setup/CustomMetadata/page?address=%2F${durableId}%3Fsetupid%3DCustomMetadata`;
+  }
+
+  static getCustomSettingSetupUrl(sfHost, durableId) {
+    return `https://${sfHost}/lightning/setup/CustomSettings/page?address=%2F${durableId}?setupid=CustomSettings`;
+  }
+
+  static getObjectSetupUrl(sfHost, sobjectNameOrDurId) {
+    return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectNameOrDurId}/Details/view`;
   }
 }

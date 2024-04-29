@@ -1615,19 +1615,15 @@ class AllDataSelection extends React.PureComponent {
       lightningNavigate({navigationType: "url", url}, url);
     }
   }
-  // TODO - remove this method and use getObjectSetupLink instead
-  getCustomMetadataLink(durableId) {
-    return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + durableId + "%3Fsetupid%3DCustomMetadata";
-  }
   getObjectFieldsSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
-      return this.getCustomMetadataLink(durableId);
+      return URLBuilder.getCustomMetadataSetupUrl(this.props.sfHost, durableId);
     } else if (isCustomSetting) {
-      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
+      return URLBuilder.getCustomSettingSetupUrl(this.props.sfHost, durableId);
     } else if (sobjectName.endsWith("__c") || sobjectName.endsWith("__kav")) {
-      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/FieldsAndRelationships/view";
+      return URLBuilder.getObjectFieldsSetupUrl(this.props.sfHost, durableId);
     } else {
-      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
+      return URLBuilder.getObjectFieldsSetupUrl(this.props.sfHost, sobjectName);
     }
   }
   getObjectListLink(sobjectName, keyPrefix, isCustomSetting) {
@@ -1698,7 +1694,11 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Links:"),
                 h("td", {},
-                  h("a", {href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Fields"),
+                  h("a", {
+                    href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
+                    target: linkTarget,
+                    onClick: this.handleLightningLinkClick
+                  }, "Fields"),
                   h("span", {}, " / "),
                   h("a", {href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget}, "Record Types"),
                   h("span", {}, " / "),
@@ -2262,5 +2262,9 @@ class URLBuilder {
 
   static getObjectSetupUrl(sfHost, sobjectNameOrDurId) {
     return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectNameOrDurId}/Details/view`;
+  }
+
+  static getObjectFieldsSetupUrl(sfHost, sobjectNameOrDurId) {
+    return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectNameOrDurId}/FieldsAndRelationships/view`;
   }
 }

@@ -1089,7 +1089,7 @@ class AllDataBoxShortcut extends React.PureComponent {
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
             } else if (rec.attributes.type === "Network"){
-              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=0DB26000000Ak2X" + rec.Id;
+              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=" + rec.Id;
               rec.label = rec.Name;
               let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
               rec.name = rec.Id + url;

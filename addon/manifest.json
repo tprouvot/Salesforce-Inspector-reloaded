@@ -6,13 +6,9 @@
   "icons": {
     "128": "icon128.png"
   },
-  "applications": {
-    "gecko": {
-      "id": "salesforceinspector@reloaded",
-      "strict_min_version": "60.0"
-    }
-  },
-  "permissions": [
+  "minimum_chrome_version": "88",
+  "permissions": ["cookies"],
+  "host_permissions": [
     "https://*.salesforce.com/*",
     "https://*.salesforce-setup.com/*",
     "https://*.force.com/*",
@@ -25,8 +21,7 @@
     "https://*.cloudforce.mil/*",
     "https://*.visualforce.mil/*",
     "https://*.crmforce.mil/*",
-    "https://*.force.com.mcas.ms/*",
-    "cookies"
+    "https://*.force.com.mcas.ms/*"
   ],
   "content_scripts": [
     {
@@ -55,18 +50,25 @@
     }
   ],
   "background": {
-    "scripts": ["background.js"]
+    "service_worker": "background.js",
+    "type": "module"
   },
   "web_accessible_resources": [
-    "popup.html",
-    "data-export.html",
-    "data-import.html",
-    "inspect.html",
-    "metadata-retrieve.html",
-    "explore-api.html",
-    "limits.html",
-    "options.html"
+    {
+      "resources": [
+        "popup.html",
+        "data-export.html",
+        "data-import.html",
+        "inspect.html",
+        "metadata-retrieve.html",
+        "explore-api.html",
+        "limits.html",
+        "options.html"
+      ],
+      "matches": ["https://*/*"],
+      "extension_ids": []
+    }
   ],
-  "incognito": "spanning",
-  "manifest_version": 2
+  "incognito": "split",
+  "manifest_version": 3
 }

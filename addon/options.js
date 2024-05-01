@@ -315,7 +315,6 @@ class Tooltip extends React.Component {
     const toolTipRect = toolTip.getBoundingClientRect();
     const x = `${elRect.left - 27}px`; // nubbin fixed offset
     const y = `${elRect.top - toolTipRect.height - 74}px`; // fixed offset
-    console.log('scroll:', window.scrollX);
     // Finally, set opacity to 100% so the user can see it
     this.setState({position: {x, y}, opacity: 1});
   }

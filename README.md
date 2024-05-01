@@ -115,6 +115,7 @@ Linting : to assure indentation, formatting and best practices coherence, please
 
 1. `npm run firefox-dev-build`
 2. In Firefox, open `about:debugging`.
+3. Select `This Firefox`
 3. Click `Load Temporary Add-on…`.
 4. Select the file `addon/manifest.json`.
 

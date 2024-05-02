@@ -80,6 +80,7 @@ class Model {
     this.winInnerHeight = 0;
     this.queryAll = false;
     this.queryTooling = false;
+    this.prefHideRelations = localStorage.getItem("defaultValueHideObjectNameColumns") !== "false"; // default to false
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
@@ -140,6 +141,14 @@ class Model {
     }
     // Recalculate visibility
     this.exportedData.updateVisibility();
+    this.updatedExportedData();
+  }
+  refreshColumnsVisibility() {
+    if (this.exportedData == null || this.exportedData.totalSize == 0 ) {
+      return;
+    }
+    // Recalculate visibility
+    this.exportedData.updateColumnsVisibility();
     this.updatedExportedData();
   }
   setQueryName(value) {
@@ -950,7 +959,9 @@ function RecordTable(vm) {
           row.push(undefined);
         }
         header[c] = column;
-        rt.colVisibilities.push(true);
+        if (typeof record[field] == "object" && record[field] != null && vm.prefHideRelations) {
+          rt.colVisibilities.push(false);
+        }else{rt.colVisibilities.push(true);}
       }
       row[c] = record[field];
       if (typeof record[field] == "object" && record[field] != null) {
@@ -972,7 +983,7 @@ function RecordTable(vm) {
     records: [],
     table: [],
     rowVisibilities: [],
-    colVisibilities: [true],
+    colVisibilities: new Array(!vm.prefHideRelations),
     countOfVisibleRecords: null,
     isTooling: false,
     totalSize: -1,
@@ -1002,15 +1013,31 @@ function RecordTable(vm) {
       this.countOfVisibleRecords = countOfVisibleRecords;
       vm.exportStatus = "Filtered " + countOfVisibleRecords + " records out of " + rt.records.length + " records";
     },
+    filterColumns(table, colVis) {
+      let filteredArray = table.map(row => {
+        return row.filter((_, index) => colVis[index]);
+      });
+      return filteredArray;
+    },
+    updateColumnsVisibility() {
+      let newColVisibilities = [];
+      for (const [_, el] of rt.table[1].entries()) {  
+        if(typeof el == 'object' && el !== null && vm.prefHideRelations ){
+          newColVisibilities.push(false);
+        } else {newColVisibilities.push(true)}
+      }
+      rt.colVisibilities = newColVisibilities;
+    },
     getVisibleTable() {
       if (vm.resultsFilter) {
         let filteredTable = [];
         for (let i = 0; i < rt.table.length; i++) {
           if (rt.rowVisibilities[i]) { filteredTable.push(rt.table[i]); }
         }
-        return filteredTable;
+        if (vm.prefHideRelations) { return rt.filterColumns(filteredTable,rt.colVisibilities) } else { return filteredTable };
+        ;
       }
-      return rt.table;
+      if (vm.prefHideRelations) { return rt.filterColumns(rt.table,rt.colVisibilities) } else { return rt.table };
     }
   };
   return rt;
@@ -1023,6 +1050,7 @@ class App extends React.Component {
     super(props);
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
+    this.onPrefHideRelationsChange = this.onPrefHideRelationsChange.bind(this);
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
     this.onSelectQueryTemplate = this.onSelectQueryTemplate.bind(this);
     this.onClearHistory = this.onClearHistory.bind(this);
@@ -1053,6 +1081,12 @@ class App extends React.Component {
     let {model} = this.props;
     model.queryTooling = e.target.checked;
     model.queryAutocompleteHandler();
+    model.didUpdate();
+  }
+  onPrefHideRelationsChange(e) {
+    let {model} = this.props;
+    model.prefHideRelations = e.target.checked;
+    model.refreshColumnsVisibility();
     model.didUpdate();
   }
   onSelectHistoryEntry(e) {
@@ -1356,6 +1390,11 @@ class App extends React.Component {
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
+          h("label", {title: "With this option, additionnal columns corresponding to Object names are removed from the query results and the exported data. These columns are useful during data import to automatically map objects."},
+              h("input", {type: "checkbox", disabled: !model.canCopy(), checked: model.prefHideRelations, onChange: this.onPrefHideRelationsChange}),
+              " ",
+              h("span", {}, "Hide Object Columns")
+            ),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),

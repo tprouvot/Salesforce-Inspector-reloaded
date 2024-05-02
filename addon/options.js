@@ -310,11 +310,14 @@ class Tooltip extends React.Component {
   setTooltipPosition() {
     // At this point, display was visible but fully transparent in the top left corner of the screen
     // If isVisible is false, getBoundingClientRect will return 0 for all values
+    const tabHeader = document.querySelectorAll('[id="main-container_header"]')[0];
+    const marginTop = parseInt(window.getComputedStyle(tabHeader).getPropertyValue("margin-top"));
+    const yOffset = tabHeader.getBoundingClientRect().top + marginTop + 2; // Add 2 extra pixels below nubbin
     const toolTip = document.querySelectorAll(`[id='${this.tipKey}']`)[0];
     const elRect = document.querySelectorAll(`[id='${this.iconKey}']`)[0].getBoundingClientRect();
     const toolTipRect = toolTip.getBoundingClientRect();
-    const x = `${elRect.left - 27}px`; // nubbin fixed offset
-    const y = `${elRect.top - toolTipRect.height - 74}px`; // fixed offset
+    const x = `${elRect.left - 27}px`; // fixed x offset (distance from left edge of tooltip to nubbin point)
+    const y = `${elRect.top - toolTipRect.height - yOffset}px`;
     // Finally, set opacity to 100% so the user can see it
     this.setState({position: {x, y}, opacity: 1});
   }
@@ -346,8 +349,8 @@ class Tooltip extends React.Component {
       return null;
     }
 
-    return h("span", {style: {marginLeft: "2px"}},
-      h("a", {href: "#", onClick: this.onClick, onMouseEnter: this.onHover, onMouseLeave: this.onHide, id: this.iconKey},
+    return h("span", {style: {marginLeft: "2px"}, id: this.iconKey},
+      h("a", {href: "#", onClick: this.onClick, onMouseEnter: this.onHover, onMouseLeave: this.onHide},
         h("span", {className: "slds-icon_container slds-icon-utility-info"},
           h("svg", {className: "slds-icon_xx-small slds-icon-text-default", viewBox: "0 0 40 40", style: {verticalAlign: "unset", margin: "3px"}},
             h("use", {xlinkHref: "symbols.svg#info", fill: "#9c9c9c"}),
@@ -548,7 +551,7 @@ class App extends React.Component {
         h("h1", {className: "slds-text-title_bold"}, "Options"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"})),
-      h("div", {className: "main-container slds-card slds-m-around_small"},
+      h("div", {className: "main-container slds-card slds-m-around_small", id: "main-container_header"},
         h(OptionsTabSelector, {model}))
     );
   }

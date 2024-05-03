@@ -7,7 +7,6 @@
 - Add option to hide 'Delete Records' button from Data Export page
 - Fix popup not closing in inspect page [issue 159](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/159) (contribution by [Luca Bassani](https://github.com/baslu93))
 - On inspect page, when double clicking on a picklist field, iterate through available values [feature 366](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/366)
-- Integrate Experience Cloud builder link to shortcut search in popup [feature 365](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/365)
 - Add 'Flow Versions' button in popup when recordId is a flow [feature 362](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/362)
 - Format relations as expected in import process [feature 26](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/26) (contribution by [Olivier Dufour](https://github.com/dufoli))
 - Ability to choose header theme [feature 294](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/294)

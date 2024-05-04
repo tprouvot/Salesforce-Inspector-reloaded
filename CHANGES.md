@@ -3,6 +3,7 @@
 ## Version 1.26
 
 - Escape to close popup [issue 71](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/71)
+- Manage custom links in option
 
 ## Version 1.25
 

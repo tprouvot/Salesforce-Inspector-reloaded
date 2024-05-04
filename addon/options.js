@@ -81,6 +81,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Search metadata from Shortcut tab", key: "metadataShortcutSearch"}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "text", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", placeholder: "Available values : green, orange, pink, purple, red, yellow"}},
+          {option: CustomLinkOption, props: {title: "Custom links (org specific)", key: this.sfHost + "_orgLinks"}},
         ]
       },
       {
@@ -450,6 +451,87 @@ class enableLogsOption extends React.Component {
         ),
       )
     );
+  }
+}
+
+class CustomLinkOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.key = props.storageKey;
+    this.model = props.model;
+    this.title = props.title;
+    let val = localStorage.getItem(this.key);
+    if (val) {
+      this.links = JSON.parse(val);
+    } else {
+      this.links = [];
+    }
+    this.addLink = this.addLink.bind(this);
+    this.deleteLink = this.deleteLink.bind(this);
+    this.onChangeLinkName = this.onChangeLinkName.bind(this);
+    this.onChangeLinkUrl = this.onChangeLinkUrl.bind(this);
+    this.state = {linkName: "", linkUrl: "", links: this.links};
+  }
+  deleteLink(i) {
+    this.links.splice(i, 1);
+    this.setState({links: this.links});
+    localStorage.setItem(this.key, JSON.stringify(this.links));
+    this.model.didUpdate();
+  }
+  addLink() {
+    this.links.push({"label": this.state.linkName, "link": this.state.linkUrl, "section": "Custom", "prod": false});
+    this.setState({linkName: "", linkUrl: "", links: this.links});
+    localStorage.setItem(this.key, JSON.stringify(this.links));
+    this.model.didUpdate();
+  }
+
+  onChangeLinkName(e) {
+    this.setState({linkName: e.target.value});
+  }
+
+  onChangeLinkUrl(e) {
+    this.setState({linkUrl: e.target.value});
+  }
+
+  render() {
+    return h("div", {},
+      h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+          h("span", {}, this.title)
+        )
+      ),
+      h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          h("input", {type: "text", id: "linkName", className: "slds-input", value: this.state.linkName, placeholder: "Name", onChange: this.onChangeLinkName}),
+        ),
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          h("input", {type: "text", id: "linkUrl", className: "slds-input", value: this.state.linkUrl, placeholder: "https://...", onChange: this.onChangeLinkUrl}),
+        ),
+        h("div", {className: "slds-form-element__control slds-col slds-col slds-size_2-of-12 text-align-middle"},
+          h("button", {onClick: this.addLink, title: "Add", className: "slds-button slds-button_brand"}, "Add"),
+        )
+      ), this.state.links.map((l, i) =>
+        h("div", {key: "link" + i, className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
+          h("div", {className: "slds-col slds-size_5-of-12 text-align-middle"},
+            h("span", {}, l.label)
+          ),
+          h("div", {className: "slds-col slds-size_5-of-12 text-align-middle"},
+            h("span", {}, l.link)
+          ),
+          h("div", {className: "slds-col slds-size_2-of-12 text-align-middle"},
+            h("button", {onClick: () => this.deleteLink(i), title: "Delete", className: "slds-button slds-button_destructive"}, "Delete")
+          )
+        )
+      ),
+      h("div", {className: "slds-border_bottom"})
+    );
+    //TODO add
+    /*
+    title custom link:
+    [del btn]
+    "label" "link" "section": "Custom" "prod": false
+    */
   }
 }
 

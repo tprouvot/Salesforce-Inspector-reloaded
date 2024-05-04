@@ -13,7 +13,7 @@ With this extension, you can:
 
 You can enable the extension by clicking on the **Salesforce Inspector Advanced** icon in the toolbar, or by pressing `Ctrl+Shift+I` (Windows) / `Ctrl+Option+I` (Mac) on your keyboard.
 
-For more information, please read this [article](https://www.salesforceben.com/salesforce-inspector-reloaded/) or the [documentation page](https://dufoli.github.io/Salesforce-Inspector-Advanced/).
+For more information, please read this the [documentation page](https://dufoli.github.io/Salesforce-Inspector-Advanced/).
 
 We hope you will enjoy using **Salesforce Inspector Advanced** and find it useful for your Salesforce development and administration tasks. If you have any feedback, questions, or issues, please feel free to [open an issue](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues) on GitHub.
 

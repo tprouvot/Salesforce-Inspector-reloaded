@@ -11,7 +11,23 @@
 
 Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
 
-We all know and love Salesforce Inspector: As the great Søren Krabbe did not have the time to maintain it anymore. Thomas Prouvot decided to take over and fork the original project but I do not share the same vision of him. So I decided to fork on a new project in a more collaborative way.
+We all know and love Salesforce Inspector: As the great Søren Krabbe did not have the time to maintain it anymore. Thomas Prouvot decided to take over and fork the original project but I do not share the same vision of him. 
+My goal is :
+- to have fun 😉 because open source is fun 🎉!
+- to achieve functionnal goals:
+  - kill dev console needs with SOSL, apex runner, debugger, profiler, static ressource support
+  - streaming API monitoring
+  - better suggestions in data export, import and inspect
+  - switch to a real editor instead of textarea : (color text, suggstion over text,...)
+  - flow improvment: cleanup old flow versions, debug custom lwc reactive, better naviguation, detect dml before rest in transaction, detect dml, soql in loop,... 
+  - monitor external package version are up to date
+- to achieve some technical goals:
+  - Avoid dom and have only react components
+  - switch to up to date version of dependencies
+  - have CI/CD build with unit test/integration test in build
+  - switch to typescript
+
+So I decided to fork on a new project in a more collaborative way.
 
 The goal of this project is to focus on improving key features for administrator: export, import and inspect.
 Then add new features to make life easier and avoid API call.

@@ -403,24 +403,23 @@ class Option extends React.Component {
           h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
         )
       ),
-      isText ?
-        h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      isText ? h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
           h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: this.placeholder, value: this.state[this.key] || "", onChange: this.onChange}),
         )
       )
       : h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-        h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
-          h("label", {className: "slds-checkbox_toggle slds-grid"},
-            h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key] || "", onChange: this.onChangeToggle}),
-            h("span", {id, className: "slds-checkbox_faux_container center-label"},
-              h("span", {className: "slds-checkbox_faux"}),
-              h("span", {className: "slds-checkbox_on"}, "Enabled"),
-              h("span", {className: "slds-checkbox_off"}, "Disabled"),
-            )
+      h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
+        h("label", {className: "slds-checkbox_toggle slds-grid"},
+          h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key] || "", onChange: this.onChangeToggle}),
+          h("span", {id, className: "slds-checkbox_faux_container center-label"},
+            h("span", {className: "slds-checkbox_faux"}),
+            h("span", {className: "slds-checkbox_on"}, "Enabled"),
+            h("span", {className: "slds-checkbox_off"}, "Disabled"),
           )
         )
-      );
+      )
+    );
   }
 }
 

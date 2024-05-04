@@ -4,6 +4,22 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
 
+const allApis = [
+  {value: "Enterprise", label: "Enterprise (default)"},
+  {value: "Tooling", label: "Tooling"},
+  {value: "Metadata", label: "Metadata"}
+];
+
+const allActions = [
+  {value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling"]},
+  {value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling"]},
+  {value: "upsert", label: "Upsert", supportedApis: ["Enterprise", "Tooling"]},
+  {value: "delete", label: "Delete", supportedApis: ["Enterprise", "Tooling"]},
+  {value: "undelete", label: "Undelete", supportedApis: ["Enterprise", "Tooling"]},
+  {value: "upsertMetadata", label: "Upsert Metadata", supportedApis: ["Metadata"]},
+  {value: "deleteMetadata", label: "Delete Metadata", supportedApis: ["Metadata"]}
+];
+
 class Model {
 
   constructor(sfHost, args) {
@@ -44,13 +60,13 @@ class Model {
     this.importTableResult = null;
     this.updateResult(null);
 
-    this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { this.refreshColumn()});
+    this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { this.refreshColumn(); });
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
     }));
 
     let apiTypeParam = args.get("apitype");
-    this.apiType = this.importType.endsWith("__mdt") ? "Metadata" : apiTypeParam ? apiTypeParam : 'Enterprise';
+    this.apiType = this.importType.endsWith("__mdt") ? "Metadata" : apiTypeParam ? apiTypeParam : "Enterprise";
 
     if (args.has("data")) {
       let data = atob(args.get("data"));
@@ -64,25 +80,9 @@ class Model {
     }
   }
 
-  allApis = [
-    { value: "Enterprise", label: "Enterprise (default)" },
-    { value: "Tooling", label: "Tooling" },
-    { value: "Metadata", label: "Metadata" }
-  ];
-
-  allActions = [
-    { value: "create", label: "Insert", supportedApis: ["Enterprise", "Tooling"] },
-    { value: "update", label: "Update", supportedApis: ["Enterprise", "Tooling"] },
-    { value: "upsert", label: "Upsert", supportedApis: ["Enterprise", "Tooling"] },
-    { value: "delete", label: "Delete", supportedApis: ["Enterprise", "Tooling"] },
-    { value: "undelete", label: "Undelete", supportedApis: ["Enterprise", "Tooling"] },
-    { value: "upsertMetadata", label: "Upsert Metadata", supportedApis: ["Metadata"] },
-    { value: "deleteMetadata", label: "Delete Metadata", supportedApis: ["Metadata"] }
-  ];
-
   // set available actions based on api type, and set the first one as the default
   updateAvailableActions() {
-    this.availableActions = this.allActions.filter(action => action.supportedApis.includes(this.apiType));
+    this.availableActions = allActions.filter(action => action.supportedApis.includes(this.apiType));
     this.importAction = this.availableActions[0].value;
     this.importActionName = this.availableActions[0].label;
   }
@@ -153,7 +153,7 @@ class Model {
       if (importOptions.get("useToolingApi") == "1") this.apiType = "Tooling";
       if (importOptions.get("useToolingApi") == "0") this.apiType = "Enterprise";
       // Keep the above two checks, in order to support old import options
-      if (this.allApis.some(api => api.value == importOptions.get("apiType"))) this.apiType = importOptions.get("apiType");
+      if (allApis.some(api => api.value == importOptions.get("apiType"))) this.apiType = importOptions.get("apiType");
       if (importOptions.get("action") == "create") this.importAction = "create";
       if (importOptions.get("action") == "update") this.importAction = "update";
       if (importOptions.get("action") == "upsert") this.importAction = "upsert";
@@ -178,7 +178,7 @@ class Model {
     let sobj = this.getSObject(data);
     if (sobj) {
       //We avoid overwriting the Tooling option in case it was already set
-      this.apiType = sobj.endsWith("__mdt") ? "Metadata" : this.apiType === 'Tooling' ? 'Tooling' : 'Enterprise';
+      this.apiType = sobj.endsWith("__mdt") ? "Metadata" : this.apiType === "Tooling" ? "Tooling" : "Enterprise";
       this.updateAvailableActions();
       this.importType = sobj;
     }
@@ -204,13 +204,19 @@ class Model {
 
     let sobject = json[0]["attributes"]["type"];
     if (sobject) {
-      csv = json.map((row) => fields.map((fieldName) => {
-        let value = fieldName == "_" ? sobject : row[fieldName];
-        if (typeof value == "boolean" || (value && typeof value !== "object")) {
-          return fieldName == "_" ? '"[' + sobject + ']"' : JSON.stringify(value);
-        }
-      }).join(separator));
-      fields = fields.map(str => '"' + str + '"');
+      csv = json
+        .map((row) => fields
+          .map((fieldName) => {
+            const ignore = fieldName == "_";
+            let value = ignore ? sobject : row[fieldName];
+            if (typeof value == "boolean" || (value && typeof value !== "object")) {
+              return ignore ? `"[${sobject}]"` : JSON.stringify(value);
+            }
+            return null;
+          })
+          .filter(value => value !== null)
+          .join(separator));
+      fields = fields.map(str => `"${str}"`);
       csv.unshift(fields.join(separator));
       csv = csv.join("\r\n");
     }
@@ -268,7 +274,7 @@ class Model {
   }
 
   sobjectList() {
-    let { globalDescribe } = this.describeInfo.describeGlobal(this.apiType == "Tooling");
+    let {globalDescribe} = this.describeInfo.describeGlobal(this.apiType == "Tooling");
     if (!globalDescribe) {
       return [];
     }
@@ -604,7 +610,7 @@ class Model {
     return hasId ? true : false;
   }
 
-  guessColumn (col) {
+  guessColumn(col) {
     if (!col) {
       return col;
     }
@@ -702,7 +708,7 @@ class Model {
       return;
     }
 
-    let { statusColumnIndex, resultIdColumnIndex, actionColumnIndex, errorColumnIndex, importAction, sobjectType, idFieldName, inputIdColumnIndex } = this.importState;
+    let {statusColumnIndex, resultIdColumnIndex, actionColumnIndex, errorColumnIndex, importAction, sobjectType, idFieldName, inputIdColumnIndex} = this.importState;
     let data = this.importData.importTable.data;
     let header = this.importData.importTable.header.map(c => c.columnValue);
     let batchRows = [];
@@ -923,7 +929,7 @@ class App extends React.Component {
     this.unloadListener = null;
   }
   onApiTypeChange(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.apiType = e.target.value;
     model.updateAvailableActions();
     model.importAction = model.availableActions[0].value;
@@ -1110,22 +1116,22 @@ class App extends React.Component {
             h("div", {className: "area-header"},
               h("h1", {}, "Configure Import")
             ),
-            h("div", { className: "conf-line" },
-              h("label", { className: "conf-input", title: "With the tooling API you can import more metadata, but you cannot import regular data. With the metadata API you can import custom metadata types." },
-                h("span", { className: "conf-label" }, "API Type"),
-                h("span", { className: "conf-value" },
-                  h("select", { value: model.apiType, onChange: this.onApiTypeChange, disabled: model.isWorking() },
-                    ...model.allApis.map((api, index) => h("option", { key: index, value: api.value }, api.label))
+            h("div", {className: "conf-line"},
+              h("label", {className: "conf-input", title: "With the tooling API you can import more metadata, but you cannot import regular data. With the metadata API you can import custom metadata types."},
+                h("span", {className: "conf-label"}, "API Type"),
+                h("span", {className: "conf-value"},
+                  h("select", {value: model.apiType, onChange: this.onApiTypeChange, disabled: model.isWorking()},
+                    ...model.allApis.map((api, index) => h("option", {key: index, value: api.value}, api.label))
                   )
                 )
               )
             ),
-            h("div", { className: "conf-line" },
-              h("label", { className: "conf-input" },
-                h("span", { className: "conf-label" }, "Action"),
-                h("span", { className: "conf-value" },
-                  h("select", { value: model.importAction, onChange: this.onImportActionChange, disabled: model.isWorking() },
-                    ...model.availableActions.map((action, index) => h("option", { key: index, value: action.value }, action.label))
+            h("div", {className: "conf-line"},
+              h("label", {className: "conf-input"},
+                h("span", {className: "conf-label"}, "Action"),
+                h("span", {className: "conf-value"},
+                  h("select", {value: model.importAction, onChange: this.onImportActionChange, disabled: model.isWorking()},
+                    ...model.availableActions.map((action, index) => h("option", {key: index, value: action.value}, action.label))
                   )
                 )
               )
@@ -1198,8 +1204,8 @@ class App extends React.Component {
               h("h1", {}, "Field Mapping")
             ),
             /* h("div", {className: "columns-label"}, "Field mapping"), */
-            model.getRequiredMissingFields().map((field, index) => h("div", { key: index, className: "conf-error confError" }, `Error: The field mapping has no '${field}' column`)),
-            h("div", { className: "conf-value" }, model.columns().map((column, index) => h(ColumnMapper, { key: index, model, column })))
+            model.getRequiredMissingFields().map((field, index) => h("div", {key: index, className: "conf-error confError"}, `Error: The field mapping has no '${field}' column`)),
+            h("div", {className: "conf-value"}, model.columns().map((column, index) => h(ColumnMapper, {key: index, model, column})))
           )
         )
       ),
@@ -1319,7 +1325,6 @@ class StatusBox extends React.Component {
 }
 
 {
-
   let args = new URLSearchParams(location.search.slice(1));
   let sfHost = args.get("host");
   initButton(sfHost, true);
@@ -1337,9 +1342,7 @@ class StatusBox extends React.Component {
     }
 
   });
-
 }
-
 
 function stringIsEmpty(str) {
   return str == null || str == undefined || str.trim() == "";

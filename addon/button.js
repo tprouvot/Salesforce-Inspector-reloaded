@@ -82,7 +82,8 @@ function initButton(sfHost, inInspector) {
 
   function setRootCSSProperties(rootElement, buttonElement) {
     let popupArrowOrientation = iFrameLocalStorage.popupArrowOrientation ? iFrameLocalStorage.popupArrowOrientation : "vertical";
-    let popupArrowPosition = iFrameLocalStorage.popupArrowPosition ? (iFrameLocalStorage.popupArrowPosition + "%") : "122px";
+    const pos = iFrameLocalStorage.popupArrowPosition;
+    let popupArrowPosition = pos ? `${Math.min(95, pos)}%` : "122px";
     let img = document.createElement("img");
     if (popupArrowOrientation == "vertical") {
       rootElement.style.right = 0;

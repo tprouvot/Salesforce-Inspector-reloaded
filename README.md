@@ -105,17 +105,15 @@ Linting : to assure indentation, formatting and best practices coherence, please
 
 ### Chrome
 
-1. `npm run chrome-dev-build`
-2. Open `chrome://extensions/`.
-3. Enable `Developer mode`.
-4. Click `Load unpacked`.
-5. Select the `addon` subdirectory of this repository.
+1. Open `chrome://extensions/`.
+2. Enable `Developer mode`.
+3. Click `Load unpacked`.
+4. Select the `addon` subdirectory of this repository.
 
 ### Firefox
 
-1. `npm run firefox-dev-build`
-2. In Firefox, open `about:debugging`.
-3. Select `This Firefox`
+1. In Firefox, open `about:debugging`.
+2. Select `This Firefox` at the top left.
 3. Click `Load Temporary Add-on…`.
 4. Select the file `addon/manifest.json`.
 

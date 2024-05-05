@@ -1,5 +1,10 @@
 export let apiVersion = localStorage.getItem("apiVersion") == null ? "60.0" : localStorage.getItem("apiVersion");
 export let sessionError;
+export function cleanInputValue(value) {
+  // For react input fields, the value may not be null or undefined, so this will clean the value
+  return (value == null) ? "" : value;
+}
+
 export let sfConn = {
 
   async getSession(sfHost) {

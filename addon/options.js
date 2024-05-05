@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, cleanInputValue} from "./inspector.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 
@@ -223,7 +223,7 @@ class ArrowButtonOption extends React.Component {
         h("label", {className: "slds-m-left_medium slds-col slds-size_2-of-12 slds-text-align_right", htmlFor: "arrowPositionSlider"}, "Position (%):"),
         h("div", {className: "slds-form-element__control slider-container slds-col slds-size_4-of-12"},
           h("div", {className: "slds-slider"},
-            h("input", {type: "range", id: "arrowPositionSlider", className: "slds-slider__range", value: this.state.arrowButtonPosition || "", min: "0", max: "100", step: "1", onChange: this.onChangeArrowPosition}),
+            h("input", {type: "range", id: "arrowPositionSlider", className: "slds-slider__range", value: cleanInputValue(this.state.arrowButtonPosition), min: "0", max: "100", step: "1", onChange: this.onChangeArrowPosition}),
             h("span", {className: "slds-slider__value", "aria-hidden": true}, this.state.arrowButtonPosition)
           )
         )
@@ -254,7 +254,7 @@ class APIVersionOption extends React.Component {
       h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          h("input", {type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: this.state.apiVersion.split(".0")[0] || "", onChange: this.onChangeApiVersion}),
+          h("input", {type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: cleanInputValue(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
         )
       )
     );
@@ -282,7 +282,7 @@ class RestHeaderOption extends React.Component {
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-          h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: "Rest Header", value: this.state.restHeader || "", onChange: this.onChangeRestHeader}),
+          h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: "Rest Header", value: cleanInputValue(this.state.restHeader), onChange: this.onChangeRestHeader}),
         )
       )
     );
@@ -405,13 +405,13 @@ class Option extends React.Component {
       ),
       isText ? h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-          h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: this.placeholder, value: this.state[this.key] || "", onChange: this.onChange}),
+          h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: this.placeholder, value: cleanInputValue(this.state[this.key]), onChange: this.onChange}),
         )
       )
       : h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
         h("label", {className: "slds-checkbox_toggle slds-grid"},
-          h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key] || "", onChange: this.onChangeToggle}),
+          h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: cleanInputValue(this.state[this.key]), onChange: this.onChangeToggle}),
           h("span", {id, className: "slds-checkbox_faux_container center-label"},
             h("span", {className: "slds-checkbox_faux"}),
             h("span", {className: "slds-checkbox_on"}, "Enabled"),
@@ -445,7 +445,7 @@ class APIKeyOption extends React.Component {
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-          h("input", {type: "text", id: "apiKeyInput", className: "slds-input", placeholder: "Consumer Key", value: this.state.apiKey || "", onChange: this.onChangeApiKey}),
+          h("input", {type: "text", id: "apiKeyInput", className: "slds-input", placeholder: "Consumer Key", value: cleanInputValue(this.state.apiKey), onChange: this.onChangeApiKey}),
         )
       )
     );
@@ -473,7 +473,7 @@ class CSVSeparatorOption extends React.Component {
       ),
       h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("input", {type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: this.state.csvSeparator || "", onChange: this.onChangeCSVSeparator})
+        h("input", {type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: cleanInputValue(this.state.csvSeparator), onChange: this.onChangeCSVSeparator})
       )
     );
   }
@@ -512,7 +512,7 @@ class enableLogsOption extends React.Component {
         ),
         h("div", {className: "slds-col slds-size_6-of-12 slds-form-element"}),
         h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
-          h("input", {type: "text", id: "debugLogDebugLevel", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "SFDC_DevConsole", value: this.state.debugLogDebugLevel || "", onChange: this.onChangeDebugLevel})
+          h("input", {type: "text", id: "debugLogDebugLevel", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "SFDC_DevConsole", value: cleanInputValue(this.state.debugLogDebugLevel), onChange: this.onChangeDebugLevel})
         ),
       ),
       h("div", {className: "slds-col slds-grid slds-wrap slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
@@ -521,7 +521,7 @@ class enableLogsOption extends React.Component {
         ),
         h("div", {className: "slds-col slds-size_6-of-12 slds-form-element"}),
         h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
-          h("input", {type: "number", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", value: this.state.debugLogTimeMinutes || "", onChange: this.onChangeDebugLogTime})
+          h("input", {type: "number", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", value: cleanInputValue(this.state.debugLogTimeMinutes), onChange: this.onChangeDebugLogTime})
         ),
       )
     );

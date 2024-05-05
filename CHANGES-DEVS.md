@@ -3,6 +3,8 @@ This file may be used by contributors to track technical notes for updates to in
 
 ## Version 1.24
 
-- Cleaned up all ES Lint Errors ([Nathan Shulman](https://github.com/nshulman))
-- Added more progress status and error details to Test Framework page ([Nathan Shulman](https://github.com/nshulman))
-- Updated instructions for Firefox and Chrome build prior to testing and to reflect new Firefox UI - manifest in the addon folder is sufficient
+- Contributions by ([Nathan Shulman](https://github.com/nshulman))
+    - Cleaned up all ES Lint Errors
+    - Added more progress status and error details to Test Framework page
+    - Updated instructions for Firefox and Chrome build prior to testing and to reflect new Firefox UI - manifest in the addon folder is sufficient
+    - Due to an error from React mentioning that input value may not be null, cleanInputValue() function was added to prevent nulls as value

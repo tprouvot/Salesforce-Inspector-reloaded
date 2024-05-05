@@ -1428,7 +1428,12 @@ class UserDetails extends React.PureComponent {
                 h("td", {className: "oneliner"},
                   (user.IsActive) ? "" : h("span", {title: "User is inactive"}, "⚠ "),
                   //user.Name + " (" + user.Alias + ")"
-                  h("a", {href: this.getUserSummaryLink(user.Id), target: linkTarget, title: "View summary"}, user.Name)
+                  h("a", {
+                    href: this.getUserSummaryLink(user.Id),
+                    target: linkTarget,
+                    title: "View summary",
+                    onClick: handleLightningLinkClick
+                  }, user.Name)
                   ,
                   " (" + user.Alias + ")"
                 )
@@ -1450,7 +1455,11 @@ class UserDetails extends React.PureComponent {
                 h("th", {}, "Profile:"),
                 h("td", {className: "oneliner"},
                   (user.Profile)
-                    ? h("a", {href: this.getProfileLink(user.ProfileId), target: linkTarget}, user.Profile.Name)
+                    ? h("a", {
+                      href: this.getProfileLink(user.ProfileId),
+                      target: linkTarget,
+                      onClick: handleLightningLinkClick
+                    }, user.Profile.Name)
                     : h("em", {className: "inactive"}, "unknown")
                 )
               ),
@@ -1469,9 +1478,26 @@ class UserDetails extends React.PureComponent {
             )
           )),
         h("div", {ref: "userButtons", className: "user-buttons center small-font"},
-          h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Details"),
-          h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
-          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
+          h("a", {
+            href: this.getUserDetailLink(user.Id),
+            target: linkTarget,
+            className: "slds-button slds-button_neutral",
+            onClick: handleLightningLinkClick
+          }, "Details"),
+          h("a", {
+            href: this.getUserPsetLink(user.Id),
+            target: linkTarget,
+            className: "slds-button slds-button_neutral",
+            title: "Show / assign user's permission sets",
+            onClick: handleLightningLinkClick
+          }, "PSet"),
+          h("a", {
+            href: this.getUserPsetGroupLink(user.Id),
+            target: linkTarget,
+            className: "slds-button slds-button_neutral",
+            title: "Show / assign user's permission set groups",
+            onClick: handleLightningLinkClick
+          }, "PSetG"),
           h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs")
         ),
         h("div", {ref: "userButtons", className: "user-buttons center small-font top-space"},

@@ -82,15 +82,33 @@ class Test {
   }
 
   async anonApex(apex) {
-    window.anonApex.removeAttribute("hidden");
+    window.anonApex.style.color = "black";
+    window.anonApexCode.textContent = apex;
     let res = await sfConn.rest("/services/data/v" + apiVersion + "/tooling/executeAnonymous/?anonymousBody=" + encodeURIComponent(apex));
-    window.anonApex.setAttribute("hidden", "");
+    window.anonApex.style.color = "lightblue";
     this.assert(res.success, res);
   }
 
 }
 
 window.isUnitTest = true;
+
+function updateProgress(nextTestId, previousTestId) {
+  const prevEl = document.getElementById(previousTestId);
+  const nextEl = document.getElementById(nextTestId);
+  const prevStyle = prevEl?.style;
+  const nextStyle = nextEl?.style;
+  if (prevStyle) {
+    prevStyle.background = "green";
+    prevStyle.borderBottom = "0";
+    prevEl.textContent = prevEl.textContent.replace("⏳", "✔️");
+  }
+  if (nextEl) {
+    nextStyle.background = "yellow";
+    nextStyle.borderBottom = "3px solid black";
+    nextEl.textContent += " ⏳";
+  }
+}
 
 addEventListener("load", () => {
   (async () => {
@@ -99,19 +117,31 @@ addEventListener("load", () => {
       let sfHost = args.get("host");
       await sfConn.getSession(sfHost);
       let test = new Test(sfHost);
+      updateProgress("popupTest");
       await popupTest(test);
+      updateProgress("csvParseTest", "popupTest");
       await csvParseTest(test);
+      updateProgress("dataImportTest", "csvParseTest");
       await dataImportTest(test);
+      updateProgress("dataExportTest", "dataImportTest");
       await dataExportTest(test);
+      updateProgress(null, "dataExportTest");
+      window.anonApex.hidden = true;
       test.assert(!seenError, "Expected no error");
-      console.log("Salesforce Inspector unit test finished successfully");
-      window.result.textContent = "Salesforce Inspector unit test finished successfully";
+      console.log("Salesforce Inspector unit tests finished successfully");
+      window.result.textContent = "Salesforce Inspector unit tests finished successfully";
       window.result.style.background = "green";
       window.page.src = "data:text/plain,Salesforce Inspector unit test finished successfully";
     } catch (e) {
       console.error("error", e);
-      window.result.textContent = "Error: " + e;
+      window.anonApex.hidden = false;
+      window.result.textContent = "Salesforce unit tests failed - Detail:";
       window.result.style.background = "red";
+      window.result.style.color = "white";
+      window.result.style.padding = "5px";
+      window.result.style.fontWeight = "bold";
+      window.resultErrorDetail.textContent = `Error Message: ${e.message}`;
+      window.resultErrorDetail.style.padding = "5px";
     }
   })();
 });

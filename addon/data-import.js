@@ -211,8 +211,9 @@ class Model {
             let value = ignore ? sobject : row[fieldName];
             if (typeof value == "boolean" || (value && typeof value !== "object")) {
               return ignore ? `"[${sobject}]"` : JSON.stringify(value);
+            } else {
+              return null;
             }
-            return null;
           })
           .filter(value => value !== null)
           .join(separator));
@@ -1121,7 +1122,7 @@ class App extends React.Component {
                 h("span", {className: "conf-label"}, "API Type"),
                 h("span", {className: "conf-value"},
                   h("select", {value: model.apiType, onChange: this.onApiTypeChange, disabled: model.isWorking()},
-                    ...model.allApis.map((api, index) => h("option", {key: index, value: api.value}, api.label))
+                    ...allApis.map((api, index) => h("option", {key: index, value: api.value}, api.label))
                   )
                 )
               )

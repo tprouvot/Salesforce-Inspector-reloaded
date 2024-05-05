@@ -1215,7 +1215,12 @@ class AllDataBoxOrg extends React.PureComponent {
             h("table", {},
               h("tbody", {},
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget}, "Org Id:")),
+                  h("th", {}, h("a", {
+                    href: URLBuilder.getCompanyInfoUrl(sfHost),
+                    title: "Company Information",
+                    target: linkTarget,
+                    onClick: handleLightningLinkClick
+                  }, "Org Id:")),
                   h("td", {}, orgInfo.Id.substring(0, 15))
                 ),
                 h("tr", {},
@@ -2336,5 +2341,9 @@ class URLBuilder {
 
   static getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectName}/RecordTypes/${recordtypeId}/view`;
+  }
+
+  static getCompanyInfoUrl(sfHost) {
+    return `https://${sfHost}/lightning/setup/CompanyProfileInfo/home`;
   }
 }

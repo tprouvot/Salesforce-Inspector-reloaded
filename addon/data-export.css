@@ -732,7 +732,7 @@ button.toggle .button-icon {
   letter-spacing: normal;
   line-height: 2em;
   word-spacing: normal;
-  overflow: hidden;
+  overflow: auto;
   background-color: white;
   color: transparent;
   white-space: pre-wrap;

@@ -92,7 +92,6 @@ class Model {
     this.selectedHistoryEntry = null;
     this.savedHistory = new QueryHistory("insextSavedQueryHistory", 50);
     this.selectedSavedEntry = null;
-    this.expandAutocomplete = false;
     this.expandSavedOptions = false;
     this.resultsFilter = "";
     this.displayPerformance = localStorage.getItem("displayQueryPerformance") !== "false"; // default to true
@@ -104,6 +103,8 @@ class Model {
     this.autocompleteProgress = {};
     this.exportProgress = {};
     this.queryName = "";
+    this.suggestionTop = 0;
+    this.suggestionLeft = 0;
     this.columnIndex = {fields: []};
     this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
@@ -156,9 +157,6 @@ class Model {
   }
   toggleHelp() {
     this.showHelp = !this.showHelp;
-  }
-  toggleExpand() {
-    this.expandAutocomplete = !this.expandAutocomplete;
   }
   toggleSavedOptions() {
     this.expandSavedOptions = !this.expandSavedOptions;
@@ -338,6 +336,14 @@ class Model {
         this.didUpdate();
       })
       .catch(err => console.log("error handling failed", err));
+  }
+  setSuggestionPosition(top, left){
+    if (this.suggestionTop == top && this.suggestionLeft == left) {
+      return;
+    }
+    this.suggestionTop = top;
+    this.suggestionLeft = left;
+    this.didUpdate();
   }
   /**
    * SOSL query autocomplete handling.
@@ -1951,7 +1957,7 @@ class App extends React.Component {
           ),
         ),
         h(Editor, {model, keywordColor: model.isSearchMode() ? keywordColorSosl : keywordColor, keywordCaseSensitive: false}),
-        h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
+        h("div", {className: "autocomplete-box"},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
             h("div", {className: "flex-right"},
@@ -1959,14 +1965,10 @@ class App extends React.Component {
               h("button", {tabIndex: 2, onClick: this.onFormatQuery, title: "Format query"}, "Format Query"),
               h("button", {tabIndex: 3, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query"),
               h("button", {tabIndex: 4, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
-              h("a", {tabIndex: 5, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
-              h("button", {tabIndex: 6, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
-                h("div", {className: "button-icon"}),
-                h("div", {className: "button-toggle-icon"})
-              )
+              h("a", {tabIndex: 5, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info")
             ),
           ),
-          h("div", {className: "autocomplete-results"},
+          h("div", {className: "autocomplete-results", style: {top: model.suggestionTop + "px", left: model.suggestionLeft + "px"}},
             model.autocompleteResults.results.map(r =>
               h("div", {className: "autocomplete-result", key: r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.value), " ")
             )

@@ -931,11 +931,12 @@ export class Editor extends React.Component {
   }
 
   componentDidUpdate() {
-    //let {model} = this.props;
-    //TODO
-    //const rect = caretEle.getBoundingClientRect();
-    //coordinatesButton.innerHTML = `Coordinates: (${rect.left}, ${rect.top})`;
+    let {model} = this.props;
+    let caretEle = model.editorMirror.getElementsByClassName("editor_caret")[0];
 
+    const rect = caretEle.getBoundingClientRect();
+    model.setSuggestionPosition(rect.top + rect.height, rect.left);
+    console.log("top: " + rect.top);
   }
   processText(src) {
     let {keywordColor, keywordCaseSensitive, model} = this.props;

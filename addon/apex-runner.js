@@ -95,12 +95,13 @@ class Model {
     this.selectedHistoryEntry = null;
     this.savedHistory = new ScriptHistory("insextSavedScriptHistory", 50);
     this.selectedSavedEntry = null;
-    this.expandAutocomplete = false;
     this.expandSavedOptions = false;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
     this.apexClasses = new RecordTable();
     this.scriptName = "";
+    this.suggestionTop = 0;
+    this.suggestionLeft = 0;
     this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     this.scriptTemplates = localStorage.getItem("scriptTemplates") ? this.scriptTemplates = localStorage.getItem("scriptTemplates").split("//") : [
       "Id batchId= Database.executeBatch(new BatchExample(), 200);",
@@ -512,6 +513,14 @@ class Model {
     this.typeProperties.set(clsName, fields);
   }
 
+  setSuggestionPosition(top, left){
+    if (this.suggestionTop == top && this.suggestionLeft == left) {
+      return;
+    }
+    this.suggestionTop = top;
+    this.suggestionLeft = left;
+    this.didUpdate();
+  }
   /**
    * APEX script autocomplete handling.
    */
@@ -1201,7 +1210,7 @@ class App extends React.Component {
           ),
           h(Editor, {model, keywordColor, keywordCaseSensitive: true}),
         ),
-        h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
+        h("div", {className: "autocomplete-box"},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
             h("div", {className: "flex-right"},

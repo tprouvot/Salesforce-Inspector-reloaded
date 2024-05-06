@@ -534,12 +534,12 @@ button.toggle .button-icon {
 .autocomplete-results {
   overflow: hidden;
   margin-top: 7px;
-  display: flex;
-  flex-wrap: nowrap;
-}
-
-.expanded .autocomplete-results {
-  flex-wrap: wrap;
+  display: block;
+  position: absolute;
+  background-color: transparent;
+  z-index: 999;
+  overflow: auto;
+  height: 200px;
 }
 
 .autocomplete-results a {
@@ -548,6 +548,7 @@ button.toggle .button-icon {
   padding: 0px 4px;
   text-decoration: none;
   color: #006dcc;
+  background-color: white;
 }
 
 .autocomplete-results a:hover,
@@ -747,13 +748,10 @@ button.toggle .button-icon {
     margin: 0;
 }
 .editor_caret {
-  /*
-  background-color: rgb(15 23 42);
-  width: 2px;
-  animation: blink 1s infinite;
-  */
-  display: none;
-  position: absolute;
+  background-color: transparent;
+  width: 1px;
+  display: inline-block;
+  /*animation: blink 1s infinite;*/
 }
 @keyframes blink {
   0%, 100% {

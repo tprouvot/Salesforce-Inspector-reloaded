@@ -948,10 +948,38 @@ export class Editor extends React.Component {
     for (let keyword of keywordColor.keys()) {
       keywords.push(keyword);
     }
-    let keywordRegEx = new RegExp("\\b(" + keywords.join("|") + ")\\b", "g" + (keywordCaseSensitive ? "" : "i"));
-
+    let keywordRegEx = new RegExp("\\b(" + keywords.join("|") + ")\\b|(\\/\\/|\\/\\*|')", "g" + (keywordCaseSensitive ? "" : "i"));
+    //yellow for function
     while ((keywordMatch = keywordRegEx.exec(remaining)) !== null) {
-      let color = keywordColor.get(keywordMatch[1].toLocaleLowerCase());
+      let color = "blue";
+      let sentence = keywordMatch[1];
+      if (keywordMatch[0] == "'") {
+        color = "orange";
+        let endIndex = remaining.indexOf("'", keywordMatch.index + 1);
+        if (endIndex > 0) {
+          sentence = remaining.substring(keywordMatch.index, endIndex + 1);
+        } else {
+          sentence = remaining.substring(keywordMatch.index);
+        }
+      } else if (keywordMatch[0] == "//") {
+        color = "green";
+        let endIndex = remaining.indexOf("\n", keywordMatch.index + 2);
+        if (endIndex > 0) {
+          sentence = remaining.substring(keywordMatch.index, endIndex + 1);
+        } else {
+          sentence = remaining.substring(keywordMatch.index);
+        }
+      } else if (keywordMatch[0] == "/*") {
+        color = "green";
+        let endIndex = remaining.indexOf("*/", keywordMatch.index + 2);
+        if (endIndex > 0) {
+          sentence = remaining.substring(keywordMatch.index, endIndex + 2);
+        } else {
+          sentence = remaining.substring(keywordMatch.index);
+        }
+      } else {
+        color = keywordColor.get(keywordMatch[1].toLocaleLowerCase());
+      }
       if (selStart <= keywordMatch.index && selStart >= 0) { // sel before keyword
         if (selStart > 0) {
           highlighted.push({value: remaining.substring(0, selStart), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
@@ -960,8 +988,8 @@ export class Editor extends React.Component {
         if (selStart < keywordMatch.index) {
           highlighted.push({value: remaining.substring(selStart, keywordMatch.index), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
         }
-        highlighted.push({value: keywordMatch[1], attributes: {style: {color}, key: "hl" + highlighted.length}});
-      } else if (selStart <= keywordMatch.index + keywordMatch[1].length && selStart >= 0) { // sel on keyword
+        highlighted.push({value: sentence, attributes: {style: {color}, key: "hl" + highlighted.length}});
+      } else if (selStart <= keywordMatch.index + sentence.length && selStart >= 0) { // sel on keyword
         if (keywordMatch.index != 0) {
           highlighted.push({value: remaining.substring(0, keywordMatch.index), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
         }
@@ -969,18 +997,18 @@ export class Editor extends React.Component {
           highlighted.push({value: remaining.substring(keywordMatch.index, selStart), attributes: {style: {color}, key: "hl" + highlighted.length}});
         }
         highlighted.push({value: "\u00A0", attributes: {className: "editor_caret", key: "hl" + highlighted.length}});
-        if (selStart < keywordMatch.index + keywordMatch[1].length) {
-          highlighted.push({value: remaining.substring(selStart, keywordMatch.index + keywordMatch[1].length), attributes: {style: {color}, key: "hl" + highlighted.length}});
+        if (selStart < keywordMatch.index + sentence.length) {
+          highlighted.push({value: remaining.substring(selStart, keywordMatch.index + sentence.length), attributes: {style: {color}, key: "hl" + highlighted.length}});
         }
       } else { //sel after keyword
         if (keywordMatch.index != 0) {
           highlighted.push({value: remaining.substring(0, keywordMatch.index), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
         }
-        highlighted.push({value: keywordMatch[1], attributes: {style: {color}, key: "hl" + highlighted.length}});
+        highlighted.push({value: sentence, attributes: {style: {color}, key: "hl" + highlighted.length}});
       }
-      remaining = remaining.substring(keywordMatch.index + keywordMatch[1].length);
-      selStart -= keywordMatch.index + keywordMatch[1].length;
-      keywordRegEx = new RegExp("\\b(" + keywords.join("|") + ")\\b", "g" + (keywordCaseSensitive ? "" : "i"));
+      remaining = remaining.substring(keywordMatch.index + sentence.length);
+      selStart -= keywordMatch.index + sentence.length;
+      keywordRegEx = new RegExp("\\b(" + keywords.join("|") + ")\\b|(\\/\\/|\\/\\*|')", "g" + (keywordCaseSensitive ? "" : "i"));
     }
     if (selStart > 0) {
       highlighted.push({value: remaining.substring(0, selStart), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});

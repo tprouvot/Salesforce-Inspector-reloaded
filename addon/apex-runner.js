@@ -1136,6 +1136,10 @@ class App extends React.Component {
 
   render() {
     let {model} = this.props;
+    let keywordColor = new Map([["{", "violet"], ["}", "violet"], ["[", "violet"], ["]", "violet"], ["(", "violet"], ["do", "violet"],
+      [")", "violet"], ["public", "blue"], ["private", "blue"], ["global", "blue"], ["class", "blue"], ["static", "blue"],
+      ["interface", "blue"], ["extends", "blue"], ["while", "violet"], ["for", "violet"], ["try", "violet"], ["catch", "violet"],
+      ["finally", "violet"], ["extends", "violet"], ["throw", "violet"], ["new", "violet"], ["if", "violet"], ["else", "violet"]]);
     return h("div", {onClick: this.onClick},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},
@@ -1195,7 +1199,7 @@ class App extends React.Component {
           h("div", {className: "line-numbers"},
             Array(model.numberOfLines).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}))
           ),
-          h(Editor, {model}),
+          h(Editor, {model, keywordColor, keywordCaseSensitive: true}),
         ),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},

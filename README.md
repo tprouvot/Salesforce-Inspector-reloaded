@@ -18,8 +18,8 @@ My goal is :
   - kill dev console needs with SOSL, apex runner, debugger, profiler, static ressource support
   - streaming API monitoring
   - better suggestions in data export, import and inspect
-  - switch to a real editor instead of textarea : (color text, suggstion over text,...)
-  - flow improvment: cleanup old flow versions, debug custom lwc reactive, better naviguation, detect dml before rest in transaction, detect dml, soql in loop,... 
+  - switch to a real editor instead of textarea : (color text, suggestion over text,...)
+  - flow improvment: cleanup old flow versions, debug custom lwc reactive, better naviguation, detect DML before callout in transaction, detect DML, SOQL in loop,... 
   - monitor external package version are up to date
 - to achieve some technical goals:
   - Avoid dom and have only react components

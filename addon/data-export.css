@@ -746,12 +746,12 @@ button.toggle .button-icon {
 
     margin: 0;
 }
-.editor_caret {
+/*.editor_caret {
   background-color: rgb(15 23 42);
   width: 2px;
   animation: blink 1s infinite;
   position: absolute;
-}
+}*/
 @keyframes blink {
   0%, 100% {
       background-color: transparent;

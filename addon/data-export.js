@@ -303,7 +303,7 @@ class Model {
   }
   isSearchMode() {
     //if query start with "f" like "find" instead of "select"
-    return this.editor.value != null ? this.editor.value.trim().toLowerCase().startsWith("f") : false;
+    return this.editor != null && this.editor.value != null ? this.editor.value.trim().toLowerCase().startsWith("f") : false;
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -1876,7 +1876,14 @@ class App extends React.Component {
   }
   render() {
     let {model} = this.props;
-    let keywordColor = new Map([["select", "blue"], ["from", "blue"], ["where", "blue"], ["group", "blue"], ["by", "blue"], ["order", "blue"], ["limit", "blue"]]);
+    let keywordColor = new Map([["select", "blue"], ["from", "blue"], ["where", "blue"], ["group", "blue"], ["by", "blue"],
+      ["order", "blue"], ["limit", "blue"], ["and", "blue"], ["or", "blue"], ["not", "blue"], ["like", "blue"]]);
+    let keywordColorSosl = new Map([["find", "blue"], ["in", "blue"], ["all", "blue"], ["fields", "blue"], ["name", "blue"],
+      ["email", "blue"], ["phone", "blue"], ["sidebar", "blue"], ["returning", "blue"], ["where", "blue"], ["order", "blue"],
+      ["by", "blue"], ["limit", "blue"], ["offset", "blue"], ["with", "blue"], ["division", "blue"], ["data", "blue"],
+      ["category", "blue"], ["at", "blue"], ["above", "blue"], ["below", "blue"], ["abov_or_below", "blue"], ["and", "blue"],
+      ["or", "blue"], ["not", "blue"], ["like", "blue"], ["highlight", "blue"], ["snippet", "blue"], ["network", "blue"],
+      ["metadata", "blue"]]);
     const perf = model.perfStatus();
     return h("div", {onClick: this.onClick},
       h("div", {id: "user-info"},
@@ -1943,7 +1950,7 @@ class App extends React.Component {
             ),
           ),
         ),
-        h(Editor, {model, keywordColor, keywordCaseSensitive: false}),
+        h(Editor, {model, keywordColor: model.isSearchMode() ? keywordColorSosl : keywordColor, keywordCaseSensitive: false}),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),

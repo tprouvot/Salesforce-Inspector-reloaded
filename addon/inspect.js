@@ -38,6 +38,8 @@ class Model {
     this.objectActionsOpen = false;
     this.objectSetupLinks = null;
     this.objectSetupLinksRequested = false;
+    this.popupTmpReactElement = undefined;
+    this.popupReactElement = undefined;
     if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
       //change background color for production
       document.body.classList.add("prod");
@@ -252,7 +254,7 @@ class Model {
     }
     return "data-export.html?" + args;
   }
-  toggleObjectActions() {
+  toggleObjectActions(elem) {
     this.objectActionsOpen = !this.objectActionsOpen;
     if (this.objectActionsOpen && !this.objectSetupLinksRequested) {
       this.objectSetupLinksRequested = true;
@@ -262,6 +264,12 @@ class Model {
           .then(setupLinks => this.objectSetupLinks = setupLinks)
       );
     }
+    if (this.objectActionsOpen){
+      this.onOpenPopup(elem);
+    }
+  }
+  onOpenPopup(elem){
+    this.popupTmpReactElement = elem;
   }
   setRecordData(recordDataPromise) {
     this.spinFor("retrieving record", recordDataPromise.then(res => {
@@ -649,7 +657,7 @@ class FieldRow extends TableRow {
         ? "[" + fieldDescribe.referenceTo.join(", ") + "]"
         : (fieldDescribe.type || "")
         + (fieldDescribe.length ? " (" + fieldDescribe.length + ")" : "")
-        + (fieldDescribe.precision || fieldDescribe.scale ? " (" + fieldDescribe.precision + ", " + fieldDescribe.scale + ")" : "")
+        + (fieldDescribe.precision || fieldDescribe.scale ? " (" + (fieldDescribe.precision - fieldDescribe.scale) + ", " + fieldDescribe.scale + ")" : "")
         + (fieldDescribe.autoNumber ? ", auto number" : "")
         + (fieldDescribe.caseSensitive ? ", case sensitive" : "")
         + (fieldDescribe.dependentPicklist ? ", dependent" : "")
@@ -667,7 +675,7 @@ class FieldRow extends TableRow {
         ? "[" + particle.ReferenceTo.referenceTo.join(", ") + "]"
         : (particle.DataType || "")
         + (particle.Length ? " (" + particle.Length + ")" : "")
-        + (particle.Precision || particle.Scale ? " (" + particle.Precision + ", " + particle.Scale + ")" : "")
+        + (particle.Precision || particle.Scale ? " (" + (particle.Precision - particle.scale) + ", " + particle.Scale + ")" : "")
         + (particle.IsAutonumber ? ", auto number" : "")
         + (particle.IsCaseSensitive ? ", case sensitive" : "")
         + (particle.IsDependentPicklist ? ", dependent" : "")
@@ -703,7 +711,7 @@ class FieldRow extends TableRow {
   fieldIsHidden() {
     return !this.fieldDescribe;
   }
-  toggleFieldActions() {
+  toggleFieldActions(elem) {
     this.fieldActionsOpen = !this.fieldActionsOpen;
     if (this.fieldActionsOpen && !this.fieldSetupLinksRequested) {
       this.fieldSetupLinksRequested = true;
@@ -713,6 +721,9 @@ class FieldRow extends TableRow {
         getFieldSetupLinks(this.rowList.model.sfHost, this.rowList.model.objectName(), this.fieldName, isCustomSetting)
           .then(setupLinks => this.fieldSetupLinks = setupLinks)
       );
+    }
+    if (this.fieldActionsOpen){
+      elem.props.onOpenPopup(elem);
     }
   }
   showFieldMetadata() {
@@ -724,7 +735,7 @@ class FieldRow extends TableRow {
       return this.fieldName + "\n"
         + (fieldDescribe.calculatedFormula ? "Formula: " + fieldDescribe.calculatedFormula + "\n" : "")
         + (fieldDescribe.inlineHelpText ? "Help text: " + fieldDescribe.inlineHelpText + "\n" : "")
-        + (fieldDescribe.picklistValues && fieldDescribe.picklistValues.length > 0 ? "Picklist values: " + fieldDescribe.picklistValues.map(pickval => pickval.value).join(", ") + "\n" : "")
+        + (fieldDescribe.picklistValues && fieldDescribe.picklistValues.length > 0 ? "Values: (iterate with ↑ & ↓) " + fieldDescribe.picklistValues.map(pickval => pickval.value).join(", ") + "\n" : "")
       ;
     }
     // Entity particle does not contain any of this information
@@ -777,7 +788,7 @@ class FieldRow extends TableRow {
   idLink() {
     return "https://" + this.rowList.model.sfHost + "/" + this.dataTypedValue;
   }
-  toggleRecordIdPop() {
+  toggleRecordIdPop(elem) {
     if (this.recordIdPop) {
       this.recordIdPop = null;
       return;
@@ -804,6 +815,7 @@ class FieldRow extends TableRow {
     links.push({href: this.idLink(), text: "View in Salesforce"});
     links.push({href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
     this.recordIdPop = links;
+    elem.props.onOpenPopup(elem);
   }
   showReferenceUrl(type) {
     let args = new URLSearchParams();
@@ -908,7 +920,7 @@ class ChildRow extends TableRow {
     }
     return "";
   }
-  toggleChildActions() {
+  toggleChildActions(elem) {
     this.childActionsOpen = !this.childActionsOpen;
     if (this.childActionsOpen && !this.childSetupLinksRequested) {
       this.childSetupLinksRequested = true;
@@ -920,6 +932,9 @@ class ChildRow extends TableRow {
         getFieldSetupLinks(this.rowList.model.sfHost, sobjectName, fieldName, isCustomSetting)
           .then(setupLinks => this.childSetupLinks = setupLinks)
       );
+    }
+    if (this.childActionsOpen){
+      elem.props.onOpenPopup(elem);
     }
   }
   showChildMetadata() {
@@ -976,6 +991,9 @@ class App extends React.Component {
     this.onDoSave = this.onDoSave.bind(this);
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onUpdateTableBorderSettings = this.onUpdateTableBorderSettings.bind(this);
+    this.handleClick = this.handleClick.bind(this);
+    this.closePopMenu = this.closePopMenu.bind(this);
+    this.onOpenPopup = this.onOpenPopup.bind(this);
   }
   componentDidMount() {
     this.refs.rowsFilter.focus();
@@ -1018,7 +1036,7 @@ class App extends React.Component {
   }
   onToggleObjectActions() {
     let {model} = this.props;
-    model.toggleObjectActions();
+    model.toggleObjectActions(this);
     model.didUpdate();
   }
   onDoUpdate(e) {
@@ -1061,13 +1079,34 @@ class App extends React.Component {
     model.didUpdate();
     // Save to local storage
   }
+  handleClick(e){
+    const {model} = this.props;
+    if (model.popupReactElement){ // There is a popup
+      const popups = document.getElementsByClassName("pop-menu");
+      if (popups && popups[0] && !popups[0].contains(e.target)){
+        model.popupReactElement.closePopMenu(); // Dynamic components implementing closePopMenu
+        model.popupReactElement = undefined;
+      }
+    }
+    if (model.popupTmpReactElement){ // First click
+      model.popupReactElement = model.popupTmpReactElement;
+      model.popupTmpReactElement = undefined;
+    }
+  }
+  closePopMenu(){
+    this.onToggleObjectActions();
+  }
+  onOpenPopup(elem){
+    const {model} = this.props;
+    model.popupTmpReactElement = elem;
+  }
   render() {
     let {model} = this.props;
     document.title = model.title();
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
     let linkTarget = linkInNewTab ? "_blank" : "_top";
     return (
-      h("div", {},
+      h("div", {onClick: this.handleClick},
         h("div", {className: "object-bar"},
           h("div", {className: "flex-right"},
             h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_large", hidden: model.spinnerCount == 0},
@@ -1171,14 +1210,16 @@ class App extends React.Component {
             rowList: model.fieldRows,
             actionsColumn: {className: "field-actions" + (model.showTableBorder ? " border-cell" : ""), reactElement: FieldActionsCell},
             classNameForRow: row => (row.fieldIsCalculated() ? "fieldCalculated " : "") + (row.fieldIsHidden() ? "fieldHidden " : ""),
-            onUpdateTableBorderSettings: this.onUpdateTableBorderSettings
+            onUpdateTableBorderSettings: this.onUpdateTableBorderSettings,
+            onOpenPopup: this.onOpenPopup,
           }) : null,
           model.useTab == "all" || model.useTab == "childs" ? h(RowTable, {
             model,
             rowList: model.childRows,
             actionsColumn: {className: "child-actions" + (model.showTableBorder ? " border-cell" : ""), reactElement: ChildActionsCell},
             classNameForRow: () => "",
-            onUpdateTableBorderSettings: this.onUpdateTableBorderSettings
+            onUpdateTableBorderSettings: this.onUpdateTableBorderSettings,
+            onOpenPopup: this.onOpenPopup,
           }) : null
         ),
         model.editMode != null && (model.useTab == "all" || model.useTab == "fields") ? h("div", {className: "footer-edit-bar"}, h("span", {className: "edit-bar"},
@@ -1270,6 +1311,8 @@ class RowTable extends React.Component {
     super(props);
     this.onToggleTableSettings = this.onToggleTableSettings.bind(this);
     this.onClickTableBorderSettings = this.onClickTableBorderSettings.bind(this);
+    this.closePopMenu = this.closePopMenu.bind(this);
+    this.onOpenPopup = this.onOpenPopup.bind(this);
     this.showTableBorder = this.props.model.showTableBorder;
     this.tableSettingsOpen = false;
   }
@@ -1279,6 +1322,9 @@ class RowTable extends React.Component {
     };
     this.tableSettingsOpen = !this.tableSettingsOpen;
     this.props.model.didUpdate();
+    if (this.tableSettingsOpen){
+      this.props.onOpenPopup(this);
+    }
   }
   onClickTableBorderSettings() {
     this.setState({
@@ -1286,6 +1332,13 @@ class RowTable extends React.Component {
     });
     this.props.onUpdateTableBorderSettings();
     this.tableSettingsOpen = false;
+    this.props.model.didUpdate();
+  }
+  onOpenPopup(elem){
+    this.props.onOpenPopup(elem);
+  }
+  closePopMenu(){
+    this.onToggleTableSettings();
   }
   render() {
     let {rowList, actionsColumn, classNameForRow} = this.props;
@@ -1317,9 +1370,9 @@ class RowTable extends React.Component {
       h("tbody", {}, rowList.rows.map(row =>
         h("tr", {className: classNameForRow(row), hidden: !row.visible(), title: row.summary(), key: row.reactKey},
           selectedColumns.map(col =>
-            h(col.reactElement, {key: col.name, row, col})
+            h(col.reactElement, {key: col.name, row, col, onOpenPopup: this.onOpenPopup})
           ),
-          h(actionsColumn.reactElement, {className: actionsColumn.className, row})
+          h(actionsColumn.reactElement, {className: actionsColumn.className, row, onOpenPopup: this.onOpenPopup})
         )
       ))
     );
@@ -1389,6 +1442,10 @@ class FieldValueCell extends React.Component {
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onRecordIdClick = this.onRecordIdClick.bind(this);
     this.onLinkClick = this.onLinkClick.bind(this);
+    this.onKeyDown = this.onKeyDown.bind(this);
+
+    this.state = {picklistValueIndex: -1};
+    this.closePopMenu = this.closePopMenu.bind(this);
   }
   onTryEdit(e) {
     let {row} = this.props;
@@ -1411,7 +1468,7 @@ class FieldValueCell extends React.Component {
   onRecordIdClick(e) {
     e.preventDefault();
     let {row} = this.props;
-    row.toggleRecordIdPop();
+    row.toggleRecordIdPop(this);
     row.rowList.model.didUpdate();
   }
   onLinkClick(e) {
@@ -1420,11 +1477,29 @@ class FieldValueCell extends React.Component {
       this.onRecordIdClick(e);
     }
   }
+  onKeyDown(e) {
+    let {row} = this.props;
+    let {picklistValueIndex} = this.state;
+    if (row.entityParticle.DataType == "picklist" && (e.key == "ArrowDown" || e.key == "ArrowUp")) {
+      let down = e.key == "ArrowDown" ? true : false;
+      down ? picklistValueIndex++ : picklistValueIndex--;
+      if (0 <= picklistValueIndex && picklistValueIndex < row.fieldDescribe.picklistValues.length){
+        e.currentTarget.value = row.fieldDescribe.picklistValues[picklistValueIndex].value;
+        row.dataEditValue = e.target.value;
+        this.setState({picklistValueIndex});
+      }
+    }
+  }
+  closePopMenu(){
+    const {row} = this.props;
+    row.toggleRecordIdPop();
+    row.rowList.model.didUpdate();
+  }
   render() {
     let {row, col} = this.props;
     if (row.isEditing()) {
       return h("td", {className: col.className},
-        h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput}),
+        h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
         h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6")
       );
     } else if (row.isId()) {
@@ -1487,6 +1562,7 @@ class FieldActionsCell extends React.Component {
     super(props);
     this.onOpenDetails = this.onOpenDetails.bind(this);
     this.onToggleFieldActions = this.onToggleFieldActions.bind(this);
+    this.closePopMenu = this.closePopMenu.bind(this);
   }
   onOpenDetails(e) {
     e.preventDefault();
@@ -1496,8 +1572,11 @@ class FieldActionsCell extends React.Component {
   }
   onToggleFieldActions() {
     let {row} = this.props;
-    row.toggleFieldActions();
+    row.toggleFieldActions(this);
     row.rowList.model.didUpdate();
+  }
+  closePopMenu(){
+    this.onToggleFieldActions();
   }
   render() {
     let {row, className} = this.props;
@@ -1523,6 +1602,7 @@ class ChildActionsCell extends React.Component {
     super(props);
     this.onOpenDetails = this.onOpenDetails.bind(this);
     this.onToggleChildActions = this.onToggleChildActions.bind(this);
+    this.closePopMenu = this.closePopMenu.bind(this);
   }
   onOpenDetails(e) {
     e.preventDefault();
@@ -1532,8 +1612,11 @@ class ChildActionsCell extends React.Component {
   }
   onToggleChildActions() {
     let {row} = this.props;
-    row.toggleChildActions();
+    row.toggleChildActions(this);
     row.rowList.model.didUpdate();
+  }
+  closePopMenu(){
+    this.onToggleChildActions();
   }
   render() {
     let {row, className} = this.props;

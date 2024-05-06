@@ -1,5 +1,34 @@
 # Release Notes
 
+## Version 1.23
+
+- Add new [setup pages](https://help.salesforce.com/s/articleView?id=release-notes.rn_general_setup_domain_prepare.htm&release=246&type=5) domain [feature 389](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/389) (request by [akalatksy](https://github.com/akalatksy))
+- Add "View summary" link on User tab [feature 386](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/386)
+- Add option to hide 'Delete Records' button from Data Export page
+- Fix popup not closing in inspect page [issue 159](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/159) (contribution by [Luca Bassani](https://github.com/baslu93))
+- On inspect page, when double clicking on a picklist field, iterate through available values [feature 366](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/366)
+- Add 'Flow Versions' button in popup when recordId is a flow [feature 362](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/362)
+- Format relations as expected in import process [feature 26](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/26) (contribution by [Olivier Dufour](https://github.com/dufoli))
+- Ability to choose header theme [feature 294](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/294)
+- Add query template customization in Option page [feature 349](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/349)
+- Add an option to enable / disable SObject context on data export [issue 341](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/341)
+- Remove Consumer key input from data export [issue 338](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/338)
+- Customize extension's favicon [feature 197](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/197)
+- Save default batch size and thread for data import [feature 329](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/329) (feature request by [ritterblau](https://github.com/ritterblau))
+- Load recently viewed records on popup [feature 321](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/321)
+- Open documentation when installing the extension [feature 322](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/322)
+- Add Query Plan to data export [feature 314](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/314)
+- Align show-all data 'Type' column with Salesforce's 'Data Type' field [issue 312](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/312) by [efcdilascio](https://github.com/efcdilascio)
+- Make data export suggestions scrollable [feature 301](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/301) by [Vranisimo](https://github.com/vranisimo)
+- Show the number of filtered records in data export [feature 300](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/300) by [Vranisimo](https://github.com/vranisimo)
+- Hide RecType and Name field from popup when field is not set [feature 298](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/298)
+- Display API version in Org tab [feature 293](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/293) (feature by [Camille Guillory](https://github.com/CamilleGuillory))
+- Add the possibility to hide fields API names after users clicked "Show fields API names"
+- Add performance On data export with option to disable in Options/Data Export tab (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Clean up popup header and footer (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Fix double "Show all data" button [issue 63](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63) (contribution by [Luca Bassani](https://github.com/baslu93))
+- Enhanced the user interface with a subtle inline "copied" indicator for field copy actions [feature 351](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/351) (contribution by [dyncan](https://github.com/dyncan))
+
 ## Version 1.22
 
 - Add AlertBanner component for Alerts following [SLDS guidelines](https://www.lightningdesignsystem.com/components/alert/) (contribution by [Nathan Shulman](https://github.com/nshulman))

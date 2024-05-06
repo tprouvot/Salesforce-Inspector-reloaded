@@ -74,28 +74,20 @@ a:visited {
     overflow-y: scroll;
 }
 
-.header-logo {
+.header-light{
+    background: #f3f3f3;
+    color: #061c3f;
+}
+.header-light svg {
+    fill : #061c3f;
+}
+
+.header-dark{
     background: #061c3f;
-    padding: 2px 1em 2px 2px;
-    color: white;
-    display: flex;
-    align-items: center;
-    margin: 0 auto;
-    border-radius: 3px;
+    color: #f3f3f3;
 }
-
-.header-icon {
-    margin-right: 12px;
-    background-color: #d8be5f;
-    border-radius: 4px;
-}
-
-.header-icon>svg {
-    line-height: 1;
-    width: 24px;
-    height: 24px;
-    fill: white;
-    vertical-align: middle;
+.header-dark svg {
+    fill :#f3f3f3;
 }
 
 button,
@@ -358,4 +350,42 @@ a.icon {
 
 .text-error{
 	color: red;
+}
+
+.popup-media__figure{
+    padding-top:0.25rem;
+    padding-left:0.3rem;
+}
+.popup-header__name-title{
+    min-width:0;
+    font-size: .95rem;
+    padding-top: .4rem;
+}
+.popup-header__title {
+    font-weight: 600;
+    line-height: 1.25;
+    display: block;
+}
+.popup-title {
+    font-size: .9rem !important;
+    padding-bottom: .6rem;
+}
+.popup-header {
+    border: 0 !important;
+    border-radius: 0 !important;
+}
+.popup-header__name-title,
+.popup-header__name-title{
+    margin-top:0.25rem;
+}
+.popup-header__icon{
+    width:1.75rem;
+    height:1.75rem;
+}
+
+.popup-icon_container,
+.popup-icon__container{
+  display:inline-block;
+  line-height:1;
+  background-color:var(--slds-c-icon-color-background, var(--sds-c-icon-color-background, transparent));
 }

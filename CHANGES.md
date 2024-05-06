@@ -3,6 +3,7 @@
 ## Version 1.24
 
 - Add option to exclude formula fields from data export autocomplete. [feature 415](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/415)
+- Trim the userQuery before make the search. [feature 410](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/410) (contribution by [César Blanco](https://github.com/cesarblancg))
 - Add setup menu items 'Trusted URLs' and 'Trusted URL and Browser Policy Violations' to shortcut links
 - Ability to quit popup with escape button [feature 378](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/378) (contribution by [Gerald Gramier](https://github.com/gramier))
 - Add option to customize org favicon [feature 180](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/180)

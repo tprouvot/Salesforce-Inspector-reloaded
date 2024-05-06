@@ -636,6 +636,7 @@ class AllDataBoxUsers extends React.PureComponent {
 
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
+    userQuery = userQuery.trim();
     if (!userQuery) {
       return [];
     }

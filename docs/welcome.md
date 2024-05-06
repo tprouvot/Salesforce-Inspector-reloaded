@@ -12,6 +12,7 @@ With this extension, you can:
 - Generate REST API requests from Explore API.
 
 You can enable the extension by clicking on the **Salesforce Inspector Reloaded** icon in the toolbar, or by pressing `Ctrl+Shift+I` (Windows) / `Ctrl+Option+I` (Mac) on your keyboard.
+![2024-05-06_14-16-10 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ab6e5461-9952-4305-9773-0074561678ca)
 
 For more information, please read this [article](https://www.salesforceben.com/salesforce-inspector-reloaded/) or the [documentation page](https://tprouvot.github.io/Salesforce-Inspector-reloaded/).
 

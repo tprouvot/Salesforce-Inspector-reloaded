@@ -1,4 +1,6 @@
 "use strict";
+let sfHost;
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Perform cookie operations in the background page, because not all foreground pages have access to the cookie API.
   // Firefox does not support incognito split mode, so we use sender.tab.cookieStoreId to select the right cookie store.
@@ -33,6 +35,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
   if (request.message == "getSession") {
+    sfHost = request.sfHost;
     chrome.cookies.get({url: "https://" + request.sfHost, name: "sid", storeId: sender.tab.cookieStoreId}, sessionCookie => {
       if (!sessionCookie) {
         sendResponse(null);
@@ -47,31 +50,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 chrome.commands.onCommand.addListener((command) => {
-  console.log(`Command ${command} pressed`);
-  let extensionPage;
-  switch (command) {
-    case "open-popup":
-      extensionPage = "./data-import.html";
-      break;
-    case "data-import":
-      extensionPage = "./data-import.html";
-      break;
-    case "data-export":
-      extensionPage = "./data-export.html";
-      break;
-    case "open-options":
-      extensionPage = "./options.html";
-      break;
-    default:
-      console.log(`Command ${command} not found`);
-  }
-  if (extensionPage){
+  if (command !== "open-popup"){
     chrome.tabs.create({
-      url: extensionPage
+      url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
     });
   } else {
-    //post message to enable popup
-    console.log("Open popup pressed");
+    chrome.runtime.sendMessage({
+      msg: "shortcut_pressed", command, sfHost
+    });
   }
 });
 chrome.runtime.onInstalled.addListener(({reason}) => {

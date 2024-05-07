@@ -25,6 +25,12 @@ let h = React.createElement;
       }
     }
   });
+  chrome.runtime.onMessage.addListener((request) => {
+    if (request.msg === "shortcut_pressed") {
+      parent.postMessage({insextOpenPopup: true}, "*");
+    }
+  }
+  );
 }
 
 function closePopup() {
@@ -46,7 +52,6 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
       inInspector,
       addonVersion,
     }), document.getElementById("root"));
-
   });
 }
 

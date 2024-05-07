@@ -160,7 +160,10 @@ function initButton(sfHost, inInspector) {
       }
       if (e.data.insextClosePopup) {
         closePopup();
-      }"field-api-name";
+      }
+      if (e.data.insextOpenPopup) {
+        openPopup();
+      }
       if (e.data.insextShowStdPageDetails) {
         showStdPageDetails(e.data.insextData, e.data.insextAllFieldSetupLinks);
       }

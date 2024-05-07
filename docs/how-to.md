@@ -255,3 +255,9 @@ If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM
 You can exclude formula fields to be included in the autocomplete by disable the toogle
 
 <img width="898" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/aa9db6c4-099d-49ea-a343-7c64e472450d">
+
+## Customize extension's shortcuts
+
+Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.
+
+<img width="660" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">

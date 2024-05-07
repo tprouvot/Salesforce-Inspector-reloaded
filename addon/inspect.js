@@ -744,6 +744,14 @@ class FieldRow extends TableRow {
   isEditing() {
     return typeof this.dataEditValue == "string";
   }
+
+  isPicklist(){
+    if(this.fieldDescribe.picklistValues.length > 0){
+      return true;
+    }
+    return false;
+  }
+
   canEdit() {
     switch (this.rowList.model.editMode) {
       case "update":
@@ -1451,7 +1459,7 @@ class FieldValueCell extends React.Component {
     let {row} = this.props;
     if (row.tryEdit()) {
       let td = e.currentTarget;
-      row.rowList.model.didUpdate(() => td.querySelector("textarea").focus());
+      row.rowList.model.didUpdate(() => td.querySelector("#input-field").focus());
     }
   }
   onDataEditValueInput(e) {
@@ -1498,10 +1506,25 @@ class FieldValueCell extends React.Component {
   render() {
     let {row, col} = this.props;
     if (row.isEditing()) {
-      return h("td", {className: col.className},
-        h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
-        h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6")
-      );
+      if (row.isPicklist()){
+        return h("td", { className: col.className },
+          h("select", {id: "input-field", className: "", value: row.dataEditValue, onChange: this.onDataEditValueInput},
+            h("option", { value: "" }, "Select an option"),
+            row.fieldDescribe.picklistValues
+              .filter(option => option.active)
+              .map(option =>
+                h("option", { value: option.value, key: option.value }, option.label)
+              )
+          ),
+          h("a", { href: "about:blank", onClick: this.onCancelEdit, className: "undo-button" }, "\u21B6")
+        );
+      }
+      else {
+        return h("td", {className: col.className},
+          h("textarea", {id: "input-field", value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
+          h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6")
+        );
+      }
     } else if (row.isId()) {
       return h("td", {className: col.className, onDoubleClick: this.onTryEdit},
         h("div", {className: "pop-menu-container"},

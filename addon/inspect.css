@@ -217,7 +217,7 @@ thead{
   /* To handle long words. This is not actually 200px but scales with the table. Table layout magic. */
 }
 
-.field-column textarea {
+.field-column #input-field {
   width: calc(100% - 20px);
   resize: vertical;
 }

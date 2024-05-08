@@ -805,7 +805,7 @@ export class Editor extends React.Component {
     });
     editorMirror.style.borderColor = "transparent";
 
-    const parseValue = (v) => v.endsWith("px") ? parseInt(v.slice(0, -2), 10) : 0;
+    //const parseValue = (v) => v.endsWith("px") ? parseInt(v.slice(0, -2), 10) : 0;
     //const borderWidth = parseValue(textareaStyles.borderWidth);
 
     //Set the cursor focus on script text area use the same than query
@@ -913,12 +913,39 @@ export class Editor extends React.Component {
         ["\"", "\""],
       ]);
       const closeChar = openToCloseChar.get(e.key);
-      model.editor.setRangeText(e.key, selectionStart, selectionStart, "end");
-      model.editor.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
+      // if quote (or any other start char) before and quote (or any other corresponding end char) right after it do not add quote (or the corresponding end char) but just move cursor after the it
+      if ((e.key === "'" || e.key === "\"") && selectionStart > 0 && selectionEnd < model.editor.value.length && selectionStart === selectionEnd && model.editor.value.substring(selectionStart - 1, selectionStart) == e.key && model.editor.value.substring(selectionEnd, selectionEnd + 1) == closeChar) {
+        model.editor.setRangeText("", selectionEnd + 1, selectionEnd + 1, "end");
+      } else {
+        model.editor.setRangeText(e.key, selectionStart, selectionStart, "end");
+        // add of close quote after open quote happend only if nxt character is space, break line, close parenthesis, close bracket... maybe just if next charactere is not a-z or 0-9
+        // look for char at + 1 because start char is already inserted
+        if (selectionStart != selectionEnd) {
+          model.editor.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
+        } else if (
+            (e.key !== "'" && e.key !== "\"") ||
+            (selectionEnd + 1 < model.editor.value.length && /[\w|\s]/.test(model.editor.value.substring(selectionEnd + 1, selectionEnd + 2))) ||
+            selectionEnd + 1 === model.editor.value.length) {
+          model.editor.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
+        }
+      }
+    } else if (e.key == "]" || e.key == ")" || e.key == "}") {
+      // if quote (or any other start char) before and quote (or any other corresponding end char) right after it do not add quote (or the corresponding end char) but just move cursor after the it
+      const closeToOpenChar = new Map([
+        ["]", "["],
+        [")", "("],
+        ["}", "{"],
+      ]);
+      const openChar = closeToOpenChar.get(e.key);
+      // if start char before and corresponding end char right after it do not add the corresponding end char but just move cursor after the it
+      if (selectionStart === selectionEnd && model.editor.value.substring(selectionStart - 1, selectionStart) == openChar && model.editor.value.substring(selectionEnd, selectionEnd + 1) == e.key) {
+        e.preventDefault();
+        model.editor.setRangeText("", selectionEnd + 1, selectionEnd + 1, "end");
+      }
     } else if (e.key === "Backspace") {
       const textBeforeCaret = value.substring(0, selectionStart);
       let indentRgEx = new RegExp("\n(" + tabChar + ")+$", "g");
-      if (textBeforeCaret.match(indentRgEx) && selectionStart == selectionEnd) {
+      if (selectionStart == selectionEnd && textBeforeCaret.match(indentRgEx)) {
         e.preventDefault();
         model.editor.setRangeText("", selectionStart, selectionStart - tabChar.length, "preserve");
       }

@@ -25,7 +25,7 @@ It permit to troubleshoot any issue when you reach an org limit as DML, SOQL, ca
 ## SOSL
 
 In data Export, you run an SOSL query in order to retreive some data across multiple objects:
-<img alt="SOSL" src="screenshots/sosl.png?raw=true" height="300">
+![SOSL](screenshots/sosl.png)
 
 ## Assignment rules
 
@@ -51,26 +51,26 @@ If you are a Firefox user, or if you want to have full control over the connecte
 
    > **Warning**
    > Don't forget to replace "chromeExtensionId" with your current extension Id
-   > <img alt="Connected App" src="screenshots/connectedApp.png?raw=true" height="300">
+   > ![Connected App](screenshots/connectedApp.png)
 
 3. Get Consumer Key and save it in the Options page
 
-   <img alt="Option button" width="276" alt="image" src="screenshots/options_button.png?raw=true">
+   ![Option button](screenshots/options_button.png)
 
 4. Enter the consumer key
 
-   <img alt="Client Id" width="849" alt="image" src="screenshots/options_api_tab.png?raw=true">
+   ![Client Id](screenshots/options_api_tab.png)
 
 5. Refresh page and generate new token
 
-   <img alt="Generate Token" src="screenshots/generateAccessToken.png?raw=true" width="300">
+   ![Generate Token](screenshots/generateAccessToken.png)
 
 ## Migrate saved queries from legacy extension to Salesforce Inspector Advanced
 
 1. Open data export page on legacy extension
-   <img alt="Inspect legacy" src="../assets/images/how-to/inspect-legacy.png?raw=true" height="300">
+   ![Right click on data export and Inspect](assets/images/how-to/inspect-legacy.png)
 2. Get saved queries from `insextSavedQueryHistory` property
-   <img alt="Inspect legacy" src="../assets/images/how-to/query-history.png?raw=true" height="300">
+   ![Edit value on local storage from browser dev tool](assets/images/how-to/query-history.png)
 3. Open it in VS Code, you should have a JSON like this one:
 
    ```json
@@ -104,13 +104,13 @@ Re-import this json in the new extension (with the same key `insextSavedQueryHis
 
 Add a new property `csvSeparator` containing the needed separator for CSV files
 
-   <img alt="Update csv separator" src="../assets/images/how-to/csv-separator.png?raw=true" height="300">
+   ![set csvSeparator on local storage from browser dev tool](assets/images/how-to/csv-separator.png)
 
 ## Disable query input autofocus
 
 From popup button, go to option menu, and slect user experience tab to switch off option `disable query input autoFocus`
 
-![image](screenshots/options_ux_tab.png)
+![Option User Experience tab](screenshots/options_ux_tab.png)
 
 ## Add custom query templates
 
@@ -119,13 +119,13 @@ Example:
 
 `SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE`
 
-<img width="895" alt="image" src="screenshots/options_data_export_tab.png?raw=true">
+![Option Data export tab](screenshots/options_data_export_tab.png)
 
 ## Open links in a new tab
 
 If you want to _always_ open extension's links in a new tab, open option from popup menu then in user experience tab, you can switch on the `Always open links in a new tab"`
 
-![image](screenshots/options_ux_tab.png)
+![Option User Experience tab](screenshots/options_ux_tab.png)
 
 If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
 Example:
@@ -141,19 +141,19 @@ Example:
 By default when you enter keyword in the Shortcut tab, the search is performed on the Setup link shortcuts _AND_ metadata (Flows, PermissionSets and Profiles).
 If you want to disable the search on the metadata, you can go to options then on user experience tab, switch off `Search metadata from Shortcut tab` 
 
-![image](screenshots/options_ux_tab.png)
+![Option User Experience tab](screenshots/options_ux_tab.png)
 
 ## Enable / Disable Flow scrollability
 
 Go on a Salesforce flow and check / uncheck the checbox to update navigation scrollability on the Flow Builder on the header bar. You can change it too inside option on user experience tab by switching `Flow Scrollability`.
 
-![2023-09-29_16-01-14 (1)](screenshots/flow_scroll.gif)
+![Checkbox is on header of each flow](screenshots/flow_scroll.gif)
 
 ## Add custom links to "Shortcut" tab
 
 Because one of the main use case for custom links is to refer to a record in your org, those links are stored under a property prefixed by the org host url.
 You can add or remove custom link under option Menu then User experience tab:
-![image](screenshots/option_custom_links.png)
+![Option User experience tab then add custom link](screenshots/option_custom_links.png)
 
 Then copy the url and add `_orgLinks` for the property name.
 Now you can enter the custom links following this convention:
@@ -161,7 +161,7 @@ Now you can enter the custom links following this convention:
 
 ET VOILA !
 
-![image](screenshots/shortcut_search.png)
+![Shortcut tab search](screenshots/shortcut_search.png)
 
 ## Enable summary view of PermissionSet / PermissionSetGroups from shortcut tab
 
@@ -179,7 +179,7 @@ Then when you click on a PermissionSet / PermissionSetGroups search result, you'
 
 From the popup, click on "Options" button and select the API tab.
 
-<img width="846" alt="image" src="screenshots/options_api_tab.png?raw=true">
+![Option API tab](screenshots/options_api_tab.png)
 
 If you want to prevent auto assignment rules, set the `createUpdateRestCalloutHeaders` property to `{"Sforce-Auto-Assign" : false}`
 
@@ -190,14 +190,14 @@ Since the plugin's api version is only updated when all productions have been up
 > [!IMPORTANT]
 > When you manually update the API version, it won't be overriden by extension future updates.
 
-![2023-11-10_09-50-55 (1)](screenshots/change_api_version.gif)
+![Change API from footer of popup](screenshots/change_api_version.gif)
 
 ## Download Event Log Files
 
 To make your life easier and avoid third party tools or login to ELF website, we implemented the download option from the data export page.
 When quering EventLogFile, add the "LogFile" field in the query and click on the value to download corresponding log.
 
-![2023-11-15_14-32-44 (1)](screenshots/download_log.png)
+![Download Log](screenshots/download_log.png)
 
 ## Enable debug logs
 
@@ -206,11 +206,11 @@ From User tab, click the "Enable Log" button.
 
 By default, this will enable logs with level "SFDC_DevConsole" for 15 minutes.
 
-<img width="279" alt="Enable Log button" src="screenshots/enable_log.png">
+![Enable debug log for a user](screenshots/enable_log.png)
 
 You can update the debug level (configuration is per organization) and duration (for all organizations) on the Options page.
 
-<img width="788" alt="DebugLog Options" src="screenshots/options_log_tab.png?raw=true">
+![Option Enable Log tab](screenshots/options_log_tab.png)
 
 > **Warning**
 > Increasing the default duration may lead to a high volume of logs generated.
@@ -230,7 +230,7 @@ are displayed.
 `var myQuery = { "query": "query accounts { uiapi { query { Account { edges { node { Id  Name { value } } } } } } }" };`
 `display(sfConn.rest("/services/data/v59.0/graphql", {method: "POST", body: myQuery}));`
 
-![2024-02-09_17-01-42 (1)](screenshots/explore_api.gif)
+![Explore API then run code in dev console and select raw json](screenshots/explore_api.gif)
 
 ## Customize extension's favicon
 
@@ -241,4 +241,4 @@ From the option page, you can customize the default favicon by:
 
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
 
-<img width="901" alt="image" src="screenshots/options_ux_tab.png?raw=true">
+![Option User experince tab](screenshots/options_ux_tab.png)

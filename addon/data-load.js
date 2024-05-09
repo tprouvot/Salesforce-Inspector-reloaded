@@ -776,6 +776,8 @@ export class Editor extends React.Component {
     this.editorAutocompleteEvent = this.editorAutocompleteEvent.bind(this);
     this.onScroll = this.onScroll.bind(this);
     this.processText = this.processText.bind(this);
+    this.numberOfLines = 1;
+    this.state = {scrolltop: 0, lineHeight: 0};
   }
 
   componentDidMount() {
@@ -803,6 +805,7 @@ export class Editor extends React.Component {
     ].forEach((property) => {
       editorMirror.style[property] = textareaStyles[property];
     });
+    this.setState({lineHeight: textareaStyles.lineHeight});
     editorMirror.style.borderColor = "transparent";
 
     //const parseValue = (v) => v.endsWith("px") ? parseInt(v.slice(0, -2), 10) : 0;
@@ -816,6 +819,7 @@ export class Editor extends React.Component {
     const ro = new ResizeObserver(() => {
       editorInput.getBoundingClientRect().height;
       editorMirror.style.height = `${editorInput.getBoundingClientRect().height}px`;
+      editorMirror.style.width = `${editorInput.getBoundingClientRect().width}px`;
       recalculateHeight();
     });
     ro.observe(editorInput);
@@ -847,6 +851,7 @@ export class Editor extends React.Component {
     if (model.editorMirror && model.editor) {
       model.editorMirror.scrollTop = model.editor.scrollTop;
     }
+    this.setState({scrolltop: model.editor.scrollTop});
   }
   editorAutocompleteEvent(e) {
     let {model} = this.props;
@@ -923,9 +928,9 @@ export class Editor extends React.Component {
         if (selectionStart != selectionEnd) {
           model.editor.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
         } else if (
-            (e.key !== "'" && e.key !== "\"") ||
-            (selectionEnd + 1 < model.editor.value.length && /[\w|\s]/.test(model.editor.value.substring(selectionEnd + 1, selectionEnd + 2))) ||
-            selectionEnd + 1 === model.editor.value.length) {
+          (e.key !== "'" && e.key !== "\"")
+          || (selectionEnd + 1 < model.editor.value.length && /[\w|\s]/.test(model.editor.value.substring(selectionEnd + 1, selectionEnd + 2)))
+          || selectionEnd + 1 === model.editor.value.length) {
           model.editor.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
         }
       }
@@ -963,20 +968,23 @@ export class Editor extends React.Component {
 
     const rect = caretEle.getBoundingClientRect();
     model.setSuggestionPosition(rect.top + rect.height, rect.left);
-    console.log("top: " + rect.top);
   }
   processText(src) {
     let {keywordColor, keywordCaseSensitive, model} = this.props;
     let remaining = src;
     let keywordMatch;
     let highlighted = [];
+    let numberOfLines = src ? src.split("\n").length : 1;
     let selStart = model.editor ? model.editor.selectionStart : 0;
     //let endIndex;
     let keywords = [];
     for (let keyword of keywordColor.keys()) {
       keywords.push(keyword);
     }
-    let keywordRegEx = new RegExp("\\b(" + keywords.join("|") + ")\\b|(\\/\\/|\\/\\*|')", "g" + (keywordCaseSensitive ? "" : "i"));
+
+    let keywordRegEx = new RegExp("\\b(" + keywords.join("|") + ")\\b|(\\/\\/|\\/\\*|'|{|\\[|\\(|}|\\]|\\))", "g" + (keywordCaseSensitive ? "" : "i"));
+    const colorBrackets = ["gold", "purple", "deepskyblue"];
+    let bracketIndex = 0;
     //yellow for function
     while ((keywordMatch = keywordRegEx.exec(remaining)) !== null) {
       let color = "blue";
@@ -1005,6 +1013,14 @@ export class Editor extends React.Component {
         } else {
           sentence = remaining.substring(keywordMatch.index);
         }
+      } else if (keywordMatch[0] == "(" || keywordMatch[0] == "[" || keywordMatch[0] == "{") {
+        color = colorBrackets[bracketIndex % 3];
+        sentence = keywordMatch[0];
+        bracketIndex++;
+      } else if (keywordMatch[0] == ")" || keywordMatch[0] == "]" || keywordMatch[0] == "}") {
+        bracketIndex--;
+        color = colorBrackets[bracketIndex % 3];
+        sentence = keywordMatch[0];
       } else {
         color = keywordColor.get(keywordMatch[1].toLocaleLowerCase());
       }
@@ -1036,7 +1052,7 @@ export class Editor extends React.Component {
       }
       remaining = remaining.substring(keywordMatch.index + sentence.length);
       selStart -= keywordMatch.index + sentence.length;
-      keywordRegEx = new RegExp("\\b(" + keywords.join("|") + ")\\b|(\\/\\/|\\/\\*|')", "g" + (keywordCaseSensitive ? "" : "i"));
+      keywordRegEx = new RegExp("\\b(" + keywords.join("|") + ")\\b|(\\/\\/|\\/\\*|'|{|\\[|\\(|}|\\]|\\))", "g" + (keywordCaseSensitive ? "" : "i"));
     }
     if (selStart > 0) {
       highlighted.push({value: remaining.substring(0, selStart), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
@@ -1046,14 +1062,23 @@ export class Editor extends React.Component {
     if (remaining) {
       highlighted.push({value: remaining, attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
     }
-    return highlighted;
+    return {highlighted, numberOfLines};
   }
   render() {
     let {model} = this.props;
-    let highlighted = this.processText(model.editor ? model.editor.value : "");
-    return h("div", {className: "editor_container"},
-      h("div", {ref: "editorMirror", className: "editor_container_mirror"}, highlighted.map(s => h("span", s.attributes, s.value))),
-      h("textarea", {id: "editor", autoComplete: "off", autoCorrect: "off", spellCheck: "false", autoCapitalize: "off", className: "editor_textarea", ref: "editor", onScroll: this.onScroll, onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.editorAutocompleteEvent, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeyDown: this.handlekeyDown, style: {maxHeight: (model.winInnerHeight - 200) + "px"}})
+    let {highlighted, numberOfLines} = this.processText(model.editor ? model.editor.value : "");
+    return h("div", {className: "editor_container", style: {maxHeight: (model.winInnerHeight - 200) + "px"}},
+      h("div", {className: "editor-container"},
+        h("div", {className: "line-numbers-wrapper", style: {lineHeight: this.state.lineHeight}},
+          h("div", {className: "line-numbers", style: {top: -this.state.scrolltop + "px"}},
+            Array(numberOfLines).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}))
+          )
+        ),
+        h("div", {className: "editor-wrapper"},
+          h("div", {ref: "editorMirror", className: "editor_container_mirror"}, highlighted.map(s => h("span", s.attributes, s.value))),
+          h("textarea", {id: "editor", autoComplete: "off", autoCorrect: "off", spellCheck: "false", autoCapitalize: "off", className: "editor_textarea", ref: "editor", onScroll: this.onScroll, onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.editorAutocompleteEvent, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeyDown: this.handlekeyDown})
+        )
+      )
     );
   }
 }

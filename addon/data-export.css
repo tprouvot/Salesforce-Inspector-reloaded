@@ -696,6 +696,12 @@ button.toggle .button-icon {
   overflow: auto;
   height: 200px;
 }
+.editor-container {
+  display: flex;
+}
+.editor-wrapper {
+  flex-grow: 1;
+}
 .editor_container {
   position: relative;
   text-align: 'left';
@@ -720,7 +726,6 @@ button.toggle .button-icon {
   border: 1px solid #DDDBDA;
   vertical-align: top;
   top: 0;
-  left: 0;
   height: 100%;
   width: 100%;
   resize: vertical;
@@ -760,4 +765,27 @@ button.toggle .button-icon {
   50% {
       background-color: rgb(15 23 42);
   }
+}
+.line-numbers-wrapper {
+  position: relative;
+  width: 44px;
+  overflow: hidden;
+}
+
+.line-numbers {
+  text-align: right;
+  padding: 8px 10px;
+  position: absolute;
+  width: 44px;
+}
+
+.line-numbers span {
+  counter-increment: linenumber;
+}
+
+.line-numbers span::before {
+  content: counter(linenumber);
+  display: block;
+  color: #506882;
+  font-size: .8125rem;
 }

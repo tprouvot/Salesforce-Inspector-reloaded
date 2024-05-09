@@ -79,7 +79,6 @@ class Model {
 
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
-    this.numberOfLines = 1;
     this.showHelp = false;
     this.userInfo = "...";
     this.userId = null;
@@ -141,7 +140,6 @@ class Model {
   setEditor(editor) {
     this.editor = editor;
     editor.value = this.initialScript;
-    this.numberOfLines = this.initialScript.split("\n").length;
     this.initialScript = null;
   }
   toggleHelp() {
@@ -530,12 +528,7 @@ class Model {
     let selStart = vm.editor.selectionStart;
     let selEnd = vm.editor.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
-    let numberOfLines = script.split("\n").length;
     this.parseAnonApex(script);
-    if (vm.numberOfLines != numberOfLines) {
-      vm.numberOfLines = numberOfLines;
-      vm.didUpdate();
-    }
     //TODO place suggestion over the text area with miroring text with span
     //advantage is that we can provide color highlight thanks to that.
     /*
@@ -1145,8 +1138,7 @@ class App extends React.Component {
 
   render() {
     let {model} = this.props;
-    let keywordColor = new Map([["{", "violet"], ["}", "violet"], ["[", "violet"], ["]", "violet"], ["(", "violet"], ["do", "violet"],
-      [")", "violet"], ["public", "blue"], ["private", "blue"], ["global", "blue"], ["class", "blue"], ["static", "blue"],
+    let keywordColor = new Map([["do", "violet"], ["public", "blue"], ["private", "blue"], ["global", "blue"], ["class", "blue"], ["static", "blue"],
       ["interface", "blue"], ["extends", "blue"], ["while", "violet"], ["for", "violet"], ["try", "violet"], ["catch", "violet"],
       ["finally", "violet"], ["extends", "violet"], ["throw", "violet"], ["new", "violet"], ["if", "violet"], ["else", "violet"]]);
     return h("div", {onClick: this.onClick},
@@ -1204,12 +1196,7 @@ class App extends React.Component {
             ),
           ),
         ),
-        h("div", {className: "editor"},
-          h("div", {className: "line-numbers"},
-            Array(model.numberOfLines).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}))
-          ),
-          h(Editor, {model, keywordColor, keywordCaseSensitive: true}),
-        ),
+        h(Editor, {model, keywordColor, keywordCaseSensitive: true}),
         h("div", {className: "autocomplete-box"},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
@@ -1218,7 +1205,7 @@ class App extends React.Component {
               h("button", {tabIndex: 2, onClick: this.onCopyScript, title: "Copy script url", className: "copy-id"}, "Export Script")
             ),
           ),
-          h("div", {className: "autocomplete-results"},
+          h("div", {className: "autocomplete-results", style: {top: model.suggestionTop + "px", left: model.suggestionLeft + "px"}},
             model.autocompleteResults.results.map(r =>
               h("div", {className: "autocomplete-result", key: r.key ? r.key : r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.title), " ")
             )

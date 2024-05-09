@@ -1,22 +1,3 @@
-  .line-numbers {
-    text-align: right;
-    padding: 8px 10px;
-  }
-  
-  .line-numbers span {
-    counter-increment: linenumber;
-  }
-  
-  .line-numbers span::before {
-    content: counter(linenumber);
-    display: block;
-    color: #506882;
-  }
-  .editor {
-    display: flex;
-  }
-
-  
 .class .autocomplete-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/relate.svg');
   background-color: #04844B;

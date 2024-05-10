@@ -82,6 +82,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "text", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", placeholder: "Available values : green, orange, pink, purple, red, yellow"}},
           {option: CustomLinkOption, props: {title: "Custom links (org specific)", key: this.sfHost + "_orgLinks"}},
+          {option: Option, props: {type: "number", title: "Number of flow version to keep", key: "clearOlderFlowsKeep", placeholder: "5 by default", default: 5}},
         ]
       },
       {
@@ -317,18 +318,7 @@ class Option extends React.Component {
 
   render() {
     const id = this.key;
-    if (this.type == "text"){
-      return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-        h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-          h("span", {}, this.title)
-        ),
-        h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-          h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-            h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: this.placeholder, value: this.state[this.key], onChange: this.onChange}),
-          )
-        )
-      );
-    } else {
+    if (this.type == "toggle") {
       return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
         h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
           h("span", {}, this.title)
@@ -345,6 +335,20 @@ class Option extends React.Component {
           )
         )
       );
+    } else if (this.type == "text" || this.type == "number") {
+      return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+          h("span", {}, this.title)
+        ),
+        h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+          h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
+            h("input", {type: this.type, id: "restHeaderInput", className: "slds-input", placeholder: this.placeholder, value: this.state[this.key], onChange: this.onChange}),
+          )
+        )
+      );
+    } else {
+      console.error("Invalid render type: " + this.type);
+      return h("div", {}, "Invalid option type: " + this.type);
     }
   }
 }

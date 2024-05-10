@@ -145,9 +145,16 @@ If you want to disable the search on the metadata, you can go to options then on
 
 ## Enable / Disable Flow scrollability
 
-Go on a Salesforce flow and check / uncheck the checbox to update navigation scrollability on the Flow Builder on the header bar. You can change it too inside option on user experience tab by switching `Flow Scrollability`.
+Go on a Salesforce flow and check / uncheck the checbox to update navigation scrollability on the Flow Builder on the header bar. You can modify it too inside option on user experience tab by switching `Flow Scrollability`.
 
 ![Checkbox is on header of each flow](screenshots/flow_scroll.gif)
+
+## Clear old Flow versions
+
+Go on a Salesforce flow and click on the `Clear old flow versions` button to delete flow versions older than `Number of flow version to keep` option on the Flow Builder on the header bar. You can modify `Number of flow version to keep` option on user experience tab.
+
+![Checkbox is on header of each flow](screenshots/clearOldFlowVersions.png)
+
 
 ## Add custom links to "Shortcut" tab
 

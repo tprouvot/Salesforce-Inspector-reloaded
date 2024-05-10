@@ -290,7 +290,7 @@ class Model {
   deleteRecords(e) {
     let separator = getSeparator();
     let data = this.exportedData.csvSerialize(separator);
-    let encodedData = btoa(data);
+    let encodedData = window.btoa(data);
 
     let args = new URLSearchParams();
     args.set("host", this.sfHost);

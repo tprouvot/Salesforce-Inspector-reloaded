@@ -2,6 +2,8 @@
 /* global showStdPageDetails */
 "use strict";
 
+
+
 // sfdcBody = normal Salesforce page
 // ApexCSIPage = Developer Console
 // auraLoadingBox = Lightning / Salesforce1
@@ -42,16 +44,31 @@ function initButton(sfHost, inInspector) {
       const checkboxState = iFrameLocalStorage.scrollOnFlowBuilder;
       // Check local storage for the checkbox state
       (checkboxState != null) ? (overflowCheckbox.checked = checkboxState) : (overflowCheckbox.checked = true);
+      // Create a new button element to clear old flow
+      const clearFlowButton = document.createElement("button");
+      clearFlowButton.textContent = "Clear old flow versions";
+      clearFlowButton.classList.add("headerFixed");
+      clearFlowButton.classList.add("clearFlowButton");
+      if (currentUrl.includes("sandbox")){
+        clearFlowButton.classList.add("clearFlowButtonSandbox");
+      } else {
+        clearFlowButton.classList.add("clearFlowButtonProd");
+      }
+
       // Create a new label element for the checkbox
       const overflowLabel = document.createElement("label");
       overflowLabel.textContent = "Enable flow scrollability";
       overflowLabel.htmlFor = "overflow-checkbox";
+      overflowCheckbox.classList.add("headerFixed");
+      overflowLabel.classList.add("headerFixed");
+      overflowCheckbox.classList.add("checkboxScroll");
+      overflowLabel.classList.add("labeCheckboxScroll");
       if (currentUrl.includes("sandbox")){
-        overflowCheckbox.className = "checkboxScrollSandbox";
-        overflowLabel.className = "labelCheckboxScrollSandbox";
+        overflowCheckbox.classList.add("checkboxScrollSandbox");
+        overflowLabel.classList.add("labelCheckboxScrollSandbox");
       } else {
-        overflowCheckbox.className = "checkboxScrollProd";
-        overflowLabel.className = "labeCheckboxScrollProd";
+        overflowCheckbox.classList.add("checkboxScrollProd");
+        overflowLabel.classList.add("labeCheckboxScrollProd");
       }
       // Get a reference to the <head> element
       const head = document.head;
@@ -62,10 +79,21 @@ function initButton(sfHost, inInspector) {
       // Append the <style> element to the <head> element
       head.appendChild(style);
       // Append the checkbox and label elements to the body of the document
+      headerFlow.appendChild(clearFlowButton);
       headerFlow.appendChild(overflowCheckbox);
       headerFlow.appendChild(overflowLabel);
       // Set the overflow property to "auto"
       overflowCheckbox.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
+
+      clearFlowButton.addEventListener("click", () => {
+        let clearArgs = {
+          contextUrl: window.location.href
+        };
+        popupEl.contentWindow.postMessage({
+          clearOlderFlows: JSON.stringify(clearArgs)
+        }, "*");
+      });
+
       // Listen for changes to the checkbox state
       overflowCheckbox.addEventListener("change", function() {
         // Check if the checkbox is currently checked

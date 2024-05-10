@@ -102,32 +102,47 @@
     margin: 2px;
 }
 
-.checkboxScrollSandbox {
+.headerFixed {
     position: fixed;
-    top: 10px;
-    right: 78px;
     z-index: 10000;
 }
-.checkboxScrollProd{
-    position: fixed;
-    top: 21px;
-    right: 78px;
-    z-index: 10000;
+
+.clearFlowButton {
+    right: 250px;
 }
-.labelCheckboxScrollSandbox{
-    position: fixed;
+
+.clearFlowButtonSandbox {
     top: 7px;
-    right: 100px;
-    color: white;
-    z-index: 10000;
 }
-.labeCheckboxScrollProd{
-    position: fixed;
+
+.clearFlowButtonProd {
     top: 15px;
+}
+
+.checkboxScroll {
+    right: 78px;
+}
+
+.checkboxScrollSandbox {
+    top: 10px;
+}
+
+.checkboxScrollProd {
+    top: 21px;
+}
+
+.labeCheckboxScroll {
     right: 100px;
     color: white;
-    z-index: 10000;
 }
+
+.labelCheckboxScrollSandbox {
+    top: 7px;
+}
+.labeCheckboxScrollProd {
+    top: 15px;
+}
+
 .copiedText {
     font-family: "Salesforce Sans", Arial, sans-serif;
     color: #28a745; 

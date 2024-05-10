@@ -370,7 +370,7 @@ export async function dataImportTest(test) {
   }
 
   let generateDataParam = data => {
-    let encodedData = btoa(data.map(r => r.join(separator)).join("\r\n"));
+    let encodedData = window.btoa(data.map(r => r.join(separator)).join("\r\n"));
     let args = new URLSearchParams();
     args.set("data", encodedData);
     return args;

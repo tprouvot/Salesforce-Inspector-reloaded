@@ -4,6 +4,7 @@
 
 - Escape to close popup [issue 71](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/71)
 - Manage custom links in option
+- Clear old flow versions inside FlowBuilder [issue 50](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/50)
 
 ## Version 1.25
 

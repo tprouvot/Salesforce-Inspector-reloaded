@@ -117,11 +117,58 @@ class App extends React.PureComponent {
         isInSetup: locationHref.includes("/lightning/setup/"),
         contextUrl: locationHref
       });
+    } else if (e.data.clearOlderFlows) {
+      this.clearOlderFlows(JSON.parse(e.data.clearOlderFlows));
+      return;
     }
     this.setState({
       isFieldsPresent: e.data.isFieldsPresent
     });
   }
+  async clearOlderFlows({contextUrl}) {
+    let keep = parseInt(localStorage.getItem("clearOlderFlowsKeep") || "5");
+    let {sfHost} = this.props;
+    if (!contextUrl || !keep) {
+      return;
+    }
+    try {
+      let url = new URL(contextUrl);
+      let searchParams = new URLSearchParams(url.search.substring(1));
+      let recordId = searchParams.get("flowId");
+      const flowSelect = "SELECT FlowDefinitionViewId, FlowDefinitionView.VersionNumber FROM FlowVersionView where DurableId = '" + recordId + "'";
+      const flowResults = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + flowSelect);
+      let flowDefinitionViewId;
+      let keepLatestVersionNumber;
+      flowResults.records.forEach(rec => {
+        flowDefinitionViewId = rec.FlowDefinitionViewId;
+        keepLatestVersionNumber = rec.FlowDefinitionView.VersionNumber - keep;
+      });
+
+      const flowToDeleteQuery = "SELECT Id, DurableId FROM FlowVersionView where FlowDefinitionViewId = '" + flowDefinitionViewId + "' and VersionNumber  <= " + keepLatestVersionNumber;
+      const flowToDeleteResults = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + flowToDeleteQuery);
+      let flowToDelete = "\"Id\"";
+      if (flowToDeleteResults.records.length === 0) {
+        console.log("No old versions to delete");
+        return;
+      }
+      flowToDeleteResults.records.forEach(rec => {
+        flowToDelete += "\r\n\"" + rec.DurableId + "\"";
+      });
+      let encodedData = window.btoa(flowToDelete);
+
+      let args = new URLSearchParams();
+      args.set("host", sfHost);
+      args.set("data", encodedData);
+      args.set("sobject", "Flow");
+      args.set("apitype", "Tooling");
+
+      window.open("data-import.html?" + args, "_blank");
+    } catch (err) {
+      console.error("Unable to clean old flow", err);
+      return;
+    }
+  }
+
   updateReleaseNotesViewed(version) {
     localStorage.setItem("latestReleaseNotesVersionViewed", version);
     this.setState({

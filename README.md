@@ -181,7 +181,9 @@ By Olivier Dufour forked from [Thomas Prouvot](https://github.com/tprouvot/Sales
 <!-- markdownlint-disable -->
 <table>
   <tr>
-    <td align="center"><a href="https://github.com/dufoli"><img src="https://avatars0.githubusercontent.com/u/202057?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Olivier Dufour</b></sub></a><br /><a href="https://github.com/dufoli/Salesforce-Inspector-Advanced/commits?author=dufoli" title="Code"><img src="https://i.stack.imgur.com/tskMh.png" alt="github" style="background-color: white;"></a> <a href="https://www.linkedin.com/in/dufourolivier" title="Linkedin"><img src="https://i.stack.imgur.com/gVE0j.png" alt="linkedin"></a></td>
+    <td align="center"><a href="https://github.com/dufoli"><img src="https://avatars0.githubusercontent.com/u/202057?v=4&s=100" width="100px;" alt=""/><br /><sub><b>Olivier Dufour</b></sub></a><br /><a href="https://github.com/dufoli/Salesforce-Inspector-Advanced/commits?author=dufoli" title="Code"><img src="https://i.stack.imgur.com/tskMh.png" alt="github"></a> <a href="https://www.linkedin.com/in/dufourolivier" title="Linkedin"><img src="https://i.stack.imgur.com/gVE0j.png" alt="linkedin"></a></td>
+    </td>
+    <td align="center"><a href="https://github.com/dufgui"><img src="https://avatars.githubusercontent.com/u/237211?v=4&s=100" width="100px;" alt=""/><br /><sub><b>Guillaume Dufour</b></sub></a><br /><a href="https://github.com/dufoli/Salesforce-Inspector-Advanced/commits?author=dufgui" title="Code"><img src="https://i.stack.imgur.com/tskMh.png" alt="github"></a> <a href="https://www.linkedin.com/in/gudufour" title="Linkedin"><img src="https://i.stack.imgur.com/gVE0j.png" alt="linkedin"></a></td>
     </td>
   </tr>
 </table>

@@ -102,10 +102,21 @@ class Model {
     this.suggestionTop = 0;
     this.suggestionLeft = 0;
     this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
-    this.scriptTemplates = localStorage.getItem("scriptTemplates") ? this.scriptTemplates = localStorage.getItem("scriptTemplates").split("//") : [
-      "Id batchId= Database.executeBatch(new BatchExample(), 200);",
-      "ID jobID = System.enqueueJob(new AsyncExecutionExample());"
-    ];
+    let scriptTemplatesRawValue = localStorage.getItem("scriptTemplates");
+    if (scriptTemplatesRawValue && scriptTemplatesRawValue != "[]") {
+      try {
+        this.scriptTemplates = JSON.parse(scriptTemplatesRawValue);
+      } catch (err) {
+        //try old format which do not support comments
+        this.scriptTemplates = scriptTemplatesRawValue.split("//");
+      }
+    } else {
+      this.scriptTemplates = [
+        "Id batchId= Database.executeBatch(new BatchExample(), 200);",
+        "ID jobID = System.enqueueJob(new AsyncExecutionExample());"
+      ];
+    }
+
     this.propertyTypes = new Map();
     this.typeProperties = new Map();
     this.typeProperties.set("List", ["add(", "addAll(", "clear(", "clone(", "contains(", "deepClone(", "equals(", "get(", "getSObjectType(", "hashCode(", "indexOf(", "isEmpty(", "iterator(", "remove(", "set(", "size(", "sort(", "toString("]);

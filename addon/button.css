@@ -3,18 +3,24 @@
     display: block;
     position: fixed;
     vertical-align: middle;
+    resize: both;
+    overflow: auto;
+    width: 280px;
+    height: 600px;
+    direction: rtl;
 }
 
 #insext .insext-popup {
     box-sizing: border-box;
-    width: 280px;
-    height: 600px;
     position:absolute;
     background-color: #ffffff;
     border-radius: 4px;
     z-index: 1;
     border: 1px solid #d8dde6;
     display: none;
+    direction: ltr;
+    height: 100%;
+    width: 100%;
 }
 
 #insext .insext-popup-vertical {

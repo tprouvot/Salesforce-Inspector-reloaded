@@ -131,6 +131,15 @@ function initButton(sfHost, inInspector) {
       const value = (source === "localStorage") ? localStorage.getItem("popupArrowOrientation") : iFrameLocalStorage.popupArrowOrientation;
       return value === "horizontal" ? value : "vertical";
     }
+    // return value for direction popup will go based on position and orientation
+    function calcDirection(pos, o) {
+      if (o === "horizontal") {
+        return pos < 8 ? "right" : pos >= 90 ? "left" : "center";
+      } else if (pos >= 55) {
+        return "up";
+      }
+      return null;
+    }
     popupEl.className = "insext-popup";
     popupEl.classList.add(`insext-popup-${getOrientation("localStorage")}`);
     popupEl.src = popupSrc;
@@ -141,19 +150,12 @@ function initButton(sfHost, inInspector) {
       if (e.data.insextInitRequest) {
         // Set CSS classes for arrow button position
         iFrameLocalStorage = e.data.iFrameLocalStorage;
-        popupEl.classList.add(`insext-popup-${getOrientation("iframe")}`);
-        if (getOrientation("iframe") === "horizontal") {
-          if (iFrameLocalStorage.popupArrowPosition < 8) {
-            popupEl.classList.add("insext-popup-horizontal-left");
-          } else if (iFrameLocalStorage.popupArrowPosition >= 90) {
-            popupEl.classList.add("insext-popup-horizontal-right");
-          } else {
-            popupEl.classList.add("insext-popup-horizontal-centered");
-          }
-        } else if (getOrientation("iframe") == "vertical") {
-          if (iFrameLocalStorage.popupArrowPosition >= 55) {
-            popupEl.classList.add("insext-popup-vertical-up");
-          }
+        const {popupArrowPosition: pos} = iFrameLocalStorage;
+        const o = getOrientation("iframe");
+        popupEl.classList.add(`insext-popup-${o}`);
+        let dir = calcDirection(pos, o);
+        if (dir) {
+          popupEl.classList.add(`insext-popup-${o}-${dir}`);
         }
         setRootCSSProperties(rootEl, btn);
         addFlowScrollability(popupEl);

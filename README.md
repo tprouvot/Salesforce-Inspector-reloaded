@@ -11,8 +11,10 @@
 
 Chrome and Firefox extension to add a metadata layout on top of the standard Salesforce UI to improve the productivity and joy of Salesforce configuration, development, and integration work.
 
-We all know and love Salesforce Inspector: As the great Søren Krabbe did not have the time to maintain it anymore. Thomas Prouvot decided to take over and fork the original project but I do not share the same vision of him. 
-My goal is :
+We all know and love Salesforce Inspector: As the great Søren Krabbe did not have the time to maintain it anymore. Thomas Prouvot decided to take over and fork the original project but I do not share the same vision of him.
+
+My goal are :
+
 - to have fun 😉 because open source is fun 🎉!
 - to achieve functionnal goals:
   - kill dev console needs with SOSL, apex runner, debugger, profiler, static ressource support

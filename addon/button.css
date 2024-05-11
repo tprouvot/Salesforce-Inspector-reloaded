@@ -113,16 +113,44 @@
     z-index: 10000;
 }
 
+.versionDetailsButton {
+    right: 410px;
+    color: white;
+    border-left: var(--lwc-borderWidthThin, 1px) solid var(--slds-g-color-brand-base-10, var(--lwc-colorBackgroundInverse, rgb(0, 22, 57)));
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.versionDetailsButtonSandbox {
+    padding-top: 7px;
+    padding-bottom: 7px;
+    top: 0px;
+}
+
+.versionDetailsButtonProd {
+    padding-top: 15px;
+    padding-bottom: 15px;
+    top: 0px;
+}
+
 .clearFlowButton {
     right: 250px;
+    color: white;
+    border-left: var(--lwc-borderWidthThin, 1px) solid var(--slds-g-color-brand-base-10, var(--lwc-colorBackgroundInverse, rgb(0, 22, 57)));
+    padding-left: 16px;
+    padding-right: 16px;
 }
 
 .clearFlowButtonSandbox {
-    top: 7px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+    top: 0px;
 }
 
 .clearFlowButtonProd {
-    top: 15px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    top: 0px;
 }
 
 .checkboxScroll {
@@ -140,13 +168,20 @@
 .labeCheckboxScroll {
     right: 100px;
     color: white;
+    border-left: var(--lwc-borderWidthThin, 1px) solid var(--slds-g-color-brand-base-10, var(--lwc-colorBackgroundInverse, rgb(0, 22, 57)));
 }
 
 .labelCheckboxScrollSandbox {
-    top: 7px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+    padding-left: 16px;
+    top: 0px;
 }
 .labeCheckboxScrollProd {
-    top: 15px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    padding-left: 16px;
+    top: 0px;
 }
 
 .copiedText {

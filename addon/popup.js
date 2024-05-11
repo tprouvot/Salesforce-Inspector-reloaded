@@ -120,11 +120,25 @@ class App extends React.PureComponent {
     } else if (e.data.clearOlderFlows) {
       this.clearOlderFlows(JSON.parse(e.data.clearOlderFlows));
       return;
+    } else if (e.data.showFlowVersionDetails) {
+      this.showFlowVersionDetails(JSON.parse(e.data.showFlowVersionDetails));
+      return;
     }
     this.setState({
       isFieldsPresent: e.data.isFieldsPresent
     });
   }
+
+  async showFlowVersionDetails({contextUrl}) {
+    let flowId = this.getFlowId(contextUrl);
+    sfConn.rest("/services/data/v" + apiVersion + "/tooling/query/?q=SELECT+DefinitionId+FROM+Flow+WHERE+Id='" + flowId + "'", {method: "GET"}).then(res => {
+      res.records.forEach(recentItem => {
+        let flowDefinitionId = recentItem.DefinitionId;
+        window.open("https://" + this.props.sfHost + "/lightning/setup/Flows/page?address=%2F" + flowDefinitionId, "_blank");
+      });
+    });
+  }
+
   async clearOlderFlows({contextUrl}) {
     let keep = parseInt(localStorage.getItem("clearOlderFlowsKeep") || "5");
     let {sfHost} = this.props;
@@ -132,9 +146,7 @@ class App extends React.PureComponent {
       return;
     }
     try {
-      let url = new URL(contextUrl);
-      let searchParams = new URLSearchParams(url.search.substring(1));
-      let recordId = searchParams.get("flowId");
+      let recordId = this.getFlowId(contextUrl);
       const flowSelect = "SELECT FlowDefinitionViewId, FlowDefinitionView.VersionNumber FROM FlowVersionView where DurableId = '" + recordId + "'";
       const flowResults = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + flowSelect);
       let flowDefinitionViewId;
@@ -167,6 +179,12 @@ class App extends React.PureComponent {
       console.error("Unable to clean old flow", err);
       return;
     }
+  }
+
+  getFlowId(contextUrl) {
+    let url = new URL(contextUrl);
+    let searchParams = new URLSearchParams(url.search.substring(1));
+    return searchParams.get("flowId");
   }
 
   updateReleaseNotesViewed(version) {

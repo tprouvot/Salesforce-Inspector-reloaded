@@ -44,8 +44,20 @@ function initButton(sfHost, inInspector) {
       const checkboxState = iFrameLocalStorage.scrollOnFlowBuilder;
       // Check local storage for the checkbox state
       (checkboxState != null) ? (overflowCheckbox.checked = checkboxState) : (overflowCheckbox.checked = true);
+
+      // Create a new anchor to go to flow details
+      const versionDetailsButton = document.createElement("a");
+      versionDetailsButton.textContent = "Version Details";
+      versionDetailsButton.classList.add("headerFixed");
+      versionDetailsButton.classList.add("versionDetailsButton");
+      if (currentUrl.includes("sandbox")){
+        versionDetailsButton.classList.add("versionDetailsButtonSandbox");
+      } else {
+        versionDetailsButton.classList.add("versionDetailsButtonProd");
+      }
+
       // Create a new button element to clear old flow
-      const clearFlowButton = document.createElement("button");
+      const clearFlowButton = document.createElement("a");
       clearFlowButton.textContent = "Clear old flow versions";
       clearFlowButton.classList.add("headerFixed");
       clearFlowButton.classList.add("clearFlowButton");
@@ -79,11 +91,18 @@ function initButton(sfHost, inInspector) {
       // Append the <style> element to the <head> element
       head.appendChild(style);
       // Append the checkbox and label elements to the body of the document
+      headerFlow.appendChild(versionDetailsButton);
       headerFlow.appendChild(clearFlowButton);
       headerFlow.appendChild(overflowCheckbox);
       headerFlow.appendChild(overflowLabel);
       // Set the overflow property to "auto"
       overflowCheckbox.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
+
+      versionDetailsButton.addEventListener("click", () => {
+        popupEl.contentWindow.postMessage({
+          showFlowVersionDetails: JSON.stringify({contextUrl: window.location.href})
+        }, "*");
+      });
 
       clearFlowButton.addEventListener("click", () => {
         let clearArgs = {

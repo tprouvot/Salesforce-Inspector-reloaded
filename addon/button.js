@@ -134,7 +134,7 @@ function initButton(sfHost, inInspector) {
     // return value for direction popup will go based on position and orientation
     function calcDirection(pos, o) {
       if (o === "horizontal") {
-        return pos < 8 ? "right" : pos >= 90 ? "left" : "center";
+        return pos < 8 ? "right" : pos >= 90 ? "left" : "centered";
       } else if (pos >= 55) {
         return "up";
       }

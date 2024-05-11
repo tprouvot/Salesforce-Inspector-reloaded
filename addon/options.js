@@ -103,7 +103,7 @@ class OptionsTabSelector extends React.Component {
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
-          {option: Option, props: {type: "text", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}}
+          {option: QueryTemplatesOption, props: {title: "Query Templates", key: "queryTemplates"}}
         ]
       },
       {
@@ -286,6 +286,7 @@ class RestHeaderOption extends React.Component {
     );
   }
 }
+
 class Option extends React.Component {
   constructor(props) {
     super(props);
@@ -530,14 +531,78 @@ class CustomLinkOption extends React.Component {
       ),
       h("div", {className: "slds-border_bottom"})
     );
-    //TODO add
-    /*
-    title custom link:
-    [del btn]
-    "label" "link" "section": "Custom" "prod": false
-    */
   }
 }
+
+class QueryTemplatesOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.key = props.storageKey;
+    this.model = props.model;
+    this.title = props.title;
+    let val = localStorage.getItem(this.key);
+    if (val) {
+      try {
+        this.queryTemplates = JSON.parse(val);
+      } catch (err) {
+        //try old format which do not support comments
+        this.queryTemplates = val.split("//");
+      }
+    } else {
+      this.queryTemplates = [];
+    }
+    this.addQueryTemplate = this.addQueryTemplate.bind(this);
+    this.deleteQueryTemplate = this.deleteQueryTemplate.bind(this);
+    this.onChangeQuery = this.onChangeQuery.bind(this);
+    this.state = {query: "", queryTemplates: this.queryTemplates};
+  }
+  deleteQueryTemplate(i) {
+    this.queryTemplates.splice(i, 1);
+    this.setState({queryTemplates: this.queryTemplates});
+    localStorage.setItem(this.key, JSON.stringify(this.queryTemplates));
+    this.model.didUpdate();
+  }
+  addQueryTemplate() {
+    this.queryTemplates.push(this.state.query);
+    this.setState({query: "", queryTemplates: this.queryTemplates});
+    localStorage.setItem(this.key, JSON.stringify(this.queryTemplates));
+    this.model.didUpdate();
+  }
+
+  onChangeQuery(e) {
+    this.setState({query: e.target.value});
+  }
+
+  render() {
+    return h("div", {},
+      h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+          h("span", {}, this.title)
+        )
+      ),
+      h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_10-of-12"},
+          h("textarea", {id: "tmplateQuery", className: "slds-input", value: this.state.query, placeholder: "SELECT...", onChange: this.onChangeQuery}),
+        ),
+        h("div", {className: "slds-form-element__control slds-col slds-col slds-size_2-of-12 text-align-middle"},
+          h("button", {onClick: this.addQueryTemplate, title: "Add", className: "slds-button slds-button_brand"}, "Add"),
+        )
+      ), this.state.queryTemplates.map((l, i) =>
+        h("div", {key: "link" + i, className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
+          h("div", {className: "slds-col slds-size_10-of-12 text-align-middle"},
+            h("span", {}, l)
+          ),
+          h("div", {className: "slds-col slds-size_2-of-12 text-align-middle"},
+            h("button", {onClick: () => this.deleteQueryTemplate(i), title: "Delete", className: "slds-button slds-button_destructive"}, "Delete")
+          )
+        )
+      ),
+      h("div", {className: "slds-border_bottom"})
+    );
+  }
+}
+
 
 let h = React.createElement;
 

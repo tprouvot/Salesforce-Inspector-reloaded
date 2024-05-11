@@ -107,13 +107,23 @@ class Model {
     this.suggestionLeft = 0;
     this.columnIndex = {fields: []};
     this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
-    this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
-      "SELECT Id FROM ",
-      "SELECT Id FROM WHERE",
-      "SELECT Id FROM WHERE IN",
-      "SELECT Id FROM WHERE LIKE",
-      "SELECT Id FROM WHERE ORDER BY"
-    ];
+    let queryTemplatesRawValue = localStorage.getItem("queryTemplates");
+    if (queryTemplatesRawValue && queryTemplatesRawValue != "[]") {
+      try {
+        this.queryTemplates = JSON.parse(queryTemplatesRawValue);
+      } catch (err) {
+        //try old format which do not support comments
+        this.queryTemplates = queryTemplatesRawValue.split("//");
+      }
+    } else {
+      this.queryTemplates = [
+        "SELECT Id FROM ",
+        "SELECT Id FROM WHERE",
+        "SELECT Id FROM WHERE IN",
+        "SELECT Id FROM WHERE LIKE",
+        "SELECT Id FROM WHERE ORDER BY"
+      ];
+    }
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;

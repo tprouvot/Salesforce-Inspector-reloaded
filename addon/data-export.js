@@ -766,9 +766,10 @@ class Model {
     } else {
       // Autocomplete field names and functions
       if (ctrlSpace) {
+        let includeFormula = localStorage.getItem("includeFormulaFieldsFromExportAutocomplete") !== "false";
         let ar = contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
-          .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
+          .filter(field => (field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase())) && (includeFormula || !field.calculated))
           .map(field => contextPath + field.name)
           .toArray();
         if (ar.length > 0) {

@@ -7,6 +7,8 @@
 - Add setup menu items 'Trusted URLs' and 'Trusted URL and Browser Policy Violations' to shortcut links
 - Ability to quit popup with escape button [feature 378](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/378) (contribution by [Gerald Gramier](https://github.com/gramier))
 - Add option to customize org favicon [feature 180](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/180)
+- Add tooltip to options [feature 399](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/399) (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Fixed popup button disappearance at 100%, also changed horizontal orientation to start at left [issue 404](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/404) (contribution by [Nathan Shulman](https://github.com/nshulman))
 
 ## Version 1.23
 

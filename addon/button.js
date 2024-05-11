@@ -131,7 +131,7 @@ function initButton(sfHost, inInspector) {
       const value = (source === "localStorage") ? localStorage.getItem("popupArrowOrientation") : iFrameLocalStorage.popupArrowOrientation;
       return value === "horizontal" ? value : "vertical";
     }
-    // return value for direction popup will go based on position and orientation
+    // return a value for direction popup will expand, based on position and orientation
     function calcDirection(pos, o) {
       if (o === "horizontal") {
         return pos < 8 ? "right" : pos >= 90 ? "left" : "centered";

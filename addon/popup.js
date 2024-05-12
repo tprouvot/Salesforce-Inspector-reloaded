@@ -1645,7 +1645,7 @@ class AllDataSelection extends React.PureComponent {
       return this.getCustomMetadataLink(durableId);
     } else if (isCustomSetting) {
       return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
-    } else if (sobjectName.endsWith("__c")) {
+    } else if (sobjectName.endsWith("__c") || sobjectName.endsWith("__kav")) {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/Details/view";
     } else {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";

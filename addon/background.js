@@ -48,7 +48,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return false;
 });
 
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands?.onCommand.addListener((command) => {
   if (command !== "open-popup"){
     chrome.tabs.create({
       url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`

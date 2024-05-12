@@ -82,7 +82,8 @@ function initButton(sfHost, inInspector) {
 
   // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
   function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos}) {
-    const isVertical = o !== "horizontal"; // Default to vertical
+    o = o || "vertical"; // Default to vertical
+    const isVertical = o === "vertical";
     pos = pos ? Math.min(95, pos) + "%" : "122px";
     const [posStyle, oStyle] = isVertical ? ["top", "right"] : ["left", "bottom"];
     const imgSrc = isVertical
@@ -138,6 +139,7 @@ function initButton(sfHost, inInspector) {
       return pos >= 55 ? "up" : null;
     }
     function resetPopupClass(o) {
+      console.log("resetPopupClass", o);
       popupEl.className = "insext-popup";
       popupEl.classList.add(`insext-popup-${o}`);
     }

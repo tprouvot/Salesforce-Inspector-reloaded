@@ -108,8 +108,8 @@ class OptionsTabSelector extends React.Component {
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
-          {option: QueryTemplatesOption, props: {title: "Query Templates", key: "queryTemplates"}},
-          {option: QueryTemplatesOption, props: {title: "Saved Query History", key: "insextSavedQueryHistory", node: "query", defaultValue: "{\"useToolingApi\": false}"}}
+          {option: QueryTemplatesOption, props: {title: "Query Templates", key: "queryTemplates", placeholder: "SELECT..."}},
+          {option: QueryTemplatesOption, props: {title: "Saved Query History", key: "insextSavedQueryHistory", node: "query", defaultValue: "{\"useToolingApi\": false}", placeholder: "SELECT..."}}
         ]
       },
       {
@@ -127,7 +127,7 @@ class OptionsTabSelector extends React.Component {
         title: "Apex and logs",
         content: [
           {option: enableLogsOption, props: {key: 1}},
-          {option: QueryTemplatesOption, props: {title: "script Templates", key: "scriptTemplates"}}
+          {option: QueryTemplatesOption, props: {title: "script Templates", key: "scriptTemplates", placeholder: "Database.executeBatch()..."}}
         ]
       }
     ];
@@ -567,6 +567,7 @@ class QueryTemplatesOption extends React.Component {
     this.title = props.title;
     this.node = props.node;
     this.defaultValue = props.defaultValue;
+    this.placeholder = props.placeholder;
     let val = localStorage.getItem(this.key);
     if (val) {
       try {
@@ -619,7 +620,7 @@ class QueryTemplatesOption extends React.Component {
       ),
       h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_10-of-12"},
-          h("textarea", {id: "tmplateQuery", className: "slds-input", value: this.state.query, placeholder: "SELECT...", onChange: this.onChangeQuery}),
+          h("textarea", {id: "tmplateQuery", className: "slds-input", value: this.state.query, placeholder: this.placeholder, onChange: this.onChangeQuery}),
         ),
         h("div", {className: "slds-form-element__control slds-col slds-col slds-size_2-of-12 text-align-middle"},
           h("button", {onClick: this.addQueryTemplate, title: "Add", className: "slds-button slds-button_brand"}, "Add"),

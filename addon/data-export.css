@@ -534,6 +534,13 @@ button.toggle .button-icon {
 .autocomplete-results {
   overflow: hidden;
   margin-top: 7px;
+}
+
+.autocomplete-results-under {
+  display: flex;
+  flex-wrap: nowrap;
+}
+.autocomplete-results-over {
   display: block;
   position: absolute;
   background-color: transparent;
@@ -541,7 +548,9 @@ button.toggle .button-icon {
   overflow: auto;
   height: 200px;
 }
-
+.expanded .autocomplete-results-under {
+  flex-wrap: wrap;
+}
 .autocomplete-results a {
   border: 1px solid #DDDBDA;
   border-radius: 0.25rem;

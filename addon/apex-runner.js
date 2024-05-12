@@ -94,6 +94,7 @@ class Model {
     this.selectedHistoryEntry = null;
     this.savedHistory = new ScriptHistory("insextSavedScriptHistory", 50);
     this.selectedSavedEntry = null;
+    this.expandAutocomplete = false;
     this.expandSavedOptions = false;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
@@ -1209,7 +1210,7 @@ class App extends React.Component {
           ),
         ),
         h(Editor, {model, keywordColor, keywordCaseSensitive: true}),
-        h("div", {className: "autocomplete-box"},
+        h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
             h("div", {className: "flex-right"},

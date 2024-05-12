@@ -82,7 +82,7 @@ function initButton(sfHost, inInspector) {
 
   // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
   function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos}) {
-    const isVertical = o !== "horizontal";
+    const isVertical = o !== "horizontal"; // Default to vertical
     pos = pos ? Math.min(95, pos) + "%" : "122px";
     const [posStyle, oStyle] = isVertical ? ["top", "right"] : ["left", "bottom"];
     const imgSrc = isVertical
@@ -125,8 +125,10 @@ function initButton(sfHost, inInspector) {
     let popupSrc = chrome.runtime.getURL("popup.html");
     let popupEl = document.createElement("iframe");
     function getOrientation(source) {
-      const value = (source === "localStorage") ? localStorage.getItem("popupArrowOrientation") : iFrameLocalStorage.popupArrowOrientation;
-      return value === "horizontal" ? value : "vertical";
+      const o = (source === "localStorage")
+        ? localStorage.getItem("popupArrowOrientation")
+        : iFrameLocalStorage.popupArrowOrientation;
+      return o || "vertical";
     }
     // return a value for direction popup will expand, based on position and orientation
     function calcDirection(pos, o) {

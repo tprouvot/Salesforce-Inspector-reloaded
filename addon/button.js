@@ -139,7 +139,6 @@ function initButton(sfHost, inInspector) {
       return pos >= 55 ? "up" : null;
     }
     function resetPopupClass(o) {
-      console.log("resetPopupClass", o);
       popupEl.className = "insext-popup";
       popupEl.classList.add(`insext-popup-${o}`);
     }

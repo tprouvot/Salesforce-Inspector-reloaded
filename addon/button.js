@@ -82,7 +82,7 @@ function initButton(sfHost, inInspector) {
 
   // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
   function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos}) {
-    const isVertical = o === "vertical";
+    const isVertical = o !== "horizontal";
     pos = pos ? Math.min(95, pos) + "%" : "122px";
     const [posStyle, oStyle] = isVertical ? ["top", "right"] : ["left", "bottom"];
     const imgSrc = isVertical
@@ -118,11 +118,8 @@ function initButton(sfHost, inInspector) {
 
   function loadPopup() {
     btn.addEventListener("click", () => {
-      if (!rootEl.classList.contains("insext-active")) {
-        openPopup();
-      } else {
-        closePopup();
-      }
+      const isInactive = !rootEl.classList.contains("insext-active");
+      togglePopup(isInactive);
     });
 
     let popupSrc = chrome.runtime.getURL("popup.html");
@@ -135,13 +132,14 @@ function initButton(sfHost, inInspector) {
     function calcDirection(pos, o) {
       if (o === "horizontal") {
         return pos < 8 ? "right" : pos >= 90 ? "left" : "centered";
-      } else if (pos >= 55) {
-        return "up";
       }
-      return null;
+      return pos >= 55 ? "up" : null;
     }
-    popupEl.className = "insext-popup";
-    popupEl.classList.add(`insext-popup-${getOrientation("localStorage")}`);
+    function resetPopupClass(o) {
+      popupEl.className = "insext-popup";
+      popupEl.classList.add(`insext-popup-${o}`);
+    }
+    resetPopupClass(getOrientation("localStorage"));
     popupEl.src = popupSrc;
     addEventListener("message", e => {
       if (e.source != popupEl.contentWindow) {
@@ -152,8 +150,8 @@ function initButton(sfHost, inInspector) {
         iFrameLocalStorage = e.data.iFrameLocalStorage;
         const {popupArrowPosition: pos} = iFrameLocalStorage;
         const o = getOrientation("iframe");
-        popupEl.classList.add(`insext-popup-${o}`);
-        let dir = calcDirection(pos, o);
+        const dir = calcDirection(pos, o);
+        resetPopupClass(o);
         if (dir) {
           popupEl.classList.add(`insext-popup-${o}-${dir}`);
         }
@@ -168,12 +166,8 @@ function initButton(sfHost, inInspector) {
           inInspector,
         }, "*");
       }
-      if (e.data.insextClosePopup) {
-        closePopup();
-      }
-      if (e.data.insextOpenPopup) {
-        openPopup();
-      }
+
+      togglePopup(e.data.insextOpenPopup, e.data.insextClosePopup);
       if (e.data.insextShowStdPageDetails) {
         showStdPageDetails(e.data.insextData, e.data.insextAllFieldSetupLinks);
       }
@@ -246,6 +240,13 @@ function initButton(sfHost, inInspector) {
       rootEl.classList.remove("insext-active");
       removeEventListener("click", outsidePopupClick);
       popupEl.blur();
+    }
+    function togglePopup(openCondition, closeCondition = !openCondition) {
+      if (openCondition) {
+        openPopup();
+      } else if (closeCondition) {
+        closePopup();
+      }
     }
     function outsidePopupClick(e) {
       // Close the popup when clicking outside it

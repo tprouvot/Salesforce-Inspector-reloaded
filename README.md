@@ -115,7 +115,7 @@ Linting : to assure indentation, formatting and best practices coherence, please
 1. In Firefox, open `about:debugging`.
 2. Select `This Firefox` at the top left.
 3. Click `Load Temporary Add-on…`.
-4. Select the file `addon/manifest.json`.
+4. Select the file `addon/manifest.json`.  This should be the manifest from the firefoxAddon branch (be sure to discard/not check in when done testing!)
 
 ### Unit tests
 

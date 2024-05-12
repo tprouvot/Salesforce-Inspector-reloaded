@@ -80,7 +80,8 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
           {option: Option, props: {type: "toggle", title: "Search metadata from Shortcut tab", key: "metadataShortcutSearch"}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
-          {option: Option, props: {type: "option", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", values: ["green", "orange", "pink", "purple", "red", "yellow"]}},
+          {option: Option, props: {type: "toggle", title: "Disable suggestion over text", key: "disableSuggestionOverText"}},
+          {option: Option, props: {type: "option", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", values: ["blue", "green", "orange", "pink", "purple", "red", "yellow"]}},
           {option: CustomLinkOption, props: {title: "Custom links (org specific)", key: this.sfHost + "_orgLinks"}},
           {option: Option, props: {type: "number", title: "Number of flow version to keep", key: "clearOlderFlowsKeep", placeholder: "5 by default", default: 5}},
         ]
@@ -315,6 +316,10 @@ class Option extends React.Component {
   onChange(e) {
     let inputValue = e.target.value;
     this.setState({[this.key]: inputValue});
+    if (this.type == "option" && inputValue == this.props.values[0]) {
+      localStorage.removeItem(this.key);
+      return;
+    }
     localStorage.setItem(this.key, inputValue);
   }
 
@@ -356,7 +361,7 @@ class Option extends React.Component {
         h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
           h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
             h("select", {className: "slds-combobox__form-element slds-input combobox-container", name: "options", id: "options", value: this.state[this.key], onChange: this.onChange},
-              this.props.values ? this.props.values.map((o) => h("option", {value: o}, o)) : ""
+              this.props.values ? this.props.values.map((o) => h("option", {key: o, value: o}, o)) : ""
             )
           )
         )

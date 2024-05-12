@@ -106,6 +106,7 @@ class Model {
     this.suggestionTop = 0;
     this.suggestionLeft = 0;
     this.columnIndex = {fields: []};
+    this.disableSuggestionOverText = localStorage.getItem("disableSuggestionOverText") === "true";
     this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     let queryTemplatesRawValue = localStorage.getItem("queryTemplates");
     if (queryTemplatesRawValue && queryTemplatesRawValue != "[]") {
@@ -1978,7 +1979,7 @@ class App extends React.Component {
               h("a", {tabIndex: 5, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info")
             ),
           ),
-          h("div", {className: "autocomplete-results", style: {top: model.suggestionTop + "px", left: model.suggestionLeft + "px"}},
+          h("div", {className: "autocomplete-results", style: model.disableSuggestionOverText ? {} : {top: model.suggestionTop + "px", left: model.suggestionLeft + "px"}},
             model.autocompleteResults.results.map(r =>
               h("div", {className: "autocomplete-result", key: r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.value), " ")
             )

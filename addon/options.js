@@ -104,7 +104,8 @@ class OptionsTabSelector extends React.Component {
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
-          {option: QueryTemplatesOption, props: {title: "Query Templates", key: "queryTemplates"}}
+          {option: QueryTemplatesOption, props: {title: "Query Templates", key: "queryTemplates"}},
+          {option: QueryTemplatesOption, props: {title: "Saved Query History", key: "insextSavedQueryHistory", node: "query", defaultValue: "{\"useToolingApi\": false}"}}
         ]
       },
       {
@@ -560,6 +561,8 @@ class QueryTemplatesOption extends React.Component {
     this.key = props.storageKey;
     this.model = props.model;
     this.title = props.title;
+    this.node = props.node;
+    this.defaultValue = props.defaultValue;
     let val = localStorage.getItem(this.key);
     if (val) {
       try {
@@ -583,7 +586,17 @@ class QueryTemplatesOption extends React.Component {
     this.model.didUpdate();
   }
   addQueryTemplate() {
-    this.queryTemplates.push(this.state.query);
+    if (this.node) {
+      let elt = {};
+      if (this.defaultValue) {
+        elt = JSON.parse(this.defaultValue);
+      }
+      elt[this.node] = this.state.query;
+      this.queryTemplates.push(elt);
+    } else {
+      this.queryTemplates.push(this.state.query);
+    }
+
     this.setState({query: "", queryTemplates: this.queryTemplates});
     localStorage.setItem(this.key, JSON.stringify(this.queryTemplates));
     this.model.didUpdate();

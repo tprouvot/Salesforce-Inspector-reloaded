@@ -552,7 +552,8 @@ class AllDataBox extends React.PureComponent {
   loadSobjects() {
     let entityMap = new Map();
 
-    function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported, isEverCreatable, newUrl}, api) {
+    function addEntity(sobj, api) {
+      let {name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported, isEverCreatable, newUrl, createable, customSetting} = sobj;
       label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
       let entity = entityMap.get(name);
       if (entity) {
@@ -565,14 +566,17 @@ class AllDataBox extends React.PureComponent {
         if (!entity.durableId) {
           entity.durableId = durableId;
         }
-        if (!entity.isEverCreatable) {
-          entity.isEverCreatable = isEverCreatable;
+        if (entity.isEverCreatable == undefined) {
+          entity.isEverCreatable = isEverCreatable || createable;
         }
         if (!entity.newUrl) {
           entity.newUrl = newUrl;
         }
-        if (!entity.recordTypesSupported) {
+        if (entity.recordTypesSupported == undefined) {
           entity.recordTypesSupported = recordTypesSupported;
+        }
+        if (entity.isCustomSetting == undefined) {
+          entity.isCustomSetting = isCustomSetting || customSetting;
         }
       } else {
         entity = {

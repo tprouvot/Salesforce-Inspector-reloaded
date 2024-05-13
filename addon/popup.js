@@ -190,7 +190,7 @@ class App extends React.PureComponent {
     }
   }
   isMac() {
-    return navigator.userAgentData?.platform.indexOf("mac") || navigator.userAgent.indexOf("Mac") > -1;
+    return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
   }
   getBannerUrlAction(sessionError, sfHost, clientId, browser) {
     let url;
@@ -360,7 +360,7 @@ class App extends React.PureComponent {
             })
           ),
           h("div", {className: "slds-col slds-size_4-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, this.isMac ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+            h("span", {className: "footer-small-text"}, this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},

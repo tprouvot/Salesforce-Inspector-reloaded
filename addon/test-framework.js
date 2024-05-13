@@ -140,7 +140,7 @@ addEventListener("load", () => {
       window.result.style.color = "white";
       window.result.style.padding = "5px";
       window.result.style.fontWeight = "bold";
-      window.resultErrorDetail.textContent = `Error Message: ${e.message}`;
+      window.resultErrorDetail.textContent = `Error Message: ${JSON.stringify(e.message)}`;
       window.resultErrorDetail.style.padding = "5px";
     }
   })();

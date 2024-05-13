@@ -7,8 +7,6 @@
 
 #insext .insext-popup {
     box-sizing: border-box;
-    width: 280px;
-    height: 600px;
     position:absolute;
     background-color: #ffffff;
     border-radius: 4px;
@@ -16,12 +14,37 @@
     border: 1px solid #d8dde6;
     display: none;
 }
+#insext .insext-popup-iframe {
+    width: 100%;
+    height: 100%
+}
+
+#insext .insext-popup-horizontal .resizable {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    height: 10px;
+    width: 10px;
+    background-color: gray;
+    background-image: repeating-linear-gradient(-45deg, transparent, transparent 2px, #e5e5e5 2px, #e5e5e5 4px);
+    border-bottom-right-radius: 10px;
+}
+#insext .insext-popup-vertical .resizable {
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    height: 10px;
+    width: 10px;
+    background-color: gray;
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 2px, #e5e5e5 2px, #e5e5e5 4px);
+    border-top-right-radius: 10px;
+}
 
 #insext .insext-popup-vertical {
     right: 0%;
     border-top-right-radius: 0;
     box-shadow: 0 -2px 2px 0 rgba(0,0,0,.16);
-}
+    }
 
 #insext .insext-popup-vertical-up {
     bottom: 100%;
@@ -30,7 +53,7 @@
 #insext .insext-popup-horizontal {
     bottom: 20px;
     box-shadow: 2px 0 2px 0 rgba(0,0,0,.16);
-}
+    }
 
 #insext .insext-popup-horizontal-left {
     right: 0%;

@@ -203,9 +203,9 @@ function initButton(sfHost, inInspector) {
         closePopup();
       }
     });
-
+    let popupWrapper = document.createElement("div");
     let popupEl = document.createElement("iframe");
-
+    popupEl.classList.add("insext-popup-iframe");
     function onbuttonmove(event) {
       let popupArrowOrientation;
       let popupArrowPosition;
@@ -219,7 +219,7 @@ function initButton(sfHost, inInspector) {
       }
       localStorage.setItem("popupArrowOrientation", popupArrowOrientation);
       localStorage.setItem("popupArrowPosition", popupArrowPosition);
-      updateButtonCSSPropertiesIfNeeded(rootEl, btn, popupEl, popupArrowOrientation, popupArrowPosition);
+      updateButtonCSSPropertiesIfNeeded(rootEl, btn, popupWrapper, popupArrowOrientation, popupArrowPosition);
 
     }
     function endmove() {
@@ -232,8 +232,9 @@ function initButton(sfHost, inInspector) {
     });
 
     let popupSrc = chrome.runtime.getURL("popup.html");
-    popupEl.className = "insext-popup";
-    popupEl.classList.add(localStorage.getItem("popupArrowOrientation") == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
+    popupWrapper.className = "insext-popup";
+    popupWrapper.classList.add(localStorage.getItem("popupArrowOrientation") == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
+
     popupEl.src = popupSrc;
     addEventListener("message", e => {
       if (e.source != popupEl.contentWindow) {
@@ -243,7 +244,7 @@ function initButton(sfHost, inInspector) {
         // Set CSS classes for arrow button position
         iFrameLocalStorage = e.data.iFrameLocalStorage;
 
-        updateButtonCSSPropertiesFromStorage(rootEl, btn, popupEl);
+        updateButtonCSSPropertiesFromStorage(rootEl, btn, popupWrapper);
         addFlowScrollability(popupEl);
         popupEl.contentWindow.postMessage({
           insextInitResponse: true,
@@ -279,7 +280,49 @@ function initButton(sfHost, inInspector) {
         }
       }
     });
-    rootEl.appendChild(popupEl);
+    popupWrapper.appendChild(popupEl);
+    let resizeHandler = document.createElement("div");
+    resizeHandler.classList.add("resizable");
+    popupWrapper.style.width = (localStorage.getItem("popupWidth") || "280") + "px";
+    popupWrapper.style.height = (localStorage.getItem("popupHeight") || "600") + "px";
+    let resizeX = 0;
+    let resizeY = 0;
+    let resizeHeight = 0;
+    let resizeWidth = 0;
+    function onResizeMove(event) {
+      if (resizeX == 0 && resizeY == 0) {
+        resizeX = event.clientX;
+        resizeY = event.clientY;
+        resizeHeight = popupWrapper.clientHeight;
+        resizeWidth = popupWrapper.clientWidth;
+      } else {
+        let popupHeight;
+        if (popupWrapper.classList.contains("insext-popup-horizontal")) {
+          popupHeight = resizeHeight + (resizeY - event.clientY);
+        } else {
+          popupHeight = resizeHeight - (resizeY - event.clientY);
+        }
+        let popupWidth = resizeWidth - (event.clientX - resizeX);
+        localStorage.setItem("popupWidth", popupWidth);
+        localStorage.setItem("popupHeight", popupHeight);
+        popupWrapper.style.width = popupWidth + "px";
+        popupWrapper.style.height = popupHeight + "px";
+      }
+    }
+    function endResizeMove() {
+      window.removeEventListener("mousemove", onResizeMove);
+      window.removeEventListener("mouseup", endResizeMove);
+      resizeX = 0;
+      resizeY = 0;
+    }
+    popupWrapper.addEventListener("mousedown", () => {
+      window.addEventListener("mousemove", onResizeMove);
+      window.addEventListener("mouseup", endResizeMove);
+    });
+
+
+    popupWrapper.appendChild(resizeHandler);
+    rootEl.appendChild(popupWrapper);
     // Function to handle copy action
     function copy(e) {
       // Retrieve the text content of the target element triggered by the event
@@ -322,12 +365,12 @@ function initButton(sfHost, inInspector) {
       rootEl.classList.add("insext-active");
       // These event listeners are only enabled when the popup is active to avoid interfering with Salesforce when not using the inspector
       addEventListener("click", outsidePopupClick);
-      popupEl.focus();
+      popupWrapper.focus();
     }
     function closePopup() {
       rootEl.classList.remove("insext-active");
       removeEventListener("click", outsidePopupClick);
-      popupEl.blur();
+      popupWrapper.blur();
     }
     function outsidePopupClick(e) {
       // Close the popup when clicking outside it

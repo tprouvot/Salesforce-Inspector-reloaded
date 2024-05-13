@@ -348,7 +348,7 @@ class App extends React.PureComponent {
           )
         ),
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
-          h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
+          h("div", {className: "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
@@ -359,8 +359,8 @@ class App extends React.PureComponent {
               value: apiVersionInput.split(".0")[0]
             })
           ),
-          h("div", {className: "slds-col slds-size_4-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+          h("div", {className: "slds-col slds-size_5-of-12 slds-text-align_left"},
+            h("span", {className: "footer-small-text"}, `${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"} to open`)
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},

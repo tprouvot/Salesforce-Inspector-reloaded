@@ -1506,17 +1506,19 @@ class FieldValueCell extends React.Component {
   render() {
     let {row, col} = this.props;
     if (row.isEditing()) {
-      if (row.isPicklist()){
+      if(row.isPicklist()){
         return h("td", { className: col.className },
-          h("select", {id: "input-field", className: "", value: row.dataEditValue, onChange: this.onDataEditValueInput},
-            h("option", { value: "" }, "Select an option"),
-            row.fieldDescribe.picklistValues
-              .filter(option => option.active)
-              .map(option =>
-                h("option", { value: option.value, key: option.value }, option.label)
-              )
-          ),
-          h("a", { href: "about:blank", onClick: this.onCancelEdit, className: "undo-button" }, "\u21B6")
+          h("div", {className: "dropdown-div"}, 
+            h("select", { className: "dropdown", value: row.dataEditValue, onChange: this.onDataEditValueInput, id: "input-field"},
+              h("option", { value: "" }, "Select an option"),
+              row.fieldDescribe.picklistValues
+                .filter(option => option.active)
+                .map(option =>
+                  h("option", { value: option.value, key: option.value }, option.label)
+                )
+            ),
+            h("input", { type: "text", placeholder: "add/select a value", value: row.dataEditValue, onChange: this.onDataEditValueInput, id: "input-field", style: { width: 'calc(100% - 40px)'}}, null),
+            h("a", {style: {marginLeft: "96%"}, href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6")),
         );
       }
       else {

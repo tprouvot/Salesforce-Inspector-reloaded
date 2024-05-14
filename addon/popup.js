@@ -66,11 +66,11 @@ function initLinks({sfHost}){
 
 function toCompositeRequest(queries) {
   let compositeRequest = [];
-  for (const query in queries) {
+  for (const q in queries) {
     compositeRequest.push({
       "method": "GET",
-      "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(query),
-      "referenceId": "fullData"
+      "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queries[q]),
+      "referenceId": q
     });
   }
   return {
@@ -739,7 +739,7 @@ class AllDataBoxUsers extends React.PureComponent {
     const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
     const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
     const queryFrom = "from User where (username like '%" + userQuery + "%' or name like '%" + userQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
-    const compositeQuery = toCompositeRequest([fullQuerySelect + " " + queryFrom, minimalQuerySelect + " " + queryFrom]);
+    const compositeQuery = toCompositeRequest({fullData: fullQuerySelect + " " + queryFrom, minimalData: minimalQuerySelect + " " + queryFrom});
 
     try {
       setIsLoading(true);
@@ -775,7 +775,7 @@ class AllDataBoxUsers extends React.PureComponent {
     const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId";
     const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId";
     const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
-    const compositeQuery = toCompositeRequest([fullQuerySelect + " " + queryFrom, mediumQuerySelect + " " + queryFrom, minimalQuerySelect + " " + queryFrom]);
+    const compositeQuery = toCompositeRequest({fullData: fullQuerySelect + " " + queryFrom, mediumData: mediumQuerySelect + " " + queryFrom, minimalData: minimalQuerySelect + " " + queryFrom});
 
     try {
       setIsLoading(true);
@@ -1098,7 +1098,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         const flowSelect = "SELECT LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const compositeQuery = toCompositeRequest([flowSelect, profileSelect, permSetSelect]);
+        const compositeQuery = toCompositeRequest({flowSelect, profileSelect, permSetSelect});
 
         const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
         let results = searchResult.compositeResponse.filter((elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0);

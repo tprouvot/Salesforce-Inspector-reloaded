@@ -251,7 +251,7 @@ class Model {
     this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
   }
   getQueryToSave() {
-    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value : this.queryInput.value;
+    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value.trim() : this.queryInput.value.trim();
   }
   autocompleteReload() {
     this.describeInfo.reloadAll();

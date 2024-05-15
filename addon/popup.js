@@ -189,6 +189,9 @@ class App extends React.PureComponent {
       });
     }
   }
+  isMac() {
+    return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
+  }
   getBannerUrlAction(sessionError, sfHost, clientId, browser) {
     let url;
     let title;
@@ -213,7 +216,7 @@ class App extends React.PureComponent {
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
-    const browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
+    const browser = navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";
     const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
     const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
     const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
@@ -345,7 +348,7 @@ class App extends React.PureComponent {
           )
         ),
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
-          h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
+          h("div", {className: "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
@@ -356,8 +359,8 @@ class App extends React.PureComponent {
               value: apiVersionInput.split(".0")[0]
             })
           ),
-          h("div", {className: "slds-col slds-size_4-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+          h("div", {className: "slds-col slds-size_5-of-12 slds-text-align_left"},
+            h("span", {className: "footer-small-text"}, `${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"} to open`)
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
@@ -1422,7 +1425,7 @@ class UserDetails extends React.PureComponent {
   }
 
   render() {
-    let {user, linkTarget, sfHost} = this.props;
+    let {user, linkTarget} = this.props;
     return (
       h("div", {className: "all-data-box-inner"},
         h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},

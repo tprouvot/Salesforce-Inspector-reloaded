@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, nullToEmptyString} from "./inspector.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 
@@ -82,7 +82,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
-          {option: Option, props: {type: "toggle", title: "Use custom favicon for Salesforce", key: "useCustomFavicon"}},
+          {option: Option, props: {type: "toggle", title: "Use custom favicon for Salesforce", key: "useCustomFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "text", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", placeholder: "Available values : green, orange, pink, purple, red, yellow"}}
         ]
       },
@@ -211,7 +211,7 @@ class ArrowButtonOption extends React.Component {
   }
 
   render() {
-    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_x-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "Popup arrow button orientation and position")
       ),
@@ -224,7 +224,7 @@ class ArrowButtonOption extends React.Component {
         h("label", {className: "slds-m-left_medium slds-col slds-size_2-of-12 slds-text-align_right", htmlFor: "arrowPositionSlider"}, "Position (%):"),
         h("div", {className: "slds-form-element__control slider-container slds-col slds-size_4-of-12"},
           h("div", {className: "slds-slider"},
-            h("input", {type: "range", id: "arrowPositionSlider", className: "slds-slider__range", value: this.state.arrowButtonPosition, min: "0", max: "100", step: "1", onChange: this.onChangeArrowPosition}),
+            h("input", {type: "range", id: "arrowPositionSlider", className: "slds-slider__range", value: nullToEmptyString(this.state.arrowButtonPosition), min: "0", max: "100", step: "1", onChange: this.onChangeArrowPosition}),
             h("span", {className: "slds-slider__value", "aria-hidden": true}, this.state.arrowButtonPosition)
           )
         )
@@ -255,7 +255,7 @@ class APIVersionOption extends React.Component {
       h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          h("input", {type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: this.state.apiVersion.split(".0")[0], onChange: this.onChangeApiVersion}),
+          h("input", {type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
         )
       )
     );
@@ -283,13 +283,88 @@ class RestHeaderOption extends React.Component {
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-          h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: "Rest Header", value: this.state.restHeader, onChange: this.onChangeRestHeader}),
+          h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: "Rest Header", value: nullToEmptyString(this.state.restHeader), onChange: this.onChangeRestHeader}),
         )
       )
     );
   }
 }
+
+class Tooltip extends React.Component {
+  constructor(props) {
+    super(props);
+    this.tooltip = props.tooltip;
+    this.tipKey = props.idKey + "_tooltip";
+    this.iconKey = props.idKey + "_icon";
+    this.onClick = this.onClick.bind(this);
+    this.onHover = this.onHover.bind(this);
+    this.onHide = this.onHide.bind(this);
+    this.showTimer = null;
+    // Default to 0 opacity and completely hidden (isTooltipVisible evaluates to display: none)
+    this.state = {
+      isTooltipVisible: false,
+      position: {x: "0", y: "0"},
+      opacity: 0
+    };
+  }
+
+  setTooltipPosition() {
+    // At this point, display was visible but fully transparent in the top left corner of the screen
+    // If isVisible is false, getBoundingClientRect will return 0 for all values
+    const tabHeader = document.querySelectorAll('[id="main-container_header"]')[0];
+    const marginTop = parseInt(window.getComputedStyle(tabHeader).getPropertyValue("margin-top"));
+    const yOffset = tabHeader.getBoundingClientRect().top + marginTop + 2; // Add 2 extra pixels below nubbin
+    const toolTip = document.querySelectorAll(`[id='${this.tipKey}']`)[0];
+    const elRect = document.querySelectorAll(`[id='${this.iconKey}']`)[0].getBoundingClientRect();
+    const toolTipRect = toolTip.getBoundingClientRect();
+    const x = `${elRect.left - 27}px`; // fixed x offset (distance from left edge of tooltip to nubbin point)
+    const y = `${elRect.top - toolTipRect.height - yOffset}px`;
+    // Finally, set opacity to 100% so the user can see it
+    this.setState({position: {x, y}, opacity: 1});
+  }
+
+  onClick(e) {
+    e.preventDefault();
+    this.show();
+  }
+
+  onHover() {
+    this.show(350);
+  }
+
+  show(delay = 0) {
+    clearTimeout(this.showTimer);
+    this.showTimer = setTimeout(() => {
+      this.setState({isTooltipVisible: true});
+      this.setTooltipPosition();
+    }, delay);
+  }
+
+  onHide() {
+    clearTimeout(this.showTimer);
+    this.setState({isTooltipVisible: false});
+  }
+
+  render() {
+    if (!this.tooltip) {
+      return null;
+    }
+
+    return h("span", {style: {marginLeft: "2px"}, id: this.iconKey},
+      h("a", {href: "#", onClick: this.onClick, onMouseEnter: this.onHover, onMouseLeave: this.onHide},
+        h("span", {className: "slds-icon_container slds-icon-utility-info"},
+          h("svg", {className: "slds-icon_xx-small slds-icon-text-default", viewBox: "0 0 40 40", style: {verticalAlign: "unset", margin: "3px"}},
+            h("use", {xlinkHref: "symbols.svg#info", fill: "#9c9c9c"}),
+          )),
+        h("span", {className: "slds-assistive-text"}, "Learn more")
+      ),
+      h("div", {className: "slds-popover slds-popover_tooltip slds-nubbin_bottom-left", role: "tooltip", id: this.tipKey, style: {position: "absolute", left: this.state.position.x, top: this.state.position.y, opacity: this.state.opacity, display: this.state.isTooltipVisible ? "block" : "none"}},
+        h("div", {className: "slds-popover__body"}, this.props.tooltip)
+      ));
+  }
+}
 class Option extends React.Component {
+
   constructor(props) {
     super(props);
     this.onChange = this.onChange.bind(this);
@@ -297,6 +372,7 @@ class Option extends React.Component {
     this.key = props.storageKey;
     this.type = props.type;
     this.label = props.label;
+    this.tooltip = props.tooltip;
     this.placeholder = props.placeholder;
     let value = localStorage.getItem(this.key);
     if (props.default !== undefined && value === null) {
@@ -321,35 +397,30 @@ class Option extends React.Component {
 
   render() {
     const id = this.key;
-    if (this.type == "text"){
-      return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-        h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-          h("span", {}, this.title)
-        ),
-        h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-          h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-            h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: this.placeholder, value: this.state[this.key], onChange: this.onChange}),
+    const isText = this.type == "text";
+    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, this.title,
+          h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
+        )
+      ),
+      isText ? h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
+          h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange}),
+        )
+      )
+      : h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
+        h("label", {className: "slds-checkbox_toggle slds-grid"},
+          h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: nullToEmptyString(this.state[this.key]), onChange: this.onChangeToggle}),
+          h("span", {id, className: "slds-checkbox_faux_container center-label"},
+            h("span", {className: "slds-checkbox_faux"}),
+            h("span", {className: "slds-checkbox_on"}, "Enabled"),
+            h("span", {className: "slds-checkbox_off"}, "Disabled"),
           )
         )
-      );
-    } else {
-      return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-        h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-          h("span", {}, this.title)
-        ),
-        h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-        h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
-          h("label", {className: "slds-checkbox_toggle slds-grid"},
-            h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
-            h("span", {id, className: "slds-checkbox_faux_container center-label"},
-              h("span", {className: "slds-checkbox_faux"}),
-              h("span", {className: "slds-checkbox_on"}, "Enabled"),
-              h("span", {className: "slds-checkbox_off"}, "Disabled"),
-            )
-          )
-        )
-      );
-    }
+      )
+    );
   }
 }
 
@@ -375,7 +446,7 @@ class APIKeyOption extends React.Component {
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-          h("input", {type: "text", id: "apiKeyInput", className: "slds-input", placeholder: "Consumer Key", value: this.state.apiKey, onChange: this.onChangeApiKey}),
+          h("input", {type: "text", id: "apiKeyInput", className: "slds-input", placeholder: "Consumer Key", value: nullToEmptyString(this.state.apiKey), onChange: this.onChangeApiKey}),
         )
       )
     );
@@ -403,7 +474,7 @@ class CSVSeparatorOption extends React.Component {
       ),
       h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("input", {type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: this.state.csvSeparator, onChange: this.onChangeCSVSeparator})
+        h("input", {type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: nullToEmptyString(this.state.csvSeparator), onChange: this.onChangeCSVSeparator})
       )
     );
   }
@@ -442,7 +513,7 @@ class enableLogsOption extends React.Component {
         ),
         h("div", {className: "slds-col slds-size_6-of-12 slds-form-element"}),
         h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
-          h("input", {type: "text", id: "debugLogDebugLevel", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "SFDC_DevConsole", value: this.state.debugLogDebugLevel, onChange: this.onChangeDebugLevel})
+          h("input", {type: "text", id: "debugLogDebugLevel", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "SFDC_DevConsole", value: nullToEmptyString(this.state.debugLogDebugLevel), onChange: this.onChangeDebugLevel})
         ),
       ),
       h("div", {className: "slds-col slds-grid slds-wrap slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
@@ -451,7 +522,7 @@ class enableLogsOption extends React.Component {
         ),
         h("div", {className: "slds-col slds-size_6-of-12 slds-form-element"}),
         h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
-          h("input", {type: "number", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", value: this.state.debugLogTimeMinutes, onChange: this.onChangeDebugLogTime})
+          h("input", {type: "number", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", value: nullToEmptyString(this.state.debugLogTimeMinutes), onChange: this.onChangeDebugLogTime})
         ),
       )
     );
@@ -480,7 +551,7 @@ class App extends React.Component {
         h("h1", {className: "slds-text-title_bold"}, "Options"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"})),
-      h("div", {className: "main-container slds-card slds-m-around_small"},
+      h("div", {className: "main-container slds-card slds-m-around_small", id: "main-container_header"},
         h(OptionsTabSelector, {model}))
     );
   }

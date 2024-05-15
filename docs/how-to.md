@@ -242,6 +242,22 @@ The customization is linked to the org, it means you can have different colors f
 
 <img width="901" alt="Customize favicon" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
 
+Now if you want to set a random favicon for all of your visited orgs, open dev console from one of the extension page and paste following code in dev console:
+
+``` js
+let colors = ['green', 'orange', 'pink', 'purple', 'red', 'yellow'];
+
+let orgs = Object.keys(localStorage).filter((localKey) =>
+    localKey.endsWith("_isSandbox")
+);
+orgs.forEach((org) => {
+    let sfHost = org.substring(0, org.indexOf(("_isSandbox")));
+    let randomFavicon = colors[(Math.floor(Math.random() * colors.length))]
+    console.info(sfHost + "_customFavicon", randomFavicon);
+    localStorage.setItem(sfHost + "_customFavicon", randomFavicon);
+});
+```
+
 ## Select all fields in a query
 
 This functionality already exists in the legacy version but since many users don't know about it, I would like to document it.

@@ -302,7 +302,8 @@ class Model {
     const timestamp = date.toISOString().replace(/[^0-9]/g, "");
     downloadLink.download = `export${timestamp}.csv`;
     let BOM = "\uFEFF";
-    downloadLink.href = "data:text/csv;charset=utf-8," + BOM + encodeURI(this.exportedData.csvSerialize(separator));
+    let bb = new Blob([BOM, this.exportedData.csvSerialize(separator)], {type: "text/csv;charset=utf-8"});
+    downloadLink.href = window.URL.createObjectURL(bb);
     downloadLink.click();
   }
   copyAsJson() {

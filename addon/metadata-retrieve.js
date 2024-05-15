@@ -104,7 +104,8 @@ class Model {
     let BOM = "\uFEFF";
     let rt = new RecordTable();
     rt.addToTable(fieldsFesult.rows);
-    downloadLink.href = "data:text/csv;charset=utf-8," + BOM + encodeURI(this.csvSerialize(rt.table, separator));
+    let bb = new Blob([BOM, this.csvSerialize(rt.table, separator)], {type: "text/csv;charset=utf-8"});
+    downloadLink.href = window.URL.createObjectURL(bb);
     downloadLink.click();
     this.progress = "done";
     this.didUpdate();

@@ -644,7 +644,8 @@ class ScrollTableCell extends React.Component {
       let downloadLink = document.createElement("a");
       downloadLink.download = e.target.href.split("/")[6];
       let BOM = "\uFEFF";
-      downloadLink.href = "data:text/csv;charset=utf-8," + BOM + encodeURI(data);
+      let bb = new Blob([BOM, data], {type: "text/csv;charset=utf-8"});
+      downloadLink.href = window.URL.createObjectURL(bb);
       downloadLink.click();
     });
   }

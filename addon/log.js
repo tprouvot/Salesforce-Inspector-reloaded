@@ -747,7 +747,8 @@ class App extends React.Component {
     let downloadLink = document.createElement("a");
     downloadLink.download = model.recordId + ".txt";
     let BOM = "\uFEFF";
-    downloadLink.href = "data:text/plain;charset=utf-8," + BOM + encodeURI(model.logData);
+    let bb = new Blob([BOM, model.logData], {type: "text/csv;charset=utf-8"});
+    downloadLink.href = window.URL.createObjectURL(bb);
     downloadLink.click();
   }
 

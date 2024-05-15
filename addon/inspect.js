@@ -1517,7 +1517,7 @@ class FieldValueCell extends React.Component {
                   h("option", { value: option.value, key: option.value }, option.label)
                 )
             ),
-            h("input", { type: "text", placeholder: "add/select a value", value: row.dataEditValue, onChange: this.onDataEditValueInput, id: "input-field", style: { width: 'calc(100% - 40px)'}}, null),
+            h("input", { type: "text", placeholder: "add/select a value", value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown, id: "input-field", style: { width: 'calc(100% - 40px)'}}, null),
             h("a", {style: {marginLeft: "96%"}, href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6")),
         );
       }

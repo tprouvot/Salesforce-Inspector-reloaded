@@ -8,7 +8,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 
 class Model {
 
-  constructor(sfHost) {
+  constructor({sfHost, args}) {
     this.sfHost = sfHost;
     this.sfLink = "https://" + sfHost;
     this.userInfo = "...";
@@ -996,7 +996,7 @@ class Editor extends React.Component {
     }*/
 
     //return h("div", {className: "editor", ref: "scroller", onScroll: onScrollerScroll, style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 160) + "px"}},
-    return h("div", {className: "editor", ref: "scroller", style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 160) + "px"}},
+    return h("div", {className: "editor", ref: "scroller", style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 220) + "px"}},
       //h("div", {className: "scrolled"}, style: {height: scrolledHeight, top: scrolledTop}},
       h("div", {className: "line-numbers", style: {lineHeight: rowHeight + "px"}},
         //Array(lastRowIdx - firstRowIdx).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}, i + firstRowIdx))

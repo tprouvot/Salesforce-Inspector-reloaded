@@ -866,9 +866,6 @@ export class Editor extends React.Component {
     let {model} = this.props;
     const {value, selectionStart, selectionEnd} = e.currentTarget;
     const tabChar = "  ";//default is 2 spaces
-    if (!model.displaySuggestion && e.key != " " && !e.ctrlKey) {
-      model.displaySuggestion = true;
-    }
     switch (e.key) {
       case " ":
         if (e.ctrlKey) {
@@ -889,19 +886,19 @@ export class Editor extends React.Component {
         if (model.displaySuggestion && !model.disableSuggestionOverText && model.activeSuggestion != -1) {
           model.activeSuggestion = -1;
         }
-        break;
+        return;
       case "ArrowDown":
         if (model.displaySuggestion && !model.disableSuggestionOverText) {
           e.preventDefault();
           model.nextSuggestion();
         }
-        break;
+        return;
       case "ArrowUp":
         if (model.displaySuggestion && !model.disableSuggestionOverText) {
           e.preventDefault();
           model.previousSuggestion();
         }
-        break;
+        return;
       case "Enter":
         if (model.displaySuggestion && !model.disableSuggestionOverText && model.activeSuggestion != -1) {
           e.preventDefault();
@@ -914,7 +911,7 @@ export class Editor extends React.Component {
           model.activeSuggestion = -1;
           model.hideSuggestion();
         }
-        break;
+        return;
       case "Tab": {
         //TODO option to select 2 spaces, 4 spaces or tab \t
         let selectedText = value.substring(selectionStart, selectionEnd);
@@ -1014,6 +1011,9 @@ export class Editor extends React.Component {
         //TODO if previous input without other keydown (even move)is openChar then delete open and closeChar
         break;
       }
+    }
+    if (!model.displaySuggestion) {
+      model.displaySuggestion = true;
     }
   }
   handleMouseUp(e) {

@@ -865,7 +865,7 @@ export class Editor extends React.Component {
     let {model} = this.props;
     const {value, selectionStart, selectionEnd} = e.currentTarget;
     const tabChar = "  ";//default is 2 spaces
-    if (!model.displaySuggestion) {
+    if (!model.displaySuggestion && e.key != " " && !e.ctrlKey) {
       model.displaySuggestion = true;
     }
     switch (e.key) {

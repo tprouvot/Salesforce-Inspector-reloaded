@@ -108,6 +108,12 @@ class Model {
     this.suggestionLeft = 0;
     this.columnIndex = {fields: []};
     this.disableSuggestionOverText = localStorage.getItem("disableSuggestionOverText") === "true";
+    this.activeSuggestion = -1;
+    if (history.disableSuggestionOverText) {
+      this.displaySuggestion = true;
+    } else {
+      this.displaySuggestion = false;
+    }
     this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     let queryTemplatesRawValue = localStorage.getItem("queryTemplates");
     if (queryTemplatesRawValue && queryTemplatesRawValue != "[]") {
@@ -351,6 +357,65 @@ class Model {
         this.didUpdate();
       })
       .catch(err => console.log("error handling failed", err));
+  }
+
+  showSuggestion() {
+    this.displaySuggestion = true;
+    this.didUpdate();
+  }
+  hideSuggestion() {
+    this.displaySuggestion = false;
+    this.didUpdate();
+  }
+  nextSuggestion() {
+    if (this.activeSuggestion < this.autocompleteResults.results.length - 1) {
+      this.activeSuggestion++;
+    } else {
+      this.activeSuggestion = 0;
+    }
+    this.didUpdate();
+  }
+  previousSuggestion() {
+    if (this.activeSuggestion > 0) {
+      this.activeSuggestion--;
+    } else {
+      this.activeSuggestion = this.autocompleteResults.results.length - 1;
+    }
+    this.didUpdate();
+  }
+  selectSuggestion() {
+    if (!this.autocompleteResults || !this.autocompleteResults.results || this.autocompleteResults.results.length == 0) {
+      return;
+    }
+    let selStart = this.editor.selectionStart;
+    let selEnd = this.editor.selectionEnd;
+    let searchTerm = selStart != selEnd
+      ? this.editor.value.substring(selStart, selEnd)
+      : this.editor.value.substring(0, selStart).match(/[a-zA-Z0-9_.]*$/)[0];
+    selStart = selEnd - searchTerm.length;
+    let ar = this.autocompleteResults.results;
+    if (this.autocompleteResults.isField && this.activeSuggestion == -1) {
+      ar = ar
+        .filter(r => r.autocompleteType == "fieldName")
+        .map((r, i, l) => this.autocompleteResults.contextPath + r.value + (i != l.length - 1 ? r.suffix : ""));
+      if (ar.length > 0) {
+        this.editor.focus();
+        this.editor.setRangeText(ar.join(""), selStart - this.autocompleteResults.contextPath.length, selEnd, "end");
+      }
+      return;
+    }
+    if (this.autocompleteResults.isFieldValue && this.activeSuggestion == -1) {
+      this.suggestFieldValues();
+      return;
+    }
+
+    //by default auto complete the first item
+    let idx = this.activeSuggestion > -1 ? this.activeSuggestion : 0;
+
+    this.editor.focus();
+    this.editor.setRangeText(ar[idx].value + ar[idx].suffix, selStart, selEnd, "end");
+    this.activeSuggestion = -1;
+    this.editorAutocompleteHandler();
   }
   setSuggestionPosition(top, left){
     if (this.suggestionTop == top && this.suggestionLeft == left) {
@@ -643,6 +708,63 @@ class Model {
     };
   }
 
+  suggestFieldValues(){
+    //previous object suggestion
+    let sobjectName = this.autocompleteResults.sobjectName;
+    let useToolingApi = this.queryTooling;
+    let selStart = this.editor.selectionStart;
+    let selEnd = this.editor.selectionEnd;
+    let query = this.editor.value;
+    let searchTerm = selStart != selEnd
+      ? query.substring(selStart, selEnd)
+      : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
+    selStart = selEnd - searchTerm.length;
+    let contextValueFields = this.autocompleteResults.contextValueFields;
+    let fieldNames = contextValueFields.map(contextValueField => contextValueField.sobjectDescribe.name + "." + contextValueField.field.name).join(", ");
+    if (contextValueFields.length > 1) {
+      this.autocompleteResults = {
+        sobjectName,
+        title: "Multiple possible fields: " + fieldNames,
+        results: []
+      };
+      return;
+    }
+    let contextValueField = contextValueFields[0];
+    let queryMethod = useToolingApi ? "tooling/query" : this.queryAll ? "queryAll" : "query";
+    let acQuery = "select " + contextValueField.field.name + " from " + contextValueField.sobjectDescribe.name + " where " + contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%' group by " + contextValueField.field.name + " limit 100";
+    this.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(acQuery), {progressHandler: this.autocompleteProgress})
+      .catch(err => {
+        if (err.name != "AbortError") {
+          this.autocompleteResults = {
+            sobjectName,
+            title: "Error: " + err.message,
+            results: []
+          };
+        }
+        return null;
+      })
+      .then(data => {
+        this.autocompleteProgress = {};
+        if (!data) {
+          return;
+        }
+        this.autocompleteResults = {
+          sobjectName,
+          title: fieldNames + " values suggestions:",
+          results: new Enumerable(data.records)
+            .map(record => record[contextValueField.field.name])
+            .filter(value => value)
+            .map(value => ({value: "'" + value + "'", title: value, suffix: " ", rank: 1, autocompleteType: "fieldValue"}))
+            .toArray()
+            .sort(this.resultsSort(searchTerm))
+        };
+      }));
+    this.autocompleteResults = {
+      sobjectName,
+      title: "Loading " + fieldNames + " values...",
+      results: []
+    };
+  }
   autocompleteField(vm, ctrlSpace, sobjectName, isAfterWhere) {
     let useToolingApi = vm.queryTooling;
     let selStart = vm.editor.selectionStart;
@@ -811,49 +933,7 @@ class Model {
       let fieldNames = contextValueFields.map(contextValueField => contextValueField.sobjectDescribe.name + "." + contextValueField.field.name).join(", ");
       if (ctrlSpace) {
         // Since this performs a Salesforce API call, we ask the user to opt in by pressing Ctrl+Space
-        if (contextValueFields.length > 1) {
-          vm.autocompleteResults = {
-            sobjectName,
-            title: "Multiple possible fields: " + fieldNames,
-            results: []
-          };
-          return;
-        }
-        let contextValueField = contextValueFields[0];
-        let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
-        let acQuery = "select " + contextValueField.field.name + " from " + contextValueField.sobjectDescribe.name + " where " + contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%' group by " + contextValueField.field.name + " limit 100";
-        vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(acQuery), {progressHandler: vm.autocompleteProgress})
-          .catch(err => {
-            if (err.name != "AbortError") {
-              vm.autocompleteResults = {
-                sobjectName,
-                title: "Error: " + err.message,
-                results: []
-              };
-            }
-            return null;
-          })
-          .then(data => {
-            vm.autocompleteProgress = {};
-            if (!data) {
-              return;
-            }
-            vm.autocompleteResults = {
-              sobjectName,
-              title: fieldNames + " values suggestions:",
-              results: new Enumerable(data.records)
-                .map(record => record[contextValueField.field.name])
-                .filter(value => value)
-                .map(value => ({value: "'" + value + "'", title: value, suffix: " ", rank: 1, autocompleteType: "fieldValue"}))
-                .toArray()
-                .sort(this.resultsSort(searchTerm))
-            };
-          }));
-        vm.autocompleteResults = {
-          sobjectName,
-          title: "Loading " + fieldNames + " values...",
-          results: []
-        };
+        vm.suggestFieldValues();
         return;
       }
       let ar = new Enumerable(contextValueFields).flatMap(function* ({field}) {
@@ -934,6 +1014,8 @@ class Model {
         .sort(this.resultsSort(searchTerm));
       vm.autocompleteResults = {
         sobjectName,
+        isFieldValue,
+        contextValueFields,
         title: fieldNames + (ar.length == 0 ? " values (Press Ctrl+Space to load suggestions):" : " values:"),
         results: ar
       };
@@ -955,6 +1037,8 @@ class Model {
       }
       vm.autocompleteResults = {
         sobjectName,
+        isField: true,
+        contextPath,
         title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " fields suggestions:",
         results: contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
@@ -1036,12 +1120,10 @@ class Model {
       .sort(this.resultsSort(searchTerm));
     if (ctx.ctrlSpace) {
       if (ar.length > 0) {
-        let rel = ar.shift();
+        let rel = ar[0];
         ctx.sobjectName = rel.dataType;
-        ctx.vm.editor.focus();
-        ctx.vm.editor.setRangeText(rel.value, selStart, selEnd, "end");
       }
-      ctx.vm.editorAutocompleteHandler();
+      this.selectSuggestion();
       return;
     }
     if (suggestRelation) {
@@ -1986,9 +2068,9 @@ class App extends React.Component {
                 h("div", {className: "button-toggle-icon"})) : ""
             ),
           ),
-          h("div", {className: "autocomplete-results " + (model.disableSuggestionOverText ? "autocomplete-results-under" : "autocomplete-results-over"), style: model.disableSuggestionOverText ? {} : {top: model.suggestionTop + "px", left: model.suggestionLeft + "px"}},
-            model.autocompleteResults.results.map(r =>
-              h("div", {className: "autocomplete-result", key: r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.value), " ")
+          h("div", {className: "autocomplete-results" + (model.disableSuggestionOverText ? " autocomplete-results-under" : " autocomplete-results-over"), hidden: !model.displaySuggestion, style: model.disableSuggestionOverText ? {} : {top: model.suggestionTop + "px", left: model.suggestionLeft + "px"}},
+            model.autocompleteResults.results.map((r, ri) =>
+              h("div", {className: "autocomplete-result" + (ri == model.activeSuggestion ? " active" : ""), key: r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.value), " ")
             )
           ),
         ),

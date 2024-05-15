@@ -103,6 +103,12 @@ class Model {
     this.suggestionTop = 0;
     this.suggestionLeft = 0;
     this.disableSuggestionOverText = localStorage.getItem("disableSuggestionOverText") === "true";
+    this.activeSuggestion = -1;
+    if (history.disableSuggestionOverText) {
+      this.displaySuggestion = true;
+    } else {
+      this.displaySuggestion = false;
+    }
     this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     let scriptTemplatesRawValue = localStorage.getItem("scriptTemplates");
     if (scriptTemplatesRawValue && scriptTemplatesRawValue != "[]") {
@@ -296,12 +302,7 @@ class Model {
     selStart = selEnd - searchTerm.length;
 
     if (ctrlSpace) {
-      if (vm.autocompleteResults && vm.autocompleteResults.results && vm.autocompleteResults.results.length > 0) {
-        let ar = vm.autocompleteResults.results;
-        vm.editor.focus();
-        vm.editor.setRangeText(ar[0].value + ar[0].suffix, selStart, selEnd, "end");
-        vm.editorAutocompleteHandler();
-      }
+      this.selectSuggestion();
       return;
     }
     let contextPath;
@@ -496,6 +497,49 @@ class Model {
       .catch(error => {
         console.error(error);
       });
+  }
+  showSuggestion() {
+    this.displaySuggestion = true;
+    this.didUpdate();
+  }
+  hideSuggestion() {
+    this.displaySuggestion = false;
+    this.didUpdate();
+  }
+  nextSuggestion() {
+    if (this.activeSuggestion < this.autocompleteResults.results.length - 1) {
+      this.activeSuggestion++;
+    } else {
+      this.activeSuggestion = 0;
+    }
+    this.didUpdate();
+  }
+  previousSuggestion() {
+    if (this.activeSuggestion > 0) {
+      this.activeSuggestion--;
+    } else {
+      this.activeSuggestion = this.autocompleteResults.results.length - 1;
+    }
+    this.didUpdate();
+  }
+  selectSuggestion() {
+    if (!this.autocompleteResults || !this.autocompleteResults.results || this.autocompleteResults.results.length == 0) {
+      return;
+    }
+    //by default auto complete the first item
+    let idx = this.activeSuggestion > -1 ? this.activeSuggestion : 0;
+    let ar = this.autocompleteResults.results;
+    let selStart = this.editor.selectionStart;
+    let selEnd = this.editor.selectionEnd;
+    let searchTerm = selStart != selEnd
+      ? this.editor.value.substring(selStart, selEnd)
+      : this.editor.value.substring(0, selStart).match(/[a-zA-Z0-9_.]*$/)[0];
+    selStart = selEnd - searchTerm.length;
+
+    this.editor.focus();
+    this.editor.setRangeText(ar[idx].value + ar[idx].suffix, selStart, selEnd, "end");
+    this.activeSuggestion = -1;
+    this.editorAutocompleteHandler();
   }
   parseClass(source, clsName){
     //todo build hierarchy of block List<Block> with startPosition, endPosition and context
@@ -1218,9 +1262,9 @@ class App extends React.Component {
               h("button", {tabIndex: 2, onClick: this.onCopyScript, title: "Copy script url", className: "copy-id"}, "Export Script")
             ),
           ),
-          h("div", {className: "autocomplete-results", style: model.disableSuggestionOverText ? {} : {top: model.suggestionTop + "px", left: model.suggestionLeft + "px"}},
-            model.autocompleteResults.results.map(r =>
-              h("div", {className: "autocomplete-result", key: r.key ? r.key : r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.title), " ")
+          h("div", {className: "autocomplete-results" + (model.disableSuggestionOverText ? " autocomplete-results-under" : " autocomplete-results-over"), hidden: !model.displaySuggestion, style: model.disableSuggestionOverText ? {} : {top: model.suggestionTop + "px", left: model.suggestionLeft + "px"}},
+            model.autocompleteResults.results.map((r, ri) =>
+              h("div", {className: "autocomplete-result" + (ri == model.activeSuggestion ? " active" : ""), key: r.key ? r.key : r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.title), " ")
             )
           ),
         ),

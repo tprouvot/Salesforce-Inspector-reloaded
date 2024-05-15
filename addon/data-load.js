@@ -776,6 +776,7 @@ export class Editor extends React.Component {
     this.editorAutocompleteEvent = this.editorAutocompleteEvent.bind(this);
     this.onScroll = this.onScroll.bind(this);
     this.processText = this.processText.bind(this);
+    this.handleMouseUp = this.handleMouseUp.bind(this);
     this.numberOfLines = 1;
     this.state = {scrolltop: 0, lineHeight: 0};
   }
@@ -862,99 +863,165 @@ export class Editor extends React.Component {
     // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
     // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50
     let {model} = this.props;
-    if (e.ctrlKey && e.key == " ") {
-      e.preventDefault();
-      model.editorAutocompleteHandler({ctrlSpace: true});
-      model.didUpdate();
-      return;
-    }
     const {value, selectionStart, selectionEnd} = e.currentTarget;
     const tabChar = "  ";//default is 2 spaces
-    if (e.key === "Tab") {
-      //TODO option to select 2 spaces, 4 spaces or tab \t
-      let selectedText = value.substring(selectionStart, selectionEnd);
-      let mod = 0;
-      if (e.shiftKey) {
-        e.preventDefault();
-        //unindent
-        let lineStart = value.substring(0, selectionStart + 1).lastIndexOf("\n") + 1;
-        if (value.substring(lineStart).startsWith(tabChar)) {
-          model.editor.setRangeText("", lineStart, lineStart + 2, "preserve");
-          mod -= tabChar.length;
-        }
-        let breakLineRegEx = /\n/gmi;
-        let breakLineMatch;
-        while ((breakLineMatch = breakLineRegEx.exec(selectedText)) !== null) {
-          lineStart = selectionStart + breakLineMatch.index + breakLineMatch[0].length;
-          if (value.substring(lineStart).startsWith(tabChar)) {
-            model.editor.setRangeText("", lineStart + mod, lineStart + 2 + mod, "preserve");
-            mod -= tabChar.length;
+    if (!model.displaySuggestion) {
+      model.displaySuggestion = true;
+    }
+    switch (e.key) {
+      case " ":
+        if (e.ctrlKey) {
+          e.preventDefault();
+          if ((model.disableSuggestionOverText)) {
+            model.editorAutocompleteHandler({ctrlSpace: true});
+            model.didUpdate();
+          } if (model.displaySuggestion) {
+            model.selectSuggestion();
+          } else {
+            model.showSuggestion();
           }
         }
-      } else if (selectionStart !== selectionEnd) {
+        break;
+      case "ArrowRight":
+      case "ArrowLeft":
+        //naviguation reset active suggestion
+        if (model.displaySuggestion && !model.disableSuggestionOverText && model.activeSuggestion != -1) {
+          model.activeSuggestion = -1;
+        }
+        break;
+      case "ArrowDown":
+        if (model.displaySuggestion && !model.disableSuggestionOverText) {
+          e.preventDefault();
+          model.nextSuggestion();
+        }
+        break;
+      case "ArrowUp":
+        if (model.displaySuggestion && !model.disableSuggestionOverText) {
+          e.preventDefault();
+          model.previousSuggestion();
+        }
+        break;
+      case "Enter":
+        if (model.displaySuggestion && !model.disableSuggestionOverText && model.activeSuggestion != -1) {
+          e.preventDefault();
+          model.selectSuggestion();
+        }
+        break;
+      case "Escape":
+        if (!model.disableSuggestionOverText) {
+          e.preventDefault();
+          model.activeSuggestion = -1;
+          model.hideSuggestion();
+        }
+        break;
+      case "Tab": {
+        //TODO option to select 2 spaces, 4 spaces or tab \t
+        let selectedText = value.substring(selectionStart, selectionEnd);
+        let mod = 0;
         e.preventDefault();
-        //indent
-        let lineStart = value.substring(0, selectionStart + 1).lastIndexOf("\n") + 1;
-        model.editor.setRangeText(tabChar, lineStart, lineStart, "preserve");
-        mod += tabChar.length;
-        let breakLineRegEx = /\n/gmi;
-        let breakLineMatch;
-        while ((breakLineMatch = breakLineRegEx.exec(selectedText)) !== null) {
-          lineStart = selectionStart + breakLineMatch.index + breakLineMatch[0].length;
-          model.editor.setRangeText(tabChar, lineStart + mod, lineStart + mod, "preserve");
+        if (e.shiftKey) {
+          //unindent
+          let lineStart = value.substring(0, selectionStart + 1).lastIndexOf("\n") + 1;
+          if (value.substring(lineStart).startsWith(tabChar)) {
+            model.editor.setRangeText("", lineStart, lineStart + 2, "preserve");
+            mod -= tabChar.length;
+          }
+          let breakLineRegEx = /\n/gmi;
+          let breakLineMatch;
+          while ((breakLineMatch = breakLineRegEx.exec(selectedText)) !== null) {
+            lineStart = selectionStart + breakLineMatch.index + breakLineMatch[0].length;
+            if (value.substring(lineStart).startsWith(tabChar)) {
+              model.editor.setRangeText("", lineStart + mod, lineStart + 2 + mod, "preserve");
+              mod -= tabChar.length;
+            }
+          }
+        } else if (selectionStart !== selectionEnd) {
+          //indent
+          let lineStart = value.substring(0, selectionStart + 1).lastIndexOf("\n") + 1;
+          model.editor.setRangeText(tabChar, lineStart, lineStart, "preserve");
           mod += tabChar.length;
+          let breakLineRegEx = /\n/gmi;
+          let breakLineMatch;
+          while ((breakLineMatch = breakLineRegEx.exec(selectedText)) !== null) {
+            lineStart = selectionStart + breakLineMatch.index + breakLineMatch[0].length;
+            model.editor.setRangeText(tabChar, lineStart + mod, lineStart + mod, "preserve");
+            mod += tabChar.length;
+          }
+        } else if (model.displaySuggestion && !model.disableSuggestionOverText && model.activeSuggestion) {
+          model.selectSuggestion();
+        } else {
+          model.editor.setRangeText(tabChar, selectionStart, selectionStart, "preserve");
         }
-      } else {
-        e.preventDefault();
-        model.editor.setRangeText(tabChar, selectionStart, selectionStart, "preserve");
+        break;
       }
-    } else if (e.key == "[" || e.key == "(" || e.key == "{" || e.key == "'" || e.key == "\"") {
-      e.preventDefault();
-      const openToCloseChar = new Map([
-        ["[", "]"],
-        ["(", ")"],
-        ["{", "}"],
-        ["'", "'"],
-        ["\"", "\""],
-      ]);
-      const closeChar = openToCloseChar.get(e.key);
-      // if quote (or any other start char) before and quote (or any other corresponding end char) right after it do not add quote (or the corresponding end char) but just move cursor after the it
-      if ((e.key === "'" || e.key === "\"") && selectionStart > 0 && selectionEnd < model.editor.value.length && selectionStart === selectionEnd && model.editor.value.substring(selectionStart - 1, selectionStart) == e.key && model.editor.value.substring(selectionEnd, selectionEnd + 1) == closeChar) {
-        model.editor.setRangeText("", selectionEnd + 1, selectionEnd + 1, "end");
-      } else {
-        model.editor.setRangeText(e.key, selectionStart, selectionStart, "end");
-        // add of close quote after open quote happend only if nxt character is space, break line, close parenthesis, close bracket... maybe just if next charactere is not a-z or 0-9
-        // look for char at + 1 because start char is already inserted
-        if (selectionStart != selectionEnd) {
-          model.editor.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
-        } else if (
-          (e.key !== "'" && e.key !== "\"")
-          || (selectionEnd + 1 < model.editor.value.length && /[\w|\s]/.test(model.editor.value.substring(selectionEnd + 1, selectionEnd + 2)))
-          || selectionEnd + 1 === model.editor.value.length) {
-          model.editor.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
+      case "[":
+      case "(":
+      case "{":
+      case "'":
+      case "\"": {
+        e.preventDefault();
+        const openToCloseChar = new Map([
+          ["[", "]"],
+          ["(", ")"],
+          ["{", "}"],
+          ["'", "'"],
+          ["\"", "\""],
+        ]);
+        const closeChar = openToCloseChar.get(e.key);
+        // if quote (or any other start char) before and quote (or any other corresponding end char) right after it do not add quote (or the corresponding end char) but just move cursor after the it
+        if ((e.key === "'" || e.key === "\"") && selectionStart > 0 && selectionEnd < model.editor.value.length && selectionStart === selectionEnd && model.editor.value.substring(selectionStart - 1, selectionStart) == e.key && model.editor.value.substring(selectionEnd, selectionEnd + 1) == closeChar) {
+          model.editor.setRangeText("", selectionEnd + 1, selectionEnd + 1, "end");
+        } else {
+          model.editor.setRangeText(e.key, selectionStart, selectionStart, "end");
+          // add of close quote after open quote happend only if nxt character is space, break line, close parenthesis, close bracket... maybe just if next charactere is not a-z or 0-9
+          // look for char at + 1 because start char is already inserted
+          if (selectionStart != selectionEnd) {
+            model.editor.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
+          } else if (
+            (e.key !== "'" && e.key !== "\"")
+            || (selectionEnd + 1 < model.editor.value.length && /[\w|\s]/.test(model.editor.value.substring(selectionEnd + 1, selectionEnd + 2)))
+            || selectionEnd + 1 === model.editor.value.length) {
+            model.editor.setRangeText(closeChar, selectionEnd + 1, selectionEnd + 1, "preserve");
+          }
         }
+        break;
       }
-    } else if (e.key == "]" || e.key == ")" || e.key == "}") {
-      // if quote (or any other start char) before and quote (or any other corresponding end char) right after it do not add quote (or the corresponding end char) but just move cursor after the it
-      const closeToOpenChar = new Map([
-        ["]", "["],
-        [")", "("],
-        ["}", "{"],
-      ]);
-      const openChar = closeToOpenChar.get(e.key);
-      // if start char before and corresponding end char right after it do not add the corresponding end char but just move cursor after the it
-      if (selectionStart === selectionEnd && model.editor.value.substring(selectionStart - 1, selectionStart) == openChar && model.editor.value.substring(selectionEnd, selectionEnd + 1) == e.key) {
-        e.preventDefault();
-        model.editor.setRangeText("", selectionEnd + 1, selectionEnd + 1, "end");
+      case "]":
+      case ")":
+      case "}": {
+        // if quote (or any other start char) before and quote (or any other corresponding end char) right after it do not add quote (or the corresponding end char) but just move cursor after the it
+        const closeToOpenChar = new Map([
+          ["]", "["],
+          [")", "("],
+          ["}", "{"],
+        ]);
+        const openChar = closeToOpenChar.get(e.key);
+        // if start char before and corresponding end char right after it do not add the corresponding end char but just move cursor after the it
+        if (selectionStart === selectionEnd && model.editor.value.substring(selectionStart - 1, selectionStart) == openChar && model.editor.value.substring(selectionEnd, selectionEnd + 1) == e.key) {
+          e.preventDefault();
+          model.editor.setRangeText("", selectionEnd + 1, selectionEnd + 1, "end");
+        }
+        break;
       }
-    } else if (e.key === "Backspace") {
-      const textBeforeCaret = value.substring(0, selectionStart);
-      let indentRgEx = new RegExp("\n(" + tabChar + ")+$", "g");
-      if (selectionStart == selectionEnd && textBeforeCaret.match(indentRgEx)) {
-        e.preventDefault();
-        model.editor.setRangeText("", selectionStart, selectionStart - tabChar.length, "preserve");
+      case "Backspace": {
+        const textBeforeCaret = value.substring(0, selectionStart);
+        let indentRgEx = new RegExp("\n(" + tabChar + ")+$", "g");
+        if (selectionStart == selectionEnd && textBeforeCaret.match(indentRgEx)) {
+          e.preventDefault();
+          model.editor.setRangeText("", selectionStart, selectionStart - tabChar.length, "preserve");
+        }
+        //TODO if previous input without other keydown (even move)is openChar then delete open and closeChar
+        break;
       }
-      //TODO if previous input without other keydown (even move)is openChar then delete open and closeChar
+    }
+  }
+  handleMouseUp(e) {
+    let {model} = this.props;
+    if (model.disableSuggestionOverText) {
+      this.editorAutocompleteEvent(e);
+    } else if (!model.displaySuggestion) {
+      model.activeSuggestion = -1;
+      model.showSuggestion();
     }
   }
   componentWillUnmount() {
@@ -964,10 +1031,16 @@ export class Editor extends React.Component {
 
   componentDidUpdate() {
     let {model} = this.props;
+    if (model.disableSuggestionOverText) {
+      return;
+    }
     let caretEle = model.editorMirror.getElementsByClassName("editor_caret")[0];
-
-    const rect = caretEle.getBoundingClientRect();
-    model.setSuggestionPosition(rect.top + rect.height, rect.left);
+    if (caretEle) {
+      const rect = caretEle.getBoundingClientRect();
+      model.setSuggestionPosition(rect.top + rect.height, rect.left);
+    } else {
+      model.displaySuggestion = false;
+    }
   }
   processText(src) {
     let {keywordColor, keywordCaseSensitive, model} = this.props;
@@ -1018,8 +1091,12 @@ export class Editor extends React.Component {
         sentence = keywordMatch[0];
         bracketIndex++;
       } else if (keywordMatch[0] == ")" || keywordMatch[0] == "]" || keywordMatch[0] == "}") {
-        bracketIndex--;
-        color = colorBrackets[bracketIndex % 3];
+        if (bracketIndex == 0) {
+          color = "red";//error
+        } else {
+          bracketIndex--;
+          color = colorBrackets[bracketIndex % 3];
+        }
         sentence = keywordMatch[0];
       } else {
         color = keywordColor.get(keywordMatch[1].toLocaleLowerCase());
@@ -1076,7 +1153,7 @@ export class Editor extends React.Component {
         ),
         h("div", {className: "editor-wrapper"},
           h("div", {ref: "editorMirror", className: "editor_container_mirror"}, highlighted.map(s => h("span", s.attributes, s.value))),
-          h("textarea", {id: "editor", autoComplete: "off", autoCorrect: "off", spellCheck: "false", autoCapitalize: "off", className: "editor_textarea", ref: "editor", onScroll: this.onScroll, onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.editorAutocompleteEvent, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeyDown: this.handlekeyDown})
+          h("textarea", {id: "editor", autoComplete: "off", autoCorrect: "off", spellCheck: "false", autoCapitalize: "off", className: "editor_textarea", ref: "editor", onScroll: this.onScroll, onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.handleMouseUp, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeyDown: this.handlekeyDown})
         )
       )
     );

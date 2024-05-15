@@ -120,8 +120,8 @@ textarea {
   border: 1px solid #DDDBDA;
 }
 
-textarea[hidden] {
-  display: none;
+textarea[hidden], .autocomplete-results[hidden] {
+  display: none !important;
 }
 
 .help-text {
@@ -561,7 +561,9 @@ button.toggle .button-icon {
 }
 
 .autocomplete-results a:hover,
-.autocomplete-results a:active {
+.autocomplete-results a:active,
+.autocomplete-results .active a
+ {
   background-color: #eff1f5;
   color: #005fb2;
 }

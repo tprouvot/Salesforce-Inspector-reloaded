@@ -744,6 +744,9 @@ class App extends React.Component {
 
   downloadFile() {
     let {model} = this.props;
+    if (model.recordId == null){
+      return;
+    }
     let downloadLink = document.createElement("a");
     downloadLink.download = model.recordId + ".txt";
     let BOM = "\uFEFF";
@@ -781,6 +784,7 @@ class App extends React.Component {
             h("input", {id: "search-text", ref: "search", placeholder: "Search a word", onKeyPress: this.onKeypress, type: "search", value: model.logSearch, onInput: this.onLogSearchInput})
           ),
           h("a", {href: "#", onClick: this.downloadFile, title: "Download Log"}, "Download Log"),
+          h(FileUpload, {model})
         ),
         h(LogTabNavigation, {model})
       )
@@ -996,7 +1000,7 @@ class Editor extends React.Component {
     }*/
 
     //return h("div", {className: "editor", ref: "scroller", onScroll: onScrollerScroll, style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 160) + "px"}},
-    return h("div", {className: "editor", ref: "scroller", style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 220) + "px"}},
+    return h("div", {className: "editor", ref: "scroller", style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 255) + "px"}},
       //h("div", {className: "scrolled"}, style: {height: scrolledHeight, top: scrolledTop}},
       h("div", {className: "line-numbers", style: {lineHeight: rowHeight + "px"}},
         //Array(lastRowIdx - firstRowIdx).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}, i + firstRowIdx))
@@ -1015,6 +1019,52 @@ class Editor extends React.Component {
     );
   }
 }
+
+class FileUpload extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      logFile: null,
+    };
+    this.onFileChange = this.onFileChange.bind(this);
+    this.onFileUpload = this.onFileUpload.bind(this);
+  }
+
+  onFileChange(event) {
+    this.setState({logFile: event.target.files[0]});
+  }
+
+  onFileUpload() {
+    let {model} = this.props;
+
+    if (this.state.logFile == null) {
+      console.log('Please select a log file to load.')
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.addEventListener('load', (event) => {
+      model.logData = event.target.result;
+      model.EnrichLog = [{value: model.logData}];
+      model.parseLog(model.logData);
+      model.didUpdate();
+    });
+    reader.readAsText(this.state.logFile);
+  }
+
+  render() {
+    return (
+      h("div", {},
+        h("h3", {}, "Upload a previous log file"),
+        h("div", {},
+          h("input", {type: "file", onChange: this.onFileChange}),
+          h("button", {onClick: this.onFileUpload}, "Upload!"),
+        )
+      )
+    );
+  }
+}
+
 
 {
   let args = new URLSearchParams(location.search.slice(1));

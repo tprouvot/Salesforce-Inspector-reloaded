@@ -1046,6 +1046,7 @@ class App extends React.Component {
     this.onSetClientId = this.onSetClientId.bind(this);
     this.onStopExecute = this.onStopExecute.bind(this);
     this.onClick = this.onClick.bind(this);
+    this.openEmptyLog = this.openEmptyLog.bind(this);
   }
   onClick(){
     let {model} = this.props;
@@ -1154,6 +1155,12 @@ class App extends React.Component {
     model.stopExecute();
     model.didUpdate();
   }
+  openEmptyLog() {
+    let queryEmptyLogArgs = new URLSearchParams();
+    let {model} = this.props;
+    queryEmptyLogArgs.set("host", model.sfHost);
+    window.open("log.html?" + queryEmptyLogArgs, "_blank", "noreferrer");
+  }
   componentDidMount() {
     let {model} = this.props;
     let queryApexClass = "SELECT Id, Name, NamespacePrefix FROM ApexClass";
@@ -1175,7 +1182,6 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
-
 
     function resize() {
       model.winInnerHeight = innerHeight;
@@ -1289,6 +1295,7 @@ class App extends React.Component {
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.executeStatus),
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExecute}, "Stop polling logs"),
+            h("button", {onClick: this.openEmptyLog}, "Open empty logs"),
           )
         ),
         h("textarea", {id: "result-text", readOnly: true, value: model.executeError || "", hidden: model.executeError == null}),

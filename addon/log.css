@@ -189,6 +189,8 @@
   .editor {
     overflow: auto;
     display: flex;
+    border-radius: 0.25rem;
+    border: 1px solid #DDDBDA;
   }
   /*.scrolled {
     display: flex;
@@ -200,8 +202,6 @@
     word-wrap: normal;
     font-size: .8125rem;
     padding: 8px 10px;
-    border-radius: 0.25rem;
-    border: 1px solid #DDDBDA;
     float: left;
     clear: left; /*or display: inline-block; */
     white-space: pre;

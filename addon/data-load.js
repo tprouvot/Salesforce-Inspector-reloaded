@@ -778,6 +778,7 @@ export class Editor extends React.Component {
     this.onScroll = this.onScroll.bind(this);
     this.processText = this.processText.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
+    this.onBlur = this.onBlur.bind(this);
     this.numberOfLines = 1;
     this.state = {scrolltop: 0, lineHeight: 0};
   }
@@ -1025,6 +1026,17 @@ export class Editor extends React.Component {
       model.showSuggestion();
     }
   }
+  onBlur(e) {
+    let {model} = this.props;
+    if (!model.disableSuggestionOverText) {
+      model.activeSuggestion = -1;
+      if (e.relatedTarget && e.relatedTarget.parentElement && e.relatedTarget.parentElement.classList.contains("autocomplete-result")) {
+        model.displaySuggestion = false;//to avoid didUpdate that will be done in click of suggestion
+      } else {
+        model.hideSuggestion();
+      }
+    }
+  }
   componentWillUnmount() {
     //let {model} = this.props;
     //TODO
@@ -1154,7 +1166,7 @@ export class Editor extends React.Component {
         ),
         h("div", {className: "editor-wrapper"},
           h("div", {ref: "editorMirror", className: "editor_container_mirror"}, highlighted.map(s => h("span", s.attributes, s.value))),
-          h("textarea", {id: "editor", autoComplete: "off", autoCorrect: "off", spellCheck: "false", autoCapitalize: "off", className: "editor_textarea", ref: "editor", onScroll: this.onScroll, onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.handleMouseUp, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeyDown: this.handlekeyDown})
+          h("textarea", {id: "editor", autoComplete: "off", autoCorrect: "off", spellCheck: "false", autoCapitalize: "off", className: "editor_textarea", ref: "editor", onScroll: this.onScroll, onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.handleMouseUp, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeyDown: this.handlekeyDown, onBlur: this.onBlur})
         )
       )
     );

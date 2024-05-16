@@ -1,6 +1,5 @@
 "use strict";
 let sfHost;
-let browser = browser === "undefined" ? chrome : browser;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Perform cookie operations in the background page, because not all foreground pages have access to the cookie API.
@@ -47,7 +46,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
   if (request.message == "createWindow") {
-    browser.windows.create({
+    const brow = typeof browser === "undefined" ? chrome : browser;
+    brow.windows.create({
       url: request.url,
       incognito: request.incognito ?? false
     });

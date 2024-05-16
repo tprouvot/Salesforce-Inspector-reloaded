@@ -68,6 +68,9 @@ body,
 a:visited {
     color: #0176d3;
 }
+a > span {
+    color: #0176d3;
+}
 
 .main {
     flex: 1;

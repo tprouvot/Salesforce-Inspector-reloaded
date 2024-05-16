@@ -1980,6 +1980,20 @@ class App extends React.Component {
   }
   render() {
     let {model} = this.props;
+    let suggestionHelper = "";
+    if (!model.disableSuggestionOverText) {
+      if (model.displaySuggestion) {
+        if (model.autocompleteResults.isField && model.activeSuggestion == -1) {
+          suggestionHelper = " Press Ctrl+Space to insert all fields | Esc to hide suggestions";
+        } else if (model.autocompleteResults.isFieldValue && model.activeSuggestion == -1) {
+          suggestionHelper = " Press Ctrl+Space to display values used | Esc to hide suggestions";
+        } else {
+          suggestionHelper = " Press Esc to hide suggestions";
+        }
+      } else {
+        suggestionHelper = " Press Ctrl+Space to display suggestions";
+      }
+    }
     let keywordColor = new Map([["select", "blue"], ["from", "blue"], ["where", "blue"], ["group", "blue"], ["by", "blue"],
       ["order", "blue"], ["limit", "blue"], ["and", "blue"], ["or", "blue"], ["not", "blue"], ["like", "blue"]]);
     let keywordColorSosl = new Map([["find", "blue"], ["in", "blue"], ["all", "blue"], ["fields", "blue"], ["name", "blue"],
@@ -2057,7 +2071,7 @@ class App extends React.Component {
         h(Editor, {model, keywordColor: model.isSearchMode() ? keywordColorSosl : keywordColor, keywordCaseSensitive: false}),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
-            h("span", {}, model.autocompleteResults.title + (model.disableSuggestionOverText ? "" : " Press Ctrl+Space")),
+            h("span", {}, model.autocompleteResults.title + suggestionHelper),
             h("div", {className: "flex-right"},
               h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Export"),
               h("button", {tabIndex: 2, onClick: this.onFormatQuery, title: "Format query"}, "Format Query"),

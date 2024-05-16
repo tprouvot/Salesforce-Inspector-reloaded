@@ -1013,7 +1013,7 @@ export class Editor extends React.Component {
         break;
       }
     }
-    if (!model.displaySuggestion) {
+    if (!model.displaySuggestion && e.key != "Control" && e.key != "Shift" && e.key != "Alt" && e.key != "Meta" && e.key != "Escape") {
       model.displaySuggestion = true;
     }
   }

@@ -1195,6 +1195,14 @@ class App extends React.Component {
 
   render() {
     let {model} = this.props;
+    let suggestionHelper = "";
+    if (!model.disableSuggestionOverText) {
+      if (model.displaySuggestion) {
+        suggestionHelper = " Press Esc to hide suggestions";
+      } else {
+        suggestionHelper = " Press Ctrl+Space to display suggestions";
+      }
+    }
     let keywordColor = new Map([["do", "violet"], ["public", "blue"], ["private", "blue"], ["global", "blue"], ["class", "blue"], ["static", "blue"],
       ["interface", "blue"], ["extends", "blue"], ["while", "violet"], ["for", "violet"], ["try", "violet"], ["catch", "violet"],
       ["finally", "violet"], ["extends", "violet"], ["throw", "violet"], ["new", "violet"], ["if", "violet"], ["else", "violet"]]);
@@ -1256,7 +1264,7 @@ class App extends React.Component {
         h(Editor, {model, keywordColor, keywordCaseSensitive: true}),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
-            h("span", {}, model.autocompleteResults.title + (model.disableSuggestionOverText ? "" : " Press Ctrl+Space"),
+            h("span", {}, model.autocompleteResults.title + suggestionHelper),
             h("div", {className: "flex-right"},
               h("button", {tabIndex: 1, onClick: this.onExecute, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Execute"),
               h("button", {tabIndex: 2, onClick: this.onCopyScript, title: "Copy script url", className: "copy-id"}, "Export Script")

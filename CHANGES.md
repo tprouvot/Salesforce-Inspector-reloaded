@@ -5,6 +5,7 @@
 - Add setup menu items 'Trusted URLs' and 'Trusted URL and Browser Policy Violations' to shortcut links
 - Ability to quit popup with escape button [feature 378](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/378) (contribution by [Gerald Gramier](https://github.com/gramier))
 - Add option to customize org favicon [feature 180](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/180)
+- Add option to hide object name columns in query results from Data Export page [feature 352](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/352)
 
 ## Version 1.23
 

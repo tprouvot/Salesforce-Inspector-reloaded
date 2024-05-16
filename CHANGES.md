@@ -2,9 +2,53 @@
 
 ## Version 1.26
 
+> [!IMPORTANT]
+> A new editor (query and script) is available in apex runner and data export with new features:
+> - Inplace suggestions (can be disable in option)
+> - Modular syntax highlighting for APEX, SOQL, and SOSL
+> - Automatic indent on new lines
+> - Indent selected text or lines with tab key
+> - Parentheses, curly brace, brackets, or quotes
+>   - Wrap selected text
+>   - Automatic close completion
+
+
+### Editor
+
+- Migrate apex runner to new editor [issue 85](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/85)
+- Add option to show/hide proposal with ctrl+space shortcut [issue 89](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/89)
+- Highlight keywords [issue 62](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/62)
+- Move suggestion over text area with list as regular IDE do [issue 41](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/41)
+- Improve quote in editor [issue 73](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/73)
+- Missing close/open char (parenthesis, bracket, curly brace), corresponding open/close char must be in red. [issue 90](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/90)
+
+### Popup
+
 - Escape to close popup [issue 71](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/71)
-- Manage custom links in option
+- Resize popup window [issue 77](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/77)
+
+
+### Option
+
+- Manage custom links in option [issue 91](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/91)
+- Enhance option component (template, history, ...) [issue 80](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/80)
+
+### Table
+
+- Migrate data-loader to new table react component [issue 75](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/75)
+
+### Flow
+
+- Access flow version details from flow builder [issue 86](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/86)
 - Clear old flow versions inside FlowBuilder [issue 50](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/50)
+
+### Log and Profile
+
+- Upload a previous log file [issue 103](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/103)
+
+### Other
+
+- Navigation bugs: custom settings and knowledge link [issue 91](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/91)
 
 ## Version 1.25
 

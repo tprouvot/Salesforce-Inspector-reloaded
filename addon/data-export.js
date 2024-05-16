@@ -791,7 +791,7 @@ class Model {
     // If we are on the right hand side of a comparison operator, autocomplete field values
     //opérator are = < > <= >= != includes() excludes() in like
     // \s*[<>=!]+\s*('?[^'\s]*)$
-    let isFieldValue = query.substring(0, selStart).match(/(\s*[<>=!]+|\s+(includes|excludes|in)\s*\(|\s+like)\s*\(?('?[^'\s]*)$/i);
+    let isFieldValue = query.substring(0, selStart).match(/(\s*[<>=!]+|(?:\s+not)?\s+(includes|excludes|in)\s*\(|\s+like)\s*\(?(?:[^,]*,)*('?[^'\s]*)$/i);
     let fieldName = null;
     if (isFieldValue) {
       let fieldEnd = selStart - isFieldValue[0].length;

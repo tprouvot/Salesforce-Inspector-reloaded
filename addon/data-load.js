@@ -1023,7 +1023,8 @@ export class Editor extends React.Component {
       this.editorAutocompleteEvent(e);
     } else if (!model.displaySuggestion) {
       model.activeSuggestion = -1;
-      model.showSuggestion();
+      // disable show suggestion on click
+      //model.showSuggestion();
     }
   }
   onBlur(e) {

@@ -1256,7 +1256,7 @@ class App extends React.Component {
         h(Editor, {model, keywordColor, keywordCaseSensitive: true}),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
-            h("span", {}, model.autocompleteResults.title),
+            h("span", {}, model.autocompleteResults.title + (model.disableSuggestionOverText ? "" : " Press Ctrl+Space"),
             h("div", {className: "flex-right"},
               h("button", {tabIndex: 1, onClick: this.onExecute, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Execute"),
               h("button", {tabIndex: 2, onClick: this.onCopyScript, title: "Copy script url", className: "copy-id"}, "Export Script")

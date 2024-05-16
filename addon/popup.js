@@ -11,11 +11,7 @@ if (typeof browser === "undefined") {
 {
   parent.postMessage({
     insextInitRequest: true,
-    iFrameLocalStorage: {
-      popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
-      popupArrowPosition: JSON.parse(localStorage.getItem("popupArrowPosition")),
-      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder"))
-    }
+    iFrameLocalStorage: JSON.parse(JSON.stringify(localStorage))
   }, "*");
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent) {
@@ -27,6 +23,12 @@ if (typeof browser === "undefined") {
       }
     }
   });
+  chrome.runtime.onMessage.addListener((request) => {
+    if (request.msg === "shortcut_pressed") {
+      parent.postMessage({insextOpenPopup: true}, "*");
+    }
+  }
+  );
 }
 
 function closePopup() {
@@ -53,7 +55,6 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
       inInspector,
       addonVersion
     }), document.getElementById("root"));
-
   });
 }
 
@@ -146,13 +147,18 @@ class App extends React.PureComponent {
       "o": ["tab", "objectTab"],
       "u": ["tab", "userTab"],
       "s": ["tab", "shortcutTab"],
-      "r": ["tab", "orgTab"]
+      "r": ["tab", "orgTab"],
+      "Escape": ["", "quit"]
     };
     if (!actionMap[e.key]) {
       return;
     }
     e.preventDefault();
     const [action, target] = actionMap[e.key];
+    if (target === "quit") {
+      closePopup();
+      return;
+    }
     if (action === "all") {
       refs.showAllDataBox.refs?.showAllDataBoxSObject?.[target]();
     } else if (action === "click" && refs[target]) {
@@ -186,6 +192,9 @@ class App extends React.PureComponent {
       });
     }
   }
+  isMac() {
+    return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
+  }
   getBannerUrlAction(sessionError, sfHost, clientId, browser) {
     let url;
     let title;
@@ -210,7 +219,7 @@ class App extends React.PureComponent {
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
-    const browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
+    const browser = navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";
     const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
     const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
     const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
@@ -342,7 +351,7 @@ class App extends React.PureComponent {
           )
         ),
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
-          h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
+          h("div", {className: "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
@@ -353,8 +362,8 @@ class App extends React.PureComponent {
               value: apiVersionInput.split(".0")[0]
             })
           ),
-          h("div", {className: "slds-col slds-size_4-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+          h("div", {className: "slds-col slds-size_5-of-12 slds-text-align_left"},
+            h("span", {className: "footer-small-text"}, `${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"} to open`)
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
@@ -638,6 +647,7 @@ class AllDataBoxUsers extends React.PureComponent {
 
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
+    userQuery = userQuery.trim();
     if (!userQuery) {
       return [];
     }
@@ -1091,7 +1101,7 @@ class AllDataBoxShortcut extends React.PureComponent {
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
             } else if (rec.attributes.type === "Network"){
-              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=0DB26000000Ak2X" + rec.Id;
+              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=" + rec.Id;
               rec.label = rec.Name;
               let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
               rec.name = rec.Id + url;
@@ -1435,7 +1445,7 @@ class UserDetails extends React.PureComponent {
   }
 
   render() {
-    let {user, linkTarget, sfHost} = this.props;
+    let {user, linkTarget} = this.props;
     return (
       h("div", {className: "all-data-box-inner"},
         h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},
@@ -1981,28 +1991,32 @@ class Autocomplete extends React.PureComponent {
   }
   handleFocus() {
     let {recentItems} = this.props;
-    sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+50").then(res => {
+    sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+100").then(res => {
+      let itemsIds = new Set();
       res.records.forEach(recentItem => {
-        recentItems.push({key: recentItem.Id,
-          value: {recordId: recentItem.Id, isRecent: true, sobject: {keyPrefix: recentItem.Id.slice(0, 3), label: recentItem.Type, name: recentItem.Name}},
-          element: [
-            h("div", {className: "autocomplete-item-main", key: "main"},
-              recentItem.Name,
-            ),
-            h("div", {className: "autocomplete-item-sub", key: "sub"},
-              h(MarkSubstring, {
-                text: recentItem.Type,
-                start: -1,
-                length: 0
-              }),
-              " • ",
-              h(MarkSubstring, {
-                text: recentItem.Id,
-                start: -1,
-                length: 0
-              })
-            )
-          ]});
+        if (!itemsIds.has(recentItem.Id)){
+          recentItems.push({key: recentItem.Id,
+            value: {recordId: recentItem.Id, isRecent: true, sobject: {keyPrefix: recentItem.Id.slice(0, 3), label: recentItem.Type, name: recentItem.Name}},
+            element: [
+              h("div", {className: "autocomplete-item-main", key: "main"},
+                recentItem.Name,
+              ),
+              h("div", {className: "autocomplete-item-sub", key: "sub"},
+                h(MarkSubstring, {
+                  text: recentItem.Type,
+                  start: -1,
+                  length: 0
+                }),
+                " • ",
+                h(MarkSubstring, {
+                  text: recentItem.Id,
+                  start: -1,
+                  length: 0
+                })
+              )
+            ]});
+          itemsIds.add(recentItem.Id);
+        }
       });
       this.setState({recentItems, showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
     });

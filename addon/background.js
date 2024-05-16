@@ -1,8 +1,6 @@
 "use strict";
-
-if (typeof browser === "undefined") {
-  var browser = chrome;
-}
+let sfHost;
+let browser = browser === "undefined" ? chrome : browser;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Perform cookie operations in the background page, because not all foreground pages have access to the cookie API.
@@ -37,6 +35,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
   if (request.message == "getSession") {
+    sfHost = request.sfHost;
     chrome.cookies.get({url: "https://" + request.sfHost, name: "sid", storeId: sender.tab.cookieStoreId}, sessionCookie => {
       if (!sessionCookie) {
         sendResponse(null);
@@ -55,6 +54,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   return false;
 });
+
+chrome.commands?.onCommand.addListener((command) => {
+  if (command !== "open-popup"){
+    chrome.tabs.create({
+      url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
+    });
+  } else {
+    chrome.runtime.sendMessage({
+      msg: "shortcut_pressed", command, sfHost
+    });
+  }
+});
+
 chrome.runtime.onInstalled.addListener(({reason}) => {
   if (reason === "install") {
     chrome.tabs.create({

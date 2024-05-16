@@ -29,7 +29,6 @@ function initButton(sfHost, inInspector) {
 
   addFlowScrollability();
 
-
   function addFlowScrollability(popupEl) {
     const currentUrl = window.location.href;
     // Check the current URL for the string "builder_platform_interaction"
@@ -81,37 +80,69 @@ function initButton(sfHost, inInspector) {
     }
   }
 
+  // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
+  function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos}) {
+    o = o || "vertical"; // Default to vertical
+    const isVertical = o === "vertical";
+    pos = pos ? Math.min(95, pos) + "%" : "122px";
+    const [posStyle, oStyle] = isVertical ? ["top", "right"] : ["left", "bottom"];
+    const imgSrc = isVertical
+      ? "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAPCAYAAADd/14OAAAA40lEQVQoz2P4//8/AzpWzGj6L59U/V8urgxMg/g4FUn6J/+X9E38LxWc8V8htR67IpCkuGfMfxCQjSpENRFFkXvk/1+/foGxQloDSD0DVkVfvnyBY7hCdEVv3rxBwXCFIIdKh2WDFT1+/BgDo1qd2fL/1q1bWDFcoW5xz3/Xppn/oycu/X/x4kUMDFeoWdD136R8wn+f9rlgxSdOnEDBKFajK96/fz8coyjEpnj79u1gjKEQXXFE/+L/Gzdu/G9WMfG/am4HZlzDFAf3LPwfOWEJWBPIwwzYUg9MsXXNFDAN4gMAmASShdkS4AcAAAAASUVORK5CYII="
+      : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAKCAYAAABrGwT5AAAAAXNSR0IArs4c6QAAAFBlWElmTU0AKgAAAAgAAgESAAMAAAABAAEAAIdpAAQAAAABAAAAJgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAD6ADAAQAAAABAAAACgAAAADdC3pnAAABWWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNi4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyI+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgoZXuEHAAABKElEQVQoFWNgwAI0C7r+6xb3/AdJKaTW/1fMaAKz0ZUyoguANHKzszEIcnMy3Hn+muHX2+cMLDwCDExs7Az3Z9ShqGdC1gzTKCHAyyDGz8OwszCM4c/Hdwy/P75l+PfrJwO6C+CakTXyc3EwlDnogM09M6eL4e+Xj1gNAGtG15hrrozsIIarSydjNYARXWOKnhQDJycnBubg4GBQDk5lYObhZ2DlFwaHARMocORFBRl4ONgYYtSEUGxE5zzevJDh77cvwEB8AQ4DJnZWFgY2FmaGSCU+dLVY+S+2LWZg+PeP4f+f3wwsP3//Yfj8/SdD6/G3DK/evceqAVkQFHiMwGhjZGFlYPn68xfDwzfvGX78+sPwYFYDSjwia4KxQdHF/JePgZGZmQEASqV1t0W3n+oAAAAASUVORK5CYII=";
+    const btnClass = `insext-btn-${o}`;
+    return {pos, posStyle, oStyle, imgSrc, btnClass};
+  }
+
   function setRootCSSProperties(rootElement, buttonElement) {
-    let popupArrowOrientation = iFrameLocalStorage.popupArrowOrientation ? iFrameLocalStorage.popupArrowOrientation : "vertical";
-    let popupArrowPosition = iFrameLocalStorage.popupArrowPosition ? (iFrameLocalStorage.popupArrowPosition + "%") : "122px";
+    const p = calcPopup(iFrameLocalStorage);
     let img = document.createElement("img");
-    if (popupArrowOrientation == "vertical") {
-      rootElement.style.right = 0;
-      rootElement.style.top = popupArrowPosition;
-      img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAPCAYAAADd/14OAAAA40lEQVQoz2P4//8/AzpWzGj6L59U/V8urgxMg/g4FUn6J/+X9E38LxWc8V8htR67IpCkuGfMfxCQjSpENRFFkXvk/1+/foGxQloDSD0DVkVfvnyBY7hCdEVv3rxBwXCFIIdKh2WDFT1+/BgDo1qd2fL/1q1bWDFcoW5xz3/Xppn/oycu/X/x4kUMDFeoWdD136R8wn+f9rlgxSdOnEDBKFajK96/fz8coyjEpnj79u1gjKEQXXFE/+L/Gzdu/G9WMfG/am4HZlzDFAf3LPwfOWEJWBPIwwzYUg9MsXXNFDAN4gMAmASShdkS4AcAAAAASUVORK5CYII=";
-      buttonElement.classList.add("insext-btn-vertical");
-    } else {
-      rootElement.style.bottom = "0px";
-      rootElement.style.right = popupArrowPosition;
-      img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAKCAYAAABrGwT5AAAAAXNSR0IArs4c6QAAAFBlWElmTU0AKgAAAAgAAgESAAMAAAABAAEAAIdpAAQAAAABAAAAJgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAD6ADAAQAAAABAAAACgAAAADdC3pnAAABWWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNi4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyI+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgoZXuEHAAABKElEQVQoFWNgwAI0C7r+6xb3/AdJKaTW/1fMaAKz0ZUyoguANHKzszEIcnMy3Hn+muHX2+cMLDwCDExs7Az3Z9ShqGdC1gzTKCHAyyDGz8OwszCM4c/Hdwy/P75l+PfrJwO6C+CakTXyc3EwlDnogM09M6eL4e+Xj1gNAGtG15hrrozsIIarSydjNYARXWOKnhQDJycnBubg4GBQDk5lYObhZ2DlFwaHARMocORFBRl4ONgYYtSEUGxE5zzevJDh77cvwEB8AQ4DJnZWFgY2FmaGSCU+dLVY+S+2LWZg+PeP4f+f3wwsP3//Yfj8/SdD6/G3DK/evceqAVkQFHiMwGhjZGFlYPn68xfDwzfvGX78+sPwYFYDSjwia4KxQdHF/JePgZGZmQEASqV1t0W3n+oAAAAASUVORK5CYII=";
-      buttonElement.classList.add("insext-btn-horizontal");
-    }
+    img.src = p.imgSrc;
+    rootElement.style[p.posStyle] = p.pos;
+    rootElement.style[p.oStyle] = 0;
+    buttonElement.classList.add(p.btnClass);
     buttonElement.appendChild(img);
+  }
+
+  function setFavicon(sfHost){
+    let fav = iFrameLocalStorage[sfHost + "_customFavicon"];
+    if (iFrameLocalStorage.useCustomFavicon && fav){
+      let link = document.createElement("link");
+      link.setAttribute("rel", "icon");
+      link.orgType = "image/x-icon";
+      if (fav.indexOf("http") == -1){
+        fav = chrome.runtime.getURL("images/favicons/" + fav + ".png");
+      }
+      link.href = fav;
+      document.head.appendChild(link);
+    }
   }
 
   function loadPopup() {
     btn.addEventListener("click", () => {
-      if (!rootEl.classList.contains("insext-active")) {
-        openPopup();
-      } else {
-        closePopup();
-      }
+      const isInactive = !rootEl.classList.contains("insext-active");
+      togglePopup(isInactive);
     });
 
     let popupSrc = chrome.runtime.getURL("popup.html");
     let popupEl = document.createElement("iframe");
-    popupEl.className = "insext-popup";
-    popupEl.classList.add(localStorage.getItem("popupArrowOrientation") == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
+    function getOrientation(source) {
+      const o = (source === "localStorage")
+        ? localStorage.getItem("popupArrowOrientation")
+        : iFrameLocalStorage.popupArrowOrientation;
+      return o || "vertical";
+    }
+    // return a value for direction popup will expand, based on position and orientation
+    function calcDirection(pos, o) {
+      if (o === "horizontal") {
+        return pos < 8 ? "right" : pos >= 90 ? "left" : "centered";
+      }
+      return pos >= 55 ? "up" : null;
+    }
+    function resetPopupClass(o) {
+      popupEl.className = "insext-popup";
+      popupEl.classList.add(`insext-popup-${o}`);
+    }
+    resetPopupClass(getOrientation("localStorage"));
     popupEl.src = popupSrc;
     addEventListener("message", e => {
       if (e.source != popupEl.contentWindow) {
@@ -120,22 +151,16 @@ function initButton(sfHost, inInspector) {
       if (e.data.insextInitRequest) {
         // Set CSS classes for arrow button position
         iFrameLocalStorage = e.data.iFrameLocalStorage;
-        popupEl.classList.add(iFrameLocalStorage.popupArrowOrientation == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
-        if (iFrameLocalStorage.popupArrowOrientation == "horizontal") {
-          if (iFrameLocalStorage.popupArrowPosition < 8) {
-            popupEl.classList.add("insext-popup-horizontal-left");
-          } else if (iFrameLocalStorage.popupArrowPosition >= 90) {
-            popupEl.classList.add("insext-popup-horizontal-right");
-          } else {
-            popupEl.classList.add("insext-popup-horizontal-centered");
-          }
-        } else if (iFrameLocalStorage.popupArrowOrientation == "vertical") {
-          if (iFrameLocalStorage.popupArrowPosition >= 55) {
-            popupEl.classList.add("insext-popup-vertical-up");
-          }
+        const {popupArrowPosition: pos} = iFrameLocalStorage;
+        const o = getOrientation("iframe");
+        const dir = calcDirection(pos, o);
+        resetPopupClass(o);
+        if (dir) {
+          popupEl.classList.add(`insext-popup-${o}-${dir}`);
         }
         setRootCSSProperties(rootEl, btn);
         addFlowScrollability(popupEl);
+        setFavicon(sfHost);
         popupEl.contentWindow.postMessage({
           insextInitResponse: true,
           sfHost,
@@ -144,9 +169,8 @@ function initButton(sfHost, inInspector) {
           inInspector,
         }, "*");
       }
-      if (e.data.insextClosePopup) {
-        closePopup();
-      }"field-api-name";
+
+      togglePopup(e.data.insextOpenPopup, e.data.insextClosePopup);
       if (e.data.insextShowStdPageDetails) {
         showStdPageDetails(e.data.insextData, e.data.insextAllFieldSetupLinks);
       }
@@ -220,6 +244,13 @@ function initButton(sfHost, inInspector) {
       removeEventListener("click", outsidePopupClick);
       popupEl.blur();
     }
+    function togglePopup(openCondition, closeCondition = !openCondition) {
+      if (openCondition) {
+        openPopup();
+      } else if (closeCondition) {
+        closePopup();
+      }
+    }
     function outsidePopupClick(e) {
       // Close the popup when clicking outside it
       if (!rootEl.contains(e.target)) {
@@ -227,5 +258,4 @@ function initButton(sfHost, inInspector) {
       }
     }
   }
-
 }

@@ -5,7 +5,7 @@
   See https://www.lightningdesignsystem.com/resources/downloads/ for latest version and archives
 
   Current versions used: 2.21.1
-  - 2.21.5 for AlertBanner
+  - 2.21.5 for AlertBanner, Tooltips, Nubbins
 */
 
 .slds-wcag {
@@ -4573,69 +4573,56 @@ a.slds-button--inverse:focus{
 }
 
 /* Size */
-
 .slds-size_1-of-12,
 .slds-size--1-of-12{
   width:8.3333333333%;
 }
-
 .slds-size_2-of-12,
 .slds-size--2-of-12{
   width:16.6666666667%;
 }
-
 .slds-size_3-of-12,
 .slds-size--3-of-12{
   width:25%;
 }
-
 .slds-size_4-of-12,
 .slds-size--4-of-12{
   width:33.3333333333%;
 }
-
 .slds-size_5-of-12,
 .slds-size--5-of-12{
   width:41.6666666667%;
 }
-
 .slds-size_6-of-12,
 .slds-size--6-of-12{
   width:50%;
 }
-
 .slds-size_7-of-12,
 .slds-size--7-of-12{
   width:58.3333333333%;
 }
-
 .slds-size_8-of-12,
 .slds-size--8-of-12{
   width:66.6666666667%;
 }
-
 .slds-size_9-of-12,
 .slds-size--9-of-12{
   width:75%;
 }
-
 .slds-size_10-of-12,
 .slds-size--10-of-12{
   width:83.3333333333%;
 }
-
 .slds-size_11-of-12,
 .slds-size--11-of-12{
   width:91.6666666667%;
 }
-
 .slds-size_12-of-12,
 .slds-size--12-of-12{
   width:100%;
 }
 
 /* Tabs */
-
 @media (min-width: 48em){
   .slds-tabs_default .slds-tabs__item + .slds-tabs__item,
 .slds-tabs--default .slds-tabs__item + .slds-tabs__item{
@@ -4949,7 +4936,6 @@ a.slds-button--inverse:focus{
 .slds-tabs_mobile__item:last-child{
   border-bottom:1px solid var(--slds-g-color-border-base-1, #e5e5e5);
 }
-
 .slds-tabs_mobile + .slds-tabs_mobile .slds-tabs_mobile__item:first-child{
   border-top:0;
 }
@@ -4976,7 +4962,6 @@ a.slds-button--inverse:focus{
       -ms-flex-align:center;
           align-items:center;
 }
-
 .slds-tabs_default .slds-has-overflow .slds-tabs__nav-scroller_inner,
 .slds-tabs_default .slds-has-overflow .slds-tabs__nav-scroller--inner,
 .slds-tabs--default .slds-has-overflow .slds-tabs__nav-scroller_inner,
@@ -4994,7 +4979,6 @@ a.slds-button--inverse:focus{
 }
 
 /* Text */
-
 .slds-text-title_bold{
     font-size:0.875rem;
     font-weight:700;
@@ -5013,8 +4997,6 @@ a.slds-button--inverse:focus{
 }
 
 /* Theme */
-.slds-theme {
-}
 .slds-theme_default {
   background-color: var(--slds-g-color-neutral-base-100, white);
   color: var(--slds-g-color-neutral-base-10, #181818);
@@ -5027,24 +5009,19 @@ a.slds-button--inverse:focus{
   color: var(--slds-g-color-neutral-base-100, white);
   background-color: var(--slds-g-color-neutral-base-50, #747474);
 }
-
 .slds-theme--info a:not(.slds-button--neutral) {
   color: var(--slds-g-color-neutral-base-100, white);
   text-decoration: underline;
 }
-
 .slds-theme--info a:not(.slds-button--neutral):visited {
   color: var(--slds-g-color-neutral-base-100, white);
 }
-
 .slds-theme--info a:not(.slds-button--neutral):focus {
   text-decoration: none;
 }
-
 .slds-theme--info a:not(.slds-button--neutral):active {
   color: var(--slds-g-color-neutral-100-opacity-50, rgba(255, 255, 255, 0.5));
 }
-
 .slds-theme--info a:not(.slds-button--neutral)[disabled] {
   color: var(--slds-g-color-neutral-100-opacity-10, rgba(255, 255, 255, 0.15));
 }
@@ -5099,24 +5076,19 @@ a.slds-button--inverse:focus{
   color: var(--slds-g-color-neutral-base-100, white) !important;
   background-color: var(--slds-g-color-error-base-40, #ea001e) !important;
 }
-
 .slds-theme--error a:not(.slds-button--neutral) {
   color: var(--slds-g-color-neutral-base-100, white) !important;
   text-decoration: underline !important;
 }
-
 .slds-theme--error a:not(.slds-button--neutral):visited {
   color: var(--slds-g-color-neutral-base-100, white) !important;
 }
-
 .slds-theme--error a:not(.slds-button--neutral):focus {
   text-decoration: none !important;
 }
-
 .slds-theme--error a:not(.slds-button--neutral):active {
   color: var(--slds-g-color-neutral-100-opacity-50, rgba(255, 255, 255, 0.5)) !important;
 }
-
 .slds-theme--error a:not(.slds-button--neutral)[disabled] {
   color: var(--slds-g-color-neutral-100-opacity-10, rgba(255, 255, 255, 0.15)) !important;
 }
@@ -5124,24 +5096,19 @@ a.slds-button--inverse:focus{
   color: var(--slds-g-color-neutral-base-100, white) !important;
   background-color: var(--slds-g-color-neutral-base-30, #444) !important;
 }
-
 .slds-theme--offline a:not(.slds-button--neutral) {
   color: var(--slds-g-color-neutral-base-100, white) !important;
   text-decoration: underline !important;
 }
-
 .slds-theme--offline a:not(.slds-button--neutral):visited {
   color: var(--slds-g-color-neutral-base-100, white) !important;
 }
-
 .slds-theme--offline a:not(.slds-button--neutral):focus {
   text-decoration: none !important;
 }
-
 .slds-theme--offline a:not(.slds-button--neutral):active {
   color: var(--slds-g-color-neutral-100-opacity-50, rgba(255, 255, 255, 0.5)) !important;
 }
-
 .slds-theme--offline a:not(.slds-button--neutral)[disabled] {
   color: var(--slds-g-color-neutral-100-opacity-10, rgba(255, 255, 255, 0.15)) !important;
 }
@@ -5161,7 +5128,6 @@ a.slds-button--inverse:focus{
 
 /* Alert Support */
 /*! Lightning Design System 2.21.5 */
-
 .slds-notify_alert {
   position: relative;
   display: -webkit-inline-box;
@@ -5231,8 +5197,6 @@ a.slds-button--inverse:focus{
 .slds-notify_alert a[disabled]a[disabled] {
   color: var(--slds-g-color-neutral-100-opacity-10, rgba(255, 255, 255, 0.15));
 }
-.slds-notify {
-}
 .slds-alert_warning {
   /*! @css-var-fallback background-color */
   --slds-c-alert-color-background: var(--slds-g-color-warning-base-60, #fe9339);
@@ -5258,7 +5222,6 @@ a.slds-button--inverse:focus{
   -webkit-transform: translateY(-50%);
   transform: translateY(-50%);
 }
-
 .slds-assistive-text {
   position: absolute !important;
   margin: -1px !important;
@@ -5310,7 +5273,6 @@ a.slds-button--inverse:focus{
   width:2.25rem;
   height:2.25rem;
 }
-
 .slds-media{
   display:-webkit-box;
   display:-ms-flexbox;
@@ -5323,6 +5285,176 @@ a.slds-button--inverse:focus{
   -ms-flex-negative:0;
       flex-shrink:0;
   margin-right:0.75rem;
+}
+
+/* Tooltip support (Popover + Nubbins) */
+/*! Lightning Design System 2.21.5 */
+.slds-popover {
+  position: relative;
+  border-radius: 0.25rem;
+  width: 20rem;
+  min-height: 2rem;
+  z-index: var(--slds-c-popover-position-zindex, 6000);
+  background-color: var(--slds-g-color-neutral-base-100, white);
+  display: inline-block;
+  -webkit-box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
+  box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+}
+.slds-popover__meta {
+  margin-bottom: 0.75rem;
+}
+.slds-popover__body {
+  padding: 0.5rem 0.75rem;
+}
+.slds-popover__body .slds-popover__header {
+  padding: 0 0 0.5rem 0;
+}
+
+.slds-popover__body,
+.slds-popover__header,
+.slds-popover__footer {
+  position: relative;
+  padding: 0.5rem 0.75rem;
+  word-wrap: break-word;
+}
+.slds-popover__header {
+  border-bottom: 0;
+}
+.slds-popover__footer {
+  border-top: 1px solid var(--slds-g-color-border-base-1, #e5e5e5);
+  background-color: var(--slds-g-color-neutral-base-95, #f3f3f3);
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+  padding: 0.5rem 0.75rem;
+}
+.slds-popover__footer_form {
+  text-align: center;
+  background: var(--slds-g-color-neutral-base-95, #f3f3f3);
+  border-radius: 0 0 0.25rem 0.25rem;
+}
+.slds-popover__body_small {
+  max-height: 15rem;
+  overflow-y: auto;
+}
+.slds-popover__close {
+  position: relative;
+  margin: 0.25rem;
+  z-index: 6001;
+}
+.slds-popover_small {
+  max-width: 15rem;
+}
+.slds-popover_medium {
+  min-width: 20rem;
+}
+.slds-popover_large {
+  min-width: 25rem;
+  max-width: 512px;
+}
+
+.slds-popover[class*="theme_"],
+.slds-popover[class*="theme--"] {
+  border: 0;
+}
+
+.slds-popover *:last-child {
+  margin-bottom: 0;
+}
+.slds-popover_full-width {
+  width: 100%;
+}
+.slds-popover_hide {
+  display: none;
+}
+.slds-popover_dark {
+  background-color: #014486;
+  color: var(--slds-g-color-neutral-base-100, white);
+}
+.slds-popover_dark .slds-badge {
+  background-color: var(--slds-g-color-neutral-base-100, white);
+}
+.slds-popover_dark .slds-popover__close {
+  color: var(--slds-g-color-neutral-base-100, white);
+}
+.slds-popover_dark .slds-icon-text-default {
+  fill: var(--slds-g-color-neutral-base-100, white);
+}
+.slds-popover_dark .slds-popover__footer {
+  border-top-color: var(--slds-g-color-brand-base-10, #001639);
+  background-color: var(--slds-g-color-brand-base-20, #032d60);
+}
+.slds-popover_tooltip {
+  width: auto;
+  max-width: var(--slds-c-tooltip-sizing-max-width, var(--sds-c-tooltip-sizing-max-width, 20rem));
+  background-color: var(
+    --slds-c-tooltip-color-background,
+    var(--sds-c-tooltip-color-background, var(--slds-g-color-brand-base-20, #032d60))
+  );
+  border: 0;
+}
+.slds-popover_tooltip .slds-popover__body {
+  font-size: var(--slds-c-tooltip-font-size, var(--sds-c-tooltip-font-size, 0.75rem));
+  color: var(--slds-c-tooltip-text-color, var(--sds-c-tooltip-text-color, var(--slds-g-color-neutral-base-100, white)));
+}
+
+/* nubbins */
+.slds-nubbin_bottom-left:before,
+.slds-nubbin_bottom-left-corner:before {
+  width: 1rem;
+  height: 1rem;
+  position: absolute;
+  -webkit-transform: rotate(45deg);
+  transform: rotate(45deg);
+  content: "";
+  background-color: inherit;
+  left: 50%;
+  bottom: -0.5rem;
+  margin-left: -0.5rem;
+}
+.slds-nubbin_bottom-left:after,
+.slds-nubbin_bottom-left-corner:after {
+  width: 1rem;
+  height: 1rem;
+  position: absolute;
+  -webkit-transform: rotate(45deg);
+  transform: rotate(45deg);
+  content: "";
+  background-color: inherit;
+  left: 50%;
+  bottom: -0.5rem;
+  margin-left: -0.5rem;
+}
+.slds-nubbin_bottom-left:after,
+.slds-nubbin_bottom-left-corner:after {
+  -webkit-box-shadow: 2px 2px 4px 0 rgba(0, 0, 0, 0.16);
+  box-shadow: 2px 2px 4px 0 rgba(0, 0, 0, 0.16);
+  z-index: -1;
+}
+.slds-nubbin_bottom-left:before,
+.slds-nubbin_bottom-left:after,
+.slds-nubbin_bottom-left-corner:before,
+.slds-nubbin_bottom-left-corner:after {
+  left: 1.5rem;
+  top: 100%;
+  margin-top: -0.5rem;
+}
+.slds-nubbin_bottom-left-corner {
+  border-radius: 0.25rem 0.25rem 0.25rem 0.125rem;
+}
+.slds-nubbin_bottom-left-corner:before,
+.slds-nubbin_bottom-left-corner:after {
+  left: 0.75rem;
+}
+
+/* Floats */
+.slds-clearfix:after{
+  content:"";
+  display:table;
+  clear:both;
+}
+.slds-float_left{
+  float:left;
 }
 
 /* Dropdown */

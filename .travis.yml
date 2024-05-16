@@ -3,5 +3,3 @@ node_js:
   - "node"
 script:
   - npm run eslint
-  - npm run firefox-release-build
-  - npm run chrome-release-build

@@ -51,3 +51,4 @@ chrome.runtime.onInstalled.addListener(({reason}) => {
     });
   }
 });
+chrome.runtime.setUninstallURL("https://forms.gle/y7LbTNsFqEqSrtyc6");

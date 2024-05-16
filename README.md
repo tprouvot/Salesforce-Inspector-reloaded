@@ -21,6 +21,8 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
     - [Chrome Web Store](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
     - [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
     - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
+  - [Beta Version](#beta-version)
+    - [Chrome Web Store](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf)
 - [Troubleshooting](#troubleshooting)
 - [Contributions](#contributions)
 - [Development](#development)
@@ -71,6 +73,20 @@ Follow steps described in [how-to documentation](https://tprouvot.github.io/Sale
 - [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
 - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
 
+### Beta Version
+
+Welcome to the beta testing phase! Your input is crucial for refining our extension. Here's why we need you:
+
+Why Beta Testing?
+
+- Diverse Testing: Identify issues across various setups.
+- Real-World Scenarios: Discover unforeseen issues in different user contexts.
+
+Report Bugs: If you discover a bug, please fill in an issue [here](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=bug,beta&projects=&template=bug_report.md&title=[BETA]). Detailed bug reports help us address issues quickly.
+
+To become a beta tester, [install the release candidate version](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf).
+Thank you for shaping our extension's future! Your feedback makes it better.
+
 ### Local Installation
 
 1. Download or clone the repo.
@@ -89,10 +105,11 @@ Follow steps described in [how-to documentation](https://tprouvot.github.io/Sale
 
 Contributions are welcome!
 
+Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
 To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
 This branch will be merge into master when the new version is published on web store.
 
-Make sure to update CHANGES.md file by describing the improvement / bugfix you realised.
+Make sure to update CHANGES.md file by describing the improvement / bugfix you realized.
 
 In order to make sure everyone who reads documentation is aware of your improvement, you can update the 'how-to' page to document / expose this new functionality.
 

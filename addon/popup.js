@@ -187,15 +187,11 @@ class App extends React.PureComponent {
     let url;
     let title;
     let text;
-    if (sessionError !== "Session expired or invalid"){
+    if (sessionError){
       text = "Access Token Expired";
       title = "Generate New Token";
-      url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
-    } else {
-      text = "Expired session";
-      title = "Return to login page";
-      url = `https://${sfHost}/`;
     }
+    url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     return {title, url, text};
   }
   render() {
@@ -301,6 +297,17 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
             ),
+            localStorage.getItem("popupGenerateTokenButton") !== "false" ? h("div", {className: "slds-m-bottom_xx-small"},
+              h("a",
+                {
+                  ref: "generateToken",
+                  href: bannerUrlAction.url,
+                  target: linkTarget,
+                  className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
+                },
+                h("span", {}, h("u", {}, "G"), "enerate Access Token"))
+            ) : null,
+
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
             inLightning && isInSetup && h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
@@ -1020,7 +1027,7 @@ class AllDataBoxShortcut extends React.PureComponent {
 
       //search for metadata if user did not disabled it
       if (metadataShortcutSearch == "true"){
-        const flowSelect = "SELECT LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
+        const flowSelect = "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
         const compositeQuery = {
@@ -1049,7 +1056,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         results.forEach(element => {
           element.body.records.forEach(rec => {
             if (rec.attributes.type === "FlowDefinitionView"){
-              rec.link = "/builder_platform_interaction/flowBuilder.app?flowId=" + rec.LatestVersionId;
+              rec.link = "/builder_platform_interaction/flowBuilder.app?flowDefId=" + rec.DurableId + "&flowId=" + rec.LatestVersionId;
               rec.label = rec.Label;
               rec.name = rec.ApiName;
               rec.detail = rec.attributes.type + " • " + rec.ProcessType;
@@ -1391,6 +1398,11 @@ class UserDetails extends React.PureComponent {
     return "inspect.html?" + args;
   }
 
+  getUserSummaryLink(userId){
+    let {sfHost} = this.props;
+    return "https://" + sfHost + "/lightning/setup/ManageUsers/" + userId + "/summary";
+  }
+
   render() {
     let {user, linkTarget, sfHost} = this.props;
     return (
@@ -1400,9 +1412,12 @@ class UserDetails extends React.PureComponent {
             h("tbody", {},
               h("tr", {},
                 h("th", {}, "Name:"),
-                h("td", {},
+                h("td", {className: "oneliner"},
                   (user.IsActive) ? "" : h("span", {title: "User is inactive"}, "⚠ "),
-                  user.Name + " (" + user.Alias + ")"
+                  //user.Name + " (" + user.Alias + ")"
+                  h("a", {href: this.getUserSummaryLink(user.Id), target: linkTarget, title: "View summary"}, user.Name)
+                  ,
+                  " (" + user.Alias + ")"
                 )
               ),
               h("tr", {},
@@ -1426,10 +1441,10 @@ class UserDetails extends React.PureComponent {
                     : h("em", {className: "inactive"}, "unknown")
                 )
               ),
-              h("tr", {},
+              user.UserRole ? h("tr", {},
                 h("th", {}, "Role:"),
-                h("td", {className: "oneliner"}, (user.UserRole) ? user.UserRole.Name : "")
-              ),
+                h("td", {className: "oneliner"}, user.UserRole.Name)
+              ) : null,
               h("tr", {},
                 h("th", {}, "Language:"),
                 h("td", {},
@@ -1512,6 +1527,13 @@ class ShowDetailsButton extends React.PureComponent {
 
 
 class AllDataSelection extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      flowDefinitionId: null
+    };
+  }
+
   clickShowDetailsBtn() {
     this.refs.showDetailsBtn.onDetailsClick();
   }
@@ -1551,6 +1573,9 @@ class AllDataSelection extends React.PureComponent {
     args.set("host", sfHost);
     args.set("checkDeployStatus", selectedValue.recordId);
     return "explore-api.html?" + args;
+  }
+  redirectToFlowVersions(){
+    return "https://" + this.props.sfHost + "/lightning/setup/Flows/page?address=%2F" + this.state.flowDefinitionId;
   }
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
@@ -1606,11 +1631,26 @@ class AllDataSelection extends React.PureComponent {
   getNewObjectUrl(sfHost, newUrl){
     return "https://" + sfHost + newUrl;
   }
+  setFlowDefinitionId(recordId){
+    if (recordId && !this.state.flowDefinitionId){
+      if (recordId.startsWith("301")){
+        sfConn.rest("/services/data/v" + apiVersion + "/tooling/query/?q=SELECT+DefinitionId+FROM+Flow+WHERE+Id='" + recordId + "'", {method: "GET"}).then(res => {
+          res.records.forEach(recentItem => {
+            this.setState({flowDefinitionId: recentItem.DefinitionId});
+          });
+        });
+      } else if (recordId.startsWith("300")){
+        this.setState({flowDefinitionId: recordId});
+      }
+    }
+  }
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent} = this.props;
+    let {flowDefinitionId} = this.state;
     // Show buttons for the available APIs.
     let buttons = selectedValue.sobject.availableApis ? Array.from(selectedValue.sobject.availableApis) : [];
     buttons.sort();
+    this.setFlowDefinitionId(selectedValue ? selectedValue.recordId : contextRecordId);
     if (buttons.length == 0 && !selectedValue.isRecent) {
       // If none of the APIs are available, show a button for the regular API, which will partly fail, but still show some useful metadata from the tooling API.
       buttons.push("noApi");
@@ -1664,6 +1704,8 @@ class AllDataSelection extends React.PureComponent {
         h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
           ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+        flowDefinitionId
+          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
         buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
           {
             key: button,
@@ -1788,7 +1830,10 @@ class AllDataSearch extends React.PureComponent {
     this.setState({queryString: val});
   }
   onAllDataFocus() {
-    this.refs.autoComplete.handleFocus();
+    //show recently viewed records only on Object tab
+    if (this.props.sobjectsList){
+      this.refs.autoComplete.handleFocus();
+    }
   }
   onAllDataBlur() {
     this.refs.autoComplete.handleBlur();

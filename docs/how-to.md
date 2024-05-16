@@ -4,16 +4,27 @@
 
 ---
 
+### For Chrome and Edge users
+
 If you enabled "API client whitelisting" (a.k.a "API Access Control") in your org, SF Inspector may not work anymore.
 
 To secure the extension usage, you can use a OAuth 2.0 flow to get an access token, linked to a connected app installed in your org.
+To install the default "SF Inspector reloaded" connected app, open popup and click 'Generate Access Token' button
 
-To install the default "SF Inspector reloaded" connected app, navigate to Setup | Connected Apps OAuth Usage, and click "Install" on the Salesforce Inspector reloaded app.
+   <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
+
+Then navigate to Setup | Connected Apps OAuth Usage, and click "Install" on the Salesforce Inspector reloaded app.
+
+From now when the token will be expired, this banner will show up and provide a link to re-generate the access token
+
+<img width="274" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/856c3635-008b-4b91-8160-019d1d701ba9">
 
 > **Warning**
 > Don't forget to grant access to the users by selecting the related profile(s) or permission set(s).
 
 If you are a Firefox user, or if you want to have full control over the connected app settings, you can also use your own connected app by following these instructions:
+
+### For Firefox users
 
 1. Create a connected app under Setup | App Manager > New Connected App.
 2. Set callback url to `chrome-extension://chromeExtensionId/data-export.html` (replace `chromeExtensionId` by the actual ID of the extension in your web browser). Make sure the "Manage user data via APIs (api)" scope is selected. You can leave other settings to their default values.
@@ -32,7 +43,7 @@ If you are a Firefox user, or if you want to have full control over the connecte
 
 5. Refresh page and generate new token
 
-   <img alt="Generate Token" src="https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/docs/screenshots/generateAccessToken.png?raw=true" width="300">
+   <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
 
 ## Migrate saved queries from legacy extension to Salesforce Inspector Reloaded
 
@@ -230,3 +241,11 @@ From the option page, you can customize the default favicon by:
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
 
 <img width="901" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
+
+## Select all fields in a query
+
+This functionality already exists in the legacy version but since many users don't know about it, I would like to document it.
+When on the export page, put the cursor between `SaELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
+If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM`.
+
+![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)

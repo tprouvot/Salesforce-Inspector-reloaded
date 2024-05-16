@@ -94,8 +94,8 @@ Follow steps described in [how-to documentation](https://dufoli.github.io/Salesf
 ### Browser Stores
 
 - [Chrome Web Store](https://chromewebstore.google.com/detail/salesforce-inspector-adva/dbfimaflmomgldabcphgolbeoamjogji)
-- Firefox Browser Add-ons : Not supported
-- Edge Add-ons : Not supported
+- [Firefox Browser Add-ons](https://addons.mozilla.org/fr/firefox/addon/salesforce-inspector-advanced)
+- Edge Add-ons : used chrome extension from edge store
 
 ### Local Installation
 

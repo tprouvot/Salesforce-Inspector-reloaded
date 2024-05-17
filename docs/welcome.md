@@ -11,7 +11,7 @@ With this extension, you can:
 - Run SOQL queries to query data and metadata from Salesforce.
 - Generate REST API requests from Explore API.
 
-You can enable the extension by clicking on the **Salesforce Inspector Reloaded** icon in the toolbar, or by pressing `Ctrl+Shift+I` (Windows) / `Ctrl+Option+I` (Mac) on your keyboard.
+You can enable the extension by clicking on the **Salesforce Inspector Reloaded** icon in the toolbar, or by pressing `Ctrl+Shift+I` (Windows) / `Ctrl+Option+I` (Mac) on your keyboard or [customize the shortcut](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#customize-extensions-shortcuts).
 
 For more information, please read this [article](https://www.salesforceben.com/salesforce-inspector-reloaded/) or the [documentation page](https://tprouvot.github.io/Salesforce-Inspector-reloaded/).
 

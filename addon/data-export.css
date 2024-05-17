@@ -245,6 +245,7 @@ input[type=search] {
   background-size: 1rem;
   background-position: 10px 7px;
   padding-left: 35px;
+  margin-right: 10px;
 }
 
 input[type=save] {

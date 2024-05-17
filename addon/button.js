@@ -105,7 +105,7 @@ function initButton(sfHost, inInspector) {
 
   function setFavicon(sfHost){
     let fav = iFrameLocalStorage[sfHost + "_customFavicon"];
-    if (iFrameLocalStorage.useCustomFavicon && fav){
+    if (fav){
       let link = document.createElement("link");
       link.setAttribute("rel", "icon");
       link.orgType = "image/x-icon";

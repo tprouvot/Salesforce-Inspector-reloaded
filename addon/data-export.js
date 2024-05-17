@@ -1044,6 +1044,7 @@ class Model {
         results: contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
           .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
+          .filter(field => field.type != "address")
           .flatMap(function* (field) {
             yield {value: field.name, title: field.label, suffix: isAfterWhere ? " " : ", ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
             if (field.relationshipName) {

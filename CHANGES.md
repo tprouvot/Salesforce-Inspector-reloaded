@@ -2,9 +2,14 @@
 
 ## Version 1.24
 
+- Customize extension's pages shortcuts in [chrome://extensions/shortcut](chrome://extensions/shortcut) ([feature 171](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/171) by [asanaEAzimzhanov](https://github.com/asanaEAzimzhanov))
+- Add option to exclude formula fields from data export autocomplete [feature 415](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/415)
+- Removes whitespace from both ends in user search [feature 410](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/410) (contribution by [César Blanco](https://github.com/cesarblancg))
 - Add setup menu items 'Trusted URLs' and 'Trusted URL and Browser Policy Violations' to shortcut links
 - Ability to quit popup with escape button [feature 378](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/378) (contribution by [Gerald Gramier](https://github.com/gramier))
 - Add option to customize org favicon [feature 180](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/180)
+- Add tooltip to options [feature 399](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/399) (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Fixed popup button disappearance at 100%, also changed horizontal orientation to start at left [issue 404](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/404) (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Add option to hide object name columns in query results from Data Export page [feature 352](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/352) (contribution by [Guillaume Fauritte](https://github.com/guillaumeSF))
 
 ## Version 1.23

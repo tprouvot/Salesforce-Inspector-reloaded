@@ -29,6 +29,10 @@
   box-sizing: border-box;
 }
 
+td.scrolltable-cell-diff {
+  background-color: #009edc50;
+}
+
 .scrolltable-cell.header {
   font-weight: 700;
   background-color: #FAFAF9;

@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.27
+
+- Show diff cells in blue when 2 rows displayed [issue 48](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/48)
+
 ## Version 1.26
 
 > [!IMPORTANT]

@@ -76,7 +76,6 @@ class Model {
       this.importAction = this.importType.endsWith("__mdt") ? "deleteMetadata" : "delete";
       this.importActionName = this.importType.endsWith("__mdt") ? "Delete Metadata" : "Delete";
       this.skipAllUnknownFields();
-      console.log(this.importData);
     }
     this.tableModel = new TableModel(sfHost, this.didUpdate.bind(this));
     this.resultTableCallback = (d) => this.tableModel.dataChange(d);
@@ -1246,17 +1245,14 @@ class App extends React.Component {
           // Ask the user for confirmation before leaving
           e.returnValue = "The import will be stopped";
         };
-        console.log("added listener");
         addEventListener("beforeunload", this.unloadListener);
       }
     } else if (this.unloadListener) {
-      console.log("removed listener");
       removeEventListener("beforeunload", this.unloadListener);
     }
   }
   render() {
     let {model} = this.props;
-    //console.log(model);
     return h("div", {onClick: this.onClick},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},

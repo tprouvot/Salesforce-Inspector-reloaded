@@ -63,7 +63,6 @@ export function DescribeInfo(spinFor, didUpdate) {
     let apiDescribes = sobjectAllDescribes[useToolingApi ? "tool" : "data"];
     if (apiDescribes.global.globalStatus == "pending") {
       apiDescribes.global.globalStatus = "loading";
-      console.log(useToolingApi ? "getting tooling objects" : "getting objects");
       spinFor(sfConn.rest(useToolingApi ? "/services/data/v" + apiVersion + "/tooling/sobjects/" : "/services/data/v" + apiVersion + "/sobjects/").then(res => {
         apiDescribes.global.globalStatus = "ready";
         apiDescribes.global.globalDescribe = res;
@@ -112,7 +111,6 @@ export function DescribeInfo(spinFor, didUpdate) {
       }
       if (sobjectInfo.sobject.sobjectStatus == "pending") {
         sobjectInfo.sobject.sobjectStatus = "loading";
-        console.log("getting fields for " + sobjectInfo.global.name);
         spinFor(sfConn.rest(sobjectInfo.global.urls.describe).then(res => {
           sobjectInfo.sobject.sobjectStatus = "ready";
           sobjectInfo.sobject.sobjectDescribe = res;

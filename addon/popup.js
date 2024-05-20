@@ -225,8 +225,11 @@ class App extends React.PureComponent {
       "o": ["tab", "objectTab"],
       "u": ["tab", "userTab"],
       "s": ["tab", "shortcutTab"],
-      "r": ["tab", "orgTab"]
+      "r": ["tab", "orgTab"],
+      //shift shortkey
+      "A": ["click", "apexRunnerBtn"]
     };
+
     if (!actionMap[e.key]) {
       return;
     }
@@ -248,17 +251,6 @@ class App extends React.PureComponent {
       case "tab":
         refs.showAllDataBox.refs[target].click();
         break;
-    }
-
-    if (e.key == "p") {
-      e.preventDefault();
-      this.refs.apexRunnerBtn.target = getLinkTarget(e);
-      this.refs.apexRunnerBtn.click();
-    }
-    if (e.key == "p") {
-      e.preventDefault();
-      this.refs.apexRunnerBtn.target = getLinkTarget(e);
-      this.refs.apexRunnerBtn.click();
     }
   }
   onChangeApi(e) {
@@ -386,7 +378,7 @@ class App extends React.PureComponent {
               h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "apexRunnerBtn", href: apexRunnerHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Run A", h("u", {}, "p"), "ex"))
+              h("a", {ref: "apexRunnerBtn", href: apexRunnerHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Run ", h("u", {}, "A"), "pex"))
             ),
             h("div", {},
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))

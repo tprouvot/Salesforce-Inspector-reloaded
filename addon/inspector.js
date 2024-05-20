@@ -330,7 +330,9 @@ function showInvalidTokenBanner(){
 }
 
 function setFavicon(sfHost){
-  let fav = localStorage.getItem(sfHost + "_customFavicon");
+  // Update favicon only if Use Custom Favicon is set
+  let useCustom = localStorage.getItem("useCustomFavicon");
+  let fav = (useCustom === "true") ? localStorage.getItem(sfHost + "_customFavicon") : null;
   if (fav){
     let link = document.querySelector("link[rel~='icon']");
     if (!link) {

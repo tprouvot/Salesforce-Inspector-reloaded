@@ -67,6 +67,7 @@
         "popup.html",
         "apex-runner.html",
         "log.html",
+        "streaming.html",
         "data-export.html",
         "data-import.html",
         "inspect.html",

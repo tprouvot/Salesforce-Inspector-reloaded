@@ -331,6 +331,7 @@ function showInvalidTokenBanner(){
 }
 
 function setFavicon(sfHost){
+  // Update favicon only if Use Custom Favicon is set
   let fav = localStorage.getItem(sfHost + "_customFavicon");
   if (fav){
     let link = document.querySelector("link[rel~='icon']");

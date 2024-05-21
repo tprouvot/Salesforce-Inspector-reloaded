@@ -105,8 +105,7 @@ function initButton(sfHost, inInspector) {
 
   function setFavicon(sfHost) {
     // Only update favicon if enabled, otherwise keep default
-    let {useCustomFavicon: custom, [sfHost + "_customFavicon"]: color} = iFrameLocalStorage;
-    let fav = (custom === "false") ? null : color;
+    let {[sfHost + "_customFavicon"]: fav} = iFrameLocalStorage;
     if (fav) {
       let link = document.createElement("link");
       link.setAttribute("rel", "icon");

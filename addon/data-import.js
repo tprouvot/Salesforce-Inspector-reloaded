@@ -1089,7 +1089,6 @@ class App extends React.Component {
   }
   render() {
     let {model} = this.props;
-    //console.log(model);
     return h("div", {},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},

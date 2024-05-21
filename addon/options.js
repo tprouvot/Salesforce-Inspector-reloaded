@@ -4,7 +4,7 @@ import {sfConn, apiVersion, nullToEmptyString} from "./inspector.js";
 import {DescribeInfo} from "./data-load.js";
 
 const faviconColors = ["green", "orange", "pink", "purple", "red", "yellow"];
-const faviconPlaceholder = `Available values: ${faviconColors.join(", ")}.`;
+const faviconPlaceholder = `Available values: ${faviconColors.join(", ")} or external URL.`;
 
 class Model {
 
@@ -84,8 +84,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
-          {option: Option, props: {type: "toggle", title: "Use custom favicon for Salesforce", key: "useCustomFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
-          {option: Option, props: {type: "text", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", isFavicon: true, tooltip: `${faviconPlaceholder} A preview to the right indicates that color has been updated. Favicon changes will be visible in tab after reload.`, placeholder: faviconPlaceholder}}
+          {option: Option, props: {type: "text", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", isFavicon: true, tooltip: `${faviconPlaceholder} Favicon changes will be visible in tab after reload (for external URL, you may need to add external domain to CSP trusted domains).`, placeholder: faviconPlaceholder}}
         ]
       },
       {

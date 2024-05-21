@@ -8,7 +8,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 
 class Model {
 
-  constructor({sfHost, args}) {
+  constructor({sfHost}) {
     this.sfHost = sfHost;
     this.sfLink = "https://" + sfHost;
     this.userInfo = "...";
@@ -1038,12 +1038,12 @@ class FileUpload extends React.Component {
     let {model} = this.props;
 
     if (this.state.logFile == null) {
-      console.log('Please select a log file to load.')
+      console.log("Please select a log file to load.");
       return;
     }
 
     const reader = new FileReader();
-    reader.addEventListener('load', (event) => {
+    reader.addEventListener("load", (event) => {
       model.logData = event.target.result;
       model.EnrichLog = [{value: model.logData}];
       model.parseLog(model.logData);
@@ -1073,7 +1073,7 @@ class FileUpload extends React.Component {
   sfConn.getSession(sfHost).then(() => {
 
     let root = document.getElementById("root");
-    let model = new Model({sfHost, args});
+    let model = new Model({sfHost});
     model.recordId = args.get("recordId");
     model.startLoading();
     model.reactCallback = cb => {

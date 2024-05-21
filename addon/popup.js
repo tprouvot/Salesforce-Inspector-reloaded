@@ -1752,17 +1752,36 @@ class AllDataRecordDetails extends React.PureComponent {
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
   }
-
+  getRecordNameField(recordIdDetails) {
+    if (recordIdDetails == null) {
+      return null;
+    }
+    if ("name" in recordIdDetails) {
+      return "name";
+    }
+    for (let suffix of ["name", "number", "subject", "title"]) {
+      for (let field in recordIdDetails) {
+        if (field.toLowerCase().endsWith(suffix)) {
+          return field;
+        }
+      }
+    }
+    return null;
+  }
+  firstUpperCase(fieldName) {
+    return fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+  }
   render() {
     let {sfHost, recordIdDetails, className, selectedValue, linkTarget} = this.props;
     if (recordIdDetails) {
+      let recordNameField = this.getRecordNameField(recordIdDetails);
       return (
         h("table", {className},
           h("tbody", {},
-            recordIdDetails.recordName ? h("tr", {},
-              h("th", {}, "Name:"),
+            recordNameField != null ? h("tr", {},
+              h("th", {}, this.firstUpperCase(recordNameField) + ":"),
               h("td", {},
-                h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
+                h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails[recordNameField])
               )
             ) : null,
             recordIdDetails.recordTypeName ? h("tr", {},

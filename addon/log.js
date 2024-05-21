@@ -791,6 +791,52 @@ class App extends React.Component {
     );
   }
 }
+
+
+class RawEditor extends React.Component {
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+    this.state = {
+      filterBy: null
+    };
+    this.availableFilters = ["Debug", "SOQL", "DML", "Callout", "Exception"];
+    this.onSelectFilterBy = this.onSelectFilterBy.bind(this);
+  }
+
+  onSelectFilterBy() {
+    // TODO
+  }
+
+  componentDidMount() {
+
+  }
+  render() {
+    let model = this.model;
+    let keywordColor = new Map([["CODE_UNIT_STARTED", "violet"], ["CODE_UNIT_FINISHED", "violet"], ["HEAP_ALLOCATE", "blue"],
+      ["SYSTEM_METHOD_ENTRY", "violet"], ["METHOD_ENTRY", "violet"], ["SYSTEM_CONSTRUCTOR_ENTRY", "violet"], ["FLOW_START_INTERVIEW_BEGIN", "violet"],
+      ["SYSTEM_METHOD_EXIT", "violet"], ["METHOD_EXIT", "violet"], ["SYSTEM_CONSTRUCTOR_EXIT", "violet"], ["FLOW_INTERVIEW_FINISHED", "violet"],
+      ["DML_BEGIN", "violet"], ["DML_END", "violet"],
+      ["VALIDATION_RULE", "blue"], ["VALIDATION_PASS", "blue"],
+      ["SOQL_EXECUTE_BEGIN", "blue"], ["SOSL_EXECUTE_BEGIN", "blue"], ["CALLOUT_REQUEST", "blue"], ["FLOW_ELEMENT_BEGIN", "blue"],
+      ["SOQL_EXECUTE_END", "blue"], ["SOSL_EXECUTE_END", "blue"], ["CALLOUT_REQUEST", "blue"], ["FLOW_ELEMENT_BEGIN", "blue"],
+      ["VALIDATION_ERROR", "red"], ["VALIDATION_FAIL", "red"], ["FLOW_ELEMENT_ERROR", "red"], ["FATAL_ERROR", "red"], ["FLOW_CREATE_INTERVIEW_ERROR", "red"], ["FLOW_START_INTERVIEWS_ERROR", "red"]
+    ]);
+    return h("div", {onClick: this.onClick},
+      h("div", {className: "button-group"},
+        h("select", {value: JSON.stringify(this.state.FilterBy), onChange: this.onSelectFilterBy, className: "log-filter"},
+          h("option", {value: JSON.stringify(null)}, "No filter"),
+          this.availableFilters.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q))
+        ),
+        h("button", {onClick: this.filter, title: "Filter"}, "Filter"),
+      ),
+      h(LogEditor, {model, keywordColor, keywordCaseSensitive: true}),
+    );
+  }
+}
+
+
+
 class LogTabNavigation extends React.Component {
   constructor(props) {
     super(props);
@@ -803,7 +849,7 @@ class LogTabNavigation extends React.Component {
         id: 1,
         tabTitle: "Tab1",
         title: "Raw Log",
-        content: Editor
+        content: RawEditor
       },
       {
         id: 2,
@@ -935,15 +981,20 @@ class Profiler extends React.Component {
   }
 }
 
-class Editor extends React.Component {
+class LogEditor extends React.Component {
   constructor(props) {
     super(props);
+    this.keywordColor = props.keywordColor;
+    this.keywordCaseSensitive = props.keywordCaseSensitive;
+
     //this.scrollTo = this.onShowStatusChange.bind(this);
     this.scrollTop = 0;
     this.scrollLeft = 0;
     this.offsetHeight = 0;
     this.offsetWidth = 0;
     this.scroller = null;
+
+    this.renderNode = this.renderNode.bind(this);
   }
   componentDidMount() {
     let {model} = this.props;
@@ -983,6 +1034,41 @@ class Editor extends React.Component {
     }
   }
 
+  renderNode(txtNode, i) {
+    let {keywordColor, keywordCaseSensitive} = this.props;
+    let remaining = txtNode.value;
+
+    let keywords = [];
+    for (let keyword of keywordColor.keys()) {
+      keywords.push(keyword);
+    }
+
+    let keywordRegEx = new RegExp("\\b(" + keywords.join("|") + ")\\b", (keywordCaseSensitive ? "" : "i"));
+    let keywordMatch;
+    let color = null;
+    let children = [];
+    while ((keywordMatch = keywordRegEx.exec(remaining)) !== null) {
+      color = keywordColor.get(keywordMatch[1]);
+      let sentence = keywordMatch[1];
+      let endIndex = keywordMatch.index + sentence.length;
+      children.push(remaining.substring(0, keywordMatch.index));
+      if (endIndex < remaining.length) {
+        remaining = remaining.substring(keywordMatch.index + sentence.length);
+      } else {
+        remaining = ""; // no remaining
+      }
+      children.push(h("span", {style: {color}}, sentence));
+    }
+    if (remaining) {
+      children.push(remaining);
+    }
+    if (txtNode.cls) {
+      return h("span", {key: "TxtNode" + i, className: txtNode.cls}, children);
+    } else {
+      return children;
+    }
+  }
+
   render() {
     let {model} = this.props;
     let lineCount = model.lineCount;
@@ -995,9 +1081,6 @@ class Editor extends React.Component {
       scrollerScrollTop = this.scroller.scrollTop;
       scrollerOffsetHeight = this.scroller.offsetHeight;
     }
-    /*function onScrollerScroll() {
-      model.didUpdate();
-    }*/
 
     //return h("div", {className: "editor", ref: "scroller", onScroll: onScrollerScroll, style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 160) + "px"}},
     return h("div", {className: "editor", ref: "scroller", style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 255) + "px"}},
@@ -1007,13 +1090,7 @@ class Editor extends React.Component {
         Array(lineCount).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}, i))
       ),
       h("div", {id: "log-text", ref: "log", style: {lineHeight: rowHeight + "px"}},
-        model.EnrichLog.map((txtNode, i) => {
-          if (txtNode.cls) {
-            return h("span", {key: "TxtNode" + i, className: txtNode.cls}, txtNode.value);
-          } else {
-            return txtNode.value;
-          }
-        })
+        model.EnrichLog.map(this.renderNode)
       )//, readOnly: true
       //)
     );

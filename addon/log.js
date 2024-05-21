@@ -414,7 +414,7 @@ class Model {
       switch (l[1]) {
         //EXECUTION_STARTED EXECUTION_FINISHED
         case "CODE_UNIT_STARTED": {
-          let child = {index: i, title: l.length > 3 ? l[3] : "code unit", child: [], start: dt, heap: 0, expanded: true, hidden: false};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : "code unit"), child: [], start: dt, heap: 0, expanded: true, hidden: false};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
@@ -442,31 +442,31 @@ class Model {
         case "SYSTEM_CONSTRUCTOR_ENTRY":
         case "FLOW_START_INTERVIEW_BEGIN":
         case "VALIDATION_RULE":{
-          let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1])), child: [], start: dt, heap: 0, expanded: true, hidden: false};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
         }
         case "SOQL_EXECUTE_BEGIN":{
-          let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false, soql: 1};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, heap: 0, expanded: true, hidden: false, soql: 1};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
         }
         case "SOSL_EXECUTE_BEGIN":{
-          let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false, sosl: 1};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, heap: 0, expanded: true, hidden: false, sosl: 1};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
         }
         case "CALLOUT_REQUEST": {
-          let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false, callout: 1};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, heap: 0, expanded: true, hidden: false, callout: 1};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
         }//TODO "futur", "queue",
         case "FLOW_ELEMENT_BEGIN": {
-          let child = {index: i, title: l.length > 3 ? l[3] : l[1], child: [], start: dt, heap: 0, expanded: true, hidden: false};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, heap: 0, expanded: true, hidden: false};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
@@ -540,7 +540,7 @@ class Model {
           break;
         } case "DML_BEGIN": {
           //DML_BEGIN|[71]|Op:Update|Type:Account|Rows:1
-          let child = {index: i, title: l.length > 3 ? l[3] : "DML", child: [], start: dt, heap: 0, expanded: true, hidden: false, dml: 1};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : "DML"), child: [], start: dt, heap: 0, expanded: true, hidden: false, dml: 1};
           if (l.length > 4){
             let dmlRow = Number(l[5].substring());
             if (!isNaN(dmlRow)){

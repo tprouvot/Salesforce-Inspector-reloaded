@@ -27,7 +27,33 @@ function getFieldDefinitionSetupLinks(sfHost, fieldName, fieldDefinition, isCust
 }
 
 export async function getFieldSetupLinks(sfHost, sobjectName, fieldName, isCustomSetting) {
-  let {records: fieldDefinitions} = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(`select DurableId from FieldDefinition where EntityDefinition.QualifiedApiName = '${sobjectName}' and QualifiedApiName = '${fieldName}'`)}`);
+  let qualifiedApiName = fieldName;
+  const replaceQualifierNameBySuffixOfAddressField = {
+    "City": "Address",
+    "CountryCode": "Address",
+    "GeocodeAccuracy": "Address",
+    "Latitude": "Address",
+    "Longitude": "Address",
+    "PostalCode": "Address",
+    "StateCode": "Address",
+    "Street": "Address",
+    "__City__s": "__c",
+    "__CountryCode__s": "__c",
+    "__GeocodeAccuracy__s": "__c",
+    "__Latitude__s": "__c",
+    "__Longitude__s": "__c",
+    "__PostalCode__s": "__c",
+    "__StateCode__s": "__c",
+    "__Street__s": "__c",
+  };
+  for (const suffixOfAddressField in replaceQualifierNameBySuffixOfAddressField) {
+    const replaceQualifiedName = replaceQualifierNameBySuffixOfAddressField[suffixOfAddressField];
+    if (fieldName.endsWith(suffixOfAddressField)) {
+      qualifiedApiName = qualifiedApiName.replace(suffixOfAddressField, replaceQualifiedName);
+      break;
+    }
+  }
+  let {records: fieldDefinitions} = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(`select DurableId from FieldDefinition where EntityDefinition.QualifiedApiName = '${sobjectName}' and QualifiedApiName = '${qualifiedApiName}'`)}`);
   let isCmdt = sobjectName.endsWith("__mdt");
   return getFieldDefinitionSetupLinks(sfHost, fieldName, fieldDefinitions[0], isCustomSetting, isCmdt);
 }

@@ -110,6 +110,7 @@ class Model {
       "SELECT Id FROM WHERE LIKE",
       "SELECT Id FROM WHERE ORDER BY"
     ];
+    this.separator = getSeparator();
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -278,15 +279,20 @@ class Model {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
   }
   copyAsCsv() {
-    let separator = getSeparator();
-    copyToClipboard(this.exportedData.csvSerialize(separator));
+    copyToClipboard(this.exportedData.csvSerialize(this.separator));
   }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
   }
+  downloadAsCsv(){
+    const blob = new Blob([this.exportedData.csvSerialize(this.separator)], { type: "data:text/csv;charset=utf-8," });
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.download = `${this.autocompleteResults.sobjectName}-${new Date().toLocaleDateString()}.csv`;
+    downloadAnchor.href = window.URL.createObjectURL(blob);
+    downloadAnchor.click();
+  }
   deleteRecords(e) {
-    let separator = getSeparator();
-    let data = this.exportedData.csvSerialize(separator);
+    let data = this.exportedData.csvSerialize(this.separator);
     let encodedData = btoa(data);
 
     let args = new URLSearchParams();
@@ -1065,6 +1071,7 @@ class App extends React.Component {
     this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
+    this.onDownloadAsCsv = this.onDownloadAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
@@ -1187,6 +1194,11 @@ class App extends React.Component {
   onCopyAsCsv() {
     let {model} = this.props;
     model.copyAsCsv();
+    model.didUpdate();
+  }
+  onDownloadAsCsv(){
+    let {model} = this.props;
+    model.downloadAsCsv();
     model.didUpdate();
   }
   onCopyAsJson() {
@@ -1382,9 +1394,14 @@ class App extends React.Component {
         h("div", {className: "result-bar"},
           h("h1", {}, "Export Result"),
           h("div", {className: "button-group"},
-            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
+              h("svg", {className: "button-icon"},
+                h("use", {xlinkHref: "symbols.svg#download"})
+              )
+            ),
             localStorage.getItem("showDeleteRecordsButton") !== "false"
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),

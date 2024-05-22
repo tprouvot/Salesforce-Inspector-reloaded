@@ -429,13 +429,15 @@ class Model {
       if (l.length <= 1) {
         continue;
       }
-      let timestamp = l[0].split(/[:. ]/);
+      let datetimeTimestamp = l[0].split(/[:. ]/);
       let dt = null;
-      if (timestamp.length == 5){
-        let rawHour = Number(timestamp[0]);
-        let rawMin = Number(timestamp[1]);
-        let rawSec = Number(timestamp[2]);
-        let rawMil = Number(timestamp[3]);
+      let timestampNanos = null;
+      if (datetimeTimestamp.length == 5){
+        let rawHour = Number(datetimeTimestamp[0]);
+        let rawMin = Number(datetimeTimestamp[1]);
+        let rawSec = Number(datetimeTimestamp[2]);
+        let rawMil = Number(datetimeTimestamp[3]);
+        let rawNano = Number(datetimeTimestamp[4].substring(1, datetimeTimestamp[4].length - 1));
         if (!isNaN(rawHour) && !isNaN(rawMin) && !isNaN(rawSec) && !isNaN(rawMil)) {
           dt = new Date();
           dt.setHours(rawHour);
@@ -443,20 +445,26 @@ class Model {
           dt.setSeconds(rawSec);
           dt.setMilliseconds(rawMil * 100);
         }
+        if (!isNaN(rawNano)) {
+          timestampNanos = rawNano;
+        }
       }
       //TODO l[2] =line number
       //l[3] =log level
       switch (l[1]) {
         //EXECUTION_STARTED EXECUTION_FINISHED
         case "CODE_UNIT_STARTED": {
-          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : "code unit"), child: [], start: dt, heap: 0, expanded: true, hidden: false};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : "code unit"), child: [], start: dt, startNano: timestampNanos, heap: 0, expanded: true, hidden: false};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
         } case "CODE_UNIT_FINISHED": {
           node.end = dt;
-          if (node.start && dt) {
-            node.duration = dt.getTime() - node.start.getTime();
+          node.endNano = timestampNanos;
+          if (node.startNano && timestampNanos) {
+            node.duration = timestampNanos - node.startNano;
+          } else if (node.start && dt) {
+            node.duration = (dt.getTime() - node.start.getTime()) * 1000;
           }
           return i;
         } case "HEAP_ALLOCATE": {
@@ -477,31 +485,31 @@ class Model {
         case "SYSTEM_CONSTRUCTOR_ENTRY":
         case "FLOW_START_INTERVIEW_BEGIN":
         case "VALIDATION_RULE":{
-          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1])), child: [], start: dt, heap: 0, expanded: true, hidden: false};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1])), child: [], start: dt, startNano: timestampNanos, heap: 0, expanded: true, hidden: false};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
         }
         case "SOQL_EXECUTE_BEGIN":{
-          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, heap: 0, expanded: true, hidden: false, soql: 1};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, startNano: timestampNanos, heap: 0, expanded: true, hidden: false, soql: 1};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
         }
         case "SOSL_EXECUTE_BEGIN":{
-          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, heap: 0, expanded: true, hidden: false, sosl: 1};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, startNano: timestampNanos, heap: 0, expanded: true, hidden: false, sosl: 1};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
         }
         case "CALLOUT_REQUEST": {
-          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, heap: 0, expanded: true, hidden: false, callout: 1};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, startNano: timestampNanos, heap: 0, expanded: true, hidden: false, callout: 1};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
         }//TODO "futur", "queue",
         case "FLOW_ELEMENT_BEGIN": {
-          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, heap: 0, expanded: true, hidden: false};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : l[1]), child: [], start: dt, startNano: timestampNanos, heap: 0, expanded: true, hidden: false};
           i = this.parseLine(lines, child);
           node.child.push(child);
           break;
@@ -515,15 +523,21 @@ class Model {
         case "FLOW_ELEMENT_ERROR":
         case "FLOW_INTERVIEW_FINISHED": {
           node.end = dt;
-          if (node.start && dt) {
-            node.duration = dt.getTime() - node.start.getTime();
+          node.endNano = timestampNanos;
+          if (node.startNano && timestampNanos) {
+            node.duration = timestampNanos - node.startNano;
+          } else if (node.start && dt) {
+            node.duration = (dt.getTime() - node.start.getTime()) * 1000;
           }
           return i;
         } case "SOSL_EXECUTE_END":
         case "SOQL_EXECUTE_END": {
           node.end = dt;
-          if (node.start && dt) {
-            node.duration = dt.getTime() - node.start.getTime();
+          node.endNano = timestampNanos;
+          if (node.startNano && timestampNanos) {
+            node.duration = timestampNanos - node.startNano;
+          } else if (node.start && dt) {
+            node.duration = (dt.getTime() - node.start.getTime()) * 1000;
           }
           //Rows:1
           let row = Number(l[3].substring(5));
@@ -535,8 +549,11 @@ class Model {
         case "VALIDATION_FAIL":
         case "VALIDATION_PASS": {
           node.end = dt;
-          if (node.start && dt) {
-            node.duration = dt.getTime() - node.start.getTime();
+          node.endNano = timestampNanos;
+          if (node.startNano && timestampNanos) {
+            node.duration = timestampNanos - node.startNano;
+          } else if (node.start && dt) {
+            node.duration = (dt.getTime() - node.start.getTime()) * 1000;
           }
           node.status = l[1];
           return i;
@@ -575,7 +592,7 @@ class Model {
           break;
         } case "DML_BEGIN": {
           //DML_BEGIN|[71]|Op:Update|Type:Account|Rows:1
-          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : "DML"), child: [], start: dt, heap: 0, expanded: true, hidden: false, dml: 1};
+          let child = {index: i, title: l.length > 4 ? l[4] : (l.length > 3 ? l[3] : "DML"), child: [], start: dt, startNano: timestampNanos, heap: 0, expanded: true, hidden: false, dml: 1};
           if (l.length > 4){
             let dmlRow = Number(l[5].substring());
             if (!isNaN(dmlRow)){

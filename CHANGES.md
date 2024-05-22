@@ -3,7 +3,7 @@
 ## Version 1.24
 
 - Add `Download CSV` button in data export page ([feature 101](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/101) requested by [Mickael Gudin](https://github.com/mickaelgudin))
-- Customize extension's pages shortcuts in [chrome://extensions/shortcut](chrome://extensions/shortcut) ([feature 171](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/171) by [asanaEAzimzhanov](https://github.com/asanaEAzimzhanov))
+- Customize extension's pages shortcuts in [chrome://extensions/shortcuts](chrome://extensions/shortcuts) ([feature 171](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/171) by [asanaEAzimzhanov](https://github.com/asanaEAzimzhanov))
 - Add option to exclude formula fields from data export autocomplete [feature 415](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/415)
 - Removes whitespace from both ends in user search [feature 410](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/410) (contribution by [César Blanco](https://github.com/cesarblancg))
 - Add setup menu items `Trusted URLs` and `Trusted URL and Browser Policy Violations` to shortcut links

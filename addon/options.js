@@ -3,11 +3,13 @@ import {sfConn, apiVersion, nullToEmptyString} from "./inspector.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 
+const faviconColors = ["green", "orange", "pink", "purple", "red", "yellow"];
+const faviconPlaceholder = `Available values: ${faviconColors.join(", ")} or external URL.`;
+
 class Model {
 
   constructor(sfHost) {
     this.sfHost = sfHost;
-
     this.sfLink = "https://" + this.sfHost;
     this.userInfo = "...";
     if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
@@ -82,8 +84,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
-          {option: Option, props: {type: "toggle", title: "Use custom favicon for Salesforce", key: "useCustomFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
-          {option: Option, props: {type: "text", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", placeholder: "Available values : green, orange, pink, purple, red, yellow"}}
+          {option: Option, props: {type: "text", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", isFavicon: true, tooltip: `${faviconPlaceholder} Favicon changes will be visible in tab after reload (for external URL, you may need to add external domain to CSP trusted domains).`, placeholder: faviconPlaceholder}}
         ]
       },
       {
@@ -105,6 +106,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
           {option: Option, props: {type: "toggle", title: "Show 'Delete Records' button ", key: "showDeleteRecordsButton", default: true}},
+          {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
           {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
           {option: Option, props: {type: "text", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}}
         ]
@@ -379,7 +381,7 @@ class Option extends React.Component {
       value = JSON.stringify(props.default);
       localStorage.setItem(this.key, value);
     }
-    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value) : value};
+    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value) : value, isFavicon: props.isFavicon};
     this.title = props.title;
   }
 
@@ -395,6 +397,14 @@ class Option extends React.Component {
     localStorage.setItem(this.key, inputValue);
   }
 
+  getIconPreview() {
+    if (this.state.isFavicon && this.state[this.key] && faviconColors.includes(this.state[this.key]?.toLowerCase())) {
+      return h("img", {src: `./images/favicons/${this.state[this.key]}.png`, style: {width: "32px", height: "32px", marginLeft: "5px"}, title: `Example of ${this.state[this.key]} favicon`});
+    } else {
+      return null;
+    }
+  }
+
   render() {
     const id = this.key;
     const isText = this.type == "text";
@@ -404,22 +414,25 @@ class Option extends React.Component {
           h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
         )
       ),
-      isText ? h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-          h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange}),
+      isText ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          h("input", {type: "text", id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
+        ),
+        h("div", {className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-left_small"},
+          this.getIconPreview(),
         )
-      )
-      : h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      ))
+      : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
         h("label", {className: "slds-checkbox_toggle slds-grid"},
-          h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: nullToEmptyString(this.state[this.key]), onChange: this.onChangeToggle}),
+          h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
           h("span", {id, className: "slds-checkbox_faux_container center-label"},
             h("span", {className: "slds-checkbox_faux"}),
             h("span", {className: "slds-checkbox_on"}, "Enabled"),
             h("span", {className: "slds-checkbox_off"}, "Disabled"),
           )
         )
-      )
+      ))
     );
   }
 }
@@ -576,5 +589,4 @@ class App extends React.Component {
     }
 
   });
-
 }

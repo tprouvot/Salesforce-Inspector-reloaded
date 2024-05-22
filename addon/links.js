@@ -17,6 +17,7 @@ export let setupLinks = [
   {label: "Public Groups", link: "/lightning/setup/PublicGroups/home", section: "Administration > Users", prod: false},
   {label: "Queues", link: "/lightning/setup/Queues/home", section: "Administration > Users", prod: false},
   {label: "Roles", link: "/lightning/setup/Roles/home", section: "Administration > Users", prod: false},
+  {label: "User Access Policies", link: "/lightning/setup/UserAccessPolicies/home", section: "Administration > Users", prod: false},
   {label: "User Management Settings", link: "/lightning/setup/UserManagementSettings/home", section: "Administration > Users", prod: false},
   {label: "Users", link: "/lightning/setup/ManageUsers/home", section: "Administration > Users", prod: false},
   //Administration > Data

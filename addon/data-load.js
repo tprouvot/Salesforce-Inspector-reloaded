@@ -725,7 +725,7 @@ export class ScrollTableRow extends React.Component {
       return h(ScrollTableCell, {key: "cell" + c, row, model, cell, rowHeight, colWidth: model.colWidths[model.firstColIdx + c], previousCell});
     });
     if (row.cells.some(c => c.isEditing)) {
-      cells.push(h("td", {}, h("button", {
+      cells.push(h("td", {key: "editcell" + row.id}, h("button", {
         name: "saveBtn",
         key: "saveBtn" + row.id,
         title: "Save the values of this record",

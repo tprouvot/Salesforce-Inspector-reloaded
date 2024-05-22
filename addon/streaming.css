@@ -159,3 +159,10 @@
     border-radius: 2px;
     fill: white;
   }
+  #result-area {
+    flex: 1 1 0;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }

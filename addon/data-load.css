@@ -1,3 +1,10 @@
+.result-table {
+  overflow: auto;
+  flex: 1 1 0;
+  background-color: #fff;
+  border-top: 1px solid #DDDBDA;
+}
+
 .result-table table {
   border: none;
 }

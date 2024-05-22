@@ -165,13 +165,6 @@ textarea[hidden], .autocomplete-results[hidden] {
   white-space: pre;
 }
 
-.result-table {
-  overflow: auto;
-  flex: 1 1 0;
-  background-color: #fff;
-  border-top: 1px solid #DDDBDA;
-}
-
 .area {
   background-color: #F8F8F8;
   padding: 8px 12px;

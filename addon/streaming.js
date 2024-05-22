@@ -16,10 +16,10 @@ function RecordTable() {
       let row = new Array(5);
       row[0] = record.channel || (record?.event?.EventApiName);
       row[1] = record?.data?.event?.replayId || record?.event?.replayId;
-      row[2] = record.data.event.createdDate || new Date();
-      row[3] = record.data.event.type;
+      row[2] = record?.data?.event?.createdDate || (new Date()).toISOString();
+      row[3] = record?.data?.event?.type || (record?.data?.event?.EventApiName) || (record?.event?.EventApiName);
       row[4] = JSON.stringify(record);
-      rt.records = rt.records.push(record);
+      rt.records.push(record);
       rt.rowVisibilities.push(true);
       rt.table.push(row);
     }
@@ -40,7 +40,6 @@ class Model {
     this.events = new RecordTable();
     this.isWorking = false;
     this.activeChannels = [];
-    this.executeStatus = "";
     this.executeError = null;
     if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
       //change background color for production
@@ -134,12 +133,17 @@ class Model {
     let eventChannels = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(query), {});
     return eventChannels.records.map(c => ({label: c.Name, value: c.Name}));
   }
+  async getPushTopics() {
+    let query = "SELECT Id, Name FROM PushTopic ORDER BY Name ASC";
+    let eventChannels = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(query), {});
+    return eventChannels.records.map(c => ({label: c.Name, value: c.Name}));
+  }
   async getChannels(eventType) {
-    let eventToChannel = {"PlatformEvent": "event", "ChangeDataCaptureEvent": "data"};
+    let eventToChannel = {"PlatformEvent": "event", "PlatformEventChannel": "event", "ChangeDataCaptureEvent": "data", "ChangeDataCaptureEventChannel": "data"};
     let channelType = eventToChannel[eventType];
     let query = "SELECT DeveloperName, Id, MasterLabel FROM PlatformEventChannel WHERE channelType = '" + channelType + "' ORDER BY MasterLabel ASC";
     let eventChannels = await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query/?q=" + encodeURIComponent(query), {});
-    return eventChannels.records.map(c => ({label: c.MasterLabel, value: c.DeveloperName}));
+    return eventChannels.records.map(c => ({label: c.MasterLabel, value: c.DeveloperName + "__chn"}));
   }
   async getEntities(eventType) {
     switch (eventType) {
@@ -219,6 +223,7 @@ class Model {
 
     if (subResponse == null || !Array.isArray(subResponse) || !subResponse[0].successful) {
       console.log("subscription failed");
+      //"403:denied_by_security_policy:create_denied" /event/Panoptes_Event_Channel
       return;
     }
     let advice = null;
@@ -238,7 +243,6 @@ class Model {
       });
       pollId++;
       if (response == null || !Array.isArray(response)) {
-        this.executeStatus = "Error";
         this.executeError = "Polling failed with empty response.";
         this.activeChannels.splice(this.activeChannels.indexOf(channel), 1);
         console.log("polling failed");
@@ -246,7 +250,6 @@ class Model {
       }
       let rspFailed = response.find(rsp => rsp == null || (rsp.data == null && !rsp.successful));
       if (rspFailed) {
-        this.executeStatus = "Error";
         this.executeError = rspFailed.error;
         this.activeChannels.splice(this.activeChannels.indexOf(channel), 1);
         console.log("polling failed:" + rspFailed.error);
@@ -258,6 +261,12 @@ class Model {
       }
       response.filter(rsp => rsp != null && rsp.data != null && rsp.channel == channel)
         .forEach(rsp => this.events.addToTable(rsp));
+      this.resultTableCallback(this.events);
+      if (pollId > 50) {
+        this.executeError = "Polling end after 50 calls.";
+        this.activeChannels.splice(this.activeChannels.indexOf(channel), 1);
+        console.log("polling ended");
+      }
     }
   }
   recalculateSize() {
@@ -343,9 +352,9 @@ class Monitor extends React.Component {
   }
   render() {
     let {model} = this.props;
-    return h("div", {},
+    return h("div", {className: "area", id: "result-area"},
       h("textarea", {id: "result-text", readOnly: true, value: model.executeError || "", hidden: model.executeError == null}),
-      h(ScrollTable, {model: model.tableModel, hidden: model.executeError != null})
+      h(ScrollTable, {model: model.tableModel, hidden: model.activeChannels.length == 0})
     );
   }
 }
@@ -358,7 +367,7 @@ class Subscribe extends React.Component {
     this.eventTypes = [
       {
         label: "Platform Event Channel",
-        value: "PlatefomEventChannel"
+        value: "PlatformEventChannel"
       },
       {
         label: "Change Data Capture Channel",
@@ -399,12 +408,24 @@ class Subscribe extends React.Component {
           }
           // /u/notifications/ExampleUserChannel
           this.topics = eventChannels;
+          if (eventChannels.length > 0){
+            this.selectedTopic = eventChannels[0].value;
+          }
           this.model.didUpdate();
         });
         break;
       case "PushTopicEvent":
-        //TODO list push topic event
-        // /topic/InvoiceStatementUpdates
+        this.model.getPushTopics().then(eventChannels => {
+          if (!eventChannels) {
+            return;
+          }
+          // /topic/TeamUpdatedContacts
+          this.topics = eventChannels;
+          if (eventChannels.length > 0){
+            this.selectedTopic = eventChannels[0].value;
+          }
+          this.model.didUpdate();
+        });
         break;
       case "ChangeDataCaptureEvent":
       case "PlatformEvent":
@@ -412,26 +433,24 @@ class Subscribe extends React.Component {
           if (!eventEntities) {
             return;
           }
-          // /event/Event_Name__e /event/Channel_Name__chn /data/ChangeEvents
+          // /event/Event_Name__e /data/AccountChangeEvents
           this.topics = eventEntities;
-          this.model.didUpdate();
-        });
-        break;
-      case "PlatefomEventChannel":
-        this.model.getChannels(this.eventType).then(eventChannels => {
-          if (!eventChannels) {
-            return;
+          if (eventEntities.length > 0){
+            this.selectedTopic = eventEntities[0].value;
           }
-          this.topics = eventChannels;
           this.model.didUpdate();
         });
         break;
+      case "PlatformEventChannel":
       case "ChangeDataCaptureEventChannel":
         this.model.getChannels(this.eventType).then(eventChannels => {
           if (!eventChannels) {
             return;
           }
           this.topics = eventChannels;
+          if (eventChannels.length > 0){
+            this.selectedTopic = eventChannels[0].value;
+          }
           this.model.didUpdate();
         });
         break;
@@ -448,7 +467,9 @@ class Subscribe extends React.Component {
     let topic = "";
     switch (this.eventType) {
       case "GenericEvent":
-        topic = "/u/";
+        if (this.selectedTopic && !this.selectedTopic.startsWith("/u/")){
+          topic = "/u/";
+        }
         break;
       case "PushTopicEvent":
         topic = "/topic/";
@@ -459,7 +480,7 @@ class Subscribe extends React.Component {
       case "PlatformEvent":
         topic = "/event/";
         break;
-      case "PlatefomEventChannel":
+      case "PlatformEventChannel":
         topic = "/event/";
         break;
       case "ChangeDataCaptureEventChannel":

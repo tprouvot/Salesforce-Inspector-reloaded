@@ -888,16 +888,41 @@ class AllDataBoxSObject extends React.PureComponent {
     }
   }
 
+  getRecordNameField(recordIdDetails) {
+    if (recordIdDetails == null) {
+      return null;
+    }
+    if ("name" in recordIdDetails) {
+      return "name";
+    }
+
+    if (recordIdDetails.attributes && recordIdDetails.attributes.type) {
+      for (let name of [recordIdDetails.attributes.type + "Number", "Subject", "Title"]) {
+        if (recordIdDetails[name]) {
+          return name;
+        }
+      }
+    }
+
+    for (let field in recordIdDetails) {
+      if (field.endsWith("Name")) {
+        return field;
+      }
+    }
+    return null;
+  }
+
   restCallForRecordDetails(fields, selectedValue){
     let query = "SELECT " + fields.join() + " FROM " + selectedValue.sobject.name + " where id='" + selectedValue.recordId + "'";
     sfConn.rest("/services/data/v" + apiVersion + "/query?q=" + encodeURIComponent(query), {logErrors: false}).then(res => {
       for (let record of res.records) {
         let lastModifiedDate = new Date(record.LastModifiedDate);
         let createdDate = new Date(record.CreatedDate);
+        let nameField = this.getRecordNameField(record);
         this.setState({
           recordIdDetails: {
             "recordTypeId": (record.RecordType) ? record.RecordType.Id : "",
-            "recordName": (record.Name) ? record.Name : "",
+            "recordName": (record.Name) ? record.Name : (record[nameField] ? record[nameField] : ""),
             "recordTypeName": (record.RecordType) ? record.RecordType.DeveloperName : "",
             "createdBy": record.CreatedBy.Alias,
             "lastModifiedBy": record.LastModifiedBy.Alias,
@@ -909,9 +934,11 @@ class AllDataBoxSObject extends React.PureComponent {
     }).catch(e => {
       //some fields (Name, RecordTypeId) are not available for particular objects, in this case remove it from the fields list
       if (e.message.includes("No such column ")){
-        this.restCallForRecordDetails(fields.filter(field => field !== "Name"), selectedValue);
+        this.restCallForRecordDetails(["FIELDS(STANDARD)", "LastModifiedBy.Alias", "CreatedBy.Alias"], selectedValue);
       } else if (e.message.includes("Didn't understand relationship 'RecordType'")){
         this.restCallForRecordDetails(fields.filter(field => !field.startsWith("RecordType.")), selectedValue);
+      } else {
+        throw e;
       }
     });
   }
@@ -1752,36 +1779,17 @@ class AllDataRecordDetails extends React.PureComponent {
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
   }
-  getRecordNameField(recordIdDetails) {
-    if (recordIdDetails == null) {
-      return null;
-    }
-    if ("name" in recordIdDetails) {
-      return "name";
-    }
-    for (let suffix of ["name", "number", "subject", "title"]) {
-      for (let field in recordIdDetails) {
-        if (field.toLowerCase().endsWith(suffix)) {
-          return field;
-        }
-      }
-    }
-    return null;
-  }
-  firstUpperCase(fieldName) {
-    return fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
-  }
+
   render() {
     let {sfHost, recordIdDetails, className, selectedValue, linkTarget} = this.props;
     if (recordIdDetails) {
-      let recordNameField = this.getRecordNameField(recordIdDetails);
       return (
         h("table", {className},
           h("tbody", {},
-            recordNameField != null ? h("tr", {},
-              h("th", {}, this.firstUpperCase(recordNameField) + ":"),
+            recordIdDetails.recordName ? h("tr", {},
+              h("th", {}, "Name:"),
               h("td", {},
-                h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails[recordNameField])
+                h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
               )
             ) : null,
             recordIdDetails.recordTypeName ? h("tr", {},

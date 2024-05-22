@@ -45,6 +45,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
+  if (request.message == "createWindow") {
+    const brow = typeof browser === "undefined" ? chrome : browser;
+    brow.windows.create({
+      url: request.url,
+      incognito: request.incognito ?? false
+    });
+  }
   return false;
 });
 

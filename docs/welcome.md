@@ -13,6 +13,9 @@ With this extension, you can:
 
 You can enable the extension by clicking on the **Salesforce Inspector Reloaded** icon in the toolbar, or by pressing `Ctrl+Shift+I` (Windows) / `Ctrl+Option+I` (Mac) on your keyboard or [customize the shortcut](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#customize-extensions-shortcuts).
 
+![2024-05-06_14-16-10 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ab6e5461-9952-4305-9773-0074561678ca)
+
+
 For more information, please read this [article](https://www.salesforceben.com/salesforce-inspector-reloaded/) or the [documentation page](https://tprouvot.github.io/Salesforce-Inspector-reloaded/).
 
 We hope you will enjoy using **Salesforce Inspector Reloaded** and find it useful for your Salesforce development and administration tasks. If you have any feedback, questions, or issues, please feel free to [open an issue](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues) on GitHub.

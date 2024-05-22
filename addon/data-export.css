@@ -302,6 +302,10 @@ input:disabled:hover {
   color: #dddbda;
 }
 
+button:disabled > svg.button-icon{
+  fill: #dddbda;
+}
+
 .highlighted {
   background-color: rgb(0, 112, 210);
   border-color: rgb(0, 112, 210);
@@ -447,9 +451,6 @@ button[hidden],
   margin-right: 0
 }
 
-/* div.button-group:not(:only-of-type) {
-  margin-left: 10px;
-} */
 .button-group> :first-child,
 .button-group>[hidden]+* {
   border-top-left-radius: 0.25rem;
@@ -520,6 +521,16 @@ button.contract .button-toggle-icon {
 
 button.toggle .button-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/light_bulb.svg');
+}
+
+svg.button-icon {
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  fill: #0070d2;
+  vertical-align: sub;
 }
 
 .autocomplete-header {

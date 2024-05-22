@@ -166,3 +166,23 @@
     flex-direction: column;
     padding: 0;
   }
+  .stream-form-label{
+    width: 11em;
+    margin-bottom: 5px;
+  }
+  .stream-form-input {
+    width: 20em;
+    margin-bottom: 5px;
+  }
+  .stream-form-fieldset{
+    border:1px solid #c0c0c0;
+    margin:0 2px;
+    padding:0.35em 0.625em 0.75em;
+  }
+  .stream-form-button {
+    margin-left: 20em;
+  }
+  .topic-delete-icon {
+    width: 3em;
+    fill: grey;
+  }

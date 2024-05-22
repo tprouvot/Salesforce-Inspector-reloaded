@@ -92,6 +92,7 @@ class App extends React.PureComponent {
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
       apexRunnerHref: "apex-runner.html?" + hostArg,
+      streamingHref: "streaming.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
     };
@@ -121,6 +122,7 @@ class App extends React.PureComponent {
       exportHref: "data-export.html?" + exportArg,
       importHref: "data-import.html?" + importArg,
       apexRunnerHref: "apex-runner.html?" + limitsArg,
+      streamingHref: "streaming.html?" + limitsArg,
       limitsHref: "limits.html?" + limitsArg
     });
   }
@@ -225,9 +227,10 @@ class App extends React.PureComponent {
       "o": ["tab", "objectTab"],
       "u": ["tab", "userTab"],
       "s": ["tab", "shortcutTab"],
+      "t": ["click", "streamingBtn"],
       "r": ["tab", "orgTab"],
       //shift shortkey
-      "A": ["click", "apexRunnerBtn"]
+      "c": ["click", "apexRunnerBtn"]
     };
 
     if (!actionMap[e.key]) {
@@ -294,7 +297,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, apexRunnerHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, apexRunnerHref, streamingHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -378,7 +381,10 @@ class App extends React.PureComponent {
               h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "apexRunnerBtn", href: apexRunnerHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Run ", h("u", {}, "A"), "pex"))
+              h("a", {ref: "apexRunnerBtn", href: apexRunnerHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Run Apex ", h("u", {}, "C"), "ode"))
+            ),
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "streamingBtn", href: streamingHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Manage S", h("u", {}, "t"), "reaming"))
             ),
             h("div", {},
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))

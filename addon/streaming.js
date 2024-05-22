@@ -41,6 +41,8 @@ class Model {
     this.isWorking = false;
     this.activeChannels = [];
     this.executeError = null;
+    this.pollId = 1;
+    this.pollClientId = null;
     if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
       //change background color for production
       document.body.classList.add("prod");
@@ -179,32 +181,56 @@ class Model {
         return [];
     }
   }
-  async pollEvents(channel) {
-    this.activeChannels.push(channel);
-    this.events.describeInfo = this.describeInfo;
-    this.events.sfHost = this.sfHost;
-    let pollId = 1;
-    let handshake = await sfConn.rest("/cometd/" + apiVersion, {
+  async unsubscribe(i) {
+    let subResponse = await sfConn.rest("/cometd/" + apiVersion, {
       method: "POST",
       body: [
         {
-          "version": "1.0",
-          "minimumVersion": "0.9",
-          "channel": "/meta/handshake",
-          "supportedConnectionTypes": ["long-polling", "callback-polling"],
-          "advice": {"timeout": 60000, "interval": 0},
-          "id": pollId.toString()
+          "channel": "/meta/unsubscribe",
+          "subscription": this.activeChannels[i],
+          "id": this.pollId.toString(),
+          "clientId": this.pollClientId
         }],
       bodyType: "json",
       headers: {}
     });
-    pollId++;
-    if (Array.isArray(handshake)) {
-      handshake = handshake[0];
-    }
-    if (handshake == null || !handshake.successful) {
-      console.log("handshake failed");
+    this.pollId++;
+    if (subResponse == null || !Array.isArray(subResponse) || !subResponse.some(r => (r.channel == "/meta/unsubscribe") && r.successful)) {
+      console.log("unsubscription failed");
+      if (subResponse != null && Array.isArray(subResponse)) {
+        subResponse.filter(r => r.error).forEach(r => console.log(r.error));
+      }
       return;
+    }
+    this.activeChannels.splice(i, 1);
+  }
+  async pollEvents(channel) {
+    //this.events.describeInfo = this.describeInfo;
+    this.events.sfHost = this.sfHost;
+    if (this.activeChannels.length == 0) {
+      let handshake = await sfConn.rest("/cometd/" + apiVersion, {
+        method: "POST",
+        body: [
+          {
+            "version": "1.0",
+            "minimumVersion": "0.9",
+            "channel": "/meta/handshake",
+            "supportedConnectionTypes": ["long-polling", "callback-polling"],
+            "advice": {"timeout": 60000, "interval": 0},
+            "id": this.pollId.toString()
+          }],
+        bodyType: "json",
+        headers: {}
+      });
+      this.pollId++;
+      if (Array.isArray(handshake)) {
+        handshake = handshake[0];
+      }
+      this.pollClientId = handshake.clientId;
+      if (handshake == null || !handshake.successful) {
+        console.log("handshake failed");
+        return;
+      }
     }
 
     let subResponse = await sfConn.rest("/cometd/" + apiVersion, {
@@ -212,46 +238,51 @@ class Model {
       body: [
         {
           "channel": "/meta/subscribe",
-          "subscription": channel, // /topic/InvoiceStatementUpdates /systemTopic/Logging /event/Event_Name__e /event/Channel_Name__chn
-          "id": pollId.toString(),
-          "clientId": handshake.clientId
+          "subscription": channel,
+          "id": this.pollId.toString(),
+          "clientId": this.pollClientId
         }],
       bodyType: "json",
       headers: {}
     });
-    pollId++;
+    this.pollId++;
 
     if (subResponse == null || !Array.isArray(subResponse) || !subResponse[0].successful) {
       console.log("subscription failed");
       //"403:denied_by_security_policy:create_denied" /event/Panoptes_Event_Channel
       return;
     }
+    this.activeChannels.push(channel);
+    if (this.activeChannels.length > 1) {
+      //another loop is already running
+      return;
+    }
     let advice = null;
-    while (this.activeChannels.includes(channel)) {
+    while (this.activeChannels.length > 0) {
       let response = await sfConn.rest("/cometd/" + apiVersion, {
         method: "POST",
         body: [
           {
             "channel": "/meta/connect",
             "connectionType": "long-polling",
-            "advice": advice || {"timeout": 0},
-            "id": pollId.toString(),
-            "clientId": handshake.clientId
+            "advice": advice || {"timeout": 110000},
+            "id": this.pollId.toString(),
+            "clientId": this.pollClientId
           }],
         bodyType: "json",
         headers: {}
       });
-      pollId++;
+      this.pollId++;
       if (response == null || !Array.isArray(response)) {
         this.executeError = "Polling failed with empty response.";
-        this.activeChannels.splice(this.activeChannels.indexOf(channel), 1);
+        this.activeChannels = [];
         console.log("polling failed");
         return;
       }
       let rspFailed = response.find(rsp => rsp == null || (rsp.data == null && !rsp.successful));
       if (rspFailed) {
         this.executeError = rspFailed.error;
-        this.activeChannels.splice(this.activeChannels.indexOf(channel), 1);
+        this.activeChannels = [];
         console.log("polling failed:" + rspFailed.error);
         return;
       }
@@ -262,9 +293,9 @@ class Model {
       response.filter(rsp => rsp != null && rsp.data != null && rsp.channel == channel)
         .forEach(rsp => this.events.addToTable(rsp));
       this.resultTableCallback(this.events);
-      if (pollId > 50) {
+      if (this.pollId > 50) {
         this.executeError = "Polling end after 50 calls.";
-        this.activeChannels.splice(this.activeChannels.indexOf(channel), 1);
+        this.activeChannels = [];
         console.log("polling ended");
       }
     }
@@ -359,7 +390,6 @@ class Monitor extends React.Component {
   }
 }
 class Subscribe extends React.Component {
-  //TODO pollEvents(channel)
   constructor(props) {
     super(props);
     this.model = props.model;
@@ -494,28 +524,38 @@ class Subscribe extends React.Component {
     this.model.didUpdate();
   }
   onUnsubscribe(i) {
-    this.model.activeChannels.splice(i, 1);
+    this.model.unsubscribe(i);
     this.model.didUpdate();
   }
   render() {
     let self = this;
     return h("div", {},
       h("h2", {className: "slds-text-title_bold"}, "1. Select Type"),
-      h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.eventType, onChange: this.onSelectEventType, title: "Event Type"},
-        h("option", {value: ""}, "types"),
-        this.eventTypes.map(t => h("option", {key: t.value, value: t.value}, t.label))
+      h("label", {className: "slds-checkbox_toggle slds-grid"},
+        h("span", {className: "slds-form-element__label slds-m-bottom_none stream-form-label"}, "Event type:"),
+        h("div", {className: "stream-form-input"},
+          h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.eventType, onChange: this.onSelectEventType, title: "Event Type"},
+            h("option", {value: ""}, "types"),
+            this.eventTypes.map(t => h("option", {key: t.value, value: t.value}, t.label))
+          )
+        )
       ),
-      h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.selectedTopic, onChange: this.onSelectTopic, title: "Topic"},
-        this.topics.map(t => h("option", {key: t.value, value: t.value}, t.label))
+      h("label", {className: "slds-checkbox_toggle slds-grid"},
+        h("span", {className: "slds-form-element__label slds-m-bottom_none stream-form-label"}, "Topic:"),
+        h("div", {className: "stream-form-input"},
+          h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.selectedTopic, onChange: this.onSelectTopic, title: "Topic"},
+            this.topics.map(t => h("option", {key: t.value, value: t.value}, t.label))
+          )
+        )
       ),
       h("div", {className: "slds-p-horizontal_small"},
-        h("button", {className: "slds-button slds-button_brand slds-float_right", onClick: this.onSubscribe, title: "Subscribe"}, "Subscribe")
+        h("button", {className: "slds-button slds-button_brand stream-form-button", onClick: this.onSubscribe, title: "Subscribe"}, "Subscribe")
       ),
       h("div", {},
         this.model.activeChannels.map((c, i) =>
           h("div", {key: "activeChannel" + i},
-            h("span", {}, c),
-            h("svg", {onClick: () => { self.onUnsubscribe(i); }, className: "topic-delete-icon"},
+            h("span", {className: "slds-icon_container"}, c),
+            h("svg", {onClick: () => { self.onUnsubscribe(i); }, className: "slds-icon slds-icon-text-default topic-delete-icon"},
               h("use", {xlinkHref: "symbols.svg#delete"})
             )
           )
@@ -580,15 +620,15 @@ class RegisterPushTopic extends React.Component {
   render() {
     return h("div", {},
       h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_small"},
-        h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-          h("span", {}, "Push Topic Name")
+        h("label", {className: "stream-form-label"},
+          h("span", {className: "slds-form-element__label"}, "Push Topic Name")
         ),
-        h("div", {className: "slds-form-element__control slds-col slds-size_8-of-12 slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-gutters_small"},
           h("input", {type: "text", className: "slds-input", value: this.state.pushTopicName, onChange: this.onSetPushTopicName}),
         )
       ),
       h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_small"},
-        h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("label", {className: "stream-form-label text-align-middle"},
           h("span", {}, "Push Topic Name")
         ),
         h("div", {className: "slds-form-element__control slds-col slds-size_8-of-12 slds-gutters_small"},
@@ -653,7 +693,7 @@ class RegisterPushTopic extends React.Component {
         )
       ),
       h("div", {className: "slds-p-horizontal_small"},
-        h("button", {className: "slds-button slds-button_brand slds-float_right", onClick: this.onCreatePushTopic, title: "Create Push Topic"}, "Create Push Topic")
+        h("button", {className: "slds-button slds-button_brand stream-form-button", onClick: this.onCreatePushTopic, title: "Create Push Topic"}, "Create Push Topic")
       )
     );
   }
@@ -724,14 +764,29 @@ class RegisterEvent extends React.Component {
     this.entities = this.props.entities;
     return h("div", {},
       h("h2", {className: "slds-text-title_bold"}, "2. Select Channel"),
-      h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.selectedChannel, onChange: this.onSelectChannel, title: "Channel"},
-        h("option", {value: "", defaultValue: true}, "Create Channel"),
-        this.channels.map(t => h("option", {key: t.value, value: t.value}, t.label))
+      h("label", {className: "slds-checkbox_toggle slds-grid"},
+        h("span", {className: "slds-form-element__label slds-m-bottom_none stream-form-label"}, "Channel:"),
+        h("div", {className: "stream-form-input"},
+          h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.selectedChannel, onChange: this.onSelectChannel, title: "Channel"},
+            h("option", {value: "", defaultValue: true}, "Create Channel"),
+            this.channels.map(t => h("option", {key: t.value, value: t.value}, t.label))
+          ),
+        )
       ),
-      h("div", {hidden: this.eventType == "GenericEvent" || this.selectedChannel != ""},
-        h("input", {placeholder: "Channel Name", type: "text", value: this.model.channelName, onInput: this.onSetChannelName}),
-        h("input", {placeholder: "Channel Label", type: "text", value: this.model.channelLabel, onInput: this.onSetChannelLabel}),
-        h("button", {onClick: this.onCreateChannel, title: "Create channel"}, "Create Channel")
+      h("fieldset", {hidden: this.eventType == "GenericEvent" || this.selectedChannel != "", className: "stream-form-fieldset"},
+        h("label", {className: "slds-checkbox_toggle slds-grid"},
+          h("span", {className: "slds-form-element__label slds-m-bottom_none stream-form-label"}, "Channel Name:"),
+          h("div", {className: "stream-form-input"},
+            h("input", {placeholder: "Channel Name", className: "slds-input", type: "text", value: this.model.channelName, onInput: this.onSetChannelName}),
+          )
+        ),
+        h("label", {className: "slds-checkbox_toggle slds-grid"},
+          h("span", {className: "slds-form-element__label slds-m-bottom_none stream-form-label"}, "Channel Label:"),
+          h("div", {className: "stream-form-input"},
+            h("input", {placeholder: "Channel Label", className: "slds-input", type: "text", value: this.model.channelLabel, onInput: this.onSetChannelLabel})
+          )
+        ),
+        h("button", {className: "slds-button slds-button_brand stream-form-button", onClick: this.onCreateChannel, title: "Create channel"}, "Create Channel")
       ),
       h("br", {}),
       h("h2", {className: "slds-text-title_bold"}, "3. Create " + (this.eventType == "PlatformEvent" ? "Plateform Event" : "Change Data Capture")),
@@ -741,12 +796,24 @@ class RegisterEvent extends React.Component {
       h("br", {}),
       h("h2", {className: "slds-text-title_bold"}, "4. Add Event Channel Member"),
       h("div", {},
-        h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.selectedEntity, onChange: this.onSelectEntity, title: "Entity"},
-          h("option", {value: "", defaultValue: true}, "Create Entity"),
-          this.entities.map(t => h("option", {key: t.value, value: t.value}, t.label))
+        h("label", {className: "slds-checkbox_toggle slds-grid"},
+          h("span", {className: "slds-form-element__label slds-m-bottom_none stream-form-label"}, "Entity:"),
+          h("div", {className: "stream-form-input"},
+            h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.selectedEntity, onChange: this.onSelectEntity, title: "Entity"},
+              h("option", {value: "", defaultValue: true}, "Select Entity"),
+              this.entities.map(t => h("option", {key: t.value, value: t.value}, t.label))
+            )
+          )
         ),
-        h("input", {placeholder: "Event Member Name", type: "text", value: this.model.eventMemberName, onInput: this.onSetEventMemberName}),
-        h("button", {onClick: this.onCreateChannelMember, title: "Create channel"}, "Create Channel")
+        h("label", {className: "slds-checkbox_toggle slds-grid"},
+          h("span", {className: "slds-form-element__label slds-m-bottom_none stream-form-label"}, "Event Member Name:"),
+          h("div", {className: "stream-form-input"},
+            h("input", {placeholder: "Event Member Name", className: "slds-input", type: "text", value: this.model.eventMemberName, onInput: this.onSetEventMemberName})
+          )
+        ),
+        h("div", {className: "slds-p-horizontal_small"},
+          h("button", {className: "slds-button slds-button_brand stream-form-button", onClick: this.onCreateChannelMember, title: "Create Channel Member"}, "Create Channel Member")
+        )
       ),
     );
   }
@@ -822,9 +889,14 @@ class Register extends React.Component {
     }
     return h("div", {},
       h("h2", {className: "slds-text-title_bold"}, "1. Select Type"),
-      h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.eventType, onChange: this.onSelectEventType, title: "Event Type"},
-        h("option", {value: ""}, "types"),
-        this.eventTypes.map(t => h("option", {key: t.value, value: t.value}, t.label))
+      h("label", {className: "slds-checkbox_toggle slds-grid"},
+        h("span", {className: "slds-form-element__label slds-m-bottom_none stream-form-label"}, "Type"),
+        h("div", {className: "stream-form-input"},
+          h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.eventType, onChange: this.onSelectEventType, title: "Event Type"},
+            h("option", {value: ""}, "types"),
+            this.eventTypes.map(t => h("option", {key: t.value, value: t.value}, t.label))
+          ),
+        )
       ),
       EventTypeForm
     );

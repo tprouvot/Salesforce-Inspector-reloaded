@@ -19,6 +19,7 @@ class Model {
     //full log text data
     this.logData = "";
     this.logSearch = "";
+    this.logFilter = "";
     this.logInput = null;
     this.searchInput = null;
     this.spinnerCount = 0;
@@ -171,6 +172,20 @@ class Model {
       this.EnrichLog = [{value: this.logData}];
     }
   }
+  recalculculFilter() {
+    if (this.logFilter) {
+      this.EnrichLog = [];
+      let lines = this.logData.split("\n");
+      for (let line of lines) {
+        let searchIdx = line.indexOf(this.logFilter);
+        if (searchIdx >= 0) {
+          this.EnrichLog.push({value: line + "\n"});
+        }
+      }
+    } else {
+      this.EnrichLog = [{value: this.logData}];
+    }
+  }
   setLogSearch(value) {
     this.logSearch = value;
     if (this.logData == null) {
@@ -187,6 +202,26 @@ class Model {
     }, 500);
 
     if (this.logSearch == null || this.logSearch.length == 0) {
+      this.searchIndex = -1;
+      return;
+    }
+    this.scrollLog(0);
+  }
+  setLogFilter(value) {
+    this.logFilter = value;
+    if (this.logData == null) {
+      return;
+    }
+    let self = this;
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+    }
+    this.timeout = setTimeout(() => {
+      self.recalculculFilter();
+      this.didUpdate();
+    }, 500);
+
+    if (this.logFilter == null || this.logFilter.length == 0) {
       this.searchIndex = -1;
       return;
     }
@@ -798,14 +833,16 @@ class RawEditor extends React.Component {
     super(props);
     this.model = props.model;
     this.state = {
-      filterBy: null
+      filterBy: "",
     };
     this.availableFilters = ["Debug", "SOQL", "DML", "Callout", "Exception"];
     this.onSelectFilterBy = this.onSelectFilterBy.bind(this);
   }
 
-  onSelectFilterBy() {
-    // TODO
+  onSelectFilterBy(e) {
+    this.setState({filterBy: e.target.value});
+    this.model.setLogFilter(e.target.value);
+    this.model.didUpdate();
   }
 
   componentDidMount() {
@@ -824,18 +861,15 @@ class RawEditor extends React.Component {
     ]);
     return h("div", {onClick: this.onClick},
       h("div", {className: "button-group"},
-        h("select", {value: JSON.stringify(this.state.FilterBy), onChange: this.onSelectFilterBy, className: "log-filter"},
-          h("option", {value: JSON.stringify(null)}, "No filter"),
-          this.availableFilters.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q))
+        h("select", {value: this.state.filterBy, onChange: this.onSelectFilterBy, className: "log-filter"},
+          h("option", {value: ""}, "No filter"),
+          this.availableFilters.map(q => h("option", {key: q.toUpperCase(), value: q.toUpperCase()}, q))
         ),
-        h("button", {onClick: this.filter, title: "Filter"}, "Filter"),
       ),
-      h(LogEditor, {model, keywordColor, keywordCaseSensitive: true}),
+      h(LogViewer, {model, keywordColor, keywordCaseSensitive: true}),
     );
   }
 }
-
-
 
 class LogTabNavigation extends React.Component {
   constructor(props) {
@@ -981,7 +1015,7 @@ class Profiler extends React.Component {
   }
 }
 
-class LogEditor extends React.Component {
+class LogViewer extends React.Component {
   constructor(props) {
     super(props);
     this.keywordColor = props.keywordColor;
@@ -1073,17 +1107,17 @@ class LogEditor extends React.Component {
     let {model} = this.props;
     let lineCount = model.lineCount;
 
+    // Scroll
     let rowHeight = 14; // constant: The initial estimated height of a row before it is rendered
     let scrollerOffsetHeight = 0;
     let scrollerScrollTop = 0;
-
     if (this.scroller != null) {
       scrollerScrollTop = this.scroller.scrollTop;
       scrollerOffsetHeight = this.scroller.offsetHeight;
     }
 
     //return h("div", {className: "editor", ref: "scroller", onScroll: onScrollerScroll, style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 160) + "px"}},
-    return h("div", {className: "editor", ref: "scroller", style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 255) + "px"}},
+    return h("div", {className: "editor", ref: "scroller", style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 317) + "px"}},
       //h("div", {className: "scrolled"}, style: {height: scrolledHeight, top: scrolledTop}},
       h("div", {className: "line-numbers", style: {lineHeight: rowHeight + "px"}},
         //Array(lastRowIdx - firstRowIdx).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}, i + firstRowIdx))

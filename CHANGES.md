@@ -2,7 +2,15 @@
 
 ## Version 1.27
 
+> [!IMPORTANT]
+> New plateform event Manager
+> TO DEFINE
+
+- Plateform event Manager [issue 15](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/15)
 - Show diff cells in blue when 2 rows displayed [issue 48](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/48)
+- Review profiler to be more readable [issue 105](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/105)
+- Display name, number, subject or title according to what is available [issue 37](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/37)
+- Handle address field properly [issue 108](https://github.com/dufoli/Salesforce-Inspector-Advanced/issues/108)
 
 ## Version 1.26
 

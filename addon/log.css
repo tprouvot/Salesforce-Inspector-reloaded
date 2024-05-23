@@ -167,7 +167,21 @@
     margin: 12px 12px 0 12px;
     height: 90%;
   }
-  
+  .area-header {
+    display: flex;
+  }
+  .script-controls {
+    display: flex;
+  }
+  .script-controls div {
+    display: flex;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-left: 1px solid #DDDBDA;
+  }
+  .script-controls label {
+    padding-right: 10px;
+  }
   h1 {
     font-size: 1rem;
     display: inline;

@@ -106,6 +106,7 @@ class Model {
       Number of Email Invocations: 0 out of 10
       Number of Mobile Apex push calls: 0 out of 10*/
     ];
+    this.filterToField = {"SOQL": "soqlTotal", "SOSL": "soslTotal", "DML": "dmlTotal", "Callout": "calloutTotal"};
     if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
       //change background color for production
       document.body.classList.add("prod");
@@ -113,6 +114,7 @@ class Model {
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
     }));
+    this.hideNodeByFilter = this.hideNodeByFilter.bind(this);
   }
 
   /**
@@ -197,7 +199,7 @@ class Model {
     }
     this.timeout = setTimeout(() => {
       self.recalculculSearch();
-      this.filterNodes(value);
+      this.hideNodesBySearch(value);
       this.didUpdate();
     }, 500);
 
@@ -218,6 +220,7 @@ class Model {
     }
     this.timeout = setTimeout(() => {
       self.recalculculFilter();
+      this.hideNodesByFilter(value);
       this.didUpdate();
     }, 500);
 
@@ -323,7 +326,34 @@ class Model {
     let result = [];
     this.nodes = this.flatternNode(node.child, result, 1);
   }
-  filterNodes(searchTerm) {
+  hideNodesByFilter(filter) {
+    if (!this.rootNode) {
+      return;
+    }
+    this.rootNode.hidden = this.hideNodeByFilter(filter, this.rootNode);
+    this.didUpdate();
+  }
+  hideNodeByFilter(filter, node) {
+    node.hidden = true;
+    let field = "";
+    if (filter in this.filterToField) {
+      field = this.filterToField[filter];
+    }
+    if (!filter || !field || (field in node && node[field] > 0)) {
+      node.hidden = false;
+    }
+    if (!node.child) {
+      return node.hidden;
+    }
+    for (let i = 0; i < node.child.length; i++) {
+      const c = node.child[i];
+      if (!this.hideNodeByFilter(filter, c)) {
+        node.hidden = false;
+      }
+    }
+    return node.hidden;
+  }
+  hideNodesBySearch(searchTerm) {
     if (!this.rootNode) {
       return;
     }
@@ -331,10 +361,10 @@ class Model {
     if (searchTerm) {
       searchRegEx = new RegExp(searchTerm, "i");
     }
-    this.rootNode.hidden = this.filterNode(searchRegEx, this.rootNode);
+    this.rootNode.hidden = this.hideNodeBySearch(searchRegEx, this.rootNode);
     this.didUpdate();
   }
-  filterNode(searchRegEx, node) {
+  hideNodeBySearch(searchRegEx, node) {
     node.hidden = true;
     if (!searchRegEx || (node.title && node.title.match(searchRegEx))) {
       node.hidden = false;
@@ -344,7 +374,7 @@ class Model {
     }
     for (let i = 0; i < node.child.length; i++) {
       const c = node.child[i];
-      if (!this.filterNode(searchRegEx, c)) {
+      if (!this.hideNodeBySearch(searchRegEx, c)) {
         node.hidden = false;
       }
     }
@@ -765,9 +795,16 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      filterBy: "",
+    };
+    this.availableFilters = ["Debug", "SOQL", "SOSL", "DML", "Callout", "Exception"];
+
+    this.onSelectFilterBy = this.onSelectFilterBy.bind(this);
     this.onLogSearchInput = this.onLogSearchInput.bind(this);
     this.onKeypress = this.onKeypress.bind(this);
     this.downloadFile = this.downloadFile.bind(this);
+    this.listAllLogs = this.listAllLogs.bind(this);
   }
   componentDidMount() {
     let {model} = this.props;
@@ -807,6 +844,21 @@ class App extends React.Component {
     downloadLink.click();
   }
 
+  onSelectFilterBy(e) {
+    let {model} = this.props;
+    this.setState({filterBy: e.target.value});
+    model.setLogFilter(e.target.value);
+    model.didUpdate();
+  }
+
+  listAllLogs() {
+    let args = new URLSearchParams();
+    args.set("host", this.props.model.sfHost);
+    args.set("query", "SELECT Id, Application, Status, Operation, StartTime, LogLength, LogUser.Name FROM ApexLog ORDER BY StartTime DESC");
+
+    window.open("data-export.html?" + args, "_blank");
+  }
+
   render() {
     let {model} = this.props;
     return h("div", {},
@@ -831,12 +883,23 @@ class App extends React.Component {
         h("div", {className: "area-header"},
         ),
         h("div", {className: "script-controls"},
-          h("h1", {}, "Search"),
           h("div", {className: "script-history-controls"},
-            h("input", {id: "search-text", ref: "search", placeholder: "Search a word", onKeyPress: this.onKeypress, type: "search", value: model.logSearch, onInput: this.onLogSearchInput})
+            h("label", {htmlFor: "search-text", className: "slds-label"}, "Search"),
+            h("input", {id: "search-text", name: "search-text", ref: "search", placeholder: "Search a word", onKeyPress: this.onKeypress, type: "search", value: model.logSearch, onInput: this.onLogSearchInput, className: "slds-input"})
           ),
-          h("a", {href: "#", onClick: this.downloadFile, title: "Download Log"}, "Download Log"),
-          h(FileUpload, {model})
+          h("div", {className: "button-group"},
+            h("select", {name: "log-filter", value: this.state.filterBy, onChange: this.onSelectFilterBy, className: "log-filter"},
+              h("option", {value: ""}, "No filter"),
+              this.availableFilters.map(q => h("option", {key: q.toUpperCase(), value: q.toUpperCase()}, q))
+            ),
+          ),
+          h("div", {},
+            h("a", {href: "#", onClick: this.downloadFile, title: "Download Log"}, "Download Log"),
+          ),
+          h(FileUpload, {model}),
+          h("div", {},
+            h("button", {onClick: this.listAllLogs, className: "slds-button slds-button_brand"}, "List all logs"),
+          ),
         ),
         h(LogTabNavigation, {model})
       )
@@ -849,17 +912,6 @@ class RawEditor extends React.Component {
   constructor(props) {
     super(props);
     this.model = props.model;
-    this.state = {
-      filterBy: "",
-    };
-    this.availableFilters = ["Debug", "SOQL", "DML", "Callout", "Exception"];
-    this.onSelectFilterBy = this.onSelectFilterBy.bind(this);
-  }
-
-  onSelectFilterBy(e) {
-    this.setState({filterBy: e.target.value});
-    this.model.setLogFilter(e.target.value);
-    this.model.didUpdate();
   }
 
   componentDidMount() {
@@ -867,22 +919,16 @@ class RawEditor extends React.Component {
   }
   render() {
     let model = this.model;
-    let keywordColor = new Map([["CODE_UNIT_STARTED", "violet"], ["CODE_UNIT_FINISHED", "violet"], ["HEAP_ALLOCATE", "blue"],
-      ["SYSTEM_METHOD_ENTRY", "violet"], ["METHOD_ENTRY", "violet"], ["SYSTEM_CONSTRUCTOR_ENTRY", "violet"], ["FLOW_START_INTERVIEW_BEGIN", "violet"],
-      ["SYSTEM_METHOD_EXIT", "violet"], ["METHOD_EXIT", "violet"], ["SYSTEM_CONSTRUCTOR_EXIT", "violet"], ["FLOW_INTERVIEW_FINISHED", "violet"],
-      ["DML_BEGIN", "violet"], ["DML_END", "violet"],
+    let keywordColor = new Map([["CODE_UNIT_STARTED", "violet"], ["CODE_UNIT_FINISHED", "violet"],
+      ["SYSTEM_METHOD_ENTRY", "violet"], ["METHOD_ENTRY", "violet"], ["SYSTEM_CONSTRUCTOR_ENTRY", "violet"], ["FLOW_START_INTERVIEW_BEGIN", "green"],
+      ["SYSTEM_METHOD_EXIT", "violet"], ["METHOD_EXIT", "violet"], ["SYSTEM_CONSTRUCTOR_EXIT", "violet"], ["FLOW_INTERVIEW_FINISHED", "green"],
+      ["DML_BEGIN", "pink"], ["DML_END", "pink"],
       ["VALIDATION_RULE", "blue"], ["VALIDATION_PASS", "blue"],
-      ["SOQL_EXECUTE_BEGIN", "blue"], ["SOSL_EXECUTE_BEGIN", "blue"], ["CALLOUT_REQUEST", "blue"], ["FLOW_ELEMENT_BEGIN", "blue"],
-      ["SOQL_EXECUTE_END", "blue"], ["SOSL_EXECUTE_END", "blue"], ["CALLOUT_REQUEST", "blue"], ["FLOW_ELEMENT_BEGIN", "blue"],
-      ["VALIDATION_ERROR", "red"], ["VALIDATION_FAIL", "red"], ["FLOW_ELEMENT_ERROR", "red"], ["FATAL_ERROR", "red"], ["FLOW_CREATE_INTERVIEW_ERROR", "red"], ["FLOW_START_INTERVIEWS_ERROR", "red"]
+      ["SOQL_EXECUTE_BEGIN", "navy"], ["SOSL_EXECUTE_BEGIN", "navy"], ["CALLOUT_REQUEST", "brown"], ["FLOW_ELEMENT_BEGIN", "green"],
+      ["SOQL_EXECUTE_END", "navy"], ["SOSL_EXECUTE_END", "navy"], ["CALLOUT_REQUEST", "brown"], ["FLOW_ELEMENT_BEGIN", "green"],
+      ["EXCEPTION_THROWN", "red"], ["VALIDATION_ERROR", "red"], ["VALIDATION_FAIL", "red"], ["FLOW_ELEMENT_ERROR", "red"], ["FATAL_ERROR", "red"], ["FLOW_CREATE_INTERVIEW_ERROR", "red"], ["FLOW_START_INTERVIEWS_ERROR", "red"]
     ]);
-    return h("div", {onClick: this.onClick},
-      h("div", {className: "button-group"},
-        h("select", {value: this.state.filterBy, onChange: this.onSelectFilterBy, className: "log-filter"},
-          h("option", {value: ""}, "No filter"),
-          this.availableFilters.map(q => h("option", {key: q.toUpperCase(), value: q.toUpperCase()}, q))
-        ),
-      ),
+    return h("div", {},
       h(LogViewer, {model, keywordColor, keywordCaseSensitive: true}),
     );
   }
@@ -1183,11 +1229,9 @@ class FileUpload extends React.Component {
   render() {
     return (
       h("div", {},
-        h("h3", {}, "Upload a previous log file"),
-        h("div", {},
-          h("input", {type: "file", onChange: this.onFileChange}),
-          h("button", {onClick: this.onFileUpload}, "Upload!"),
-        )
+        h("label", {htmlFor: "logFile"}, "Load a previous log"),
+        h("input", {type: "file", name: "logFile", onChange: this.onFileChange, className: "slds-input"}),
+        h("button", {onClick: this.onFileUpload, className: "slds-button slds-button_brand"}, "Load"),
       )
     );
   }

@@ -15,6 +15,7 @@ class Model {
     // URL parameters
     this.recordId = null;
     this.lineCount = 1;
+    this.lineNumbers = Array.from(Array(this.lineCount).keys());
 
     //full log text data
     this.logData = "";
@@ -155,6 +156,7 @@ class Model {
   recalculculSearch() {
     let searchIdx = 0;
     let lastSearchIdx = 0;
+    this.lineNumbers = Array.from(Array(this.lineCount).keys());
     if (this.logSearch) {
       this.EnrichLog = [];
       searchIdx = this.logData.indexOf(this.logSearch);
@@ -177,15 +179,20 @@ class Model {
   recalculculFilter() {
     if (this.logFilter) {
       this.EnrichLog = [];
+      this.lineNumbers = [];
+      let lineNumber = 0;
       let lines = this.logData.split("\n");
       for (let line of lines) {
         let searchIdx = line.indexOf(this.logFilter);
         if (searchIdx >= 0) {
           this.EnrichLog.push({value: line + "\n"});
+          this.lineNumbers.push(lineNumber);
         }
+        lineNumber++;
       }
     } else {
       this.EnrichLog = [{value: this.logData}];
+      this.lineNumbers = Array.from(Array(this.lineCount).keys());
     }
   }
   setLogSearch(value) {
@@ -319,6 +326,7 @@ class Model {
   parseLog(data) {
     let lines = data.split("\n");
     this.lineCount = lines.length;
+    this.lineNumbers = Array.from(Array(this.lineCount).keys());
     let node = {index: 0, title: "Log", child: [], heap: 0};
     this.parseLine(lines, node);
     this.aggregate(node);
@@ -908,7 +916,7 @@ class App extends React.Component {
 }
 
 
-class RawEditor extends React.Component {
+class RawLog extends React.Component {
   constructor(props) {
     super(props);
     this.model = props.model;
@@ -946,7 +954,7 @@ class LogTabNavigation extends React.Component {
         id: 1,
         tabTitle: "Tab1",
         title: "Raw Log",
-        content: RawEditor
+        content: RawLog
       },
       {
         id: 2,
@@ -1168,7 +1176,6 @@ class LogViewer extends React.Component {
 
   render() {
     let {model} = this.props;
-    let lineCount = model.lineCount;
 
     // Scroll
     let rowHeight = 14; // constant: The initial estimated height of a row before it is rendered
@@ -1180,11 +1187,11 @@ class LogViewer extends React.Component {
     }
 
     //return h("div", {className: "editor", ref: "scroller", onScroll: onScrollerScroll, style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 160) + "px"}},
-    return h("div", {className: "editor", ref: "scroller", style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 317) + "px"}},
+    return h("div", {className: "editor", ref: "scroller", style: {offsetHeight: scrollerOffsetHeight, scrollTop: scrollerScrollTop, maxHeight: (model.winInnerHeight - 212) + "px"}},
       //h("div", {className: "scrolled"}, style: {height: scrolledHeight, top: scrolledTop}},
       h("div", {className: "line-numbers", style: {lineHeight: rowHeight + "px"}},
         //Array(lastRowIdx - firstRowIdx).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}, i + firstRowIdx))
-        Array(lineCount).fill(null).map((e, i) => h("span", {key: "LineNumber" + i}, i))
+        model.lineNumbers.map((e) => h("span", {key: "LineNumber" + e}, e))
       ),
       h("div", {id: "log-text", ref: "log", style: {lineHeight: rowHeight + "px"}},
         model.EnrichLog.map(this.renderNode)

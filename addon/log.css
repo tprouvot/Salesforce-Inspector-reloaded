@@ -224,6 +224,12 @@
     background: khaki;
     vertical-align: baseline;
   }
+  .tree-icon {
+    align-self: center;
+    width: 0.75rem;
+    height: 0.75rem;
+    fill: blue;
+  }
   /*thead th {
     resize: horizontal;
     overflow: hidden;

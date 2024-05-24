@@ -41,7 +41,7 @@ class Model {
     this.isWorking = false;
     this.activeChannels = [];
     this.executeError = null;
-    this.pollId = 1;
+    this.pollId = 0;
     this.pollClientId = null;
     if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
       //change background color for production
@@ -182,6 +182,7 @@ class Model {
     }
   }
   async unsubscribe(i) {
+    this.pollId++;
     let subResponse = await sfConn.rest("/cometd/" + apiVersion, {
       method: "POST",
       body: [
@@ -194,7 +195,6 @@ class Model {
       bodyType: "json",
       headers: {}
     });
-    this.pollId++;
     if (subResponse == null || !Array.isArray(subResponse) || !subResponse.some(r => (r.channel == "/meta/unsubscribe") && r.successful)) {
       console.log("unsubscription failed");
       if (subResponse != null && Array.isArray(subResponse)) {
@@ -208,6 +208,7 @@ class Model {
     //this.events.describeInfo = this.describeInfo;
     this.events.sfHost = this.sfHost;
     if (this.activeChannels.length == 0) {
+      this.pollId++;
       let handshake = await sfConn.rest("/cometd/" + apiVersion, {
         method: "POST",
         body: [
@@ -222,7 +223,6 @@ class Model {
         bodyType: "json",
         headers: {}
       });
-      this.pollId++;
       if (Array.isArray(handshake)) {
         handshake = handshake[0];
       }
@@ -232,7 +232,7 @@ class Model {
         return;
       }
     }
-
+    this.pollId++;
     let subResponse = await sfConn.rest("/cometd/" + apiVersion, {
       method: "POST",
       body: [
@@ -245,7 +245,6 @@ class Model {
       bodyType: "json",
       headers: {}
     });
-    this.pollId++;
 
     if (subResponse == null || !Array.isArray(subResponse) || !subResponse[0].successful) {
       console.log("subscription failed");
@@ -259,6 +258,7 @@ class Model {
     }
     let advice = null;
     while (this.activeChannels.length > 0) {
+      this.pollId++;
       let response = await sfConn.rest("/cometd/" + apiVersion, {
         method: "POST",
         body: [
@@ -272,7 +272,6 @@ class Model {
         bodyType: "json",
         headers: {}
       });
-      this.pollId++;
       if (response == null || !Array.isArray(response)) {
         this.executeError = "Polling failed with empty response.";
         this.activeChannels = [];
@@ -385,7 +384,7 @@ class Monitor extends React.Component {
     let {model} = this.props;
     return h("div", {className: "area", id: "result-area"},
       h("textarea", {id: "result-text", readOnly: true, value: model.executeError || "", hidden: model.executeError == null}),
-      h(ScrollTable, {model: model.tableModel, hidden: model.activeChannels.length == 0})
+      h(ScrollTable, {model: model.tableModel})
     );
   }
 }
@@ -916,7 +915,6 @@ class App extends React.Component {
   }
   componentDidMount() {
     let {model} = this.props;
-
     function resize() {
       model.didUpdate(); // Will call recalculateSize
     }

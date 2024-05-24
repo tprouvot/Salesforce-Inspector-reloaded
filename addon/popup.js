@@ -3,6 +3,8 @@ import {sfConn, apiVersion, sessionError} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 
+var p = parent;
+
 let h = React.createElement;
 
 {
@@ -2273,17 +2275,7 @@ function getLinkTarget(e) {
 window.getRecordId = getRecordId; // for unit tests
 
 function lightningNavigate(details, fallbackURL) {
-  chrome.runtime.sendMessage({message: "lightningNavigate", details}).then(response => {
-    if (response.success) {
-      console.log("Lightning navigation successful");
-    } else {
-      console.log("Lightning navigation failed, falling back to default navigation", response.message);
-      window.open(fallbackURL, "_top");
-    }
-  }).catch(error => {
-    console.error("Lightning navigation failed, falling back to default navigation", error.message);
-    window.open(fallbackURL, "_top");
-  });
+  p.postMessage({lightningNavigate: {...details, fallbackURL}}, "*");
 }
 
 function handleLightningLinkClick(e) {

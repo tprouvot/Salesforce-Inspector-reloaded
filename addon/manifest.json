@@ -7,11 +7,7 @@
     "128": "icon128.png"
   },
   "minimum_chrome_version": "88",
-  "permissions": [
-    "cookies",
-    "scripting",
-    "activeTab"
-  ],
+  "permissions": ["cookies"],
   "host_permissions": [
     "https://*.salesforce.com/*",
     "https://*.salesforce-setup.com/*",
@@ -68,7 +64,8 @@
         "explore-api.html",
         "limits.html",
         "options.html",
-        "/images/favicons/*"
+        "/images/favicons/*",
+        "inject.js"
       ],
       "matches": ["https://*/*"],
       "extension_ids": []

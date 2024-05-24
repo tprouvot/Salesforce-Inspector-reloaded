@@ -63,8 +63,7 @@
         "metadata-retrieve.html",
         "explore-api.html",
         "limits.html",
-        "options.html",
-        "/images/favicons/*"
+        "options.html"
       ],
       "matches": ["https://*/*"],
       "extension_ids": []

@@ -235,7 +235,7 @@ are displayed.
 
 From the option page, you can customize the default favicon by:
 
-- a predefined color among those values (green, orange, pink, purple, red, yellow)
+- a predefined color name among [those values](https://www.w3schools.com/tags/ref_colornames.asp) or any HTML color code you want (ie `#FF8C00`).
 - a custom favicon url (ie "https://stackoverflow.com/favicon.ico")
 
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
@@ -245,7 +245,7 @@ The customization is linked to the org, it means you can have different colors f
 Now if you want to set a random favicon for all of your visited orgs, open dev console from one of the extension page and paste following code in dev console:
 
 ``` js
-let colors = ['green', 'orange', 'pink', 'purple', 'red', 'yellow'];
+let colors = ['olive', 'darkorange', 'pink', 'purple', 'firebrick', 'hotpink', 'skyblue', '#1E90FF'];
 
 let orgs = Object.keys(localStorage).filter((localKey) =>
     localKey.endsWith("_isSandbox")

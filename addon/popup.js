@@ -6,6 +6,9 @@ import {setupLinks} from "./links.js";
 var p = parent;
 
 let h = React.createElement;
+if (typeof browser === "undefined") {
+  var browser = chrome;
+}
 
 {
   parent.postMessage({
@@ -22,6 +25,12 @@ let h = React.createElement;
       }
     }
   });
+  chrome.runtime.onMessage.addListener((request) => {
+    if (request.msg === "shortcut_pressed") {
+      parent.postMessage({insextOpenPopup: true}, "*");
+    }
+  }
+  );
 }
 
 function closePopup() {
@@ -48,7 +57,6 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
       inInspector,
       addonVersion
     }), document.getElementById("root"));
-
   });
 }
 
@@ -186,6 +194,9 @@ class App extends React.PureComponent {
       });
     }
   }
+  isMac() {
+    return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
+  }
   getBannerUrlAction(sessionError, sfHost, clientId, browser) {
     let url;
     let title;
@@ -210,7 +221,7 @@ class App extends React.PureComponent {
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
-    const browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
+    const browser = navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";
     const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
     const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
     const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
@@ -342,7 +353,7 @@ class App extends React.PureComponent {
           )
         ),
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
-          h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
+          h("div", {className: "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
@@ -353,8 +364,8 @@ class App extends React.PureComponent {
               value: apiVersionInput.split(".0")[0]
             })
           ),
-          h("div", {className: "slds-col slds-size_4-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+          h("div", {className: "slds-col slds-size_5-of-12 slds-text-align_left"},
+            h("span", {className: "footer-small-text"}, `${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"} to open`)
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
@@ -639,6 +650,7 @@ class AllDataBoxUsers extends React.PureComponent {
 
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
+    userQuery = userQuery.trim();
     if (!userQuery) {
       return [];
     }
@@ -1092,7 +1104,7 @@ class AllDataBoxShortcut extends React.PureComponent {
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
             } else if (rec.attributes.type === "Network"){
-              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=0DB26000000Ak2X" + rec.Id;
+              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=" + rec.Id;
               rec.label = rec.Name;
               let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
               rec.name = rec.Id + url;
@@ -1265,6 +1277,14 @@ class UserDetails extends React.PureComponent {
     this.enableDebugLog = this.enableDebugLog.bind(this);
   }
 
+  openUrlInIncognito(targetUrl) {
+    browser.runtime.sendMessage({
+      message: "createWindow",
+      url: targetUrl,
+      incognito: true,
+    });
+  }
+
   async enableDebugLog() {
 
     let {user} = this.props;
@@ -1383,6 +1403,11 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/servlet/servlet.su" + "?oid=" + encodeURIComponent(contextOrgId) + "&suorgadminid=" + encodeURIComponent(userId) + "&retURL=" + encodeURIComponent(retUrl) + "&targetURL=" + encodeURIComponent(targetUrl);
   }
 
+  loginAsInIncognito(userId) {
+    const targetUrl = "https://" + this.sfHost + "/secur/frontdoor.jsp?sid=" + sfConn.sessionId + "&retURL=" + encodeURIComponent(this.getLoginAsLink(userId));
+    this.openUrlInIncognito(targetUrl);
+  }
+
   getLoginAsPortalLink(user){
     let {sfHost, contextOrgId, contextPath} = this.props;
     const retUrl = contextPath || "/";
@@ -1423,8 +1448,12 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/lightning/setup/ManageUsers/" + userId + "/summary";
   }
 
+  openMenu(){
+    this.refs.buttonMenu.classList.toggle("slds-is-open");
+  }
+
   render() {
-    let {user, linkTarget, sfHost} = this.props;
+    let {user, linkTarget} = this.props;
     return (
       h("div", {className: "all-data-box-inner"},
         h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},
@@ -1507,10 +1536,31 @@ class UserDetails extends React.PureComponent {
           }, "PSetG"),
           h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs")
         ),
-        h("div", {ref: "userButtons", className: "user-buttons center small-font top-space"},
-          this.doSupportLoginAs(user) ? h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Try login as") : null,
-          this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "Login to Experience") : null,
-        )
+        this.doSupportLoginAs(user) ? h("div", {className: "user-buttons justify-center small-font slds-button-group top-space", role: "group"},
+          h("a", {href: this.getLoginAsLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs"),
+          h("div", {ref: "buttonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.openMenu(), title: "Show other LoginAs options"},
+              h("svg", {className: "slds-button__icon"},
+                h("use", {xlinkHref: "symbols.svg#down"})
+              ),
+              h("span", {className: "slds-assistive-text"}, "Show other LoginAs options")
+            ),
+            h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.openMenu()},
+              h("ul", {className: "slds-dropdown__list", role: "menu"},
+                h("li", {className: "slds-dropdown__item", role: "presentation"},
+                  h("a", {onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, tabIndex: "0"},
+                    h("span", {className: "slds-truncate", title: "Incognito"},
+                      h("span", {className: "slds-truncate", title: "Incognito"}, "Incognito")
+                    )
+                  ),
+                  this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, tabIndex: "1"},
+                    h("span", {className: "slds-truncate", title: "Portal"}, "Portal")
+                  ) : null
+                )
+              )
+            )
+          ),
+        ) : null
       )
     );
   }

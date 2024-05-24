@@ -64,7 +64,6 @@
         "explore-api.html",
         "limits.html",
         "options.html",
-        "/images/favicons/*",
         "inject.js"
       ],
       "matches": ["https://*/*"],
@@ -72,5 +71,28 @@
     }
   ],
   "incognito": "split",
-  "manifest_version": 3
+  "manifest_version": 3,
+  "commands": {
+    "open-popup": {
+      "description": "Open popup"
+    },
+    "data-export": {
+      "description": "Data Export"
+    },
+    "data-import": {
+      "description": "Data Import"
+    },
+    "options": {
+      "description": "Options"
+    },
+    "metadata-retrieve": {
+      "description": "Retrieve Metadata"
+    },
+    "limits": {
+      "description": "Org Limits"
+    },
+    "explore-api": {
+      "description": "Explore API"
+    }
+  }
 }

@@ -1,5 +1,10 @@
 export let apiVersion = localStorage.getItem("apiVersion") == null ? "60.0" : localStorage.getItem("apiVersion");
 export let sessionError;
+export function nullToEmptyString(value) {
+  // For react input fields, the value may not be null or undefined, so this will clean the value
+  return (value == null) ? "" : value;
+}
+
 export let sfConn = {
 
   async getSession(sfHost) {
@@ -34,7 +39,6 @@ export let sfConn = {
         localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
       });
     }
-    setFavicon(sfHost);
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}) {
@@ -322,22 +326,4 @@ function showInvalidTokenBanner(){
   if (containerToShow) { containerToShow.classList.remove("hide"); }
   const containerToMask = document.getElementById("mainTabs");
   if (containerToMask) { containerToMask.classList.add("mask"); }
-}
-
-function setFavicon(sfHost){
-  let fav = localStorage.getItem(sfHost + "_customFavicon");
-  if (fav){
-    let link = document.querySelector("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "icon";
-      document.head.appendChild(link);
-    }
-    //check if custom favicon from the extension or web
-    if (fav.indexOf("http") == -1){
-      fav = "./images/favicons/" + fav + ".png";
-    }
-    link.href = fav;
-  }
-
 }

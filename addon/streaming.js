@@ -290,7 +290,7 @@ class Model {
       if (arsp) {
         advice = arsp.advice;
       }
-      response.filter(rsp => rsp != null && rsp.data != null && rsp.channel == channel)
+      response.filter(rsp => rsp != null && rsp.data != null)
         .forEach(rsp => this.events.addToTable(rsp));
       this.resultTableCallback(this.events);
       if (this.pollId > 50) {
@@ -352,7 +352,7 @@ class StreamingTabSelector extends React.Component {
   }
 
   render() {
-    return h("div", {className: "slds-tabs_default", style: {height: "inherit"}},
+    return h("div", {className: "slds-tabs_default flex-area", style: {height: "inherit"}},
       h("ul", {className: "options-tab-container slds-tabs_default__nav", role: "tablist"},
         this.tabs.map((tab) => h(StreamingTab, {key: tab.id, id: tab.id, title: tab.title, content: tab.content, onTabSelect: this.onTabSelect, selectedTabId: this.state.selectedTabId, model: this.model}))
       ),
@@ -949,7 +949,7 @@ class App extends React.Component {
             ),
           ),
         ),
-        h("div", {className: "main-container slds-card slds-m-around_small"},
+        h("div", {className: "main-container slds-card slds-m-around_small flex-area"},
           h(StreamingTabSelector, {model}))
       )
     );

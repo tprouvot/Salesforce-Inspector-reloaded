@@ -159,6 +159,11 @@
     border-radius: 2px;
     fill: white;
   }
+  .flex-area {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+  }
   #result-area {
     flex: 1 1 0;
     margin-bottom: 12px;

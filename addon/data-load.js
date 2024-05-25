@@ -577,6 +577,9 @@ export class TableModel {
         queryLogArgs.set("recordId", cell.recordId);
         cell.links.push({withIcon: true, href: "log.html?" + queryLogArgs, label: "View Log", className: "view-inspector", action: ""});
       }
+      if (cell.objectType == "AsyncApexJob") {
+        cell.links.push({withIcon: true, href: cell.recordId, label: "Abord Job", className: "abord-job", action: "abord"});
+      }
 
       // If the recordId ends with 0000000000AAA it is a dummy ID such as the ID for the master record type 012000000000000AAA
       if (cell.recordId && self.isRecordId(cell.recordId) && !cell.recordId.endsWith("0000000000AAA")) {
@@ -642,6 +645,11 @@ class ScrollTableCell extends React.Component {
 
   }
 
+  abordJob(e){
+    let script = "System.abortJob('" + e.target.href + "')";
+    sfConn.rest("/services/data/v" + apiVersion + "/tooling/executeAnonymous/?anonymousBody=" + encodeURIComponent(script), {})
+      .catch(error => { console.error(error); });
+  }
   downloadFile(e){
     sfConn.rest(e.target.href, {responseType: "text/csv"}).then(data => {
       let downloadLink = document.createElement("a");
@@ -701,6 +709,8 @@ class ScrollTableCell extends React.Component {
               attributes.onClick = this.copyToClipboard;
             } else if (l.action == "download") {
               attributes.onClick = this.downloadFile;
+            } else if (l.action == "abord") {
+              attributes.onClick = this.abordJob;
             }
             return h("a", attributes, arr);
           })) : ""

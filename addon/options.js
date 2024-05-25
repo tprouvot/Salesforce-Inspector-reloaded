@@ -365,7 +365,7 @@ class Option extends React.Component {
         ),
         h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
           h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-            h("select", {className: "slds-combobox__form-element slds-input combobox-container", name: "options", id: "options", value: this.state[this.key], onChange: this.onChange},
+            h("select", {className: "slds-combobox__form-element slds-input combobox-container", name: "options", id: "options", value: cleanInputValue(this.state[this.key]), onChange: this.onChange},
               this.props.values ? this.props.values.map((o) => h("option", {key: o, value: o}, o)) : ""
             )
           )
@@ -628,7 +628,7 @@ class QueryTemplatesOption extends React.Component {
       ), this.state.queryTemplates.map((l, i) =>
         h("div", {key: "link" + i, className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
           h("div", {className: "slds-col slds-size_10-of-12 text-align-middle"},
-            h("span", {}, l)
+            h("span", {}, this.node ? l[this.node] : l)
           ),
           h("div", {className: "slds-col slds-size_2-of-12 text-align-middle"},
             h("button", {onClick: () => this.deleteQueryTemplate(i), title: "Delete", className: "slds-button slds-button_destructive"}, "Delete")

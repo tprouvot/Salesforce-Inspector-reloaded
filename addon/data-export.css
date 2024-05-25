@@ -536,7 +536,7 @@ button.toggle .button-icon {
 .autocomplete-results-over {
   display: block;
   position: absolute;
-  background-color: transparent;
+  background-color: white;
   z-index: 999;
   overflow: auto;
   height: 200px;
@@ -544,10 +544,21 @@ button.toggle .button-icon {
 .expanded .autocomplete-results-under {
   flex-wrap: wrap;
 }
-.autocomplete-results a {
+.autocomplete-results-under a {
   border: 1px solid #DDDBDA;
   border-radius: 0.25rem;
   padding: 0px 4px;
+}
+
+.autocomplete-results-over .autocomplete-result {
+  border-bottom: 1px solid #DDDBDA;
+  height: 22px;
+}
+.autocomplete-results-ower a {
+  width: 100%
+}
+
+.autocomplete-results a {
   text-decoration: none;
   color: #006dcc;
   background-color: white;
@@ -555,16 +566,17 @@ button.toggle .button-icon {
 
 .autocomplete-results a:hover,
 .autocomplete-results a:active,
-.autocomplete-results .active a
- {
+.autocomplete-results-over .active,
+.autocomplete-results-over .autocomplete-result:hover {
   background-color: #eff1f5;
   color: #005fb2;
 }
-
-.autocomplete-result,
+.autocomplete-result {
+  white-space: nowrap;
+}
+.autocomplete-results-under .autocomplete-result,
 .autocomplete-results span {
   margin: 0 4px 4px 0;
-  white-space: nowrap;
 }
 
 .autocomplete-icon {
@@ -758,7 +770,7 @@ button.toggle .button-icon {
 }
 .editor_caret {
   background-color: transparent;
-  width: 1px;
+  width: 0px;
   display: inline-block;
   /*animation: blink 1s infinite;*/
 }

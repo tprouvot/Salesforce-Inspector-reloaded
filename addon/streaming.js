@@ -383,7 +383,7 @@ class Monitor extends React.Component {
   render() {
     let {model} = this.props;
     return h("div", {className: "area", id: "result-area"},
-      h("textarea", {id: "result-text", readOnly: true, value: model.executeError || "", hidden: model.executeError == null}),
+      h("textarea", {className: "result-text", readOnly: true, value: model.executeError || "", hidden: model.executeError == null}),
       h(ScrollTable, {model: model.tableModel})
     );
   }

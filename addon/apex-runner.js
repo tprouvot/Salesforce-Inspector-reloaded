@@ -69,6 +69,8 @@ class Model {
     this.sfHost = sfHost;
     this.tableModel = new TableModel(sfHost, this.didUpdate.bind(this));
     this.resultTableCallback = (d) => this.tableModel.dataChange(d);
+    this.tableJobModel = new TableModel(sfHost, this.didUpdate.bind(this));
+    this.resultJobTableCallback = (d) => this.tableJobModel.dataChange(d);
     this.editor = null;
     this.initialScript = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
@@ -90,6 +92,7 @@ class Model {
     this.executeStatus = "Ready";
     this.executeError = null;
     this.logs = null;
+    this.jobs = null;
     this.scriptHistory = new ScriptHistory("insextScriptHistory", 100);
     this.selectedHistoryEntry = null;
     this.savedHistory = new ScriptHistory("insextSavedScriptHistory", 50);
@@ -150,6 +153,9 @@ class Model {
   }
   updatedLogs() {
     this.resultTableCallback(this.logs);
+  }
+  updatedJobs() {
+    this.resultJobTableCallback(this.jobs);
   }
   setscriptName(value) {
     this.scriptName = value;
@@ -646,19 +652,16 @@ class Model {
       if (!data.done) {
         let pr = vm.batchHandler(sfConn.rest(data.nextRecordsUrl, {}), vm, logs, onData);
         vm.executeError = null;
-        vm.logs = logs;
         onData(false);
         vm.didUpdate();
         return pr;
       }
       if (logs.records.length == 0) {
         vm.executeError = null;
-        vm.logs = logs;
         onData(true);
         return null;
       }
       vm.executeError = null;
-      vm.logs = logs;
       onData(true);
       return null;
     }, err => {
@@ -668,13 +671,11 @@ class Model {
       if (logs.totalSize != -1) {
         // We already got some data. Show it, and indicate that not all data was executed
         vm.executeError = null;
-        vm.logs = logs;
         onData(true);
         return null;
       }
       vm.executeStatus = "Error";
       vm.executeError = err.message;
-      vm.logs = null;
       onData(true);
       return null;
     });
@@ -831,6 +832,9 @@ class Model {
     let logs = new RecordTable();
     logs.describeInfo = vm.describeInfo;
     logs.sfHost = vm.sfHost;
+    let jobs = new RecordTable();
+    jobs.describeInfo = vm.describeInfo;
+    jobs.sfHost = vm.sfHost;
     let pollId = 1;
     let handshake = await sfConn.rest("/cometd/" + apiVersion, {
       method: "POST",
@@ -910,13 +914,29 @@ class Model {
         advice = arsp.advice;
       }
       if (response.find(rsp => rsp != null && rsp.data != null && rsp.channel == "/systemTopic/Logging")) {
-        let queryLogs = "SELECT Id, Application, Status, Operation, StartTime, LogLength, LogUser.Name FROM ApexLog ORDER BY StartTime DESC";
+        let queryLogs = "SELECT Id, Application, Status, Operation, StartTime, LogLength, LogUser.Name FROM ApexLog ORDER BY StartTime DESC LIMIT 100";
+        let queryJobs = "SELECT Id, JobType, ApexClass.Name, CompletedDate, CreatedBy.Name, CreatedDate, ExtendedStatus, TotalJobItems , JobItemsProcessed, NumberOfErrors, Status FROM AsyncApexJob WHERE JobType in ('BatchApex', 'Queueable') ORDER BY CreatedDate desc LIMIT 100";
         //logs.resetTable();
         logs = new RecordTable();
         logs.describeInfo = vm.describeInfo;
         logs.sfHost = vm.sfHost;
+        jobs = new RecordTable();
+        jobs.describeInfo = vm.describeInfo;
+        jobs.sfHost = vm.sfHost;
         await vm.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryLogs), {}), vm, logs, () => {
+          vm.logs = logs;
           vm.updatedLogs();
+        })
+          .catch(error => {
+            console.error(error);
+            vm.isWorking = false;
+            vm.executeStatus = "Error";
+            vm.executeError = "UNEXPECTED EXCEPTION:" + error;
+            vm.logs = null;
+          });
+        await vm.batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queryJobs), {}), vm, jobs, () => {
+          vm.jobs = jobs;
+          vm.updatedJobs();
         })
           .catch(error => {
             console.error(error);
@@ -935,6 +955,7 @@ class Model {
   recalculateSize() {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     this.tableModel.viewportChange();
+    this.tableJobModel.viewportChange();
   }
 }
 
@@ -1052,11 +1073,23 @@ class App extends React.Component {
     this.onStopExecute = this.onStopExecute.bind(this);
     this.onClick = this.onClick.bind(this);
     this.openEmptyLog = this.openEmptyLog.bind(this);
+    this.onTabSelect = this.onTabSelect.bind(this);
+
+    this.state = {
+      selectedTabId: 1
+    };
+  }
+  onTabSelect(e) {
+    e.preventDefault();
+    this.setState({selectedTabId: e.target.tabIndex});
   }
   onClick(){
     let {model} = this.props;
     if (model && model.tableModel) {
       model.tableModel.onClick();
+    }
+    if (model && model.tableJobModel) {
+      model.tableJobModel.onClick();
     }
   }
   onSelectHistoryEntry(e) {
@@ -1298,14 +1331,29 @@ class App extends React.Component {
       h("div", {className: "area", id: "result-area"},
         h("div", {className: "result-bar"},
           h("h1", {}, "Execute Result"),
+          h("div", {className: "slds-tabs_default flex-area", style: {height: "inherit"}},
+            h("ul", {className: "options-tab-container slds-tabs_default__nav", role: "tablist"},
+              h("li", {className: "options-tab slds-text-align_center slds-tabs_default__item" + (this.state.selectedTabId === 1 ? " slds-is-active" : ""), title: "Logs", tabIndex: 1, role: "presentation", onClick: this.onTabSelect},
+                h("a", {className: "slds-tabs_default__link", href: "#", role: "tab", tabIndex: 1, id: "tab-default-1__item"}, "Logs")
+              ),
+              h("li", {className: "options-tab slds-text-align_center slds-tabs_default__item" + (this.state.selectedTabId === 2 ? " slds-is-active" : ""), title: "Jobs", tabIndex: 2, role: "presentation", onClick: this.onTabSelect},
+                h("a", {className: "slds-tabs_default__link", href: "#", role: "tab", tabIndex: 2, id: "tab-default-2__item"}, "Jobs")
+              )
+            ),
+          ),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.executeStatus),
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExecute}, "Stop polling logs"),
             h("button", {onClick: this.openEmptyLog}, "Open empty logs"),
-          )
+          ),
         ),
-        h("textarea", {id: "result-text", readOnly: true, value: model.executeError || "", hidden: model.executeError == null}),
-        h(ScrollTable, {model: model.tableModel, hidden: model.executeError != null})
+        h("textarea", {className: "result-text", readOnly: true, value: model.executeError || "", hidden: model.executeError == null}),
+        h("div", {className: "scrolltable-wrapper", hidden: (model.executeError != null || this.state.selectedTabId != 1)},
+          h(ScrollTable, {model: model.tableModel})
+        ),
+        h("div", {className: "scrolltable-wrapper", hidden: (model.executeError != null || this.state.selectedTabId != 2)},
+          h(ScrollTable, {model: model.tableJobModel})
+        )
       )
     );
   }

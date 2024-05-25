@@ -2121,7 +2121,7 @@ class App extends React.Component {
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
           ),
         ),
-        h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
+        h("textarea", {className: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
         h(ScrollTable, {model: model.tableModel, hidden: model.exportError != null})
       )
     );

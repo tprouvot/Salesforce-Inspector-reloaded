@@ -120,7 +120,7 @@ textarea {
   border: 1px solid #DDDBDA;
 }
 
-textarea[hidden], .autocomplete-results[hidden] {
+textarea[hidden], div[hidden] {
   display: none !important;
 }
 
@@ -159,7 +159,7 @@ textarea[hidden], .autocomplete-results[hidden] {
   color: #8c8c8c;
 }
 
-#result-text {
+.result-text {
   flex: 1 1 0;
   resize: none;
   white-space: pre;
@@ -804,4 +804,11 @@ button.toggle .button-icon {
   display: block;
   color: #506882;
   font-size: .8125rem;
+}
+.result-status {
+  white-space: nowrap;
+}
+.result-status span,
+.result-status button{
+  margin-left: 1em;
 }

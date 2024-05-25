@@ -7,3 +7,8 @@
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/textarea.svg');
   background-color: #04844B;
 }
+.scrolltable-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+}

@@ -374,6 +374,11 @@ export class TableModel {
 
     if (!force && this.firstRowTop <= this.scrollTop && (this.lastRowTop >= this.scrollTop + this.offsetHeight || this.lastRowIdx == this.rowCount)
      && this.firstColLeft <= this.scrollLeft && (this.lastColLeft >= this.scrollLeft + this.offsetWidth || this.lastColIdx == this.colCount)) {
+      if (this.scrolledHeight != this.totalHeight || this.scrolledWidth != this.totalWidth){
+        this.scrolledHeight = this.totalHeight;
+        this.scrolledWidth = this.totalWidth;
+        this.didUpdate();
+      }
       return;
     }
 

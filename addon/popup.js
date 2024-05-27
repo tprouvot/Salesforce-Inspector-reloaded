@@ -439,7 +439,7 @@ class App extends React.PureComponent {
                 onMouseEnter: () => { this.setButtonTooltip("Limits - Shortcut [l]"); },
                 onMouseLeave: () => { this.setButtonTooltip(""); }
               },
-              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#ban", style: {fill: "#706E6B"}})),
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#metrics", style: {fill: "#706E6B"}})),
               h("span", {className: "slds-assistive-text"}, "Limits"),
             ),
             h("a",

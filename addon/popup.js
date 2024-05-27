@@ -491,7 +491,7 @@ class App extends React.PureComponent {
                 target: linkTarget,
                 className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large"
               },
-              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#setup", style: {fill: "#706E6B"}})),
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#fallback", style: {fill: "#706E6B"}})),
               h("span", {className: "slds-assistive-text"}, "Setup Home")
             ),
             h("a",

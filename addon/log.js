@@ -332,7 +332,7 @@ class Model {
     this.aggregate(node);
     this.rootNode = node;
     let result = [];
-    this.nodes, this.maxLvlNodes = this.flatternNode(node.child, result, 1, 1);
+    [this.nodes, this.maxLvlNodes] = this.flatternNode(node.child, result, 1, 1);
   }
   hideNodesByFilter(filter) {
     if (!this.rootNode) {
@@ -1275,13 +1275,20 @@ class FlamGraphRect extends React.Component {
     this.width = props.width;
     this.offsetWidth = props.offsetWidth;
     this.height = 20;
+    this.fontSize = 12;
     this.nextChildOffsetWidth = 0;
+    this.nodeTitle = this.node.title;
+    if (this.nodeTitle.length > (this.width / this.fontSize)) {
+      this.nodeTitle = this.nodeTitle.substring(0, Math.floor(this.width / this.fontSize));
+    }
   }
 
   render() {
     return h("g", {},
-      h("rect", {width: this.width, height: this.height, fill: "red", x: this.offsetWidth, y: this.offsetHeight * this.height}),
-      h("text", {x: this.offsetWidth - (this.width / 2), y: this.offsetHeight * this.height, fontSize: "60", textAnchor: "middle", fill: "white"}, this.node.title),
+      h("rect", {width: this.width, height: this.height, style: {fill: "rgb(236,112,99)", strokeWidth: "3", stroke: "red"}, x: this.offsetWidth, y: this.offsetHeight * this.height},
+        h("title", {}, this.node.title)
+      ),
+      h("text", {x: this.offsetWidth + (this.width / 2), y: (this.offsetHeight + 0.5) * this.height, fontSize: this.fontSize, textAnchor: "middle", fill: "white"}, this.nodeTitle),
       this.node.child.map((c) => this.renderChild(c))
     );
   }

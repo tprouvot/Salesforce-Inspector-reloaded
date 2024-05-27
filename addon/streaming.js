@@ -133,7 +133,7 @@ class Model {
   async getGenericChannels() {
     let query = "SELECT Id, Name, Description FROM StreamingChannel ORDER BY Name ASC";
     let eventChannels = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(query), {});
-    return eventChannels.records.map(c => ({label: c.Name, value: c.Name}));
+    return eventChannels.records.map(c => ({label: c.Name, value: c.Id}));
   }
   async getPushTopics() {
     let query = "SELECT Id, Name FROM PushTopic ORDER BY Name ASC";
@@ -180,6 +180,11 @@ class Model {
       default:
         return [];
     }
+  }
+  async publish(url, payload) {
+    let res;
+    res = await sfConn.rest(url, {method: "POST", body: payload});
+    return res;
   }
   async unsubscribe(i) {
     this.pollId++;
@@ -328,13 +333,13 @@ class StreamingTabSelector extends React.Component {
         tabTitle: "Tab2",
         title: "Subscribe",
         content: Subscribe
-      }, /* TODO
+      },
       {
         id: 3,
         tabTitle: "Tab3",
         title: "Publish",
         content: Publish
-      },*/
+      },
       {
         id: 4,
         tabTitle: "Tab4",
@@ -436,9 +441,9 @@ class Subscribe extends React.Component {
             return;
           }
           // /u/notifications/ExampleUserChannel
-          this.topics = eventChannels;
+          this.topics = eventChannels.map(c => ({label: c.label, value: c.label}));
           if (eventChannels.length > 0){
-            this.selectedTopic = eventChannels[0].value;
+            this.selectedTopic = eventChannels[0].label;
           }
           this.model.didUpdate();
         });
@@ -564,9 +569,132 @@ class Subscribe extends React.Component {
   }
 }
 class Publish extends React.Component {
-  //TODO just send payload
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+    this.sfLink = this.model.sfLink;
+    this.eventTypes = [
+      {
+        label: "Platform event",
+        value: "PlatformEvent"
+      },
+      {
+        label: "Generic event",
+        value: "GenericEvent"
+      }
+    ];
+    this.eventType = "";
+    this.selectedTopic = "";
+    this.payload = "";
+    this.publishResult = "";
+    this.topics = [];
+    this.onSelectEventType = this.onSelectEventType.bind(this);
+    this.onSelectTopic = this.onSelectTopic.bind(this);
+    this.onPublish = this.onPublish.bind(this);
+    this.onSetPayload = this.onSetPayload.bind(this);
+  }
+  onSelectEventType(e) {
+    this.eventType = e.target.value;
+    switch (this.eventType) {
+      case "GenericEvent":
+        this.model.getGenericChannels().then(eventChannels => {
+          if (!eventChannels) {
+            return;
+          }
+          // /u/notifications/ExampleUserChannel
+          this.topics = eventChannels;
+          if (eventChannels.length > 0){
+            this.selectedTopic = eventChannels[0].value;
+          }
+          this.model.didUpdate();
+        });
+        break;
+      case "PlatformEvent":
+        this.model.getEntities(this.eventType).then(eventEntities => {
+          if (!eventEntities) {
+            return;
+          }
+          // /event/Event_Name__e
+          this.topics = eventEntities;
+          if (eventEntities.length > 0){
+            this.selectedTopic = eventEntities[0].value;
+          }
+          this.model.didUpdate();
+        });
+        break;
+      default:
+        break;
+    }
+    this.model.didUpdate();
+  }
+  onSelectTopic(e) {
+    this.selectedTopic = e.target.value;
+    this.model.didUpdate();
+  }
+  onSetPayload(e) {
+    this.payload = e.target.value;
+    this.model.didUpdate();
+  }
+  onPublish(){
+    let url = "";
+    switch (this.eventType) {
+      case "GenericEvent":
+        if (this.selectedTopic){
+          url = "/services/data/v" + apiVersion + "/sobjects/StreamingChannel/" + this.selectedTopic + "/push";
+        }
+        break;
+      case "PlatformEvent":
+        url = "/services/data/v" + apiVersion + "/sobjects/" + this.selectedTopic + "/";
+        break;
+      default:
+        break;
+    }
+
+    this.model.publish(url, this.payload)
+      .catch(err => {
+        console.log(err);
+        this.publishResult = "Failed: " + JSON.stringify(err);
+        this.model.didUpdate();
+      })
+      .then((res) => {
+        if (res) {
+          this.publishResult = "OK : " + JSON.stringify(res);
+          this.model.didUpdate();
+        }
+      });
+    this.model.didUpdate();
+  }
+
   render() {
-    return h("div", {}, "TODO"
+    return h("div", {},
+      h("h2", {className: "slds-text-title_bold"}, "1. Select Type"),
+      h("label", {className: "slds-checkbox_toggle slds-grid"},
+        h("span", {className: "slds-form-element__label slds-m-bottom_none stream-form-label"}, "Event type:"),
+        h("div", {className: "stream-form-input"},
+          h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.eventType, onChange: this.onSelectEventType, title: "Event Type"},
+            h("option", {value: ""}, "types"),
+            this.eventTypes.map(t => h("option", {key: t.value, value: t.value}, t.label))
+          )
+        )
+      ),
+      h("label", {className: "slds-checkbox_toggle slds-grid"},
+        h("span", {className: "slds-form-element__label slds-m-bottom_none stream-form-label"}, "Topic:"),
+        h("div", {className: "stream-form-input"},
+          h("select", {className: "slds-combobox__form-element slds-input combobox-container", value: this.selectedTopic, onChange: this.onSelectTopic, title: "Topic"},
+            this.topics.map(t => h("option", {key: t.value, value: t.value}, t.label))
+          )
+        )
+      ),
+      h("label", {className: "slds-checkbox_toggle slds-grid"},
+        h("span", {className: "slds-form-element__label slds-m-bottom_none stream-form-label"}, "Payload:"),
+        h("div", {className: "stream-form-input"},
+          h("textarea", {className: "slds-input", value: this.payload, onChange: this.onSetPayload, title: "Payload"})
+        )
+      ),
+      h("div", {className: "slds-p-horizontal_small"},
+        h("button", {className: "slds-button slds-button_brand stream-form-button", onClick: this.onPublish, title: "Publish"}, "Publish")
+      ),
+      h("div", {}, this.publishResult)
     );
   }
 }

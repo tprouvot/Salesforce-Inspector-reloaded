@@ -493,6 +493,15 @@ button.toggle .button-icon {
   height: 16px;
 }
 
+.download-icon {
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  fill: #706E6B;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+}
+
 button.toggle:hover .button-icon,
 button.toggle:hover .button-toggle-icon {
   background-color: #004487;

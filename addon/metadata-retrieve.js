@@ -392,7 +392,11 @@ class App extends React.Component {
         ),
         h("div", {className: "body"},
           h("h1", {}, "Data Model"),
-          h("button", {onClick: this.onClickDataModel, disabled: (model.progress == "working")}, "Download Data Model"),
+          h("button", {onClick: this.onClickDataModel, disabled: (model.progress == "working"), title: "Download Data Model"},
+            h("svg", {className: "download-icon"},
+              h("use", {xlinkHref: "symbols.svg#download"})
+            )
+          ),
           h("h1", {}, "Metadata"),
           h("div", {hidden: !model.metadataObjects},
             model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,

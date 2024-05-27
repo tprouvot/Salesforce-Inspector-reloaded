@@ -575,7 +575,7 @@ export class TableModel {
         let queryLogArgs = new URLSearchParams();
         queryLogArgs.set("host", self.sfHost);
         queryLogArgs.set("recordId", cell.recordId);
-        cell.links.push({withIcon: true, href: "log.html?" + queryLogArgs, label: "View Log", className: "view-inspector", action: ""});
+        cell.links.push({withIcon: true, href: "log.html?" + queryLogArgs, label: "View Log", className: "view-log", action: ""});
       }
       if (cell.objectType == "AsyncApexJob") {
         cell.links.push({withIcon: true, href: cell.recordId, label: "Abord Job", className: "abord-job", action: "abord"});

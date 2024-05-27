@@ -124,3 +124,11 @@ input:disabled:hover {
   background-color: #fff;
   color: #dddbda;
 }
+.download-icon {
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  fill: #706E6B;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+}

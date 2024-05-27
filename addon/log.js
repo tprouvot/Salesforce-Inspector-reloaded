@@ -908,7 +908,11 @@ class App extends React.Component {
             ),
           ),
           h("div", {},
-            h("a", {href: "#", onClick: this.downloadFile, title: "Download Log"}, "Download Log"),
+            h("a", {href: "#", onClick: this.downloadFile, title: "Download Log"},
+              h("svg", {className: "download-icon"},
+                h("use", {xlinkHref: "symbols.svg#download"})
+              )
+            ),
           ),
           h(FileUpload, {model}),
           h("div", {},

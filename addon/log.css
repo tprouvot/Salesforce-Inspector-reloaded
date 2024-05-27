@@ -111,7 +111,20 @@
     display: flex;
     align-items: center;
   }
-
+  .download-icon {
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 1rem;
+    fill: #706E6B;
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+  }
+  
+  label {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  }
   .prod {
     background-color: #e0a4b5 !important;
     background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png') !important;

@@ -94,7 +94,8 @@ class App extends React.PureComponent {
       apexRunnerHref: "apex-runner.html?" + hostArg,
       streamingHref: "streaming.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
-      latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
+      latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion,
+      buttonTooltip: ""
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
@@ -229,7 +230,6 @@ class App extends React.PureComponent {
       "s": ["tab", "shortcutTab"],
       "t": ["click", "streamingBtn"],
       "r": ["tab", "orgTab"],
-      //shift shortkey
       "c": ["click", "apexRunnerBtn"]
     };
 
@@ -289,6 +289,9 @@ class App extends React.PureComponent {
     url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     return {title, url, text};
   }
+  setButtonTooltip(tooltip) {
+    this.setState({buttonTooltip: tooltip});
+  }
   render() {
     let {
       sfHost,
@@ -297,7 +300,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, apexRunnerHref, streamingHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, apexRunnerHref, streamingHref, limitsHref, isFieldsPresent, latestNotesViewed, buttonTooltip} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -374,78 +377,138 @@ class App extends React.PureComponent {
         h("div", {className: "main", id: "mainTabs"},
           h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, onContextRecordChange: this.onContextRecordChange, isFieldsPresent}),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
-            h("div", {className: "slds-grid slds-gutters slds-grid_align-center"},
-              h("div", {className: "slds-col slds-size_6-of-12"},
-                h("a", {ref: "dataExportBtn", href: exportHref, target: linkTarget, className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large", title: "Data Export"},
-                  h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#download"})),
-                  h("span", {className: "slds-assistive-text"}, "Data Export"),
-                ),
-              ),
-              h("div", {className: "slds-col slds-size_6-of-12"},
-                h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large", title: "Data Import"},
-                  h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#upload"})),
-                  h("span", {className: "slds-assistive-text"}, "Data Import"),
-                ),
-              ),
+            h("a",
+              {
+                ref: "dataExportBtn",
+                href: exportHref,
+                target: linkTarget,
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large",
+                title: "Data Export",
+                onMouseEnter: () => { this.setButtonTooltip("Data Export - Shortcut [e]"); },
+                onMouseLeave: () => { this.setButtonTooltip(""); }
+              },
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#download", style: {fill: "#706E6B"}})),
+              h("span", {className: "slds-assistive-text"}, "Data Export"),
             ),
-            h("div", {className: "slds-grid slds-gutters slds-grid_align-center"},
-              h("div", {className: "slds-col slds-size_6-of-12"},
-                h("a", {ref: "apexRunnerBtn", href: apexRunnerHref, target: linkTarget, className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large", title: "Run Apex Code"},
-                  h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#apex"})),
-                  h("span", {className: "slds-assistive-text"}, "Run Apex Code"),
-                ),
-              ),
-              h("div", {className: "slds-col slds-size_6-of-12"},
-                h("a", {ref: "streamingBtn", href: streamingHref, target: linkTarget, className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large", title: "Manage Streaming"},
-                  h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#broadcast"})),
-                  h("span", {className: "slds-assistive-text"}, "Manage Streaming"),
-                ),
-              ),
+            h("a",
+              {
+                ref: "dataImportBtn",
+                href: importHref,
+                target: linkTarget,
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large",
+                title: "Data Import",
+                onMouseEnter: () => { this.setButtonTooltip("Data Import - Shortcut [i]"); },
+                onMouseLeave: () => { this.setButtonTooltip(""); }
+              },
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#upload", style: {fill: "#706E6B"}})),
+              h("span", {className: "slds-assistive-text"}, "Data Import"),
             ),
-            h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large", title: "Limits"},
-              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#ban"})),
+            h("a",
+              {
+                ref: "apexRunnerBtn",
+                href: apexRunnerHref,
+                target: linkTarget,
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large",
+                title: "Run Apex Code",
+                onMouseEnter: () => { this.setButtonTooltip("Run Apex Code - Shortcut [c]"); },
+                onMouseLeave: () => { this.setButtonTooltip(""); }
+              },
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#apex", style: {fill: "#706E6B"}})),
+              h("span", {className: "slds-assistive-text"}, "Run Apex Code"),
+            ),
+            h("a",
+              {
+                ref: "streamingBtn",
+                href: streamingHref,
+                target: linkTarget,
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large",
+                title: "Manage Streaming",
+                onMouseEnter: () => { this.setButtonTooltip("Manage Streaming - Shortcut [t]"); },
+                onMouseLeave: () => { this.setButtonTooltip(""); }
+              },
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#broadcast", style: {fill: "#706E6B"}})),
+              h("span", {className: "slds-assistive-text"}, "Manage Streaming"),
+            ),
+            h("a",
+              {
+                ref: "limitsBtn",
+                href: limitsHref,
+                target: linkTarget,
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large",
+                title: "Limits",
+                onMouseEnter: () => { this.setButtonTooltip("Limits - Shortcut [l]"); },
+                onMouseLeave: () => { this.setButtonTooltip(""); }
+              },
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#ban", style: {fill: "#706E6B"}})),
               h("span", {className: "slds-assistive-text"}, "Limits"),
             ),
-          ),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
-            // Advanded features should be put below this line, and the layout adjusted so they are below the fold
-            h("a", {ref: "a", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large", title: "Download Metadata"},
-              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#package"})),
+            h("a",
+              {
+                ref: "a",
+                href: "metadata-retrieve.html?" + hostArg,
+                target: linkTarget,
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large",
+                title: "Download Metadata",
+                onMouseEnter: () => { this.setButtonTooltip("Download Metadata - Shortcut [d]"); },
+                onMouseLeave: () => { this.setButtonTooltip(""); }
+              },
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#package", style: {fill: "#706E6B"}})),
               h("span", {className: "slds-assistive-text"}, "Download Metadata"),
             ),
-            h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large", title: "Explore API"},
-              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#description"})),
-              h("span", {className: "slds-assistive-text"}, "E", h("u", {}, "x"), "plore API"),
+            h("a",
+              {
+                ref: "apiExploreBtn",
+                href: "explore-api.html?" + hostArg,
+                target: linkTarget,
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large",
+                title: "Explore API",
+                onMouseEnter: () => { this.setButtonTooltip("Explore API - Shortcut [x]"); },
+                onMouseLeave: () => { this.setButtonTooltip(""); }
+              },
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#description", style: {fill: "#706E6B"}})),
+              h("span", {className: "slds-assistive-text"}, "Explore API"),
             ),
             // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
-            inLightning && isInSetup && h("div", {className: "slds-m-bottom_xx-small"},
-              h("a",
-                {
-                  ref: "homeBtn",
-                  href: `https://${sfHost}/lightning/page/home`,
-                  title: "You can choose if you want to open in a new tab or not",
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral"
-                },
-                h("span", {}, "Salesforce ", h("u", {}, "H"), "ome"))
+            inLightning && isInSetup && h("a",
+              {
+                ref: "homeBtn",
+                href: `https://${sfHost}/lightning/page/home`,
+                title: "Salesforce Home",
+                onMouseEnter: () => { this.setButtonTooltip("Salesforce Home - Shortcut [h]"); },
+                onMouseLeave: () => { this.setButtonTooltip(""); },
+                target: linkTarget,
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large"
+              },
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#home", style: {fill: "#706E6B"}})),
+              h("span", {className: "slds-assistive-text"}, "Salesforce Home")),
+            inLightning && !isInSetup && h("a",
+              {
+                ref: "homeBtn",
+                href: `https://${sfHost}/lightning/setup/SetupOneHome/home?setupApp=all`,
+                title: "Setup Home",
+                onMouseEnter: () => { this.setButtonTooltip("Setup Home - Shortcut [h]"); },
+                onMouseLeave: () => { this.setButtonTooltip(""); },
+                target: linkTarget,
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large"
+              },
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#setup", style: {fill: "#706E6B"}})),
+              h("span", {className: "slds-assistive-text"}, "Setup Home")
             ),
-            inLightning && !isInSetup && h("div", {className: "slds-m-bottom_xx-small"},
-              h("a",
-                {
-                  ref: "homeBtn",
-                  href: `https://${sfHost}/lightning/setup/SetupOneHome/home?setupApp=all`,
-                  title: "You can choose if you want to open in a new tab or not",
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral"
-                },
-                h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
+            h("a",
+              {
+                ref: "optionsBtn",
+                href: "options.html?" + hostArg,
+                title: "Options",
+                onMouseEnter: () => { this.setButtonTooltip("Options - Shortcut [p]"); },
+                onMouseLeave: () => { this.setButtonTooltip(""); },
+                target: linkTarget,
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large"
+              },
+              h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#settings", style: {fill: "#706E6B"}})),
+              h("span", {className: "slds-assistive-text"}, "Options"),
             ),
           ),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
-            h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
-            ),
-          )
+          h("span", {role: "tooltip"}, h("strong", {}, buttonTooltip)),
         ),
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},

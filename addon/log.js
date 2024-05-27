@@ -1276,7 +1276,7 @@ class FlamGraphRect extends React.Component {
     this.offsetWidth = props.offsetWidth;
     this.height = 20;
     this.fontSize = 12;
-    this.nextChildOffsetWidth = 0;
+    this.nextChildOffsetWidth = this.offsetWidth;
     this.nodeTitle = this.node.title;
     if (this.nodeTitle.length > (this.width / this.fontSize)) {
       this.nodeTitle = this.nodeTitle.substring(0, Math.floor(this.width / this.fontSize));
@@ -1296,9 +1296,9 @@ class FlamGraphRect extends React.Component {
   renderChild(c) {
     let childWidth;
     if (this.node.duration) {
-      childWidth = 1000 * (c.duration / this.node.duration);
+      childWidth = this.width * (c.duration / this.node.duration);
     } else {
-      childWidth = 1000;
+      childWidth = this.width;
     }
     let offsetWidth = this.nextChildOffsetWidth;
     this.nextChildOffsetWidth += childWidth;

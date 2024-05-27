@@ -332,7 +332,7 @@ class Model {
     this.aggregate(node);
     this.rootNode = node;
     let result = [];
-    this.nodes = this.flatternNode(node.child, result, 1);
+    this.nodes, this.maxLvlNodes = this.flatternNode(node.child, result, 1, 1);
   }
   hideNodesByFilter(filter) {
     if (!this.rootNode) {
@@ -444,7 +444,10 @@ class Model {
       node.calloutTotal += c.calloutTotal;
     }
   }
-  flatternNode(child, result, lvl) {
+  flatternNode(child, result, lvl, maxLvlNodes) {
+    if (lvl > maxLvlNodes) {
+      maxLvlNodes = lvl;
+    }
     for (let i = 0; i < child.length; i++) {
       let c = child[i];
       c.key = "node" + result.length;
@@ -454,10 +457,10 @@ class Model {
       c.index = result.length;
       result.push(c);
       if (c.child && c.child.length > 0) {
-        this.flatternNode(c.child, result, lvl + 1);
+        maxLvlNodes = this.flatternNode(c.child, result, lvl + 1, maxLvlNodes)[1];
       }
     }
-    return result;
+    return [result, maxLvlNodes];
   }
 
   parseLine(lines, node){
@@ -971,6 +974,12 @@ class LogTabNavigation extends React.Component {
         tabTitle: "Tab2",
         title: "Profiler",
         content: Profiler
+      },
+      {
+        id: 3,
+        tabTitle: "Tab3",
+        title: "FlamGraph",
+        content: FlamGraph
       }
     ];
     this.onTabSelect = this.onTabSelect.bind(this);
@@ -1252,6 +1261,57 @@ class FileUpload extends React.Component {
         h("label", {htmlFor: "logFile"}, "Load a previous log"),
         h("input", {type: "file", name: "logFile", onChange: this.onFileChange, className: "slds-input"}),
         h("button", {onClick: this.onFileUpload, className: "slds-button slds-button_brand"}, "Load"),
+      )
+    );
+  }
+}
+
+
+class FlamGraphRect extends React.Component {
+  constructor(props) {
+    super(props);
+    this.node = props.node;
+    this.offsetHeight = props.offsetHeight;
+    this.width = props.width;
+    this.offsetWidth = props.offsetWidth;
+    this.height = 20;
+    this.nextChildOffsetWidth = 0;
+  }
+
+  render() {
+    return h("g", {},
+      h("rect", {width: this.width, height: this.height, fill: "red", x: this.offsetWidth, y: this.offsetHeight * this.height}),
+      h("text", {x: this.offsetWidth - (this.width / 2), y: this.offsetHeight * this.height, fontSize: "60", textAnchor: "middle", fill: "white"}, this.node.title),
+      this.node.child.map((c) => this.renderChild(c))
+    );
+  }
+
+  renderChild(c) {
+    let childWidth;
+    if (this.node.duration) {
+      childWidth = 1000 * (c.duration / this.node.duration);
+    } else {
+      childWidth = 1000;
+    }
+    let offsetWidth = this.nextChildOffsetWidth;
+    this.nextChildOffsetWidth += childWidth;
+    return h(FlamGraphRect, {node: c, offsetHeight: this.offsetHeight + 1, width: childWidth, offsetWidth});
+  }
+}
+
+
+class FlamGraph extends React.Component {
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+    this.column = props.model.column;
+    this.rootNode = this.model.rootNode;
+  }
+
+  render() {
+    return h("div", {style: {overflow: "scroll", height: "inherit"}}, //className: "slds-tree_container"},
+      h("svg", {ref: "logFlameGraph", version: "1.1", baseProfile: "full", xmlns: "http://www.w3.org/2000/svg", width: "100%", height: "100%"},
+        h(FlamGraphRect, {node: this.rootNode, offsetHeight: 0, width: 1000, offsetWidth: 0})
       )
     );
   }

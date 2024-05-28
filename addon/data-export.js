@@ -28,7 +28,7 @@ class QueryHistory {
 
   add(entry) {
     let history = this._get();
-    let historyIndex = history.findIndex(e => e.query == entry.query && e.useToolingApi == entry.useToolingApi);
+    let historyIndex = history.findIndex(e => ((e.query == entry.query && (!entry.name || e.name == entry.name)) || e.query == e.name + ":" + e.query) && e.useToolingApi == entry.useToolingApi);
     if (historyIndex > -1) {
       history.splice(historyIndex, 1);
     }
@@ -42,7 +42,8 @@ class QueryHistory {
 
   remove(entry) {
     let history = this._get();
-    let historyIndex = history.findIndex(e => e.query == entry.query && e.useToolingApi == entry.useToolingApi);
+    //old and new format
+    let historyIndex = history.findIndex(e => ((e.query == entry.query && (!entry.name || e.name == entry.name)) || e.query == e.name + ":" + e.query) && e.useToolingApi == entry.useToolingApi);
     if (historyIndex > -1) {
       history.splice(historyIndex, 1);
     }
@@ -58,7 +59,7 @@ class QueryHistory {
   sort(storageKey, history) {
     //sort only saved query not history
     if (storageKey === "insextSavedQueryHistory") {
-      history.sort((a, b) => (a.query > b.query) ? 1 : ((b.query > a.query) ? -1 : 0));
+      history.sort((a, b) => ((a.name ? a.name + a.query : a.query) > (b.name ? b.name + b.query : b.query)) ? 1 : (((b.name ? b.name + b.query : b.query) > (a.name ? a.name + a.query : a.query)) ? -1 : 0));
     }
     this.list = history;
   }
@@ -249,17 +250,20 @@ class Model {
     this.queryHistory.clear();
   }
   selectSavedEntry() {
-    let delimiter = ":";
     if (this.selectedSavedEntry != null) {
-      let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(delimiter)) {
-        let query = this.selectedSavedEntry.query.split(delimiter);
-        this.queryName = query[0];
-        queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
+      //old format
+      let delimitermatch = this.selectedSavedEntry.query.match(/:\s*(select|find)[\S\s]*$/i);
+      if (delimitermatch) {
+        this.queryName = this.selectedSavedEntry.query.substring(0, delimitermatch.index);
+        this.editor.value = this.selectedSavedEntry.query.substring(delimitermatch.index + 1);
       } else {
-        queryStr = this.selectedSavedEntry.query;
+        this.editor.value = this.selectedSavedEntry.query;
+        if (this.selectedSavedEntry.name) {
+          this.queryName = this.selectedSavedEntry.name;
+        } else {
+          this.queryName = "";
+        }
       }
-      this.editor.value = queryStr;
       this.queryTooling = this.selectedSavedEntry.useToolingApi;
       this.editorAutocompleteHandler();
       this.selectedSavedEntry = null;
@@ -269,13 +273,13 @@ class Model {
     this.savedHistory.clear();
   }
   addToHistory() {
-    this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    this.savedHistory.add({query: this.getQueryToSave(), name: this.queryName, useToolingApi: this.queryTooling});
   }
   removeFromHistory() {
-    this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    this.savedHistory.remove({query: this.getQueryToSave(), name: this.queryName, useToolingApi: this.queryTooling});
   }
   getQueryToSave() {
-    return this.queryName != "" ? this.queryName + ":" + this.editor.value : this.editor.value;
+    return this.editor.value;
   }
   autocompleteReload() {
     this.describeInfo.reloadAll();

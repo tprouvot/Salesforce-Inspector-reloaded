@@ -109,7 +109,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
           {option: QueryTemplatesOption, props: {title: "Query Templates", key: "queryTemplates", placeholder: "SELECT..."}},
-          {option: QueryTemplatesOption, props: {title: "Saved Query History", key: "insextSavedQueryHistory", node: "query", defaultValue: "{\"useToolingApi\": false}", placeholder: "SELECT..."}}
+          {option: QueryTemplatesOption, props: {title: "Saved Query History", key: "insextSavedQueryHistory", node: "query", withName: true, defaultValue: "{\"useToolingApi\": false}", placeholder: "SELECT..."}}
         ]
       },
       {
@@ -565,6 +565,7 @@ class QueryTemplatesOption extends React.Component {
     this.key = props.storageKey;
     this.model = props.model;
     this.title = props.title;
+    this.withName = props.withName;
     this.node = props.node;
     this.defaultValue = props.defaultValue;
     this.placeholder = props.placeholder;
@@ -582,7 +583,11 @@ class QueryTemplatesOption extends React.Component {
     this.addQueryTemplate = this.addQueryTemplate.bind(this);
     this.deleteQueryTemplate = this.deleteQueryTemplate.bind(this);
     this.onChangeQuery = this.onChangeQuery.bind(this);
+    this.onChangeName = this.onChangeName.bind(this);
     this.state = {query: "", queryTemplates: this.queryTemplates};
+    if (this.withName) {
+      this.state.name = "";
+    }
   }
   deleteQueryTemplate(i) {
     this.queryTemplates.splice(i, 1);
@@ -596,19 +601,25 @@ class QueryTemplatesOption extends React.Component {
       if (this.defaultValue) {
         elt = JSON.parse(this.defaultValue);
       }
+      if (this.withName) {
+        elt.name = this.state.name;
+      }
       elt[this.node] = this.state.query;
       this.queryTemplates.push(elt);
     } else {
       this.queryTemplates.push(this.state.query);
     }
 
-    this.setState({query: "", queryTemplates: this.queryTemplates});
+    this.setState({query: "", name: "", queryTemplates: this.queryTemplates});
     localStorage.setItem(this.key, JSON.stringify(this.queryTemplates));
     this.model.didUpdate();
   }
 
   onChangeQuery(e) {
     this.setState({query: e.target.value});
+  }
+  onChangeName(e) {
+    this.setState({name: e.target.value});
   }
 
   render() {
@@ -619,8 +630,11 @@ class QueryTemplatesOption extends React.Component {
         )
       ),
       h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_10-of-12"},
-          h("textarea", {id: "tmplateQuery", className: "slds-input", value: this.state.query, placeholder: this.placeholder, onChange: this.onChangeQuery}),
+        this.withName ? h("div", {className: "slds-form-element__control slds-col slds-size_3-of-12"},
+          h("input", {id: "templateQueryName", className: "slds-input", value: this.state.name, placeholder: "Name", onChange: this.onChangeName}),
+        ) : "",
+        h("div", {className: "slds-form-element__control " + this.withName ? "slds-col slds-size_7-of-12" : "slds-col slds-size_10-of-12"},
+          h("textarea", {id: "templateQuery", className: "slds-input", value: this.state.query, placeholder: this.placeholder, onChange: this.onChangeQuery}),
         ),
         h("div", {className: "slds-form-element__control slds-col slds-col slds-size_2-of-12 text-align-middle"},
           h("button", {onClick: this.addQueryTemplate, title: "Add", className: "slds-button slds-button_brand"}, "Add"),
@@ -628,7 +642,7 @@ class QueryTemplatesOption extends React.Component {
       ), this.state.queryTemplates.map((l, i) =>
         h("div", {key: "link" + i, className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
           h("div", {className: "slds-col slds-size_10-of-12 text-align-middle"},
-            h("span", {}, this.node ? l[this.node] : l)
+            h("span", {}, ((this.withName && l.name) ? l.name + ":" : "") + (this.node ? l[this.node] : l))
           ),
           h("div", {className: "slds-col slds-size_2-of-12 text-align-middle"},
             h("button", {onClick: () => this.deleteQueryTemplate(i), title: "Delete", className: "slds-button slds-button_destructive"}, "Delete")

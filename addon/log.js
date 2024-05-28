@@ -1273,6 +1273,7 @@ class FlamGraphRect extends React.Component {
     this.node = props.node;
     this.offsetHeight = props.offsetHeight;
     this.width = props.width;
+    this.greenColor = 255 - (255 * this.width / 1000);
     this.offsetWidth = props.offsetWidth;
     this.height = 20;
     this.fontSize = 12;
@@ -1285,7 +1286,7 @@ class FlamGraphRect extends React.Component {
 
   render() {
     return h("g", {},
-      h("rect", {width: this.width, height: this.height, style: {fill: "rgb(236,112,99)", strokeWidth: "3", stroke: "red"}, x: this.offsetWidth, y: this.offsetHeight * this.height},
+      h("rect", {width: this.width, height: this.height, style: {fill: "rgb(236," + this.greenColor + ",100)", strokeWidth: "3", stroke: "rgb(255," + this.greenColor + ",0)"}, x: this.offsetWidth, y: this.offsetHeight * this.height},
         h("title", {}, this.node.title)
       ),
       h("text", {x: this.offsetWidth + (this.width / 2), y: (this.offsetHeight + 0.5) * this.height, fontSize: this.fontSize, textAnchor: "middle", fill: "white"}, this.nodeTitle),
@@ -1302,7 +1303,7 @@ class FlamGraphRect extends React.Component {
     }
     let offsetWidth = this.nextChildOffsetWidth;
     this.nextChildOffsetWidth += childWidth;
-    return h(FlamGraphRect, {node: c, offsetHeight: this.offsetHeight + 1, width: childWidth, offsetWidth});
+    return h(FlamGraphRect, {node: c, key: c.key, offsetHeight: this.offsetHeight + 1, width: childWidth, offsetWidth});
   }
 }
 
@@ -1318,7 +1319,7 @@ class FlamGraph extends React.Component {
   render() {
     return h("div", {style: {overflow: "scroll", height: "inherit"}}, //className: "slds-tree_container"},
       h("svg", {ref: "logFlameGraph", version: "1.1", baseProfile: "full", xmlns: "http://www.w3.org/2000/svg", width: "100%", height: "100%"},
-        h(FlamGraphRect, {node: this.rootNode, offsetHeight: 0, width: 1000, offsetWidth: 0})
+        h(FlamGraphRect, {node: this.rootNode, key: this.rootNode.key, offsetHeight: 0, width: 1000, offsetWidth: 0})
       )
     );
   }

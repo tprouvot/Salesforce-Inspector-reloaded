@@ -1198,7 +1198,12 @@ export class Editor extends React.Component {
           )
         ),
         h("div", {className: "editor-wrapper"},
-          h("div", {ref: "editorMirror", className: "editor_container_mirror"}, highlighted.map(s => h("span", s.attributes, s.value))),
+          h("div", {ref: "editorMirror", className: "editor_container_mirror"}, highlighted.map((s, i) => {
+            if (i == highlighted.length - 1 && s.value.endsWith("\n")) {
+              return [h("span", s.attributes, s.value), h("br", {})];
+            }
+            return h("span", s.attributes, s.value);
+          })),
           h("textarea", {id: "editor", autoComplete: "off", autoCorrect: "off", spellCheck: "false", autoCapitalize: "off", className: "editor_textarea", ref: "editor", onScroll: this.onScroll, onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.handleMouseUp, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeyDown: this.handlekeyDown, onBlur: this.onBlur})
         )
       )

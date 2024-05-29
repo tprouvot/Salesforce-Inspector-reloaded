@@ -1147,23 +1147,23 @@ export class Editor extends React.Component {
       } else {
         color = keywordColor.get(keywordMatch[1].toLocaleLowerCase());
       }
-      if (selStart <= keywordMatch.index && selStart >= 0) { // sel before keyword
+      if (selStart <= keywordMatch.index && selStart > 0) { // sel before keyword
         if (selStart > 0) {
           highlighted.push({value: remaining.substring(0, selStart), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
         }
-        highlighted.push({value: "\u00A0", attributes: {className: "editor_caret", key: "hl" + highlighted.length}});
+        highlighted.push({value: "", attributes: {className: "editor_caret", key: "hl" + highlighted.length}});
         if (selStart < keywordMatch.index) {
           highlighted.push({value: remaining.substring(selStart, keywordMatch.index), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
         }
         highlighted.push({value: sentence, attributes: {style: {color}, key: "hl" + highlighted.length}});
-      } else if (selStart <= keywordMatch.index + sentence.length && selStart >= 0) { // sel on keyword
+      } else if (selStart <= keywordMatch.index + sentence.length && selStart > 0) { // sel on keyword
         if (keywordMatch.index != 0) {
           highlighted.push({value: remaining.substring(0, keywordMatch.index), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
         }
         if (keywordMatch.index < selStart) {
           highlighted.push({value: remaining.substring(keywordMatch.index, selStart), attributes: {style: {color}, key: "hl" + highlighted.length}});
         }
-        highlighted.push({value: "\u00A0", attributes: {className: "editor_caret", key: "hl" + highlighted.length}});
+        highlighted.push({value: "", attributes: {className: "editor_caret", key: "hl" + highlighted.length}});
         if (selStart < keywordMatch.index + sentence.length) {
           highlighted.push({value: remaining.substring(selStart, keywordMatch.index + sentence.length), attributes: {style: {color}, key: "hl" + highlighted.length}});
         }
@@ -1179,7 +1179,7 @@ export class Editor extends React.Component {
     }
     if (selStart > 0) {
       highlighted.push({value: remaining.substring(0, selStart), attributes: {style: {color: "black"}, key: "hl" + highlighted.length}});
-      highlighted.push({value: "\u00A0", attributes: {className: "editor_caret", key: "hl" + highlighted.length}});
+      highlighted.push({value: "", attributes: {className: "editor_caret", key: "hl" + highlighted.length}});
       remaining = remaining.substring(selStart);
     }
     if (remaining) {
@@ -1190,6 +1190,17 @@ export class Editor extends React.Component {
   render() {
     let {model} = this.props;
     let {highlighted, numberOfLines} = this.processText(model.editor ? model.editor.value : "");
+    // bug chrome with respect of white space
+    let endOfText = "";
+    if (highlighted.length) {
+      let last = highlighted[highlighted.length - 1];
+      if (last.attributes.className == "editor_caret") {
+        last = highlighted[highlighted.length - 2];
+      }
+      if (last.value && last.value.endsWith("\n")) {
+        endOfText = h("br", {});
+      }
+    }
     return h("div", {className: "editor_container", style: {maxHeight: (model.winInnerHeight - 200) + "px"}},
       h("div", {className: "editor-container"},
         h("div", {className: "line-numbers-wrapper", style: {lineHeight: this.state.lineHeight}},
@@ -1198,12 +1209,9 @@ export class Editor extends React.Component {
           )
         ),
         h("div", {className: "editor-wrapper"},
-          h("div", {ref: "editorMirror", className: "editor_container_mirror"}, highlighted.map((s, i) => {
-            if (i == highlighted.length - 1 && s.value.endsWith("\n")) {
-              return [h("span", s.attributes, s.value), h("br", {})];
-            }
-            return h("span", s.attributes, s.value);
-          })),
+          h("div", {ref: "editorMirror", className: "editor_container_mirror"}, highlighted.map((s, i) => h("span", s.attributes, s.value)),
+            endOfText
+          ),
           h("textarea", {id: "editor", autoComplete: "off", autoCorrect: "off", spellCheck: "false", autoCapitalize: "off", className: "editor_textarea", ref: "editor", onScroll: this.onScroll, onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.handleMouseUp, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeyDown: this.handlekeyDown, onBlur: this.onBlur})
         )
       )

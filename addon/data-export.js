@@ -2006,7 +2006,9 @@ class App extends React.Component {
       }
     }
     let keywordColor = new Map([["select", "blue"], ["from", "blue"], ["where", "blue"], ["group", "blue"], ["by", "blue"],
-      ["order", "blue"], ["limit", "blue"], ["and", "blue"], ["or", "blue"], ["not", "blue"], ["like", "blue"]]);
+      ["order", "blue"], ["limit", "blue"], ["and", "blue"], ["or", "blue"], ["not", "blue"], ["like", "blue"], ["in", "blue"],
+      ["offset", "blue"], ["typeof", "blue"], ["when", "blue"], ["then", "blue"], ["else", "blue"], ["end", "blue"], ["using", "blue"],
+      ["scope", "blue"], ["with", "blue"], ["data", "blue"], ["category", "blue"], ["rollup", "blue"], ["cube", "blue"]]);
     let keywordColorSosl = new Map([["find", "blue"], ["in", "blue"], ["all", "blue"], ["fields", "blue"], ["name", "blue"],
       ["email", "blue"], ["phone", "blue"], ["sidebar", "blue"], ["returning", "blue"], ["where", "blue"], ["order", "blue"],
       ["by", "blue"], ["limit", "blue"], ["offset", "blue"], ["with", "blue"], ["division", "blue"], ["data", "blue"],

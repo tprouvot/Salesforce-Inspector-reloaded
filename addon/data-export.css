@@ -780,7 +780,7 @@ button.toggle .button-icon {
 .editor_caret {
   background-color: transparent;
   width: 0px;
-  display: inline-block;
+  /*display: inline-block;*/
   /*animation: blink 1s infinite;*/
 }
 @keyframes blink {

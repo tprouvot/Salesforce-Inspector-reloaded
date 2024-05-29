@@ -1,10 +1,12 @@
 {
   "name": "Salesforce Inspector Advanced",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.27.1",
+  "version": "1.27",
+  "version_name": "1.27",
   "icons": {
     "128": "icon128.png"
   },
+  "minimum_chrome_version": "88",
   "applications": {
     "gecko": {
       "id": "salesforceinspector@advanced",
@@ -12,6 +14,9 @@
     }
   },
   "permissions": [
+    "cookies"
+  ],
+  "host_permissions": [
     "https://*.salesforce.com/*",
     "https://*.force.com/*",
     "https://*.cloudforce.com/*",
@@ -24,8 +29,7 @@
     "https://*.visualforce.mil/*",
     "https://*.crmforce.mil/*",
     "https://*.force.com.mcas.ms/*",
-    "https://*.salesforce-setup.com/*",
-    "cookies"
+    "https://*.salesforce-setup.com/*"
   ],
   "content_scripts": [
     {
@@ -65,17 +69,25 @@
     ]
   },
   "web_accessible_resources": [
-    "popup.html",
-    "apex-runner.html",
-    "log.html",
-    "streaming.html",
-    "data-export.html",
-    "data-import.html",
-    "inspect.html",
-    "metadata-retrieve.html",
-    "explore-api.html",
-    "limits.html",
-    "options.html"
+    {
+      "resources": [
+        "popup.html",
+        "apex-runner.html",
+        "log.html",
+        "streaming.html",
+        "data-export.html",
+        "data-import.html",
+        "inspect.html",
+        "metadata-retrieve.html",
+        "explore-api.html",
+        "limits.html",
+        "options.html"
+      ],
+      "matches": [
+        "https://*/*"
+      ],
+      "extension_ids": []
+    }
   ],
   "incognito": "spanning",
   "manifest_version": 2

@@ -22,6 +22,9 @@ The second tab is a profilter and display a treeview to be able to analyze in de
 It permit to troubleshoot any issue when you reach an org limit as DML, SOQL, callout, CPU time. 
 ![image](screenshots/logProfiler.png)
 
+and for cpu limit exception (duration over 10 seconds), you can check flame chart.
+![image](screenshots/flame_chart.png)
+
 ## SOSL
 
 In data Export, you run an SOSL query in order to retreive some data across multiple objects:

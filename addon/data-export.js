@@ -1293,6 +1293,10 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     this.scrollTable.viewportChange();
   }
+  toggleQueryMoreMenu(){
+    this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
+  }
+
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
@@ -1334,10 +1338,6 @@ class App extends React.Component {
               ),
               h("button", {onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
             ),
-            h("div", {className: "pop-menu saveOptions", hidden: !model.expandSavedOptions},
-              h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query"),
-              h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
-            ),
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
                 h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
@@ -1345,7 +1345,32 @@ class App extends React.Component {
               ),
               h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
               h("button", {onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
-              h("button", {className: model.expandSavedOptions ? "toggle contract" : "toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"}))
+              h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+                h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleQueryMoreMenu(), title: "Show more options"},
+                  h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#down"})
+                  ),
+                  h("span", {className: "slds-assistive-text"}, "Show more options")
+                ),
+                h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.toggleQueryMoreMenu()},
+                  h("ul", {className: "slds-dropdown__list", role: "menu"},
+                    h("li", {className: "slds-dropdown__item", role: "presentation"},
+                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
+                        h("span", {className: "slds-truncate"},
+                          h("span", {className: "slds-truncate", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
+                        )
+                      )
+                    ),
+                    h("li", {className: "slds-dropdown__item", role: "presentation"},
+                    h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
+                      h("span", {className: "slds-truncate"},
+                        h("span", {className: "slds-truncate", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+                      )
+                    )
+                  )
+                  )
+                )
+              ),
             ),
           ),
           h("div", {className: "query-options"},

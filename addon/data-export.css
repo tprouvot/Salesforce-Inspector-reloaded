@@ -186,6 +186,10 @@ h1 {
   color: #080707;
   font-weight: 700;
   line-height: 1.25;
+  margin: revert;
+}
+.user-info h1 {
+  padding: 0 6px 0 10px;
 }
 
 .query-controls {
@@ -521,6 +525,10 @@ button.contract .button-toggle-icon {
 
 button.toggle .button-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/light_bulb.svg');
+}
+
+ul > li > a > span {
+  color: #0176d3;
 }
 
 svg.button-icon {

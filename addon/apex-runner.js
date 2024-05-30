@@ -798,7 +798,11 @@ class Model {
   }
   async enableLogs() {
     const DTnow = new Date(Date.now());
-    const debugTimeInMs = 15 * 60 * 1000;
+    let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");
+    if (debugLogTimeMinutes == null) {
+      localStorage.setItem("debugLogTimeMinutes", 15);
+    }
+    const debugTimeInMs = debugLogTimeMinutes * 60 * 1000;
 
     let traceFlags = await this.getTraceFlags(DTnow, debugTimeInMs);
     /*If an old trace flag is found on the user and with this debug level

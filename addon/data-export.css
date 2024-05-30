@@ -186,6 +186,10 @@ h1 {
   color: #080707;
   font-weight: 700;
   line-height: 1.25;
+  margin: revert;
+}
+.user-info h1 {
+  padding: 0 6px 0 10px;
 }
 
 .query-controls {

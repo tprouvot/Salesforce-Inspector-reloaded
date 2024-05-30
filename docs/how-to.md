@@ -235,12 +235,28 @@ are displayed.
 
 From the option page, you can customize the default favicon by:
 
-- a predefined color among those values (green, orange, pink, purple, red, yellow)
+- a predefined color name among [those values](https://www.w3schools.com/tags/ref_colornames.asp) or any HTML color code you want (ie `#FF8C00`).
 - a custom favicon url (ie "https://stackoverflow.com/favicon.ico")
 
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
 
 <img width="901" alt="Customize favicon" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
+
+Now if you want to set a random favicon for all of your visited orgs, open dev console from one of the extension page and paste following code in dev console:
+
+``` js
+let colors = ['olive', 'darkorange', 'pink', 'purple', 'firebrick', 'hotpink', 'skyblue', '#1E90FF'];
+
+let orgs = Object.keys(localStorage).filter((localKey) =>
+    localKey.endsWith("_isSandbox")
+);
+orgs.forEach((org) => {
+    let sfHost = org.substring(0, org.indexOf(("_isSandbox")));
+    let randomFavicon = colors[(Math.floor(Math.random() * colors.length))]
+    console.info(sfHost + "_customFavicon", randomFavicon);
+    localStorage.setItem(sfHost + "_customFavicon", randomFavicon);
+});
+```
 
 ## Select all fields in a query
 
@@ -261,3 +277,9 @@ You can exclude formula fields to be included in the autocomplete by disable the
 Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.
 
 <img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">
+
+## Hide additional columns in query results
+
+After running a query in the "Data Export" page, you can hide additional columns in the query results. These columns represent the name of the objects included in your query. They are useful to automatically map the fields to the correct object in the "Data Import" page. The columns are hidden in the exported files (CSV or Excel) as well. You can set a default value, using the 'Hide additionnal Object Name Columns by default on Data Export' option ("Options" -> "Data Export" tab).
+
+![2024-05-16_17-54-24 (1)](https://github.com/guillaumeSF/Salesforce-Inspector-reloaded/assets/166603639/45fda19b-b426-4b11-91cb-4f0fbc5c47d7)

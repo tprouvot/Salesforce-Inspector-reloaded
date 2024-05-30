@@ -512,7 +512,7 @@ th[tabindex] {
 .object-name {
   flex: 1 1 0;
   margin: 0 1em;
-  font-size: 1.2em;
+  font-size: 1.1em;
   font-weight: normal;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -45,10 +45,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
+  if (request.message == "createWindow") {
+    const brow = typeof browser === "undefined" ? chrome : browser;
+    brow.windows.create({
+      url: request.url,
+      incognito: request.incognito ?? false
+    });
+  }
   return false;
 });
 
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands?.onCommand.addListener((command) => {
   if (command !== "open-popup"){
     chrome.tabs.create({
       url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`

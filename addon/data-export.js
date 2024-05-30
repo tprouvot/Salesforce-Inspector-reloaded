@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, nullToEmptyString} from "./inspector.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
@@ -80,6 +80,7 @@ class Model {
     this.winInnerHeight = 0;
     this.queryAll = false;
     this.queryTooling = false;
+    this.prefHideRelations = localStorage.getItem("hideObjectNameColumnsDataExport") == "true"; // default to false
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
@@ -109,6 +110,7 @@ class Model {
       "SELECT Id FROM WHERE LIKE",
       "SELECT Id FROM WHERE ORDER BY"
     ];
+    this.separator = getSeparator();
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -140,6 +142,14 @@ class Model {
     }
     // Recalculate visibility
     this.exportedData.updateVisibility();
+    this.updatedExportedData();
+  }
+  refreshColumnsVisibility() {
+    if (this.exportedData == null || this.exportedData.totalSize == 0) {
+      return;
+    }
+    // Recalculate visibility
+    this.exportedData.updateColumnsVisibility();
     this.updatedExportedData();
   }
   setQueryName(value) {
@@ -269,15 +279,20 @@ class Model {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
   }
   copyAsCsv() {
-    let separator = getSeparator();
-    copyToClipboard(this.exportedData.csvSerialize(separator));
+    copyToClipboard(this.exportedData.csvSerialize(this.separator));
   }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
   }
+  downloadAsCsv(){
+    const blob = new Blob([this.exportedData.csvSerialize(this.separator)], { type: "data:text/csv;charset=utf-8," });
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.download = `${this.autocompleteResults.sobjectName}-${new Date().toLocaleDateString()}.csv`;
+    downloadAnchor.href = window.URL.createObjectURL(blob);
+    downloadAnchor.click();
+  }
   deleteRecords(e) {
-    let separator = getSeparator();
-    let data = this.exportedData.csvSerialize(separator);
+    let data = this.exportedData.csvSerialize(this.separator);
     let encodedData = btoa(data);
 
     let args = new URLSearchParams();
@@ -951,7 +966,9 @@ function RecordTable(vm) {
           row.push(undefined);
         }
         header[c] = column;
-        rt.colVisibilities.push(true);
+        if (typeof record[field] == "object" && record[field] != null && vm.prefHideRelations) {
+          rt.colVisibilities.push(false);
+        } else { rt.colVisibilities.push(true); }
       }
       row[c] = record[field];
       if (typeof record[field] == "object" && record[field] != null) {
@@ -973,7 +990,7 @@ function RecordTable(vm) {
     records: [],
     table: [],
     rowVisibilities: [],
-    colVisibilities: [true],
+    colVisibilities: new Array(!vm.prefHideRelations),
     countOfVisibleRecords: null,
     isTooling: false,
     totalSize: -1,
@@ -1003,15 +1020,29 @@ function RecordTable(vm) {
       this.countOfVisibleRecords = countOfVisibleRecords;
       vm.exportStatus = "Filtered " + countOfVisibleRecords + " records out of " + rt.records.length + " records";
     },
+    filterColumns(table, colVis) {
+      let filteredArray = table.map(row => row.filter((_, index) => colVis[index]));
+      return filteredArray;
+    },
+    updateColumnsVisibility() {
+      let newColVisibilities = [];
+      for (const [_, el] of rt.table[1].entries()) {
+        if (typeof el == "object" && el !== null && vm.prefHideRelations){
+          newColVisibilities.push(false);
+        } else { newColVisibilities.push(true); }
+      }
+      rt.colVisibilities = newColVisibilities;
+    },
     getVisibleTable() {
       if (vm.resultsFilter) {
         let filteredTable = [];
         for (let i = 0; i < rt.table.length; i++) {
           if (rt.rowVisibilities[i]) { filteredTable.push(rt.table[i]); }
         }
-        return filteredTable;
+        if (vm.prefHideRelations) { return rt.filterColumns(filteredTable, rt.colVisibilities); } else { return filteredTable; }
+
       }
-      return rt.table;
+      if (vm.prefHideRelations) { return rt.filterColumns(rt.table, rt.colVisibilities); } else { return rt.table; }
     }
   };
   return rt;
@@ -1024,6 +1055,7 @@ class App extends React.Component {
     super(props);
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
+    this.onPrefHideRelationsChange = this.onPrefHideRelationsChange.bind(this);
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
     this.onSelectQueryTemplate = this.onSelectQueryTemplate.bind(this);
     this.onClearHistory = this.onClearHistory.bind(this);
@@ -1039,6 +1071,7 @@ class App extends React.Component {
     this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
+    this.onDownloadAsCsv = this.onDownloadAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
@@ -1054,6 +1087,12 @@ class App extends React.Component {
     let {model} = this.props;
     model.queryTooling = e.target.checked;
     model.queryAutocompleteHandler();
+    model.didUpdate();
+  }
+  onPrefHideRelationsChange(e) {
+    let {model} = this.props;
+    model.prefHideRelations = e.target.checked;
+    model.refreshColumnsVisibility();
     model.didUpdate();
   }
   onSelectHistoryEntry(e) {
@@ -1155,6 +1194,11 @@ class App extends React.Component {
   onCopyAsCsv() {
     let {model} = this.props;
     model.copyAsCsv();
+    model.didUpdate();
+  }
+  onDownloadAsCsv(){
+    let {model} = this.props;
+    model.downloadAsCsv();
     model.didUpdate();
   }
   onCopyAsJson() {
@@ -1350,20 +1394,30 @@ class App extends React.Component {
         h("div", {className: "result-bar"},
           h("h1", {}, "Export Result"),
           h("div", {className: "button-group"},
-            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
+              h("svg", {className: "button-icon"},
+                h("use", {xlinkHref: "symbols.svg#download"})
+              )
+            ),
             localStorage.getItem("showDeleteRecordsButton") !== "false"
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
+          h("label", {title: "With this option, additionnal columns corresponding to Object names are removed from the query results and the exported data. These columns are useful during data import to automatically map objects."},
+            h("input", {type: "checkbox", checked: model.prefHideRelations, onChange: this.onPrefHideRelationsChange}),
+            " ",
+            h("span", {}, "Hide Object Columns")
+          ),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
           ),
         ),
-        h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
+        h("textarea", {id: "result-text", readOnly: true, value: nullToEmptyString(model.exportError), hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null}
           /* the scroll table goes here */
         )

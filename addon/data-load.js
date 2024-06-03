@@ -123,6 +123,11 @@ export function DescribeInfo(spinFor, didUpdate) {
   };
 }
 
+// Pluralize a numeric value by adding an s (or optional suffix) if it is not 1
+export function s(num, suffix = "s") {
+  return num == 1 ? "" : suffix;
+}
+
 // Copy text to the clipboard, without rendering it, since rendering is slow.
 export function copyToClipboard(value) {
   if (parent && parent.isUnitTest) { // for unit tests
@@ -163,7 +168,8 @@ function renderCell(rt, cell, td) {
       pop.className = "pop-menu";
       td.appendChild(pop);
       let {objectTypes, recordId} = recordInfo();
-      for (let objectType of objectTypes) {
+      let objectType = undefined;
+      function setLinks(){
         let aShow = document.createElement("a");
         let args = new URLSearchParams();
         args.set("host", rt.sfHost);
@@ -185,7 +191,7 @@ function renderCell(rt, cell, td) {
 
         //Query Record
         let aQuery = document.createElement("a");
-        let query = "SELECT Id FROM " + objectTypes + " WHERE Id = '" + recordId + "'";
+        let query = "SELECT Id FROM " + objectType + " WHERE Id = '" + recordId + "'";
         let queryArgs = new URLSearchParams();
         queryArgs.set("host", rt.sfHost);
         queryArgs.set("query", query);
@@ -197,53 +203,63 @@ function renderCell(rt, cell, td) {
         aqueryIcon.className = "icon";
         pop.appendChild(aQuery);
         aQuery.prepend(aqueryIcon);
-      }
-      // If the recordId ends with 0000000000AAA it is a dummy ID such as the ID for the master record type 012000000000000AAA
-      if (recordId && isRecordId(recordId) && !recordId.endsWith("0000000000AAA")) {
-        let aView = document.createElement("a");
-        aView.href = "https://" + rt.sfHost + "/" + recordId;
-        aView.target = "_blank";
-        aView.textContent = "View in Salesforce";
-        aView.className = "view-salesforce";
-        let aviewIcon = document.createElement("div");
-        aviewIcon.className = "icon";
-        pop.appendChild(aView);
-        aView.prepend(aviewIcon);
-      }
 
-      //Download event logFile
-      if (isEventLogFile(recordId)) {
-        let aDownload = document.createElement("a");
-        aDownload.id = recordId;
-        aDownload.target = "_blank";
-        aDownload.textContent = "Download File";
-        aDownload.className = "download-salesforce";
-        let aDownloadIcon = document.createElement("div");
-        aDownloadIcon.className = "icon";
-        pop.appendChild(aDownload);
-        aDownload.prepend(aDownloadIcon);
-        aDownload.addEventListener("click", e => {
-          sfConn.rest(e.target.id, {responseType: "text/csv"}).then(data => {
-            let downloadLink = document.createElement("a");
-            downloadLink.download = recordId.split("/")[6];
-            downloadLink.href = "data:text/csv;charset=utf-8," + data;
-            downloadLink.click();
+        // If the recordId ends with 0000000000AAA it is a dummy ID such as the ID for the master record type 012000000000000AAA
+        if (recordId && isRecordId(recordId) && !recordId.endsWith("0000000000AAA")) {
+          let aView = document.createElement("a");
+          aView.href = "https://" + rt.sfHost + "/" + recordId;
+          aView.target = "_blank";
+          aView.textContent = "View in Salesforce";
+          aView.className = "view-salesforce";
+          let aviewIcon = document.createElement("div");
+          aviewIcon.className = "icon";
+          pop.appendChild(aView);
+          aView.prepend(aviewIcon);
+        }
+
+        //Download event logFile
+        if (isEventLogFile(recordId)) {
+          let aDownload = document.createElement("a");
+          aDownload.id = recordId;
+          aDownload.target = "_blank";
+          aDownload.textContent = "Download File";
+          aDownload.className = "download-salesforce";
+          let aDownloadIcon = document.createElement("div");
+          aDownloadIcon.className = "icon";
+          pop.appendChild(aDownload);
+          aDownload.prepend(aDownloadIcon);
+          aDownload.addEventListener("click", e => {
+            sfConn.rest(e.target.id, {responseType: "text/csv"}).then(data => {
+              let downloadLink = document.createElement("a");
+              downloadLink.download = recordId.split("/")[6];
+              downloadLink.href = "data:text/csv;charset=utf-8," + data;
+              downloadLink.click();
+            });
+            td.removeChild(pop);
           });
-          td.removeChild(pop);
-        });
+        } else {
+          //copy to clipboard
+          let aCopy = document.createElement("a");
+          aCopy.className = "copy-id";
+          aCopy.textContent = "Copy Id";
+          aCopy.id = recordId;
+          let acopyIcon = document.createElement("div");
+          acopyIcon.className = "icon";
+          pop.appendChild(aCopy);
+          aCopy.prepend(acopyIcon);
+          aCopy.addEventListener("click", e => {
+            navigator.clipboard.writeText(e.target.id);
+            td.removeChild(pop);
+          });
+        }
+      }
+      if (objectTypes.length === 1){
+        objectType = objectTypes[0];
+        setLinks();
       } else {
-        //copy to clipboard
-        let aCopy = document.createElement("a");
-        aCopy.className = "copy-id";
-        aCopy.textContent = "Copy Id";
-        aCopy.id = recordId;
-        let acopyIcon = document.createElement("div");
-        acopyIcon.className = "icon";
-        pop.appendChild(aCopy);
-        aCopy.prepend(acopyIcon);
-        aCopy.addEventListener("click", e => {
-          navigator.clipboard.writeText(e.target.id);
-          td.removeChild(pop);
+        sfConn.rest(`/services/data/v${apiVersion}/ui-api/records/${recordId}?layoutTypes=Compact`).then(res => {
+          objectType = res.apiName;
+          setLinks();
         });
       }
       function closer(ev) {

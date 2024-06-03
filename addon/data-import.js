@@ -22,8 +22,8 @@ class Model {
     this.updateAvailableActions();
     this.importType = "Account";
     this.externalId = "Id";
-    this.batchSize = "200";
-    this.batchConcurrency = "6";
+    this.batchSize = localStorage.getItem("defaultBatchSize") ? localStorage.getItem("defaultBatchSize") : "200";
+    this.batchConcurrency = localStorage.getItem("defaultThreadSize") ? localStorage.getItem("defaultThreadSize") : "6";
     this.confirmPopup = null;
     this.activeBatches = 0;
     this.isProcessingQueue = false;
@@ -44,7 +44,7 @@ class Model {
     this.importTableResult = null;
     this.updateResult(null);
 
-    this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { });
+    this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { this.refreshColumn()});
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
     }));
@@ -187,6 +187,8 @@ class Model {
       this.importAction = "update";
       this.importActionName = "Update";
     }
+    this.refreshColumn();
+    this.updateResult(this.importData.importTable);
   }
 
   getDataFromJson(json) {
@@ -602,6 +604,36 @@ class Model {
     return hasId ? true : false;
   }
 
+  guessColumn (col) {
+    if (!col) {
+      return col;
+    }
+    let columnName = col.split(".");
+    if (columnName.length == 2) {
+      let externalIdColumn = this.columnList().find(s => s.toLowerCase().startsWith(columnName[0].toLowerCase()) && s.toLowerCase().endsWith(columnName[1].toLowerCase()));
+      if (externalIdColumn) {
+        return externalIdColumn;
+      }
+    }
+    return col.trim();
+  }
+
+  refreshColumn() {
+    if (!this.importData.importTable) {
+      return;
+    }
+    if (!this.importData.importTable.header) {
+      return;
+    }
+    this.importData.importTable.header = this.importData.importTable.header.map(c => {
+      if (!c) {
+        return c;
+      }
+      c.columnValue = this.guessColumn(c.columnOriginalValue);
+      return c;
+    });
+
+  }
   makeColumn(column, index) {
     let self = this;
     let xmlName = /^[a-zA-Z_][a-zA-Z0-9_]*$/; // A (subset of a) valid XML name
@@ -912,6 +944,7 @@ class App extends React.Component {
   onImportTypeChange(e) {
     let {model} = this.props;
     model.importType = e.target.value;
+    model.refreshColumn();
     model.didUpdate();
   }
   onDataFormatChange(e) {

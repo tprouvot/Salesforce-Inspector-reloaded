@@ -1,4 +1,5 @@
 export let apiVersion = localStorage.getItem("apiVersion") == null ? "60.0" : localStorage.getItem("apiVersion");
+export let sessionError;
 export let sfConn = {
 
   async getSession(sfHost) {
@@ -33,6 +34,7 @@ export let sfConn = {
         localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
       });
     }
+    setFavicon(sfHost);
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}) {
@@ -97,10 +99,15 @@ export let sfConn = {
       err.message = "Network error, offline or timeout";
       throw err;
     } else if (xhr.status == 401) {
-      showExpiredTokenLink();
+      let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
+      //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
+      if (localStorage.getItem(this.instanceHostname + "_access_token")){
+        sessionError = error;
+        showInvalidTokenBanner();
+      }
       let err = new Error();
       err.name = "Unauthorized";
-      err.message = "New access token needed";
+      err.message = error;
       throw err;
     } else {
       if (!logErrors) { console.error("Received error response from Salesforce REST API", xhr); }
@@ -298,7 +305,6 @@ class XML {
     }
     return parseResponse(element);
   }
-
 }
 
 function getMyDomain(host) {
@@ -311,9 +317,27 @@ function getMyDomain(host) {
   return host;
 }
 
-function showExpiredTokenLink() {
-  const expiredTokenLinkContainer = document.getElementById("expiredTokenLink");
-  if (expiredTokenLinkContainer) { expiredTokenLinkContainer.classList.remove("hide"); }
-  const mainContainer = document.getElementById("mainTabs");
-  if (mainContainer) { mainContainer.classList.add("mask"); }
+function showInvalidTokenBanner(){
+  const containerToShow = document.getElementById("invalidTokenBanner");
+  if (containerToShow) { containerToShow.classList.remove("hide"); }
+  const containerToMask = document.getElementById("mainTabs");
+  if (containerToMask) { containerToMask.classList.add("mask"); }
+}
+
+function setFavicon(sfHost){
+  let fav = localStorage.getItem(sfHost + "_customFavicon");
+  if (fav){
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    //check if custom favicon from the extension or web
+    if (fav.indexOf("http") == -1){
+      fav = "./images/favicons/" + fav + ".png";
+    }
+    link.href = fav;
+  }
+
 }

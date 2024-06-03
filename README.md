@@ -43,6 +43,10 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://tprouvot.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
 
+- SalesforceBen [article](https://www.salesforceben.com/salesforce-inspector-reloaded/), [video](https://youtu.be/dvYp5mKxxzM?si=hBCIaGOyqAJlerea)
+- ApexHours [article](https://www.apexhours.com/salesforce-inspector-reloaded/)
+- SalesforceWay [podcast](https://salesforceway.com/podcast/salesforce-inspector-reloaded/)
+
 ## New features compared to original SF Inspector
 
 - Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)

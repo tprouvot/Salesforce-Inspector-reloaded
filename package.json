@@ -8,7 +8,7 @@
     "chrome-release-build": "node scripts/release-build.js chrome"
   },
   "devDependencies": {
-    "eslint": "^8.56.0",
+    "eslint": "^9.4.0",
     "fs-extra": "11.2.0",
     "replace-in-file": "7.1.0",
     "zip-dir": "2.0.0"

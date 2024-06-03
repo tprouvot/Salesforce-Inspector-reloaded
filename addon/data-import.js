@@ -992,8 +992,8 @@ class Model {
 
     let wsdl = sfConn.wsdl(apiVersion, this.apiType);
     let soapheaders = {};
-    if (this.assignmentRule && (this.importType === "Case" || this.importType === "Lead" || this.importType === "Account")) {
-      soapheaders.headers = {"AssignmentRuleHeader": {"useDefaultRule": true}};
+    if (this.importType === "Case" || this.importType === "Lead" || this.importType === "Account") {
+      soapheaders.headers = {"AssignmentRuleHeader": {"useDefaultRule": this.assignmentRule}};
     }
     this.spinFor(sfConn.soap(wsdl, importAction, importArgs, soapheaders).then(res => {
 

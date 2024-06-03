@@ -696,7 +696,7 @@ class ScrollTableCell extends React.Component {
         className += " scrolltable-cell-diff";
       }
       return h("td", {className, style: {minWidth: colWidth + "px", height: rowHeight + "px"}},
-        cell.linkable ? h("a", {href: "about:blank", title: "Show all data", onClick: this.onClick, onDoubleClick: this.onTryEdit}, cell.label) : h("div", {onDoubleClick: this.onTryEdit}, cell.label),
+        cell.linkable ? h("a", {href: "about:blank", title: "Show all data", onClick: this.onClick, onDoubleClick: this.onTryEdit}, cell.label?.toString()) : h("div", {onDoubleClick: this.onTryEdit}, cell.label?.toString()),
         cell.showMenu ? h("div", {className: "pop-menu"},
           cell.links.map((l, idx) => {
             let arr = [];

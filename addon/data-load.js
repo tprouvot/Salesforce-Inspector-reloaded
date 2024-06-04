@@ -683,20 +683,28 @@ class ScrollTableCell extends React.Component {
   }
   render() {
     let {cell, rowHeight, colWidth, previousCell} = this.props;
+    let cellLabel = cell.label?.toString();
+    if (cellLabel == "[object Object]") {
+      cellLabel = "";
+    }
+    let cellDataEditValue = cell.dataEditValue?.toString();
+    if (cellDataEditValue == "[object Object]") {
+      cellDataEditValue = "";
+    }
     let className = "scrolltable-cell";
     if (cell.isEditing){
       if (previousCell != null && previousCell.dataEditValue != cell.dataEditValue) {
         className += " scrolltable-cell-diff";
       }
       return h("td", {className, style: {minWidth: colWidth + "px", height: rowHeight + "px"}},
-        h("textarea", {value: cell.dataEditValue, onChange: this.onDataEditValueInput}),
+        h("textarea", {value: cellDataEditValue, onChange: this.onDataEditValueInput}),
         h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6"));
     } else {
       if (previousCell != null && previousCell.label != cell.label) {
         className += " scrolltable-cell-diff";
       }
       return h("td", {className, style: {minWidth: colWidth + "px", height: rowHeight + "px"}},
-        cell.linkable ? h("a", {href: "about:blank", title: "Show all data", onClick: this.onClick, onDoubleClick: this.onTryEdit}, cell.label?.toString()) : h("div", {onDoubleClick: this.onTryEdit}, cell.label?.toString()),
+        cell.linkable ? h("a", {href: "about:blank", title: "Show all data", onClick: this.onClick, onDoubleClick: this.onTryEdit}, cellLabel) : h("div", {onDoubleClick: this.onTryEdit}, cellLabel),
         cell.showMenu ? h("div", {className: "pop-menu"},
           cell.links.map((l, idx) => {
             let arr = [];

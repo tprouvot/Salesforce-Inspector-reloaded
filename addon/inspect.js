@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setupColorListeners} from "./inspector.js";
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 
@@ -978,7 +978,7 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.setupColorListeners();
+    setupColorListeners();
     this.onUseAllTab = this.onUseAllTab.bind(this);
     this.onUseFieldsTab = this.onUseFieldsTab.bind(this);
     this.onUseChildsTab = this.onUseChildsTab.bind(this);
@@ -1079,27 +1079,6 @@ class App extends React.Component {
     model.reloadTables();
     model.didUpdate();
     // Save to local storage
-  }
-
-  setupColorListeners() {
-    const html = document.documentElement;
-
-    // listen to changes from the options page
-    window.addEventListener("storage", e => {
-      if (!e.isTrusted || (e.key !== "enableDarkMode" && e.key !== "enableAccentColors"))
-        return;
-
-      const isThemeKey = e.key === "enableDarkMode";
-      const newValueBool = e.newValue === "true";
-
-      const category = isThemeKey ? "theme" : "accent";
-      const value = isThemeKey ? (newValueBool ?  "dark" : "light") : (newValueBool ? "accent" : "default");
-      const htmlValue = html.dataset[category];
-
-      if (value != htmlValue) { // avoid recursion
-        html.dataset[category] = value;
-      }
-    });
   }
 
   handleClick(e){

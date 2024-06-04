@@ -28,7 +28,6 @@ function initButton(sfHost, inInspector) {
   document.body.appendChild(rootEl);
 
   addFlowScrollability();
-  setupColorChange();
 
   function addFlowScrollability(popupEl) {
     const currentUrl = window.location.href;
@@ -120,6 +119,7 @@ function initButton(sfHost, inInspector) {
       if (e.data.insextInitRequest) {
         // Set CSS classes for arrow button position
         iFrameLocalStorage = e.data.iFrameLocalStorage;
+        setupColorChange();
         popupEl.classList.add(iFrameLocalStorage.popupArrowOrientation == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
         if (iFrameLocalStorage.popupArrowOrientation == "horizontal") {
           if (iFrameLocalStorage.popupArrowPosition < 8) {
@@ -238,22 +238,11 @@ function initButton(sfHost, inInspector) {
     }
   }
 
-  function setupColorChange(error = 0) {
-    const storage = window[0].localStorage;
-    console.log({error});
-    if (error > 5) {
-      return console.error("Didn't find Inspector's storage");
-    }
-    if (!window[0].location.pathname.endsWith("popup.html")) {
-      return setTimeout(() => setupColorChange(error += 1), 500);
-    }
-
-    const savedTheme = storage.getItem("enableDarkMode");
-    const themeValue = savedTheme === "true" ? "dark" : "light";
-    rootEl.dataset.theme = themeValue; //rootEl is #insext
-
-    const savedAccent = storage.getItem("enableAccentColors");
-    const accentValue = savedAccent === "true" ? "accent" : "default";
-    rootEl.dataset.accent = accentValue; //rootEl is #insext
+  function setupColorChange() {
+    const themeValue = iFrameLocalStorage.enableDarkMode === true ? "dark" : "light";
+    const accentValue = iFrameLocalStorage.enableAccentColors === true ? "accent" : "default";
+    //rootEl is #insext
+    rootEl.dataset.theme = themeValue;
+    rootEl.dataset.accent = accentValue;
   }
 }

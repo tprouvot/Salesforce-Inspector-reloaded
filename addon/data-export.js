@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setupColorListeners} from "./inspector.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
@@ -1021,7 +1021,7 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.setupColorListeners();
+    setupColorListeners();
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
@@ -1248,27 +1248,6 @@ class App extends React.Component {
   recalculateSize() {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     this.scrollTable.viewportChange();
-  }
-
-  setupColorListeners() {
-    const html = document.documentElement;
-
-    // listen to changes from the options page
-    window.addEventListener("storage", e => {
-      if (!e.isTrusted || (e.key !== "enableDarkMode" && e.key !== "enableAccentColors"))
-        return;
-
-      const isThemeKey = e.key === "enableDarkMode";
-      const newValueBool = e.newValue === "true";
-
-      const category = isThemeKey ? "theme" : "accent";
-      const value = isThemeKey ? (newValueBool ?  "dark" : "light") : (newValueBool ? "accent" : "default");
-      const htmlValue = html.dataset[category];
-
-      if (value != htmlValue) { // avoid recursion
-        html.dataset[category] = value;
-      }
-    });
   }
 
   render() {

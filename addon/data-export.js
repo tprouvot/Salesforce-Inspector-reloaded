@@ -15,7 +15,7 @@ class QueryHistory {
     try {
       history = JSON.parse(localStorage[this.storageKey]);
     } catch (e) {
-      // empty
+      console.error(e);
     }
     if (!Array.isArray(history)) {
       history = [];
@@ -1031,7 +1031,7 @@ function RecordTable(vm) {
     },
     updateColumnsVisibility() {
       let newColVisibilities = [];
-      for (const [_, el] of rt.table[1].entries()) {
+      for (const [el] of rt.table[1].entries()) {
         if (typeof el == "object" && el !== null && vm.prefHideRelations){
           newColVisibilities.push(false);
         } else { newColVisibilities.push(true); }

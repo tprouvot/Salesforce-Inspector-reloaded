@@ -176,7 +176,7 @@ class Model {
     this.updateResult({header, data});
 
     //automatically select the SObject if possible
-    let sobj = this.getSObject(data);
+    let sobj = this.getSObject(data, header);
     if (sobj) {
       //We avoid overwriting the Tooling option in case it was already set
       this.apiType = sobj.endsWith("__mdt") ? "Metadata" : this.apiType === "Tooling" ? "Tooling" : "Enterprise";
@@ -594,10 +594,24 @@ class Model {
     this.updateImportTableResult();
   }
 
-  getSObject(data) {
+  getSObject(data, header) {
     if (data[0][0].startsWith("[") && data[0][0].endsWith("]")) {
       let obj = data[0][0].substr(1, data[0][0].length - 2);
       return obj;
+    }
+    let idIndex = header.findIndex(column => column.columnValue.toLowerCase() === "id");
+    if (idIndex != -1) {
+      let firstId = data[0][idIndex];
+      let keyPrefix = firstId?.substring(0, 3);
+      let {globalDescribe} = this.describeInfo.describeGlobal(this.apiType == "Tooling");
+      if (!globalDescribe || !keyPrefix) {
+        return "";
+      }
+
+      let firstSobject = globalDescribe.sobjects
+        .filter(sobjectDescribe => sobjectDescribe.keyPrefix == keyPrefix)
+        .map(sobjectDescribe => sobjectDescribe.name).shift();
+      return firstSobject ? firstSobject : "";
     }
     return "";
   }

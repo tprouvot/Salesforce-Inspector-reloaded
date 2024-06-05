@@ -1,6 +1,6 @@
 /* exported initButton */
 /* global showStdPageDetails */
-"use strict";
+
 
 (function() {
   let script = document.createElement('script');

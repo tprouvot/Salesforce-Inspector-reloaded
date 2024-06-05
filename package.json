@@ -9,9 +9,13 @@
   },
   "devDependencies": {
     "@types/chrome": "^0.0.266",
-    "eslint": "^9.1.0",
+    "@eslint/compat": "^1.0.3",
+    "@eslint/js": "^9.4.0",
+    "eslint": "^9.4.0",
+    "eslint-plugin-react": "^7.34.2",
     "fs-extra": "11.2.0",
-    "replace-in-file": "7.2.0",
+    "globals": "^15.3.0",
+    "replace-in-file": "7.1.0",
     "zip-dir": "2.0.0"
   }
 }

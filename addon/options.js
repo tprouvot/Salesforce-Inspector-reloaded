@@ -127,6 +127,14 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: enableLogsOption, props: {key: 1}}
         ]
+      },
+      {
+        id: 6,
+        tabTitle: "Tab6",
+        title: "Metadata",
+        content: [
+          {option: Option, props: {type: "toggle", title: "Include managed packages metadata", key: "includeManagedMetadata"}},
+        ]
       }
     ];
     this.onTabSelect = this.onTabSelect.bind(this);

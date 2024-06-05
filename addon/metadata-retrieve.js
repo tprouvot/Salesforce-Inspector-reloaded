@@ -23,9 +23,10 @@ class Model {
     this.progress = "ready";
     this.downloadLink = null;
     this.statusLink = null;
-    this.metadataObjects = null;
-    this.includeManagedPackage = false;
+    this.metadataObjects = [];
+    this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
     this.packageXml = "Package.xml goes here";
+    this.metadataFilter = "";
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -267,6 +268,10 @@ class App extends React.Component {
     this.onStartClick = this.onStartClick.bind(this);
     this.onSelectAllChange = this.onSelectAllChange.bind(this);
     this.onUpdateManagedPackageSelection = this.onUpdateManagedPackageSelection.bind(this);
+    this.onMetadataFilterInput = this.onMetadataFilterInput.bind(this);
+  }
+  componentDidMount() {
+    this.refs.metadataFilter.focus();
   }
   onSelectAllChange(e) {
     let {model} = this.props;
@@ -283,15 +288,24 @@ class App extends React.Component {
   onUpdateManagedPackageSelection(e){
     let {model} = this.props;
     model.includeManagedPackage = e.target.checked;
+    localStorage.setItem("includeManagedMetadata", model.includeManagedPackage);
+    model.didUpdate();
+  }
+  onMetadataFilterInput(e){
+    let {model} = this.props;
+    model.metadataFilter = e.target.value;
+    //model.metadataObjects = model.metadataObjects.map(metadataObject => ({...metadataObject, display: metadataObject.xmlName.toLowerCase().includes(model.metadataFilter.toLowerCase())}));
+    model.metadataObjects = model.metadataObjects.filter(metadataObject => metadataObject.xmlName.toLowerCase().includes(model.metadataFilter.toLowerCase()));
+    model.packageXml = this.getXml();
     model.didUpdate();
   }
   getXml(){
     //let package = JSON.parse(localStorage.getItem("package.xml"));
-    let packageXml = JSON.parse({"": [], "CustomLabel": ["AccountMap", "adobesign__Admin_Msg", "adobesign__Back"], "ApexPage": ["AnswersHome"]});
+    let packageXml = "";
     let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
               + '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
     if (packageXml != null){
-      for (let metadataType in packageXml) {
+      for (let metadataType in model.packageXml) {
         let itemList = packageXml[metadataType];
         if (itemList.length > 0) {
           xml += "    <types>\n";
@@ -331,11 +345,16 @@ class App extends React.Component {
         ),
         h("div", {className: "area", id: "result-area"},
           h("div", {className: "result-bar"},
-            h("h1", {className: "slds-text-title_bold"}, "Metadata Result"),
-            h("button", {onClick: this.onStartClick}, "Download metadata"),
-            model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
-            model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null,
-            h("span", {className: "flex"}),
+            h("h1", {className: "slds-text-title_bold"}, "Metadata"),
+            h("input", {className: "filter-input", placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
+            h("label", {className: "slds-checkbox_toggle max-width-small"},
+              h("input", {type: "checkbox", checked: model.metadataObjects.every(metadataObject => metadataObject.selected), onChange: this.onSelectAllChange}),
+              h("span", {className: "slds-checkbox_faux_container center-label"},
+                h("span", {className: "slds-checkbox_faux"}),
+                h("span", {className: "slds-checkbox_on"}, "Unselect all"),
+                h("span", {className: "slds-checkbox_off"}, "Select all"),
+              )
+            ),
             h("label", {className: "slds-checkbox_toggle max-width-small"},
               h("input", {type: "checkbox", required: true, "aria-describedby": "toggle-namespace", className: "slds-input", checked: model.includeManagedPackage, onChange: this.onUpdateManagedPackageSelection}),
               h("span", {className: "slds-checkbox_faux_container center-label"},
@@ -344,20 +363,15 @@ class App extends React.Component {
                 h("span", {className: "slds-checkbox_off"}, "Include managed package metadata"),
               )
             ),
-            h("a", {href: "https://github.com/jesperkristensen/forcecmd"}, "Automate this with forcecmd")
+            h("button", {onClick: this.onStartClick}, "Download metadata"),
+            model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
+            model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null
           ),
           h("div", {id: "result-table", ref: "scroller"},
             model.metadataObjects
               ? h("div", {className: "result slds-grid"},
                 h("div", {className: "slds-col"},
-                  h("label", {className: "slds-checkbox_toggle max-width-small"},
-                    h("input", {type: "checkbox", checked: model.metadataObjects.every(metadataObject => metadataObject.selected), onChange: this.onSelectAllChange}),
-                    h("span", {className: "slds-checkbox_faux_container center-label"},
-                      h("span", {className: "slds-checkbox_faux"}),
-                      h("span", {className: "slds-checkbox_on"}, "Unselect all"),
-                      h("span", {className: "slds-checkbox_off"}, "Select all"),
-                    )
-                  ),
+
                   h("br", {}),
                   h("ul", {className: "slds-accordion"},
                     model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model}))),
@@ -365,7 +379,7 @@ class App extends React.Component {
                   h("button", {onClick: this.onStartClick}, "Download metadata")
                 ),
                 h("div", {className: "slds-col"},
-                  h("textarea", {readOnly: true, value: model.packageXml})
+                  h("textarea", {readOnly: false, value: model.packageXml})
                 )
               )
               : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))

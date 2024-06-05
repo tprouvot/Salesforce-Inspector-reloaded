@@ -133,3 +133,17 @@ textarea {
 .max-width-small{
   max-width: 20%;
 }
+.filter-input {
+  font: inherit;
+  width: 20em;
+  padding: 0 2.5rem;
+  background-color: #fff;
+  color: #16325c;
+  border: 1px solid #d8dde6;
+  border-radius: .25rem;
+  transition: border .1s linear, background-color .1s linear;
+  display: inline-block;
+  line-height: 1.875rem;
+  min-height: calc(1.875rem + (1px * 2));
+  margin-top:0.5rem;
+}

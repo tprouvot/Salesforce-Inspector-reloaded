@@ -11,6 +11,7 @@ export default [
       sourceType: "module",
       globals: {
         chrome: "readonly",
+        browser: "readonly",
         ...globals.browser
       }
     },

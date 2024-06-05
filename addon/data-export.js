@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, nullToEmptyString} from "./inspector.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
@@ -15,7 +15,7 @@ class QueryHistory {
     try {
       history = JSON.parse(localStorage[this.storageKey]);
     } catch (e) {
-      // empty
+      console.error(e);
     }
     if (!Array.isArray(history)) {
       history = [];
@@ -80,6 +80,7 @@ class Model {
     this.winInnerHeight = 0;
     this.queryAll = false;
     this.queryTooling = false;
+    this.prefHideRelations = localStorage.getItem("hideObjectNameColumnsDataExport") == "true"; // default to false
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
@@ -102,7 +103,6 @@ class Model {
     this.autocompleteProgress = {};
     this.exportProgress = {};
     this.queryName = "";
-    this.clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : "";
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
       "SELECT Id FROM ",
       "SELECT Id FROM WHERE",
@@ -110,6 +110,7 @@ class Model {
       "SELECT Id FROM WHERE LIKE",
       "SELECT Id FROM WHERE ORDER BY"
     ];
+    this.separator = getSeparator();
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -143,11 +144,16 @@ class Model {
     this.exportedData.updateVisibility();
     this.updatedExportedData();
   }
+  refreshColumnsVisibility() {
+    if (this.exportedData == null || this.exportedData.totalSize == 0) {
+      return;
+    }
+    // Recalculate visibility
+    this.exportedData.updateColumnsVisibility();
+    this.updatedExportedData();
+  }
   setQueryName(value) {
     this.queryName = value;
-  }
-  setClientId(value) {
-    this.clientId = value;
   }
   setQueryInput(queryInput) {
     this.queryInput = queryInput;
@@ -232,7 +238,7 @@ class Model {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
       let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(delimiter)) {
+      if (this.selectedSavedEntry.query.includes(delimiter) && this.selectedSavedEntry.query.indexOf(":SELECT") >= 0) {
         let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
         queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
@@ -251,14 +257,11 @@ class Model {
   addToHistory() {
     this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
   }
-  saveClientId() {
-    localStorage.setItem(this.sfHost + "_clientId", this.clientId);
-  }
   removeFromHistory() {
     this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
   }
   getQueryToSave() {
-    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value : this.queryInput.value;
+    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value.trim() : this.queryInput.value.trim();
   }
   autocompleteReload() {
     this.describeInfo.reloadAll();
@@ -276,15 +279,20 @@ class Model {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
   }
   copyAsCsv() {
-    let separator = getSeparator();
-    copyToClipboard(this.exportedData.csvSerialize(separator));
+    copyToClipboard(this.exportedData.csvSerialize(this.separator));
   }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
   }
+  downloadAsCsv(){
+    const blob = new Blob([this.exportedData.csvSerialize(this.separator)], { type: "data:text/csv;charset=utf-8," });
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.download = `${this.autocompleteResults.sobjectName}-${new Date().toLocaleDateString()}.csv`;
+    downloadAnchor.href = window.URL.createObjectURL(blob);
+    downloadAnchor.click();
+  }
   deleteRecords(e) {
-    let separator = getSeparator();
-    let data = this.exportedData.csvSerialize(separator);
+    let data = this.exportedData.csvSerialize(this.separator);
     let encodedData = btoa(data);
 
     let args = new URLSearchParams();
@@ -360,19 +368,23 @@ class Model {
       vm.autocompleteProgress.abort();
     }
 
-    vm.autocompleteClick = ({value, suffix}) => {
-      vm.queryInput.focus();
-      //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
-      let indexFrom = query.toLowerCase().indexOf("from");
-      if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
-        suffix = "";
+    vm.autocompleteClick = ({value, suffix, link}) => {
+      if (link){
+        window.open(link, "_blank");
+      } else {
+        vm.queryInput.focus();
+        //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
+        let indexFrom = query.toLowerCase().indexOf("from");
+        if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
+          suffix = "";
+        }
+        vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
+        //add query suffix if needed
+        if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
+          vm.queryInput.value += " LIMIT 200";
+        }
+        vm.queryAutocompleteHandler();
       }
-      vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
-      //add query suffix if needed
-      if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
-        vm.queryInput.value += " LIMIT 200";
-      }
-      vm.queryAutocompleteHandler();
     };
 
     // Find the token we want to autocomplete. This is the selected text, or the last word before the cursor.
@@ -649,7 +661,12 @@ class Model {
         }
         let contextValueField = contextValueFields[0];
         let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
-        let acQuery = "select " + contextValueField.field.name + " from " + contextValueField.sobjectDescribe.name + " where " + contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%' group by " + contextValueField.field.name + " limit 100";
+        let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%'";
+        if(contextValueField.sobjectDescribe.name.toLowerCase() === "recordtype"){
+          whereClause += vm.autocompleteResults.sobjectName ? " AND SobjectType = '" + vm.autocompleteResults.sobjectName + "'" : "";
+        }
+        let acQuery = "SELECT " + contextValueField.field.name + " FROM " + contextValueField.sobjectDescribe.name + " WHERE " + whereClause + " GROUP BY " + contextValueField.field.name + " LIMIT 100";
+
         vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(acQuery), {progressHandler: vm.autocompleteProgress})
           .catch(err => {
             if (err.name != "AbortError") {
@@ -769,9 +786,10 @@ class Model {
     } else {
       // Autocomplete field names and functions
       if (ctrlSpace) {
+        let includeFormula = localStorage.getItem("includeFormulaFieldsFromExportAutocomplete") !== "false";
         let ar = contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
-          .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
+          .filter(field => (field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase())) && (includeFormula || !field.calculated))
           .map(field => contextPath + field.name)
           .toArray();
         if (ar.length > 0) {
@@ -905,6 +923,28 @@ class Model {
   stopExport() {
     this.exportProgress.abort();
   }
+  doQueryPlan(){
+    let vm = this; // eslint-disable-line consistent-this
+    let exportedData = new RecordTable(vm);
+
+    vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(vm.queryInput.value)).then(res => {
+      exportedData.addToTable(res.plans);
+      vm.exportStatus = "";
+      vm.performancePoints = [];
+      vm.exportedData = exportedData;
+      vm.updatedExportedData();
+      vm.didUpdate();
+    }, () => {
+      vm.isWorking = false;
+    }));
+    vm.autocompleteResults = {
+      sobjectName: "",
+      title: "Query Plan Tool:",
+      results: [{value: "Developer Console Query Plan Tool FAQ", title: "Developer Console Query Plan Tool FAQ", rank: 1, autocompleteType: "fieldName", dataType: "", link: "https://help.salesforce.com/s/articleView?id=000386864&type=1"},
+        {value: "Get Feedback on Query Performance", title: "Get Feedback on Query Performance", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "", link: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_query_explain.htm"},
+      ]
+    };
+  }
 }
 
 function RecordTable(vm) {
@@ -931,7 +971,9 @@ function RecordTable(vm) {
           row.push(undefined);
         }
         header[c] = column;
-        rt.colVisibilities.push(true);
+        if (typeof record[field] == "object" && record[field] != null && vm.prefHideRelations) {
+          rt.colVisibilities.push(false);
+        } else { rt.colVisibilities.push(true); }
       }
       row[c] = record[field];
       if (typeof record[field] == "object" && record[field] != null) {
@@ -953,7 +995,7 @@ function RecordTable(vm) {
     records: [],
     table: [],
     rowVisibilities: [],
-    colVisibilities: [true],
+    colVisibilities: new Array(!vm.prefHideRelations),
     countOfVisibleRecords: null,
     isTooling: false,
     totalSize: -1,
@@ -981,6 +1023,20 @@ function RecordTable(vm) {
         if (isVisible(rt.table[r], filter)) countOfVisibleRecords++;
       }
       this.countOfVisibleRecords = countOfVisibleRecords;
+      vm.exportStatus = "Filtered " + countOfVisibleRecords + " records out of " + rt.records.length + " records";
+    },
+    filterColumns(table, colVis) {
+      let filteredArray = table.map(row => row.filter((_, index) => colVis[index]));
+      return filteredArray;
+    },
+    updateColumnsVisibility() {
+      let newColVisibilities = [];
+      for (const [el] of rt.table[1].entries()) {
+        if (typeof el == "object" && el !== null && vm.prefHideRelations){
+          newColVisibilities.push(false);
+        } else { newColVisibilities.push(true); }
+      }
+      rt.colVisibilities = newColVisibilities;
     },
     getVisibleTable() {
       if (vm.resultsFilter) {
@@ -988,9 +1044,10 @@ function RecordTable(vm) {
         for (let i = 0; i < rt.table.length; i++) {
           if (rt.rowVisibilities[i]) { filteredTable.push(rt.table[i]); }
         }
-        return filteredTable;
+        if (vm.prefHideRelations) { return rt.filterColumns(filteredTable, rt.colVisibilities); } else { return filteredTable; }
+
       }
-      return rt.table;
+      if (vm.prefHideRelations) { return rt.filterColumns(rt.table, rt.colVisibilities); } else { return rt.table; }
     }
   };
   return rt;
@@ -1003,12 +1060,12 @@ class App extends React.Component {
     super(props);
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
+    this.onPrefHideRelationsChange = this.onPrefHideRelationsChange.bind(this);
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
     this.onSelectQueryTemplate = this.onSelectQueryTemplate.bind(this);
     this.onClearHistory = this.onClearHistory.bind(this);
     this.onSelectSavedEntry = this.onSelectSavedEntry.bind(this);
     this.onAddToHistory = this.onAddToHistory.bind(this);
-    this.onSaveClientId = this.onSaveClientId.bind(this);
     this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
@@ -1016,13 +1073,14 @@ class App extends React.Component {
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
+    this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
+    this.onDownloadAsCsv = this.onDownloadAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
-    this.onSetClientId = this.onSetClientId.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
   }
   onQueryAllChange(e) {
@@ -1034,6 +1092,12 @@ class App extends React.Component {
     let {model} = this.props;
     model.queryTooling = e.target.checked;
     model.queryAutocompleteHandler();
+    model.didUpdate();
+  }
+  onPrefHideRelationsChange(e) {
+    let {model} = this.props;
+    model.prefHideRelations = e.target.checked;
+    model.refreshColumnsVisibility();
     model.didUpdate();
   }
   onSelectHistoryEntry(e) {
@@ -1067,12 +1131,6 @@ class App extends React.Component {
     e.preventDefault();
     let {model} = this.props;
     model.addToHistory();
-    model.didUpdate();
-  }
-  onSaveClientId(e) {
-    e.preventDefault();
-    let {model} = this.props;
-    model.saveClientId();
     model.didUpdate();
   }
   onRemoveFromHistory(e) {
@@ -1128,6 +1186,11 @@ class App extends React.Component {
     navigator.clipboard.writeText(url.toString());
     model.didUpdate();
   }
+  onQueryPlan(){
+    let {model} = this.props;
+    model.doQueryPlan();
+    model.didUpdate();
+  }
   onCopyAsExcel() {
     let {model} = this.props;
     model.copyAsExcel();
@@ -1136,6 +1199,11 @@ class App extends React.Component {
   onCopyAsCsv() {
     let {model} = this.props;
     model.copyAsCsv();
+    model.didUpdate();
+  }
+  onDownloadAsCsv(){
+    let {model} = this.props;
+    model.downloadAsCsv();
     model.didUpdate();
   }
   onCopyAsJson() {
@@ -1156,11 +1224,6 @@ class App extends React.Component {
   onSetQueryName(e) {
     let {model} = this.props;
     model.setQueryName(e.target.value);
-    model.didUpdate();
-  }
-  onSetClientId(e) {
-    let {model} = this.props;
-    model.setClientId(e.target.value);
     model.didUpdate();
   }
   onStopExport() {
@@ -1235,6 +1298,10 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     this.scrollTable.viewportChange();
   }
+  toggleQueryMoreMenu(){
+    this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
+  }
+
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
@@ -1276,10 +1343,6 @@ class App extends React.Component {
               ),
               h("button", {onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
             ),
-            h("div", {className: "pop-menu saveOptions", hidden: !model.expandSavedOptions},
-              h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query"),
-              h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
-            ),
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
                 h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
@@ -1287,9 +1350,32 @@ class App extends React.Component {
               ),
               h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
               h("button", {onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
-              h("button", {className: model.expandSavedOptions ? "toggle contract" : "toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"})),
-              h("input", {placeholder: "Consumer Key", type: "default", value: model.clientId, onInput: this.onSetClientId}),
-              h("button", {onClick: this.onSaveClientId, title: "Save Consumer Key"}, "Save"),
+              h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+                h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleQueryMoreMenu(), title: "Show more options"},
+                  h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#down"})
+                  ),
+                  h("span", {className: "slds-assistive-text"}, "Show more options")
+                ),
+                h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.toggleQueryMoreMenu()},
+                  h("ul", {className: "slds-dropdown__list", role: "menu"},
+                    h("li", {className: "slds-dropdown__item", role: "presentation"},
+                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
+                        h("span", {className: "slds-truncate"},
+                          h("span", {className: "slds-truncate", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
+                        )
+                      )
+                    ),
+                    h("li", {className: "slds-dropdown__item", role: "presentation"},
+                    h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
+                      h("span", {className: "slds-truncate"},
+                        h("span", {className: "slds-truncate", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+                      )
+                    )
+                  )
+                  )
+                )
+              ),
             ),
           ),
           h("div", {className: "query-options"},
@@ -1312,8 +1398,9 @@ class App extends React.Component {
             h("div", {className: "flex-right"},
               h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Export"),
               h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query"),
-              h("a", {tabIndex: 3, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
-              h("button", {tabIndex: 4, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
+              h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
+              h("a", {tabIndex: 4, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
+              h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
                 h("div", {className: "button-icon"}),
                 h("div", {className: "button-toggle-icon"})
               )
@@ -1337,19 +1424,30 @@ class App extends React.Component {
         h("div", {className: "result-bar"},
           h("h1", {}, "Export Result"),
           h("div", {className: "button-group"},
-            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
-            h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried, ", className: "delete-btn"}, "Delete Records"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
+              h("svg", {className: "button-icon"},
+                h("use", {xlinkHref: "symbols.svg#download"})
+              )
+            ),
+            localStorage.getItem("showDeleteRecordsButton") !== "false"
+              ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
+          h("label", {title: "With this option, additionnal columns corresponding to Object names are removed from the query results and the exported data. These columns are useful during data import to automatically map objects."},
+            h("input", {type: "checkbox", checked: model.prefHideRelations, onChange: this.onPrefHideRelationsChange}),
+            " ",
+            h("span", {}, "Hide Object Columns")
+          ),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
           ),
         ),
-        h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
+        h("textarea", {id: "result-text", readOnly: true, value: nullToEmptyString(model.exportError), hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null}
           /* the scroll table goes here */
         )

@@ -1,4 +1,6 @@
-"use strict";
+
+let sfHost;
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Perform cookie operations in the background page, because not all foreground pages have access to the cookie API.
   // Firefox does not support incognito split mode, so we use sender.tab.cookieStoreId to select the right cookie store.
@@ -32,6 +34,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
   if (request.message == "getSession") {
+    sfHost = request.sfHost;
     chrome.cookies.get({url: "https://" + request.sfHost, name: "sid", storeId: sender.tab.cookieStoreId}, sessionCookie => {
       if (!sessionCookie) {
         sendResponse(null);
@@ -42,5 +45,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }
+  if (request.message == "createWindow") {
+    const brow = typeof browser === "undefined" ? chrome : browser;
+    brow.windows.create({
+      url: request.url,
+      incognito: request.incognito ?? false
+    });
+  }
   return false;
 });
+chrome.action.onClicked.addListener(() => {
+  chrome.runtime.sendMessage({
+    msg: "shortcut_pressed", sfHost
+  });
+});
+chrome.commands?.onCommand.addListener((command) => {
+  if (command !== "open-popup"){
+    chrome.tabs.create({
+      url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
+    });
+  } else {
+    chrome.runtime.sendMessage({
+      msg: "shortcut_pressed", sfHost
+    });
+  }
+});
+
+chrome.runtime.onInstalled.addListener(({reason}) => {
+  if (reason === "install") {
+    chrome.tabs.create({
+      url: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/welcome/"
+    });
+  }
+});
+chrome.runtime.setUninstallURL("https://forms.gle/y7LbTNsFqEqSrtyc6");

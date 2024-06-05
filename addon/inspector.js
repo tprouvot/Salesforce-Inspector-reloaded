@@ -1,4 +1,10 @@
-export let apiVersion = localStorage.getItem("apiVersion") == null ? "59.0" : localStorage.getItem("apiVersion");
+export let apiVersion = localStorage.getItem("apiVersion") == null ? "60.0" : localStorage.getItem("apiVersion");
+export let sessionError;
+export function nullToEmptyString(value) {
+  // For react input fields, the value may not be null or undefined, so this will clean the value
+  return (value == null) ? "" : value;
+}
+
 export let sfConn = {
 
   async getSession(sfHost) {
@@ -97,10 +103,15 @@ export let sfConn = {
       err.message = "Network error, offline or timeout";
       throw err;
     } else if (xhr.status == 401) {
-      showExpiredTokenLink();
+      let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
+      //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
+      if (localStorage.getItem(this.instanceHostname + "_access_token")){
+        sessionError = error;
+        showInvalidTokenBanner();
+      }
       let err = new Error();
       err.name = "Unauthorized";
-      err.message = "New access token needed";
+      err.message = error;
       throw err;
     } else {
       if (!logErrors) { console.error("Received error response from Salesforce REST API", xhr); }
@@ -298,7 +309,6 @@ class XML {
     }
     return parseResponse(element);
   }
-
 }
 
 function getMyDomain(host) {
@@ -311,9 +321,9 @@ function getMyDomain(host) {
   return host;
 }
 
-function showExpiredTokenLink() {
-  const expiredTokenLinkContainer = document.getElementById("expiredTokenLink");
-  if (expiredTokenLinkContainer) { expiredTokenLinkContainer.classList.remove("hide"); }
-  const mainContainer = document.getElementById("mainTabs");
-  if (mainContainer) { mainContainer.classList.add("mask"); }
+function showInvalidTokenBanner(){
+  const containerToShow = document.getElementById("invalidTokenBanner");
+  if (containerToShow) { containerToShow.classList.remove("hide"); }
+  const containerToMask = document.getElementById("mainTabs");
+  if (containerToMask) { containerToMask.classList.add("mask"); }
 }

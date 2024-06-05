@@ -17,6 +17,7 @@ export let setupLinks = [
   {label: "Public Groups", link: "/lightning/setup/PublicGroups/home", section: "Administration > Users", prod: false},
   {label: "Queues", link: "/lightning/setup/Queues/home", section: "Administration > Users", prod: false},
   {label: "Roles", link: "/lightning/setup/Roles/home", section: "Administration > Users", prod: false},
+  {label: "User Access Policies", link: "/lightning/setup/UserAccessPolicies/home", section: "Administration > Users", prod: false},
   {label: "User Management Settings", link: "/lightning/setup/UserManagementSettings/home", section: "Administration > Users", prod: false},
   {label: "Users", link: "/lightning/setup/ManageUsers/home", section: "Administration > Users", prod: false},
   //Administration > Data
@@ -90,6 +91,7 @@ export let setupLinks = [
   {label: "Themes", link: "/lightning/setup/CommunityThemeDefinitionList/home", section: "Platform Tools > Feature Settings > Digital Experiences", prod: false},
 
   //Platform Tools > Feature Settings
+  {label: "Field History Tracking", link: "/lightning/setup/FieldHistoryTracking/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Functions", link: "/lightning/setup/Functions/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Home", link: "/lightning/setup/Home/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Quip (Salesforce Anywhere)", link: "/lightning/setup/SalesforceAnywhereSetupPage/home", section: "Platform Tools > Feature Settings", prod: false},
@@ -358,6 +360,8 @@ export let setupLinks = [
   {label: "Session Management", link: "/lightning/setup/SessionManagementPage/home", section: "Settings > Security", prod: false},
   {label: "Session Settings", link: "/lightning/setup/SecuritySession/home", section: "Settings > Security", prod: false},
   {label: "Sharing Settings", link: "/lightning/setup/SecuritySharing/home", section: "Settings > Security", prod: false},
+  {label: "Trusted URL and Browser Policy Violations", link: "/lightning/setup/BrowserPolicyViolations/home", section: "Settings > Security", prod: false},
+  {label: "Trusted URLs", link: "/lightning/setup/SecurityCspTrustedSite/home", section: "Settings > Security", prod: false},
   {label: "Trusted URLs for Redirects", link: "/lightning/setup/SecurityRedirectWhitelistUrl/home", section: "Settings > Security", prod: false},
   {label: "View Setup Audit Trail", link: "/lightning/setup/SecurityEvents/home", section: "Settings > Security", prod: false},
 

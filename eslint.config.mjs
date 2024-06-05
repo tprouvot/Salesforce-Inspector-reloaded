@@ -9,7 +9,15 @@ export default [
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
-      globals: globals.browser
+      globals: {
+        chrome: "readonly",
+        ...globals.browser
+      }
+    },
+    settings: {
+      react: {
+        version: "detect"
+      },
     },
     ignores: [
       "addon/react-dom.js",
@@ -21,6 +29,7 @@ export default [
       "target/"
     ],
     rules: {
+      "react/prop-types": 0,
       "indent": ["error", 2, {"SwitchCase": 1, "flatTernaryExpressions": true}],
       "quotes": ["error", "double", {"avoidEscape": true}],
       "semi": ["error", "always"],

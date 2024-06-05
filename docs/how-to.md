@@ -9,11 +9,18 @@
 If you enabled "API client whitelisting" (a.k.a "API Access Control") in your org, SF Inspector may not work anymore.
 
 To secure the extension usage, you can use a OAuth 2.0 flow to get an access token, linked to a connected app installed in your org.
-To install the default "SF Inspector reloaded" connected app, open popup and click 'Generate Access Token' button
 
-   <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
+1. Open the extension and scroll down to the “Generate Access Token” button.
+2. You should see the “OAUTH_APP_BLOCKED” error which is normal at this stage.
+3. Go to “Connected Apps OAuth Usage” in setup and search for “Salesforce Inspector reloaded”.
+4. Click “Install” and then confirm installation.
+5. Now configure the profiles or permissions sets which will have the right to use the extension.
+6. Go back to “Connected Apps OAuth Usage” and click “Unblock” next to “Salesforce Inspector reloaded”
+7. Once again, open the extension and scroll down to the “Generate Access Token” button
 
-Then navigate to Setup | Connected Apps OAuth Usage, and click "Install" on the Salesforce Inspector reloaded app.
+![2024-05-28_16-12-29 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1cb41271-ea61-4e25-9c68-2a50764c4cec)
+
+This is it ! You can use the extension with the default connected app.
 
 From now when the token will be expired, this banner will show up and provide a link to re-generate the access token
 
@@ -235,7 +242,7 @@ are displayed.
 
 From the option page, you can customize the default favicon by:
 
-- a predefined color among those values (green, orange, pink, purple, red, yellow)
+- a predefined color name among [those values](https://www.w3schools.com/tags/ref_colornames.asp) or any HTML color code you want (ie `#FF8C00`).
 - a custom favicon url (ie "https://stackoverflow.com/favicon.ico")
 
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
@@ -245,7 +252,7 @@ The customization is linked to the org, it means you can have different colors f
 Now if you want to set a random favicon for all of your visited orgs, open dev console from one of the extension page and paste following code in dev console:
 
 ``` js
-let colors = ['green', 'orange', 'pink', 'purple', 'red', 'yellow'];
+let colors = ['olive', 'darkorange', 'pink', 'purple', 'firebrick', 'hotpink', 'skyblue', '#1E90FF'];
 
 let orgs = Object.keys(localStorage).filter((localKey) =>
     localKey.endsWith("_isSandbox")

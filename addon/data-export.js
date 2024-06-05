@@ -110,6 +110,7 @@ class Model {
       "SELECT Id FROM WHERE LIKE",
       "SELECT Id FROM WHERE ORDER BY"
     ];
+    this.separator = getSeparator();
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -237,7 +238,7 @@ class Model {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
       let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(delimiter)) {
+      if (this.selectedSavedEntry.query.includes(delimiter) && this.selectedSavedEntry.query.indexOf(":SELECT") >= 0) {
         let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
         queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
@@ -260,7 +261,7 @@ class Model {
     this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
   }
   getQueryToSave() {
-    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value : this.queryInput.value;
+    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value.trim() : this.queryInput.value.trim();
   }
   autocompleteReload() {
     this.describeInfo.reloadAll();
@@ -278,15 +279,20 @@ class Model {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
   }
   copyAsCsv() {
-    let separator = getSeparator();
-    copyToClipboard(this.exportedData.csvSerialize(separator));
+    copyToClipboard(this.exportedData.csvSerialize(this.separator));
   }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
   }
+  downloadAsCsv(){
+    const blob = new Blob([this.exportedData.csvSerialize(this.separator)], { type: "data:text/csv;charset=utf-8," });
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.download = `${this.autocompleteResults.sobjectName}-${new Date().toLocaleDateString()}.csv`;
+    downloadAnchor.href = window.URL.createObjectURL(blob);
+    downloadAnchor.click();
+  }
   deleteRecords(e) {
-    let separator = getSeparator();
-    let data = this.exportedData.csvSerialize(separator);
+    let data = this.exportedData.csvSerialize(this.separator);
     let encodedData = btoa(data);
 
     let args = new URLSearchParams();
@@ -655,7 +661,12 @@ class Model {
         }
         let contextValueField = contextValueFields[0];
         let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
-        let acQuery = "select " + contextValueField.field.name + " from " + contextValueField.sobjectDescribe.name + " where " + contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%' group by " + contextValueField.field.name + " limit 100";
+        let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%'";
+        if(contextValueField.sobjectDescribe.name.toLowerCase() === "recordtype"){
+          whereClause += vm.autocompleteResults.sobjectName ? " AND SobjectType = '" + vm.autocompleteResults.sobjectName + "'" : "";
+        }
+        let acQuery = "SELECT " + contextValueField.field.name + " FROM " + contextValueField.sobjectDescribe.name + " WHERE " + whereClause + " GROUP BY " + contextValueField.field.name + " LIMIT 100";
+
         vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(acQuery), {progressHandler: vm.autocompleteProgress})
           .catch(err => {
             if (err.name != "AbortError") {
@@ -1065,6 +1076,7 @@ class App extends React.Component {
     this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
+    this.onDownloadAsCsv = this.onDownloadAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
@@ -1189,6 +1201,11 @@ class App extends React.Component {
     model.copyAsCsv();
     model.didUpdate();
   }
+  onDownloadAsCsv(){
+    let {model} = this.props;
+    model.downloadAsCsv();
+    model.didUpdate();
+  }
   onCopyAsJson() {
     let {model} = this.props;
     model.copyAsJson();
@@ -1281,6 +1298,10 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     this.scrollTable.viewportChange();
   }
+  toggleQueryMoreMenu(){
+    this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
+  }
+
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
@@ -1322,10 +1343,6 @@ class App extends React.Component {
               ),
               h("button", {onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
             ),
-            h("div", {className: "pop-menu saveOptions", hidden: !model.expandSavedOptions},
-              h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query"),
-              h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
-            ),
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
                 h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
@@ -1333,7 +1350,32 @@ class App extends React.Component {
               ),
               h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
               h("button", {onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
-              h("button", {className: model.expandSavedOptions ? "toggle contract" : "toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"}))
+              h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+                h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleQueryMoreMenu(), title: "Show more options"},
+                  h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#down"})
+                  ),
+                  h("span", {className: "slds-assistive-text"}, "Show more options")
+                ),
+                h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.toggleQueryMoreMenu()},
+                  h("ul", {className: "slds-dropdown__list", role: "menu"},
+                    h("li", {className: "slds-dropdown__item", role: "presentation"},
+                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
+                        h("span", {className: "slds-truncate"},
+                          h("span", {className: "slds-truncate", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
+                        )
+                      )
+                    ),
+                    h("li", {className: "slds-dropdown__item", role: "presentation"},
+                    h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
+                      h("span", {className: "slds-truncate"},
+                        h("span", {className: "slds-truncate", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+                      )
+                    )
+                  )
+                  )
+                )
+              ),
             ),
           ),
           h("div", {className: "query-options"},
@@ -1382,9 +1424,14 @@ class App extends React.Component {
         h("div", {className: "result-bar"},
           h("h1", {}, "Export Result"),
           h("div", {className: "button-group"},
-            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
+              h("svg", {className: "button-icon"},
+                h("use", {xlinkHref: "symbols.svg#download"})
+              )
+            ),
             localStorage.getItem("showDeleteRecordsButton") !== "false"
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),

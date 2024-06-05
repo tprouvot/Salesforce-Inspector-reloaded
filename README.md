@@ -21,6 +21,8 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
     - [Chrome Web Store](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
     - [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
     - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
+  - [Beta Version](#beta-version)
+    - [Chrome Web Store](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf)
 - [Troubleshooting](#troubleshooting)
 - [Contributions](#contributions)
 - [Development](#development)
@@ -40,6 +42,10 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 > User guide for using the extension.
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://tprouvot.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
+
+- SalesforceBen [article](https://www.salesforceben.com/salesforce-inspector-reloaded/), [video](https://youtu.be/dvYp5mKxxzM?si=hBCIaGOyqAJlerea)
+- ApexHours [article](https://www.apexhours.com/salesforce-inspector-reloaded/)
+- SalesforceWay [podcast](https://salesforceway.com/podcast/salesforce-inspector-reloaded/)
 
 ## New features compared to original SF Inspector
 
@@ -71,6 +77,20 @@ Follow steps described in [how-to documentation](https://tprouvot.github.io/Sale
 - [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
 - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
 
+### Beta Version
+
+Welcome to the beta testing phase! Your input is crucial for refining our extension. Here's why we need you:
+
+Why Beta Testing?
+
+- Diverse Testing: Identify issues across various setups.
+- Real-World Scenarios: Discover unforeseen issues in different user contexts.
+
+Report Bugs: If you discover a bug, please fill in an issue [here](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=bug,beta&projects=&template=bug_report.md&title=[BETA]). Detailed bug reports help us address issues quickly.
+
+To become a beta tester, [install the release candidate version](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf).
+Thank you for shaping our extension's future! Your feedback makes it better.
+
 ### Local Installation
 
 1. Download or clone the repo.
@@ -89,10 +109,11 @@ Follow steps described in [how-to documentation](https://tprouvot.github.io/Sale
 
 Contributions are welcome!
 
+Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
 To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
 This branch will be merge into master when the new version is published on web store.
 
-Make sure to update CHANGES.md file by describing the improvement / bugfix you realised.
+Make sure to update CHANGES.md file by describing the improvement / bugfix you realized.
 
 In order to make sure everyone who reads documentation is aware of your improvement, you can update the 'how-to' page to document / expose this new functionality.
 
@@ -115,7 +136,7 @@ Linting : to assure indentation, formatting and best practices coherence, please
 1. In Firefox, open `about:debugging`.
 2. Select `This Firefox` at the top left.
 3. Click `Load Temporary Add-on…`.
-4. Select the file `addon/manifest.json`.  This should be the manifest from the firefoxAddon branch (be sure to discard/not check in when done testing!)
+4. Select the file `addon/manifest.json`. This should be the manifest from the firefoxAddon branch (be sure to discard/not check in when done testing!)
 
 ### Unit tests
 

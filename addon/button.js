@@ -1,6 +1,6 @@
 /* exported initButton */
 /* global showStdPageDetails */
-"use strict";
+
 
 // sfdcBody = normal Salesforce page
 // ApexCSIPage = Developer Console

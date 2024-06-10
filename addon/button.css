@@ -139,10 +139,25 @@
     display: inline-block;
     vertical-align: middle;
     animation: fadeOut 2s forwards;
-  }
-  
-  @keyframes fadeOut {
+}
+
+@keyframes fadeOut {
     to {
       opacity: 0;
     }
-  }   
+}   
+
+/* transitions */
+#insext {
+    & :is(.insext-popup-vertical, .insext-popup-horizontal) {
+        transition-property: box-shadow;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
+    }
+
+    & :is(.insext-btn.insext-btn-vertical, .insext-btn.insext-btn-horizontal) {
+        transition-property: box-shadow, background-color, border-color;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
+    }
+}

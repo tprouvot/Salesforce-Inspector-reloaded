@@ -228,136 +228,55 @@ html {
     --inspector-accent-text-preview: var(--inspector-text);
 }
 
-:is(div, input, ul, a):not(:has([style*=transparent])), 
-div.table-container > table > tbody > tr,
-div.slds-tabs_default > ul.options-tab-container > li:after,
-.gauge::before, .gauge::after, .table-settings-button, th.th-filter-row, #save-wrapper {
+:is(div, input, ul, a):not(:has([style*=transparent])) /* all */ {
     transition-property: background-color;
     transition-duration: var(--inspector-transition-time-slow);
     transition-timing-function: var(--inspector-transition-function);
 }
 
-:is(select, input):is(.slds-input, .query-history),
-.conf-value > :is(select, input),
-:is(span, button, a):is(.button, .progress),
-div.object-name,
-div.all-data-box-data > table,
-div.flex-wrapper :is(button, input),
-div.button-group > :is(button, input),
-div:is(.autocomplete-header, .conf-line) > div.flex-right > button,
-button:is(.actions-button, .cancel-btn),
-div#result-area > div.result-bar input,
-a.sf-link, textarea, td.scrolltable-cell, input::placeholder, th[tabindex], .slds-tabs_default__link, input.filter-input {
+:is(span, button, a).button /* all */,
+textarea /* data-export, data-import, explore-api, inspect */,
+input::placeholder /* will work in future browser developments */ {
     transition-property: color, background-color;
     transition-duration: var(--inspector-transition-time-slow);
     transition-timing-function: var(--inspector-transition-function);
 }
 
-.popup-header__icon,
-a:is(.sf-link, .button.field-info) svg,
-#save-wrapper svg {
-    transition-property: fill, background-color;
-    transition-duration: inherit;
-    transition-timing-function: inherit;
+a.sf-link /* data-export, data-import, explore-api, inspect, limits, metadata, options */ {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+
+    & svg {
+        transition-property: fill, background-color;
+        transition-duration: inherit;
+        transition-timing-function: inherit;
+    }
 }
 
-:is(span, label, li):not(:has(> span, > label)), 
-#result-table > :not(div),
-div:is(.value-text, .center, .all-data-box-inner.empty, .log-info, .log-working),
-#save-wrapper > input,
-a.autocomplete-item span > mark,
-div.all-data-box-data > table :is(th, td > *),
-#root > div > div:last-child > div.slds-size_5-of-12 > :is(a, span, input),
-h1:not(:has(> span)), 
-input::placeholder, /* will work in future broswer developments */
-figcaption, .meter-value {
+:is(span, label, li):not(:has(> span, > label)) /* all */, 
+h1:not(:has(> span)) /* all */ {
     transition-property: color;
     transition-duration: var(--inspector-transition-time-slow);
     transition-timing-function: var(--inspector-transition-function);
 }
 
-.autocomplete-item {
-    transition-property: color;
-    transition-duration: var(--inspector-transition-time-fast);
-    transition-timing-function: var(--inspector-transition-function);
-}
-
-th.th-filter-row > input {
-    transition-property: color, border-color;
-    transition-duration: inherit;
-    transition-timing-function: inherit;
-}
-
-#root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg > use,
-svg.slds-icon {
-    transition-property: color, fill;
-    transition-duration: var(--inspector-transition-time-slow);
-    transition-timing-function: var(--inspector-transition-function);
-}
-
-#insext {
-    & :is(.insext-popup-vertical, .insext-popup-horizontal) {
-        transition-property: box-shadow;
-        transition-duration: var(--inspector-transition-time-slow);
-        transition-timing-function: var(--inspector-transition-function);
-    }
-
-    & :is(.insext-btn.insext-btn-vertical, .insext-btn.insext-btn-horizontal) {
-        transition-property: box-shadow, background-color, border-color;
-        transition-duration: var(--inspector-transition-time-slow);
-        transition-timing-function: var(--inspector-transition-function);
-    }
-}
-
-a:is(.slds-button, .slds-button) {
-    &:has(> span) {
-      transition-property: background-color, border-color;
-    }
-
-    &:not(:has(> span)) {
-      transition-property: color, background-color;
-    }
-
-    transition-duration: var(--inspector-transition-time-slow);
-    transition-timing-function: var(--inspector-transition-function);
-}
-
-div.area > div.conf-value,
-#mainTabs {
-    transition-property: scrollbar-color;
-    transition-duration: var(--inspector-transition-time-slow);
-    transition-timing-function: var(--inspector-transition-function);
-}
-
-#result-table, div.table-container {
+#result-table /* data-export, data-import, data-load, explore-api */ {
     transition-property: background-color, scrollbar-color;
     transition-duration: var(--inspector-transition-time-slow);
     transition-timing-function: var(--inspector-transition-function);
+
+    & > :not(div) {
+        transition-property: color;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
+    }
 }
 
-#mainTabs > div,
-#mainTabs ul.small-tabs > li,
-div.slds-show  div.slds-border_bottom,
-div#user-info, span.slds-checkbox_faux {
+div#user-info /* data-export, data-import, explore-api, options */ {
     transition-property: background-color, border-color;
     transition-duration: var(--inspector-transition-time-slow);
     transition-timing-function: var(--inspector-transition-function);
-}
-
-span.slds-checkbox_faux:before, span.slds-checkbox_faux:after /* options.js */ {
-    transition-property: background-color;
-    transition-duration: var(--inspector-transition-time-slow);
-    transition-timing-function: var(--inspector-transition-function);
-}
-
-input.all-data-input /* popup.js */ {
-    transition-property: color, background-color, border-color;
-    transition-duration: var(--inspector-transition-time-slow);
-    transition-timing-function: var(--inspector-transition-function);
-} 
-
-div.object-name > span.quick-select {
-    transition-property: none;
 }
 
 body {

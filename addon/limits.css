@@ -183,3 +183,16 @@ html {
   transition-timing-function: ease-in-out;
   scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
 }
+
+/* transitions */
+figcaption, .meter-value {
+    transition-property: color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+.gauge::before, .gauge::after {
+    transition-property: background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}

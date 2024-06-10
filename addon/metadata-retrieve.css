@@ -111,3 +111,17 @@ html {
   transition-timing-function: ease-in-out;
   scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
 }
+
+
+/* transitions */
+div:is(.log-info, .log-working) {
+    transition-property: color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+span.progress {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}

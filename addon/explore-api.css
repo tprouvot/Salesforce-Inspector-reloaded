@@ -82,3 +82,11 @@ pre {
 .key {
     color: var(--inspector-error);
 }
+
+/* transitions */
+div#result-area > div.result-bar input,
+td.scrolltable-cell {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}

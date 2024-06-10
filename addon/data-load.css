@@ -163,3 +163,10 @@
 .pop-menu a:active {
   background-color: var(--inspector-background);
 }
+
+/* transitions */
+td.scrolltable-cell {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}

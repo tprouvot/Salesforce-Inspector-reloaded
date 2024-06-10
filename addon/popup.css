@@ -382,8 +382,6 @@ a.icon {
     border-radius: 4px;
     color: var(--inspector-text);
     line-height: 1;
-    width: 24px;
-    height: 24px;
     fill: var(--inspector-text);
     vertical-align: middle;
 }
@@ -395,14 +393,83 @@ a.icon {
   background-color:var(--slds-c-icon-color-background, var(--sds-c-icon-color-background, transparent));
 }
 
-#root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg {
-    border: none;
-}
-
 .popup-footer-icon {
   background-color: unset;
+  border: none;
+
+  & > use {
+    fill: var(--inspector-text);
+  }
 }
 
-.popup-footer-icon > use {
-  fill: var(--inspector-text);
+/* transitions */
+a.slds-button {
+    &:has(> span) {
+      transition-property: background-color, border-color;
+    }
+
+    &:not(:has(> span)) {
+      transition-property: color, background-color;
+    }
+
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+a.autocomplete-item {
+    transition-property: color;
+    transition-duration: var(--inspector-transition-time-fast);
+    transition-timing-function: var(--inspector-transition-function);
+
+    & span > mark {
+        transition-property: color;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
+    }
+}
+
+input.all-data-input {
+    transition-property: color, background-color, border-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+} 
+
+#mainTabs {
+    transition-property: scrollbar-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+
+    & > div,
+    & ul.small-tabs > li {
+        transition-property: background-color, border-color;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
+    }
+}
+
+div.all-data-box-data > table :is(th, td > *),
+div:is(.center, .all-data-box-inner.empty),
+#root > div > div:last-child > div.slds-size_5-of-12 > :is(a, span, input) {
+    transition-property: color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+.popup-header__icon {
+    transition-property: fill, background-color;
+    transition-duration: inherit;
+    transition-timing-function: inherit;
+}
+
+div.all-data-box-data > table {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+#root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg > use,
+svg.slds-icon {
+    transition-property: color, fill;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }

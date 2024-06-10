@@ -139,6 +139,7 @@ table {
   white-space: pre-wrap;
 }
 
+
 .value-text.value-is-object {
   color: var(--inspector-object);
 }
@@ -772,4 +773,59 @@ div.mainContent > input {
 .child-actions .pop-menu {
   right: 0;
   text-align: right;
+}
+
+/* transition */
+div.object-name {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+
+    > span.quick-select {
+        transition-property: none;
+    }
+}
+
+div.table-container {
+    transition-property: background-color, scrollbar-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+
+    & > table > tbody > tr {
+        transition-property: background-color;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
+    }
+}
+
+th.th-filter-row {
+    transition-property: background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+
+    & > input {
+        transition-property: color, border-color;
+        transition-duration: inherit;
+        transition-timing-function: inherit;
+    }
+}
+
+div.value-text {
+    transition-property: color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+input.filter-input,
+button.actions-button,
+th[tabindex] {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+.table-settings-button {
+    transition-property: background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }

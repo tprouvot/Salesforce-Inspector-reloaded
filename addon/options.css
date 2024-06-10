@@ -156,52 +156,40 @@ body {
     text-align: center;
 }
 
-.hide {
-  display: none;
-  visibility: hidden;
+/* transitions */
+a.slds-tabs_default__link {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }
 
-#preview-holder {
-  display: flex;
+span.slds-checkbox_faux {
+    transition-property: background-color, border-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 
-  & > label {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    height: 4rem;
-    padding-right: 16px;
-
-    & > div {
-      border: 1px solid var(--inspector-neutral);
-      width: 5rem;
-      height: 80%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition-property: color, border-color, background-color;
-
-      &.selected {
-        border: 2px solid var(--inspector-primary);
-      }
-
-      &.default {
-        background-color: var(--inspector-default-background-preview);
-
-        & > span {
-          color: var(--inspector-default-text-preview);
-        }
-      }
-
-      &.accent {
-        background-color: var(--inspector-accent-background-preview);
-
-        & > span {
-          color: var(--inspector-accent-text-preview);
-        }
-      }
-
+    &:before, &:after {
+        transition-property: background-color;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
     }
 
-  }
 }
 
+div.slds-show  div.slds-border_bottom {
+    transition-property: background-color, border-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+div.slds-tabs_default > ul.options-tab-container > li:after {
+    transition-property: background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+#root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg > use {
+    transition-property: color, fill;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}

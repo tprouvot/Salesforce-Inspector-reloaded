@@ -511,3 +511,37 @@ button.contract .button-toggle-icon {
   margin: 0;
   height: 100%;
 }
+
+/* transitions */
+div.area > div.conf-value {
+    transition-property: scrollbar-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+
+    & > :is(select, input) {
+        transition-property: color, background-color;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
+    }
+}
+
+a.button.field-info svg {
+    transition-property: fill, background-color;
+    transition-duration: inherit;
+    transition-timing-function: inherit;
+}
+
+button.cancel-btn,
+div.conf-line > div.flex-right > button,
+div.button-group > :is(button, input),
+div.flex-wrapper :is(button, input) {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+svg.slds-icon {
+    transition-property: color, fill;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}

@@ -9,7 +9,7 @@ body {
 select {
   width: 100%;
 }
-textarea {
+#result-table textarea {
   display:block;
   width: 100%;
   height: 40em;
@@ -47,6 +47,13 @@ td,th {
   font-weight: bold;
   color: red;
 }
+#result-table {
+  overflow: scroll;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  width: 100%;
+}
 
 #result-table table tr:first-child {
   font-weight: 700;
@@ -61,3 +68,32 @@ pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
 .boolean { color: blue; }
 .null { color: magenta; }
 .key { color: red; }
+
+.form-line {
+  margin-top: 5px;
+  display: flex;
+  flex: 1 1 0;
+}
+.form-input {
+  
+}
+.form-label {
+  font-weight: normal;
+  color: #4a4a56;
+  display: flex;
+  align-items: center;
+  display: inline-block;
+  text-align: left;
+  width: 9em;
+  padding-right: 1em;
+}
+.form-value, .form-value * {
+  width: 100%;
+}
+#query-area {
+  display: flex;
+  flex-direction: column;
+}
+.highlighted {
+  margin-left: 10px;
+}

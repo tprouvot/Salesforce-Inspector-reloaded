@@ -140,27 +140,32 @@ export let sfConn = {
       Enterprise: {
         servicePortAddress: "/services/Soap/c/" + apiVersion,
         targetNamespaces: ' xmlns="urn:enterprise.soap.sforce.com" xmlns:sf="urn:sobject.enterprise.soap.sforce.com"',
-        apiName: "Enterprise"
+        apiName: "Enterprise",
+        wsdlUrl: "/soap/wsdl.jsp?type=*&ver_aircall=2.14&ver_b2bma=1.7&ver_dfsle=6.7&ver_dsfs=7.0&ver_efl=1.5&ver_Profile2PermSet=3.8&ver_relateiq=2.0&ver_sf_chttr_apps=1.20&ver_sf_com_apps=1.7"
       },
       Partner: {
         servicePortAddress: "/services/Soap/u/" + apiVersion,
         targetNamespaces: ' xmlns="urn:partner.soap.sforce.com" xmlns:sf="urn:sobject.partner.soap.sforce.com"',
-        apiName: "Partner"
+        apiName: "Partner",
+        wsdlUrl: "/soap/wsdl.jsp"
       },
       Apex: {
         servicePortAddress: "/services/Soap/s/" + apiVersion,
         targetNamespaces: ' xmlns="http://soap.sforce.com/2006/08/apex"',
-        apiName: "Apex"
+        apiName: "Apex",
+        wsdlUrl: "/services/wsdl/apex"
       },
       Metadata: {
         servicePortAddress: "/services/Soap/m/" + apiVersion,
         targetNamespaces: ' xmlns="http://soap.sforce.com/2006/04/metadata"',
-        apiName: "Metadata"
+        apiName: "Metadata",
+        wsdlUrl: "/services/wsdl/metadata"
       },
       Tooling: {
         servicePortAddress: "/services/Soap/T/" + apiVersion,
         targetNamespaces: ' xmlns="urn:tooling.soap.sforce.com" xmlns:sf="urn:sobject.tooling.soap.sforce.com" xmlns:mns="urn:metadata.tooling.soap.sforce.com"',
-        apiName: "Tooling"
+        apiName: "Tooling",
+        wsdlUrl: "/services/wsdl/tooling"
       }
     };
     if (apiName) {
@@ -169,16 +174,7 @@ export let sfConn = {
     return wsdl;
   },
 
-  async soap(wsdl, method, args, {headers} = {}) {
-    if (!this.instanceHostname || !this.sessionId) {
-      throw new Error("Session not found");
-    }
-
-    let xhr = new XMLHttpRequest();
-    xhr.open("POST", "https://" + this.instanceHostname + wsdl.servicePortAddress + "?cache=" + Math.random(), true);
-    xhr.setRequestHeader("Content-Type", "text/xml");
-    xhr.setRequestHeader("SOAPAction", '""');
-
+  formatSoapMessage(wsdl, method, args, headers) {
     let sessionHeaderKey = wsdl.apiName == "Metadata" ? "met:SessionHeader" : "SessionHeader";
     let sessionIdKey = wsdl.apiName == "Metadata" ? "met:sessionId" : "sessionId";
     let requestMethod = wsdl.apiName == "Metadata" ? `met:${method}` : method;
@@ -190,8 +186,7 @@ export let sfConn = {
     if (wsdl.apiName == "Metadata") {
       requestAttributes.push('xmlns:met="http://soap.sforce.com/2006/04/metadata"');
     }
-
-    let requestBody = XML.stringify({
+    return XML.stringify({
       name: "soapenv:Envelope",
       attributes: ` ${requestAttributes.join(" ")}${wsdl.targetNamespaces}`,
       value: {
@@ -199,7 +194,23 @@ export let sfConn = {
         "soapenv:Body": {[requestMethod]: args}
       }
     });
+  },
+  async soap(wsdl, method, args, {headers} = {}) {
+    if (!this.instanceHostname || !this.sessionId) {
+      throw new Error("Session not found");
+    }
 
+    let xhr = new XMLHttpRequest();
+    xhr.open("POST", "https://" + this.instanceHostname + wsdl.servicePortAddress + "?cache=" + Math.random(), true);
+    xhr.setRequestHeader("Content-Type", "text/xml");
+    xhr.setRequestHeader("SOAPAction", '""');
+
+    let requestBody;
+    if (typeof args == "string") {
+      requestBody = args;
+    } else {
+      requestBody = this.formatSoapMessage(wsdl, method, args, headers);
+    }
     xhr.responseType = "document";
     await new Promise(resolve => {
       xhr.onreadystatechange = () => {

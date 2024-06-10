@@ -12,20 +12,29 @@ class Model {
 
     this.apiResponse = null;
     this.selectedTextView = null;
+    this.requestType = "REST";
+    this.soapMethods = [];
+    this.soapType = "Partner";
+    this.operationToParams = {};
+    this.apiUrl;
+    this.payload = "";
 
     if (args.has("apiUrls")) {
       let apiUrls = args.getAll("apiUrls");
       this.title = apiUrls.length + " API requests, e.g. " + apiUrls[0];
+      this.apiUrl = apiUrls[0];
       let apiPromise = Promise.all(apiUrls.map(url => sfConn.rest(url)));
       this.performRequest(apiPromise);
     } else if (args.has("checkDeployStatus")) {
       let wsdl = sfConn.wsdl(apiVersion, "Metadata");
       this.title = "checkDeployStatus: " + args.get("checkDeployStatus");
+      this.apiUrl = wsdl.servicePortAddress;
       let apiPromise = sfConn.soap(wsdl, "checkDeployStatus", {id: args.get("checkDeployStatus"), includeDetails: true});
       this.performRequest(apiPromise);
     } else {
       let apiUrl = args.get("apiUrl") || "/services/data/";
       this.title = apiUrl;
+      this.apiUrl = apiUrl;
       let apiPromise = sfConn.rest(apiUrl);
       this.performRequest(apiPromise);
     }
@@ -243,6 +252,91 @@ class Model {
     // Don't update selectedTextView. No radio button will be selected, leaving the text area blank.
     // The results can be quite large and take a long time to render, so we only want to render a result once the user has explicitly selected it.
   }
+  setRequestType(requestType) {
+    this.requestType = requestType;
+    if (requestType == "SOAP") {
+      //force refresh of operation
+      this.setSoapType(this.soapType);
+    } else {
+      this.didUpdate();
+    }
+  }
+  setSoapType(soapType) {
+    this.soapType = soapType;
+    sfConn.rest(sfConn.wsdl(apiVersion, soapType).wsdlUrl, {responseType: "document"}).then(wsdl => {
+      let messages = {};
+      this.operationToParams = {};
+      this.soapMethods = [];
+      for (let message of wsdl.getElementsByTagName("message")) {
+        //TODO handle part[element] to get complexType and build hierarchy
+        let params = [];
+        for (let part of message.getElementsByTagName("part")) {
+          let param = {};
+          param[part.getAttribute("name")] = "";
+          params.push(param);
+        }
+        messages[message.getAttribute("name")] = params;
+      }
+      let portTypes = wsdl.getElementsByTagName("portType");
+      if (portTypes.length == 0) {
+        return;
+      }
+      let operations = portTypes[0].getElementsByTagName("operation");
+      for (let op of operations) {
+        let opName = op.getAttribute("name");
+        this.soapMethods.push(opName);
+        let inputs = op.getElementsByTagName("input");
+        if (inputs.length == 0) {
+          continue;
+        }
+        let input = inputs[0];
+        let msg = input.getAttribute("message");
+        if (!msg || !opName) {
+          continue;
+        }
+        if (msg.includes(":")) {
+          msg = msg.split(":", 2)[1];
+        }
+        this.operationToParams[opName] = messages[msg];
+      }
+      if (this.soapMethods.length > 0) {
+        this.setSoapMethod(this.soapMethods[0]);
+      } else {
+        this.didUpdate();
+      }
+    });
+    this.didUpdate();
+  }
+  setHttpMethod(httpMethod) {
+    this.httpMethod = httpMethod;
+    this.didUpdate();
+  }
+  setSoapMethod(soapMethod) {
+    //this.soapMethod = soapMethod;
+    //TODO format for human with tab
+    this.payload = sfConn.formatSoapMessage(sfConn.wsdl(apiVersion, this.soapType), soapMethod, this.operationToParams[soapMethod], {});
+    this.didUpdate();
+  }
+  setUrl(url) {
+    this.apiUrl = url;
+    this.didUpdate();
+  }
+  setPayload(payload) {
+    this.payload = payload;
+    this.didUpdate();
+  }
+  execute() {
+    switch (this.requestType) {
+      case "SOAP":
+        this.performRequest(sfConn.soap(sfConn.wsdl(apiVersion, this.soapType), null, this.payload));
+        break;
+      case "REST":
+        this.performRequest(sfConn.rest(this.apiUrl));
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 function csvSerialize(table, separator) {
@@ -252,10 +346,51 @@ function csvSerialize(table, separator) {
 let h = React.createElement;
 
 class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.setRequestType = this.setRequestType.bind(this);
+    this.setSoapType = this.setSoapType.bind(this);
+    this.setHttpMethod = this.setHttpMethod.bind(this);
+    this.setSoapMethod = this.setSoapMethod.bind(this);
+    this.setUrl = this.setUrl.bind(this);
+    this.setPayload = this.setPayload.bind(this);
+    this.onExecute = this.onExecute.bind(this);
+  }
+  setRequestType(e) {
+    let {model} = this.props;
+    model.setRequestType(e.target.value);
+  }
+  setSoapType(e) {
+    let {model} = this.props;
+    model.setSoapType(e.target.value);
+  }
+  setSoapMethod(e) {
+    let {model} = this.props;
+    model.setSoapMethod(e.target.value);
+  }
+
+  setHttpMethod(e) {
+    let {model} = this.props;
+    model.setHttpMethod(e.target.value);
+  }
+  setUrl(e) {
+    let {model} = this.props;
+    model.setUrl(e.target.value);
+  }
+  setPayload(e) {
+    let {model} = this.props;
+    model.setPayload(e.target.value);
+  }
+  onExecute() {
+    let {model} = this.props;
+    model.execute();
+  }
 
   render() {
     let {model} = this.props;
     document.title = model.title;
+    let soapTypes = ["Enterprise", "Partner", "Apex", "Metadata", "Tooling"];
+    let httpMethods = ["GET", "POST", "PUT", "PATCH", "DELETE"];
     return h("div", {},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},
@@ -273,6 +408,41 @@ class App extends React.Component {
             h("div", {className: "slds-spinner__dot-b"}),
           ),
         ),
+      ),
+      h("div", {className: "area", id: "query-area"},
+        h("div", {className: "form-line"},
+          h("label", {className: "form-input"},
+            h("span", {className: "form-label"}, "Type")),
+          h("span", {className: "form-value"},
+            h("select", {name: "requestType", onChange: this.setRequestType}, h("option", {value: "REST"}, "REST"), h("option", {value: "SOAP"}, "SOAP"))),
+          h("button", {className: "highlighted", onClick: this.onExecute}, "Execute")
+        ),
+        h("div", {hidden: model.requestType != "SOAP", className: "form-line"},
+          h("label", {className: "form-input"},
+            h("span", {className: "form-label"}, "WSDL")),
+          h("span", {className: "form-value"},
+            h("select", {name: "soapType", onChange: this.setSoapType, value: model.soapType}, soapTypes.map(s => h("option", {value: s, key: s}, s))))),
+        h("div", {hidden: model.requestType != "SOAP", className: "form-line"},
+          h("label", {className: "form-input"},
+            h("span", {className: "form-label"}, "Soap Method")),
+          h("span", {className: "form-value"},
+            h("select", {name: "soapMethod", onChange: this.setSoapMethod}, model.soapMethods.map(s => h("option", {value: s, key: s}, s))))),
+        h("div", {className: "form-line", hidden: (model.requestType == "REST" && model.httpMethod == "GET")},
+          h("label", {className: "form-input"},
+            h("span", {className: "form-label"}, "Payload")),
+          h("span", {className: "form-value"},
+            h("textarea", {name: "httpBody", value: model.payload, onChange: this.setPayload}))),
+        //TODO headers, reponse type , body type ?
+        h("div", {hidden: model.requestType != "REST", className: "form-line"},
+          h("label", {className: "form-input"},
+            h("span", {className: "form-label"}, "URL")),
+          h("span", {className: "form-value"},
+            h("input", {name: "url", onChange: this.setUrl, value: model.apiUrl}))),
+        h("div", {hidden: model.requestType != "REST", className: "form-line"},
+          h("label", {className: "form-input"},
+            h("span", {className: "form-label"}, "Method")),
+          h("span", {className: "form-value"},
+            h("select", {name: "httpMethod", onChange: this.setHttpMethod, value: model.httpMethod}, httpMethods.map(s => h("option", {value: s, key: s}, s)))))
       ),
       h("div", {className: "area", id: "result-area"},
         h("div", {className: "result-bar"},

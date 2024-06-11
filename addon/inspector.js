@@ -37,13 +37,13 @@ export let sfConn = {
     setFavicon(sfHost);
   },
 
-  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}) {
+  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null, withoutCache = false} = {}) {
     if (!this.instanceHostname) {
       throw new Error("Instance Hostname not found");
     }
 
     let xhr = new XMLHttpRequest();
-    if (!url.includes("/executeAnonymous/")){
+    if ((!url.includes("/executeAnonymous/")) || withoutCache){
       url += (url.includes("?") ? "&" : "?") + "cache=" + Math.random();
     }
     const sfHost = "https://" + this.instanceHostname;

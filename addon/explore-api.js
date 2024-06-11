@@ -18,12 +18,13 @@ class Model {
     this.operationToParams = {};
     this.apiUrl;
     this.payload = "";
+    this.httpMethod = "GET";
 
     if (args.has("apiUrls")) {
       let apiUrls = args.getAll("apiUrls");
       this.title = apiUrls.length + " API requests, e.g. " + apiUrls[0];
       this.apiUrl = apiUrls[0];
-      let apiPromise = Promise.all(apiUrls.map(url => sfConn.rest(url)));
+      let apiPromise = Promise.all(apiUrls.map(url => sfConn.rest(url, {withoutCache: true})));
       this.performRequest(apiPromise);
     } else if (args.has("checkDeployStatus")) {
       let wsdl = sfConn.wsdl(apiVersion, "Metadata");
@@ -35,7 +36,7 @@ class Model {
       let apiUrl = args.get("apiUrl") || "/services/data/";
       this.title = apiUrl;
       this.apiUrl = apiUrl;
-      let apiPromise = sfConn.rest(apiUrl);
+      let apiPromise = sfConn.rest(apiUrl, {withoutCache: true});
       this.performRequest(apiPromise);
     }
 
@@ -267,13 +268,32 @@ class Model {
       let messages = {};
       this.operationToParams = {};
       this.soapMethods = [];
+      let elementToTypes = {};
+
+      for (let complexType of wsdl.querySelectorAll("complexType")) {
+        let elementName = complexType.getAttribute("name");
+        if (!elementName) {
+          elementName = complexType.parentElement.getAttribute("name");
+        }
+        let params = {};
+        for (let element of complexType.querySelectorAll("element")) {
+          params[element.getAttribute("name")] = "";
+        }
+        elementToTypes[elementName] = params;
+      }
       for (let message of wsdl.getElementsByTagName("message")) {
         //TODO handle part[element] to get complexType and build hierarchy
-        let params = [];
+        let params = {};
         for (let part of message.getElementsByTagName("part")) {
-          let param = {};
-          param[part.getAttribute("name")] = "";
-          params.push(param);
+          let element = part.getAttribute("element");
+          if (element.includes(":")) {
+            element = element.split(":", 2)[1];
+          }
+          if (elementToTypes[element]) {
+            params = {...params, ...elementToTypes[element]};
+          } else {
+            params[part.getAttribute("name")] = "";
+          }
         }
         messages[message.getAttribute("name")] = params;
       }
@@ -331,7 +351,7 @@ class Model {
         this.performRequest(sfConn.soap(sfConn.wsdl(apiVersion, this.soapType), null, this.payload));
         break;
       case "REST":
-        this.performRequest(sfConn.rest(this.apiUrl));
+        this.performRequest(sfConn.rest(this.apiUrl, {method: this.httpMethod, bodyType: "raw", body: ((this.httpMethod != "GET" && this.httpMethod != "DELETE") ? this.payload : null), withoutCache: true}));
         break;
       default:
         break;
@@ -390,7 +410,7 @@ class App extends React.Component {
     let {model} = this.props;
     document.title = model.title;
     let soapTypes = ["Enterprise", "Partner", "Apex", "Metadata", "Tooling"];
-    let httpMethods = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+    let httpMethods = ["GET", "POST", "PUT", "PATCH", "DELETE"]; // not needed: "HEAD", "CONNECT", "OPTIONS", "TRACE"
     return h("div", {},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},
@@ -427,7 +447,12 @@ class App extends React.Component {
             h("span", {className: "form-label"}, "Soap Method")),
           h("span", {className: "form-value"},
             h("select", {name: "soapMethod", onChange: this.setSoapMethod}, model.soapMethods.map(s => h("option", {value: s, key: s}, s))))),
-        h("div", {className: "form-line", hidden: (model.requestType == "REST" && model.httpMethod == "GET")},
+        h("div", {hidden: model.requestType != "REST", className: "form-line"},
+          h("label", {className: "form-input"},
+            h("span", {className: "form-label"}, "Method")),
+          h("span", {className: "form-value"},
+            h("select", {name: "httpMethod", onChange: this.setHttpMethod, value: model.httpMethod}, httpMethods.map(s => h("option", {value: s, key: s}, s))))),
+        h("div", {className: "form-line", hidden: (model.requestType == "REST" && (model.httpMethod == "GET" || model.httpMethod == "DELETE"))},
           h("label", {className: "form-input"},
             h("span", {className: "form-label"}, "Payload")),
           h("span", {className: "form-value"},
@@ -437,12 +462,7 @@ class App extends React.Component {
           h("label", {className: "form-input"},
             h("span", {className: "form-label"}, "URL")),
           h("span", {className: "form-value"},
-            h("input", {name: "url", onChange: this.setUrl, value: model.apiUrl}))),
-        h("div", {hidden: model.requestType != "REST", className: "form-line"},
-          h("label", {className: "form-input"},
-            h("span", {className: "form-label"}, "Method")),
-          h("span", {className: "form-value"},
-            h("select", {name: "httpMethod", onChange: this.setHttpMethod, value: model.httpMethod}, httpMethods.map(s => h("option", {value: s, key: s}, s)))))
+            h("input", {name: "url", onChange: this.setUrl, value: model.apiUrl})))
       ),
       h("div", {className: "area", id: "result-area"},
         h("div", {className: "result-bar"},

@@ -662,7 +662,7 @@ class ScrollTableCell extends React.Component {
   }
   copyToClipboard(e){
     e.preventDefault();
-    navigator.clipboard.writeText(e.target.href);
+    navigator.clipboard.writeText(this.cell.recordId);
     this.model.toggleMenu(this.row.id, this.cell.id);
   }
   onClick(e) {

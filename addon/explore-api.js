@@ -282,7 +282,6 @@ class Model {
         elementToTypes[elementName] = params;
       }
       for (let message of wsdl.getElementsByTagName("message")) {
-        //TODO handle part[element] to get complexType and build hierarchy
         let params = {};
         for (let part of message.getElementsByTagName("part")) {
           let element = part.getAttribute("element");
@@ -331,10 +330,39 @@ class Model {
     this.httpMethod = httpMethod;
     this.didUpdate();
   }
+  formatforHuman(src) {
+    let indent = -1;
+    let matchTag;
+    let result = "";
+    let startIdx = 0;
+    const tagRegExp = RegExp("<[\\/]?", "g");
+    while ((matchTag = tagRegExp.exec(src)) !== null) {
+      result += src.substring(startIdx, matchTag.index);
+      startIdx = matchTag.index + matchTag[0].length;
+      switch (matchTag[0]) {
+        case "<":
+          indent++;
+          result += "\n" + "  ".repeat(indent) + matchTag[0];
+          break;
+        case "</":
+          result += "\n" + "  ".repeat(indent) + matchTag[0];
+          indent--;
+          break;
+        case "<\\":
+          result += "\n" + "  ".repeat(indent) + matchTag[0];
+          break;
+        default:
+          break;
+      }
+    }
+    if (startIdx < src.length) {
+      result += src.substring(startIdx, src.length - 1);
+    }
+    return result;
+  }
   setSoapMethod(soapMethod) {
     //this.soapMethod = soapMethod;
-    //TODO format for human with tab
-    this.payload = sfConn.formatSoapMessage(sfConn.wsdl(apiVersion, this.soapType), soapMethod, this.operationToParams[soapMethod], {});
+    this.payload = this.formatforHuman(sfConn.formatSoapMessage(sfConn.wsdl(apiVersion, this.soapType), soapMethod, this.operationToParams[soapMethod], {}));
     this.didUpdate();
   }
   setUrl(url) {
@@ -405,7 +433,9 @@ class App extends React.Component {
     let {model} = this.props;
     model.execute();
   }
-
+  cleanCell(cell){
+    return ((!cell || cell.toString() == "[object Object]") ? "" : cell.toString());
+  }
   render() {
     let {model} = this.props;
     document.title = model.title;
@@ -457,7 +487,7 @@ class App extends React.Component {
             h("span", {className: "form-label"}, "Payload")),
           h("span", {className: "form-value"},
             h("textarea", {name: "httpBody", value: model.payload, onChange: this.setPayload}))),
-        //TODO headers, reponse type , body type ?
+        //TODO headers
         h("div", {hidden: model.requestType != "REST", className: "form-line"},
           h("label", {className: "form-input"},
             h("span", {className: "form-label"}, "URL")),
@@ -490,7 +520,7 @@ class App extends React.Component {
                   model.selectedTextView.table.map((row, key) =>
                     h("tr", {key},
                       row.map((cell, key) =>
-                        h("td", {key, className: "scrolltable-cell"}, "" + cell)
+                        h("td", {key, className: "scrolltable-cell"}, this.cleanCell(cell))
                       )
                     )
                   )

@@ -6,6 +6,9 @@
   "icons": {
     "128": "icon128.png"
   },
+  "action": {
+    "default_title": "Open popup"
+  },
   "minimum_chrome_version": "88",
   "permissions": ["cookies"],
   "host_permissions": [
@@ -63,8 +66,7 @@
         "metadata-retrieve.html",
         "explore-api.html",
         "limits.html",
-        "options.html",
-        "/images/favicons/*"
+        "options.html"
       ],
       "matches": ["https://*/*"],
       "extension_ids": []

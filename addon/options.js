@@ -429,7 +429,9 @@ class FaviconOption extends React.Component {
     super(props);
     this.sfHost = props.model.sfHost;
     this.onChangeFavicon = this.onChangeFavicon.bind(this);
-    this.state = {favicon: localStorage.getItem(this.sfHost + "_customFavicon") ? localStorage.getItem(this.sfHost + "_customFavicon") : ""};
+    let favicon = localStorage.getItem(this.sfHost + "_customFavicon") ? localStorage.getItem(this.sfHost + "_customFavicon") : "";
+    let isInternal = favicon.length > 0 && !favicon.startsWith("http");
+    this.state = {favicon, isInternal};
   }
 
   onChangeFavicon(e) {
@@ -448,9 +450,9 @@ class FaviconOption extends React.Component {
           h("input", {type: "text", className: "slds-input", placeholder: "All HTML Color Names, Hex code or external URL", value: nullToEmptyString(this.state.favicon), onChange: this.onChangeFavicon}),
         ),
         h("div", {className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-left_small"},
-          h("svg", {className: "icon"},
+          this.state.isInternal ? h("svg", {className: "icon"},
             h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
-          ),
+          ) : null
         )
       )
     );

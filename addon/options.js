@@ -81,7 +81,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
-          {option: FaviconOption, props: {key: this.sfHost + "_customFavicon"}}
+          {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}}
         ]
       },
       {
@@ -431,6 +431,7 @@ class FaviconOption extends React.Component {
     this.onChangeFavicon = this.onChangeFavicon.bind(this);
     let favicon = localStorage.getItem(this.sfHost + "_customFavicon") ? localStorage.getItem(this.sfHost + "_customFavicon") : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
+    this.tooltip = props.tooltip;
     this.state = {favicon, isInternal};
   }
 
@@ -443,7 +444,9 @@ class FaviconOption extends React.Component {
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-        h("span", {}, "Custom favicon (org specific)")
+        h("span", {}, "Custom favicon (org specific)",
+          h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
+        )
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},

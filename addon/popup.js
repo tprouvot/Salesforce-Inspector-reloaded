@@ -355,9 +355,7 @@ class App extends React.PureComponent {
             })
           ),
           h("div", {className: "slds-col slds-size_3-of-12 slds-text-align_left slds-grid slds-grid_vertical slds-grid_vertical-align-center"},
-            h("span", {className: "footer-small-text"}, (navigator.userAgentData?.platform.indexOf("mac") > -1 || navigator.userAgent.indexOf("mac") > -1) ? "[ctrl+option+i]" : "[ctrl+alt+i]",
-              h("br")),
-            h("span", {className: "footer-small-text"}, "to open")
+            h("span", {className: "footer-small-text"}, (navigator.userAgentData?.platform.indexOf("mac") > -1 || navigator.userAgent.indexOf("mac") > -1) ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},

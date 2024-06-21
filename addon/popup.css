@@ -378,7 +378,6 @@ a.icon {
 .popup-header__icon{
     width:1.75rem;
     height:1.75rem;
-    margin-right: 12px;
     border-radius: 4px;
     color: var(--inspector-text);
     line-height: 1;
@@ -398,7 +397,7 @@ a.icon {
   border: none;
 
   & > use {
-    fill: var(--inspector-text);
+    fill: var(--inspector-text-neutral);
   }
 }
 

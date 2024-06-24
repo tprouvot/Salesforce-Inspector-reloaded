@@ -1,3 +1,5 @@
+// This file was created to avoid requesting the "scripting" permission, which can lead to the extension being blacklisted by some companies.
+
 document.addEventListener("lightningNavigate", (event) => {
     handleLightningNavigation(event.detail);
 });

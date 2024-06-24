@@ -1033,6 +1033,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         element.detail = element.section;
         element.name = element.link;
         element.Id = element.name;
+        element.isSetupLink = true;
       });
 
       let metadataShortcutSearch = localStorage.getItem("metadataShortcutSearch");
@@ -1157,7 +1158,15 @@ class AllDataBoxShortcut extends React.PureComponent {
 
     return (
       h("div", {ref: "shortcutsBox", className: "users-box"},
-        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 200, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender}),
+        h(AllDataSearch, {
+          ref: "allDataSearch",
+          getMatches: this.getMatches,
+          onDataSelect: this.onDataSelect,
+          inputSearchDelay: 200,
+          placeholderText: "Quick find links, shortcuts",
+          resultRender: this.resultRender,
+          sfHost
+        }),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
             ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
@@ -2160,6 +2169,15 @@ class Autocomplete extends React.PureComponent {
         window.open(recordURL, linkTarget);
       } else {
         lightningNavigate({navigationType: "recordId", recordId: value.recordId}, recordURL);
+      }
+    } else if(value.isSetupLink) {
+      const url = "https://" + sfHost + value.link;
+      const linkTarget = getLinkTarget(e);
+      closePopup();
+      if (linkTarget == "_blank") {
+        window.open(url, linkTarget);
+      } else {
+        lightningNavigate({navigationType: "url", url}, url);
       }
     } else {
       this.props.updateInput(value);

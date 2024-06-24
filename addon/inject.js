@@ -3,7 +3,6 @@ document.addEventListener("lightningNavigate", (event) => {
 });
 
 function handleLightningNavigation(details) {
-    console.debug("inject.js: handling lightning-navigation", details);
     try {
         switch (details.navigationType) {
             case "recordId":
@@ -16,7 +15,7 @@ function handleLightningNavigation(details) {
                 throw new Error("Invalid navigation type");
         }
     } catch (error) {
-        console.debug("Lightning navigation failed, falling back to default navigation:", error.message);
+        console.error("Lightning navigation failed, falling back to default navigation:", error.message);
         window.open(details.fallbackURL, "_top");
     }
 

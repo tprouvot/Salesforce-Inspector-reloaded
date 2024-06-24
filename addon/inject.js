@@ -1,9 +1,10 @@
+//Choice has been made not to use chrome.scripting.executeScript in background.js to avoid the addition of scripting permission in the plugin which can be blacklisted by some companies
+
 document.addEventListener("lightningNavigate", (event) => {
     handleLightningNavigation(event.detail);
 });
 
 function handleLightningNavigation(details) {
-    console.debug("inject.js: handling lightning-navigation", details);
     try {
         switch (details.navigationType) {
             case "recordId":
@@ -16,7 +17,7 @@ function handleLightningNavigation(details) {
                 throw new Error("Invalid navigation type");
         }
     } catch (error) {
-        console.debug("Lightning navigation failed, falling back to default navigation:", error.message);
+        console.error("Lightning navigation failed, falling back to default navigation:", error.message);
         window.open(details.fallbackURL, "_top");
     }
 

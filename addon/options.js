@@ -78,7 +78,7 @@ class OptionsTabSelector extends React.Component {
           {option: ArrowButtonOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Flow Scrollability", key: "scrollOnFlowBuilder"}},
           {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
-          {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab"}},
+          {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab", tooltip: "Enabling this option will prevent Lightning Navigation (faster loading) to be used"}},
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
           {option: Option, props: {type: "toggle", title: "Search metadata from Shortcut tab", key: "metadataShortcutSearch"}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},

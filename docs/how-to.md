@@ -103,18 +103,14 @@ Example:
 
 ## Open links in a new tab
 
-If you want to _always_ open extension's links in a new tab, you can set the `openLinksInNewTab` property to `true`
+If you want to _always_ open extension's links in a new tab, you can enable> **Warning**
+   > Don't forget to replace "chromeExtensionId" with your current extension Id toggle.
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/e6ae08a9-1ee9-4809-a820-1377aebcd547)
+<img width="925" alt="Open link in a new tab" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/7cd6c1fa-af55-4149-a2fb-73611c6f02f9">
 
-If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
-Example:
+> **Warning**
+   > Enabling this option will prevent you to use `Lightning navigation` which allows faster navigation.
 
-- Data <ins>E</ins>xport : e
-- Data <ins>I</ins>mport : i
-- Org <ins>L</ins>imits : l
-- <ins>D</ins>ownload Metadata : d
-- E<ins>x</ins>plore API : x
 
 ## Disable metadata search from Shortcut tab
 
@@ -277,6 +273,17 @@ You can exclude formula fields to be included in the autocomplete by disable the
 Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.
 
 <img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">
+
+### Default shortcuts
+
+If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
+Example:
+
+- Data <ins>E</ins>xport : e
+- Data <ins>I</ins>mport : i
+- Org <ins>L</ins>imits : l
+- <ins>D</ins>ownload Metadata : d
+- E<ins>x</ins>plore API : x
 
 ## Hide additional columns in query results
 

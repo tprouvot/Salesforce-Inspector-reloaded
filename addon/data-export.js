@@ -15,7 +15,7 @@ class QueryHistory {
     try {
       history = JSON.parse(localStorage[this.storageKey]);
     } catch (e) {
-      // empty
+      console.error(e);
     }
     if (!Array.isArray(history)) {
       history = [];
@@ -238,7 +238,7 @@ class Model {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
       let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(delimiter)) {
+      if (this.selectedSavedEntry.query.includes(delimiter) && this.selectedSavedEntry.query.indexOf(":SELECT") >= 0) {
         let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
         queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
@@ -261,7 +261,7 @@ class Model {
     this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
   }
   getQueryToSave() {
-    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value : this.queryInput.value;
+    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value.trim() : this.queryInput.value.trim();
   }
   autocompleteReload() {
     this.describeInfo.reloadAll();
@@ -661,7 +661,12 @@ class Model {
         }
         let contextValueField = contextValueFields[0];
         let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
-        let acQuery = "select " + contextValueField.field.name + " from " + contextValueField.sobjectDescribe.name + " where " + contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%' group by " + contextValueField.field.name + " limit 100";
+        let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%'";
+        if(contextValueField.sobjectDescribe.name.toLowerCase() === "recordtype"){
+          whereClause += vm.autocompleteResults.sobjectName ? " AND SobjectType = '" + vm.autocompleteResults.sobjectName + "'" : "";
+        }
+        let acQuery = "SELECT " + contextValueField.field.name + " FROM " + contextValueField.sobjectDescribe.name + " WHERE " + whereClause + " GROUP BY " + contextValueField.field.name + " LIMIT 100";
+
         vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(acQuery), {progressHandler: vm.autocompleteProgress})
           .catch(err => {
             if (err.name != "AbortError") {
@@ -1026,7 +1031,7 @@ function RecordTable(vm) {
     },
     updateColumnsVisibility() {
       let newColVisibilities = [];
-      for (const [_, el] of rt.table[1].entries()) {
+      for (const [el] of rt.table[1].entries()) {
         if (typeof el == "object" && el !== null && vm.prefHideRelations){
           newColVisibilities.push(false);
         } else { newColVisibilities.push(true); }
@@ -1293,6 +1298,10 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     this.scrollTable.viewportChange();
   }
+  toggleQueryMoreMenu(){
+    this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
+  }
+
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
@@ -1334,10 +1343,6 @@ class App extends React.Component {
               ),
               h("button", {onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
             ),
-            h("div", {className: "pop-menu saveOptions", hidden: !model.expandSavedOptions},
-              h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query"),
-              h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
-            ),
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
                 h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
@@ -1345,7 +1350,32 @@ class App extends React.Component {
               ),
               h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
               h("button", {onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
-              h("button", {className: model.expandSavedOptions ? "toggle contract" : "toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"}))
+              h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+                h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleQueryMoreMenu(), title: "Show more options"},
+                  h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#down"})
+                  ),
+                  h("span", {className: "slds-assistive-text"}, "Show more options")
+                ),
+                h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.toggleQueryMoreMenu()},
+                  h("ul", {className: "slds-dropdown__list", role: "menu"},
+                    h("li", {className: "slds-dropdown__item", role: "presentation"},
+                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
+                        h("span", {className: "slds-truncate"},
+                          h("span", {className: "slds-truncate", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
+                        )
+                      )
+                    ),
+                    h("li", {className: "slds-dropdown__item", role: "presentation"},
+                    h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
+                      h("span", {className: "slds-truncate"},
+                        h("span", {className: "slds-truncate", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+                      )
+                    )
+                  )
+                  )
+                )
+              ),
             ),
           ),
           h("div", {className: "query-options"},

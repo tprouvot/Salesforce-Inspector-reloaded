@@ -1,6 +1,6 @@
 /* exported initButton */
 /* global showStdPageDetails */
-"use strict";
+
 
 (function() {
   let script = document.createElement('script');
@@ -102,6 +102,7 @@ function initButton(sfHost, inInspector) {
   function setRootCSSProperties(rootElement, buttonElement) {
     const p = calcPopup(iFrameLocalStorage);
     let img = document.createElement("img");
+    img.role = "presentation";
     img.src = p.imgSrc;
     rootElement.style[p.posStyle] = p.pos;
     rootElement.style[p.oStyle] = 0;

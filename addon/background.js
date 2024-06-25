@@ -1,4 +1,4 @@
-"use strict";
+
 let sfHost;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -54,7 +54,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   return false;
 });
-
+chrome.action.onClicked.addListener(() => {
+  chrome.runtime.sendMessage({
+    msg: "shortcut_pressed", sfHost
+  });
+});
 chrome.commands?.onCommand.addListener((command) => {
   if (command !== "open-popup"){
     chrome.tabs.create({
@@ -62,7 +66,7 @@ chrome.commands?.onCommand.addListener((command) => {
     });
   } else {
     chrome.runtime.sendMessage({
-      msg: "shortcut_pressed", command, sfHost
+      msg: "shortcut_pressed", sfHost
     });
   }
 });

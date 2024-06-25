@@ -68,7 +68,8 @@
         "metadata-retrieve.html",
         "explore-api.html",
         "limits.html",
-        "options.html"
+        "options.html",
+        "inject.js"
       ],
       "matches": ["https://*/*"],
       "extension_ids": []

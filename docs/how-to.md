@@ -9,11 +9,18 @@
 If you enabled "API client whitelisting" (a.k.a "API Access Control") in your org, SF Inspector may not work anymore.
 
 To secure the extension usage, you can use a OAuth 2.0 flow to get an access token, linked to a connected app installed in your org.
-To install the default "SF Inspector reloaded" connected app, open popup and click 'Generate Access Token' button
 
-   <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
+1. Open the extension and scroll down to the “Generate Access Token” button.
+2. You should see the “OAUTH_APP_BLOCKED” error which is normal at this stage.
+3. Go to “Connected Apps OAuth Usage” in setup and search for “Salesforce Inspector reloaded”.
+4. Click “Install” and then confirm installation.
+5. Now configure the profiles or permissions sets which will have the right to use the extension.
+6. Go back to “Connected Apps OAuth Usage” and click “Unblock” next to “Salesforce Inspector reloaded”
+7. Once again, open the extension and scroll down to the “Generate Access Token” button
 
-Then navigate to Setup | Connected Apps OAuth Usage, and click "Install" on the Salesforce Inspector reloaded app.
+![2024-05-28_16-12-29 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1cb41271-ea61-4e25-9c68-2a50764c4cec)
+
+This is it ! You can use the extension with the default connected app.
 
 From now when the token will be expired, this banner will show up and provide a link to re-generate the access token
 
@@ -103,18 +110,13 @@ Example:
 
 ## Open links in a new tab
 
-If you want to _always_ open extension's links in a new tab, you can set the `openLinksInNewTab` property to `true`
+If you want to _always_ open extension's links in a new tab, you can enable> **Warning**
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/e6ae08a9-1ee9-4809-a820-1377aebcd547)
+<img width="925" alt="Open link in a new tab" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/7cd6c1fa-af55-4149-a2fb-73611c6f02f9">
 
-If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
-Example:
+> **Warning**
+   > Enabling this option will prevent you to use `Lightning navigation` which allows faster navigation.
 
-- Data <ins>E</ins>xport : e
-- Data <ins>I</ins>mport : i
-- Org <ins>L</ins>imits : l
-- <ins>D</ins>ownload Metadata : d
-- E<ins>x</ins>plore API : x
 
 ## Disable metadata search from Shortcut tab
 
@@ -277,6 +279,17 @@ You can exclude formula fields to be included in the autocomplete by disable the
 Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.
 
 <img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">
+
+### Default shortcuts
+
+If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
+Example:
+
+- Data <ins>E</ins>xport : e
+- Data <ins>I</ins>mport : i
+- Org <ins>L</ins>imits : l
+- <ins>D</ins>ownload Metadata : d
+- E<ins>x</ins>plore API : x
 
 ## Hide additional columns in query results
 

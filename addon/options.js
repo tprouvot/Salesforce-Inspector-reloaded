@@ -3,9 +3,6 @@ import {sfConn, apiVersion, nullToEmptyString} from "./inspector.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 
-const faviconColors = ["green", "orange", "pink", "purple", "red", "yellow"];
-const faviconPlaceholder = `Available values: ${faviconColors.join(", ")} or external URL.`;
-
 class Model {
 
   constructor(sfHost) {
@@ -78,13 +75,13 @@ class OptionsTabSelector extends React.Component {
           {option: ArrowButtonOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Flow Scrollability", key: "scrollOnFlowBuilder"}},
           {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
-          {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab"}},
+          {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab", tooltip: "Enabling this option will prevent Lightning Navigation (faster loading) to be used"}},
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
           {option: Option, props: {type: "toggle", title: "Search metadata from Shortcut tab", key: "metadataShortcutSearch"}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
-          {option: Option, props: {type: "text", title: "Custom favicon (org specific)", key: this.sfHost + "_customFavicon", isFavicon: true, tooltip: `${faviconPlaceholder} Favicon changes will be visible in tab after reload (for external URL, you may need to add external domain to CSP trusted domains).`, placeholder: faviconPlaceholder}}
+          {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}}
         ]
       },
       {
@@ -381,7 +378,7 @@ class Option extends React.Component {
       value = JSON.stringify(props.default);
       localStorage.setItem(this.key, value);
     }
-    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value) : value, isFavicon: props.isFavicon};
+    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value) : value};
     this.title = props.title;
   }
 
@@ -397,14 +394,6 @@ class Option extends React.Component {
     localStorage.setItem(this.key, inputValue);
   }
 
-  getIconPreview() {
-    if (this.state.isFavicon && this.state[this.key] && faviconColors.includes(this.state[this.key]?.toLowerCase())) {
-      return h("img", {src: `./images/favicons/${this.state[this.key]}.png`, style: {width: "32px", height: "32px", marginLeft: "5px"}, title: `Example of ${this.state[this.key]} favicon`});
-    } else {
-      return null;
-    }
-  }
-
   render() {
     const id = this.key;
     const isText = this.type == "text";
@@ -417,9 +406,6 @@ class Option extends React.Component {
       isText ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
           h("input", {type: "text", id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
-        ),
-        h("div", {className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-left_small"},
-          this.getIconPreview(),
         )
       ))
       : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
@@ -433,6 +419,45 @@ class Option extends React.Component {
           )
         )
       ))
+    );
+  }
+}
+
+class FaviconOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.sfHost = props.model.sfHost;
+    this.onChangeFavicon = this.onChangeFavicon.bind(this);
+    let favicon = localStorage.getItem(this.sfHost + "_customFavicon") ? localStorage.getItem(this.sfHost + "_customFavicon") : "";
+    let isInternal = favicon.length > 0 && !favicon.startsWith("http");
+    this.tooltip = props.tooltip;
+    this.state = {favicon, isInternal};
+  }
+
+  onChangeFavicon(e) {
+    let favicon = e.target.value;
+    this.setState({favicon});
+    localStorage.setItem(this.sfHost + "_customFavicon", favicon);
+  }
+
+  render() {
+    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, "Custom favicon (org specific)",
+          h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
+        )
+      ),
+      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
+          h("input", {type: "text", className: "slds-input", placeholder: "All HTML Color Names, Hex code or external URL", value: nullToEmptyString(this.state.favicon), onChange: this.onChangeFavicon}),
+        ),
+        h("div", {className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-left_small"},
+          this.state.isInternal ? h("svg", {className: "icon"},
+            h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
+          ) : null
+        )
+      )
     );
   }
 }

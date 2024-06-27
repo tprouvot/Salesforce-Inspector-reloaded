@@ -82,7 +82,9 @@ class App extends React.PureComponent {
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
-      latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
+      latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion,
+      isLatestApi: true,
+      currentApiVersionInput: null
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
@@ -169,8 +171,17 @@ class App extends React.PureComponent {
     }
   }
   onChangeApi(e) {
-    localStorage.setItem("apiVersion", e.target.value + ".0");
-    this.setState({apiVersionInput: e.target.value});
+    if(sessionStorage.getItem("currentApiVersion") == null ) {
+      sessionStorage.setItem('currentApiVersion',this.state.currentApiVersionInput) 
+    }
+    if(e.target.value <= this.state.currentApiVersionInput){
+      localStorage.setItem("apiVersion", e.target.value + ".0");
+      this.setState({isLatestApi: true});
+      this.setState({apiVersionInput: e.target.value});
+    } else {
+      this.setState({isLatestApi: false});
+      this.setState({apiVersionInput: e.target.value});
+    }
   }
   componentDidMount() {
     let {sfHost} = this.props;
@@ -189,6 +200,8 @@ class App extends React.PureComponent {
       sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType,TimeZoneSidKey+FROM+Organization").then(res => {
         orgInfo = res.records[0];
         sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
+        this.state.currentApiVersionInput = orgInfo.attributes.url.split('/')[3].split('v')[1];
+        sessionStorage.setItem('currentApiVersion',this.state.currentApiVersionInput );
       });
     }
   }
@@ -350,35 +363,38 @@ class App extends React.PureComponent {
             ),
           )
         ),
-        h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
-          h("div", {className: "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small"},
-            h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
-            h("span", {}, " / "),
-            h("input", {
-              className: "api-input",
-              type: "number",
-              title: "Update api version",
-              onChange: this.onChangeApi,
-              value: apiVersionInput.split(".0")[0]
-            })
-          ),
-          h("div", {className: "slds-col slds-size_5-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, `${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"} to open`)
-          ),
-          h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
-            h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
-              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
-                h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})
+        h("div",{className: "sslds-border_top slds-grid slds-grid_vertical slds-p-around_x-small slds-theme_shade"},
+          h("div", {className: "slds-grid slds-theme_shade"},
+            h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
+              h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
+              h("span", {}, " / "),
+              h("input", {
+                className: "api-input",
+                type: "number",
+                title: "Update api version",
+                onChange: this.onChangeApi,
+                value: apiVersionInput.split(".0")[0]
+              })
+            ),
+            h("div", {className: "slds-col slds-size_4-of-12 slds-text-align_left"},
+              h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+            ),
+            h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
+              h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
+                h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
+                  h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})
+                )
               )
-            )
-          ),
-          h("div", {id: "optionsBtn", className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Options"},
-            h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget},
-              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
-                h("use", {xlinkHref: "symbols.svg#settings", style: {fill: "#9c9c9c"}})
+            ),
+            h("div", {id: "optionsBtn", className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Options"},
+              h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget},
+                h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
+                  h("use", {xlinkHref: "symbols.svg#settings", style: {fill: "#9c9c9c"}})
+                )
               )
-            )
+            ),
           ),
+          h("span",{className:"footer-small-text slds-theme_error slds-m-vertical--xx-small"} ,this.state.isLatestApi ? "": "You can't use beyond the latest version"),
         )
       )
     );

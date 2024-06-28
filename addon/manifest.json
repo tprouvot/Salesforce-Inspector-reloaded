@@ -46,7 +46,7 @@
       ],
       "all_frames": true,
       "css": ["button.css", "inspect-inline.css"],
-      "js": ["button.js", "inspect-inline.js"]
+      "js": ["button.js", "inspect-inline.js","./lib/jsforce.js"]
     }
   ],
   "background": {
@@ -94,5 +94,8 @@
     "explore-api": {
       "description": "Explore API"
     }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; connect-src 'self' https://maytronics--qafull.sandbox.my.salesforce.com/;"
   }
 }

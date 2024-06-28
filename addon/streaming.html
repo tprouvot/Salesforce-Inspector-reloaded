@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="
+      script-src 'self' 'unsafe-eval' 'unsafe-inline' https://maytronics--qafull.sandbox.my.salesforce.com/ wss://maytronics--qafull.sandbox.my.salesforce.com/;
+    "/>
+    <title>Streaming</title>
+    <link rel="stylesheet" href="button.css">
+    <link rel="stylesheet" href="slds-spinner.css">
+    <link rel="stylesheet" href="data-load.css">
+    <link rel="stylesheet" href="streaming.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="react.js"></script>
+    <script src="react-dom.js"></script>
+    <script src="button.js"></script>
+    <script src="./lib/jsforce.js"></script>
+    <script type="module" src="streaming.js"></script>
+  </body>
+</html>

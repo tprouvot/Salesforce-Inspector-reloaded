@@ -1,0 +1,515 @@
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-Light.woff2);
+  font-weight:300
+}
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-LightItalic.woff2);
+  font-style:italic;
+  font-weight:300
+}
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-Regular.woff2);
+  font-weight:400
+}
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-Italic.woff2);
+  font-style:italic;
+  font-weight:400
+}
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-Bold.woff2);
+  font-weight:700
+}
+@font-face {
+  font-family:'Salesforce Sans';
+  src:url(fonts/SalesforceSans-BoldItalic.woff2);
+  font-style:italic;
+  font-weight:700
+}
+* {
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+html {
+  height: 100%;
+}
+body {
+  font-family: "Salesforce Sans", Arial, sans-serif;
+  font-size: .8125rem;
+  overflow: hidden;
+  margin: 0;
+  height: 100%;
+  display: flex;
+  background-color: #B0C4DF;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png');
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: 0px 48px;
+}
+.prod {
+  background-color: #e0a4b5;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png');
+}
+#root {
+  display: flex;
+  flex-grow: 1;
+  width: 100%;
+}
+[data-reactroot] {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  width: 100%;
+}
+[hidden] {
+  display: none !important;
+}
+#user-info {
+  background: #f7f9fb;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  flex-wrap: wrap;
+}
+#user-info h1 {
+  padding: 0 6px 0 10px;
+}
+#user-info span{
+  font-size: 1.2em;
+}
+.sf-link {
+  background-color: rgb(6, 28, 63);
+  border-radius: 3px;
+  line-height: 1.8em;
+  text-decoration: none;
+  display: inline-block;
+  padding: 2px;
+  color: white;
+  padding-right: 1em;
+}
+.sf-link svg {
+  width: 1.8em;;
+  height: 1.8em;;
+  display: block;
+  margin-left: 1px;
+  margin-right: 1em;
+  float: left;
+  background-color: #ef7ead;
+  border-radius: 2px;
+  fill: white;
+}
+#help-btn {
+  margin-left: auto;
+  text-decoration: none;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #919191;
+  display: flex;
+  align-items: center;
+}
+#help-btn:hover .icon{
+  background-color: #818181;
+}
+#help-btn .icon {
+  display: inline-block;
+  width: 1.4rem;
+  height: 1.4rem;;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1.4rem;;
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
+  -webkit-mask-position: center;
+  background-color: #919191;
+}
+#spinner {
+  left: -15px;
+  top: 9px;
+}
+.flex-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+.help-text {
+  background: #fff;
+  border: 1px solid #DDDBDA;
+  padding: 0 15px;
+  border-radius: 0.25rem;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+#result-table {
+  margin-top: 3px;
+  overflow: auto;
+  flex-basis: 0;
+  flex-grow: 1;
+  margin-bottom: 8px;
+}
+.area {
+  background-color: #F8F8F8;
+  padding: 8px 12px;
+  border-radius: 5px;
+  border: 1px solid #DDDBDA;
+  margin: 12px 12px 0 12px;
+  flex-grow: 1;
+}
+.area.configure-import {
+  overflow-y: auto;
+}
+div[data-reactroot] > .area:last-child {
+  margin-bottom: 12px;
+}
+.area-header {
+  margin-bottom: 12px;
+}
+h1 {
+  font-size: 1.125rem;
+  margin: 0px;
+  display: inline;
+  color: #080707;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.conf-section {
+  display: flex;
+  flex-direction: row;
+  max-height: calc(50% - 79px);
+}
+@media (max-width: 670px) {
+  .conf-section {
+    display: block;
+  }
+}
+.conf-subsection {
+  flex-grow: 1;
+  flex-basis: 0;
+  display: flex;
+}
+.conf-subsection:last-child .area {
+  margin-left: 0;
+}
+.area.import-actions {
+  flex-grow: 0;
+}
+.conf-label, .columns-label, label {
+  font-weight: normal;
+  color: #4a4a56;
+  display: flex;
+  align-items: center;
+}
+.conf-label {
+  display: inline-block;
+  text-align: left;
+  width: 9em;
+  padding-right: 1em;
+}
+.radio-buttons label {
+  margin-right: 10px;
+  align-items: end;
+}
+.conf-value {
+  display: inline-block;
+}
+.conf-line {
+  margin-top: 5px;
+}
+.configure-import .conf-line {
+  display: flex;
+  align-items: flex-start;
+}
+.conf-error {
+  color: #a00;
+  margin-left: 12px;
+  display: flex;
+  align-items: center;
+}
+.conf-error button{
+  margin: 0 0 0 6px;
+}
+.confError {
+  box-shadow: 0 0 3px 1px #a00;
+}
+.confError + .confError {
+  margin-top: 5px;
+}
+.columns-mapping .conf-line {
+  padding: 5px 0;
+  margin: 0;
+}
+.flex-wrapper {
+  display: flex;
+  align-items: center;
+}
+.columns-mapping label {
+  display: block;
+  margin-bottom: 2px;
+}
+.columns-mapping .conf-label {
+  display: block;
+}
+.columns-mapping .conf-value {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  max-height: calc(100% - 34px);
+}
+.columns-mapping .conf-line input[type=search] {
+  flex-grow: 1;
+  width: auto;
+}
+.status-group {
+  display: flex;
+  flex-wrap: wrap;
+}
+.status-group div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.status-group label {
+  font-weight: bold;
+  color: #4a4a56;
+  padding-right: 15px;
+  white-space: nowrap;
+}
+label.statusGroupEmpty {
+  color: lightgray;
+  font-weight: normal;
+}
+.batch-size {
+  width: 3.4em;
+}
+.char-btn {
+  color: white;
+  text-decoration: none;
+  background-color: gray;
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  line-height: 14px;
+  text-align: center;
+}
+#confirm-background {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 99999;
+}
+#confirm-dialog {
+  width: 400px;
+  position: relative;
+  margin: 10% auto;
+  border-radius: 10px;
+  background: #fff;
+  padding: 20px;
+}
+.dialog-buttons {
+  text-align: center;
+}
+.button-space {
+  margin-right: 20px;
+}
+select,
+input[type=search],
+input[type=number],
+input[type=text] {
+  width: 335px;
+  font-family: inherit;
+  padding: 5px 13px;
+  border: 1px solid #DDDBDA;
+  border-radius: 0.25rem;
+  height: 32px;
+  position: relative;
+}
+input.object-list {
+  width: 296px;
+}
+input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}
+.configure-import input[type="checkbox"] {
+  margin: 0;
+}
+textarea:focus,
+button:active,
+button:focus,
+input:active,
+input:focus,
+select:active,
+select:focus {
+  border: 1px solid rgb(21, 137, 238);
+  box-shadow: rgb(6, 28, 63) 0px 0px 3px 0px;
+  outline: none;
+  z-index: 1;
+}
+.button-group button:active:not(:first-child), 
+.button-group button:focus:not(:first-child),
+.button-group input:active:not(:first-child), 
+.button-group input:focus:not(:first-child),
+.button-group select:focus:not(:first-child),
+.button-group select:focus:not(:first-child) {
+  margin-left: -1px;
+  border: 1px solid rgb(21, 137, 238);
+}
+button:active,
+button:focus {
+  background-color: rgb(238, 241, 246);
+  color: #005fb2;
+}
+button:disabled,
+input:disabled {
+  color: #dddbda;
+  cursor: default;
+}
+button:disabled:hover {
+  background-color: #fff;
+  color: #dddbda;
+}
+.highlighted {
+  background-color: rgb(0, 112, 210);
+  border-color: rgb(0, 112, 210);
+  color: #fff;
+}
+.highlighted:hover,
+.highlighted:active {
+  background-color: rgb(0, 95, 178);
+  color: #fff;
+}
+.highlighted:disabled {
+  background-color: #c9c7c5;
+  border-color: #c9c7c5;
+  color: #fff;
+}
+.highlighted:disabled:hover {
+  background-color: #c9c7c5;
+  color: #fff;
+}
+option[value="null"][disabled] {
+  display: none;
+}
+textarea {
+  outline: none;
+  border-radius: 0.25rem;
+  border: 1px solid #DDDBDA;
+}
+#data {
+  resize: none;
+  white-space: pre;
+  word-wrap: normal;
+  height: auto;
+  width: 335px;
+  overflow: hidden;
+  text-align: center;
+  color: #777;
+  padding: 1.5em;
+  font: inherit;
+}
+.import-actions .conf-line {
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+.button-group{
+  white-space: nowrap;
+}
+.button-group button,
+.button-group .button,
+.button-group select,
+.button-group input {
+  border-left-width: 0;
+  border-radius: 0;
+  margin-right: 0
+}
+.button-group > :first-child,
+.button-group > [hidden] + * {
+  border-top-left-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
+  border-left-width: 1px;
+}
+.button-group > :last-child {
+  border-top-right-radius: 0.25rem;
+  border-bottom-right-radius: 0.25rem;
+  margin-right: 10px;
+}
+button, .button {
+  border: 1px solid #DDDBDA;
+  height: 32px;
+  display: inline-block;
+  text-decoration: none;
+  background-color: white;
+  padding: 0 16px;
+  color: #0070d2;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+  line-height: 32px;
+  border-radius: 0.25rem;
+  margin-right: 10px;
+  white-space: nowrap;
+}
+button:hover, .button:hover {
+  background-color: #F4F6F9;
+  color: #005fb2;
+}
+button.toggle {
+  padding: 0 11px;
+}
+.button.field-info {
+  margin: 0 0 0 5px;
+  padding: 0 8px;
+  line-height: 28px;
+}
+.button-toggle-icon,
+.button-icon {
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  background-color: #706E6B;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+}
+button.toggle:hover .button-icon,
+button.toggle:hover .button-toggle-icon  {
+  background-color: #004487;
+}
+.flex-right button:last-child {
+  margin-right: 0;
+}
+button.expand .button-toggle-icon {
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/down.svg');
+}
+button.contract .button-toggle-icon {
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/up.svg');
+}
+.button.field-info .button-icon {
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce-inspector-logo.svg');
+}
+.cancel-btn {
+  color: #c23934;
+}
+.cancel-btn:not(:disabled):hover,
+.cancel-btn:not(:disabled):active,
+.cancel-btn:not(:disabled):focus {
+  color: #a12b2b;
+}
+.area.result-area {
+  padding: 0;
+  height: 40%;
+}
+#result-table {
+  overflow: auto;
+  background-color: #fff;
+  margin: 0;
+  height: 100%;
+}

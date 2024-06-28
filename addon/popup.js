@@ -78,6 +78,7 @@ class App extends React.PureComponent {
       isFieldsPresent: false,
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
+      streamingHref: "streaming.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
     };
@@ -106,6 +107,7 @@ class App extends React.PureComponent {
     this.setState({
       exportHref: "data-export.html?" + exportArg,
       importHref: "data-import.html?" + importArg,
+      streamingHref: "streaming.html?"+ importArg,
       limitsHref: "limits.html?" + limitsArg
     });
   }
@@ -211,7 +213,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, streamingHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -293,6 +295,9 @@ class App extends React.PureComponent {
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
+            ),
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "", href: streamingHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "S"), "treaming"))
             ),
             h("div", {},
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))

@@ -39,6 +39,7 @@ export let sfConn = {
         localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
       });
     }
+    return this.sessionId;
     setFavicon(sfHost);
   },
 

@@ -39,11 +39,8 @@ export let sfConn = {
         localStorage.setItem(sfHost + "_trialExpirationDate", res.records[0].TrialExpirationDate);
       });
     }
-<<<<<<< HEAD
     return this.sessionId;
     setFavicon(sfHost);
-=======
->>>>>>> 7529523 ([general] Favicons rework (#438))
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {

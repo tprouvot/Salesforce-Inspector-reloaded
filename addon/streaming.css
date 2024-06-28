@@ -143,6 +143,13 @@ body {
   margin-top: 10px;
   margin-bottom: 5px;
 }
+#result-table {
+  margin-top: 3px;
+  overflow: auto;
+  flex-basis: 0;
+  flex-grow: 1;
+  margin-bottom: 8px;
+}
 .area {
   background-color: #F8F8F8;
   padding: 8px 12px;
@@ -151,14 +158,15 @@ body {
   margin: 12px 12px 0 12px;
   flex-grow: 1;
 }
+.area.configure-import {
+  overflow-y: auto;
+}
+div[data-reactroot] > .area:last-child {
+  margin-bottom: 12px;
+}
 .area-header {
   margin-bottom: 12px;
 }
-/*
-div[data-reactroot] > .area:last-child {
-  margin-bottom: 12px;
-}*/
-
 h1 {
   font-size: 1.125rem;
   margin: 0px;
@@ -167,13 +175,27 @@ h1 {
   font-weight: 700;
   line-height: 1.25;
 }
-
+.conf-section {
+  display: flex;
+  flex-direction: row;
+  max-height: calc(50% - 79px);
+}
 @media (max-width: 670px) {
   .conf-section {
     display: block;
   }
 }
-
+.conf-subsection {
+  flex-grow: 1;
+  flex-basis: 0;
+  display: flex;
+}
+.conf-subsection:last-child .area {
+  margin-left: 0;
+}
+.area.import-actions {
+  flex-grow: 0;
+}
 .conf-label, .columns-label, label {
   font-weight: normal;
   color: #4a4a56;
@@ -183,8 +205,8 @@ h1 {
 .conf-label {
   display: inline-block;
   text-align: left;
-  width: auto;
-  padding-right: 0.5em;
+  width: 9em;
+  padding-right: 1em;
 }
 .radio-buttons label {
   margin-right: 10px;
@@ -192,10 +214,13 @@ h1 {
 }
 .conf-value {
   display: inline-block;
-  margin-right: 1em;;
 }
 .conf-line {
   margin-top: 5px;
+}
+.configure-import .conf-line {
+  display: flex;
+  align-items: flex-start;
 }
 .conf-error {
   color: #a00;
@@ -378,8 +403,45 @@ textarea {
   border-radius: 0.25rem;
   border: 1px solid #DDDBDA;
 }
-
-
+#data {
+  resize: none;
+  white-space: pre;
+  word-wrap: normal;
+  height: auto;
+  width: 335px;
+  overflow: hidden;
+  text-align: center;
+  color: #777;
+  padding: 1.5em;
+  font: inherit;
+}
+.import-actions .conf-line {
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+.button-group{
+  white-space: nowrap;
+}
+.button-group button,
+.button-group .button,
+.button-group select,
+.button-group input {
+  border-left-width: 0;
+  border-radius: 0;
+  margin-right: 0
+}
+.button-group > :first-child,
+.button-group > [hidden] + * {
+  border-top-left-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
+  border-left-width: 1px;
+}
+.button-group > :last-child {
+  border-top-right-radius: 0.25rem;
+  border-bottom-right-radius: 0.25rem;
+  margin-right: 10px;
+}
 button, .button {
   border: 1px solid #DDDBDA;
   height: 32px;
@@ -433,46 +495,21 @@ button.contract .button-toggle-icon {
 .button.field-info .button-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce-inspector-logo.svg');
 }
-
+.cancel-btn {
+  color: #c23934;
+}
+.cancel-btn:not(:disabled):hover,
+.cancel-btn:not(:disabled):active,
+.cancel-btn:not(:disabled):focus {
+  color: #a12b2b;
+}
 .area.result-area {
   padding: 0;
+  height: 40%;
 }
-
-#result-area {
-  height: 100%;
-  margin-bottom: 10px;
-}
-
-.result-bar {
-  margin-bottom: 10px;
-}
-
 #result-table {
-  margin-top: 2px;
   overflow: auto;
-  max-height: calc(80vh - 100px);
-  background-color: white;
-}
-
-.event-box {
-  background-color: #e9eef3;
-  margin: 4px;
-  border: 0.5px solid rgb(196, 193, 193);
-  padding: 5px;
-  width: 30%;
-  white-space: pre-wrap;
-}
-
-.event-selected {
-  background-color: #e9eef3;
-  margin: 4px;
-  border: 2px solid rgb(3, 153, 63);
-  padding: 5px;
-  width: 30%;
-  white-space: pre-wrap;
-}
-
-.channel-listening {
-  margin-left: 2%;
-  color: green
+  background-color: #fff;
+  margin: 0;
+  height: 100%;
 }

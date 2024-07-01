@@ -663,7 +663,9 @@ class Model {
         let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
         let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%'";
         if(contextValueField.sobjectDescribe.name.toLowerCase() === "recordtype"){
-          whereClause += vm.autocompleteResults.sobjectName ? " AND SobjectType = '" + vm.autocompleteResults.sobjectName + "'" : "";
+          let sobject = contextPath.split(".")[0];
+          sobject = sobject.toLowerCase() === "recordtype" ? vm.autocompleteResults.sobjectName : sobject;
+          whereClause += vm.autocompleteResults.sobjectName ? " AND SobjectType = '" + sobject + "'" : "";
         }
         let acQuery = "SELECT " + contextValueField.field.name + " FROM " + contextValueField.sobjectDescribe.name + " WHERE " + whereClause + " GROUP BY " + contextValueField.field.name + " LIMIT 100";
 

@@ -105,6 +105,7 @@ class Model {
     this.queryName = "";
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
       "SELECT Id FROM ",
+      'FIND {""}\nIN Name Fields\nRETURNING Contact(Name, Phone)',
       "SELECT Id FROM WHERE",
       "SELECT Id FROM WHERE IN",
       "SELECT Id FROM WHERE LIKE",
@@ -151,6 +152,21 @@ class Model {
     // Recalculate visibility
     this.exportedData.updateColumnsVisibility();
     this.updatedExportedData();
+  }
+  setQueryMethod(data){
+    let method;
+    if (data.isTooling){
+      method = "tooling/query";
+    } else if (this.queryAll){
+      method = "queryAll";
+    } else if (this.queryInput.value.toLowerCase().startsWith("find")){
+      method = "search";
+    } else if (this.queryInput.value.trim().startsWith("{")){
+      method = "graphql";
+    } else {
+      method = "query";
+    }
+    data.queryMethod = method;
   }
   setQueryName(value) {
     this.queryName = value;
@@ -285,7 +301,7 @@ class Model {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
   }
   downloadAsCsv(){
-    const blob = new Blob([this.exportedData.csvSerialize(this.separator)], { type: "data:text/csv;charset=utf-8," });
+    const blob = new Blob([this.exportedData.csvSerialize(this.separator)], {type: "data:text/csv;charset=utf-8,"});
     const downloadAnchor = document.createElement("a");
     downloadAnchor.download = `${this.autocompleteResults.sobjectName}-${new Date().toLocaleDateString()}.csv`;
     downloadAnchor.href = window.URL.createObjectURL(blob);
@@ -474,6 +490,8 @@ class Model {
     // Find out what sobject we are querying, by using the word after the "from" keyword.
     // Assuming no subqueries in the select clause, we should find the correct sobjectName. There should be only one "from" keyword, and strings (which may contain the word "from") are only allowed after the real "from" keyword.
     let fromKeywordMatch = /(^|\s)from\s+([a-z0-9_]*)/i.exec(query);
+    let findKeywordMatch = /(^|\s)find\s+([a-z0-9_]*)/i.exec(query);
+    let graphKeywordMatch = /(^|\s)uiapi\s+([a-z0-9_]*)/i.exec(query);
     if (fromKeywordMatch) {
       sobjectName = fromKeywordMatch[2];
       isAfterFrom = selStart > fromKeywordMatch.index + 1;
@@ -484,9 +502,10 @@ class Model {
         sobjectName = fromKeywordMatch[1];
         isAfterFrom = false;
       } else {
+        let title = findKeywordMatch || graphKeywordMatch ? "" : "\"from\" keyword not found";
         vm.autocompleteResults = {
           sobjectName: "",
-          title: "\"from\" keyword not found",
+          title,
           results: []
         };
         return;
@@ -662,7 +681,7 @@ class Model {
         let contextValueField = contextValueFields[0];
         let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
         let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%'";
-        if(contextValueField.sobjectDescribe.name.toLowerCase() === "recordtype"){
+        if (contextValueField.sobjectDescribe.name.toLowerCase() === "recordtype"){
           let sobject = contextPath.split(".")[0];
           sobject = sobject.toLowerCase() === "recordtype" ? vm.autocompleteResults.sobjectName : sobject;
           whereClause += vm.autocompleteResults.sobjectName ? " AND SobjectType = '" + sobject + "'" : "";
@@ -838,7 +857,6 @@ class Model {
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
     let query = vm.queryInput.value;
-    let queryMethod = exportedData.isTooling ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
@@ -846,14 +864,41 @@ class Model {
         }
         throw err;
       }).then(data => {
-        exportedData.addToTable(data.records);
+        let isQueryMode = exportedData.queryMethod === "query";
+        let fieldsResponses = {query: "records", search: "searchRecords", graphql: "data"};
+        if (exportedData.queryMethod === "graphql"){
+          let sanitizedQuery = vm.queryInput.value.replace(/ /g, "");
+          exportedData.sobject = sanitizedQuery.substring(
+            sanitizedQuery.indexOf("query{") + 6, sanitizedQuery.lastIndexOf("{edges")
+          );
+
+          let dataGraph = data.data.uiapi.query[exportedData.sobject].edges.map(record => {
+            const firstProperty = Object.keys(record.node)[0];
+
+            // Use the first property to determine the structure
+            const transformed = {};
+            if (firstProperty) {
+              for (const key in record.node) {
+                if (Object.prototype.hasOwnProperty.call(record.node, key)) {
+                  transformed[key] = (typeof record.node[key] === "object" && "value" in record.node[key]) ? record.node[key].value : record.node[key];
+                  transformed.attributes = {type: exportedData.sobject};
+                }
+              }
+            }
+            return transformed;
+          });
+          exportedData.addToTable(dataGraph);
+        } else {
+          exportedData.addToTable(data[fieldsResponses[exportedData.queryMethod]]);
+        }
+
         let recs = exportedData.records.length;
         let total = exportedData.totalSize;
         if (data.totalSize != -1) {
-          exportedData.totalSize = data.totalSize;
-          total = data.totalSize;
+          exportedData.totalSize = isQueryMode ? data.totalSize : recs;
+          total = exportedData.totalSize;
         }
-        if (!data.done) {
+        if (!data.done && isQueryMode) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
           vm.isWorking = true;
           vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
@@ -905,7 +950,9 @@ class Model {
         return null;
       });
     }
-    vm.spinFor(batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query), {progressHandler: vm.exportProgress}))
+    this.setQueryMethod(exportedData);
+    vm.spinFor(batchHandler(this.getQueryApiFunction(exportedData.queryMethod, query), {progressHandler: vm.exportProgress})
+    //vm.spinFor(batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/" + exportedData.queryMethod + "/?q=" + encodeURIComponent(query), {progressHandler: vm.exportProgress}))
       .catch(error => {
         console.error(error);
         vm.isWorking = false;
@@ -921,6 +968,13 @@ class Model {
     vm.exportError = null;
     vm.exportedData = exportedData;
     vm.updatedExportedData();
+  }
+  getQueryApiFunction(queryMethod, query){
+    if (queryMethod === "graphql"){
+      return sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod, {method: "POST", body: {"query": "query objects " + query}});
+    } else {
+      return sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query));
+    }
   }
   stopExport() {
     this.exportProgress.abort();
@@ -1369,12 +1423,12 @@ class App extends React.Component {
                       )
                     ),
                     h("li", {className: "slds-dropdown__item", role: "presentation"},
-                    h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
-                      h("span", {className: "slds-truncate"},
-                        h("span", {className: "slds-truncate", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
+                        h("span", {className: "slds-truncate"},
+                          h("span", {className: "slds-truncate", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+                        )
                       )
                     )
-                  )
                   )
                 )
               ),

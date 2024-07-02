@@ -106,6 +106,7 @@ class Model {
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
       "SELECT Id FROM ",
       'FIND {""}\nIN Name Fields\nRETURNING Contact(Name, Phone)',
+      "{\n\tuiapi {\n\t\tquery {\n\t\t\tContact {\n\t\t\t\tedges {\n\t\t\t\t\t node {\n\t\t\t\t\t\tId\n\t\t\t\t\t\tName { value }\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n}",
       "SELECT Id FROM WHERE",
       "SELECT Id FROM WHERE IN",
       "SELECT Id FROM WHERE LIKE",
@@ -867,15 +868,10 @@ class Model {
         let isQueryMode = exportedData.queryMethod === "query";
         let fieldsResponses = {query: "records", search: "searchRecords", graphql: "data"};
         if (exportedData.queryMethod === "graphql"){
-          let sanitizedQuery = vm.queryInput.value.replace(/ /g, "");
-          exportedData.sobject = sanitizedQuery.substring(
-            sanitizedQuery.indexOf("query{") + 6, sanitizedQuery.lastIndexOf("{edges")
-          );
-
+          exportedData.sobject = Object.keys(data.data.uiapi.query)[0];
           let dataGraph = data.data.uiapi.query[exportedData.sobject].edges.map(record => {
             const firstProperty = Object.keys(record.node)[0];
 
-            // Use the first property to determine the structure
             const transformed = {};
             if (firstProperty) {
               for (const key in record.node) {

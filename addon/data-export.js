@@ -977,7 +977,7 @@ class Model {
     }
   }
   stopExport() {
-    this.exportProgress.abort();
+    this.exportProgress.abort;
   }
   doQueryPlan(){
     let vm = this; // eslint-disable-line consistent-this

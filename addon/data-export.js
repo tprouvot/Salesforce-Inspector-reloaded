@@ -948,7 +948,6 @@ class Model {
     }
     this.setQueryMethod(exportedData);
     vm.spinFor(batchHandler(this.getQueryApiFunction(exportedData.queryMethod, query), {progressHandler: vm.exportProgress})
-    //vm.spinFor(batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/" + exportedData.queryMethod + "/?q=" + encodeURIComponent(query), {progressHandler: vm.exportProgress}))
       .catch(error => {
         console.error(error);
         vm.isWorking = false;

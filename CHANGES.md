@@ -2,6 +2,7 @@
 
 ## Version 1.24
 
+- Support SOSL [feature 131](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/131) and GraphQL queries in Data Export
 - Increase API version to 61 (Summer'24)
 - Improve readability for screen readers ([feature 454](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/454) request by [Andrew Russo](https://github.com/mavtron-andrewrusso))
 - Restrict autocomplete suggestion to SObject record type names in Data Export page (feature [442](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/442) by [Camille Guillory](https://github.com/CamilleGuillory))

@@ -9,11 +9,18 @@
 If you enabled "API client whitelisting" (a.k.a "API Access Control") in your org, SF Inspector may not work anymore.
 
 To secure the extension usage, you can use a OAuth 2.0 flow to get an access token, linked to a connected app installed in your org.
-To install the default "SF Inspector reloaded" connected app, open popup and click 'Generate Access Token' button
 
-   <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
+1. Open the extension and scroll down to the “Generate Access Token” button.
+2. You should see the “OAUTH_APP_BLOCKED” error which is normal at this stage.
+3. Go to “Connected Apps OAuth Usage” in setup and search for “Salesforce Inspector reloaded”.
+4. Click “Install” and then confirm installation.
+5. Now configure the profiles or permissions sets which will have the right to use the extension.
+6. Go back to “Connected Apps OAuth Usage” and click “Unblock” next to “Salesforce Inspector reloaded”
+7. Once again, open the extension and scroll down to the “Generate Access Token” button
 
-Then navigate to Setup | Connected Apps OAuth Usage, and click "Install" on the Salesforce Inspector reloaded app.
+![2024-05-28_16-12-29 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1cb41271-ea61-4e25-9c68-2a50764c4cec)
+
+This is it ! You can use the extension with the default connected app.
 
 From now when the token will be expired, this banner will show up and provide a link to re-generate the access token
 
@@ -235,12 +242,28 @@ are displayed.
 
 From the option page, you can customize the default favicon by:
 
-- a predefined color among those values (green, orange, pink, purple, red, yellow)
+- a predefined color name among [those values](https://www.w3schools.com/tags/ref_colornames.asp) or any HTML color code you want (ie `#FF8C00`).
 - a custom favicon url (ie "https://stackoverflow.com/favicon.ico")
 
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
 
-<img width="901" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
+<img width="901" alt="Customize favicon" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
+
+Now if you want to set a random favicon for all of your visited orgs, open dev console from one of the extension page and paste following code in dev console:
+
+``` js
+let colors = ['olive', 'darkorange', 'pink', 'purple', 'firebrick', 'hotpink', 'skyblue', '#1E90FF'];
+
+let orgs = Object.keys(localStorage).filter((localKey) =>
+    localKey.endsWith("_isSandbox")
+);
+orgs.forEach((org) => {
+    let sfHost = org.substring(0, org.indexOf(("_isSandbox")));
+    let randomFavicon = colors[(Math.floor(Math.random() * colors.length))]
+    console.info(sfHost + "_customFavicon", randomFavicon);
+    localStorage.setItem(sfHost + "_customFavicon", randomFavicon);
+});
+```
 
 ## Select all fields in a query
 
@@ -249,3 +272,21 @@ When on the export page, put the cursor between `SaELECT` and `FROM` and press `
 If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM`.
 
 ![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)
+
+## Exclude formula fields from data export autocomplete
+
+You can exclude formula fields to be included in the autocomplete by disable the toogle
+
+<img width="898" alt="Exclude formula fields from autocomplete" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/aa9db6c4-099d-49ea-a343-7c64e472450d">
+
+## Customize extension's shortcuts
+
+Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.
+
+<img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">
+
+## Hide additional columns in query results
+
+After running a query in the "Data Export" page, you can hide additional columns in the query results. These columns represent the name of the objects included in your query. They are useful to automatically map the fields to the correct object in the "Data Import" page. The columns are hidden in the exported files (CSV or Excel) as well. You can set a default value, using the 'Hide additionnal Object Name Columns by default on Data Export' option ("Options" -> "Data Export" tab).
+
+![2024-05-16_17-54-24 (1)](https://github.com/guillaumeSF/Salesforce-Inspector-reloaded/assets/166603639/45fda19b-b426-4b11-91cb-4f0fbc5c47d7)

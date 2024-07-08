@@ -6,8 +6,18 @@
   </head>
   <body>
     <h1>Salesforce Inspector Unit Test</h1>
-    <div id="anonApex" style="background: yellow; text-align: center;" hidden>Execute Anonymous</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;">
+      <div id="popupTest" style="background: grey; text-align: center; padding: 3px;">Test Popups</div>
+      <div id="csvParseTest" style="background: grey; text-align: center; padding: 3px;">Test CSV Parsing</div>
+      <div id="dataImportTest" style="background: grey; text-align: center; padding: 3px;">Test Data Import</div>
+      <div id="dataExportTest" style="background: grey; text-align: center; padding: 3px;">Test Data Export</div>
+    </div>
+    <div id="anonApex" style="background: lightblue; text-align: center; color: lightblue" >Anonymous Execution
+      <pre id="anonApexCode" style="height:100px;">
+      </pre>
+    </div>
     <div id="result" style="background: lightblue; text-align: center;"></div>
+    <pre id="resultErrorDetail" style="background: #dcdcdc; margin-top: 0;"></pre>
     <iframe id="page" style="height: 600px;width: 100%"></iframe>
     <script type="module" src="test-framework.js"></script>
   </body>

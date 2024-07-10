@@ -866,7 +866,7 @@ class Model {
         throw err;
       }).then(data => {
         let isQueryMode = exportedData.queryMethod === "query";
-        let fieldsResponses = {query: "records","tooling/query": "records", search: "searchRecords", graphql: "data"};
+        let fieldsResponses = {query: "records", "tooling/query": "records", search: "searchRecords", graphql: "data"};
         if (exportedData.queryMethod === "graphql"){
           exportedData.sobject = Object.keys(data.data.uiapi.query)[0];
           let dataGraph = data.data.uiapi.query[exportedData.sobject].edges.map(record => {
@@ -972,7 +972,7 @@ class Model {
     }
   }
   stopExport() {
-    this.exportProgress.abort;
+    this.exportProgress.abort();
   }
   doQueryPlan(){
     let vm = this; // eslint-disable-line consistent-this

@@ -307,11 +307,11 @@ export class TableModel {
     let row = this.rows[rowId];
     let record = {};
     row.cells.filter(c => c.dataEditValue !== undefined).forEach(c => {
-      record[this.header[c.id]] = c.dataEditValue;
+      record[this.header[c.id].name] = c.dataEditValue;
     });
     let recordId = "";
     let objectType = "";
-    row.cells.filter(c => this.header[c.id] == "Id").forEach(h => {
+    row.cells.filter(c => this.header[c.id].name == "Id").forEach(h => {
       recordId = h.label == "" ? null : h.label;
       objectType = h.objectTypes[0];
     });
@@ -343,7 +343,7 @@ export class TableModel {
   editCell(rowId, cellId) {
     let cell = this.rows[rowId].cells[cellId];
     //do not allow edit of id
-    if (this.header[cellId] && this.header[cellId].toLowerCase() == "Id") {
+    if (this.header[cellId] && this.header[cellId].name && this.header[cellId].name.toLowerCase() == "Id") {
       return;
     }
     //do not allow edit of object column
@@ -351,7 +351,7 @@ export class TableModel {
       return;
     }
     // not sub record for moment
-    if (this.header[cell.id].includes(".")){
+    if (this.header[cell.id].name && this.header[cell.id].name.includes(".")){
       return;
     }
     cell.dataEditValue = cell.label;
@@ -418,7 +418,7 @@ export class TableModel {
       if (this.colVisible[c] == 0) {
         continue;
       }
-      this.header.push(head[c]);
+      this.header.push({name: head[c], idx: c, id: this.header.length});
     }
     this.rows = [];
     this.scrolledHeight = this.totalHeight;
@@ -468,9 +468,11 @@ export class TableModel {
           dataCell.label = cell;
         }
         dataCell.id = dataRow.cells.length;
+        dataCell.idx = c;
         dataRow.cells.push(dataCell);
       }
       dataRow.id = this.rows.length;
+      dataRow.idx = r;
       this.rows.push(dataRow);
     }
     this.didUpdate();
@@ -745,7 +747,7 @@ export class ScrollTableRow extends React.Component {
       if (previousRow != null && c < previousRow.cells.length) {
         previousCell = previousRow.cells[c];
       }
-      return h(ScrollTableCell, {key: "cell" + c, row, model, cell, rowHeight, colWidth: model.colWidths[model.firstColIdx + c], previousCell});
+      return h(ScrollTableCell, {key: "cell" + cell.id, row, model, cell, rowHeight, colWidth: model.colWidths[cell.idx], previousCell});
     });
     if (row.cells.some(c => c.isEditing)) {
       cells.push(h("td", {key: "editcell" + row.id}, h("button", {
@@ -782,19 +784,18 @@ export class ScrollTable extends React.Component {
   }
   render() {
     let {model} = this.props;
-    let firstRowIdx = model.firstRowIdx > 0 ? model.firstRowIdx : 1;
     let previousRow = null;
     return h("div", {className: "result-table", onScroll: this.onScroll, ref: "scroller"},
       h("div", {className: "scrolltable-scrolled", ref: "scrolled", style: {height: model.scrolledHeight + "px", width: model.scrolledWidth + "px"}},
         h("table", {style: {top: model.firstRowTop + "px", left: model.firstColLeft + "px"}},
           h("thead", {},
             h("tr", {},
-              model.header.map((cell, c) => h("td", {key: "head" + c, className: "scrolltable-cell header", style: {minWidth: model.colWidths[model.firstColIdx + c] + "px", height: model.headerHeight + "px"}}, cell))
+              model.header.map((cell) => h("td", {key: "head" + cell.id, className: "scrolltable-cell header", style: {minWidth: model.colWidths[cell.idx] + "px", height: model.headerHeight + "px"}}, cell.name))
             )
           ),
           h("tbody", {},
-            model.rows.map((row, r) => {
-              let result = h(ScrollTableRow, {key: "row" + r, model, row, rowHeight: model.rowHeights[firstRowIdx + r], rowId: r, previousRow});
+            model.rows.map((row) => {
+              let result = h(ScrollTableRow, {key: "row" + row.id, model, row, rowHeight: model.rowHeights[row.idx], rowId: row.id, previousRow});
               if (model.rows.length == 2) {
                 previousRow = row;
               }

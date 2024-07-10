@@ -258,6 +258,9 @@ export class TableModel {
       return;
     }
     this.renderData({force: false});
+  }
+
+  recalculate(){
     // Before this point we invalidate style and layout. After this point we recalculate style and layout, and we do not invalidate them again.
     if (this.rows.length > 0) {
       //thead
@@ -302,7 +305,6 @@ export class TableModel {
       }
     }
   }
-
   doSave(rowId) {
     let row = this.rows[rowId];
     let record = {};
@@ -779,8 +781,8 @@ export class ScrollTable extends React.Component {
     model.setScrollerElement(scroller, scrolled);
   }
   componentDidUpdate() {
-    //let {model} = this.props;
-    //model.viewportChange();
+    let {model} = this.props;
+    model.recalculate();
   }
   render() {
     let {model} = this.props;

@@ -1270,40 +1270,46 @@ class FileUpload extends React.Component {
 class FlamGraphRect extends React.Component {
   constructor(props) {
     super(props);
-    this.node = props.node;
-    this.offsetHeight = props.offsetHeight;
-    this.width = props.width;
-    this.greenColor = 255 - (255 * this.width / 1000);
-    this.offsetWidth = props.offsetWidth;
     this.height = 20;
     this.fontSize = 12;
-    this.nextChildOffsetWidth = this.offsetWidth;
-    this.nodeTitle = this.node.title;
-    if (this.nodeTitle.length > (this.width / this.fontSize)) {
-      this.nodeTitle = this.nodeTitle.substring(0, Math.floor(this.width / this.fontSize));
-    }
   }
 
   render() {
+    let {node, width, offsetHeight, offsetWidth} = this.props;
+    let nextChildOffsetWidth = offsetWidth;
+    let greenColor = 255 - (255 * width / 1000);
+    let nodeTitle = node.title;
+    nodeTitle = node.title;
+    if (nodeTitle.length > (width / this.fontSize)) {
+      nodeTitle = nodeTitle.substring(0, Math.floor(width / this.fontSize));
+    }
+    if (nodeTitle.length > (width / this.fontSize)) {
+      nodeTitle = nodeTitle.substring(0, Math.floor(width / this.fontSize));
+    }
     return h("g", {},
-      h("rect", {width: this.width, height: this.height, style: {fill: "rgb(236," + this.greenColor + ",100)", strokeWidth: "3", stroke: "rgb(255," + this.greenColor + ",0)"}, x: this.offsetWidth, y: this.offsetHeight * this.height},
-        h("title", {}, this.node.title)
+      h("rect", {width, height: this.height, style: {fill: "rgb(236," + greenColor + ",100)", strokeWidth: "3", stroke: "rgb(255," + greenColor + ",0)"}, x: offsetWidth, y: offsetHeight * this.height},
+        h("title", {}, node.title)
       ),
-      h("text", {x: this.offsetWidth + (this.width / 2), y: (this.offsetHeight + 0.5) * this.height, fontSize: this.fontSize, textAnchor: "middle", fill: "white"}, this.nodeTitle),
-      this.node.child.map((c) => this.renderChild(c))
+      h("text", {x: offsetWidth + (width / 2), y: (offsetHeight + 0.5) * this.height, fontSize: this.fontSize, textAnchor: "middle", fill: "white"}, nodeTitle),
+      node.child.map((c) => this.renderChild(c, node, width, nextChildOffsetWidth, offsetHeight))
     );
   }
 
-  renderChild(c) {
+  renderChild(c, node, width, nextChildOffsetWidth, offsetHeight) {
     let childWidth;
-    if (this.node.duration) {
-      childWidth = this.width * (c.duration / this.node.duration);
+    if (node[this.props.field]) {
+      childWidth = width * (c[this.props.field] / node[this.props.field]);
+    } else if (node[this.props.field] == 0){
+      childWidth = 0;
     } else {
-      childWidth = this.width;
+      childWidth = width;
     }
-    let offsetWidth = this.nextChildOffsetWidth;
-    this.nextChildOffsetWidth += childWidth;
-    return h(FlamGraphRect, {node: c, key: c.key, offsetHeight: this.offsetHeight + 1, width: childWidth, offsetWidth});
+    let offsetWidth = nextChildOffsetWidth;
+    nextChildOffsetWidth += childWidth;
+    if (childWidth == 0) {
+      return "";
+    }
+    return h(FlamGraphRect, {node: c, field: this.props.field, key: c.key, offsetHeight: offsetHeight + 1, width: childWidth, offsetWidth});
   }
 }
 
@@ -1314,12 +1320,66 @@ class FlamGraph extends React.Component {
     this.model = props.model;
     this.column = props.model.column;
     this.rootNode = this.model.rootNode;
-  }
+    this.availableFilters = [{
+      title: "Duration",
+      field: "duration"
+    },
+    {
+      title: "Heap",
+      field: "heapTotal"
+    },
+    {
+      title: "DML",
+      field: "dmlTotal",
+    },
+    {
+      title: "SOQL",
+      field: "soqlTotal",
+    },
+    {
+      title: "SOSL",
+      field: "soslTotal",
+    },
+    {
+      title: "Query rows",
+      field: "rowTotal",
+    },
+    {
+      title: "DML rows",
+      field: "dmlRowTotal",
+    },
+    {
+      title: "Callouts",
+      field: "calloutTotal",
+    },
+    {
+      title: "Futur calls",
+      field: "futurTotal",
+    },
+    {
+      title: "jobs enqueue",
+      field: "queueTotal",
+    }];
+    this.state = {
+      filterBy: "duration",
+    };
+    this.onSelectFilterBy = this.onSelectFilterBy.bind(this);
 
+  }
+  onSelectFilterBy(e) {
+    let {model} = this.props;
+    this.setState({filterBy: e.target.value});
+    model.didUpdate();
+  }
   render() {
     return h("div", {style: {overflow: "scroll", height: "inherit"}}, //className: "slds-tree_container"},
+      h("div", {className: "button-group"},
+        h("select", {name: "log-filter", value: this.state.filterBy, onChange: this.onSelectFilterBy, className: "log-filter"},
+          this.availableFilters.map(q => h("option", {key: q.field, value: q.field}, q.title))
+        ),
+      ),
       h("svg", {ref: "logFlameGraph", version: "1.1", baseProfile: "full", xmlns: "http://www.w3.org/2000/svg", width: "100%", height: "100%"},
-        h(FlamGraphRect, {node: this.rootNode, key: this.rootNode.key, offsetHeight: 0, width: 1000, offsetWidth: 0})
+        h(FlamGraphRect, {node: this.rootNode, field: this.state.filterBy, key: this.rootNode.key, offsetHeight: 0, width: 1000, offsetWidth: 0})
       )
     );
   }

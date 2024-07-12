@@ -20,6 +20,10 @@ const allActions = [
   {value: "deleteMetadata", label: "Delete Metadata", supportedApis: ["Metadata"]}
 ];
 
+const headersTemplates = [
+  '{"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}'
+];
+
 class Model {
 
   constructor(sfHost, args) {
@@ -840,11 +844,9 @@ class Model {
     setTimeout(this.executeBatch.bind(this), 2500);
 
     let wsdl = sfConn.wsdl(apiVersion, this.apiType);
-    //let headers = {"AllOrNoneHeader": {"allOrNone": false}, "AssignmentRuleHeader": {"useDefaultRule": this.assignmentRule}, "OwnerChangeOptions": {"execute": true, "type": "KeepAccountTeam"}};
-    //let headers = {"OwnerChangeOptions": [{"execute": true, "type": {"KeepAccountTeam": true}}]};
-    //{"OwnerChangeOptions": [{"execute": true, "type": {"SendEmail": true}}]};
+    let headers = this.customHeaders?.length > 0 ? {headers: JSON.parse(this.customHeaders)} : {};
 
-    this.spinFor(sfConn.soap(wsdl, importAction, importArgs, this.customHeaders).then(res => {
+    this.spinFor(sfConn.soap(wsdl, importAction, importArgs, headers).then(res => {
 
       let results = sfConn.asArray(res);
       for (let i = 0; i < results.length; i++) {
@@ -921,6 +923,7 @@ class App extends React.Component {
     this.onExternalIdChange = this.onExternalIdChange.bind(this);
     this.onBatchSizeChange = this.onBatchSizeChange.bind(this);
     this.onCustomHeadersChange = this.onCustomHeadersChange.bind(this);
+    this.onCustomHeadersKeyPress = this.onCustomHeadersKeyPress.bind(this);
     this.onBatchConcurrencyChange = this.onBatchConcurrencyChange.bind(this);
     this.onToggleHelpClick = this.onToggleHelpClick.bind(this);
     this.onDoImportClick = this.onDoImportClick.bind(this);
@@ -933,6 +936,7 @@ class App extends React.Component {
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
     this.unloadListener = null;
+    this.state = {templateValueIndex: -1};
   }
   onApiTypeChange(e) {
     let {model} = this.props;
@@ -980,6 +984,19 @@ class App extends React.Component {
     model.batchSize = e.target.value;
     model.executeBatch();
     model.didUpdate();
+  }
+  onCustomHeadersKeyPress(e){
+    if (e.key == "ArrowDown" || e.key == "ArrowUp"){
+      let {model} = this.props;
+      let {templateValueIndex} = this.state;
+      let down = e.key == "ArrowDown" ? true : false;
+      down ? templateValueIndex++ : templateValueIndex--;
+      if (0 <= templateValueIndex && templateValueIndex < headersTemplates.length){
+        model.customHeaders = headersTemplates[templateValueIndex];
+        this.setState({templateValueIndex});
+        model.didUpdate();
+      }
+    }
   }
   onCustomHeadersChange(e){
     let {model} = this.props;
@@ -1203,9 +1220,9 @@ class App extends React.Component {
             ),
             h("div", {className: "conf-line"},
               h("label", {className: "conf-input", title: "JSON Header (AllOrNoneHeader, AssignmentRuleHeader, OwnerChangeOptions ...)"},
-                h("span", {className: "conf-label"}, "Custom Header"),
+                h("span", {className: "conf-label"}, "Custom Headers"),
                 h("span", {className: "conf-value"},
-                  h("input", {type: "text", placeholder: "{'OwnerChangeOptions': [{'execute': true, 'type': {'SendEmail': true}}]}", value: model.customHeaders, onChange: this.onCustomHeadersChange, className: " batch-size"}),
+                  h("input", {type: "text", placeholder: '{"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}', value: model.customHeaders, onKeyDown: this.onCustomHeadersKeyPress, onChange: this.onCustomHeadersChange, className: " batch-size"}),
                 )
               )
             ),

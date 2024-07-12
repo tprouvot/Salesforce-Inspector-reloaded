@@ -295,4 +295,9 @@ After running a query in the "Data Export" page, you can hide additional columns
 
 You can configure the [SOAP headers](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/soap_headers.htm) when importing records to specify Assignment Rule, Duplicate Rule or OwnerChangeOptions.
 
-<img width="505" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/0b19ad3a-bbd7-480b-a98d-c336438dae05">
+ie for KeepAccountTeam:
+``` json
+{"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}
+```
+
+<img width="504" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/5c9a9c40-72bf-4ab7-ab0a-30b72c29478f">

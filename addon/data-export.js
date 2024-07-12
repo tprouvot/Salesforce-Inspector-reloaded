@@ -1252,7 +1252,7 @@ class Model {
       //not in subquery before main from
       if (!beforeFrom //nothing before
         || (beforeFrom.split("(").length == beforeFrom.split(")").length) //not in subquery before main from
-        || !openParenthesisSplit[openParenthesisSplit.length - 1].trim().toLocaleLowerCase().startsWith("select")
+        || !openParenthesisSplit[openParenthesisSplit.length - 1].trim().toLowerCase().startsWith("select")
         || isAfterFrom) { // after main from => Id IN (SELECT Id...)
         this.autocompleteObject(vm, false);
         return;

@@ -343,7 +343,8 @@ export class TableModel {
     this.didUpdate();
   }
   editCell(rowId, cellId) {
-    let cell = this.rows[rowId].cells[cellId];
+    let row = this.rows[rowId];
+    let cell = row.cells[cellId];
     //do not allow edit of id
     if (this.header[cellId] && this.header[cellId].name && this.header[cellId].name.toLowerCase() == "Id") {
       return;
@@ -356,6 +357,22 @@ export class TableModel {
     if (this.header[cell.id].name && this.header[cell.id].name.includes(".")){
       return;
     }
+    let tableRow = this.data.table[row.idx];
+    let objectCell = tableRow && tableRow.length ? tableRow[0] : null;
+    if (objectCell && objectCell.attributes && objectCell.attributes.type) {
+      let {sobjectStatus, sobjectDescribe} = this.data.describeInfo.describeSobject(this.data.isTooling, objectCell.attributes.type);
+      if (sobjectStatus == "ready") {
+        let picklistValues = sobjectDescribe.fields
+          .filter(f => f.name.toLowerCase() == this.header[cell.id].name.toLowerCase())
+          .flatMap(f => f.picklistValues)
+          .map(pv => pv.value);
+        if (picklistValues && picklistValues.length) {
+          cell.suggestions = picklistValues;
+          cell.filteredSuggestions = cell.suggestions;
+        }
+      }
+    }
+
     cell.dataEditValue = cell.label;
     cell.isEditing = true;
     this.didUpdate();
@@ -640,6 +657,14 @@ class ScrollTableCell extends React.Component {
     this.copyToClipboard = this.copyToClipboard.bind(this);
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onDataEditValueInput = this.onDataEditValueInput.bind(this);
+    this.onFocus = this.onFocus.bind(this);
+    this.onBlur = this.onBlur.bind(this);
+    this.onSuggestionClick = this.onSuggestionClick.bind(this);
+    this.onKeyDown = this.onKeyDown.bind(this);
+    this.state = {
+      activeSuggestion: 0,
+      showSuggestions: false
+    };
   }
   onTryEdit() {
     let {model} = this.props;
@@ -673,12 +698,79 @@ class ScrollTableCell extends React.Component {
     e.preventDefault();
     this.model.toggleMenu(this.row.id, this.cell.id);
   }
+  onFocus() {
+    let {model} = this.props;
+    this.setState({
+      activeSuggestion: 0,
+      showSuggestions: true
+    });
+    model.didUpdate();
+  }
+  onBlur() {
+    let {model} = this.props;
+    setTimeout(() => {
+      //no need to refresh if already refresh by click on value
+      if (!this.state || !this.state.showSuggestions) {
+        return;
+      }
+      this.setState({
+        activeSuggestion: 0,
+        showSuggestions: false
+      });
+      model.didUpdate();
+    }, 100); // Set timeout for 500ms
+  }
   onDataEditValueInput(e) {
     let {model, cell} = this.props;
     const userInput = e.target.value;
     //TODO state
+    if (cell.suggestions){
+      cell.filteredSuggestions = cell.suggestions.filter(
+        suggestion =>
+          suggestion.toLowerCase().indexOf(userInput.toLowerCase()) > -1
+      );
+    }
+    this.setState({
+      activeSuggestion: 0,
+      showSuggestions: true
+    });
     cell.dataEditValue = userInput;
     model.didUpdate();
+  }
+  onSuggestionClick(e) {
+    let {cell} = this.props;
+    this.setState({
+      activeSuggestion: 0,
+      showSuggestions: false
+    });
+    cell.filteredSuggestions = [];
+    cell.dataEditValue = e.target.innerText;
+  }
+  onKeyDown(e){
+    const {activeSuggestion} = this.state;
+    let {cell} = this.props;
+    switch (e.keyCode) {
+      case 40:
+        if (activeSuggestion - 1 === cell.filteredSuggestions.length) {
+          return;
+        }
+        this.setState({activeSuggestion: activeSuggestion + 1});
+        break;
+      case 38:
+        if (activeSuggestion === 0) {
+          return;
+        }
+        this.setState({activeSuggestion: activeSuggestion - 1});
+        break;
+      case 13:
+        this.setState({
+          activeSuggestion: 0,
+          showSuggestions: false
+        });
+        cell.dataEditValue = cell.filteredSuggestions[activeSuggestion];
+        e.preventDefault();
+        break;
+    }
   }
   onCancelEdit(e) {
     e.preventDefault();
@@ -687,6 +779,7 @@ class ScrollTableCell extends React.Component {
   }
   render() {
     let {cell, rowHeight, colWidth, previousCell} = this.props;
+    let {activeSuggestion, showSuggestions} = this.state;
     let cellLabel = cell.label?.toString();
     if (cellLabel == "[object Object]") {
       cellLabel = "";
@@ -701,8 +794,18 @@ class ScrollTableCell extends React.Component {
         className += " scrolltable-cell-diff";
       }
       return h("td", {className, style: {minWidth: colWidth + "px", height: rowHeight + "px"}},
-        h("textarea", {value: cellDataEditValue, onChange: this.onDataEditValueInput}),
-        h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6"));
+        h("textarea", {value: cellDataEditValue, onChange: this.onDataEditValueInput, onFocus: this.onFocus, onBlur: this.onBlur, onKeyDown: this.onKeyDown}),
+        h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6"),
+        (showSuggestions && cell.filteredSuggestions.length)
+          ? h("ul", {className: "suggestions"},
+            cell.filteredSuggestions.map((suggestion, index) => {
+              let SuggestionClass;
+              if (index === activeSuggestion) {
+                SuggestionClass = "suggestion-active";
+              }
+              return h("li", {className: SuggestionClass, key: suggestion, onClick: this.onSuggestionClick}, suggestion);
+            })
+          ) : "");
     } else {
       if (previousCell != null && previousCell.label != cell.label) {
         className += " scrolltable-cell-diff";
@@ -1156,7 +1259,7 @@ export class Editor extends React.Component {
         }
         sentence = keywordMatch[0];
       } else {
-        color = keywordColor.get(keywordMatch[1].toLocaleLowerCase());
+        color = keywordColor.get(keywordMatch[1].toLowerCase());
       }
       if (selStart <= keywordMatch.index && selStart > 0) { // sel before keyword
         if (selStart > 0) {

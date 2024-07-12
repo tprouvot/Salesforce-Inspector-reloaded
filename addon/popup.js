@@ -24,7 +24,8 @@ let h = React.createElement;
         parentSelf.postMessage({
           updateIcon: true,
           iFrameLocalStorage: {
-            customFavicon: fav
+            customFavicon: fav,
+            customFaviconSF: localStorage.getItem("customFaviconSF")
           }
         }, "*");
       } else if (e.data.updateLocalStorage) {

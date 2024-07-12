@@ -34,7 +34,6 @@ export let sfConn = {
         localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
       });
     }
-    setFavicon(sfHost);
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null, withoutCache = false} = {}) {
@@ -342,22 +341,4 @@ function showInvalidTokenBanner(){
   if (containerToShow) { containerToShow.classList.remove("hide"); }
   const containerToMask = document.getElementById("mainTabs");
   if (containerToMask) { containerToMask.classList.add("mask"); }
-}
-
-function setFavicon(sfHost){
-  let fav = localStorage.getItem(sfHost + "_customFavicon");
-  if (fav){
-    let link = document.querySelector("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "icon";
-      document.head.appendChild(link);
-    }
-    //check if custom favicon from the extension or web
-    if (fav.indexOf("http") == -1){
-      fav = "./images/favicons/" + fav + ".png";
-    }
-    link.href = fav;
-  }
-
 }

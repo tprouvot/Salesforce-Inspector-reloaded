@@ -14,11 +14,19 @@ let h = React.createElement;
       scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder"))
     }
   }, "*");
+  let parentSelf = parent;
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent) {
       if (e.data.insextInitResponse) {
         init(e.data);
         initLinks(e.data);
+        let fav = generateFavIcon(e.data);
+        parentSelf.postMessage({
+          updateIcon: true,
+          iFrameLocalStorage: {
+            customFavicon: fav
+          }
+        }, "*");
       } else if (e.data.updateLocalStorage) {
         localStorage.setItem(e.data.key, e.data.value);
       }
@@ -38,7 +46,28 @@ function showApiName(e) {
     e.target.innerText = e.target.innerText.replace("Hide", "Show");
   }
 }
-
+function generateFavIcon({sfHost}) {
+  let fav = localStorage.getItem(sfHost + "_customFavicon");
+  let genCustomIcon = localStorage.getItem("generateCustomFavicon");
+  if (!fav && genCustomIcon == "true") {
+    let org = window.location.hostname.split(".", 2)[0];
+    const letters = "0123456789ABCDEF";
+    fav = "#";
+    if (org.indexOf("--") >= 0) {
+      fav += "0";//sandbox is not red-ish
+      for (let i = 1; i < 6; i++) {
+        fav += letters[Math.floor(Math.random() * 16)];
+      }
+    } else {
+      fav += "F";//prod is red-ish
+      for (let i = 1; i < 6; i++) {
+        fav += letters[Math.floor(Math.random() * 16)];
+      }
+    }
+    localStorage.setItem(sfHost + "_customFavicon", fav);
+  }
+  return fav;
+}
 function init({sfHost, inDevConsole, inLightning, inInspector}) {
   let addonVersion = chrome.runtime.getManifest().version;
 

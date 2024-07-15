@@ -1,4 +1,5 @@
 "use strict";
+let sfHost = "";
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Perform cookie operations in the background page, because not all foreground pages have access to the cookie API.
   // Firefox does not support incognito split mode, so we use sender.tab.cookieStoreId to select the right cookie store.
@@ -15,6 +16,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.cookies.get({url: request.url, name: "sid", storeId: sender.tab.cookieStoreId}, cookie => {
       if (!cookie || currentDomain.endsWith(".mcas.ms")) { //Domain used by Microsoft Defender for Cloud Apps, where sid exists but cannot be read
         sendResponse(currentDomain);
+        sfHost = currentDomain;
         return;
       }
       const [orgId] = cookie.value.split("!");
@@ -25,6 +27,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
           if (sessionCookie) {
             sendResponse(sessionCookie.domain);
+            sfHost = sessionCookie.domain;
           }
         });
       });
@@ -50,4 +53,15 @@ chrome.runtime.onInstalled.addListener(({reason}) => {
       url: "https://dufoli.github.io/Salesforce-Inspector-Advanced/welcome/"
     });
   }
+});
+chrome.commands.onCommand.addListener((command) => {
+  //TODO home to open setup
+  chrome.tabs.create({
+    url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
+  });
+});
+chrome.action.onClicked.addListener(() => {
+  chrome.tabs.create({
+    url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/data-export.html?host=${sfHost}`
+  });
 });

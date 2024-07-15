@@ -364,6 +364,13 @@ class Model {
       this.objectData = sobjectDescribe;
       for (let fieldDescribe of sobjectDescribe.fields) {
         this.fieldRows.getRow(fieldDescribe.name).fieldDescribe = fieldDescribe;
+        //rollup summary data is not in describe
+        if (fieldDescribe.calculated == true && fieldDescribe.calculatedFormula == null) {
+          let qry = "SELECT Id, DeveloperName, Metadata FROM FieldDefinition WHERE EntityDefinition.DeveloperName = '" + this.sobjectName + "' AND QualifiedApiName = '" + fieldDescribe.name + "'";
+          this.spinFor("Field definition", sfConn.rest("/services/data/v" + apiVersion + "/tooling/query/?q=" + encodeURIComponent(qry)).then(fieldDef => {
+            this.fieldRows.getRow(fieldDescribe.name).fieldDefinition = fieldDef.records[0].Metadata;
+          }));
+        }
       }
       this.fieldRows.resortRows();
       for (let childDescribe of sobjectDescribe.childRelationships) {
@@ -593,6 +600,7 @@ class FieldRow extends TableRow {
     this.fieldName = fieldName;
     this.reactKey = reactKey;
     this.fieldDescribe = undefined;
+    this.fieldDefinition = undefined;
     this.dataTypedValue = undefined;
     this.dataEditValue = null;
     this.detailLayoutInfo = undefined;
@@ -611,6 +619,9 @@ class FieldRow extends TableRow {
     }
     if (this.fieldDescribe) {
       addProperties(props, this.fieldDescribe, "desc.", {});
+    }
+    if (this.fieldDefinition) {
+      addProperties(props, this.fieldDefinition, "def.", {});
     }
     if (this.entityParticle) {
       addProperties(props, this.entityParticle, "part.", {});
@@ -746,9 +757,25 @@ class FieldRow extends TableRow {
   }
   summary() {
     let fieldDescribe = this.fieldDescribe;
+    let fieldDefinition = this.fieldDefinition;
+    let summary = null;
+    if (fieldDefinition) {
+      if (fieldDefinition.summaryOperation) {
+        summary = fieldDefinition.summaryOperation + "(";
+      }
+      if (fieldDefinition.summarizedField) {
+        summary += fieldDefinition.summarizedField;
+      }
+      summary += ")";
+      if (fieldDefinition.summaryFilterItems.length){
+        summary += " WHERE ";
+        summary += fieldDefinition.summaryFilterItems.map(f => f.field + " " + f.operation + " " + f.value).join(" AND ");
+      }
+    }
     if (fieldDescribe) {
       return this.fieldName + "\n"
         + (fieldDescribe.calculatedFormula ? "Formula: " + fieldDescribe.calculatedFormula + "\n" : "")
+        + (summary ? "Roll-up: " + summary + "\n" : "")
         + (fieldDescribe.inlineHelpText ? "Help text: " + fieldDescribe.inlineHelpText + "\n" : "")
         + (fieldDescribe.picklistValues && fieldDescribe.picklistValues.length > 0 ? "Picklist values: " + fieldDescribe.picklistValues.map(pickval => pickval.value).join(", ") + "\n" : "")
       ;

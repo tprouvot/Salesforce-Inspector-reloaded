@@ -367,6 +367,7 @@ class Model {
 
   showSuggestion() {
     this.displaySuggestion = true;
+    this.editorAutocompleteHandler({newDescribe: true});
     this.didUpdate();
   }
   hideSuggestion() {
@@ -1287,7 +1288,7 @@ class Model {
           ctx.fromObject = "";
         }
 
-        if (fromKeywordMatch.index + fromKeywordMatch[1].length > ctx.selStart){
+        if (fromKeywordMatch.index + fromKeywordMatch[1].length + 1 >= ctx.selStart){
           //in select : grab relation link for ctx
           this.autocompleteRelation(ctx, false);
           subQueryRegExp = /\((\s*select.*\sfrom\s+)([a-z0-9_]*)(\s*.*)\)/gmi;

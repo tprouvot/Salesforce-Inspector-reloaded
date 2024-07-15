@@ -423,7 +423,7 @@ class Model {
     let idx = this.activeSuggestion > -1 ? this.activeSuggestion : 0;
 
     this.editor.focus();
-    this.editor.setRangeText(ar[idx].value + ar[idx].suffix, selStart, selEnd, "end");
+    this.editor.setRangeText((this.autocompleteResults.contextPath ? this.autocompleteResults.contextPath : "") + ar[idx].value + ar[idx].suffix, selStart, selEnd, "end");
     this.activeSuggestion = -1;
     this.editorAutocompleteHandler();
   }
@@ -1052,7 +1052,6 @@ class Model {
         title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " fields suggestions:",
         results: contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
-          .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
           .filter(field => field.type != "address")
           .flatMap(function* (field) {
             yield {value: field.name, title: field.label, suffix: isAfterWhere ? " " : ", ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
@@ -1060,6 +1059,7 @@ class Model {
               yield {value: field.relationshipName + ".", title: field.label, suffix: "", rank: 1, autocompleteType: "relationshipName", dataType: ""};
             }
           })
+          .filter(field => field.value.toLowerCase().includes(searchTerm.toLowerCase()) || field.title.toLowerCase().includes(searchTerm.toLowerCase()))
           .concat(
             new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "convertTimezone", "toLabel", "convertCurrency", "FORMAT"])
               .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))

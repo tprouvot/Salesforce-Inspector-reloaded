@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
+import {Enumerable, copyToClipboard, initScrollTable} from "./data-load.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -28,7 +28,7 @@ class QueryHistory {
 
   add(entry) {
     let history = this._get();
-    let historyIndex = history.findIndex(e => e.query == entry.query && e.useToolingApi == entry.useToolingApi);
+    let historyIndex = history.findIndex(e => e.endpoint == entry.endpoint);
     if (historyIndex > -1) {
       history.splice(historyIndex, 1);
     }
@@ -42,7 +42,7 @@ class QueryHistory {
 
   remove(entry) {
     let history = this._get();
-    let historyIndex = history.findIndex(e => e.query == entry.query && e.useToolingApi == entry.useToolingApi);
+    let historyIndex = history.findIndex(e => e.endpoint == entry.endpoint);
     if (historyIndex > -1) {
       history.splice(historyIndex, 1);
     }
@@ -56,9 +56,9 @@ class QueryHistory {
   }
 
   sort(storageKey, history) {
-    //sort only saved query not history
+    //sort only saved endpoint not history
     if (storageKey === "restSavedQueryHistory") {
-      history.sort((a, b) => (a.query > b.query) ? 1 : ((b.query > a.query) ? -1 : 0));
+      history.sort((a, b) => (a.endpoint > b.endpoint) ? 1 : ((b.endpoint > a.endpoint) ? -1 : 0));
     }
     this.list = history;
   }
@@ -67,19 +67,13 @@ class QueryHistory {
 class Model {
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
-    this.queryInput = null;
     this.apiUrls = null;
-    this.initialQuery = "";
-    this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
-      this.queryAutocompleteHandler({newDescribe: true});
-      this.didUpdate();
-    });
+    this.initialEndpoint = "";
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
     this.userInfo = "...";
     this.winInnerHeight = 0;
     this.queryAll = false;
-    this.queryTooling = false;
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
@@ -102,7 +96,6 @@ class Model {
     this.canSendRequest = true;
     this.resultClass = "neutral";
     this.request = {endpoint: "", method: "get", body: ""};
-    this.request = {endpoint: "", method: "get", body: ""};
     this.requestTemplates = localStorage.getItem("requestTemplates") ? this.requestTemplates = localStorage.getItem("requestTemplates").split("//") : [
       {key: "getLimit", endpoint: `/services/data/v${apiVersion}/limits`, method: "GET", body: ""},
       {key: "getAccount", endpoint: `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name+FROM+Account+LIMIT+1`, method: "GET", body: ""},
@@ -110,20 +103,18 @@ class Model {
       {key: "updateAccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "PATCH", body: '{  \n"Name" : "SFIR Updated"\n}'},
       {key: "deleteccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "DELETE", body: ""}
     ];
+    this.selectedTemplate = "";
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
     }));
 
     if (args.has("query")) {
-      this.initialQuery = args.get("query");
-      this.queryTooling = args.has("useToolingApi");
+      this.initialEndpoint = args.get("query");
     } else if (this.queryHistory.list[0]) {
-      this.initialQuery = this.queryHistory.list[0].query;
-      this.queryTooling = this.queryHistory.list[0].useToolingApi;
+      this.request = this.queryHistory.list[0];
     } else {
-      this.initialQuery = `/services/data/v${apiVersion}/limits`;
-      this.queryTooling = false;
+      this.initialEndpoint = `/services/data/v${apiVersion}/limits`;
     }
 
     if (args.has("error")) {
@@ -136,11 +127,6 @@ class Model {
   setQueryName(value) {
     this.queryName = value;
   }
-  setQueryInput(queryInput) {
-    this.queryInput = queryInput;
-    queryInput.value = this.initialQuery;
-    this.initialQuery = null;
-  }
   toggleSavedOptions() {
     this.expandSavedOptions = !this.expandSavedOptions;
   }
@@ -148,21 +134,17 @@ class Model {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
     args.set("objectType", this.autocompleteResults.sobjectName);
-    if (this.queryTooling) {
-      args.set("useToolingApi", "1");
-    }
     return "inspect.html?" + args;
+  }
+  selectRequest(request){
+    //TODO
   }
   selectHistoryEntry() {
     if (this.selectedHistoryEntry != null) {
-      this.queryInput.value = this.selectedHistoryEntry.query;
-      this.queryTooling = this.selectedHistoryEntry.useToolingApi;
-      this.queryAutocompleteHandler();
+      this.request.endpoint = this.selectedHistoryEntry.query;
+      this.selectRequest(this.selectedHistoryEntry);
       this.selectedHistoryEntry = null;
     }
-  }
-  selectQueryTemplate() {
-    this.queryInput.value = this.selectedQueryTemplate;
   }
   clearHistory() {
     this.queryHistory.clear();
@@ -181,8 +163,7 @@ class Model {
       } else {
         queryStr = this.selectedSavedEntry.query;
       }
-      this.queryInput.value = queryStr;
-      this.queryTooling = this.selectedSavedEntry.useToolingApi;
+      this.request.endpoint = queryStr;
       this.queryAutocompleteHandler();
       this.selectedSavedEntry = null;
     }
@@ -191,16 +172,13 @@ class Model {
     this.savedHistory.clear();
   }
   addToHistory() {
-    this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    this.savedHistory.add({query: this.getQueryToSave()});
   }
   removeFromHistory() {
-    this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    this.savedHistory.remove({query: this.getQueryToSave()});
   }
   getQueryToSave() {
-    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value : this.queryInput.value;
-  }
-  autocompleteReload() {
-    this.describeInfo.reloadAll();
+    return this.queryName != "" ? this.queryName + ":" + this.request.endpoint : this.request.endpoint;
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -236,133 +214,9 @@ class Model {
       })
       .catch(err => console.log("error handling failed", err));
   }
-  /**
-   * SOQL query autocomplete handling.
-   * Put caret at the end of a word or select some text to autocomplete it.
-   * Searches for both label and API name.
-   * Autocompletes sobject names after the "from" keyword.
-   * Autocompletes field names, if the "from" keyword exists followed by a valid object name.
-   * Supports relationship fields.
-   * Autocompletes field values (picklist values, date constants, boolean values).
-   * Autocompletes any textual field value by performing a Salesforce API query when Ctrl+Space is pressed.
-   * Inserts all autocomplete field suggestions when Ctrl+Space is pressed.
-   * Supports subqueries in where clauses, but not in select clauses.
-   */
-  queryAutocompleteHandler(e = {}) {
-    let vm = this; // eslint-disable-line consistent-this
-    let useToolingApi = vm.queryTooling;
-    let query = vm.queryInput.value;
-    let selStart = vm.queryInput.selectionStart;
-    let selEnd = vm.queryInput.selectionEnd;
-    let ctrlSpace = e.ctrlSpace;
 
-    // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
-    let newAutocompleteState = [useToolingApi, query, selStart, selEnd].join("$");
-    if (newAutocompleteState == vm.autocompleteState && !ctrlSpace && !e.newDescribe) {
-      return;
-    }
-    vm.autocompleteState = newAutocompleteState;
-
-    // Cancel any async operation since its results will no longer be relevant.
-    if (vm.autocompleteProgress.abort) {
-      vm.autocompleteProgress.abort();
-    }
-
-    vm.autocompleteClick = ({value, suffix, link}) => {
-      if (link){
-        window.open(link, "_blank");
-      } else {
-        vm.queryInput.focus();
-        vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
-        vm.queryAutocompleteHandler();
-      }
-    };
-
-    // Find the token we want to autocomplete. This is the selected text, or the last word before the cursor.
-    let searchTerm = selStart != selEnd
-      ? query.substring(selStart, selEnd)
-      : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
-    selStart = selEnd - searchTerm.length;
-
-    function sortRank({value, title}) {
-      let i = 0;
-      if (value.toLowerCase() == searchTerm.toLowerCase()) {
-        return i;
-      }
-      i++;
-      if (title.toLowerCase() == searchTerm.toLowerCase()) {
-        return i;
-      }
-      i++;
-      if (value.toLowerCase().startsWith(searchTerm.toLowerCase())) {
-        return i;
-      }
-      i++;
-      if (title.toLowerCase().startsWith(searchTerm.toLowerCase())) {
-        return i;
-      }
-      i++;
-      if (value.toLowerCase().includes("__" + searchTerm.toLowerCase())) {
-        return i;
-      }
-      i++;
-      if (value.toLowerCase().includes("_" + searchTerm.toLowerCase())) {
-        return i;
-      }
-      i++;
-      if (title.toLowerCase().includes(" " + searchTerm.toLowerCase())) {
-        return i;
-      }
-      i++;
-      return i;
-    }
-    function resultsSort(a, b) {
-      return sortRank(a) - sortRank(b) || a.rank - b.rank || a.value.localeCompare(b.value);
-    }
-
-    // If we are just after the "from" keyword, autocomplete the sobject name
-    if (query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
-      let {globalStatus, globalDescribe} = vm.describeInfo.describeGlobal(useToolingApi);
-      if (!globalDescribe) {
-        switch (globalStatus) {
-          case "loading":
-            vm.autocompleteResults = {
-              sobjectName: "",
-              title: "Loading metadata...",
-              results: []
-            };
-            return;
-          case "loadfailed":
-            vm.autocompleteResults = {
-              sobjectName: "",
-              title: "Loading metadata failed.",
-              results: [{value: "Retry", title: "Retry"}]
-            };
-            vm.autocompleteClick = vm.autocompleteReload.bind(vm);
-            return;
-          default:
-            vm.autocompleteResults = {
-              sobjectName: "",
-              title: "Unexpected error: " + globalStatus,
-              results: []
-            };
-            return;
-        }
-      }
-      vm.autocompleteResults = {
-        sobjectName: "",
-        title: "Objects suggestions:",
-        results: new Enumerable(globalDescribe.sobjects)
-          .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
-          .map(sobjectDescribe => ({value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: ""}))
-          .toArray()
-          .sort(resultsSort)
-      };
-      return;
-    }
-  }
   doSend() {
-    this.spinFor(sfConn.rest(this.queryInput.value, true, {method: this.request.method, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress})
+    this.spinFor(sfConn.rest(this.request.endpoint, true, {method: this.request.method, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress})
       .catch(err => {
         if (err.name != "AbortError") {
           this.autocompleteResults = {
@@ -373,6 +227,8 @@ class Model {
         return null;
       })
       .then((result) => {
+        //TODO Add to history
+        this.queryHistory.add(this.request);
         if (!result) {
           model.didUpdate();
           return;
@@ -588,6 +444,7 @@ class App extends React.Component {
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onUpdateBody = this.onUpdateBody.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
+    this.onSetEndpoint = this.onSetEndpoint.bind(this);
   }
   onSelectHistoryEntry(e) {
     let {model} = this.props;
@@ -598,10 +455,15 @@ class App extends React.Component {
   onSelectRequestTemplate(e) {
     let {model} = this.props;
     let request = model.requestTemplates.filter(template => template.key === e.target.value)[0];
-    model.selectedQueryTemplate = request.endpoint;
+    model.selectedTemplate = e.target.value;
     model.request = request;
+    this.refs.endpoint.value = request.endpoint;
+    this.resetRequest(model);
+  }
+  resetRequest(model){
     model.apiResponse = "";
-    model.selectQueryTemplate();
+    this.refs.resultBar.classList.remove("success");
+    this.refs.resultBar.classList.remove("error");
     model.didUpdate();
   }
   onSelectQueryMethod(e){
@@ -678,33 +540,15 @@ class App extends React.Component {
     model.setQueryName(e.target.value);
     model.didUpdate();
   }
+  onSetEndpoint(e){
+    let {model} = this.props;
+    model.request.endpoint = e.target.value;
+    model.didUpdate();
+  }
   componentDidMount() {
     let {model} = this.props;
-    let queryInput = this.refs.query;
+    let endpointInput = this.refs.endpoint;
 
-    model.setQueryInput(queryInput);
-    //Set the cursor focus on query text area
-    if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
-      queryInput.focus();
-    }
-
-    function queryAutocompleteEvent() {
-      model.queryAutocompleteHandler();
-      model.didUpdate();
-    }
-    queryInput.addEventListener("input", queryAutocompleteEvent);
-    // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
-    queryInput.addEventListener("keyup", queryAutocompleteEvent);
-
-    // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
-    // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50
-    queryInput.addEventListener("keydown", e => {
-      if (e.ctrlKey && e.key == " ") {
-        e.preventDefault();
-        model.queryAutocompleteHandler({ctrlSpace: true});
-        model.didUpdate();
-      }
-    });
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
@@ -720,13 +564,13 @@ class App extends React.Component {
     if (!window.webkitURL) {
       // Firefox
       // Firefox does not fire a resize event. The next best thing is to listen to when the browser changes the style.height attribute.
-      new MutationObserver(recalculateHeight).observe(queryInput, {attributes: true});
+      new MutationObserver(recalculateHeight).observe(endpointInput, {attributes: true});
     } else {
       // Chrome
       // Chrome does not fire a resize event and does not allow us to get notified when the browser changes the style.height attribute.
       // Instead we listen to a few events which are often fired at the same time.
       // This is not required in Firefox, and Mozilla reviewers don't like it for performance reasons, so we only do this in Chrome via browser detection.
-      queryInput.addEventListener("mousemove", recalculateHeight);
+      endpointInput.addEventListener("mousemove", recalculateHeight);
       addEventListener("mouseup", recalculateHeight);
     }
     function resize() {
@@ -774,14 +618,14 @@ class App extends React.Component {
         h("div", {className: "query-controls"},
           h("h1", {}, "Request"),
           h("div", {className: "query-history-controls"},
-            h("select", {value: "", onChange: this.onSelectRequestTemplate, className: "query-history", title: "Check documentation to customize templates"},
+            h("select", {value: model.selectedTemplate, onChange: this.onSelectRequestTemplate, className: "query-template", title: "Check documentation to customize templates"},
               h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
               model.requestTemplates.map(req => h("option", {key: req.key, value: req.key}, req.method + " " + req.endpoint))
             ),
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "Request History"),
-                model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+                h("option", {value: JSON.stringify(null), disabled: true}, "History"),
+                model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.endpoint))
               ),
               h("button", {onClick: this.onClearHistory, title: "Clear Request History"}, "Clear")
             ),
@@ -791,7 +635,7 @@ class App extends React.Component {
             ),
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
+                h("option", {value: JSON.stringify(null), disabled: true}, "Saved"),
                 model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
               ),
               h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
@@ -808,7 +652,7 @@ class App extends React.Component {
             h("option", {key: "patch", value: "PATCH"}, "PATCH"),
             h("option", {key: "delete", value: "DELETE"}, "DELETE")
           ),
-          h("input", {ref: "query", className: "slds-input query-control slds-m-right_medium", type: "default", placeholder: "/services/data/v" + apiVersion, value: this.queryInput}),
+          h("input", {ref: "endpoint", className: "slds-input query-control slds-m-right_medium", type: "default", placeholder: "/services/data/v" + apiVersion, onChange: this.onSetEndpoint}),
           h("div", {className: "flex-right"},
             h("button", {tabIndex: 1, disabled: !model.canSendRequest, onClick: this.onSend, title: "Ctrl+Enter / F5", className: "highlighted"}, "Send"),
           ),
@@ -821,7 +665,7 @@ class App extends React.Component {
         )
       ),
       h("div", {className: "area", id: "result-area"},
-        h("div", {className: `result-bar ${model.resultClass}`},
+        h("div", {ref: "resultBar", className: `result-bar ${model.resultClass} status-bar`},
           h("h1", {}, "Response"),
           h("div", {className: "button-group"},
             h("button", {disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy")

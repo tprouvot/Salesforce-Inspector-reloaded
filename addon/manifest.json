@@ -10,6 +10,39 @@
   "permissions": [
     "cookies"
   ],
+  "action": {
+    "default_title": "Export data"
+  },
+  "commands": {
+    "apex-runner": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+C",
+        "mac": "Command+Shift+C"
+      },
+      "description": "Run apex code"
+    },
+    "data-export": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+E",
+        "mac": "Command+Shift+E"
+      },
+      "description": "Export data"
+    },
+    "data-import": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+I",
+        "mac": "Command+Shift+I"
+      },
+      "description": "Import data"
+    },
+    "streaming": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+T",
+        "mac": "Command+Shift+T"
+      },
+      "description": "Manage streaming"
+    }
+  },
   "host_permissions": [
     "https://*.salesforce.com/*",
     "https://*.force.com/*",

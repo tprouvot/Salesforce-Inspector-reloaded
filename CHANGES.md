@@ -1,5 +1,22 @@
 # Release Notes
 
+## Version 1.28
+
+* #130 Fields() do not handle metadata and address field  by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/133
+* #84 Explore api: new ux by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/142
+* #139 Flamgraph on other mesures (SOQL, Heap,...) by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/145
+* #126 : suggestion on data export edit by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/146
+* #138 Favicon by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/147
+* #125 add roll up summary info by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/148
+* #141 #140 shortcut and default action by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/149
+* #135 import guess sobject based on id prefix if no type column
+* Data export: select child object field remove parent (exemple: RecordType.Dev => DeveloperName = remove recordType)
+* Data export : Fix __r must display all custom relationship
+* Data export : field in subquery failed to suggest
+* Data export, inspect: select value picklist value if already a value selected will failed to update and need to erase a letter to make it working
+* Data export, apex runner: , column width grow exponentially during lateral scroll
+
+
 ## Version 1.27
 
 > [!IMPORTANT]

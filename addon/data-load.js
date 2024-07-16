@@ -803,7 +803,7 @@ class ScrollTableCell extends React.Component {
               if (index === activeSuggestion) {
                 SuggestionClass = "suggestion-active";
               }
-              return h("li", {className: SuggestionClass, key: suggestion, onClick: this.onSuggestionClick}, suggestion);
+              return h("li", {className: SuggestionClass, key: suggestion, onMouseDown: this.onSuggestionClick}, suggestion);
             })
           ) : "");
     } else {

@@ -75,6 +75,7 @@ In order to rich this goal, I have take a closer look to the full backlog of ori
 - Import: assignment rules
 - Apex Runner: execute batch, enqueue job or just anonymous code, poll log, auto suggest className, 
 - Log: profiler, search with autoscroll, download
+- Streaming : Manage and monitor plateform event
 
 ## Security and Privacy
 

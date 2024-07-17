@@ -741,7 +741,7 @@ button.toggle .button-icon {
   border: 1px solid #DDDBDA;
   color: transparent;
   caret-color: black;
-  line-height: 2em;
+  line-height: 1em;
 }
 .editor_container_mirror span {
   vertical-align: top;

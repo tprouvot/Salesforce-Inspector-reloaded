@@ -1222,7 +1222,7 @@ class App extends React.Component {
               h("label", {className: "conf-input", title: "JSON Header (AllOrNoneHeader, AssignmentRuleHeader, OwnerChangeOptions ...)"},
                 h("span", {className: "conf-label"}, "Custom Headers"),
                 h("span", {className: "conf-value"},
-                  h("input", {type: "text", placeholder: '{"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}', value: model.customHeaders, onKeyDown: this.onCustomHeadersKeyPress, onChange: this.onCustomHeadersChange, className: " batch-size"}),
+                  h("input", {type: "text", placeholder: "Press ↓ for suggestions", value: model.customHeaders, onKeyDown: this.onCustomHeadersKeyPress, onChange: this.onCustomHeadersChange, className: " batch-size"}),
                 )
               )
             ),

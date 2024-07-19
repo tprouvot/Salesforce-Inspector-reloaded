@@ -710,6 +710,8 @@ button.toggle .button-icon {
   color: white;
 }
 .error {
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
   background-color: #ea001e;
   color: white;
 }

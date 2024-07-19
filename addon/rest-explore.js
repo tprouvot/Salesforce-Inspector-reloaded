@@ -479,7 +479,7 @@ class App extends React.Component {
         )
       ),
       h("div", {className: "area", id: "result-area"},
-        h("div", {ref: "resultBar", className: `result-bar ${model.resultClass} status-bar`},
+        h("div", {ref: "resultBar", className: `result-bar ${model.resultClass}`},
           h("h1", {}, "Response"),
           h("div", {className: "button-group"},
             h("button", {disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy")

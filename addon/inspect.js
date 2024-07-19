@@ -366,7 +366,7 @@ class Model {
         this.fieldRows.getRow(fieldDescribe.name).fieldDescribe = fieldDescribe;
         //rollup summary data is not in describe
         if (fieldDescribe.calculated == true && fieldDescribe.calculatedFormula == null) {
-          let qry = "SELECT Id, DeveloperName, Metadata FROM FieldDefinition WHERE EntityDefinition.DeveloperName = '" + this.sobjectName + "' AND QualifiedApiName = '" + fieldDescribe.name + "'";
+          let qry = "SELECT Id, DeveloperName, Metadata FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = '" + this.sobjectName + "' AND QualifiedApiName = '" + fieldDescribe.name + "'";
           this.spinFor("Field definition", sfConn.rest("/services/data/v" + apiVersion + "/tooling/query/?q=" + encodeURIComponent(qry)).then(fieldDef => {
             this.fieldRows.getRow(fieldDescribe.name).fieldDefinition = fieldDef.records[0].Metadata;
           }));

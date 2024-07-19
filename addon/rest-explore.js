@@ -56,7 +56,6 @@ class QueryHistory {
   }
 
   sort(storageKey, history) {
-    //sort only saved endpoint not history
     if (storageKey === "restSavedQueryHistory") {
       history.sort((a, b) => (a.endpoint > b.endpoint) ? 1 : ((b.endpoint > a.endpoint) ? -1 : 0));
     }
@@ -525,12 +524,4 @@ class App extends React.Component {
     }
   });
 
-}
-
-function getLinkTarget(e) {
-  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
-    return "_blank";
-  } else {
-    return "_top";
-  }
 }

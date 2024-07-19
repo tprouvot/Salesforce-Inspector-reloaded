@@ -109,12 +109,13 @@ class Model {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
     }));
 
-    if (args.has("query")) {
-      this.initialEndpoint = args.get("query");
+    if (args.has("endpoint") && args.has("method")) {
+      this.request.endpoint = args.get("endpoint");
+      this.request.method = args.get("method");
     } else if (this.queryHistory.list[0]) {
       this.request = this.queryHistory.list[0];
     } else {
-      this.initialEndpoint = `/services/data/v${apiVersion}/limits`;
+      this.request = this.requestTemplates[0];
     }
 
     if (args.has("error")) {
@@ -135,16 +136,6 @@ class Model {
     args.set("host", this.sfHost);
     args.set("objectType", this.autocompleteResults.sobjectName);
     return "inspect.html?" + args;
-  }
-  selectRequest(request){
-    //TODO
-  }
-  selectHistoryEntry() {
-    if (this.selectedHistoryEntry != null) {
-      this.request.endpoint = this.selectedHistoryEntry.query;
-      this.selectRequest(this.selectedHistoryEntry);
-      this.selectedHistoryEntry = null;
-    }
   }
   clearHistory() {
     this.queryHistory.clear();
@@ -227,7 +218,8 @@ class Model {
         return null;
       })
       .then((result) => {
-        //TODO Add to history
+        //generate key with timestamp
+        this.request.key = Date.now();
         this.queryHistory.add(this.request);
         if (!result) {
           model.didUpdate();
@@ -446,19 +438,18 @@ class App extends React.Component {
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetEndpoint = this.onSetEndpoint.bind(this);
   }
-  onSelectHistoryEntry(e) {
+  onSelectEntry(e, key) {
     let {model} = this.props;
-    model.selectedHistoryEntry = JSON.parse(e.target.value);
-    model.selectHistoryEntry();
+    model.request = model.requestTemplates.filter(template => template.key === e.target[key])[0];
+    this.refs.endpoint.value = model.request.endpoint;
+    this.resetRequest(model);
     model.didUpdate();
   }
+  onSelectHistoryEntry(e) {
+    this.onSelectEntry(e, "key");
+  }
   onSelectRequestTemplate(e) {
-    let {model} = this.props;
-    let request = model.requestTemplates.filter(template => template.key === e.target.value)[0];
-    model.selectedTemplate = e.target.value;
-    model.request = request;
-    this.refs.endpoint.value = request.endpoint;
-    this.resetRequest(model);
+    this.onSelectEntry(e, "value");
   }
   resetRequest(model){
     model.apiResponse = "";
@@ -625,7 +616,7 @@ class App extends React.Component {
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
                 h("option", {value: JSON.stringify(null), disabled: true}, "History"),
-                model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.endpoint))
+                model.queryHistory.list.map(q => h("option", {key: q.key, value: JSON.stringify(q)}, q.endpoint))
               ),
               h("button", {onClick: this.onClearHistory, title: "Clear Request History"}, "Clear")
             ),

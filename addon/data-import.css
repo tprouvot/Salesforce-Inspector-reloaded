@@ -331,6 +331,9 @@ input[type=text] {
   height: 32px;
   position: relative;
 }
+input[type=number]{
+  width: 99px;
+}
 input.object-list {
   width: 296px;
 }
@@ -353,9 +356,9 @@ select:focus {
   outline: none;
   z-index: 1;
 }
-.button-group button:active:not(:first-child), 
+.button-group button:active:not(:first-child),
 .button-group button:focus:not(:first-child),
-.button-group input:active:not(:first-child), 
+.button-group input:active:not(:first-child),
 .button-group input:focus:not(:first-child),
 .button-group select:focus:not(:first-child),
 .button-group select:focus:not(:first-child) {

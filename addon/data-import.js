@@ -20,6 +20,10 @@ const allActions = [
   {value: "deleteMetadata", label: "Delete Metadata", supportedApis: ["Metadata"]}
 ];
 
+const headersTemplates = [
+  '{"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}'
+];
+
 class Model {
 
   constructor(sfHost, args) {
@@ -840,7 +844,9 @@ class Model {
     setTimeout(this.executeBatch.bind(this), 2500);
 
     let wsdl = sfConn.wsdl(apiVersion, this.apiType);
-    this.spinFor(sfConn.soap(wsdl, importAction, importArgs).then(res => {
+    let headers = this.customHeaders?.length > 0 ? {headers: JSON.parse(this.customHeaders)} : {};
+
+    this.spinFor(sfConn.soap(wsdl, importAction, importArgs, headers).then(res => {
 
       let results = sfConn.asArray(res);
       for (let i = 0; i < results.length; i++) {
@@ -916,6 +922,8 @@ class App extends React.Component {
     this.onDataPaste = this.onDataPaste.bind(this);
     this.onExternalIdChange = this.onExternalIdChange.bind(this);
     this.onBatchSizeChange = this.onBatchSizeChange.bind(this);
+    this.onCustomHeadersChange = this.onCustomHeadersChange.bind(this);
+    this.onCustomHeadersKeyPress = this.onCustomHeadersKeyPress.bind(this);
     this.onBatchConcurrencyChange = this.onBatchConcurrencyChange.bind(this);
     this.onToggleHelpClick = this.onToggleHelpClick.bind(this);
     this.onDoImportClick = this.onDoImportClick.bind(this);
@@ -928,6 +936,7 @@ class App extends React.Component {
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
     this.unloadListener = null;
+    this.state = {templateValueIndex: -1};
   }
   onApiTypeChange(e) {
     let {model} = this.props;
@@ -974,6 +983,24 @@ class App extends React.Component {
     let {model} = this.props;
     model.batchSize = e.target.value;
     model.executeBatch();
+    model.didUpdate();
+  }
+  onCustomHeadersKeyPress(e){
+    if (e.key == "ArrowDown" || e.key == "ArrowUp"){
+      let {model} = this.props;
+      let {templateValueIndex} = this.state;
+      let down = e.key == "ArrowDown" ? true : false;
+      down ? templateValueIndex++ : templateValueIndex--;
+      if (0 <= templateValueIndex && templateValueIndex < headersTemplates.length){
+        model.customHeaders = headersTemplates[templateValueIndex];
+        this.setState({templateValueIndex});
+        model.didUpdate();
+      }
+    }
+  }
+  onCustomHeadersChange(e){
+    let {model} = this.props;
+    model.customHeaders = e.target.value;
     model.didUpdate();
   }
   onBatchConcurrencyChange(e) {
@@ -1177,19 +1204,25 @@ class App extends React.Component {
             h("div", {className: "conf-line"},
               h("label", {className: "conf-input", title: "The number of records per batch. A higher value is faster but increases the risk of errors due to governor limits."},
                 h("span", {className: "conf-label"}, "Batch size"),
-                h("span", {className: "conf-value"},
+                h("span", {className: "conf-value button-space"},
                   h("input", {type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, className: (model.batchSizeError() ? "confError" : "") + " batch-size"}),
                   h("div", {className: "conf-error", hidden: !model.batchSizeError()}, model.batchSizeError())
                 )
-              )
-            ),
-            h("div", {className: "conf-line"},
+              ),
               h("label", {className: "conf-input", title: "The number of batches to execute concurrently. A higher number is faster but increases the risk of errors due to lock congestion."},
                 h("span", {className: "conf-label"}, "Threads"),
                 h("span", {className: "conf-value"},
                   h("input", {type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, className: (model.batchConcurrencyError() ? "confError" : "") + " batch-size"}),
                   h("span", {hidden: !model.isWorking()}, model.activeBatches),
                   h("div", {className: "conf-error", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
+                )
+              )
+            ),
+            h("div", {className: "conf-line"},
+              h("label", {className: "conf-input", title: "JSON Header (AllOrNoneHeader, AssignmentRuleHeader, OwnerChangeOptions ...)"},
+                h("span", {className: "conf-label"}, "Custom Headers"),
+                h("span", {className: "conf-value"},
+                  h("input", {type: "text", placeholder: "Press ↓ for suggestions", value: model.customHeaders, onKeyDown: this.onCustomHeadersKeyPress, onChange: this.onCustomHeadersChange, className: " batch-size"}),
                 )
               )
             ),

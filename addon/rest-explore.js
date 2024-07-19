@@ -163,7 +163,8 @@ class Model {
     this.savedHistory.clear();
   }
   addToHistory() {
-
+    this.request.key = Date.now();
+    this.request.label = this.queryName ? this.queryName : "";
     this.savedHistory.add(this.request);
   }
   removeFromHistory() {
@@ -416,7 +417,7 @@ class App extends React.Component {
           ),
           " Salesforce Home"
         ),
-        h("h1", {}, "REST Explore"),
+        h("h1", {}, "REST Explore (beta)"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
           h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
@@ -450,7 +451,7 @@ class App extends React.Component {
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
                 h("option", {value: JSON.stringify(null), disabled: true}, "Saved"),
-                model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.method + " " + q.endpoint))
+                model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.label + " " + q.method + " " + q.endpoint))
               ),
               h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
               h("button", {onClick: this.onAddToHistory, title: "Add request to saved history"}, "Save Query"),

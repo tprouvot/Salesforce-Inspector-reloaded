@@ -91,7 +91,7 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: APIVersionOption, props: {key: 1}},
           {option: APIKeyOption, props: {key: 2}},
-          {option: RestHeaderOption, props: {key: 3}}
+          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders"}}
         ]
       },
       {
@@ -255,34 +255,6 @@ class APIVersionOption extends React.Component {
       h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
           h("input", {type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
-        )
-      )
-    );
-  }
-}
-
-class RestHeaderOption extends React.Component {
-
-  constructor(props) {
-    super(props);
-    this.onChangeRestHeader = this.onChangeRestHeader.bind(this);
-    this.state = {restHeader: localStorage.getItem("createUpdateRestCalloutHeaders") ? localStorage.getItem("createUpdateRestCalloutHeaders") : ""};
-  }
-
-  onChangeRestHeader(e) {
-    let restHeader = e.target.value;
-    this.setState({restHeader});
-    localStorage.setItem("createUpdateRestCalloutHeaders", restHeader);
-  }
-
-  render() {
-    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-        h("span", {}, "Rest Header")
-      ),
-      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-          h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: "Rest Header", value: nullToEmptyString(this.state.restHeader), onChange: this.onChangeRestHeader}),
         )
       )
     );

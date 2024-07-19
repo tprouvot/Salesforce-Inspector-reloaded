@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {Enumerable, copyToClipboard, initScrollTable} from "./data-load.js";
+import {copyToClipboard, initScrollTable} from "./data-load.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -163,13 +163,11 @@ class Model {
     this.savedHistory.clear();
   }
   addToHistory() {
-    this.savedHistory.add({query: this.getQueryToSave()});
+
+    this.savedHistory.add(this.request);
   }
   removeFromHistory() {
-    this.savedHistory.remove({query: this.getQueryToSave()});
-  }
-  getQueryToSave() {
-    return this.queryName != "" ? this.queryName + ":" + this.request.endpoint : this.request.endpoint;
+    this.savedHistory.remove(this.request);
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -228,92 +226,6 @@ class Model {
         this.parseResponse(result, "Success");
         console.log(result);
       }));
-
-
-    /*
-    let exportedData = new RecordTable(vm);
-    exportedData.isTooling = vm.queryTooling;
-    exportedData.describeInfo = vm.describeInfo;
-    exportedData.sfHost = vm.sfHost;
-    let query = vm.queryInput.value;
-    let queryMethod = exportedData.isTooling ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
-    function batchHandler(batch) {
-      return batch.catch(err => {
-        if (err.name == "AbortError") {
-          return {records: [], done: true, totalSize: -1};
-        }
-        throw err;
-      }).then(data => {
-        exportedData.addToTable(data.records);
-        let recs = exportedData.records.length;
-        let total = exportedData.totalSize;
-        if (data.totalSize != -1) {
-          exportedData.totalSize = data.totalSize;
-          total = data.totalSize;
-        }
-        if (!data.done) {
-          let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
-          vm.isWorking = true;
-          vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
-          vm.exportError = null;
-          vm.exportedData = exportedData;
-          vm.updatedExportedData();
-          vm.didUpdate();
-          return pr;
-        }
-        vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
-        if (recs == 0) {
-          vm.isWorking = false;
-          vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
-          vm.exportError = null;
-          vm.exportedData = exportedData;
-          vm.updatedExportedData();
-          return null;
-        }
-        vm.isWorking = false;
-        vm.exportStatus = `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
-        vm.exportError = null;
-        vm.exportedData = exportedData;
-        vm.updatedExportedData();
-        return null;
-      }, err => {
-        if (err.name != "SalesforceRestError") {
-          throw err; // not a SalesforceRestError
-        }
-        let recs = exportedData.records.length;
-        let total = exportedData.totalSize;
-        if (total != -1) {
-          // We already got some data. Show it, and indicate that not all data was exported
-          vm.isWorking = false;
-          vm.exportStatus = `Exported ${recs} of ${total} record${s(total)}. Stopped by error.`;
-          vm.exportError = null;
-          vm.exportedData = exportedData;
-          vm.updatedExportedData();
-          return null;
-        }
-        vm.isWorking = false;
-        vm.exportStatus = "Error";
-        vm.exportError = err.message;
-        vm.exportedData = null;
-        vm.updatedExportedData();
-        return null;
-      });
-    }
-    vm.spinFor(batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query), {progressHandler: vm.exportProgress}))
-      .catch(error => {
-        console.error(error);
-        vm.isWorking = false;
-        vm.exportStatus = "Error";
-        vm.exportError = "UNEXPECTED EXCEPTION:" + error;
-        vm.exportedData = null;
-        vm.updatedExportedData();
-      }));
-    vm.setResultsFilter("");
-    vm.isWorking = true;
-    vm.exportStatus = "Exporting...";
-    vm.exportError = null;
-    vm.exportedData = exportedData;
-    vm.updatedExportedData();*/
   }
 
   parseResponse(result, status) {
@@ -328,95 +240,6 @@ class Model {
   }
 }
 
-function RecordTable(vm) {
-  /*
-  We don't want to build our own SOQL parser, so we discover the columns based on the data returned.
-  This means that we cannot find the columns of cross-object relationships, when the relationship field is null for all returned records.
-  We don't care, because we don't need a stable set of columns for our use case.
-  */
-  let columnIdx = new Map();
-  let header = ["_"];
-  function discoverColumns(record, prefix, row) {
-    for (let field in record) {
-      if (field == "attributes") {
-        continue;
-      }
-      let column = prefix + field;
-      let c;
-      if (columnIdx.has(column)) {
-        c = columnIdx.get(column);
-      } else {
-        c = header.length;
-        columnIdx.set(column, c);
-        for (let row of rt.table) {
-          row.push(undefined);
-        }
-        header[c] = column;
-        rt.colVisibilities.push(true);
-      }
-      row[c] = record[field];
-      if (typeof record[field] == "object" && record[field] != null) {
-        discoverColumns(record[field], column + ".", row);
-      }
-    }
-  }
-  function cellToString(cell) {
-    if (cell == null) {
-      return "";
-    } else if (typeof cell == "object" && cell.attributes && cell.attributes.type) {
-      return "[" + cell.attributes.type + "]";
-    } else {
-      return "" + cell;
-    }
-  }
-  let isVisible = (row, filter) => !filter || row.some(cell => cellToString(cell).toLowerCase().includes(filter.toLowerCase()));
-  let rt = {
-    records: [],
-    table: [],
-    rowVisibilities: [],
-    colVisibilities: [true],
-    countOfVisibleRecords: null,
-    isTooling: false,
-    totalSize: -1,
-    addToTable(expRecords) {
-      rt.records = rt.records.concat(expRecords);
-      if (rt.table.length == 0 && expRecords.length > 0) {
-        rt.table.push(header);
-        rt.rowVisibilities.push(true);
-      }
-      let filter = vm.resultsFilter;
-      for (let record of expRecords) {
-        let row = new Array(header.length);
-        row[0] = record;
-        rt.table.push(row);
-        rt.rowVisibilities.push(isVisible(row, filter));
-        discoverColumns(record, "", row);
-      }
-    },
-    csvSerialize: separator => rt.getVisibleTable().map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
-    updateVisibility() {
-      let filter = vm.resultsFilter;
-      let countOfVisibleRecords = 0;
-      for (let r = 1/* always show header */; r < rt.table.length; r++) {
-        rt.rowVisibilities[r] = isVisible(rt.table[r], filter);
-        if (isVisible(rt.table[r], filter)) countOfVisibleRecords++;
-      }
-      this.countOfVisibleRecords = countOfVisibleRecords;
-      vm.exportStatus = "Filtered " + countOfVisibleRecords + " records out of " + rt.records.length + " records";
-    },
-    getVisibleTable() {
-      if (vm.resultsFilter) {
-        let filteredTable = [];
-        for (let i = 0; i < rt.table.length; i++) {
-          if (rt.rowVisibilities[i]) { filteredTable.push(rt.table[i]); }
-        }
-        return filteredTable;
-      }
-      return rt.table;
-    }
-  };
-  return rt;
-}
 
 let h = React.createElement;
 
@@ -438,18 +261,24 @@ class App extends React.Component {
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetEndpoint = this.onSetEndpoint.bind(this);
   }
-  onSelectEntry(e, key) {
+  onSelectEntry(e, list) {
     let {model} = this.props;
-    model.request = model.requestTemplates.filter(template => template.key === e.target[key])[0];
+    model.request = list.filter(template => template.key.toString() === e.target.value)[0];
     this.refs.endpoint.value = model.request.endpoint;
     this.resetRequest(model);
     model.didUpdate();
   }
   onSelectHistoryEntry(e) {
-    this.onSelectEntry(e, "key");
+    let {model} = this.props;
+    this.onSelectEntry(e, model.queryHistory.list);
   }
   onSelectRequestTemplate(e) {
-    this.onSelectEntry(e, "value");
+    let {model} = this.props;
+    this.onSelectEntry(e, model.requestTemplates);
+  }
+  onSelectSavedEntry(e) {
+    let {model} = this.props;
+    this.onSelectEntry(e, model.savedHistory.list);
   }
   resetRequest(model){
     model.apiResponse = "";
@@ -471,12 +300,6 @@ class App extends React.Component {
       model.clearHistory();
       model.didUpdate();
     }
-  }
-  onSelectSavedEntry(e) {
-    let {model} = this.props;
-    model.selectedSavedEntry = JSON.parse(e.target.value);
-    model.selectSavedEntry();
-    model.didUpdate();
   }
   onAddToHistory(e) {
     e.preventDefault();
@@ -616,7 +439,7 @@ class App extends React.Component {
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
                 h("option", {value: JSON.stringify(null), disabled: true}, "History"),
-                model.queryHistory.list.map(q => h("option", {key: q.key, value: JSON.stringify(q)}, q.endpoint))
+                model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.method + " " + q.endpoint))
               ),
               h("button", {onClick: this.onClearHistory, title: "Clear Request History"}, "Clear")
             ),
@@ -627,7 +450,7 @@ class App extends React.Component {
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
                 h("option", {value: JSON.stringify(null), disabled: true}, "Saved"),
-                model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+                model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.method + " " + q.endpoint))
               ),
               h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
               h("button", {onClick: this.onAddToHistory, title: "Add request to saved history"}, "Save Query"),

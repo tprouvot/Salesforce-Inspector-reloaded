@@ -1,4 +1,5 @@
 <img src="[https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/master/addon/icon128.png?raw=true](https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/main/addon/icon128.png)" align="right">
+
 # Salesforce inspector reloaded
 
 ![GitHub release](https://img.shields.io/github/v/release/tprouvot/Salesforce-Inspector-reloaded?sort=semver)

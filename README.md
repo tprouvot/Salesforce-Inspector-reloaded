@@ -43,7 +43,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://tprouvot.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
 
-- Salesforce Developers Blog [Improve Your Productivity with Salesforce Inspector Reloaded]([https://www.apexhours.com/salesforce-inspector-reloaded/](https://developer.salesforce.com/blogs/2024/07/improve-your-productivity-with-salesforce-inspector-reloaded))
+- Salesforce Developers Blog [Improve Your Productivity with Salesforce Inspector Reloaded](https://developer.salesforce.com/blogs/2024/07/improve-your-productivity-with-salesforce-inspector-reloaded))
 - SalesforceBen [article](https://www.salesforceben.com/salesforce-inspector-reloaded/), [video](https://youtu.be/dvYp5mKxxzM?si=hBCIaGOyqAJlerea)
 - ApexHours [article](https://www.apexhours.com/salesforce-inspector-reloaded/)
 - SalesforceWay [podcast](https://salesforceway.com/podcast/salesforce-inspector-reloaded/)

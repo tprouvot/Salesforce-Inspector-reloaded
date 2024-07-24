@@ -490,26 +490,27 @@ class AllDataBox extends React.PureComponent {
     let entityMap = new Map();
 
     function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported, isEverCreatable, newUrl}, api) {
-      label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
+      label = label.match("__MISSING") ? "" : label; //Error is added to the label if no label exists
       let entity = entityMap.get(name);
+      // Each API call enhances the data, only the Name fields are present for each call.
       if (entity) {
-        if (!entity.label) { // Doesn't seem to be needed, but if we have to do it for keyPrefix, we can just as well do it for label.
-          entity.label = label;
-        }
-        if (!entity.keyPrefix) { // For some objects the keyPrefix is only available in some of the APIs.
+        if (!entity.keyPrefix) {
           entity.keyPrefix = keyPrefix;
         }
         if (!entity.durableId) {
           entity.durableId = durableId;
         }
-        if (!entity.isEverCreatable) {
-          entity.isEverCreatable = isEverCreatable;
+        if (!entity.isCustomSetting) {
+          entity.isCustomSetting = isCustomSetting;
         }
         if (!entity.newUrl) {
           entity.newUrl = newUrl;
         }
         if (!entity.recordTypesSupported) {
           entity.recordTypesSupported = recordTypesSupported;
+        }
+        if (!entity.isEverCreatable) {
+          entity.isEverCreatable = isEverCreatable;
         }
       } else {
         entity = {
@@ -1114,13 +1115,21 @@ class AllDataBoxShortcut extends React.PureComponent {
           });
         });
       }
-      return result ? result : [];
+      //if no result found, add the globzl search link
+      result.length > 0 ? result : result.push({link: "/one/one.app#" + this.getEncodedGlobalSearch(shortcutSearch), label: '"' + shortcutSearch + '"', detail: "No results found", name: "Use Global Search"});
+      return result;
     } catch (err) {
       console.error("Unable to find shortcut", err);
       return [];
     } finally {
       setIsLoading(false);
     }
+  }
+
+  getEncodedGlobalSearch(term){
+    let searchPayload = JSON.parse('{ "componentDef": "forceSearch:searchPageDesktop", "attributes": { "term": null, "scopeMap": { "type": "TOP_RESULTS" }, "context": { "FILTERS": {}, "searchSource": "ASSISTANT_DIALOG", "disableIntentQuery": false, "disableSpellCorrection": false, "permsAndPrefs": { "SearchUi.feedbackComponentEnabled": false, "OrgPreferences.ChatterEnabled": true, "Search.crossObjectsAutoSuggestEnabled": true, "OrgPreferences.EinsteinSearchNaturalLanguageEnabled": true, "SearchUi.searchUIInteractionLoggingEnabled": false, "MySearch.userCanHaveMySearchBestResult": true, "SearchResultsLVM.lvmEnabledForTopResults": false }, "searchDialogSessionId": "00000000-0000-0000-0000-000000000000", "debugInfo": { "appType": "Standard", "appNamespace": "standard", "location": "one:auraContainer" } }, "groupId": "DEFAULT" }, "state": {} }');
+    searchPayload.attributes.term = term;
+    return btoa(JSON.stringify(searchPayload));
   }
 
   async onDataSelect(shortcut) {

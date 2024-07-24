@@ -188,6 +188,7 @@ h1 {
   color: #080707;
   font-weight: 700;
   line-height: 1.25;
+  margin: revert;
 }
 
 .query-controls {
@@ -720,4 +721,7 @@ button.toggle .button-icon {
 }
 .status-code{
   font-weight: bold;
+}
+.blue{
+  color:#0070d2;
 }

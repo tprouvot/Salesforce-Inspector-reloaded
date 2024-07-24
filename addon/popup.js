@@ -487,7 +487,7 @@ class AllDataBox extends React.PureComponent {
     let entityMap = new Map();
 
     function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported, isEverCreatable, newUrl}, api) {
-      label = label.match("__MISSING") ?'' :label //Error is added to the label if no label exists
+      label = label.match("__MISSING") ? "" : label; //Error is added to the label if no label exists
       let entity = entityMap.get(name);
       // Each API call enhances the data, only the Name fields are present for each call.
       if (entity) {
@@ -1112,13 +1112,21 @@ class AllDataBoxShortcut extends React.PureComponent {
           });
         });
       }
-      return result ? result : [];
+      //if no result found, add the globzl search link
+      result.length > 0 ? result : result.push({link: "/one/one.app#" + this.getEncodedGlobalSearch(shortcutSearch), label: '"' + shortcutSearch + '"', detail: "No results found", name: "Use Global Search"});
+      return result;
     } catch (err) {
       console.error("Unable to find shortcut", err);
       return [];
     } finally {
       setIsLoading(false);
     }
+  }
+
+  getEncodedGlobalSearch(term){
+    let searchPayload = JSON.parse('{ "componentDef": "forceSearch:searchPageDesktop", "attributes": { "term": null, "scopeMap": { "type": "TOP_RESULTS" }, "context": { "FILTERS": {}, "searchSource": "ASSISTANT_DIALOG", "disableIntentQuery": false, "disableSpellCorrection": false, "permsAndPrefs": { "SearchUi.feedbackComponentEnabled": false, "OrgPreferences.ChatterEnabled": true, "Search.crossObjectsAutoSuggestEnabled": true, "OrgPreferences.EinsteinSearchNaturalLanguageEnabled": true, "SearchUi.searchUIInteractionLoggingEnabled": false, "MySearch.userCanHaveMySearchBestResult": true, "SearchResultsLVM.lvmEnabledForTopResults": false }, "searchDialogSessionId": "00000000-0000-0000-0000-000000000000", "debugInfo": { "appType": "Standard", "appNamespace": "standard", "location": "one:auraContainer" } }, "groupId": "DEFAULT" }, "state": {} }');
+    searchPayload.attributes.term = term;
+    return btoa(JSON.stringify(searchPayload));
   }
 
   async onDataSelect(shortcut) {

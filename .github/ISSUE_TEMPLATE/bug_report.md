@@ -9,6 +9,7 @@ assignees: tprouvot
 **Make sure to read the troubleshooting section before creating an issue**
 
 - [ ] I've read the [common issues](https://tprouvot.github.io/Salesforce-Inspector-reloaded/troubleshooting/) and the one I'm about to create is not one of those documented.
+- [ ] I've read the [release note](https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/releaseCandidate/CHANGES.md) and the one I'm about to create is not already fixed.
 
 **Describe the bug**
 A clear and concise description of what the bug is.

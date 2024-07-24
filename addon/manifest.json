@@ -65,6 +65,7 @@
         "inspect.html",
         "metadata-retrieve.html",
         "explore-api.html",
+        "rest-explore.html",
         "limits.html",
         "options.html",
         "streaming.html",
@@ -97,6 +98,9 @@
     },
     "explore-api": {
       "description": "Explore API"
+    },
+    "rest-explore": {
+      "description": "REST Explore"
     }
   }
 }

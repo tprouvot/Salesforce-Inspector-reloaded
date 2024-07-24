@@ -41,7 +41,7 @@ export let sfConn = {
     }
   },
 
-  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}) {
+  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {
     if (!this.instanceHostname) {
       throw new Error("Instance Hostname not found");
     }
@@ -62,9 +62,9 @@ export let sfConn = {
     }
 
     if (body !== undefined) {
+      xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
       if (bodyType == "json") {
         body = JSON.stringify(body);
-        xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
       } else if (bodyType == "raw") {
         // Do nothing
       } else {
@@ -94,7 +94,9 @@ export let sfConn = {
       };
       xhr.send(body);
     });
-    if (xhr.status >= 200 && xhr.status < 300) {
+    if (rawResponse){
+      return xhr;
+    } else if (xhr.status >= 200 && xhr.status < 300) {
       return xhr.response;
     } else if (xhr.status == 0) {
       if (!logErrors) { console.error("Received no response from Salesforce REST API", xhr); }

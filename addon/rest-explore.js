@@ -205,7 +205,8 @@ class Model {
   }
 
   doSend() {
-    this.spinFor(sfConn.rest(this.request.endpoint, true, {method: this.request.method, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress})
+    //sfConn.rest(recordUrl, {method: "PATCH", body: record, headers: this.headerCallout}).then(() => {
+    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress}, true)
       .catch(err => {
         if (err.name != "AbortError") {
           this.autocompleteResults = {

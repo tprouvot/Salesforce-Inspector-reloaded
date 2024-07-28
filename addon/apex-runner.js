@@ -1321,7 +1321,7 @@ class App extends React.Component {
           ),
           h("div", {ref: "autocompleteResultBox", className: "autocomplete-results" + (model.disableSuggestionOverText ? " autocomplete-results-under" : " autocomplete-results-over"), hidden: !model.displaySuggestion, style: model.disableSuggestionOverText ? {} : {top: model.suggestionTop + "px", left: model.suggestionLeft + "px"}},
             model.autocompleteResults.results.map((r, ri) =>
-              h("div", {className: "autocomplete-result" + (ri == model.activeSuggestion ? " active" : ""), key: r.key ? r.key : r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.title), " ")
+              h("div", {className: "autocomplete-result" + (ri == model.activeSuggestion ? " active" : ""), key: r.key ? r.key : r.value}, h("a", {tabIndex: 0, title: r.title, onMouseDown: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.title), " ")
             )
           ),
         ),

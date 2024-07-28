@@ -109,7 +109,8 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
-          {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
+          {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export", key: "useSObjectContextOnDataImportLink", default: true}},
+          {option: Option, props: {type: "toggle", title: "Skip technical comlumns", key: "skipTechnicalColumns", default: true}},
           {option: QueryTemplatesOption, props: {title: "Query Templates", key: "queryTemplates", placeholder: "SELECT..."}},
           {option: QueryTemplatesOption, props: {title: "Saved Query History", key: "insextSavedQueryHistory", node: "query", withName: true, defaultValue: "{\"useToolingApi\": false}", placeholder: "SELECT..."}}
         ]

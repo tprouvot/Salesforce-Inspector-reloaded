@@ -1647,6 +1647,7 @@ class Model {
 function RecordTable(vm) {
   let columnIdx = new Map();
   let header = ["_"];
+  let skipTechnicalColumns = localStorage.getItem("skipTechnicalColumns") !== "false";
   // try to respect the right order of column by matching query column and record column
   function discoverQueryColumns(record, fields) {
     for (let field of fields) {
@@ -1677,7 +1678,7 @@ function RecordTable(vm) {
         if (fieldName.includes(".")) {
           let splittedField = fieldName.split(".");
           splittedField.slice(0, splittedField.length - 1).map(col => {
-            if (!columnIdx.has(col)) {
+            if (!skipTechnicalColumns && !columnIdx.has(col)) {
               let c = header.length;
               columnIdx.set(col, c);
               for (let row of rt.table) {
@@ -1697,11 +1698,16 @@ function RecordTable(vm) {
       if (field == "attributes") {
         continue;
       }
-      //remove totalsize, done and records column
-      if (typeof record[field] == "object" && record[field] != null && record[field]["records"] != null) {
-        record[field] = record[field]["records"];
-      }
       let column = prefix + field;
+      //remove totalsize, done and records column
+      if (typeof record[field] == "object" && record[field] != null) {
+        if (record[field]["records"] != null) {
+          record[field] = record[field]["records"];
+        } else if (skipTechnicalColumns && record[field] != null) {
+          discoverColumns(record[field], column + ".", row);
+          continue;
+        }
+      }
       if (Array.isArray(record[field])) {
         discoverColumns(record[field], column + ".", row);
         continue;
@@ -2099,7 +2105,7 @@ class App extends React.Component {
           ),
           h("div", {ref: "autocompleteResultBox", className: "autocomplete-results" + (model.disableSuggestionOverText ? " autocomplete-results-under" : " autocomplete-results-over"), hidden: !model.displaySuggestion, style: model.disableSuggestionOverText ? {} : {top: model.suggestionTop + "px", left: model.suggestionLeft + "px"}},
             model.autocompleteResults.results.map((r, ri) =>
-              h("div", {className: "autocomplete-result" + (ri == model.activeSuggestion ? " active" : ""), key: r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.value), " ")
+              h("div", {className: "autocomplete-result" + (ri == model.activeSuggestion ? " active" : ""), key: r.value}, h("a", {tabIndex: 0, title: r.title, onMouseDown: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.value), " ")
             )
           ),
         ),

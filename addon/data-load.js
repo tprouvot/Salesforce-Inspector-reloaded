@@ -349,6 +349,10 @@ export class TableModel {
     if (this.header[cellId] && this.header[cellId].name && this.header[cellId].name.toLowerCase() == "Id") {
       return;
     }
+    // do not allow edit if no id column
+    if (!this.header.some(c => this.header[c.id].name == "Id")) {
+      return;
+    }
     //do not allow edit of object column
     if (cell.linkable && !this.isRecordId(cell.label)){
       return;
@@ -749,6 +753,9 @@ class ScrollTableCell extends React.Component {
   onKeyDown(e){
     const {activeSuggestion} = this.state;
     let {cell} = this.props;
+    if (!cell.filteredSuggestions || cell.filteredSuggestions.length == 0) {
+      return;
+    }
     switch (e.keyCode) {
       case 40:
         if (activeSuggestion - 1 === cell.filteredSuggestions.length) {
@@ -796,7 +803,7 @@ class ScrollTableCell extends React.Component {
       return h("td", {className, style: {minWidth: colWidth + "px", height: rowHeight + "px"}},
         h("textarea", {value: cellDataEditValue, onChange: this.onDataEditValueInput, onFocus: this.onFocus, onBlur: this.onBlur, onKeyDown: this.onKeyDown}),
         h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6"),
-        (showSuggestions && cell.filteredSuggestions.length)
+        (showSuggestions && cell.filteredSuggestions && cell.filteredSuggestions.length)
           ? h("ul", {className: "suggestions"},
             cell.filteredSuggestions.map((suggestion, index) => {
               let SuggestionClass;

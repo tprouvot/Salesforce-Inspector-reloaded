@@ -878,6 +878,9 @@ class App extends React.Component {
 
   render() {
     let {model} = this.props;
+    let hostArg = new URLSearchParams();
+    hostArg.set("host", model.sfHost);
+    hostArg.set("tab", 5);
     return h("div", {},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},
@@ -893,6 +896,9 @@ class App extends React.Component {
             h("span", {className: "slds-assistive-text"}),
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
+          ),
+          h("a", {href: "options.html?" + hostArg, className: "top-btn", id: "options-btn", title: "Option", target: "_blank"},
+            h("div", {className: "icon"})
           ),
         ),
       ),

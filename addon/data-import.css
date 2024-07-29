@@ -104,7 +104,8 @@ body {
   border-radius: 2px;
   fill: white;
 }
-#help-btn {
+
+.top-btn {
   margin-left: auto;
   text-decoration: none;
   font-size: 1.5rem;
@@ -113,18 +114,28 @@ body {
   display: flex;
   align-items: center;
 }
-#help-btn:hover .icon{
+
+.top-btn:hover .icon {
   background-color: #818181;
 }
-#help-btn .icon {
+
+.top-btn .icon {
   display: inline-block;
   width: 1.4rem;
-  height: 1.4rem;;
+  height: 1.4rem;
+  ;
   -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 1.4rem;;
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
+  -webkit-mask-size: 1.4rem;
+  ;
   -webkit-mask-position: center;
   background-color: #919191;
+}
+
+#help-btn .icon {
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
+}
+#options-btn .icon {
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/settings.svg');
 }
 #spinner {
   left: -15px;

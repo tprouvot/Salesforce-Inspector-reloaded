@@ -1267,6 +1267,9 @@ class App extends React.Component {
   }
   render() {
     let {model} = this.props;
+    let hostArg = new URLSearchParams();
+    hostArg.set("host", model.sfHost);
+    hostArg.set("tab", 4);
     return h("div", {onClick: this.onClick},
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},
@@ -1283,7 +1286,10 @@ class App extends React.Component {
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
           ),
-          h("a", {href: "#", id: "help-btn", title: "Import Help", onClick: this.onToggleHelpClick},
+          h("a", {href: "options.html?" + hostArg, className: "top-btn", id: "options-btn", title: "Option", target: "_blank"},
+            h("div", {className: "icon"})
+          ),
+          h("a", {href: "#", className: "top-btn", id: "help-btn", title: "Import Help", onClick: this.onToggleHelpClick},
             h("div", {className: "icon"})
           ),
         ),

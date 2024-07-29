@@ -328,7 +328,7 @@ textarea[readonly] {
   border-top: 1px solid #DDDBDA;
 }
 
-#help-btn {
+.top-btn {
   margin-left: auto;
   text-decoration: none;
   font-size: 1.5rem;
@@ -338,11 +338,11 @@ textarea[readonly] {
   align-items: center;
 }
 
-#help-btn:hover .icon {
+.top-btn:hover .icon {
   background-color: #818181;
 }
 
-#help-btn .icon {
+.top-btn .icon {
   display: inline-block;
   width: 1.4rem;
   height: 1.4rem;
@@ -350,10 +350,17 @@ textarea[readonly] {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1.4rem;
   ;
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
   -webkit-mask-position: center;
   background-color: #919191;
 }
+
+#help-btn .icon {
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
+}
+#options-btn .icon {
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/settings.svg');
+}
+
 
 #spinner {
   left: -15px;

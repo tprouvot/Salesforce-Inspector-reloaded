@@ -9,9 +9,9 @@ function cleanInputValue(value) {
 
 class Model {
 
-  constructor(sfHost) {
+  constructor(sfHost, tab) {
     this.sfHost = sfHost;
-
+    this.tab = tab;
     this.sfLink = "https://" + this.sfHost;
     this.userInfo = "...";
     if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
@@ -68,8 +68,9 @@ class OptionsTabSelector extends React.Component {
     super(props);
     this.model = props.model;
     this.sfHost = this.model.sfHost;
+    let tab = props.model.tab || 1;
     this.state = {
-      selectedTabId: 1
+      selectedTabId: tab
     };
     this.tabs = [
       {
@@ -692,11 +693,12 @@ class App extends React.Component {
 
   let args = new URLSearchParams(location.search.slice(1));
   let sfHost = args.get("host");
+  let tab = args.get("tab") ? parseInt(args.get("tab")) : 1;
   initButton(sfHost, true);
   sfConn.getSession(sfHost).then(() => {
 
     let root = document.getElementById("root");
-    let model = new Model(sfHost);
+    let model = new Model(sfHost, tab);
     model.reactCallback = cb => {
       ReactDOM.render(h(App, {model}), root, cb);
     };

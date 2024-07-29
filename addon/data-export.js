@@ -1646,17 +1646,55 @@ class Model {
 
 function RecordTable(vm) {
   let columnIdx = new Map();
+  let columnType = new Map();
   let header = ["_"];
   let skipTechnicalColumns = localStorage.getItem("skipTechnicalColumns") !== "false";
+  let dateFormat = localStorage.getItem("dateFormat");
+  let datetimeFormat = localStorage.getItem("datetimeFormat");
   // try to respect the right order of column by matching query column and record column
   function discoverQueryColumns(record, fields) {
+    let sobjectDescribe = null;
+    //TODO we will need parent model of rt maybe
+    if (record.attributes && record.attributes.type) {
+      let sobjectName = record.attributes.type;
+      //TODO maybe we will need to wait that cache is already filled on describe
+      sobjectDescribe = vm.describeInfo.describeSobject(vm.queryTooling, sobjectName).sobjectDescribe;
+    }
     for (let field of fields) {
       let fieldName = "";
+      let fieldType = "";
       if (field.name) {
         let fieldNameSplitted = field.name.split(".");
         let subRecord = record;
+        let currentSobjectDescribe = sobjectDescribe;
         for (let i = 0; i < fieldNameSplitted.length; i++) {
           const currentFieldName = fieldNameSplitted[i];
+          // 1. try to collect name with describe
+          if (currentSobjectDescribe) {
+            let arr = currentSobjectDescribe.fields
+              .filter(sobjField => sobjField.relationshipName && sobjField.relationshipName.toLowerCase() == currentFieldName.toLowerCase())
+              .map(sobjField => (sobjField));
+            if (arr.length > 0) {
+              if (arr[0].ReferenceTo) {
+                //only take first ReferenceTo
+                currentSobjectDescribe = vm.describeInfo.describeSobject(vm.queryTooling, arr[0].ReferenceTo[0]).sobjectDescribe;
+                fieldName = fieldName ? fieldName + "." + arr[0].relationshipName : arr[0].relationshipName;
+                continue;
+              }
+            }
+            arr = currentSobjectDescribe.fields
+              .filter(sobjField => sobjField.name.toLowerCase() == currentFieldName.toLowerCase())
+              .map(sobjField => (sobjField));
+            if (arr.length > 0) {
+              fieldName = fieldName ? fieldName + "." + arr[0].name : arr[0].name;
+              fieldType = arr[0].type;
+              if (!columnType.has(fieldName)) {
+                columnType.set(fieldName, fieldType);
+              }
+              break;
+            }
+          }
+          // 2. try to collect name with record structure
           for (let f in subRecord) {
             if (f && currentFieldName && f.toLowerCase() == currentFieldName.toLowerCase()) {
               subRecord = subRecord[f];
@@ -1724,11 +1762,50 @@ function RecordTable(vm) {
         header[c] = column;
         rt.colVisibilities.push(true);
       }
-      row[c] = record[field];
+      if (columnType.get(field) == "date" && dateFormat) {
+        row[c] = convertDate(record[field], dateFormat);
+      } else if (columnType.get(field) == "datetime" && datetimeFormat) {
+        row[c] = convertDate(record[field], datetimeFormat);
+      } else {
+        row[c] = record[field];
+      }
       if (typeof record[field] == "object" && record[field] != null) {
         discoverColumns(record[field], column + ".", row);
       }
     }
+  }
+  function convertDate(field, format) {
+    let dt = new Date(field);
+    let formatedDate = "";
+    let remaining = format;
+    while (remaining) {
+      if (remaining.match(/^yyyy/i)) {
+        remaining = remaining.substring(4);
+        formatedDate += dt.getFullYear();
+      } else if (remaining.match(/^MM/)) {
+        remaining = remaining.substring(2);
+        formatedDate += ("0" + (dt.getMonth() + 1)).slice(-2);
+      } else if (remaining.match(/^dd/i)) {
+        remaining = remaining.substring(2);
+        formatedDate += ("0" + dt.getDate()).slice(-2);
+      } else if (remaining.match(/^HH/)) {
+        remaining = remaining.substring(2);
+        formatedDate += ("0" + dt.getHours()).slice(-2);
+      } else if (remaining.match(/^mm/)) {
+        remaining = remaining.substring(2);
+        formatedDate += ("0" + dt.getMinutes()).slice(-2);
+      } else if (remaining.match(/^ss/)) {
+        remaining = remaining.substring(2);
+        formatedDate += ("0" + dt.getSeconds()).slice(-2);
+      } else if (remaining.match(/^SSS/)) {
+        remaining = remaining.substring(3);
+        formatedDate += ("00" + dt.getMilliseconds()).slice(-3);
+      } else {
+        formatedDate += remaining[0];
+        remaining = remaining.substring(1);
+      }
+    }
+    return formatedDate;
   }
   function cellToString(cell) {
     if (cell == null) {

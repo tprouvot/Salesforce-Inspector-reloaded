@@ -1754,6 +1754,8 @@ class AllDataSelection extends React.PureComponent {
   getObjectSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
       return this.getCustomMetadataLink(durableId);
+    } else if (sobjectName.endsWith("__e")) {
+      return "https://" + this.props.sfHost + "/lightning/setup/EventObjects/page?address=%2F" + durableId + "%3Fsetupid%3DEventObjects";
     } else if (isCustomSetting) {
       return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
     } else if (sobjectName.endsWith("__c") || sobjectName.endsWith("__kav")) {
@@ -1822,7 +1824,7 @@ class AllDataSelection extends React.PureComponent {
                   h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name)
                 )
               ),
-              h("tr", {},
+              h("tr", {className: (selectedValue.sobject.name.endsWith("__e") ? "hide" : "")},
                 h("th", {}, "Links:"),
                 h("td", {},
                   h("a", {href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Fields"),

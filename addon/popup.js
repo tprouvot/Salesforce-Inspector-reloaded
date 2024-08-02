@@ -1661,23 +1661,25 @@ class AllDataSelection extends React.PureComponent {
    */
   getObjectSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
-      return this.getCustomMetadataLink(durableId);
+      return this.getMetadataLink(durableId, "CustomMetadata");
+    } else if (sobjectName.endsWith("__e")) {
+      return this.getMetadataLink(durableId, "EventObjects");
     } else if (isCustomSetting) {
-      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
+      return this.getMetadataLink(durableId, "CustomSettings");
     } else if (sobjectName.endsWith("__c")) {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/Details/view";
     } else {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
     }
   }
-  getCustomMetadataLink(durableId) {
-    return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + durableId + "%3Fsetupid%3DCustomMetadata";
+  getMetadataLink(durableId, type){
+    return `https://${this.props.sfHost}/lightning/setup/${type}/page?address=%2F${durableId}%3Fsetupid%3D${type}`;
   }
   getObjectFieldsSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
-      return this.getCustomMetadataLink(durableId);
+      return this.getMetadataLink(durableId, "CustomMetadata");
     } else if (isCustomSetting) {
-      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
+      return this.getMetadataLink(durableId, "CustomSettings");
     } else if (sobjectName.endsWith("__c") || sobjectName.endsWith("__kav")) {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/FieldsAndRelationships/view";
     } else {
@@ -1749,10 +1751,13 @@ class AllDataSelection extends React.PureComponent {
                 h("th", {}, "Links:"),
                 h("td", {},
                   h("a", {href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Fields"),
-                  h("span", {}, " / "),
-                  h("a", {href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget}, "Record Types"),
-                  h("span", {}, " / "),
-                  h("a", {href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Object List")
+                  selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 0 ? h("span", {},
+                    h("span", {}, " / "),
+                    h("a", {href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget}, "Record Types"),
+                  ) : null,
+                  selectedValue.sobject.name.endsWith("__e") ? null : h("span", {}, h("span", {}, " / "),
+                    h("a", {href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Object List")
+                  )
                 ),
               ),
               h("tr", {},

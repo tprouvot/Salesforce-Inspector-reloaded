@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.25
+
+- Fix Platform Event links on popup [issue 500](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/500)
+
 ## Version 1.24
 
 - Add new REST Explore page to call Salesforce APIs from the extension

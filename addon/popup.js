@@ -557,11 +557,11 @@ class AllDataBox extends React.PureComponent {
             console.error("count entity definitions: ", err);
           });
       }
-      this.setState({entityDefinitionCount: count});
     }
 
     function getEntityDefinitions(){
-      for (let bucket = 0; bucket < Math.ceil(this.state.entityDefinitionCount / 2000); bucket++) {
+      let entityDefinitionCount = sessionStorage.getItem("entityDefinitionCount");
+      for (let bucket = 0; bucket < Math.ceil(entityDefinitionCount / 2000); bucket++) {
         let offset = bucket > 0 ? " OFFSET " + (bucket * 2000) : "";
         let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
         sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
@@ -586,8 +586,18 @@ class AllDataBox extends React.PureComponent {
     let isEntityCachingEnabled = localStorage.getItem("enableEntityDefinitionCaching") === "true";
     let sessionSobjectList = isEntityCachingEnabled ? JSON.parse(sessionStorage.getItem("sobjectsList")) : null;
     if (!sessionSobjectList){
+      let count = sessionStorage.getItem("entityDefinitionCount");
+      if (!count){
+        sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT COUNT() FROM EntityDefinition"))
+          .then(res => {
+            let entityNb = res.totalSize;
+            sessionStorage.setItem("entityDefinitionCount", entityNb);
+          }).catch(err => {
+            console.error("count entity definitions: ", err);
+          });
+      }
       Promise.all([
-        getEntityDefinitionCount(),
+        //getEntityDefinitionCount(),
         // Get objects the user can access from the regular API
         getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
         // Get objects the user can access from the tooling API

@@ -2,6 +2,7 @@
 
 ## Version 1.25
 
+- Add option to save entity definition in cache [issue 437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437)
 - Fix Platform Event links on popup [issue 500](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/500)
 
 ## Version 1.24

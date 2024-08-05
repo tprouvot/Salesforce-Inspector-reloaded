@@ -42,6 +42,7 @@ export let sfConn = {
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {
+    console.log(url);
     if (!this.instanceHostname) {
       throw new Error("Instance Hostname not found");
     }

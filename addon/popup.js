@@ -403,7 +403,8 @@ class AllDataBox extends React.PureComponent {
       contextUserId: null,
       contextOrgId: null,
       contextPath: null,
-      contextSobject: null
+      contextSobject: null,
+      entityMap: null,
     };
     this.onAspectClick = this.onAspectClick.bind(this);
     this.parseContextUrl = this.ensureKnownBrowserContext.bind(this);
@@ -545,59 +546,79 @@ class AllDataBox extends React.PureComponent {
       });
     }
 
-    function getEntityDefinitions(){
-      return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT COUNT() FROM EntityDefinition"))
-        .then(res => {
-          let entityNb = res.totalSize;
-          for (let bucket = 0; bucket < Math.ceil(entityNb / 2000); bucket++) {
-            let offset = bucket > 0 ? " OFFSET " + (bucket * 2000) : "";
-            let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
-            sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
-              .then(respEntity => {
-                for (let record of respEntity.records) {
-                  addEntity({
-                    name: record.QualifiedApiName,
-                    label: record.Label,
-                    keyPrefix: record.KeyPrefix,
-                    durableId: record.DurableId,
-                    isCustomSetting: record.IsCustomSetting,
-                    recordTypesSupported: record.RecordTypesSupported,
-                    newUrl: record.NewUrl,
-                    isEverCreatable: record.IsEverCreatable
-                  }, null);
-                }
-              }).catch(err => {
-                console.error("list entity definitions: ", err);
-              });
-          }
-        }).catch(err => {
-          console.error("count entity definitions: ", err);
-        });
+    function getEntityDefinitionCount(){
+      let count = sessionStorage.getItem("entityDefinitionCount");
+      if (!count){
+        sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT COUNT() FROM EntityDefinition"))
+          .then(res => {
+            let entityNb = res.totalSize;
+            sessionStorage.setItem("entityDefinitionCount", entityNb);
+          }).catch(err => {
+            console.error("count entity definitions: ", err);
+          });
+      }
+      this.setState({entityDefinitionCount: count});
     }
 
-    Promise.all([
-      // Get objects the user can access from the regular API
-      getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
-      // Get objects the user can access from the tooling API
-      getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi"),
-      // Get all objects, even the ones the user cannot access from any API
-      // These records are less interesting than the ones the user has access to, but still interesting since we can get information about them using the tooling API
-      // If there are too many records, we get "EXCEEDED_ID_LIMIT: EntityDefinition does not support queryMore(), use LIMIT to restrict the results to a single batch"
-      // Even if documentation mention that LIMIT and OFFSET are not supported, we use it to split the EntityDefinition queries into 2000 buckets
-      getEntityDefinitions(),
-    ])
-      .then(() => {
-        // TODO progressively display data as each of the three responses becomes available
-        this.setState({
-          sobjectsLoading: false,
-          sobjectsList: Array.from(entityMap.values())
+    function getEntityDefinitions(){
+      for (let bucket = 0; bucket < Math.ceil(this.state.entityDefinitionCount / 2000); bucket++) {
+        let offset = bucket > 0 ? " OFFSET " + (bucket * 2000) : "";
+        let query = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000" + offset;
+        sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
+          .then(respEntity => {
+            for (let record of respEntity.records) {
+              addEntity({
+                name: record.QualifiedApiName,
+                label: record.Label,
+                keyPrefix: record.KeyPrefix,
+                durableId: record.DurableId,
+                isCustomSetting: record.IsCustomSetting,
+                recordTypesSupported: record.RecordTypesSupported,
+                newUrl: record.NewUrl,
+                isEverCreatable: record.IsEverCreatable
+              }, null);
+            }
+          }).catch(err => {
+            console.error("list entity definitions: ", err);
+          });
+      }
+    }
+    let isEntityCachingEnabled = localStorage.getItem("enableEntityDefinitionCaching") === "true";
+    let sessionSobjectList = isEntityCachingEnabled ? JSON.parse(sessionStorage.getItem("sobjectsList")) : null;
+    if (!sessionSobjectList){
+      Promise.all([
+        getEntityDefinitionCount(),
+        // Get objects the user can access from the regular API
+        getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
+        // Get objects the user can access from the tooling API
+        getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi"),
+        // Get all objects, even the ones the user cannot access from any API
+        // These records are less interesting than the ones the user has access to, but still interesting since we can get information about them using the tooling API
+        // If there are too many records, we get "EXCEEDED_ID_LIMIT: EntityDefinition does not support queryMore(), use LIMIT to restrict the results to a single batch"
+        // Even if documentation mention that LIMIT and OFFSET are not supported, we use it to split the EntityDefinition queries into 2000 buckets
+        getEntityDefinitions(),
+      ])
+        .then(() => {
+          // TODO progressively display data as each of the three responses becomes available
+          this.setState({
+            sobjectsLoading: false,
+            sobjectsList: Array.from(entityMap.values())
+          });
+          if (isEntityCachingEnabled){
+            sessionStorage.setItem("sobjectsList", JSON.stringify(this.state.sobjectsList));
+          }
+          this.refs.showAllDataBoxSObject.refs.allDataSearch.getMatchesDelayed("");
+        })
+        .catch(e => {
+          console.error(e);
+          this.setState({sobjectsLoading: false});
         });
-        this.refs.showAllDataBoxSObject.refs.allDataSearch.getMatchesDelayed("");
-      })
-      .catch(e => {
-        console.error(e);
-        this.setState({sobjectsLoading: false});
+    } else {
+      this.setState({
+        sobjectsLoading: false,
+        sobjectsList: sessionSobjectList
       });
+    }
   }
 
   render() {

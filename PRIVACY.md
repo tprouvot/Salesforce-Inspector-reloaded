@@ -14,7 +14,12 @@ We use local storage objects to remember your :
 
 - Query History
 - Saved Queries
+- Rest request history
+- Saved Rest requests
 - Environment type (PROD or Sandbox)
-- Client Id @ Session Id (only if you're using Salesforce Extension with a connected App)
+- Client Id & Session Id (only if you're using Salesforce Extension with a connected App)
+- All persisted configuration options
 
+Check in the extension what is stored in [localStorage](https://github.com/search?q=repo%3Atprouvot%2FSalesforce-Inspector-reloaded+%22localStorage%22+path%3A%2F%5Eaddon%5C%2F%2F&type=code) and [sessionStorage](https://github.com/search?q=repo%3Atprouvot%2FSalesforce-Inspector-reloaded+%22sessionStorage%22+path%3A%2F%5Eaddon%5C%2F%2F&type=code).
+ 
 We do not use local storage objects for any other purpose. You may erase the local storage objects by deleting your browser's history.

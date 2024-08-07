@@ -1696,6 +1696,9 @@ class AllDataSelection extends React.PureComponent {
       return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
     }
   }
+  getObjectListAccess(sobjectName) {
+    return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/ObjectAccess/view";
+  }
   getRecordTypesLink(sfHost, sobjectName, durableId) {
     if (sobjectName.endsWith("__c") || sobjectName.endsWith("__kav")) {
       return "https://" + sfHost + "/lightning/setup/ObjectManager/" + durableId + "/RecordTypes/view";
@@ -1756,7 +1759,10 @@ class AllDataSelection extends React.PureComponent {
                     h("a", {href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget}, "Record Types"),
                   ) : null,
                   selectedValue.sobject.name.endsWith("__e") ? null : h("span", {}, h("span", {}, " / "),
-                    h("a", {href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Object List")
+                    h("a", {href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "List")
+                  ),
+                  selectedValue.sobject.name.endsWith("__e") || selectedValue.sobject.name.endsWith("__mdt") ? null : h("span", {}, h("span", {}, " / "),
+                    h("a", {href: this.getObjectListAccess(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Access")
                   )
                 ),
               ),

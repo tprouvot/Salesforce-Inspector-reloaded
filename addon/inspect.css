@@ -217,7 +217,7 @@ thead{
   /* To handle long words. This is not actually 200px but scales with the table. Table layout magic. */
 }
 
-.field-column textarea {
+.field-column #input-field {
   width: calc(100% - 20px);
   resize: vertical;
 }
@@ -755,4 +755,24 @@ th[tabindex] {
 .child-actions .pop-menu {
   right: 0;
   text-align: right;
+}
+
+.dropdown-div {
+  position: relative;
+  height: 25px; 
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.dropdown {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  height: 25px;
+}
+
+.dropdown-div input{
+  position: absolute;
+  height: 25px;
 }

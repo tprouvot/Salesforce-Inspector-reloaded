@@ -2,6 +2,7 @@
 
 ## Version 1.25
 
+- Add "Object Access" link in Object popup tab to display Object permission details (Winter 25 feature)
 - Fix Platform Event links on popup [issue 500](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/500)
 
 ## Version 1.24

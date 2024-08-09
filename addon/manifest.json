@@ -64,6 +64,7 @@
         "explore-api.html",
         "limits.html",
         "options.html",
+        "streaming.html",
         "/images/favicons/*"
       ],
       "matches": ["https://*/*"],

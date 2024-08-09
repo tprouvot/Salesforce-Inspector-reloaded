@@ -143,13 +143,6 @@ body {
   margin-top: 10px;
   margin-bottom: 5px;
 }
-#result-table {
-  margin-top: 3px;
-  overflow: auto;
-  flex-basis: 0;
-  flex-grow: 1;
-  margin-bottom: 8px;
-}
 .area {
   background-color: #F8F8F8;
   padding: 8px 12px;
@@ -158,15 +151,14 @@ body {
   margin: 12px 12px 0 12px;
   flex-grow: 1;
 }
-.area.configure-import {
-  overflow-y: auto;
-}
-div[data-reactroot] > .area:last-child {
-  margin-bottom: 12px;
-}
 .area-header {
   margin-bottom: 12px;
 }
+/*
+div[data-reactroot] > .area:last-child {
+  margin-bottom: 12px;
+}*/
+
 h1 {
   font-size: 1.125rem;
   margin: 0px;
@@ -175,27 +167,13 @@ h1 {
   font-weight: 700;
   line-height: 1.25;
 }
-.conf-section {
-  display: flex;
-  flex-direction: row;
-  max-height: calc(50% - 79px);
-}
+
 @media (max-width: 670px) {
   .conf-section {
     display: block;
   }
 }
-.conf-subsection {
-  flex-grow: 1;
-  flex-basis: 0;
-  display: flex;
-}
-.conf-subsection:last-child .area {
-  margin-left: 0;
-}
-.area.import-actions {
-  flex-grow: 0;
-}
+
 .conf-label, .columns-label, label {
   font-weight: normal;
   color: #4a4a56;
@@ -205,8 +183,8 @@ h1 {
 .conf-label {
   display: inline-block;
   text-align: left;
-  width: 9em;
-  padding-right: 1em;
+  width: auto;
+  padding-right: 0.5em;
 }
 .radio-buttons label {
   margin-right: 10px;
@@ -214,13 +192,10 @@ h1 {
 }
 .conf-value {
   display: inline-block;
+  margin-right: 1em;;
 }
 .conf-line {
   margin-top: 5px;
-}
-.configure-import .conf-line {
-  display: flex;
-  align-items: flex-start;
 }
 .conf-error {
   color: #a00;
@@ -505,11 +480,26 @@ button.contract .button-toggle-icon {
 }
 .area.result-area {
   padding: 0;
-  height: 40%;
 }
+
+#result-area {
+  height: 100%;
+}
+
 #result-table {
   overflow: auto;
-  background-color: #fff;
-  margin: 0;
-  height: 100%;
+  max-height: 100vh;
+  background-color: white;
+}
+
+.event-box {
+  border: 0.5px solid rgb(196, 193, 193);
+  padding: 5px;
+  width: 50%;
+  white-space: pre-wrap;
+}
+
+.channel-listening {
+  margin-left: 2%;
+  color: green
 }

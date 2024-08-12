@@ -265,6 +265,16 @@ orgs.forEach((org) => {
 });
 ```
 
+## Customize sandbox banner color
+
+From the option page, enable "Use favicon color on sandbox banner"
+<img width="772" alt="image" src="https://github.com/user-attachments/assets/28cb7f5f-01fd-48b9-a5da-f50f6cbb2f81">
+
+
+<img width="1087" alt="image" src="https://github.com/user-attachments/assets/f90999c2-f93e-423a-bcb7-18a8aa717a17">
+
+
+
 ## Select all fields in a query
 
 This functionality already exists in the legacy version but since many users don't know about it, I would like to document it.

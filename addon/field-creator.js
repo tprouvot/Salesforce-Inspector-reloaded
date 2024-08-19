@@ -1,5 +1,6 @@
 /* global React ReactDOM field-creator.js */
-import { sfConn, apiVersion } from "./inspector.js";
+import {sfConn, apiVersion} from "./inspector.js";
+
 /* global initButton */
 
 
@@ -18,7 +19,7 @@ class ProfilesModal extends React.Component {
   }
 
   handleSearchChange = (event) => {
-    this.setState({ searchTerm: event.target.value });
+    this.setState({searchTerm: event.target.value});
   };
 
   componentDidUpdate(prevProps) {
@@ -31,7 +32,7 @@ class ProfilesModal extends React.Component {
 
   initializePermissions(field, permissionSets) {
     const permissions = Object.keys(permissionSets).reduce((acc, name) => {
-      acc[name] = { edit: false, read: false };
+      acc[name] = {edit: false, read: false};
       return acc;
     }, {});
 
@@ -56,7 +57,7 @@ class ProfilesModal extends React.Component {
         [name]: {
           ...prevState.permissions[name],
           [type]: !prevState.permissions[name][type],
-          ...(type === "edit" ? { read: true } : {})
+          ...(type === "edit" ? {read: true} : {})
         }
       }
     }), this.updateAllCheckboxes);
@@ -69,14 +70,14 @@ class ProfilesModal extends React.Component {
     const allSelected = !this.state[stateKey];
 
     this.setState(prevState => {
-      const updatedPermissions = { ...prevState.permissions };
+      const updatedPermissions = {...prevState.permissions};
       Object.keys(this.props.permissionSets).forEach(name => {
         if ((tableType === "Profiles" && this.props.permissionSets[name] !== null)
           || (tableType === "PermissionSets" && this.props.permissionSets[name] === null)) {
           updatedPermissions[name] = {
             ...updatedPermissions[name],
             [type]: allSelected,
-            ...(type === "edit" ? { read: true } : {})
+            ...(type === "edit" ? {read: true} : {})
           };
         }
       });
@@ -89,8 +90,8 @@ class ProfilesModal extends React.Component {
   };
 
   updateAllCheckboxes = () => {
-    const { permissions } = this.state;
-    const { permissionSets } = this.props;
+    const {permissions} = this.state;
+    const {permissionSets} = this.props;
 
     const profilesEntries = Object.entries(permissions).filter(([name]) => permissionSets[name] !== null);
     const permissionSetsEntries = Object.entries(permissions).filter(([name]) => permissionSets[name] === null);
@@ -109,7 +110,7 @@ class ProfilesModal extends React.Component {
   };
 
   applyToAllFields = () => {
-    const { permissions } = this.state;
+    const {permissions} = this.state;
     this.props.onApplyToAllFields(permissions);
   };
 
@@ -117,7 +118,7 @@ class ProfilesModal extends React.Component {
 
 
   render() {
-    const { field, permissionSets, onSave, onClose } = this.props;
+    const {field, permissionSets, onSave, onClose} = this.props;
     const {
       permissions,
       allEditProfiles,
@@ -141,15 +142,15 @@ class ProfilesModal extends React.Component {
       .sort((a, b) => a[0].localeCompare(b[0])));
 
     const renderTable = (items, title) =>
-      React.createElement("div", { key: title },
+      React.createElement("div", {key: title},
         React.createElement("h5", null, title),
-        React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", marginBottom: "20px" } },
+        React.createElement("table", {style: {width: "100%", borderCollapse: "collapse", marginBottom: "20px"}},
           React.createElement("thead", null,
             React.createElement("tr", null,
-              React.createElement("th", { style: { padding: "8px", textAlign: "left", borderBottom: "1px solid #ddd" } }, "Name"),
-              React.createElement("th", { style: { padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd" } },
-                React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "center" } },
-                  React.createElement("span", { style: { marginRight: "5px" } }, "Edit"),
+              React.createElement("th", {style: {padding: "8px", textAlign: "left", borderBottom: "1px solid #ddd"}}, "Name"),
+              React.createElement("th", {style: {padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd"}},
+                React.createElement("div", {style: {display: "flex", alignItems: "center", justifyContent: "center"}},
+                  React.createElement("span", {style: {marginRight: "5px"}}, "Edit"),
                   React.createElement("input", {
                     type: "checkbox",
                     checked: title === "Profiles" ? allEditProfiles : allEditPermissionSets,
@@ -157,9 +158,9 @@ class ProfilesModal extends React.Component {
                   })
                 )
               ),
-              React.createElement("th", { style: { padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd" } },
-                React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "center" } },
-                  React.createElement("span", { style: { marginRight: "5px" } }, "Read"),
+              React.createElement("th", {style: {padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd"}},
+                React.createElement("div", {style: {display: "flex", alignItems: "center", justifyContent: "center"}},
+                  React.createElement("span", {style: {marginRight: "5px"}}, "Read"),
                   React.createElement("input", {
                     type: "checkbox",
                     checked: title === "Profiles" ? allReadProfiles : allReadPermissionSets,
@@ -171,16 +172,16 @@ class ProfilesModal extends React.Component {
           ),
           React.createElement("tbody", null,
             items.map(([name, profile]) =>
-              React.createElement("tr", { key: name },
-                React.createElement("td", { style: { padding: "8px", borderBottom: "1px solid #ddd" } }, profile || name),
-                React.createElement("td", { style: { padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd" } },
+              React.createElement("tr", {key: name},
+                React.createElement("td", {style: {padding: "8px", borderBottom: "1px solid #ddd"}}, profile || name),
+                React.createElement("td", {style: {padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd"}},
                   React.createElement("input", {
                     type: "checkbox",
                     checked: permissions[name].edit,
                     onChange: () => this.handlePermissionChange(name, "edit")
                   })
                 ),
-                React.createElement("td", { style: { padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd" } },
+                React.createElement("td", {style: {padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd"}},
                   React.createElement("input", {
                     type: "checkbox",
                     checked: permissions[name].read,
@@ -241,7 +242,7 @@ class ProfilesModal extends React.Component {
         marginBottom: "15px"
       }
     },
-    React.createElement("h1", { className: "modal-title" }, "Set Field Permissions"),
+    React.createElement("h1", {className: "modal-title"}, "Set Field Permissions"),
     React.createElement("button", {
       type: "button",
       className: "close",
@@ -294,7 +295,7 @@ class ProfilesModal extends React.Component {
       type: "button",
       className: "btn btn-default",
       onClick: onClose,
-      style: { marginRight: "10px" }
+      style: {marginRight: "10px"}
     }, "Close"),
     React.createElement("button", {
       type: "button",
@@ -317,7 +318,7 @@ class ProfilesModal extends React.Component {
 
         onSave(updatedField);
       },
-      style: { marginRight: "10px" }
+      style: {marginRight: "10px"}
     }, "Save"),
     React.createElement("button", {
       type: "button",
@@ -336,12 +337,12 @@ class FieldOptionModal extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      field: { ...props.field },
+      field: {...props.field},
     };
   }
 
   handleInputChange = (event) => {
-    const { name, value, type, checked } = event.target;
+    const {name, value, type, checked} = event.target;
     const newValue = type === "checkbox" ? checked : value;
 
     this.setState((prevState) => ({
@@ -357,13 +358,13 @@ class FieldOptionModal extends React.Component {
   };
 
   renderFieldOptions = () => {
-    const { field } = this.state;
+    const {field} = this.state;
     switch (field.type) {
       case "Checkbox":
-        return React.createElement("div", { className: "field_options Checkbox_options" },
-          React.createElement("div", { className: "form-group" },
+        return React.createElement("div", {className: "field_options Checkbox_options"},
+          React.createElement("div", {className: "form-group"},
             React.createElement("label", null, "Default Value"),
-            React.createElement("div", { className: "radio" },
+            React.createElement("div", {className: "radio"},
               React.createElement("label", null,
                 React.createElement("input", {
                   type: "radio",
@@ -375,7 +376,7 @@ class FieldOptionModal extends React.Component {
                 " Checked"
               )
             ),
-            React.createElement("div", { className: "radio" },
+            React.createElement("div", {className: "radio"},
               React.createElement("label", null,
                 React.createElement("input", {
                   type: "radio",
@@ -392,9 +393,9 @@ class FieldOptionModal extends React.Component {
         );
 
       case "Currency":
-        return React.createElement("div", { className: "field_options Currency_options" },
-          React.createElement("div", { className: "form-group" },
-            React.createElement("label", { htmlFor: "currencyLength" }, "Length"),
+        return React.createElement("div", {className: "field_options Currency_options"},
+          React.createElement("div", {className: "form-group"},
+            React.createElement("label", {htmlFor: "currencyLength"}, "Length"),
             React.createElement("input", {
               type: "text",
               id: "currencyLength",
@@ -405,8 +406,8 @@ class FieldOptionModal extends React.Component {
               onChange: this.handleInputChange
             })
           ),
-          React.createElement("div", { className: "form-group" },
-            React.createElement("label", { htmlFor: "currencyDecimalPlaces" }, "Decimal Places"),
+          React.createElement("div", {className: "form-group"},
+            React.createElement("label", {htmlFor: "currencyDecimalPlaces"}, "Decimal Places"),
             React.createElement("input", {
               type: "text",
               id: "currencyDecimalPlaces",
@@ -426,7 +427,7 @@ class FieldOptionModal extends React.Component {
       case "Email":
       case "Phone":
       case "Url":
-        return React.createElement("div", { className: `field_options ${field.type}_options` },
+        return React.createElement("div", {className: `field_options ${field.type}_options`},
           this.renderDescriptionAndHelpText(),
           this.renderRequiredCheckbox(),
           field.type === "Email" && this.renderUniqueCheckbox(),
@@ -434,10 +435,10 @@ class FieldOptionModal extends React.Component {
         );
 
       case "Location":
-        return React.createElement("div", { className: "field_options Location_options" },
-          React.createElement("div", { className: "form-group" },
+        return React.createElement("div", {className: "field_options Location_options"},
+          React.createElement("div", {className: "form-group"},
             React.createElement("label", null, "Latitude and Longitude Display Notation"),
-            React.createElement("div", { className: "radio" },
+            React.createElement("div", {className: "radio"},
               React.createElement("label", null,
                 React.createElement("input", {
                   type: "radio",
@@ -449,7 +450,7 @@ class FieldOptionModal extends React.Component {
                 " Degrees, Minutes, Seconds"
               )
             ),
-            React.createElement("div", { className: "radio" },
+            React.createElement("div", {className: "radio"},
               React.createElement("label", null,
                 React.createElement("input", {
                   type: "radio",
@@ -462,8 +463,8 @@ class FieldOptionModal extends React.Component {
               )
             )
           ),
-          React.createElement("div", { className: "form-group" },
-            React.createElement("label", { htmlFor: "geolocationDecimalPlaces" }, "Decimal Places"),
+          React.createElement("div", {className: "form-group"},
+            React.createElement("label", {htmlFor: "geolocationDecimalPlaces"}, "Decimal Places"),
             React.createElement("input", {
               type: "text",
               id: "geolocationDecimalPlaces",
@@ -479,9 +480,9 @@ class FieldOptionModal extends React.Component {
 
       case "Number":
       case "Percent":
-        return React.createElement("div", { className: `field_options ${field.type}_options` },
-          React.createElement("div", { className: "form-group" },
-            React.createElement("label", { htmlFor: `${field.type.toLowerCase()}Length` }, "Length"),
+        return React.createElement("div", {className: `field_options ${field.type}_options`},
+          React.createElement("div", {className: "form-group"},
+            React.createElement("label", {htmlFor: `${field.type.toLowerCase()}Length`}, "Length"),
             React.createElement("input", {
               type: "text",
               id: `${field.type.toLowerCase()}Length`,
@@ -492,8 +493,8 @@ class FieldOptionModal extends React.Component {
               onChange: this.handleInputChange
             })
           ),
-          React.createElement("div", { className: "form-group" },
-            React.createElement("label", { htmlFor: `${field.type.toLowerCase()}DecimalPlaces` }, "Decimal Places"),
+          React.createElement("div", {className: "form-group"},
+            React.createElement("label", {htmlFor: `${field.type.toLowerCase()}DecimalPlaces`}, "Decimal Places"),
             React.createElement("input", {
               type: "text",
               id: `${field.type.toLowerCase()}DecimalPlaces`,
@@ -512,9 +513,9 @@ class FieldOptionModal extends React.Component {
 
       case "Picklist":
       case "MultiselectPicklist":
-        return React.createElement("div", { className: `field_options ${field.type}_options` },
-          React.createElement("div", { className: "form-group" },
-            React.createElement("label", { htmlFor: `${field.type.toLowerCase()}Options` }, "Picklist Values"),
+        return React.createElement("div", {className: `field_options ${field.type}_options`},
+          React.createElement("div", {className: "form-group"},
+            React.createElement("label", {htmlFor: `${field.type.toLowerCase()}Options`}, "Picklist Values"),
             React.createElement("textarea", {
               id: `${field.type.toLowerCase()}Options`,
               name: "picklistvalues",
@@ -525,7 +526,7 @@ class FieldOptionModal extends React.Component {
               onChange: this.handleInputChange
             })
           ),
-          React.createElement("div", { className: "checkbox" },
+          React.createElement("div", {className: "checkbox"},
             React.createElement("label", null,
               React.createElement("input", {
                 type: "checkbox",
@@ -537,7 +538,7 @@ class FieldOptionModal extends React.Component {
               " Sort values alphabetically"
             )
           ),
-          React.createElement("div", { className: "checkbox" },
+          React.createElement("div", {className: "checkbox"},
             React.createElement("label", null,
               React.createElement("input", {
                 type: "checkbox",
@@ -550,8 +551,8 @@ class FieldOptionModal extends React.Component {
             )
           ),
           //this.renderRestrictToDefinedValues(),
-          field.type === "MultiselectPicklist" && React.createElement("div", { className: "form-group" },
-            React.createElement("label", { htmlFor: "picklist-multiVisibleLines" }, "# Visible Lines"),
+          field.type === "MultiselectPicklist" && React.createElement("div", {className: "form-group"},
+            React.createElement("label", {htmlFor: "picklist-multiVisibleLines"}, "# Visible Lines"),
             React.createElement("input", {
               type: "text",
               id: "picklist-multiVisibleLines",
@@ -567,9 +568,9 @@ class FieldOptionModal extends React.Component {
         );
 
       case "Text":
-        return React.createElement("div", { className: "field_options Text_options" },
-          React.createElement("div", { className: "form-group" },
-            React.createElement("label", { htmlFor: "textLength" }, "Length"),
+        return React.createElement("div", {className: "field_options Text_options"},
+          React.createElement("div", {className: "form-group"},
+            React.createElement("label", {htmlFor: "textLength"}, "Length"),
             React.createElement("input", {
               type: "text",
               id: "textLength",
@@ -587,16 +588,16 @@ class FieldOptionModal extends React.Component {
         );
 
       case "TextArea":
-        return React.createElement("div", { className: "field_options TextArea_options" },
+        return React.createElement("div", {className: "field_options TextArea_options"},
           this.renderDescriptionAndHelpText(),
           this.renderRequiredCheckbox()
         );
 
       case "LongTextArea":
       case "Html":
-        return React.createElement("div", { className: `field_options ${field.type}_options` },
-          React.createElement("div", { className: "form-group" },
-            React.createElement("label", { htmlFor: `${field.type.toLowerCase()}Length` }, "Length"),
+        return React.createElement("div", {className: `field_options ${field.type}_options`},
+          React.createElement("div", {className: "form-group"},
+            React.createElement("label", {htmlFor: `${field.type.toLowerCase()}Length`}, "Length"),
             React.createElement("input", {
               type: "text",
               id: `${field.type.toLowerCase()}Length`,
@@ -607,8 +608,8 @@ class FieldOptionModal extends React.Component {
               onChange: this.handleInputChange
             })
           ),
-          React.createElement("div", { className: "form-group" },
-            React.createElement("label", { htmlFor: `${field.type.toLowerCase()}VisibleLines` }, "# Visible Lines"),
+          React.createElement("div", {className: "form-group"},
+            React.createElement("label", {htmlFor: `${field.type.toLowerCase()}VisibleLines`}, "# Visible Lines"),
             React.createElement("input", {
               type: "text",
               id: `${field.type.toLowerCase()}VisibleLines`,
@@ -628,10 +629,10 @@ class FieldOptionModal extends React.Component {
   };
 
   renderDescriptionAndHelpText = () => {
-    const { field } = this.state;
+    const {field} = this.state;
     return React.createElement("div", null,
-      React.createElement("div", { className: "form-group" },
-        React.createElement("label", { htmlFor: "description" }, "Description"),
+      React.createElement("div", {className: "form-group"},
+        React.createElement("label", {htmlFor: "description"}, "Description"),
         React.createElement("textarea", {
           id: "description",
           name: "description",
@@ -641,8 +642,8 @@ class FieldOptionModal extends React.Component {
           onChange: this.handleInputChange
         })
       ),
-      React.createElement("div", { className: "form-group" },
-        React.createElement("label", { htmlFor: "helpText" }, "Help Text"),
+      React.createElement("div", {className: "form-group"},
+        React.createElement("label", {htmlFor: "helpText"}, "Help Text"),
         React.createElement("textarea", {
           id: "helpText",
           name: "helptext",
@@ -656,8 +657,8 @@ class FieldOptionModal extends React.Component {
   };
 
   renderRestrictToDefinedValues = () => {
-    const { field } = this.state;
-    return React.createElement("div", { className: "checkbox" },
+    const {field} = this.state;
+    return React.createElement("div", {className: "checkbox"},
       React.createElement("label", null,
         React.createElement("input", {
           type: "checkbox",
@@ -672,8 +673,8 @@ class FieldOptionModal extends React.Component {
   };
 
   renderRequiredCheckbox = () => {
-    const { field } = this.state;
-    return React.createElement("div", { className: "checkbox" },
+    const {field} = this.state;
+    return React.createElement("div", {className: "checkbox"},
       React.createElement("label", null,
         React.createElement("input", {
           type: "checkbox",
@@ -688,8 +689,8 @@ class FieldOptionModal extends React.Component {
   };
 
   renderUniqueCheckbox = () => {
-    const { field } = this.state;
-    return React.createElement("div", { className: "checkbox" },
+    const {field} = this.state;
+    return React.createElement("div", {className: "checkbox"},
       React.createElement("label", null,
         React.createElement("input", {
           type: "checkbox",
@@ -704,8 +705,8 @@ class FieldOptionModal extends React.Component {
   };
 
   renderExternalIdCheckbox = () => {
-    const { field } = this.state;
-    return React.createElement("div", { className: "checkbox" },
+    const {field} = this.state;
+    return React.createElement("div", {className: "checkbox"},
       React.createElement("label", null,
         React.createElement("input", {
           type: "checkbox",
@@ -755,9 +756,9 @@ class FieldOptionModal extends React.Component {
         borderRadius: "8px"
       }
     },
-    React.createElement("div", { className: "modal-content", style: { border: "none", backgroundColor: "transparent" } },
-      React.createElement("div", { className: "modal-header", style: { borderBottom: "none", padding: "0 0 10px 0", position: "relative" } },
-        React.createElement("h4", { className: "modal-title", style: { textAlign: "center", width: "100%", margin: "0" } }, "Set Field Options"),
+    React.createElement("div", {className: "modal-content", style: {border: "none", backgroundColor: "transparent"}},
+      React.createElement("div", {className: "modal-header", style: {borderBottom: "none", padding: "0 0 10px 0", position: "relative"}},
+        React.createElement("h4", {className: "modal-title", style: {textAlign: "center", width: "100%", margin: "0"}}, "Set Field Options"),
         React.createElement("button", {
           type: "button",
           className: "close",
@@ -772,7 +773,7 @@ class FieldOptionModal extends React.Component {
             cursor: "pointer"
           }
         },
-        React.createElement("span", { "aria-hidden": "true" }, "×")
+        React.createElement("span", {"aria-hidden": "true"}, "×")
         )
       ),
       React.createElement("div", {
@@ -823,27 +824,27 @@ class FieldRow extends React.Component {
         deploymentStatus = React.createElement("svg", {
           className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
           viewBox: "0 0 52 52",
-          style: { width: "20px" }
+          style: {width: "20px"}
         },
-        React.createElement("use", { xlinkHref: "symbols.svg#clock", style: { fill: "#005fb2" } })
+        React.createElement("use", {xlinkHref: "symbols.svg#clock", style: {fill: "#005fb2"}})
         );
         break;
       case "success":
         deploymentStatus = React.createElement("svg", {
           className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
           viewBox: "0 0 52 52",
-          style: { width: "20px" }
+          style: {width: "20px"}
         },
-        React.createElement("use", { xlinkHref: "symbols.svg#success", style: { fill: "#2e844a" } })
+        React.createElement("use", {xlinkHref: "symbols.svg#success", style: {fill: "#2e844a"}})
         );
         break;
       case "error":
         deploymentStatus = React.createElement("svg", {
           className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
           viewBox: "0 0 52 52",
-          style: { width: "20px" }
+          style: {width: "20px"}
         },
-        React.createElement("use", { xlinkHref: "symbols.svg#error", style: { fill: "#ba0517" } })
+        React.createElement("use", {xlinkHref: "symbols.svg#error", style: {fill: "#ba0517"}})
         );
         break;
       default:
@@ -852,32 +853,32 @@ class FieldRow extends React.Component {
 
     return (
       React.createElement("tr", null,
-        React.createElement("td", { className: "text-center", style: { verticalAlign: "middle" } },
-          React.createElement("div", { className: "text-center", style: { verticalAlign: "middle" } },
+        React.createElement("td", {className: "text-center", style: {verticalAlign: "middle"}},
+          React.createElement("div", {className: "text-center", style: {verticalAlign: "middle"}},
             React.createElement("svg", {
               className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
               viewBox: "0 0 52 52",
               onClick: () => this.props.onClone(this.props.index),
-              style: { cursor: "pointer", width: "20px" }
+              style: {cursor: "pointer", width: "20px"}
             },
-            React.createElement("use", { xlinkHref: "symbols.svg#clone", style: { fill: "#005fb2" } })
+            React.createElement("use", {xlinkHref: "symbols.svg#clone", style: {fill: "#005fb2"}})
             )
           )
         ),
-        React.createElement("td", { className: "text-center", style: { verticalAlign: "middle" } },
-          React.createElement("div", { className: "text-center", style: { verticalAlign: "middle" } },
+        React.createElement("td", {className: "text-center", style: {verticalAlign: "middle"}},
+          React.createElement("div", {className: "text-center", style: {verticalAlign: "middle"}},
             React.createElement("svg", {
               className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
               viewBox: "0 0 52 52",
               onClick: () => this.props.onDelete(this.props.index),
-              style: { cursor: "pointer", width: "20px" }
+              style: {cursor: "pointer", width: "20px"}
             },
-            React.createElement("use", { xlinkHref: "symbols.svg#delete", style: { fill: "#9c9c9c" } })
+            React.createElement("use", {xlinkHref: "symbols.svg#delete", style: {fill: "#9c9c9c"}})
             )
           )
         ),
-        React.createElement("td", { className: "form-control-cell", style: { verticalAlign: "middle" } },
-          React.createElement("div", { style: { display: "flex", justifyContent: "center" } },
+        React.createElement("td", {className: "form-control-cell", style: {verticalAlign: "middle"}},
+          React.createElement("div", {style: {display: "flex", justifyContent: "center"}},
             React.createElement("input", {
               type: "text",
               className: "input-textBox",
@@ -887,8 +888,8 @@ class FieldRow extends React.Component {
             })
           )
         ),
-        React.createElement("td", { className: "form-control-cell", style: { verticalAlign: "middle" } },
-          React.createElement("div", { style: { display: "flex", justifyContent: "center" } },
+        React.createElement("td", {className: "form-control-cell", style: {verticalAlign: "middle"}},
+          React.createElement("div", {style: {display: "flex", justifyContent: "center"}},
             React.createElement("input", {
               type: "text",
               className: "input-textBox",
@@ -898,29 +899,29 @@ class FieldRow extends React.Component {
             })
           )
         ),
-        React.createElement("td", { className: "form-control-cell", style: { verticalAlign: "middle" } },
-          React.createElement("div", { style: { display: "flex", justifyContent: "center" } },
+        React.createElement("td", {className: "form-control-cell", style: {verticalAlign: "middle"}},
+          React.createElement("div", {style: {display: "flex", justifyContent: "center"}},
             React.createElement("select", {
               className: "form-control",
               value: this.props.field.type,
               onChange: (e) => this.props.onTypeChange(this.props.index, e.target.value)
             },
-            React.createElement("option", { value: "Checkbox" }, "Checkbox"),
-            React.createElement("option", { value: "Currency" }, "Currency"),
-            React.createElement("option", { value: "Date" }, "Date"),
-            React.createElement("option", { value: "DateTime" }, "Date / Time"),
-            React.createElement("option", { value: "Email" }, "Email"),
-            React.createElement("option", { value: "Location" }, "Geolocation"),
-            React.createElement("option", { value: "Number" }, "Number"),
-            React.createElement("option", { value: "Percent" }, "Percent"),
-            React.createElement("option", { value: "Phone" }, "Phone"),
-            React.createElement("option", { value: "Picklist" }, "Picklist"),
-            React.createElement("option", { value: "MultiselectPicklist" }, "Picklist (Multi-Select)"),
-            React.createElement("option", { value: "Text" }, "Text"),
-            React.createElement("option", { value: "TextArea" }, "Text Area"),
-            React.createElement("option", { value: "LongTextArea" }, "Text Area (Long)"),
-            React.createElement("option", { value: "Html" }, "Text Area (Rich)"),
-            React.createElement("option", { value: "Url" }, "URL")
+            React.createElement("option", {value: "Checkbox"}, "Checkbox"),
+            React.createElement("option", {value: "Currency"}, "Currency"),
+            React.createElement("option", {value: "Date"}, "Date"),
+            React.createElement("option", {value: "DateTime"}, "Date / Time"),
+            React.createElement("option", {value: "Email"}, "Email"),
+            React.createElement("option", {value: "Location"}, "Geolocation"),
+            React.createElement("option", {value: "Number"}, "Number"),
+            React.createElement("option", {value: "Percent"}, "Percent"),
+            React.createElement("option", {value: "Phone"}, "Phone"),
+            React.createElement("option", {value: "Picklist"}, "Picklist"),
+            React.createElement("option", {value: "MultiselectPicklist"}, "Picklist (Multi-Select)"),
+            React.createElement("option", {value: "Text"}, "Text"),
+            React.createElement("option", {value: "TextArea"}, "Text Area"),
+            React.createElement("option", {value: "LongTextArea"}, "Text Area (Long)"),
+            React.createElement("option", {value: "Html"}, "Text Area (Rich)"),
+            React.createElement("option", {value: "Url"}, "URL")
             )
           )
         ),
@@ -936,10 +937,10 @@ class FieldRow extends React.Component {
             onClick: () => this.props.onEditProfiles(this.props.index)
           }, "Permissions")
         ),
-        React.createElement("td", { className: "text-center", style: { verticalAlign: "middle" } },
+        React.createElement("td", {className: "text-center", style: {verticalAlign: "middle"}},
           React.createElement("div", {
             className: "text-center",
-            style: { verticalAlign: "middle", fontSize: "20px", cursor: "pointer" },
+            style: {verticalAlign: "middle", fontSize: "20px", cursor: "pointer"},
             onClick: () => this.props.onShowDeploymentStatus(this.props.index)
           },
           deploymentStatus
@@ -953,7 +954,7 @@ class FieldRow extends React.Component {
 class FieldsTable extends React.Component {
   render() {
     return (
-      React.createElement("div", { className: "table-responsive", style: { overflowX: "auto", maxWidth: "100%" } },
+      React.createElement("div", {className: "table-responsive", style: {overflowX: "auto", maxWidth: "100%"}},
         React.createElement("table", {
           className: "table table-hover",
           id: "fields_table",
@@ -965,14 +966,14 @@ class FieldsTable extends React.Component {
         },
         React.createElement("thead", null,
           React.createElement("tr", null,
-            React.createElement("th", { style: { width: "5%" } }),
-            React.createElement("th", { style: { width: "5%" } }),
-            React.createElement("th", { style: { width: "20%" } }, "Label"),
-            React.createElement("th", { style: { width: "20%" } }, "API Name (__c)"),
-            React.createElement("th", { style: { width: "20%" } }, "Type"),
-            React.createElement("th", { style: { width: "10%" } }, "Options"),
-            React.createElement("th", { style: { width: "10%" } }, "Permissions"),
-            React.createElement("th", { style: { width: "10%" } })
+            React.createElement("th", {style: {width: "5%"}}),
+            React.createElement("th", {style: {width: "5%"}}),
+            React.createElement("th", {style: {width: "20%"}}, "Label"),
+            React.createElement("th", {style: {width: "20%"}}, "API Name (__c)"),
+            React.createElement("th", {style: {width: "20%"}}, "Type"),
+            React.createElement("th", {style: {width: "10%"}}, "Options"),
+            React.createElement("th", {style: {width: "10%"}}, "Permissions"),
+            React.createElement("th", {style: {width: "10%"}})
           )
         ),
         React.createElement("tbody", null,
@@ -1005,7 +1006,7 @@ class App extends React.Component {
       objects: [],
       profiles: [],
       permissionSets: {},
-      fields: [{ label: "", name: "", type: "Text" }],
+      fields: [{label: "", name: "", type: "Text"}],
       showProfilesModal: false,
       currentFieldIndex: null,
       showModal: false,
@@ -1194,7 +1195,7 @@ class App extends React.Component {
     })
       .then(response => response.json())
       .then(data => {
-        this.setState({ objects: data.sobjects });
+        this.setState({objects: data.sobjects});
       })
       .catch(error => {
         console.error("Error fetching objects:", error);
@@ -1225,7 +1226,7 @@ class App extends React.Component {
           permissionSetMap[record.Name] = record.Id;
         });
 
-        this.setState({ permissionSets, permissionSetMap });
+        this.setState({permissionSets, permissionSetMap});
       })
       .catch(error => {
         console.error("Error fetching permission sets:", error);
@@ -1234,7 +1235,7 @@ class App extends React.Component {
 
   addRow = () => {
     this.setState((prevState) => ({
-      fields: [...prevState.fields, { label: "", name: "", type: "Text" }],
+      fields: [...prevState.fields, {label: "", name: "", type: "Text"}],
     }));
   };
 
@@ -1267,7 +1268,7 @@ class App extends React.Component {
   onNameChange = (index, name) => {
     this.setState((prevState) => ({
       fields: prevState.fields.map((field, i) =>
-        i === index ? { ...field, name } : field
+        i === index ? {...field, name} : field
       ),
     }));
   };
@@ -1275,7 +1276,7 @@ class App extends React.Component {
   onTypeChange = (index, type) => {
     this.setState((prevState) => ({
       fields: prevState.fields.map((field, i) =>
-        i === index ? { ...field, type } : field
+        i === index ? {...field, type} : field
       ),
     }));
   };
@@ -1288,19 +1289,19 @@ class App extends React.Component {
   };
 
   openImportModal = () => {
-    this.setState({ showImportModal: true, importCsvContent: "", importError: "" });
+    this.setState({showImportModal: true, importCsvContent: "", importError: ""});
   };
 
   closeImportModal = () => {
-    this.setState({ showImportModal: false, importCsvContent: "", importError: "" });
+    this.setState({showImportModal: false, importCsvContent: "", importError: ""});
   };
 
   handleImportCsvChange = (event) => {
-    this.setState({ importCsvContent: event.target.value });
+    this.setState({importCsvContent: event.target.value});
   };
 
   importCsv = () => {
-    const { importCsvContent } = this.state;
+    const {importCsvContent} = this.state;
     const lines = importCsvContent.split("\n");
     const newFields = [];
     let hasError = false;
@@ -1315,9 +1316,9 @@ class App extends React.Component {
       const [label, name, type] = line.split(",").map(item => item.trim());
       if (label && name && type) {
         if (validTypes.includes(type)) {
-          newFields.push({ label, name, type });
+          newFields.push({label, name, type});
         } else {
-          this.setState({ importError: `Invalid type "${type}" on line ${index + 1}` });
+          this.setState({importError: `Invalid type "${type}" on line ${index + 1}`});
           hasError = true;
         }
       }
@@ -1376,7 +1377,7 @@ class App extends React.Component {
   };
 
   onSaveFieldProfiles = (updatedField) => {
-    const { fields, currentFieldIndex } = this.state;
+    const {fields, currentFieldIndex} = this.state;
     fields[currentFieldIndex] = updatedField;
     this.setState({
       fields,
@@ -1386,7 +1387,7 @@ class App extends React.Component {
   };
 
   applyToAllFields = (permissions) => {
-    const { fields } = this.state;
+    const {fields} = this.state;
     const updatedFields = fields.map(field => {
       const updatedProfiles = Object.entries(permissions).reduce((acc, [name, perm]) => {
         if (perm.edit || perm.read) {
@@ -1397,7 +1398,7 @@ class App extends React.Component {
         }
         return acc;
       }, []);
-      return { ...field, profiles: updatedProfiles };
+      return {...field, profiles: updatedProfiles};
     });
 
     this.setState({
@@ -1410,7 +1411,7 @@ class App extends React.Component {
   };
 
   onSaveFieldOptions = (updatedField) => {
-    const { fields, currentFieldIndex } = this.state;
+    const {fields, currentFieldIndex} = this.state;
     fields[currentFieldIndex] = updatedField;
     this.setState({
       fields,
@@ -1424,7 +1425,7 @@ class App extends React.Component {
   };
 
   deploy = () => {
-    const { fields, selectedObject } = this.state;
+    const {fields, selectedObject} = this.state;
     if (!selectedObject) {
       alert("Please select an object first");
       return;
@@ -1439,10 +1440,10 @@ class App extends React.Component {
 
     const updatedFields = fields.map(field =>
       field.deploymentStatus !== "success"
-        ? { ...field, deploymentStatus: "pending" }
+        ? {...field, deploymentStatus: "pending"}
         : field
     );
-    this.setState({ fields: updatedFields });
+    this.setState({fields: updatedFields});
 
     fieldsToProcess.forEach((field) => {
       const index = fields.findIndex(f => f === field);
@@ -1450,13 +1451,13 @@ class App extends React.Component {
         .then(() => {
           const newFields = [...this.state.fields];
           newFields[index].deploymentStatus = "success";
-          this.setState({ fields: newFields });
+          this.setState({fields: newFields});
         })
         .catch(error => {
           const newFields = [...this.state.fields];
           newFields[index].deploymentStatus = "error";
           newFields[index].deploymentError = error.message;
-          this.setState({ fields: newFields });
+          this.setState({fields: newFields});
         });
     });
   };
@@ -1465,44 +1466,44 @@ class App extends React.Component {
 
 
   render() {
-    const { fields, showModal, showProfilesModal, currentFieldIndex } = this.state;
+    const {fields, showModal, showProfilesModal, currentFieldIndex} = this.state;
 
     return (
 
 
       React.createElement("div", null,
-        React.createElement("div", { id: "user-info" },
-          React.createElement("a", { href: `https://${sfConn.instanceHostname}`, className: "sf-link" },
-            React.createElement("svg", { viewBox: "0 0 24 24" },
-              React.createElement("path", { d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z" })
+        React.createElement("div", {id: "user-info"},
+          React.createElement("a", {href: `https://${sfConn.instanceHostname}`, className: "sf-link"},
+            React.createElement("svg", {viewBox: "0 0 24 24"},
+              React.createElement("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
             ),
             " Salesforce Home"
           ),
           React.createElement("h1", {}, "Field Creator"),
           React.createElement("span", {}, "  "),
-          React.createElement("div", { className: "flex-right" },
-            React.createElement("span", { className: "slds-assistive-text" }),
-            React.createElement("div", { className: "slds-spinner__dot-a" }),
-            React.createElement("div", { className: "slds-spinner__dot-b" }),
+          React.createElement("div", {className: "flex-right"},
+            React.createElement("span", {className: "slds-assistive-text"}),
+            React.createElement("div", {className: "slds-spinner__dot-a"}),
+            React.createElement("div", {className: "slds-spinner__dot-b"}),
           ),
-          React.createElement("a", { href: "#", id: "help-btn", title: "Export Help", onClick: null },
-            React.createElement("div", { className: "icon" })
+          React.createElement("a", {href: "#", id: "help-btn", title: "Export Help", onClick: null},
+            React.createElement("div", {className: "icon"})
           ),
         ),
-        React.createElement("div", { className: "area firstHeader" },
-          React.createElement("div", { className: "form-group" },
-            React.createElement("label", { htmlFor: "object_select" }, "Select Object"),
+        React.createElement("div", {className: "area firstHeader"},
+          React.createElement("div", {className: "form-group"},
+            React.createElement("label", {htmlFor: "object_select"}, "Select Object"),
             React.createElement("br", null),
             React.createElement("select", {
               className: "form-control",
               id: "object_select",
-              style: { width: "400px" },
+              style: {width: "400px"},
               value: this.state.selectedObject,
-              onChange: (e) => this.setState({ selectedObject: e.target.value })
+              onChange: (e) => this.setState({selectedObject: e.target.value})
             },
-            React.createElement("option", { value: "" }, "Select object to create fields for...."),
+            React.createElement("option", {value: ""}, "Select object to create fields for...."),
             this.state.objects.map((obj) =>
-              React.createElement("option", { key: obj.name, value: obj.name },
+              React.createElement("option", {key: obj.name, value: obj.name},
                 obj.name, " (", obj.label, ")"
               )
             )
@@ -1510,13 +1511,13 @@ class App extends React.Component {
           )
           ,
           React.createElement("br", null),
-          React.createElement("div", { className: "col-xs-12 text-center", id: "deploy" },
-            React.createElement("button", { className: "btn btn-large", onClick: this.clearAll }, "Clear All"),
-            React.createElement("button", { className: "btn btn-large", onClick: this.openImportModal }, "Import CSV"),
-            React.createElement("button", { className: "btn btn-large highlighted", onClick: this.deploy }, "Deploy Fields"),
+          React.createElement("div", {className: "col-xs-12 text-center", id: "deploy"},
+            React.createElement("button", {className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
+            React.createElement("button", {className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
+            React.createElement("button", {className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
             React.createElement("br", null)
           )),
-        React.createElement("div", { className: "area" },
+        React.createElement("div", {className: "area"},
           React.createElement(FieldsTable, {
             fields,
             onDelete: this.removeRow,
@@ -1528,7 +1529,7 @@ class App extends React.Component {
             onEditProfiles: this.onEditProfiles,
             onShowDeploymentStatus: this.onShowDeploymentStatus
           }),
-          React.createElement("button", { className: "btn btn-sm highlighted", id: "add_row", onClick: this.addRow, style: { maxWidth: "18%" } }, "Add Row")
+          React.createElement("button", {className: "btn btn-sm highlighted", id: "add_row", onClick: this.addRow, style: {maxWidth: "18%"}}, "Add Row")
         ),
 
         showProfilesModal && React.createElement(ProfilesModal, {
@@ -1595,7 +1596,7 @@ class App extends React.Component {
             marginBottom: "15px"
           }
         }),
-        this.state.importError && React.createElement("p", { style: { color: "red" } }, this.state.importError),
+        this.state.importError && React.createElement("p", {style: {color: "red"}}, this.state.importError),
         React.createElement("div", {
           style: {
             display: "flex",
@@ -1604,7 +1605,7 @@ class App extends React.Component {
         },
         React.createElement("button", {
           onClick: this.closeImportModal,
-          style: { marginRight: "10px" }
+          style: {marginRight: "10px"}
         }, "Cancel"),
         React.createElement("button", {
           onClick: this.importCsv,

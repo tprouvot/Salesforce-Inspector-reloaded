@@ -402,6 +402,7 @@ class FaviconOption extends React.Component {
     super(props);
     this.sfHost = props.model.sfHost;
     this.onChangeFavicon = this.onChangeFavicon.bind(this);
+    this.useRandomFavicon = this.useRandomFavicon.bind(this);
     let favicon = localStorage.getItem(this.sfHost + "_customFavicon") ? localStorage.getItem(this.sfHost + "_customFavicon") : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
     this.tooltip = props.tooltip;
@@ -412,6 +413,42 @@ class FaviconOption extends React.Component {
     let favicon = e.target.value;
     this.setState({favicon});
     localStorage.setItem(this.sfHost + "_customFavicon", favicon);
+  }
+
+  useRandomFavicon(){
+    let colors = [
+      'olive', 'darkorange', 'pink', 'purple', 'firebrick', 'hotpink', 'skyblue',
+      'lightcoral', 'gold', 'indigo', 'teal', 'lime', 'crimson', 'peru', 'cyan',
+      'tomato', 'orchid', 'magenta', 'mediumvioletred', 'dodgerblue', 'slateblue',
+      'sienna', 'maroon', 'mediumseagreen', 'plum', 'turquoise', 'deepskyblue',
+      'rosybrown', 'slategray', 'darkslateblue', 'palevioletred'
+  ];
+
+  let orgs = Object.keys(localStorage).filter((localKey) =>
+      localKey.endsWith("_isSandbox")
+  );
+
+  orgs.forEach((org) => {
+      let sfHost = org.substring(0, org.indexOf("_isSandbox"));
+      let existingColor = localStorage.getItem(sfHost + "_customFavicon");
+
+      if (!existingColor) {  // Only assign a color if none is set
+          if (colors.length === 0) {
+              console.warn("No more colors available.");
+              return;
+          }
+          let randomIndex = Math.floor(Math.random() * colors.length);
+          let randomFavicon = colors[randomIndex];
+          colors.splice(randomIndex, 1);  // Remove the used color from the list
+          console.info(sfHost + "_customFavicon", randomFavicon);
+          localStorage.setItem(sfHost + "_customFavicon", randomFavicon);
+          if(sfHost === this.sfHost){
+            this.setState({favicon: randomFavicon});
+          }
+      } else {
+          console.info(sfHost + " already has a customFavicon: " + existingColor);
+      }
+  });
   }
 
   render() {
@@ -429,6 +466,9 @@ class FaviconOption extends React.Component {
           this.state.isInternal ? h("svg", {className: "icon"},
             h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
           ) : null
+        ),
+        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
+          h("button", {className: "button button-brand", onClick: this.useRandomFavicon, title: "Use random favicon for all orgs I've visited"}, "Randomize")
         )
       )
     );

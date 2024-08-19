@@ -252,16 +252,35 @@ The customization is linked to the org, it means you can have different colors f
 Now if you want to set a random favicon for all of your visited orgs, open dev console from one of the extension page and paste following code in dev console:
 
 ``` js
-let colors = ['olive', 'darkorange', 'pink', 'purple', 'firebrick', 'hotpink', 'skyblue', '#1E90FF'];
+let colors = [
+    'olive', 'darkorange', 'pink', 'purple', 'firebrick', 'hotpink', 'skyblue',
+    'lightcoral', 'gold', 'indigo', 'teal', 'lime', 'crimson', 'peru', 'cyan',
+    'tomato', 'orchid', 'magenta', 'mediumvioletred', 'dodgerblue', 'slateblue',
+    'sienna', 'maroon', 'mediumseagreen', 'plum', 'turquoise', 'deepskyblue',
+    'rosybrown', 'slategray', 'darkslateblue', 'palevioletred'
+];
 
 let orgs = Object.keys(localStorage).filter((localKey) =>
     localKey.endsWith("_isSandbox")
 );
+
 orgs.forEach((org) => {
-    let sfHost = org.substring(0, org.indexOf(("_isSandbox")));
-    let randomFavicon = colors[(Math.floor(Math.random() * colors.length))]
-    console.info(sfHost + "_customFavicon", randomFavicon);
-    localStorage.setItem(sfHost + "_customFavicon", randomFavicon);
+    let sfHost = org.substring(0, org.indexOf("_isSandbox"));
+    let existingColor = localStorage.getItem(sfHost + "_customFavicon");
+
+    if (!existingColor) {  // Only assign a color if none is set
+        if (colors.length === 0) {
+            console.warn("No more colors available.");
+            return;
+        }
+        let randomIndex = Math.floor(Math.random() * colors.length);
+        let randomFavicon = colors[randomIndex];
+        colors.splice(randomIndex, 1);  // Remove the used color from the list
+        console.info(sfHost + "_customFavicon", randomFavicon);
+        localStorage.setItem(sfHost + "_customFavicon", randomFavicon);
+    } else {
+        console.info(sfHost + " already has a customFavicon: " + existingColor);
+    }
 });
 ```
 

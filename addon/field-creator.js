@@ -1150,7 +1150,6 @@ class App extends React.Component {
         return response.json();
       })
       .then(data => {
-        console.log("Field created:", data);
         return this.setFieldPermissions(field, data.id, objectName);
       })
       .catch(error => {
@@ -1220,7 +1219,6 @@ class App extends React.Component {
       .then(data => {
         let permissionSets = {};
         let permissionSetMap = {};
-        console.log(data);
         data.records.forEach(record => {
           permissionSets[record.Name] = record.Profile ? record.Profile.Name : null;
           permissionSetMap[record.Name] = record.Id;
@@ -1343,7 +1341,7 @@ class App extends React.Component {
         const errorData = JSON.parse(field.deploymentError);
         errorMessage = errorData[0]?.message || errorMessage;
       } catch (e) {
-        console.log('Catch error' + e)
+        console.err('Catch error' + e)
         errorMessage = field.deploymentError || errorMessage;
       }
       alert(`Deployment Error: ${errorMessage}`);
@@ -1406,8 +1404,7 @@ class App extends React.Component {
       fields: updatedFields,
       showProfilesModal: false,
       currentFieldIndex: null,
-    }, () => {
-      console.log("Updated fields:", this.state.fields);
+or    }, () => {
     });
   };
 

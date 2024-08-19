@@ -1343,6 +1343,7 @@ class App extends React.Component {
         const errorData = JSON.parse(field.deploymentError);
         errorMessage = errorData[0]?.message || errorMessage;
       } catch (e) {
+        console.log('Catch error' + e)
         errorMessage = field.deploymentError || errorMessage;
       }
       alert(`Deployment Error: ${errorMessage}`);

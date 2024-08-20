@@ -1149,9 +1149,7 @@ class App extends React.Component {
         }
         return response.json();
       })
-      .then(data => {
-        return this.setFieldPermissions(field, data.id, objectName);
-      })
+      .then(data => this.setFieldPermissions(field, data.id, objectName))
       .catch(error => {
         console.error("Error creating field:", error);
         throw error;
@@ -1341,7 +1339,7 @@ class App extends React.Component {
         const errorData = JSON.parse(field.deploymentError);
         errorMessage = errorData[0]?.message || errorMessage;
       } catch (e) {
-        console.err('Catch error' + e)
+        console.err("Catch error" + e)
         errorMessage = field.deploymentError || errorMessage;
       }
       alert(`Deployment Error: ${errorMessage}`);
@@ -1403,9 +1401,7 @@ class App extends React.Component {
     this.setState({
       fields: updatedFields,
       showProfilesModal: false,
-      currentFieldIndex: null,
-or    }, () => {
-    });
+      currentFieldIndex: null});
   };
 
   onSaveFieldOptions = (updatedField) => {

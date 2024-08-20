@@ -4,15 +4,14 @@ import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 
 let h = React.createElement;
+if (typeof browser === "undefined") {
+  var browser = chrome;
+}
 
 {
   parent.postMessage({
     insextInitRequest: true,
-    iFrameLocalStorage: {
-      popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
-      popupArrowPosition: JSON.parse(localStorage.getItem("popupArrowPosition")),
-      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder"))
-    }
+    iFrameLocalStorage: JSON.parse(JSON.stringify(localStorage))
   }, "*");
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent) {
@@ -24,6 +23,12 @@ let h = React.createElement;
       }
     }
   });
+  chrome.runtime.onMessage.addListener((request) => {
+    if (request.msg === "shortcut_pressed") {
+      parent.postMessage({insextOpenPopup: true}, "*");
+    }
+  }
+  );
 }
 
 function closePopup() {
@@ -50,7 +55,6 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
       inInspector,
       addonVersion
     }), document.getElementById("root"));
-
   });
 }
 
@@ -143,13 +147,18 @@ class App extends React.PureComponent {
       "o": ["tab", "objectTab"],
       "u": ["tab", "userTab"],
       "s": ["tab", "shortcutTab"],
-      "r": ["tab", "orgTab"]
+      "r": ["tab", "orgTab"],
+      "Escape": ["", "quit"]
     };
     if (!actionMap[e.key]) {
       return;
     }
     e.preventDefault();
     const [action, target] = actionMap[e.key];
+    if (target === "quit") {
+      closePopup();
+      return;
+    }
     if (action === "all") {
       refs.showAllDataBox.refs?.showAllDataBoxSObject?.[target]();
     } else if (action === "click" && refs[target]) {
@@ -183,6 +192,9 @@ class App extends React.PureComponent {
       });
     }
   }
+  isMac() {
+    return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
+  }
   getBannerUrlAction(sessionError, sfHost, clientId, browser) {
     let url;
     let title;
@@ -207,7 +219,7 @@ class App extends React.PureComponent {
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
-    const browser = navigator.userAgent.includes("Chrome") ? "chrome" : "moz";
+    const browser = navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";
     const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
     const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
     const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
@@ -297,6 +309,9 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
             ),
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "restExploreBtn", href: "rest-explore.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "R"), "EST Explore (beta)"))
+            ),
             localStorage.getItem("popupGenerateTokenButton") !== "false" ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
                 {
@@ -339,7 +354,7 @@ class App extends React.PureComponent {
           )
         ),
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
-          h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
+          h("div", {className: "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
@@ -350,8 +365,8 @@ class App extends React.PureComponent {
               value: apiVersionInput.split(".0")[0]
             })
           ),
-          h("div", {className: "slds-col slds-size_4-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, navigator.userAgentData.platform.indexOf("mac") > -1 ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")
+          h("div", {className: "slds-col slds-size_5-of-12 slds-text-align_left"},
+            h("span", {className: "footer-small-text"}, `${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"} to open`)
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
@@ -475,26 +490,27 @@ class AllDataBox extends React.PureComponent {
     let entityMap = new Map();
 
     function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported, isEverCreatable, newUrl}, api) {
-      label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
+      label = label.match("__MISSING") ? "" : label; //Error is added to the label if no label exists
       let entity = entityMap.get(name);
+      // Each API call enhances the data, only the Name fields are present for each call.
       if (entity) {
-        if (!entity.label) { // Doesn't seem to be needed, but if we have to do it for keyPrefix, we can just as well do it for label.
-          entity.label = label;
-        }
-        if (!entity.keyPrefix) { // For some objects the keyPrefix is only available in some of the APIs.
+        if (!entity.keyPrefix) {
           entity.keyPrefix = keyPrefix;
         }
         if (!entity.durableId) {
           entity.durableId = durableId;
         }
-        if (!entity.isEverCreatable) {
-          entity.isEverCreatable = isEverCreatable;
+        if (!entity.isCustomSetting) {
+          entity.isCustomSetting = isCustomSetting;
         }
         if (!entity.newUrl) {
           entity.newUrl = newUrl;
         }
         if (!entity.recordTypesSupported) {
           entity.recordTypesSupported = recordTypesSupported;
+        }
+        if (!entity.isEverCreatable) {
+          entity.isEverCreatable = isEverCreatable;
         }
       } else {
         entity = {
@@ -635,6 +651,7 @@ class AllDataBoxUsers extends React.PureComponent {
 
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
+    userQuery = userQuery.trim();
     if (!userQuery) {
       return [];
     }
@@ -1082,18 +1099,32 @@ class AllDataBoxShortcut extends React.PureComponent {
               }
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
+            } else if (rec.attributes.type === "Network"){
+              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=" + rec.Id;
+              rec.label = rec.Name;
+              let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
+              rec.name = rec.Id + url;
+              rec.detail = rec.attributes.type + " (" + rec.Status + ") • Builder";
             }
             result.push(rec);
           });
         });
       }
-      return result ? result : [];
+      //if no result found, add the globzl search link
+      result.length > 0 ? result : result.push({link: "/one/one.app#" + this.getEncodedGlobalSearch(shortcutSearch), label: '"' + shortcutSearch + '"', detail: "No results found", name: "Use Global Search"});
+      return result;
     } catch (err) {
       console.error("Unable to find shortcut", err);
       return [];
     } finally {
       setIsLoading(false);
     }
+  }
+
+  getEncodedGlobalSearch(term){
+    let searchPayload = JSON.parse('{ "componentDef": "forceSearch:searchPageDesktop", "attributes": { "term": null, "scopeMap": { "type": "TOP_RESULTS" }, "context": { "FILTERS": {}, "searchSource": "ASSISTANT_DIALOG", "disableIntentQuery": false, "disableSpellCorrection": false, "permsAndPrefs": { "SearchUi.feedbackComponentEnabled": false, "OrgPreferences.ChatterEnabled": true, "Search.crossObjectsAutoSuggestEnabled": true, "OrgPreferences.EinsteinSearchNaturalLanguageEnabled": true, "SearchUi.searchUIInteractionLoggingEnabled": false, "MySearch.userCanHaveMySearchBestResult": true, "SearchResultsLVM.lvmEnabledForTopResults": false }, "searchDialogSessionId": "00000000-0000-0000-0000-000000000000", "debugInfo": { "appType": "Standard", "appNamespace": "standard", "location": "one:auraContainer" } }, "groupId": "DEFAULT" }, "state": {} }');
+    searchPayload.attributes.term = term;
+    return btoa(JSON.stringify(searchPayload));
   }
 
   async onDataSelect(shortcut) {
@@ -1245,6 +1276,14 @@ class UserDetails extends React.PureComponent {
     this.enableDebugLog = this.enableDebugLog.bind(this);
   }
 
+  openUrlInIncognito(targetUrl) {
+    browser.runtime.sendMessage({
+      message: "createWindow",
+      url: targetUrl,
+      incognito: true,
+    });
+  }
+
   async enableDebugLog() {
 
     let {user} = this.props;
@@ -1363,6 +1402,11 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/servlet/servlet.su" + "?oid=" + encodeURIComponent(contextOrgId) + "&suorgadminid=" + encodeURIComponent(userId) + "&retURL=" + encodeURIComponent(retUrl) + "&targetURL=" + encodeURIComponent(targetUrl);
   }
 
+  loginAsInIncognito(userId) {
+    const targetUrl = "https://" + this.sfHost + "/secur/frontdoor.jsp?sid=" + sfConn.sessionId + "&retURL=" + encodeURIComponent(this.getLoginAsLink(userId));
+    this.openUrlInIncognito(targetUrl);
+  }
+
   getLoginAsPortalLink(user){
     let {sfHost, contextOrgId, contextPath} = this.props;
     const retUrl = contextPath || "/";
@@ -1403,8 +1447,12 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/lightning/setup/ManageUsers/" + userId + "/summary";
   }
 
+  openMenu(){
+    this.refs.buttonMenu.classList.toggle("slds-is-open");
+  }
+
   render() {
-    let {user, linkTarget, sfHost} = this.props;
+    let {user, linkTarget} = this.props;
     return (
       h("div", {className: "all-data-box-inner"},
         h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},
@@ -1461,10 +1509,31 @@ class UserDetails extends React.PureComponent {
           h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
           h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs")
         ),
-        h("div", {ref: "userButtons", className: "user-buttons center small-font top-space"},
-          this.doSupportLoginAs(user) ? h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Try login as") : null,
-          this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "Login to Experience") : null,
-        )
+        this.doSupportLoginAs(user) ? h("div", {className: "user-buttons justify-center small-font slds-button-group top-space", role: "group"},
+          h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs"),
+          h("div", {ref: "buttonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.openMenu(), title: "Show other LoginAs options"},
+              h("svg", {className: "slds-button__icon"},
+                h("use", {xlinkHref: "symbols.svg#down"})
+              ),
+              h("span", {className: "slds-assistive-text"}, "Show other LoginAs options")
+            ),
+            h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.openMenu()},
+              h("ul", {className: "slds-dropdown__list", role: "menu"},
+                h("li", {className: "slds-dropdown__item", role: "presentation"},
+                  h("a", {onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, tabIndex: "0"},
+                    h("span", {className: "slds-truncate", title: "Incognito"},
+                      h("span", {className: "slds-truncate", title: "Incognito"}, "Incognito")
+                    )
+                  ),
+                  this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, tabIndex: "1"},
+                    h("span", {className: "slds-truncate", title: "Portal"}, "Portal")
+                  ) : null
+                )
+              )
+            )
+          ),
+        ) : null
       )
     );
   }
@@ -1929,28 +1998,32 @@ class Autocomplete extends React.PureComponent {
   }
   handleFocus() {
     let {recentItems} = this.props;
-    sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+50").then(res => {
+    sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+100").then(res => {
+      let itemsIds = new Set();
       res.records.forEach(recentItem => {
-        recentItems.push({key: recentItem.Id,
-          value: {recordId: recentItem.Id, isRecent: true, sobject: {keyPrefix: recentItem.Id.slice(0, 3), label: recentItem.Type, name: recentItem.Name}},
-          element: [
-            h("div", {className: "autocomplete-item-main", key: "main"},
-              recentItem.Name,
-            ),
-            h("div", {className: "autocomplete-item-sub", key: "sub"},
-              h(MarkSubstring, {
-                text: recentItem.Type,
-                start: -1,
-                length: 0
-              }),
-              " • ",
-              h(MarkSubstring, {
-                text: recentItem.Id,
-                start: -1,
-                length: 0
-              })
-            )
-          ]});
+        if (!itemsIds.has(recentItem.Id)){
+          recentItems.push({key: recentItem.Id,
+            value: {recordId: recentItem.Id, isRecent: true, sobject: {keyPrefix: recentItem.Id.slice(0, 3), label: recentItem.Type, name: recentItem.Name}},
+            element: [
+              h("div", {className: "autocomplete-item-main", key: "main"},
+                recentItem.Name,
+              ),
+              h("div", {className: "autocomplete-item-sub", key: "sub"},
+                h(MarkSubstring, {
+                  text: recentItem.Type,
+                  start: -1,
+                  length: 0
+                }),
+                " • ",
+                h(MarkSubstring, {
+                  text: recentItem.Id,
+                  start: -1,
+                  length: 0
+                })
+              )
+            ]});
+          itemsIds.add(recentItem.Id);
+        }
       });
       this.setState({recentItems, showResults: true, selectedIndex: 0, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
     });

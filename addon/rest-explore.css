@@ -147,7 +147,6 @@ textarea[hidden] {
 }
 
 .result-bar {
-  margin-bottom: 3px;
   display: flex;
   align-items: center;
   padding: 8px 12px;
@@ -179,6 +178,9 @@ textarea[hidden] {
   border: 1px solid #DDDBDA;
   margin: 12px 12px 0 12px;
 }
+#result-area.area{
+  border:none;
+}
 
 h1 {
   font-size: 1rem;
@@ -187,9 +189,6 @@ h1 {
   font-weight: 700;
   line-height: 1.25;
   margin: revert;
-}
-.user-info h1 {
-  padding: 0 6px 0 10px;
 }
 
 .query-controls {
@@ -249,7 +248,6 @@ input[type=search] {
   background-size: 1rem;
   background-position: 10px 7px;
   padding-left: 35px;
-  margin-right: 10px;
 }
 
 input[type=save] {
@@ -265,6 +263,9 @@ input[type="checkbox"] {
   height: 1rem;
 }
 
+input.query-control{
+  width: -webkit-fill-available;
+}
 textarea:not([readonly]):focus,
 button:active,
 button:focus,
@@ -306,10 +307,6 @@ input:disabled:hover {
   color: #dddbda;
 }
 
-button:disabled > svg.button-icon{
-  fill: #dddbda;
-}
-
 .highlighted {
   background-color: rgb(0, 112, 210);
   border-color: rgb(0, 112, 210);
@@ -342,6 +339,10 @@ textarea[readonly] {
   border-radius: 0;
   border: none;
   border-top: 1px solid #DDDBDA;
+  resize: vertical;
+  word-wrap: normal;
+  font-size: 11px;
+  height: 40em;
 }
 
 #help-btn {
@@ -527,20 +528,6 @@ button.toggle .button-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/light_bulb.svg');
 }
 
-ul > li > a > span {
-  color: #0176d3;
-}
-
-svg.button-icon {
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 1rem;
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  fill: #0070d2;
-  vertical-align: sub;
-}
-
 .autocomplete-header {
   display: flex;
   align-items: flex-end;
@@ -711,7 +698,30 @@ svg.button-icon {
   top: 0;
   z-index: 2;
 }
-.expanded{
-  overflow: auto;
-  height: 200px;
+.request-body{
+  height: 150px;
+}
+.success {
+  background-color: #2e844a;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  color: white;
+}
+.success > h1 {
+  color: white;
+}
+.error {
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  background-color: #ea001e;
+  color: white;
+}
+.error > h1 {
+  color: white;
+}
+.status-code{
+  font-weight: bold;
+}
+.blue{
+  color:#0070d2;
 }

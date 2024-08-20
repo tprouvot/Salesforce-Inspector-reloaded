@@ -13,17 +13,19 @@ export async function getObjectSetupLinks(sfHost, sobjectName) {
 }
 
 function getFieldDefinitionSetupLinks(sfHost, fieldName, fieldDefinition, isCustomSetting, isCustomMetadata) {
-  let durableId = fieldDefinition.DurableId.split(".");
-  let entityDurableId = durableId[0];
-  let fieldDurableId = durableId[durableId.length - 1];
-  let customType = isCustomMetadata ? "CustomMetadata" : isCustomSetting ? "CustomSettings" : "";
-  let lightSetupLink = isCustomMetadata ? `https://${sfHost}/lightning/setup/${customType}/page?address=%2F${fieldDurableId}%3Fsetupid%3D${customType}` : `https://${sfHost}/lightning/setup/ObjectManager/${entityDurableId}/FieldsAndRelationships/${fieldDurableId}/view`;
-  return {
-    lightningSetupLink: lightSetupLink,
-    classicSetupLink: fieldName.includes("__")
-      ? `https://${sfHost}/${fieldDurableId}`
-      : `https://${sfHost}/p/setup/field/StandardFieldAttributes/d?id=${fieldDurableId}&type=${entityDurableId}`
-  };
+  if(fieldDefinition?.DurableId){
+    let durableId = fieldDefinition.DurableId?.split(".");
+    let entityDurableId = durableId[0];
+    let fieldDurableId = durableId[durableId.length - 1];
+    let customType = isCustomMetadata ? "CustomMetadata" : isCustomSetting ? "CustomSettings" : "";
+    let lightSetupLink = isCustomMetadata ? `https://${sfHost}/lightning/setup/${customType}/page?address=%2F${fieldDurableId}%3Fsetupid%3D${customType}` : `https://${sfHost}/lightning/setup/ObjectManager/${entityDurableId}/FieldsAndRelationships/${fieldDurableId}/view`;
+    return {
+      lightningSetupLink: lightSetupLink,
+      classicSetupLink: fieldName.includes("__")
+        ? `https://${sfHost}/${fieldDurableId}`
+        : `https://${sfHost}/p/setup/field/StandardFieldAttributes/d?id=${fieldDurableId}&type=${entityDurableId}`
+    };
+  }
 }
 
 export async function getFieldSetupLinks(sfHost, sobjectName, fieldName, isCustomSetting) {

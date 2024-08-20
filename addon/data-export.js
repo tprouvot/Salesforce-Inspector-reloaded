@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, nullToEmptyString} from "./inspector.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
@@ -15,7 +15,7 @@ class QueryHistory {
     try {
       history = JSON.parse(localStorage[this.storageKey]);
     } catch (e) {
-      // empty
+      console.error(e);
     }
     if (!Array.isArray(history)) {
       history = [];
@@ -80,6 +80,7 @@ class Model {
     this.winInnerHeight = 0;
     this.queryAll = false;
     this.queryTooling = false;
+    this.prefHideRelations = localStorage.getItem("hideObjectNameColumnsDataExport") == "true"; // default to false
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
@@ -104,11 +105,14 @@ class Model {
     this.queryName = "";
     this.queryTemplates = localStorage.getItem("queryTemplates") ? this.queryTemplates = localStorage.getItem("queryTemplates").split("//") : [
       "SELECT Id FROM ",
+      'FIND {""}\nIN Name Fields\nRETURNING Contact(Name, Phone)',
+      "{\n\tuiapi {\n\t\tquery {\n\t\t\tContact {\n\t\t\t\tedges {\n\t\t\t\t\t node {\n\t\t\t\t\t\tId\n\t\t\t\t\t\tName { value }\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n}",
       "SELECT Id FROM WHERE",
       "SELECT Id FROM WHERE IN",
       "SELECT Id FROM WHERE LIKE",
       "SELECT Id FROM WHERE ORDER BY"
     ];
+    this.separator = getSeparator();
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -141,6 +145,29 @@ class Model {
     // Recalculate visibility
     this.exportedData.updateVisibility();
     this.updatedExportedData();
+  }
+  refreshColumnsVisibility() {
+    if (this.exportedData == null || this.exportedData.totalSize == 0) {
+      return;
+    }
+    // Recalculate visibility
+    this.exportedData.updateColumnsVisibility();
+    this.updatedExportedData();
+  }
+  setQueryMethod(data){
+    let method;
+    if (data.isTooling){
+      method = "tooling/query";
+    } else if (this.queryAll){
+      method = "queryAll";
+    } else if (this.queryInput.value.toLowerCase().startsWith("find")){
+      method = "search";
+    } else if (this.queryInput.value.trim().startsWith("{")){
+      method = "graphql";
+    } else {
+      method = "query";
+    }
+    data.queryMethod = method;
   }
   setQueryName(value) {
     this.queryName = value;
@@ -228,7 +255,7 @@ class Model {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
       let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(delimiter)) {
+      if (this.selectedSavedEntry.query.includes(delimiter) && this.selectedSavedEntry.query.indexOf(":SELECT") >= 0) {
         let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
         queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
@@ -251,7 +278,7 @@ class Model {
     this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
   }
   getQueryToSave() {
-    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value : this.queryInput.value;
+    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value.trim() : this.queryInput.value.trim();
   }
   autocompleteReload() {
     this.describeInfo.reloadAll();
@@ -269,15 +296,20 @@ class Model {
     copyToClipboard(this.exportedData.csvSerialize("\t"));
   }
   copyAsCsv() {
-    let separator = getSeparator();
-    copyToClipboard(this.exportedData.csvSerialize(separator));
+    copyToClipboard(this.exportedData.csvSerialize(this.separator));
   }
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
   }
+  downloadAsCsv(){
+    const blob = new Blob([this.exportedData.csvSerialize(this.separator)], {type: "data:text/csv;charset=utf-8,"});
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.download = `${this.autocompleteResults.sobjectName}-${new Date().toLocaleDateString()}.csv`;
+    downloadAnchor.href = window.URL.createObjectURL(blob);
+    downloadAnchor.click();
+  }
   deleteRecords(e) {
-    let separator = getSeparator();
-    let data = this.exportedData.csvSerialize(separator);
+    let data = this.exportedData.csvSerialize(this.separator);
     let encodedData = btoa(data);
 
     let args = new URLSearchParams();
@@ -459,6 +491,8 @@ class Model {
     // Find out what sobject we are querying, by using the word after the "from" keyword.
     // Assuming no subqueries in the select clause, we should find the correct sobjectName. There should be only one "from" keyword, and strings (which may contain the word "from") are only allowed after the real "from" keyword.
     let fromKeywordMatch = /(^|\s)from\s+([a-z0-9_]*)/i.exec(query);
+    let findKeywordMatch = /(^|\s)find\s+([a-z0-9_]*)/i.exec(query);
+    let graphKeywordMatch = /(^|\s)uiapi\s+([a-z0-9_]*)/i.exec(query);
     if (fromKeywordMatch) {
       sobjectName = fromKeywordMatch[2];
       isAfterFrom = selStart > fromKeywordMatch.index + 1;
@@ -469,9 +503,10 @@ class Model {
         sobjectName = fromKeywordMatch[1];
         isAfterFrom = false;
       } else {
+        let title = findKeywordMatch || graphKeywordMatch ? "" : "\"from\" keyword not found";
         vm.autocompleteResults = {
           sobjectName: "",
-          title: "\"from\" keyword not found",
+          title,
           results: []
         };
         return;
@@ -646,7 +681,14 @@ class Model {
         }
         let contextValueField = contextValueFields[0];
         let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
-        let acQuery = "select " + contextValueField.field.name + " from " + contextValueField.sobjectDescribe.name + " where " + contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%' group by " + contextValueField.field.name + " limit 100";
+        let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%'";
+        if (contextValueField.sobjectDescribe.name.toLowerCase() === "recordtype"){
+          let sobject = contextPath.split(".")[0];
+          sobject = sobject.toLowerCase() === "recordtype" ? vm.autocompleteResults.sobjectName : sobject;
+          whereClause += vm.autocompleteResults.sobjectName ? " AND SobjectType = '" + sobject + "'" : "";
+        }
+        let acQuery = "SELECT " + contextValueField.field.name + " FROM " + contextValueField.sobjectDescribe.name + " WHERE " + whereClause + " GROUP BY " + contextValueField.field.name + " LIMIT 100";
+
         vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(acQuery), {progressHandler: vm.autocompleteProgress})
           .catch(err => {
             if (err.name != "AbortError") {
@@ -766,9 +808,10 @@ class Model {
     } else {
       // Autocomplete field names and functions
       if (ctrlSpace) {
+        let includeFormula = localStorage.getItem("includeFormulaFieldsFromExportAutocomplete") !== "false";
         let ar = contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
-          .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
+          .filter(field => (field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase())) && (includeFormula || !field.calculated))
           .map(field => contextPath + field.name)
           .toArray();
         if (ar.length > 0) {
@@ -815,7 +858,6 @@ class Model {
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
     let query = vm.queryInput.value;
-    let queryMethod = exportedData.isTooling ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
@@ -823,14 +865,36 @@ class Model {
         }
         throw err;
       }).then(data => {
-        exportedData.addToTable(data.records);
+        let isQueryMode = exportedData.queryMethod === "query";
+        let fieldsResponses = {query: "records", "tooling/query": "records", search: "searchRecords", graphql: "data"};
+        if (exportedData.queryMethod === "graphql"){
+          exportedData.sobject = Object.keys(data.data.uiapi.query)[0];
+          let dataGraph = data.data.uiapi.query[exportedData.sobject].edges.map(record => {
+            const firstProperty = Object.keys(record.node)[0];
+
+            const transformed = {};
+            if (firstProperty) {
+              for (const key in record.node) {
+                if (Object.prototype.hasOwnProperty.call(record.node, key)) {
+                  transformed[key] = (typeof record.node[key] === "object" && "value" in record.node[key]) ? record.node[key].value : record.node[key];
+                  transformed.attributes = {type: exportedData.sobject};
+                }
+              }
+            }
+            return transformed;
+          });
+          exportedData.addToTable(dataGraph);
+        } else {
+          exportedData.addToTable(data[fieldsResponses[exportedData.queryMethod]]);
+        }
+
         let recs = exportedData.records.length;
         let total = exportedData.totalSize;
         if (data.totalSize != -1) {
-          exportedData.totalSize = data.totalSize;
-          total = data.totalSize;
+          exportedData.totalSize = isQueryMode ? data.totalSize : recs;
+          total = exportedData.totalSize;
         }
-        if (!data.done) {
+        if (!data.done && isQueryMode) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
           vm.isWorking = true;
           vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
@@ -882,7 +946,8 @@ class Model {
         return null;
       });
     }
-    vm.spinFor(batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query), {progressHandler: vm.exportProgress}))
+    this.setQueryMethod(exportedData);
+    vm.spinFor(batchHandler(this.getQueryApiFunction(exportedData.queryMethod, query), {progressHandler: vm.exportProgress})
       .catch(error => {
         console.error(error);
         vm.isWorking = false;
@@ -898,6 +963,13 @@ class Model {
     vm.exportError = null;
     vm.exportedData = exportedData;
     vm.updatedExportedData();
+  }
+  getQueryApiFunction(queryMethod, query){
+    if (queryMethod === "graphql"){
+      return sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod, {method: "POST", body: {"query": "query objects " + query}});
+    } else {
+      return sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query));
+    }
   }
   stopExport() {
     this.exportProgress.abort();
@@ -950,7 +1022,9 @@ function RecordTable(vm) {
           row.push(undefined);
         }
         header[c] = column;
-        rt.colVisibilities.push(true);
+        if (typeof record[field] == "object" && record[field] != null && vm.prefHideRelations) {
+          rt.colVisibilities.push(false);
+        } else { rt.colVisibilities.push(true); }
       }
       row[c] = record[field];
       if (typeof record[field] == "object" && record[field] != null) {
@@ -972,7 +1046,7 @@ function RecordTable(vm) {
     records: [],
     table: [],
     rowVisibilities: [],
-    colVisibilities: [true],
+    colVisibilities: new Array(!vm.prefHideRelations),
     countOfVisibleRecords: null,
     isTooling: false,
     totalSize: -1,
@@ -1002,15 +1076,29 @@ function RecordTable(vm) {
       this.countOfVisibleRecords = countOfVisibleRecords;
       vm.exportStatus = "Filtered " + countOfVisibleRecords + " records out of " + rt.records.length + " records";
     },
+    filterColumns(table, colVis) {
+      let filteredArray = table.map(row => row.filter((_, index) => colVis[index]));
+      return filteredArray;
+    },
+    updateColumnsVisibility() {
+      let newColVisibilities = [];
+      for (const [el] of rt.table[1].entries()) {
+        if (typeof el == "object" && el !== null && vm.prefHideRelations){
+          newColVisibilities.push(false);
+        } else { newColVisibilities.push(true); }
+      }
+      rt.colVisibilities = newColVisibilities;
+    },
     getVisibleTable() {
       if (vm.resultsFilter) {
         let filteredTable = [];
         for (let i = 0; i < rt.table.length; i++) {
           if (rt.rowVisibilities[i]) { filteredTable.push(rt.table[i]); }
         }
-        return filteredTable;
+        if (vm.prefHideRelations) { return rt.filterColumns(filteredTable, rt.colVisibilities); } else { return filteredTable; }
+
       }
-      return rt.table;
+      if (vm.prefHideRelations) { return rt.filterColumns(rt.table, rt.colVisibilities); } else { return rt.table; }
     }
   };
   return rt;
@@ -1023,6 +1111,7 @@ class App extends React.Component {
     super(props);
     this.onQueryAllChange = this.onQueryAllChange.bind(this);
     this.onQueryToolingChange = this.onQueryToolingChange.bind(this);
+    this.onPrefHideRelationsChange = this.onPrefHideRelationsChange.bind(this);
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
     this.onSelectQueryTemplate = this.onSelectQueryTemplate.bind(this);
     this.onClearHistory = this.onClearHistory.bind(this);
@@ -1038,6 +1127,7 @@ class App extends React.Component {
     this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
+    this.onDownloadAsCsv = this.onDownloadAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
@@ -1053,6 +1143,12 @@ class App extends React.Component {
     let {model} = this.props;
     model.queryTooling = e.target.checked;
     model.queryAutocompleteHandler();
+    model.didUpdate();
+  }
+  onPrefHideRelationsChange(e) {
+    let {model} = this.props;
+    model.prefHideRelations = e.target.checked;
+    model.refreshColumnsVisibility();
     model.didUpdate();
   }
   onSelectHistoryEntry(e) {
@@ -1156,6 +1252,11 @@ class App extends React.Component {
     model.copyAsCsv();
     model.didUpdate();
   }
+  onDownloadAsCsv(){
+    let {model} = this.props;
+    model.downloadAsCsv();
+    model.didUpdate();
+  }
   onCopyAsJson() {
     let {model} = this.props;
     model.copyAsJson();
@@ -1248,6 +1349,10 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     this.scrollTable.viewportChange();
   }
+  toggleQueryMoreMenu(){
+    this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
+  }
+
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
@@ -1289,10 +1394,6 @@ class App extends React.Component {
               ),
               h("button", {onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
             ),
-            h("div", {className: "pop-menu saveOptions", hidden: !model.expandSavedOptions},
-              h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query"),
-              h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
-            ),
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
                 h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
@@ -1300,7 +1401,32 @@ class App extends React.Component {
               ),
               h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
               h("button", {onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
-              h("button", {className: model.expandSavedOptions ? "toggle contract" : "toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"}))
+              h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+                h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleQueryMoreMenu(), title: "Show more options"},
+                  h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#down"})
+                  ),
+                  h("span", {className: "slds-assistive-text"}, "Show more options")
+                ),
+                h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.toggleQueryMoreMenu()},
+                  h("ul", {className: "slds-dropdown__list", role: "menu"},
+                    h("li", {className: "slds-dropdown__item", role: "presentation"},
+                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
+                        h("span", {className: "slds-truncate"},
+                          h("span", {className: "slds-truncate", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
+                        )
+                      )
+                    ),
+                    h("li", {className: "slds-dropdown__item", role: "presentation"},
+                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
+                        h("span", {className: "slds-truncate"},
+                          h("span", {className: "slds-truncate", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
             ),
           ),
           h("div", {className: "query-options"},
@@ -1339,7 +1465,11 @@ class App extends React.Component {
         ),
         h("div", {hidden: !model.showHelp, className: "help-text"},
           h("h3", {}, "Export Help"),
-          h("p", {}, "Use for quick one-off data exports. Enter a ", h("a", {href: "http://www.salesforce.com/us/developer/docs/soql_sosl/", target: "_blank"}, "SOQL query"), " in the box above and press Export."),
+          h("p", {}, "Use for quick one-off data exports. Enter a ",
+            h("a", {href: "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql.htm", target: "_blank"}, "SOQL"),
+            h("a", {href: "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_sosl.htm", target: "_blank"}, ", SOSL "),
+            h("a", {href: "https://developer.salesforce.com/docs/platform/graphql/guide/query-record-examples.html", target: "_blank"}, ", GraphQL"),
+            " query in the box above and press Export."),
           h("p", {}, "Press Ctrl+Space to insert all field name autosuggestions or to load suggestions for field values."),
           h("p", {}, "Press Ctrl+Enter or F5 to execute the export."),
           h("p", {}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
@@ -1349,20 +1479,30 @@ class App extends React.Component {
         h("div", {className: "result-bar"},
           h("h1", {}, "Export Result"),
           h("div", {className: "button-group"},
-            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
             h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
+            h("button", {disabled: !model.canCopy(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
+              h("svg", {className: "button-icon"},
+                h("use", {xlinkHref: "symbols.svg#download"})
+              )
+            ),
             localStorage.getItem("showDeleteRecordsButton") !== "false"
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
+          h("label", {title: "With this option, additionnal columns corresponding to Object names are removed from the query results and the exported data. These columns are useful during data import to automatically map objects."},
+            h("input", {type: "checkbox", checked: model.prefHideRelations, onChange: this.onPrefHideRelationsChange}),
+            " ",
+            h("span", {}, "Hide Object Columns")
+          ),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
             h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
           ),
         ),
-        h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
+        h("textarea", {id: "result-text", readOnly: true, value: nullToEmptyString(model.exportError), hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null}
           /* the scroll table goes here */
         )

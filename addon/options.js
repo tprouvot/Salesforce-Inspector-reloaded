@@ -402,11 +402,40 @@ class FaviconOption extends React.Component {
     super(props);
     this.sfHost = props.model.sfHost;
     this.onChangeFavicon = this.onChangeFavicon.bind(this);
-    this.useRandomFavicon = this.useRandomFavicon.bind(this);
+    this.populateFaviconColors = this.populateFaviconColors.bind(this);
+    this.onToogleSmartMode = this.onToogleSmartMode.bind(this);
+
     let favicon = localStorage.getItem(this.sfHost + "_customFavicon") ? localStorage.getItem(this.sfHost + "_customFavicon") : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
+    let smartMode = true;
     this.tooltip = props.tooltip;
-    this.state = {favicon, isInternal};
+    this.state = {favicon, isInternal, smartMode};
+    this.colorShades = {
+      dev: [
+        "LightSkyBlue", "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue",
+        "CornflowerBlue", "SlateBlue", "SteelBlue", "LightSteelBlue", "LightBlue",
+        "PowderBlue", "SkyBlue", "MediumSlateBlue", "Indigo", "BlueViolet",
+        "MediumPurple", "LightCyan", "Aqua", "Turquoise", "DarkTurquoise"
+      ],
+      uat: [
+        "MediumOrchid", "Orchid", "DarkOrchid", "DarkViolet", "DarkMagenta",
+        "Purple", "BlueViolet", "Indigo", "DarkSlateBlue", "RebeccaPurple",
+        "MediumPurple", "MediumSlateBlue", "SlateBlue", "Lavender", "Thistle",
+        "Violet", "Plum", "Orchid", "MediumOrchid", "Magenta"
+      ],
+      int: [
+        "LightGreen", "LimeGreen", "SeaGreen", "MediumSeaGreen", "ForestGreen",
+        "Green", "DarkGreen", "YellowGreen", "OliveDrab", "DarkOliveGreen",
+        "PaleGreen", "MediumSpringGreen", "SpringGreen", "LawnGreen", "Chartreuse",
+        "GreenYellow", "LightSeaGreen", "DarkSeaGreen", "MediumAquamarine", "Aquamarine"
+      ],
+      full: [
+        "Orange", "DarkOrange", "Coral", "Tomato", "OrangeRed",
+        "Red", "Crimson", "FireBrick", "DarkRed", "Salmon",
+        "LightCoral", "IndianRed", "Sienna", "Chocolate", "SaddleBrown",
+        "Peru", "DarkSalmon", "LightSalmon", "RosyBrown", "LightPink"
+      ]
+    };
   }
 
   onChangeFavicon(e) {
@@ -415,41 +444,70 @@ class FaviconOption extends React.Component {
     localStorage.setItem(this.sfHost + "_customFavicon", favicon);
   }
 
-  useRandomFavicon(){
-    let colors = [
-      'olive', 'darkorange', 'pink', 'purple', 'firebrick', 'hotpink', 'skyblue',
-      'lightcoral', 'gold', 'indigo', 'teal', 'lime', 'crimson', 'peru', 'cyan',
-      'tomato', 'orchid', 'magenta', 'mediumvioletred', 'dodgerblue', 'slateblue',
-      'sienna', 'maroon', 'mediumseagreen', 'plum', 'turquoise', 'deepskyblue',
-      'rosybrown', 'slategray', 'darkslateblue', 'palevioletred'
-  ];
+  onToogleSmartMode(e) {
+    let smartMode = e.target.checked;
+    this.setState({smartMode});
+  }
 
-  let orgs = Object.keys(localStorage).filter((localKey) =>
+  populateFaviconColors(){
+    let orgs = Object.keys(localStorage).filter((localKey) =>
       localKey.endsWith("_isSandbox")
-  );
+    );
 
-  orgs.forEach((org) => {
+    orgs.forEach((org) => {
       let sfHost = org.substring(0, org.indexOf("_isSandbox"));
       let existingColor = localStorage.getItem(sfHost + "_customFavicon");
 
-      if (!existingColor) {  // Only assign a color if none is set
-          if (colors.length === 0) {
-              console.warn("No more colors available.");
-              return;
+      if (!existingColor) { // Only assign a color if none is set
+        const chosenColor = this.getColorForHost(sfHost, this.state.smartMode);
+        if (chosenColor) {
+          console.info(sfHost + "_customFavicon", chosenColor);
+          localStorage.setItem(sfHost + "_customFavicon", chosenColor);
+          if (sfHost === this.sfHost) {
+            this.setState({favicon: chosenColor});
           }
-          let randomIndex = Math.floor(Math.random() * colors.length);
-          let randomFavicon = colors[randomIndex];
-          colors.splice(randomIndex, 1);  // Remove the used color from the list
-          console.info(sfHost + "_customFavicon", randomFavicon);
-          localStorage.setItem(sfHost + "_customFavicon", randomFavicon);
-          if(sfHost === this.sfHost){
-            this.setState({favicon: randomFavicon});
-          }
+        }
       } else {
-          console.info(sfHost + " already has a customFavicon: " + existingColor);
+        console.info(sfHost + " already has a customFavicon: " + existingColor);
       }
-  });
+    });
   }
+
+  getEnvironmentType(sfHost) {
+    // Function to get environment type based on sfHost
+    if (sfHost.includes("dev")) return "dev";
+    if (sfHost.includes("uat")) return "uat";
+    if (sfHost.includes("int") || sfHost.includes("sit")) return "int";
+    if (sfHost.includes("full")) return "full";
+    return null;
+  }
+
+  getColorForHost(sfHost, smartMode) {
+    // Attempt to get the environment type
+    const envType = this.getEnvironmentType(sfHost);
+
+    // Check if smartMode is true and environment type is valid
+    if (smartMode && envType && this.colorShades[envType].length > 0) {
+      // Select a random color from the corresponding environment shades
+      const randomIndex = Math.floor(Math.random() * this.colorShades[envType].length);
+      const chosenColor = this.olorShades[envType][randomIndex];
+      this.colorShades[envType].splice(randomIndex, 1); // Remove the used color from the list
+      return chosenColor;
+    } else {
+      // If no environment type matches or smartMode is false, use a random color from all available shades
+      const allColors = Object.values(this.colorShades).flat();
+      if (allColors.length > 0) {
+        const randomIndex = Math.floor(Math.random() * allColors.length);
+        const chosenColor = allColors[randomIndex];
+        allColors.splice(randomIndex, 1); // Remove the used color from the list
+        return chosenColor;
+      } else {
+        console.warn("No more colors available.");
+        return null;
+      }
+    }
+  }
+
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
@@ -459,16 +517,28 @@ class FaviconOption extends React.Component {
         )
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
+        h("div", {className: "slds-form-element__control"},
           h("input", {type: "text", className: "slds-input", placeholder: "All HTML Color Names, Hex code or external URL", value: nullToEmptyString(this.state.favicon), onChange: this.onChangeFavicon}),
         ),
-        h("div", {className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-left_small"},
+        h("div", {className: "slds-form-element__control slds-col"},
           this.state.isInternal ? h("svg", {className: "icon"},
             h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
           ) : null
+        )
+      ),
+      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {dir: "rtl", className: "slds-form-element__control slds-col "},
+          h("label", {className: "slds-checkbox_toggle slds-grid"},
+            h("input", {type: "checkbox", required: true, className: "slds-input", checked: this.state.smartMode, onChange: this.onToogleSmartMode}),
+            h("span", {className: "slds-checkbox_faux_container center-label"},
+              h("span", {className: "slds-checkbox_faux"}),
+              h("span", {className: "slds-checkbox_on", title: "Use favicon based on org name (DEV : blue, UAT :green ..)"}, "Smart"),
+              h("span", {className: "slds-checkbox_off", title: "Use random favicon"}, "Random"),
+            )
+          )
         ),
-        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          h("button", {className: "button button-brand", onClick: this.useRandomFavicon, title: "Use random favicon for all orgs I've visited"}, "Randomize")
+        h("div", {className: "slds-form-element__control"},
+          h("button", {className: "button button-brand", onClick: this.populateFaviconColors, title: "Use favicon for all orgs I've visited"}, "Populate All")
         )
       )
     );

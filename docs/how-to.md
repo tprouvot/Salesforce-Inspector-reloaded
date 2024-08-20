@@ -247,42 +247,14 @@ From the option page, you can customize the default favicon by:
 
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
 
-<img width="901" alt="Customize favicon" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
+<img width="878" alt="image" src="https://github.com/user-attachments/assets/fdf24a37-2cab-402e-a101-4a20bc4e1ae4">
 
-Now if you want to set a random favicon for all of your visited orgs, open dev console from one of the extension page and paste following code in dev console:
+Now if you want to populate all the orgs you visited with a custom favicon, you have two options:
+- Smart mode enabled: this will analyze your environment name and populate a favicon based on this (blue for dev, green for int, purple for uat and orange for full)
+- Random: this will choose a random color among all the predefined colors
 
-``` js
-let colors = [
-    'olive', 'darkorange', 'pink', 'purple', 'firebrick', 'hotpink', 'skyblue',
-    'lightcoral', 'gold', 'indigo', 'teal', 'lime', 'crimson', 'peru', 'cyan',
-    'tomato', 'orchid', 'magenta', 'mediumvioletred', 'dodgerblue', 'slateblue',
-    'sienna', 'maroon', 'mediumseagreen', 'plum', 'turquoise', 'deepskyblue',
-    'rosybrown', 'slategray', 'darkslateblue', 'palevioletred'
-];
-
-let orgs = Object.keys(localStorage).filter((localKey) =>
-    localKey.endsWith("_isSandbox")
-);
-
-orgs.forEach((org) => {
-    let sfHost = org.substring(0, org.indexOf("_isSandbox"));
-    let existingColor = localStorage.getItem(sfHost + "_customFavicon");
-
-    if (!existingColor) {  // Only assign a color if none is set
-        if (colors.length === 0) {
-            console.warn("No more colors available.");
-            return;
-        }
-        let randomIndex = Math.floor(Math.random() * colors.length);
-        let randomFavicon = colors[randomIndex];
-        colors.splice(randomIndex, 1);  // Remove the used color from the list
-        console.info(sfHost + "_customFavicon", randomFavicon);
-        localStorage.setItem(sfHost + "_customFavicon", randomFavicon);
-    } else {
-        console.info(sfHost + " already has a customFavicon: " + existingColor);
-    }
-});
-```
+Then you click on Populate All and that's it!
+Note: orgs with an existing customized favicon won't be affected.
 
 ## Customize sandbox banner color
 

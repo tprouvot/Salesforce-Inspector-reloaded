@@ -365,8 +365,15 @@ class App extends React.PureComponent {
               value: apiVersionInput.split(".0")[0]
             })
           ),
+          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Buy me a coffee"},
+            h("a", {href: "#", target: linkTarget},
+              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
+                h("use", {xlinkHref: "symbols.svg#cart", style: {fill: "#9c9c9c"}})
+              )
+            )
+          ),
           h("div", {className: "slds-col slds-size_5-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, `${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"} to open`)
+            h("span", {className: "footer-small-text", title: "Shortcut to open the popup"}, `${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"}`)
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
@@ -381,7 +388,7 @@ class App extends React.PureComponent {
                 h("use", {xlinkHref: "symbols.svg#settings", style: {fill: "#9c9c9c"}})
               )
             )
-          ),
+          )
         )
       )
     );

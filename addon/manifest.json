@@ -24,7 +24,8 @@
     "https://*.cloudforce.mil/*",
     "https://*.visualforce.mil/*",
     "https://*.crmforce.mil/*",
-    "https://*.force.com.mcas.ms/*"
+    "https://*.force.com.mcas.ms/*",
+    "https://*.builder.salesforce-experience.com/*"
   ],
   "content_scripts": [
     {
@@ -45,7 +46,8 @@
         "https://*.cloudforce.mil/*",
         "https://*.visualforce.mil/*",
         "https://*.crmforce.mil/*",
-        "https://*.lightning.force.com.mcas.ms/*"
+        "https://*.lightning.force.com.mcas.ms/*",
+        "https://*.builder.salesforce-experience.com/*"
       ],
       "all_frames": true,
       "css": ["button.css", "inspect-inline.css"],

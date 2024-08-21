@@ -9,12 +9,6 @@
   "action": {
     "default_title": "Open popup"
   },
-  "applications": {
-    "gecko": {
-      "id": "jid1-DBcuAQpfLMcvOQ@jetpack",
-      "strict_min_version": "60.0"
-    }
-  },
   "minimum_chrome_version": "88",
   "permissions": ["cookies"],
   "host_permissions": [
@@ -30,7 +24,8 @@
     "https://*.cloudforce.mil/*",
     "https://*.visualforce.mil/*",
     "https://*.crmforce.mil/*",
-    "https://*.force.com.mcas.ms/*"
+    "https://*.force.com.mcas.ms/*",
+    "https://*.builder.salesforce-experience.com/*"
   ],
   "content_scripts": [
     {
@@ -51,11 +46,12 @@
         "https://*.cloudforce.mil/*",
         "https://*.visualforce.mil/*",
         "https://*.crmforce.mil/*",
-        "https://*.lightning.force.com.mcas.ms/*"
+        "https://*.lightning.force.com.mcas.ms/*",
+        "https://*.builder.salesforce-experience.com/*"
       ],
       "all_frames": true,
       "css": ["button.css", "inspect-inline.css"],
-      "js": ["button.js", "inspect-inline.js", "links.js"]
+      "js": ["button.js", "inspect-inline.js"]
     }
   ],
   "background": {
@@ -71,6 +67,7 @@
         "inspect.html",
         "metadata-retrieve.html",
         "explore-api.html",
+        "rest-explore.html",
         "limits.html",
         "options.html"
       ],
@@ -78,7 +75,7 @@
       "extension_ids": []
     }
   ],
-  "incognito": "replaced-at-build",
+  "incognito": "split",
   "manifest_version": 3,
   "commands": {
     "open-popup": {

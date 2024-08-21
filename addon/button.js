@@ -5,7 +5,7 @@
 // sfdcBody = normal Salesforce page
 // ApexCSIPage = Developer Console
 // auraLoadingBox = Lightning / Salesforce1
-if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox") || location.host.endsWith("visualforce.com")) {
+if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #studioBody") || location.host.endsWith("visualforce.com")) {
   // We are in a Salesforce org
   chrome.runtime.sendMessage({message: "getSfHost", url: location.href}, sfHost => {
     if (sfHost) {

@@ -412,28 +412,29 @@ class FaviconOption extends React.Component {
     this.state = {favicon, isInternal, smartMode};
     this.colorShades = {
       dev: [
-        "LightSkyBlue", "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue",
-        "CornflowerBlue", "SlateBlue", "SteelBlue", "LightSteelBlue", "LightBlue",
-        "PowderBlue", "SkyBlue", "MediumSlateBlue", "Indigo", "BlueViolet",
-        "MediumPurple", "LightCyan", "Aqua", "Turquoise", "DarkTurquoise"
+        "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue", "CornflowerBlue",
+        "SlateBlue", "SteelBlue", "SkyBlue", "PowderBlue", "MediumSlateBlue",
+        "Indigo", "BlueViolet", "MediumPurple", "CadetBlue", "Aqua",
+        "Turquoise", "DarkTurquoise", "Teal", "LightSlateGray", "DarkCyan"
       ],
       uat: [
         "MediumOrchid", "Orchid", "DarkOrchid", "DarkViolet", "DarkMagenta",
         "Purple", "BlueViolet", "Indigo", "DarkSlateBlue", "RebeccaPurple",
-        "MediumPurple", "MediumSlateBlue", "SlateBlue", "Lavender", "Thistle",
-        "Violet", "Plum", "Orchid", "MediumOrchid", "Magenta"
+        "MediumPurple", "MediumSlateBlue", "SlateBlue", "Plum", "Violet",
+        "Thistle", "Magenta", "DarkOrchid", "Fuchsia", "DarkPurple"
       ],
       int: [
-        "LightGreen", "LimeGreen", "SeaGreen", "MediumSeaGreen", "ForestGreen",
-        "Green", "DarkGreen", "YellowGreen", "OliveDrab", "DarkOliveGreen",
-        "PaleGreen", "MediumSpringGreen", "SpringGreen", "LawnGreen", "Chartreuse",
-        "GreenYellow", "LightSeaGreen", "DarkSeaGreen", "MediumAquamarine", "Aquamarine"
+        "LimeGreen", "SeaGreen", "MediumSeaGreen", "ForestGreen", "Green",
+        "DarkGreen", "YellowGreen", "OliveDrab", "DarkOliveGreen",
+        "SpringGreen", "LawnGreen", "DarkKhaki",
+        "GreenYellow", "DarkSeaGreen", "MediumAquamarine", "Aquamarine",
+        "Teal", "Jade", "MediumForestGreen", "HunterGreen"
       ],
       full: [
         "Orange", "DarkOrange", "Coral", "Tomato", "OrangeRed",
-        "Red", "Crimson", "FireBrick", "DarkRed", "Salmon",
-        "LightCoral", "IndianRed", "Sienna", "Chocolate", "SaddleBrown",
-        "Peru", "DarkSalmon", "LightSalmon", "RosyBrown", "LightPink"
+        "Salmon", "IndianRed", "Sienna", "Chocolate", "SaddleBrown",
+        "Peru", "DarkSalmon", "RosyBrown", "Brown", "Maroon",
+        "Tangerine", "Peach", "BurntOrange", "Pumpkin", "Amber"
       ]
     };
   }

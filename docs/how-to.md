@@ -112,7 +112,7 @@ Example:
 
 If you want to _always_ open extension's links in a new tab, you can set the `openLinksInNewTab` property to `true`
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/e6ae08a9-1ee9-4809-a820-1377aebcd547)
+<img width="904" alt="Open link in a new tab" src="https://github.com/user-attachments/assets/c2586ae8-49e9-4e3f-8a3f-31b2a3689ea1">
 
 If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
 Example:
@@ -126,9 +126,9 @@ Example:
 ## Disable metadata search from Shortcut tab
 
 By default when you enter keyword in the Shortcut tab, the search is performed on the Setup link shortcuts _AND_ metadata (Flows, PermissionSets and Profiles).
-If you want to disable the search on the metadata, set `metadataShortcutSearch` to `false`
+If you want to disable the search on the metadata, update related option:
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/a31566d8-0ad4-47e5-a1ab-3eada43b3430)
+<img width="892" alt="image" src="https://github.com/user-attachments/assets/2541fc22-9f1b-4cd1-90cd-d4615b313d96">
 
 ## Enable / Disable Flow scrollability
 
@@ -173,9 +173,9 @@ Since Winter 24, there is a beta functionality to view a summary of the Permissi
 
 <img width="718" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/36448cd1-260e-49bd-9dfd-c61910f813f4">
 
-You can enable this view for the Shortcut search by creating a new localVariable as shown below.
+You can enable this view for the Shortcut search by enabling the option as shown below.
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/f3093e4b-438c-4795-b64a-8d37651906a5)
+<img width="883" alt="Enable Summary" src="https://github.com/user-attachments/assets/4487d0a4-8ed0-4467-993a-17900bc79ce6">
 
 Then when you click on a PermissionSet / PermissionSetGroups search result, you'll be redirected to the summary.
 
@@ -194,7 +194,7 @@ If you want to prevent auto assignment rules, set the `createUpdateRestCalloutHe
 Since the plugin's api version is only updated when all productions have been updated to the new release, you may want to use the latest version during preview windows.
 
 > [!IMPORTANT]
-> When you manually update the API version, it won't be overriden by extension future updates.
+> When you manually update the API version, it won't be overridden by extension future updates.
 
 ![2023-11-10_09-50-55 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6ae51a29-9887-41a6-8148-d9e12c2dc10d)
 
@@ -228,6 +228,10 @@ then set "Display Query Execution Time" to enabled. Total time for the query to 
 are displayed.
 
 ## Test GraphQL query
+
+> [!WARNING]
+> DEPRECATED : Since you can use Data Export to test GraphQL and also REST Explore to run the request, this should not be useful anymore.
+
 
 - Open popup and click on "Explore API" button.
 - Right click on the page and select "Inspect"

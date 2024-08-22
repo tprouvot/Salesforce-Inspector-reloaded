@@ -276,11 +276,11 @@ class ProfilesModal extends React.Component {
       style: {
         width: "100%",
         padding: "8px",
-        marginBottom: "15px",
         border: "1px solid #ccc",
         borderRadius: "4px"
       }
-    }),
+      
+    }),React.createElement("p", {},"Profile permissions are set to the converted permission set."),
     renderTable(profiles, "Profiles"),
     renderTable(permissionSetsOnly, "Permission Sets")
     ),

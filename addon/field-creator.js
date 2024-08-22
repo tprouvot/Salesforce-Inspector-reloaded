@@ -245,6 +245,7 @@ class ProfilesModal extends React.Component {
     React.createElement("h1", {className: "modal-title"}, "Set Field Permissions"),
     React.createElement("button", {
       type: "button",
+      "aria-label": "Close permission modal button",
       className: "close",
       onClick: onClose,
       style: {
@@ -293,12 +294,14 @@ class ProfilesModal extends React.Component {
     },
     React.createElement("button", {
       type: "button",
+      "aria-label": "Close button",
       className: "btn btn-default",
       onClick: onClose,
       style: {marginRight: "10px"}
     }, "Close"),
     React.createElement("button", {
       type: "button",
+      "aria-label": "Save permission for this field",
       className: "btn btn-primary highlighted",
       onClick: () => {
         const updatedProfiles = Object.entries(permissions).reduce((acc, [name, perm]) => {
@@ -321,6 +324,7 @@ class ProfilesModal extends React.Component {
       style: {marginRight: "10px"}
     }, "Save"),
     React.createElement("button", {
+      "aria-label": "Apply the permission to all fields in the table",
       type: "button",
       className: "btn btn-secondary",
       onClick: this.applyToAllFields
@@ -760,6 +764,7 @@ class FieldOptionModal extends React.Component {
       React.createElement("div", {className: "modal-header", style: {borderBottom: "none", padding: "0 0 10px 0", position: "relative"}},
         React.createElement("h4", {className: "modal-title", style: {textAlign: "center", width: "100%", margin: "0"}}, "Set Field Options"),
         React.createElement("button", {
+          "aria-label": "Close Button",
           type: "button",
           className: "close",
           onClick: this.props.onClose,
@@ -796,11 +801,13 @@ class FieldOptionModal extends React.Component {
         }
       },
       React.createElement("button", {
+        "aria-label": "Close Button",
         className: "btn btn-secondary",
         onClick: this.props.onClose,
 
       }, "Cancel"),
       React.createElement("button", {
+        "aria-label": "Save options button",
         className: "btn btn-primary highlighted",
         onClick: this.handleSave,
 
@@ -927,12 +934,14 @@ class FieldRow extends React.Component {
         ),
         React.createElement("td", null,
           React.createElement("button", {
+            "aria-label": "Open options modal for this field button",
             className: "btn btn-sm btn100",
             onClick: () => this.props.onEditOptions(this.props.index)
           }, "Options")
         ),
         React.createElement("td", null,
           React.createElement("button", {
+            "aria-label": "Open permission modal for this field button",
             className: "btn btn-sm btn100",
             onClick: () => this.props.onEditProfiles(this.props.index)
           }, "Permissions")
@@ -969,7 +978,7 @@ class FieldsTable extends React.Component {
             React.createElement("th", {style: {width: "5%"}}),
             React.createElement("th", {style: {width: "5%"}}),
             React.createElement("th", {style: {width: "20%"}}, "Label"),
-            React.createElement("th", {style: {width: "20%"}}, "API Name (__c)"),
+            React.createElement("th", {style: {width: "20%"}}, "API Name (__c)"), // make the lables/th clearly part of the table.
             React.createElement("th", {style: {width: "20%"}}, "Type"),
             React.createElement("th", {style: {width: "10%"}}, "Options"),
             React.createElement("th", {style: {width: "10%"}}, "Permissions"),
@@ -1012,13 +1021,28 @@ class App extends React.Component {
       showModal: false,
       showImportModal: false,
       importCsvContent: "",
-      importError: ""
+      importError: "",
+      userInfo: "..."
     };
   }
 
   componentDidMount() {
     this.fetchObjects();
     this.fetchPermissionSets();
+    this.fetchUserInfo();
+  }
+
+
+  fetchUserInfo() {
+    const wsdl = sfConn.wsdl(apiVersion, "Partner");
+    sfConn.soap(wsdl, "getUserInfo", {})
+      .then(res => {
+        const userInfo = `${res.userFullName} / ${res.userName} / ${res.organizationName}`;
+        this.setState({ userInfo });
+      })
+      .catch(err => {
+        console.error("Error fetching user info:", err);
+      });
   }
 
 
@@ -1178,7 +1202,7 @@ class App extends React.Component {
     return typeMap[uiType] || uiType;
   }
 
-  fetchObjects = () => {
+  fetchObjects = () => { //Check objects if globaldescribe is cached / implement this? EntitiDefinition
     const accessToken = sfConn.sessionId;
     const instanceUrl = `https://${sfConn.instanceHostname}`;
     const objectsUrl = `${instanceUrl}/services/data/v${apiVersion}/sobjects`;
@@ -1298,6 +1322,7 @@ class App extends React.Component {
 
   importCsv = () => {
     const {importCsvContent} = this.state;
+    const separator = localStorage.getItem("csvSeparator") ? localStorage.getItem("csvSeparator") : ",";
     const lines = importCsvContent.split("\n");
     const newFields = [];
     let hasError = false;
@@ -1307,9 +1332,8 @@ class App extends React.Component {
       "Percent", "Phone", "Picklist", "MultiselectPicklist", "Text", "TextArea",
       "LongTextArea", "Html", "Url"
     ];
-
     lines.forEach((line, index) => {
-      const [label, name, type] = line.split(",").map(item => item.trim());
+      const [label, name, type] = line.split(separator).map(item => item.trim());
       if (label && name && type) {
         if (validTypes.includes(type)) {
           newFields.push({label, name, type});
@@ -1339,7 +1363,7 @@ class App extends React.Component {
         const errorData = JSON.parse(field.deploymentError);
         errorMessage = errorData[0]?.message || errorMessage;
       } catch (e) {
-        console.err("Catch error" + e)
+        console.err("Catch error" + e);
         errorMessage = field.deploymentError || errorMessage;
       }
       alert(`Deployment Error: ${errorMessage}`);
@@ -1460,7 +1484,7 @@ class App extends React.Component {
 
 
   render() {
-    const {fields, showModal, showProfilesModal, currentFieldIndex} = this.state;
+    const {fields, showModal, showProfilesModal, currentFieldIndex,userInfo } = this.state;
 
     return (
 
@@ -1474,7 +1498,7 @@ class App extends React.Component {
             " Salesforce Home"
           ),
           React.createElement("h1", {}, "Field Creator"),
-          React.createElement("span", {}, "  "),
+          React.createElement("span", {}, " / " + userInfo),
           React.createElement("div", {className: "flex-right"},
             React.createElement("span", {className: "slds-assistive-text"}),
             React.createElement("div", {className: "slds-spinner__dot-a"}),
@@ -1506,9 +1530,9 @@ class App extends React.Component {
           ,
           React.createElement("br", null),
           React.createElement("div", {className: "col-xs-12 text-center", id: "deploy"},
-            React.createElement("button", {className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
-            React.createElement("button", {className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
-            React.createElement("button", {className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
+            React.createElement("button", {"aria-label": "Clear Button",className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
+            React.createElement("button", {"aria-label": "Open Import CSV modal button",className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
+            React.createElement("button", {"aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
             React.createElement("br", null)
           )),
         React.createElement("div", {className: "area"},
@@ -1523,7 +1547,7 @@ class App extends React.Component {
             onEditProfiles: this.onEditProfiles,
             onShowDeploymentStatus: this.onShowDeploymentStatus
           }),
-          React.createElement("button", {className: "btn btn-sm highlighted", id: "add_row", onClick: this.addRow, style: {maxWidth: "18%"}}, "Add Row")
+          React.createElement("button", {"aria-label": "Add Row/New field to table",className: "btn btn-sm highlighted", id: "add_row", onClick: this.addRow, style: {maxWidth: "18%"}}, "Add Row")
         ),
 
         showProfilesModal && React.createElement(ProfilesModal, {
@@ -1569,9 +1593,10 @@ class App extends React.Component {
             marginBottom: "15px"
           }
         },
-        React.createElement("h2", null, "CSV Import"),
+        React.createElement("h2", null, "CSV Import (beta)"),
         React.createElement("button", {
           onClick: this.closeImportModal,
+          "aria-label": "Close Import Modal",
           style: {
             background: "none",
             border: "none",
@@ -1580,7 +1605,7 @@ class App extends React.Component {
           }
         }, "×")
         ),
-        React.createElement("p", null, "Enter comma separated values of Label, ApiName, Type."),
+        React.createElement("p", null, "Enter comma separated values of Label, ApiName, Type (Set the separator in Data Export options). "),
         React.createElement("textarea", {
           value: this.state.importCsvContent,
           onChange: this.handleImportCsvChange,
@@ -1598,10 +1623,12 @@ class App extends React.Component {
           }
         },
         React.createElement("button", {
+          "aria-label": "Cancel button",
           onClick: this.closeImportModal,
           style: {marginRight: "10px"}
         }, "Cancel"),
         React.createElement("button", {
+          "aria-label": "Import button",
           onClick: this.importCsv,
           className: "btn btn-primary"
         }, "Import")

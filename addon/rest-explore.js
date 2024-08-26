@@ -227,8 +227,10 @@ class Model {
   }
 
   doSend() {
+    this.canSendRequest = false;
     this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress}, true)
       .catch(err => {
+        this.canSendRequest = true;
         if (err.name != "AbortError") {
           this.autocompleteResults = {
             title: "Error: " + err.message,
@@ -246,6 +248,7 @@ class Model {
           return;
         }
         this.parseResponse(result, "Success");
+        this.canSendRequest = true;
         console.log(result);
       }));
   }
@@ -389,7 +392,7 @@ class App extends React.Component {
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
-        model.doExport();
+        model.doSend();
         model.didUpdate();
       }
     });

@@ -2152,7 +2152,7 @@ class App extends React.Component {
             h("div", {className: "button-group"},
               h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
                 h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
-                model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+                model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, (q.name ? q.name + ":" + q.query : q.query).substring(0, 300)))
               ),
               h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
               h("button", {onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),

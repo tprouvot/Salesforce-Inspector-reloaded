@@ -322,14 +322,14 @@ After running a query in the "Data Export" page, you can hide additional columns
 ![2024-05-16_17-54-24 (1)](https://github.com/guillaumeSF/Salesforce-Inspector-reloaded/assets/166603639/45fda19b-b426-4b11-91cb-4f0fbc5c47d7)
 
 
-# Field Creator Extension How-To Guide
+# Field Creator
 
 ![image](https://github.com/user-attachments/assets/5dfe73a1-b218-471a-93b5-0f281a90ba44)
 
 
 ## Getting Started
 
-1. Open the Field Creator extension in your Salesforce org.
+1. Open the Field Creator through the pop-up.
 
  <img width="200" src="https://github.com/user-attachments/assets/da2f92fa-97a9-437b-82bd-cd71a9248964">
 

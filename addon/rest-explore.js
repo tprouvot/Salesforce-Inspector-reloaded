@@ -261,7 +261,16 @@ class Model {
       code: result.status,
       value: result.response ? JSON.stringify(result.response, null, "    ") : "NONE"
     };
-    // The results can be quite large and take a long time to render, so we only want to render a result once the user has explicitly selected it.
+    //TODO parse result and add url to apiList if contains /services/data/v61.0/
+    let newApis = Object.keys(result.response)
+      .filter(key => result.response[key].startsWith("/services/data/"))
+      .map(key => ({
+        key,
+        "endpoint": result.response[key]
+      }));
+    newApis.forEach(api => this.apiList.push(api));
+    this.filteredApiList = this.apiList.filter(api => api.endpoint.toLowerCase().includes(this.request.endpoint.toLowerCase()));
+
   }
 }
 
@@ -385,6 +394,7 @@ class App extends React.Component {
     model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(e.target.value.toLowerCase()));
     model.didUpdate();
   }
+
   componentDidMount() {
     let {model} = this.props;
     let endpointInput = this.refs.endpoint;

@@ -122,6 +122,7 @@ Example:
 - Org <ins>L</ins>imits : l
 - <ins>D</ins>ownload Metadata : d
 - E<ins>x</ins>plore API : x
+- <ins>F</ins>ield Creator : f
 
 ## Disable metadata search from Shortcut tab
 
@@ -323,10 +324,17 @@ After running a query in the "Data Export" page, you can hide additional columns
 
 # Field Creator Extension How-To Guide
 
+![image](https://github.com/user-attachments/assets/5dfe73a1-b218-471a-93b5-0f281a90ba44)
+
+
 ## Getting Started
 
 1. Open the Field Creator extension in your Salesforce org.
+![image](https://github.com/user-attachments/assets/da2f92fa-97a9-437b-82bd-cd71a9248964)
+
 2. Select the object you want to create fields for from the dropdown menu.
+![image](https://github.com/user-attachments/assets/d7a48850-4756-43f9-bddd-ad9d8dd0da5d)
+
 
 ## Creating Fields
 
@@ -335,7 +343,13 @@ After running a query in the "Data Export" page, you can hide additional columns
 3. Click "Options" to set additional field properties (This modal will be dynamic depending on the field type).
 4. Click "Permissions" to set field-level security, use the "Apply to All Fields" option in the Permissions modal to quickly set permissions for all fields.
 
+   ![image](https://github.com/user-attachments/assets/972b8558-e745-4d37-b980-cb07b0482e10)
+
+
 ## Bulk Import (beta)
+
+![image](https://github.com/user-attachments/assets/e4582af0-c6b9-4d6c-bae2-b97a5dfe85d3)
+
 
 1. Click "Import CSV" to open the import modal.
 2. Enter comma-separated values in the format: Label, API Name, Type. (The separator can be configured from the extension options)
@@ -352,6 +366,9 @@ After running a query in the "Data Export" page, you can hide additional columns
 - Use "Clone" to duplicate a field row.
 - Use "Delete" to remove a field row.
 - Click "Clear All" to reset the entire field list.
+
+![image](https://github.com/user-attachments/assets/e820d160-1183-48d2-82fd-e1fd376a0109)
+
 
 
 ## Configure Import options in Data Import

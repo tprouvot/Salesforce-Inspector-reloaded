@@ -1,5 +1,11 @@
 # Release Notes
 
+
+## Version 1.25
+- [feature 511] Added new Field Creator section
+- [feature 511] Added the Field Creator button to the pop-up and to the sortcuts
+
+
 ## Version 1.25
 
 - Ad option to colorize sandbox banner in the same color as the favicon

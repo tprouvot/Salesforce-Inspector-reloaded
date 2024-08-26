@@ -87,9 +87,11 @@ class Model {
     this.exportStatus = "Ready";
     this.exportError = null;
     this.exportedData = null;
-    this.queryHistory = new QueryHistory("insextQueryHistory", 100);
+    let historyNb = localStorage.getItem("numberOfQueriesInHistory");
+    this.queryHistory = new QueryHistory("insextQueryHistory", historyNb ? historyNb : 100);
     this.selectedHistoryEntry = null;
-    this.savedHistory = new QueryHistory("insextSavedQueryHistory", 50);
+    let savedNb = localStorage.getItem("numberOfQueriesSaved");
+    this.savedHistory = new QueryHistory("insextSavedQueryHistory", savedNb ? savedNb : 50);
     this.selectedSavedEntry = null;
     this.expandAutocomplete = false;
     this.expandSavedOptions = false;

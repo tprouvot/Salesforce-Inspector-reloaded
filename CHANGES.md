@@ -2,6 +2,7 @@
 
 ## Version 1.25
 
+- Add option to increase the number of saved & history query in data export
 - Enable Salesforce Inspector Reloaded on Experience Builder
 - Ad option to colorize sandbox banner in the same color as the favicon [doc](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=favico#customize-sandbox-banner-color)
 - Add "Object Access" link in Object popup tab to display Object permission details (Winter 25 feature)

@@ -388,6 +388,7 @@ class App extends React.Component {
   componentDidMount() {
     let {model} = this.props;
     let endpointInput = this.refs.endpoint;
+    endpointInput.value = model.request.endpoint;
 
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {

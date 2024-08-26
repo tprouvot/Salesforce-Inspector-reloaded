@@ -320,6 +320,40 @@ After running a query in the "Data Export" page, you can hide additional columns
 
 ![2024-05-16_17-54-24 (1)](https://github.com/guillaumeSF/Salesforce-Inspector-reloaded/assets/166603639/45fda19b-b426-4b11-91cb-4f0fbc5c47d7)
 
+
+# Field Creator Extension How-To Guide
+
+## Getting Started
+
+1. Open the Field Creator extension in your Salesforce org.
+2. Select the object you want to create fields for from the dropdown menu.
+
+## Creating Fields
+
+1. Click "Add Row" to add a new field.
+2. Fill in the Label, API Name, and select the Field Type.
+3. Click "Options" to set additional field properties (This modal will be dynamic depending on the field type).
+4. Click "Permissions" to set field-level security, use the "Apply to All Fields" option in the Permissions modal to quickly set permissions for all fields.
+
+## Bulk Import (beta)
+
+1. Click "Import CSV" to open the import modal.
+2. Enter comma-separated values in the format: Label, API Name, Type. (The separator can be configured from the extension options)
+3. Click "Import" to add the fields to your list.
+
+## Deploying Fields
+
+1. Review your field list for accuracy.
+2. Click "Deploy Fields" to create the fields in your Salesforce org.
+3. Check the deployment status icon for each field.
+
+## Additional Features
+
+- Use "Clone" to duplicate a field row.
+- Use "Delete" to remove a field row.
+- Click "Clear All" to reset the entire field list.
+
+
 ## Configure Import options in Data Import
 
 You can configure the [SOAP headers](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/soap_headers.htm) when importing records to specify Assignment Rule, Duplicate Rule or OwnerChangeOptions.

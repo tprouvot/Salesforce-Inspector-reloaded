@@ -867,8 +867,8 @@ class Model {
         }
         throw err;
       }).then(data => {
-        let isQueryMode = exportedData.queryMethod === "query";
-        let fieldsResponses = {query: "records", "tooling/query": "records", search: "searchRecords", graphql: "data"};
+        let isQueryMode = exportedData.queryMethod.startsWith("query");
+        let fieldsResponses = {query: "records", queryAll: "records", "tooling/query": "records", search: "searchRecords", graphql: "data"};
         if (exportedData.queryMethod === "graphql"){
           exportedData.sobject = Object.keys(data.data.uiapi.query)[0];
           let dataGraph = data.data.uiapi.query[exportedData.sobject].edges.map(record => {

@@ -1,8 +1,25 @@
 # Release Notes
 
-## Version 1.24
+## Version 1.25
 
 - Download Metadata page restyling
+- Add autocomplete feature for REST Explore page
+- Add option to increase the number of saved & history query in data export
+- Enable Salesforce Inspector Reloaded on Experience Builder
+- Add option to colorize sandbox banner in the same color as the favicon [doc](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=favico#customize-sandbox-banner-color)
+- Add "Object Access" link in Object popup tab to display Object permission details (Winter 25 feature)
+- Fix Platform Event links on popup [issue 500](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/500)
+
+## Version 1.24
+
+- Add new REST Explore page to call Salesforce APIs from the extension
+- Add Global Search in Shortcut tab when no result was found
+- Enable users to configure custom headers on Data Import (AssignmentRuleHeader, DuplicateRuleHeader, OwnerChangeOptions ...) [feature 478](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/478)
+- Fix CustomSetting links in popup [issue 473](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/473) (contribution by [Boris Castellani](https://github.com/castellani))
+- Support SOSL [feature 131](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/131) and GraphQL queries in Data Export
+- Increase API version to 61 (Summer'24)
+- Improve readability for screen readers ([feature 454](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/454) request by [Andrew Russo](https://github.com/mavtron-andrewrusso))
+>>>>>>> releaseCandidate
 - Restrict autocomplete suggestion to SObject record type names in Data Export page (feature [442](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/442) by [Camille Guillory](https://github.com/CamilleGuillory))
 - Add `Download CSV` button in data export page ([feature 101](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/101) requested by [Mickael Gudin](https://github.com/mickaelgudin))
 - Customize extension's pages shortcuts in [chrome://extensions/shortcuts](chrome://extensions/shortcuts) ([feature 171](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/171) by [asanaEAzimzhanov](https://github.com/asanaEAzimzhanov))

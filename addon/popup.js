@@ -45,7 +45,8 @@ function showApiName(e) {
 }
 
 function init({sfHost, inDevConsole, inLightning, inInspector}) {
-  let addonVersion = chrome.runtime.getManifest().version;
+  console.log(chrome.runtime.getManifest());
+  let addonVersion = chrome.runtime.getManifest().version_name;
 
   sfConn.getSession(sfHost).then(() => {
     ReactDOM.render(h(App, {
@@ -309,6 +310,9 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
             ),
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "restExploreBtn", href: "rest-explore.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "R"), "EST Explore (beta)"))
+            ),
             localStorage.getItem("popupGenerateTokenButton") !== "false" ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
                 {
@@ -487,26 +491,27 @@ class AllDataBox extends React.PureComponent {
     let entityMap = new Map();
 
     function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported, isEverCreatable, newUrl}, api) {
-      label = label || ""; // Avoid null exceptions if the object does not have a label (some don't). All objects have a name. Not needed for keyPrefix since we only do equality comparisons on those.
+      label = label.match("__MISSING") ? "" : label; //Error is added to the label if no label exists
       let entity = entityMap.get(name);
+      // Each API call enhances the data, only the Name fields are present for each call.
       if (entity) {
-        if (!entity.label) { // Doesn't seem to be needed, but if we have to do it for keyPrefix, we can just as well do it for label.
-          entity.label = label;
-        }
-        if (!entity.keyPrefix) { // For some objects the keyPrefix is only available in some of the APIs.
+        if (!entity.keyPrefix) {
           entity.keyPrefix = keyPrefix;
         }
         if (!entity.durableId) {
           entity.durableId = durableId;
         }
-        if (!entity.isEverCreatable) {
-          entity.isEverCreatable = isEverCreatable;
+        if (!entity.isCustomSetting) {
+          entity.isCustomSetting = isCustomSetting;
         }
         if (!entity.newUrl) {
           entity.newUrl = newUrl;
         }
         if (!entity.recordTypesSupported) {
           entity.recordTypesSupported = recordTypesSupported;
+        }
+        if (!entity.isEverCreatable) {
+          entity.isEverCreatable = isEverCreatable;
         }
       } else {
         entity = {
@@ -1111,13 +1116,21 @@ class AllDataBoxShortcut extends React.PureComponent {
           });
         });
       }
-      return result ? result : [];
+      //if no result found, add the globzl search link
+      result.length > 0 ? result : result.push({link: "/one/one.app#" + this.getEncodedGlobalSearch(shortcutSearch), label: '"' + shortcutSearch + '"', detail: "No results found", name: "Use Global Search"});
+      return result;
     } catch (err) {
       console.error("Unable to find shortcut", err);
       return [];
     } finally {
       setIsLoading(false);
     }
+  }
+
+  getEncodedGlobalSearch(term){
+    let searchPayload = JSON.parse('{ "componentDef": "forceSearch:searchPageDesktop", "attributes": { "term": null, "scopeMap": { "type": "TOP_RESULTS" }, "context": { "FILTERS": {}, "searchSource": "ASSISTANT_DIALOG", "disableIntentQuery": false, "disableSpellCorrection": false, "permsAndPrefs": { "SearchUi.feedbackComponentEnabled": false, "OrgPreferences.ChatterEnabled": true, "Search.crossObjectsAutoSuggestEnabled": true, "OrgPreferences.EinsteinSearchNaturalLanguageEnabled": true, "SearchUi.searchUIInteractionLoggingEnabled": false, "MySearch.userCanHaveMySearchBestResult": true, "SearchResultsLVM.lvmEnabledForTopResults": false }, "searchDialogSessionId": "00000000-0000-0000-0000-000000000000", "debugInfo": { "appType": "Standard", "appNamespace": "standard", "location": "one:auraContainer" } }, "groupId": "DEFAULT" }, "state": {} }');
+    searchPayload.attributes.term = term;
+    return btoa(JSON.stringify(searchPayload));
   }
 
   async onDataSelect(shortcut) {
@@ -1503,7 +1516,7 @@ class UserDetails extends React.PureComponent {
           h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs")
         ),
         this.doSupportLoginAs(user) ? h("div", {className: "user-buttons justify-center small-font slds-button-group top-space", role: "group"},
-          h("a", {href: this.getLoginAsLink(user), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs"),
+          h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs"),
           h("div", {ref: "buttonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
             h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.openMenu(), title: "Show other LoginAs options"},
               h("svg", {className: "slds-button__icon"},
@@ -1644,23 +1657,25 @@ class AllDataSelection extends React.PureComponent {
    */
   getObjectSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
-      return this.getCustomMetadataLink(durableId);
+      return this.getMetadataLink(durableId, "CustomMetadata");
+    } else if (sobjectName.endsWith("__e")) {
+      return this.getMetadataLink(durableId, "EventObjects");
     } else if (isCustomSetting) {
-      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
+      return this.getMetadataLink(durableId, "CustomSettings");
     } else if (sobjectName.endsWith("__c")) {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/Details/view";
     } else {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
     }
   }
-  getCustomMetadataLink(durableId) {
-    return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + durableId + "%3Fsetupid%3DCustomMetadata";
+  getMetadataLink(durableId, type){
+    return `https://${this.props.sfHost}/lightning/setup/${type}/page?address=%2F${durableId}%3Fsetupid%3D${type}`;
   }
   getObjectFieldsSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
-      return this.getCustomMetadataLink(durableId);
+      return this.getMetadataLink(durableId, "CustomMetadata");
     } else if (isCustomSetting) {
-      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2F" + durableId + "?setupid=CustomSettings";
+      return this.getMetadataLink(durableId, "CustomSettings");
     } else if (sobjectName.endsWith("__c") || sobjectName.endsWith("__kav")) {
       return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/FieldsAndRelationships/view";
     } else {
@@ -1676,6 +1691,9 @@ class AllDataSelection extends React.PureComponent {
     } else {
       return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
     }
+  }
+  getObjectListAccess(sobjectName) {
+    return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/ObjectAccess/view";
   }
   getRecordTypesLink(sfHost, sobjectName, durableId) {
     if (sobjectName.endsWith("__c") || sobjectName.endsWith("__kav")) {
@@ -1732,10 +1750,16 @@ class AllDataSelection extends React.PureComponent {
                 h("th", {}, "Links:"),
                 h("td", {},
                   h("a", {href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Fields"),
-                  h("span", {}, " / "),
-                  h("a", {href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget}, "Record Types"),
-                  h("span", {}, " / "),
-                  h("a", {href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Object List")
+                  selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 0 ? h("span", {},
+                    h("span", {}, " / "),
+                    h("a", {href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget}, "Record Types"),
+                  ) : null,
+                  selectedValue.sobject.name.endsWith("__e") ? null : h("span", {}, h("span", {}, " / "),
+                    h("a", {href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "List")
+                  ),
+                  selectedValue.sobject.name.endsWith("__e") || selectedValue.sobject.name.endsWith("__mdt") ? null : h("span", {}, h("span", {}, " / "),
+                    h("a", {href: this.getObjectListAccess(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Access")
+                  )
                 ),
               ),
               h("tr", {},

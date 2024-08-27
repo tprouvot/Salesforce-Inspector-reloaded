@@ -1,8 +1,8 @@
 {
   "name": "Salesforce Inspector Reloaded",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.24",
-  "version_name": "1.24",
+  "version": "1.25",
+  "version_name": "1.25",
   "icons": {
     "128": "icon128.png"
   },
@@ -24,7 +24,8 @@
     "https://*.cloudforce.mil/*",
     "https://*.visualforce.mil/*",
     "https://*.crmforce.mil/*",
-    "https://*.force.com.mcas.ms/*"
+    "https://*.force.com.mcas.ms/*",
+    "https://*.builder.salesforce-experience.com/*"
   ],
   "content_scripts": [
     {
@@ -45,7 +46,8 @@
         "https://*.cloudforce.mil/*",
         "https://*.visualforce.mil/*",
         "https://*.crmforce.mil/*",
-        "https://*.lightning.force.com.mcas.ms/*"
+        "https://*.lightning.force.com.mcas.ms/*",
+        "https://*.builder.salesforce-experience.com/*"
       ],
       "all_frames": true,
       "css": ["button.css", "inspect-inline.css"],
@@ -65,6 +67,7 @@
         "inspect.html",
         "metadata-retrieve.html",
         "explore-api.html",
+        "rest-explore.html",
         "limits.html",
         "options.html"
       ],
@@ -95,6 +98,9 @@
     },
     "explore-api": {
       "description": "Explore API"
+    },
+    "rest-explore": {
+      "description": "REST Explore"
     }
   }
 }

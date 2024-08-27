@@ -155,3 +155,49 @@ body {
 .center-label {
     text-align: center;
 }
+
+.icon{
+  width: 24px;
+  height: 24px;
+}
+button,
+.button {
+  border: 1px solid #DDDBDA;
+  height: 32px;
+  display: inline-block;
+  text-decoration: none;
+  background-color: white;
+  padding: 0 16px;
+  color: #0070d2;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+  line-height: 32px;
+  border-radius: 0.25rem;
+  margin-right: 10px;
+  white-space: nowrap;
+}
+
+button:hover,
+.button:hover {
+  background-color: #F4F6F9;
+  color: #005fb2;
+}
+.button-brand {
+  background-color: #0070d2;
+  border-color: #0070d2;
+  color: #fff;
+}
+
+.button-brand:focus:not([disabled]),
+.button-brand:hover:not([disabled]) {
+  background-color: #005fb2;
+  border-color: #005fb2;
+  color: #fff;
+}
+
+.button-brand:active:not([disabled]) {
+  background-color: #005fb2;
+  border-color: #005fb2;
+  color: #fff;
+}

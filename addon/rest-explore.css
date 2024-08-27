@@ -541,8 +541,12 @@ button.toggle .button-icon {
 .autocomplete-results {
   overflow: hidden;
   margin-top: 7px;
+  padding-bottom: 7px;
   display: flex;
   flex-wrap: nowrap;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  white-space: nowrap
 }
 
 .expanded .autocomplete-results {

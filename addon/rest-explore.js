@@ -249,7 +249,6 @@ class Model {
         }
         this.parseResponse(result, "Success");
         this.canSendRequest = true;
-        console.log(result);
       }));
   }
 
@@ -261,16 +260,16 @@ class Model {
       code: result.status,
       value: result.response ? JSON.stringify(result.response, null, "    ") : "NONE"
     };
-    //TODO parse result and add url to apiList if contains /services/data/v61.0/
-    let newApis = Object.keys(result.response)
-      .filter(key => result.response[key].startsWith("/services/data/"))
-      .map(key => ({
-        key,
-        "endpoint": result.response[key]
-      }));
-    newApis.forEach(api => this.apiList.push(api));
-    this.filteredApiList = this.apiList.filter(api => api.endpoint.toLowerCase().includes(this.request.endpoint.toLowerCase()));
-
+    if (this.resultClass === "success"){
+      let newApis = Object.keys(result.response)
+        .filter(key => result.response[key].startsWith("/services/data/"))
+        .map(key => ({
+          key,
+          "endpoint": result.response[key]
+        }));
+      newApis.forEach(api => this.apiList.push(api));
+      this.filteredApiList = this.apiList.filter(api => api.endpoint.toLowerCase().includes(this.request.endpoint.toLowerCase()));
+    }
   }
 }
 

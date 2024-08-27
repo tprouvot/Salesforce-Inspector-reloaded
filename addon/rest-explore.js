@@ -267,7 +267,11 @@ class Model {
           key,
           "endpoint": result.response[key]
         }));
-      newApis.forEach(api => this.apiList.push(api));
+      newApis.forEach(api => {
+        if (!this.apiList.some(existingApi => existingApi.key === api.key)) {
+          this.apiList.push(api);
+        }
+      });
       this.filteredApiList = this.apiList.filter(api => api.endpoint.toLowerCase().includes(this.request.endpoint.toLowerCase()));
     }
   }

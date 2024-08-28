@@ -59,8 +59,6 @@ class ProfilesModal extends React.Component {
     }), this.updateAllCheckboxes);
   };
 
-
-
   handleSelectAll = (type, tableType) => {
     const stateKey = `all${type.charAt(0).toUpperCase() + type.slice(1)}${tableType}`;
     const allSelected = !this.state[stateKey];

@@ -1,10 +1,6 @@
 /* global React ReactDOM field-creator.js */
 import {sfConn, apiVersion} from "./inspector.js";
 
-/* global initButton */
-
-
-
 class ProfilesModal extends React.Component {
   constructor(props) {
     super(props);

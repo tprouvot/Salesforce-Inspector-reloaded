@@ -436,6 +436,9 @@ class App extends React.Component {
   }
   componentDidUpdate() {
     this.recalculateSize();
+    if (window.Prism) {
+      window.Prism.highlightAll();
+    }
   }
   canSendRequest(){
     let {model} = this.props;
@@ -572,9 +575,11 @@ class App extends React.Component {
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null},
           model.apiResponse && h("div", {},
-            h("pre", {className: "language-json"}, // Set the language class to JSON for Prism to highlight
-              h("code", {className: "language-json"}, model.apiResponse.value)
-            ),
+            h("div", {},
+              h("pre", {className: "language-json"}, // Set the language class to JSON for Prism to highlight
+                h("code", {className: "language-json"}, model.apiResponse.value)
+              )
+            )
           )
         )
       )

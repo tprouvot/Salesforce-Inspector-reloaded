@@ -867,8 +867,8 @@ class Model {
         }
         throw err;
       }).then(data => {
-        let isQueryMode = exportedData.queryMethod.startsWith("query");
         let fieldsResponses = {query: "records", queryAll: "records", "tooling/query": "records", search: "searchRecords", graphql: "data"};
+        let isSoql = fieldsResponses[exportedData.queryMethod] === "records";
         if (exportedData.queryMethod === "graphql"){
           exportedData.sobject = Object.keys(data.data.uiapi.query)[0];
           let dataGraph = data.data.uiapi.query[exportedData.sobject].edges.map(record => {
@@ -893,10 +893,10 @@ class Model {
         let recs = exportedData.records.length;
         let total = exportedData.totalSize;
         if (data.totalSize != -1) {
-          exportedData.totalSize = isQueryMode ? data.totalSize : recs;
+          exportedData.totalSize = isSoql ? data.totalSize : recs;
           total = exportedData.totalSize;
         }
-        if (!data.done && isQueryMode) {
+        if (!data.done && isSoql) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
           vm.isWorking = true;
           vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;

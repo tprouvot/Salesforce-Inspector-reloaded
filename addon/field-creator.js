@@ -1244,7 +1244,7 @@ class App extends React.Component {
           ? {
             ...field,
             label,
-            name: label.replace(/\s+/g, "_")
+            name: label.replace(/\s+(\w)/g, (_, letter) => letter.toUpperCase())
           }
           : field
       ),

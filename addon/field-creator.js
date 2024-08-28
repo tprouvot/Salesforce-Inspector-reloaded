@@ -327,7 +327,6 @@ class ProfilesModal extends React.Component {
   }
 }
 
-
 class FieldOptionModal extends React.Component {
   constructor(props) {
     super(props);

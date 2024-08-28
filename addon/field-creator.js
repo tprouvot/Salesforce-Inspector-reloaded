@@ -185,19 +185,7 @@ class ProfilesModal extends React.Component {
         )
       );
 
-    return React.createElement("div", {
-      style: {
-        display: "block",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        zIndex: 1050,
-        overflowY: "auto"
-      }
-    },
+    return React.createElement("div", {className: "modalBlackBase"},
     React.createElement("div", {
       className: "modal-dialog",
       style: {
@@ -716,22 +704,11 @@ class FieldOptionModal extends React.Component {
 
   render() {
     return React.createElement("div", {
-      className: "modal fade show",
+      className: "modal fade show modalBlackBase",
       id: "fieldOptionModal",
       role: "dialog",
       "aria-labelledby": "fieldOptionModalLabel",
-      "aria-hidden": "true",
-      style: {
-        display: "block",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        zIndex: 1050,
-        overflowY: "auto"
-      }
+      "aria-hidden": "true"
     },
     React.createElement("div", {
       className: "modal-dialog",

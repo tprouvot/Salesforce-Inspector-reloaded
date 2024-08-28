@@ -1320,7 +1320,6 @@ class App extends React.Component {
     }
   };
 
-
   onShowDeploymentStatus = (index) => {
     const field = this.state.fields[index];
     if (field.deploymentStatus === "error") {

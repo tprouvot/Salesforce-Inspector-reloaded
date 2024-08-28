@@ -1487,8 +1487,6 @@ class App extends React.Component {
     const {fields, showModal, showProfilesModal, currentFieldIndex,userInfo } = this.state;
 
     return (
-
-
       React.createElement("div", null,
         React.createElement("div", {id: "user-info"},
           React.createElement("a", {href: `https://${sfConn.instanceHostname}`, className: "sf-link"},

@@ -1470,9 +1470,6 @@ class App extends React.Component {
     });
   };
 
-
-
-
   render() {
     const {fields, showModal, showProfilesModal, currentFieldIndex,userInfo } = this.state;
 

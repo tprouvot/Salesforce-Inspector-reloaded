@@ -2,6 +2,7 @@
 
 ## Version 1.24
 
+- Fix issue [issue 543](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/543) and [issue 538](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/538)
 - Add new REST Explore page to call Salesforce APIs from the extension
 - Add Global Search in Shortcut tab when no result was found
 - Enable users to configure custom headers on Data Import (AssignmentRuleHeader, DuplicateRuleHeader, OwnerChangeOptions ...) [feature 478](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/478)

@@ -809,7 +809,6 @@ class FieldOptionModal extends React.Component {
   }
 }
 
-
 // Define the React components
 class FieldRow extends React.Component {
   render() {

@@ -255,7 +255,7 @@ class Model {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
       let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(delimiter) && this.selectedSavedEntry.query.indexOf(":SELECT") >= 0) {
+      if (this.selectedSavedEntry.query.includes(delimiter) && this.selectedSavedEntry.query.toLowerCase().indexOf(":select") >= 0) {
         let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
         queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);

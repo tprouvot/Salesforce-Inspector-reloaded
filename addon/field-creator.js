@@ -108,9 +108,6 @@ class ProfilesModal extends React.Component {
     this.props.onApplyToAllFields(permissions);
   };
 
-
-
-
   render() {
     const {field, permissionSets, onSave, onClose} = this.props;
     const {

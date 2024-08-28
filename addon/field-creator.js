@@ -1011,6 +1011,7 @@ class App extends React.Component {
       currentFieldIndex: null,
       showModal: false,
       showImportModal: false,
+      allFieldsHavePermissions: true,
       importCsvContent: "",
       importError: "",
       objectSearch: "",
@@ -1463,6 +1464,7 @@ class App extends React.Component {
       showProfilesModal: false,
       currentFieldIndex: null,
     });
+    this.checkAllFieldsHavePermissions();
   };
 
   applyToAllFields = (permissions) => {
@@ -1484,7 +1486,10 @@ class App extends React.Component {
       fields: updatedFields,
       showProfilesModal: false,
       currentFieldIndex: null});
-  };
+
+      this.checkAllFieldsHavePermissions();
+  }
+  ;
 
   onSaveFieldOptions = (updatedField) => {
     const {fields, currentFieldIndex} = this.state;
@@ -1500,10 +1505,20 @@ class App extends React.Component {
     location.reload();
   };
 
+  checkAllFieldsHavePermissions = () => {
+    if (this.state.fields.every(field => field.profiles && field.profiles.length > 0)) {
+      this.setState({ allFieldsHavePermissions: true });
+      return true;
+    } else {
+      this.setState({ allFieldsHavePermissions: false });
+      return false;
+    }
+  };
+  
   deploy = () => {
-    const {fields, selectedObject} = this.state;
-    if (!selectedObject) {
-      alert("Please select an object first");
+    const { fields, allFieldsHavePermissions } = this.state;
+  
+    if (!this.checkAllFieldsHavePermissions()) {
       return;
     }
 
@@ -1539,7 +1554,7 @@ class App extends React.Component {
   };
 
   render() {
-    const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject} = this.state;
+    const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject,  allFieldsHavePermissions    } = this.state;
 
     return (
       React.createElement("div", null,
@@ -1557,7 +1572,7 @@ class App extends React.Component {
             React.createElement("div", {className: "slds-spinner__dot-a"}),
             React.createElement("div", {className: "slds-spinner__dot-b"}),
           ),
-          React.createElement("a", {href: "", id: "help-btn", title: "Field Creator Help", onClick: null},
+          React.createElement("a", {href: "https://github.com/SantiParris8/Salesforce-Inspector-reloaded-fieldCreator/blob/releaseCandidate/docs/field-creator.md",target:"_blank", id: "help-btn", title: "Field Creator Help", onClick: null},
             React.createElement("div", {className: "icon"})
           ),
         ),
@@ -1611,7 +1626,8 @@ class App extends React.Component {
               React.createElement("button", {"aria-label": "Clear Button",className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
               React.createElement("button", {"aria-label": "Open Import CSV modal button",className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
               React.createElement("button", {"disabled": !this.state.selectedObject, "aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
-              React.createElement("br", null)
+              !this.state.allFieldsHavePermissions && React.createElement("p", {style: {color: "red"}}, "Some fields are missing permissions"),
+
             )
           )
         ),

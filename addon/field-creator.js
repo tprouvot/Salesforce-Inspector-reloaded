@@ -9,10 +9,14 @@ class ProfilesModal extends React.Component {
       allReadProfiles: false,
       allEditPermissionSets: false,
       allReadPermissionSets: false,
+      isProfilesExpanded: false,
+      isPermissionSetsExpanded: true,
       searchTerm: "",
       permissions: this.initializePermissions(props.field, props.permissionSets)
     };
   }
+
+
 
   handleSearchChange = (event) => {
     this.setState({searchTerm: event.target.value});
@@ -108,6 +112,13 @@ class ProfilesModal extends React.Component {
     this.props.onApplyToAllFields(permissions);
   };
 
+  toggleSection = (section) => {
+    const stateKey = `is${section.replace(' ', '')}Expanded`;
+    this.setState(prevState => ({
+      [stateKey]: !prevState[stateKey]
+    }));
+  }
+
   render() {
     const {field, permissionSets, onSave, onClose} = this.props;
     const {
@@ -116,9 +127,10 @@ class ProfilesModal extends React.Component {
       allReadProfiles,
       allEditPermissionSets,
       allReadPermissionSets,
-      searchTerm
+      searchTerm,
+      isProfilesExpanded,
+      isPermissionSetsExpanded
     } = this.state;
-
 
     const filterItems = (items) => items.filter(([name, profile]) =>
       (profile || name).toLowerCase().includes(searchTerm.toLowerCase())
@@ -132,10 +144,15 @@ class ProfilesModal extends React.Component {
       .filter(([_, profile]) => profile === null)
       .sort((a, b) => a[0].localeCompare(b[0])));
 
-    const renderTable = (items, title) =>
-      React.createElement("div", {key: title},
-        React.createElement("h5", null, title),
-        React.createElement("table", {style: {width: "100%", borderCollapse: "collapse", marginBottom: "20px"}},
+      const renderTable = (items, title) =>
+        React.createElement("div", {key: title},
+          React.createElement("h5", {
+            onClick: () => this.toggleSection(title),
+            style: {cursor: 'pointer', userSelect: 'none'}
+          }, 
+            `${title} ${this.state[`is${title.replace(' ', '')}Expanded`] ? '▼' : '▶'}`
+          ),
+          this.state[`is${title.replace(' ', '')}Expanded`] && React.createElement("table",  {style: {width: "100%", borderCollapse: "collapse", marginBottom: "20px"}},
           React.createElement("thead", null,
             React.createElement("tr", null,
               React.createElement("th", {style: {padding: "8px", textAlign: "left", borderBottom: "1px solid #ddd"}}, "Name"),
@@ -189,18 +206,20 @@ class ProfilesModal extends React.Component {
     React.createElement("div", {
       className: "modal-dialog",
       style: {
-        overflowY: "overlay",
+        overflowY: "hidden",
         position: "absolute",
         top: "50%",
         left: "50%",
-        maxHeight: "80%",
+        height: "80%",
         transform: "translate(-50%, -50%)",
         maxWidth: "600px",
         width: "90%",
         backgroundColor: "#fff",
         padding: "20px",
         boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-        borderRadius: "8px"
+        borderRadius: "8px",
+        display: "flex",
+        flexDirection: "column"
       }
     },
     React.createElement("div", {
@@ -241,7 +260,7 @@ class ProfilesModal extends React.Component {
       style: {
         overflowY: "auto",
         flexGrow: 1,
-        marginRight: "-10px", // To compensate for the scrollbar width
+        marginRight: "-10px",
         paddingRight: "10px",
         scrollbarWidth: "thin",
         scrollbarColor: "#B0C4DF transparent"
@@ -259,16 +278,22 @@ class ProfilesModal extends React.Component {
         borderRadius: "4px"
       }
       
-    }),React.createElement("p", {},"Profile permissions are set to the converted permission set."),
-    renderTable(profiles, "Profiles"),
-    renderTable(permissionSetsOnly, "Permission Sets")
+    }),React.createElement("p", {},"Please consider granting field access to Permission Sets."),
+    
+    renderTable(permissionSetsOnly, "Permission Sets"),
+    renderTable(profiles, "Profiles")
     ),
     React.createElement("div", {
       className: "modal-footer",
       style: {
         marginTop: "15px",
         display: "flex",
-        justifyContent: "flex-end"
+        justifyContent: "flex-end",
+        borderTop: "1px solid #e5e5e5",
+        padding: "15px 0",
+        backgroundColor: "#fff",
+        position: "sticky",
+        bottom: 0
       }
     },
     React.createElement("button", {
@@ -988,7 +1013,9 @@ class App extends React.Component {
       showImportModal: false,
       importCsvContent: "",
       importError: "",
-      userInfo: "..."
+      objectSearch: "",
+      userInfo: "...",
+      filteredObjects: []
     };
   }
 
@@ -997,6 +1024,47 @@ class App extends React.Component {
     this.fetchPermissionSets();
     this.fetchUserInfo();
   }
+
+  handleObjectSearch = (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    
+    // Sort the filtered objects based on relevance
+    const sortedFilteredObjects = this.state.objects
+      .filter(obj => 
+        obj.name.toLowerCase().includes(searchTerm) || 
+        obj.label.toLowerCase().includes(searchTerm)
+      )
+      .sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        const aLabel = a.label.toLowerCase();
+        const bLabel = b.label.toLowerCase();
+  
+        // Prioritize exact matches
+        if (aName === searchTerm || aLabel === searchTerm) return -1;
+        if (bName === searchTerm || bLabel === searchTerm) return 1;
+  
+        // Then prioritize matches at the beginning
+        if (aName.startsWith(searchTerm) || aLabel.startsWith(searchTerm)) return -1;
+        if (bName.startsWith(searchTerm) || bLabel.startsWith(searchTerm)) return 1;
+  
+        // Then sort alphabetically
+        return aName.localeCompare(bName);
+      });
+  
+    this.setState({
+      objectSearch: e.target.value,
+      filteredObjects: sortedFilteredObjects,
+    });
+  };
+
+  handleObjectSelect = (objectName) => {
+    this.setState({
+      selectedObject: objectName,
+      objectSearch: objectName,
+      filteredObjects: [],
+    });
+  };
 
 
   fetchUserInfo() {
@@ -1232,9 +1300,15 @@ class App extends React.Component {
   };
 
   cloneRow = (index) => {
-    this.setState((prevState) => ({
-      fields: [...prevState.fields, prevState.fields[index]],
-    }));
+    this.setState((prevState) => {
+      const clonedField = { ...prevState.fields[index] };
+      delete clonedField.deploymentStatus;
+      delete clonedField.deploymentError;
+  
+      return {
+        fields: [...prevState.fields, clonedField],
+      };
+    });
   };
 
   onLabelChange = (index, label) => {
@@ -1288,11 +1362,31 @@ class App extends React.Component {
 
   importCsv = () => {
     const {importCsvContent} = this.state;
-    const separator = localStorage.getItem("csvSeparator") ? localStorage.getItem("csvSeparator") : ",";
+    // Helper function to detect the separator
+    const detectSeparator = (content) => {
+      const potentialSeparators = [",", ";", "\t", "|"];
+      const lines = content.split("\n").filter(line => line.trim() !== ""); // Remove empty lines
+      if (lines.length === 0) {
+        return ","; // Default to comma if no content
+      }
+      // Check the first line for the most frequent separator
+      const firstLine = lines[0];
+      let maxSeparator = ",";
+      let maxCount = 0;
+      potentialSeparators.forEach(separator => {
+        const count = firstLine.split(separator).length;
+        if (count > maxCount) {
+          maxCount = count;
+          maxSeparator = separator;
+        }
+      });
+      return maxSeparator;
+    };
+    // Detect separator dynamically
+    const separator = detectSeparator(importCsvContent);
     const lines = importCsvContent.split("\n");
     const newFields = [];
     let hasError = false;
-
     const validTypes = [
       "Checkbox", "Currency", "Date", "DateTime", "Email", "Location", "Number",
       "Percent", "Phone", "Picklist", "MultiselectPicklist", "Text", "TextArea",
@@ -1309,7 +1403,6 @@ class App extends React.Component {
         }
       }
     });
-
     if (!hasError) {
       this.setState(prevState => ({
         fields: [...prevState.fields, ...newFields],
@@ -1446,7 +1539,7 @@ class App extends React.Component {
   };
 
   render() {
-    const {fields, showModal, showProfilesModal, currentFieldIndex,userInfo } = this.state;
+    const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject} = this.state;
 
     return (
       React.createElement("div", null,
@@ -1464,37 +1557,64 @@ class App extends React.Component {
             React.createElement("div", {className: "slds-spinner__dot-a"}),
             React.createElement("div", {className: "slds-spinner__dot-b"}),
           ),
-          React.createElement("a", {href: "#", id: "help-btn", title: "Export Help", onClick: null},
+          React.createElement("a", {href: "", id: "help-btn", title: "Field Creator Help", onClick: null},
             React.createElement("div", {className: "icon"})
           ),
         ),
-        React.createElement("div", {className: "area firstHeader"},
-          React.createElement("div", {className: "form-group"},
-            React.createElement("label", {htmlFor: "object_select"}, "Select Object"),
-            React.createElement("br", null),
-            React.createElement("select", {
-              className: "form-control",
-              id: "object_select",
-              style: {width: "400px"},
-              value: this.state.selectedObject,
-              onChange: (e) => this.setState({selectedObject: e.target.value})
-            },
-            React.createElement("option", {value: ""}, "Select object to create fields for...."),
-            this.state.objects.map((obj) =>
-              React.createElement("option", {key: obj.name, value: obj.name},
-                obj.name, " (", obj.label, ")"
+        React.createElement("div", { style: { position: "relative" } }, // Increased z-index
+          React.createElement("div", {className: "area firstHeader", style: { position: "relative", zIndex: 1 }}, // Lower z-index
+            React.createElement("div", {className: "form-group"},
+              React.createElement("label", {htmlFor: "object_select"}, "Select Object"),
+              selectedObject && React.createElement("a", {
+                href: `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject}/FieldsAndRelationships/view`,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                style: { marginLeft: "10px" }
+              }, "(Fields)"),              React.createElement("br", null),
+              React.createElement("div", {style: {position: "relative", width: "400px"}},
+                React.createElement("input", {
+                  type: "text",
+                  id: "object_select",
+                  className: "form-control input-textBox",
+                  placeholder: "Search and select object...",
+                  value: this.state.objectSearch,
+                  onChange: this.handleObjectSearch,
+                  style: {width: "100%"}
+                }),
+                this.state.filteredObjects.length > 0 && React.createElement("ul", {
+                  className:"ulItem"
+                },
+                  this.state.filteredObjects.map(obj =>
+                    React.createElement("li", {
+                      key: obj.name,
+                      onClick: () => this.handleObjectSelect(obj.name),
+                      style: {
+                        padding: "8px 12px",
+                        cursor: "pointer",
+                        transition: "background-color 0.2s",
+                      },
+                      onMouseEnter: (e) => {
+                        e.target.style.backgroundColor = "#f0f0f0";
+                      },
+                      onMouseLeave: (e) => {
+                        e.target.style.backgroundColor = "transparent";
+                      }
+                    },
+                      `${obj.name} (${obj.label})`
+                    )
+                  )
+                )
               )
-            )
+            ),
+            React.createElement("br", null),
+            React.createElement("div", {className: "col-xs-12 text-center", id: "deploy"},
+              React.createElement("button", {"aria-label": "Clear Button",className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
+              React.createElement("button", {"aria-label": "Open Import CSV modal button",className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
+              React.createElement("button", {"disabled": !this.state.selectedObject, "aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
+              React.createElement("br", null)
             )
           )
-          ,
-          React.createElement("br", null),
-          React.createElement("div", {className: "col-xs-12 text-center", id: "deploy"},
-            React.createElement("button", {"aria-label": "Clear Button",className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
-            React.createElement("button", {"aria-label": "Open Import CSV modal button",className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
-            React.createElement("button", {"aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
-            React.createElement("br", null)
-          )),
+        ),
         React.createElement("div", {className: "area"},
           React.createElement(FieldsTable, {
             fields,
@@ -1565,7 +1685,7 @@ class App extends React.Component {
           }
         }, "×")
         ),
-        React.createElement("p", null, "Enter comma separated values of Label, ApiName, Type (Set the separator in Data Export options). "),
+        React.createElement("p", null, "Enter " + (localStorage.getItem("csvSeparator") || ",") + "  separated values of Label, ApiName, Type."),
         React.createElement("textarea", {
           value: this.state.importCsvContent,
           onChange: this.handleImportCsvChange,

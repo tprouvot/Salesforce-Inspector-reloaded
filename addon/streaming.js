@@ -7,9 +7,9 @@ import {DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
 // Import the CometD symbols.
 import {CometD} from "./cometd/cometd.js";
 
-const myEvent1 = {"schema":"wvzfKOWpumi4KAKipWNUVg","payload":{"FulfillmentOrderId":"0a3KD00000000mQYAQ","NewStatusCategory":"CLOSED","CreatedById":"0050C000008stThQAI","OldStatus":"In Process","CreatedDate":"2024-08-07T12:12:19.078Z","OrderSummaryId":"1OsKD000000CaYS0A0","OldStatusCategory":"FULFILLING","NewStatus":"Fulfilled"},"event":{"EventUuid":"e5ba71b1-7070-4e3d-8b4a-3250c4d0385f","replayId":7661}};
-const myEvent2 = {"schema":"wvzfKOWpumi4KAKipWNUVg","payload":{"FulfillmentOrderId":"0a3KD00000000mQYAQ","NewStatusCategory":"CLOSED","CreatedById":"0050C000008stThQAI","OldStatus":"In Process","CreatedDate":"2024-08-07T12:12:19.078Z","OrderSummaryId":"1OsKD000000CaYS0A0","OldStatusCategory":"FULFILLING","NewStatus":"Fulfilled"},"event":{"EventUuid":"e5ba71b1-7078-4e3d-8b4a-3250c4d0385f","replayId":7661}};
-const myEvent3 = {"schema":"wvzfKOWpumi4KAKipWNUVg","payload":{"FulfillmentOrderId":"0a3KD00000000mQYAQ","NewStatusCategory":"CLOSED","CreatedById":"0050C000008stThQAI","OldStatus":"In Process","CreatedDate":"2024-08-07T12:12:19.078Z","OrderSummaryId":"1OsKD000000CaYS0A0","OldStatusCategory":"FULFILLING","NewStatus":"Fulfilled"},"event":{"EventUuid":"e5ba71b1-7070-4e3d-8b4a-3250c470385f","replayId":7661}};
+const myEvent1 = {"schema":"wvzfKOWpumi4KAKipWNUVg","payload":{"FulfillmentOrderId":"0a3KD00000000mQYAQ","NewStatusCategory":"OPEN","CreatedById":"0050C000008stThQAI","OldStatus":"In Process","CreatedDate":"2024-08-07T12:12:19.078Z","OrderSummaryId":"1OsKD000000CaYS0A0","OldStatusCategory":"FULFILLING","NewStatus":"Fulfilled"},"event":{"EventUuid":"e5ba71b1-7070-4e3d-8b4a-3250c4d0385f","replayId":7661}};
+const myEvent2 = {"schema":"wvzfKOWpumi4KAKipWNUVg","payload":{"FulfillmentOrderId":"0a3KD00000000mQYAQ","NewStatusCategory":"PROCESS","CreatedById":"0050C000008stThQAI","OldStatus":"In Process","CreatedDate":"2024-08-07T12:12:19.078Z","OrderSummaryId":"1OsKD000000CaYS0A0","OldStatusCategory":"FULFILLING","NewStatus":"Fulfilled"},"event":{"EventUuid":"e5ba71b1-7078-4e3d-8b4a-3250c4d0385f","replayId":7661}};
+const myEvent3 = {"schema":"wvzfKOWpumi4KAKipWNUVg","payload":{"FulfillmentOrderId":"0a3KD00000000mQYAQ","NewStatusCategory":"CANCELLED","CreatedById":"0050C000008stThQAI","OldStatus":"In Process","CreatedDate":"2024-08-07T12:12:19.078Z","OrderSummaryId":"1OsKD000000CaYS0A0","OldStatusCategory":"FULFILLING","NewStatus":"Fulfilled"},"event":{"EventUuid":"e5ba71b1-7070-4e3d-8b4a-3250c470385f","replayId":7661}};
 const myEvent4 = {"schema":"wvzfKOWpumi4KAKipWNUVg","payload":{"FulfillmentOrderId":"0a3KD00000000mQYAQ","NewStatusCategory":"CLOSED","CreatedById":"0050C000008stThQAI","OldStatus":"In Process","CreatedDate":"2024-08-07T12:12:19.078Z","OrderSummaryId":"1OsKD000000CaYS0A0","OldStatusCategory":"FULFILLING","NewStatus":"Fulfilled"},"event":{"EventUuid":"e5ba71b1-7078-4e3d-8b4a-3250c480385f","replayId":7661}};
 
 
@@ -17,9 +17,9 @@ const channelSuffix = "/event/";
 const channelTypes = [
   //{value: "GenericEvent", label: "Generic Event"},
   {value: "StandardPlatformEvent", label: "Standard Platform Event"},
-  {value: "PlatformEvent", label: "Custom Platform Event"},
+  {value: "PlatformEvent", label: "Custom Platform Event"}
   //{value: "GenericEvent", label: "Generic Event"},
-  {value: "ChangeDataCaptureEvent", label: "Change Data Capture"}
+  //{value: "ChangeDataCaptureEvent", label: "Change Data Capture"}
 ];
 const defaultChannelType = "StandardPlatformEvent";
 
@@ -28,24 +28,23 @@ class Model {
   constructor(sfHost, sessionId, args) {
     this.sfHost = sfHost;
     this.sessionId = sessionId;
-    //this.importData = undefined;
-    //this.consecutiveFailures = 0;
-
     this.sfLink = "https://" + this.sfHost;
-    //this.spinnerCount = 0;
-    //this.showHelp = false;
+    this.spinnerCount = 0;
+    this.showHelp = false;
     this.userInfo = "...";
     this.events = [];
-
     this.selectedChannelType = defaultChannelType;
     this.channels = [];
     this.selectedChannel = "";
     this.channelListening = "";
-    this.subscribeDisabled = false;
-    this.unsubscribeDisabled = true;
-
+    this.isListenning = false;
+    this.selectedEvent = undefined;
     this.cometd = {};
     this.subscription = {};
+
+    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
+      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
+    }));
 
     if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
       //change background color for production
@@ -69,6 +68,29 @@ class Model {
       this.testCallback();
     }
   }
+
+  /**
+   * Show the spinner while waiting for a promise.
+   * didUpdate() must be called after calling spinFor.
+   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
+   * @param promise The promise to wait for.
+   */
+  spinFor(promise) {
+    this.spinnerCount++;
+    promise
+      .catch(err => {
+        console.error("spinFor", err);
+      })
+      .then(() => {
+        this.spinnerCount--;
+        this.didUpdate();
+      })
+      .catch(err => console.log("error handling failed", err));
+  }
+
+  toggleHelp() {
+    this.showHelp = !this.showHelp;
+  }
 }
 
 let h = React.createElement;
@@ -81,7 +103,8 @@ class App extends React.Component {
     this.onChannelSelection = this.onChannelSelection.bind(this);
     this.onSuscribeToChannel = this.onSuscribeToChannel.bind(this);
     this.onUnsuscribeToChannel = this.onUnsuscribeToChannel.bind(this);
-
+    this.onToggleHelp = this.onToggleHelp.bind(this);
+    this.onSelectEvent = this.onSelectEvent.bind(this);
     this.getEventChannels(defaultChannelType);
   }
 
@@ -133,7 +156,6 @@ class App extends React.Component {
               label: channel.MasterLabel
             });
           }else{
-            console.log('PE');
             if(index == 0){
               model.selectedChannel = channelSuffix + channel.QualifiedApiName;
             }
@@ -143,14 +165,18 @@ class App extends React.Component {
             });
           }
         });
-        //model.events.unshift(myEvent1);
-        //model.events.unshift(myEvent2);
-        //model.events.unshift(myEvent3);
-        //model.events.unshift(myEvent4);
-        //console.log(model.events);
+        /*
+        model.events.unshift(myEvent1);
+        model.events.unshift(myEvent2);
+        model.events.unshift(myEvent3);
+        model.events.unshift(myEvent4);
+        console.log('model.events');
+        console.log(model.events)
+        */
         model.didUpdate();
+        
       }).catch(err => {
-          console.error("An error occured fetching Event Channels of type " + this.channelType+ ": ", err);
+          console.error("An error occured fetching Event Channels of type " + channelType+ ": ", err.message);
       });
   }
 
@@ -194,14 +220,14 @@ class App extends React.Component {
         model.cometd = cometd;
         // Subscribe to receive messages from the server.
         model.channelListening = 'Listening on ' + model.selectedChannel + ' ...';
-        model.subscribeDisabled = true;
-        model.unsubscribeDisabled = false;
+        model.isListenning = true;
         console.log(model.channelListening);
         model.didUpdate();
         model.subscription = cometd.subscribe(model.selectedChannel, function(m) {
             console.log(m.data);
             //console.log(JSON.stringify(m.data));
-            model.events.unshift = JSON.parse(JSON.stringify(m.data));
+            model.events.unshift(JSON.parse(JSON.stringify(m.data)));
+            console.log('model.events');
             console.log(model.events);
             model.didUpdate();
         });
@@ -217,8 +243,7 @@ class App extends React.Component {
       if (unsubscribeReply.successful) {
         console.log("Unsubscribe sucessfully");
         model.channelListening = "";
-        model.subscribeDisabled = false;
-        model.unsubscribeDisabled = true;
+        model.isListenning = false;
         model.didUpdate();
           // Server truly received the disconnect request
       }
@@ -228,6 +253,20 @@ class App extends React.Component {
         console.log("cometD Disconnected");
       }
     });
+    model.didUpdate();
+  }
+
+  onSelectEvent(e){
+    e.preventDefault();
+    let {model} = this.props;
+    model.selectedEvent = e.target.id;
+    model.didUpdate();
+  }
+
+  onToggleHelp(e) {
+    //e.preventDefault();
+    let {model} = this.props;
+    model.toggleHelp();
     model.didUpdate();
   }
 
@@ -246,13 +285,13 @@ class App extends React.Component {
         h("h1", {}, "Streaming"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
-          /*
+          
           h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
             h("span", {className: "slds-assistive-text"}),
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
-          ),*/
-          h("a", {href: "#", id: "help-btn", title: "Import Help", onClick: this.onToggleHelpClick},
+          ),
+          h("a", {href: "#", id: "help-btn", title: "Import Help", onClick: this.onToggleHelp},
             h("div", {className: "icon"})
           ),
         ),
@@ -269,7 +308,7 @@ class App extends React.Component {
             h("span", {className: "conf-label"}, "Channel Type :"),
             h("span", {className: "conf-value"},
               h("select", { value: model.selectedChannelType, 
-                            onChange: this.onChannelTypeChange, /*disabled: model.isWorking()*/
+                            onChange: this.onChannelTypeChange, disabled: model.isListenning
                           },
                           ...channelTypes.map((type, index) => h("option", {key: index, value: type.value}, type.label)
                           )
@@ -277,45 +316,24 @@ class App extends React.Component {
             ),
             h("span", {className: "conf-label"}, "Channel :"),
             h("span", {className: "conf-value"},
-              h("select", {value: model.eventEntity, onChange:this.onChannelSelection, /*disabled: model.isWorking()*/},
+              h("select", {value: model.eventEntity, onChange:this.onChannelSelection, disabled: model.isListenning},
                   ...model.channels.map((entity, index) => h("option", {key: index, value: entity.name}, entity.label))
               )
             ),
-            h("button", {onClick: this.onSuscribeToChannel, title: "Suscribe to channel", disabled: model.subscribeDisabled}, "Subscribe"),
-            h("button", {onClick: this.onUnsuscribeToChannel, title: "Unsuscribe to channel", disabled: model.unsubscribeDisabled}, "Unsubscribe")
+            h("button", {onClick: this.onSuscribeToChannel, title: "Suscribe to channel", disabled: model.isListenning}, "Subscribe"),
+            h("button", {onClick: this.onUnsuscribeToChannel, title: "Unsuscribe to channel", disabled: !model.isListenning}, "Unsubscribe")
           )
+        ),
+        h("div", {hidden: !model.showHelp, className: "help-text"},
+          h("h3", {}, "Streaming Help"),
+          h("p", {}, "Use for monitor Platform Event queue."),
+          h("p", {}, "Subscribe to a channel to see events in the result area. Only new events will be catched."),
+          h("p", {}, "Supports Standard and Custom Platform Events")
         )
       ),
       // END SUBSCRIBE CHANNEL
 
-      /*
-      h("div", {className: "area import-actions"},
-        h("div", {hidden: !model.showHelp, className: "help-text"},
-          h("h3", {}, "Import Help"),
-          h("p", {}, "Use for quick one-off data imports."),
-          h("ul", {},
-            h("li", {}, "Enter your CSV or Excel data in the box above.",
-              h("ul", {},
-                h("li", {}, "The input must contain a header row with field API names."),
-                h("li", {}, "To use an external ID for a lookup field, the header row should contain the lookup relation name, the target sobject name and the external ID name separated by colons, e.g. \"MyLookupField__r:MyObject__c:MyExternalIdField__c\"."),
-                h("li", {}, "Empty cells insert null values."),
-                h("li", {}, "Number, date, time and checkbox values must conform to the relevant ", h("a", {href: "http://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes", target: "_blank"}, "XSD datatypes"), "."),
-                h("li", {}, "Columns starting with an underscore are ignored."),
-                h("li", {}, "You can resume a previous import by including the \"__Status\" column in your input."),
-                h("li", {}, "You can supply the other import options by clicking \"Copy options\" and pasting the options into Excel in the top left cell, just above the header row.")
-              )
-            ),
-            h("li", {}, "Select your input format"),
-            h("li", {}, "Select an action (insert, update, upsert or delete)"),
-            h("li", {}, "Enter the API name of the object to import"),
-            h("li", {}, "Press the Run button")
-          ),
-          h("p", {}, "Bulk API is not supported. Large data volumes may freeze or crash your browser.")
-        ),
-      ),*/
-      
-      // START BODY
-      
+      // START BODY      
       h("div", {className: "area", id: "result-area"},
         h("div", {className: "result-bar"},
           h("h1", {}, "Event Result"),
@@ -324,9 +342,9 @@ class App extends React.Component {
         h("div", {id: "result-table"},
           /* the scroll table goes here*/
           h("div",{},
-            model.events.map(event =>
-              h("p", { className: "event-box"}, JSON.stringify(event, null, 4))
-            )
+            model.events.map((event, index) => h("div", {onClick: this.onSelectEvent,id: index, key: index, value: event, className:` ${model.selectedEvent == index ? 'event-selected' : 'event-box'}`},
+              JSON.stringify(event, null, 4))
+          )
           )         
         )
       )  

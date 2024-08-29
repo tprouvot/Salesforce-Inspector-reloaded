@@ -1538,7 +1538,7 @@ class App extends React.Component {
 
     fieldsToProcess.forEach((field) => {
       const index = fields.findIndex(f => f === field);
-      this.createField(field, selectedObject)
+      this.createField(field, this.state.selectedObject)
         .then(() => {
           const newFields = [...this.state.fields];
           newFields[index].deploymentStatus = "success";

@@ -262,7 +262,7 @@ class Model {
     };
     if (this.resultClass === "success"){
       let newApis = Object.keys(result.response)
-        .filter(key => result.response[key].startsWith("/services/data/"))
+        .filter(key => typeof result.response[key] == "string" && result.response[key].startsWith("/services/data/"))
         .map(key => ({
           key,
           "endpoint": result.response[key]

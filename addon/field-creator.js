@@ -113,11 +113,11 @@ class ProfilesModal extends React.Component {
   };
 
   toggleSection = (section) => {
-    const stateKey = `is${section.replace(' ', '')}Expanded`;
+    const stateKey = `is${section.replace(" ", "")}Expanded`;
     this.setState(prevState => ({
       [stateKey]: !prevState[stateKey]
     }));
-  }
+  };
 
   render() {
     const {field, permissionSets, onSave, onClose} = this.props;
@@ -128,8 +128,6 @@ class ProfilesModal extends React.Component {
       allEditPermissionSets,
       allReadPermissionSets,
       searchTerm,
-      isProfilesExpanded,
-      isPermissionSetsExpanded
     } = this.state;
 
     const filterItems = (items) => items.filter(([name, profile]) =>
@@ -144,15 +142,15 @@ class ProfilesModal extends React.Component {
       .filter(([_, profile]) => profile === null)
       .sort((a, b) => a[0].localeCompare(b[0])));
 
-      const renderTable = (items, title) =>
-        React.createElement("div", {key: title},
-          React.createElement("h5", {
-            onClick: () => this.toggleSection(title),
-            style: {cursor: 'pointer', userSelect: 'none'}
-          }, 
-            `${title} ${this.state[`is${title.replace(' ', '')}Expanded`] ? '▼' : '▶'}`
-          ),
-          this.state[`is${title.replace(' ', '')}Expanded`] && React.createElement("table",  {style: {width: "100%", borderCollapse: "collapse", marginBottom: "20px"}},
+    const renderTable = (items, title) =>
+      React.createElement("div", {key: title},
+        React.createElement("h5", {
+          onClick: () => this.toggleSection(title),
+          style: {cursor: "pointer", userSelect: "none"}
+        },
+        `${title} ${this.state[`is${title.replace(" ", "")}Expanded`] ? "▼" : "▶"}`
+        ),
+        this.state[`is${title.replace(" ", "")}Expanded`] && React.createElement("table", {style: {width: "100%", borderCollapse: "collapse", marginBottom: "20px"}},
           React.createElement("thead", null,
             React.createElement("tr", null,
               React.createElement("th", {style: {padding: "8px", textAlign: "left", borderBottom: "1px solid #ddd"}}, "Name"),
@@ -203,139 +201,139 @@ class ProfilesModal extends React.Component {
       );
 
     return React.createElement("div", {className: "modalBlackBase"},
-    React.createElement("div", {
-      className: "modal-dialog",
-      style: {
-        overflowY: "hidden",
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        height: "80%",
-        transform: "translate(-50%, -50%)",
-        maxWidth: "600px",
-        width: "90%",
-        backgroundColor: "#fff",
-        padding: "20px",
-        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-        borderRadius: "8px",
-        display: "flex",
-        flexDirection: "column"
-      }
-    },
-    React.createElement("div", {
-      className: "modal-content",
-      style: {
-        position: "relative",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column"
-      }
-    },
-    React.createElement("div", {
-      className: "modal-header",
-      style: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "15px"
-      }
-    },
-    React.createElement("h1", {className: "modal-title"}, "Set Field Permissions"),
-    React.createElement("button", {
-      type: "button",
-      "aria-label": "Close permission modal button",
-      className: "close",
-      onClick: onClose,
-      style: {
-        cursor: "pointer",
-        background: "none",
-        border: "none",
-        fontSize: "1.5rem",
-        fontWeight: "bold"
-      }
-    }, "×")
-    ),
-    React.createElement("div", {
-      className: "modal-body",
-      style: {
-        overflowY: "auto",
-        flexGrow: 1,
-        marginRight: "-10px",
-        paddingRight: "10px",
-        scrollbarWidth: "thin",
-        scrollbarColor: "#B0C4DF transparent"
-      }
-    },
-    React.createElement("input", {
-      type: "text",
-      placeholder: "Search profiles and permission sets...",
-      value: this.state.searchTerm,
-      onChange: this.handleSearchChange,
-      style: {
-        width: "100%",
-        padding: "8px",
-        border: "1px solid #ccc",
-        borderRadius: "4px"
-      }
-      
-    }),React.createElement("p", {},"Please consider granting field access to Permission Sets."),
-    
-    renderTable(permissionSetsOnly, "Permission Sets"),
-    renderTable(profiles, "Profiles")
-    ),
-    React.createElement("div", {
-      className: "modal-footer",
-      style: {
-        marginTop: "15px",
-        display: "flex",
-        justifyContent: "flex-end",
-        borderTop: "1px solid #e5e5e5",
-        padding: "15px 0",
-        backgroundColor: "#fff",
-        position: "sticky",
-        bottom: 0
-      }
-    },
-    React.createElement("button", {
-      type: "button",
-      "aria-label": "Close button",
-      className: "btn btn-default",
-      onClick: onClose,
-      style: {marginRight: "10px"}
-    }, "Close"),
-    React.createElement("button", {
-      type: "button",
-      "aria-label": "Save permission for this field",
-      className: "btn btn-primary highlighted",
-      onClick: () => {
-        const updatedProfiles = Object.entries(permissions).reduce((acc, [name, perm]) => {
-          if (perm.edit || perm.read) {
-            acc.push({
-              name,
-              access: perm.edit ? "edit" : "read"
-            });
-          }
-          return acc;
-        }, []);
-
-        const updatedField = {
-          ...field,
-          profiles: updatedProfiles
-        };
-
-        onSave(updatedField);
+      React.createElement("div", {
+        className: "modal-dialog",
+        style: {
+          overflowY: "hidden",
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          height: "80%",
+          transform: "translate(-50%, -50%)",
+          maxWidth: "600px",
+          width: "90%",
+          backgroundColor: "#fff",
+          padding: "20px",
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+          borderRadius: "8px",
+          display: "flex",
+          flexDirection: "column"
+        }
       },
-      style: {marginRight: "10px"}
-    }, "Save"),
-    React.createElement("button", {
-      "aria-label": "Apply the permission to all fields in the table",
-      type: "button",
-      className: "btn btn-secondary",
-      onClick: this.applyToAllFields
-    }, "Apply to All Fields")
-    )
-    )
-    )
+      React.createElement("div", {
+        className: "modal-content",
+        style: {
+          position: "relative",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column"
+        }
+      },
+      React.createElement("div", {
+        className: "modal-header",
+        style: {
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "15px"
+        }
+      },
+      React.createElement("h1", {className: "modal-title"}, "Set Field Permissions"),
+      React.createElement("button", {
+        type: "button",
+        "aria-label": "Close permission modal button",
+        className: "close",
+        onClick: onClose,
+        style: {
+          cursor: "pointer",
+          background: "none",
+          border: "none",
+          fontSize: "1.5rem",
+          fontWeight: "bold"
+        }
+      }, "×")
+      ),
+      React.createElement("div", {
+        className: "modal-body",
+        style: {
+          overflowY: "auto",
+          flexGrow: 1,
+          marginRight: "-10px",
+          paddingRight: "10px",
+          scrollbarWidth: "thin",
+          scrollbarColor: "#B0C4DF transparent"
+        }
+      },
+      React.createElement("input", {
+        type: "text",
+        placeholder: "Search profiles and permission sets...",
+        value: this.state.searchTerm,
+        onChange: this.handleSearchChange,
+        style: {
+          width: "100%",
+          padding: "8px",
+          border: "1px solid #ccc",
+          borderRadius: "4px"
+        }
+
+      }), React.createElement("p", {}, "Please consider granting field access to Permission Sets."),
+
+      renderTable(permissionSetsOnly, "Permission Sets"),
+      renderTable(profiles, "Profiles")
+      ),
+      React.createElement("div", {
+        className: "modal-footer",
+        style: {
+          marginTop: "15px",
+          display: "flex",
+          justifyContent: "flex-end",
+          borderTop: "1px solid #e5e5e5",
+          padding: "15px 0",
+          backgroundColor: "#fff",
+          position: "sticky",
+          bottom: 0
+        }
+      },
+      React.createElement("button", {
+        type: "button",
+        "aria-label": "Close button",
+        className: "btn btn-default",
+        onClick: onClose,
+        style: {marginRight: "10px"}
+      }, "Close"),
+      React.createElement("button", {
+        type: "button",
+        "aria-label": "Save permission for this field",
+        className: "btn btn-primary highlighted",
+        onClick: () => {
+          const updatedProfiles = Object.entries(permissions).reduce((acc, [name, perm]) => {
+            if (perm.edit || perm.read) {
+              acc.push({
+                name,
+                access: perm.edit ? "edit" : "read"
+              });
+            }
+            return acc;
+          }, []);
+
+          const updatedField = {
+            ...field,
+            profiles: updatedProfiles
+          };
+
+          onSave(updatedField);
+        },
+        style: {marginRight: "10px"}
+      }, "Save"),
+      React.createElement("button", {
+        "aria-label": "Apply the permission to all fields in the table",
+        type: "button",
+        className: "btn btn-secondary",
+        onClick: this.applyToAllFields
+      }, "Apply to All Fields")
+      )
+      )
+      )
     );
   }
 }
@@ -1029,31 +1027,31 @@ class App extends React.Component {
 
   handleObjectSearch = (e) => {
     const searchTerm = e.target.value.toLowerCase();
-    
+
     // Sort the filtered objects based on relevance
     const sortedFilteredObjects = this.state.objects
-      .filter(obj => 
-        obj.name.toLowerCase().includes(searchTerm) || 
-        obj.label.toLowerCase().includes(searchTerm)
+      .filter(obj =>
+        obj.name.toLowerCase().includes(searchTerm)
+        || obj.label.toLowerCase().includes(searchTerm)
       )
       .sort((a, b) => {
         const aName = a.name.toLowerCase();
         const bName = b.name.toLowerCase();
         const aLabel = a.label.toLowerCase();
         const bLabel = b.label.toLowerCase();
-  
+
         // Prioritize exact matches
         if (aName === searchTerm || aLabel === searchTerm) return -1;
         if (bName === searchTerm || bLabel === searchTerm) return 1;
-  
+
         // Then prioritize matches at the beginning
         if (aName.startsWith(searchTerm) || aLabel.startsWith(searchTerm)) return -1;
         if (bName.startsWith(searchTerm) || bLabel.startsWith(searchTerm)) return 1;
-  
+
         // Then sort alphabetically
         return aName.localeCompare(bName);
       });
-  
+
     this.setState({
       objectSearch: e.target.value,
       filteredObjects: sortedFilteredObjects,
@@ -1074,7 +1072,7 @@ class App extends React.Component {
     sfConn.soap(wsdl, "getUserInfo", {})
       .then(res => {
         const userInfo = `${res.userFullName} / ${res.userName} / ${res.organizationName}`;
-        this.setState({ userInfo });
+        this.setState({userInfo});
       })
       .catch(err => {
         console.error("Error fetching user info:", err);
@@ -1239,11 +1237,11 @@ class App extends React.Component {
   }
 
   fetchObjects = () => {
-  
+
     const accessToken = sfConn.sessionId;
     const instanceUrl = `https://${sfConn.instanceHostname}`;
     const objectsUrl = `${instanceUrl}/services/data/v${apiVersion}/sobjects`;
-  
+
     fetch(objectsUrl, {
       method: "GET",
       headers: {
@@ -1254,7 +1252,7 @@ class App extends React.Component {
       .then(response => response.json())
       .then(data => {
         const nonLayoutableObjects = data.sobjects.filter(obj => obj.layoutable === true);
-        this.setState({ objects: nonLayoutableObjects });
+        this.setState({objects: nonLayoutableObjects});
       })
       .catch(error => {
         console.error("Error fetching objects:", error);
@@ -1305,10 +1303,10 @@ class App extends React.Component {
 
   cloneRow = (index) => {
     this.setState((prevState) => {
-      const clonedField = { ...prevState.fields[index] };
+      const clonedField = {...prevState.fields[index]};
       delete clonedField.deploymentStatus;
       delete clonedField.deploymentError;
-  
+
       return {
         fields: [...prevState.fields, clonedField],
       };
@@ -1429,11 +1427,11 @@ class App extends React.Component {
         console.error("Catch error", e);
         errorMessage = field.deploymentError || errorMessage;
       }
-      this.setState({ fieldErrorMessage: errorMessage });
-    }  else if (field.deploymentStatus === "pending") {
-      this.setState({ fieldErrorMessage: "Field deployment is in progress" });
+      this.setState({fieldErrorMessage: errorMessage});
+    } else if (field.deploymentStatus === "pending") {
+      this.setState({fieldErrorMessage: "Field deployment is in progress"});
     } else {
-      this.setState({ fieldErrorMessage: "Field has not been deployed yet" });
+      this.setState({fieldErrorMessage: "Field has not been deployed yet"});
     }
   };
 
@@ -1489,9 +1487,9 @@ class App extends React.Component {
       showProfilesModal: false,
       currentFieldIndex: null});
 
-      this.checkAllFieldsHavePermissions();
+    this.checkAllFieldsHavePermissions();
   }
-  ;
+    ;
 
   onSaveFieldOptions = (updatedField) => {
     const {fields, currentFieldIndex} = this.state;
@@ -1509,17 +1507,17 @@ class App extends React.Component {
 
   checkAllFieldsHavePermissions = () => {
     if (this.state.fields.every(field => field.profiles && field.profiles.length > 0)) {
-      this.setState({ allFieldsHavePermissions: true });
+      this.setState({allFieldsHavePermissions: true});
       return true;
     } else {
-      this.setState({ allFieldsHavePermissions: false });
+      this.setState({allFieldsHavePermissions: false});
       return false;
     }
   };
-  
+
   deploy = () => {
-    const { fields, allFieldsHavePermissions } = this.state;
-  
+    const {fields} = this.state;
+
     if (!this.checkAllFieldsHavePermissions()) {
       return;
     }
@@ -1556,7 +1554,7 @@ class App extends React.Component {
   };
 
   render() {
-    const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject,  allFieldsHavePermissions,fieldErrorMessage    } = this.state;
+    const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject} = this.state;
 
     return (
       React.createElement("div", null,
@@ -1574,20 +1572,20 @@ class App extends React.Component {
             React.createElement("div", {className: "slds-spinner__dot-a"}),
             React.createElement("div", {className: "slds-spinner__dot-b"}),
           ),
-          React.createElement("a", {href: "https://github.com/SantiParris8/Salesforce-Inspector-reloaded-fieldCreator/blob/releaseCandidate/docs/field-creator.md",target:"_blank", id: "help-btn", title: "Field Creator Help", onClick: null},
+          React.createElement("a", {href: "https://github.com/SantiParris8/Salesforce-Inspector-reloaded-fieldCreator/blob/releaseCandidate/docs/field-creator.md", target: "_blank", id: "help-btn", title: "Field Creator Help", onClick: null},
             React.createElement("div", {className: "icon"})
           ),
         ),
-        React.createElement("div", { style: { position: "relative" } }, // Increased z-index
-          React.createElement("div", {className: "area firstHeader", style: { position: "relative", zIndex: 1 }}, // Lower z-index
+        React.createElement("div", {style: {position: "relative"}}, // Increased z-index
+          React.createElement("div", {className: "area firstHeader", style: {position: "relative", zIndex: 1}}, // Lower z-index
             React.createElement("div", {className: "form-group"},
               React.createElement("label", {htmlFor: "object_select"}, "Select Object"),
               selectedObject && React.createElement("a", {
                 href: `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject}/FieldsAndRelationships/view`,
                 target: "_blank",
                 rel: "noopener noreferrer",
-                style: { marginLeft: "10px" }
-              }, "(Fields)"),              React.createElement("br", null),
+                style: {marginLeft: "10px"}
+              }, "(Fields)"), React.createElement("br", null),
               React.createElement("div", {style: {position: "relative", width: "400px"}},
                 React.createElement("input", {
                   type: "text",
@@ -1599,34 +1597,34 @@ class App extends React.Component {
                   style: {width: "100%"}
                 }),
                 this.state.filteredObjects.length > 0 && React.createElement("ul", {
-                  className:"ulItem"
+                  className: "ulItem"
                 },
-                  this.state.filteredObjects.map(obj =>
-                    React.createElement("li", {
-                      key: obj.name,
-                      onClick: () => this.handleObjectSelect(obj.name),
-                      style: {
-                        padding: "8px 12px",
-                        cursor: "pointer",
-                        transition: "background-color 0.2s",
-                      },
-                      onMouseEnter: (e) => {
-                        e.target.style.backgroundColor = "#f0f0f0";
-                      },
-                      onMouseLeave: (e) => {
-                        e.target.style.backgroundColor = "transparent";
-                      }
+                this.state.filteredObjects.map(obj =>
+                  React.createElement("li", {
+                    key: obj.name,
+                    onClick: () => this.handleObjectSelect(obj.name),
+                    style: {
+                      padding: "8px 12px",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s",
                     },
-                      `${obj.name} (${obj.label})`
-                    )
+                    onMouseEnter: (e) => {
+                      e.target.style.backgroundColor = "#f0f0f0";
+                    },
+                    onMouseLeave: (e) => {
+                      e.target.style.backgroundColor = "transparent";
+                    }
+                  },
+                  `${obj.name} (${obj.label})`
                   )
+                )
                 )
               )
             ),
             React.createElement("br", null),
             React.createElement("div", {className: "col-xs-12 text-center", id: "deploy"},
-              React.createElement("button", {"aria-label": "Clear Button",className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
-              React.createElement("button", {"aria-label": "Open Import CSV modal button",className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
+              React.createElement("button", {"aria-label": "Clear Button", className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
+              React.createElement("button", {"aria-label": "Open Import CSV modal button", className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
               React.createElement("button", {"disabled": !this.state.selectedObject, "aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
               !this.state.allFieldsHavePermissions && React.createElement("p", {style: {color: "red"}}, "Some fields are missing permissions"),
 
@@ -1645,7 +1643,7 @@ class App extends React.Component {
             onEditProfiles: this.onEditProfiles,
             onShowDeploymentStatus: this.onShowDeploymentStatus
           }),
-          React.createElement("button", {"aria-label": "Add Row/New field to table",className: "btn btn-sm highlighted", id: "add_row", onClick: this.addRow, style: {maxWidth: "18%"}}, "Add Row")
+          React.createElement("button", {"aria-label": "Add Row/New field to table", className: "btn btn-sm highlighted", id: "add_row", onClick: this.addRow, style: {maxWidth: "18%"}}, "Add Row")
         ),
 
         showProfilesModal && React.createElement(ProfilesModal, {
@@ -1733,67 +1731,67 @@ class App extends React.Component {
         )
         )
         ),
-        
+
         this.state.fieldErrorMessage && React.createElement("div", {
           className: "notification_container"
         },
-          React.createElement("div", {
-            className: "slds-notify slds-notify_toast slds-theme_error",
-            role: "alert",
-            style: {
-              display: "flex",
-              alignItems: "center"
-            }
-          },
-            React.createElement("span", {
-              title: "Error",
-              style: {
-                display: "inline-flex",
-                alignItems: "center",
-                marginRight: "10px"
-              }
-            },
-              React.createElement("svg", {
-                className: "slds-icon",
-                "aria-hidden": "true",
-                style: {
-                  width: "24px",
-                  height: "24px"
-                }
-              },
-                React.createElement("use", {
-                  xlinkHref: "symbols.svg#error",
-                  style: {fill: "white"}
-                })
-              )
-            ),
-            React.createElement("span", {
-              className: "slds-text-heading_small"
-            }, this.state.fieldErrorMessage),
-            React.createElement("a", {
-              title: "Close",
-              onClick: () => this.setState({ fieldErrorMessage: null }),
-              style: {
-                marginLeft: "10px",
-                display: "inline-flex",
-                alignItems: "center"
-              }
-            },
-              React.createElement("svg", {
-                className: "slds-icon",
-                "aria-hidden": "true",
-                style: {
-                  width: "24px",
-                  height: "24px"
-                }
-              },
-                React.createElement("use", {
-                  xlinkHref: "symbols.svg#close",
-                  style: {fill: "white"}
-                })
-              )
-            )
-          )
+        React.createElement("div", {
+          className: "slds-notify slds-notify_toast slds-theme_error",
+          role: "alert",
+          style: {
+            display: "flex",
+            alignItems: "center"
+          }
+        },
+        React.createElement("span", {
+          title: "Error",
+          style: {
+            display: "inline-flex",
+            alignItems: "center",
+            marginRight: "10px"
+          }
+        },
+        React.createElement("svg", {
+          className: "slds-icon",
+          "aria-hidden": "true",
+          style: {
+            width: "24px",
+            height: "24px"
+          }
+        },
+        React.createElement("use", {
+          xlinkHref: "symbols.svg#error",
+          style: {fill: "white"}
+        })
+        )
+        ),
+        React.createElement("span", {
+          className: "slds-text-heading_small"
+        }, this.state.fieldErrorMessage),
+        React.createElement("a", {
+          title: "Close",
+          onClick: () => this.setState({fieldErrorMessage: null}),
+          style: {
+            marginLeft: "10px",
+            display: "inline-flex",
+            alignItems: "center"
+          }
+        },
+        React.createElement("svg", {
+          className: "slds-icon",
+          "aria-hidden": "true",
+          style: {
+            width: "24px",
+            height: "24px"
+          }
+        },
+        React.createElement("use", {
+          xlinkHref: "symbols.svg#close",
+          style: {fill: "white"}
+        })
+        )
+        )
+        )
         )
       )
     );

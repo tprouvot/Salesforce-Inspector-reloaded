@@ -378,45 +378,8 @@ textarea {
   border-radius: 0.25rem;
   border: 1px solid #DDDBDA;
 }
-#data {
-  resize: none;
-  white-space: pre;
-  word-wrap: normal;
-  height: auto;
-  width: 335px;
-  overflow: hidden;
-  text-align: center;
-  color: #777;
-  padding: 1.5em;
-  font: inherit;
-}
-.import-actions .conf-line {
-  display: flex;
-  align-items: center;
-  margin: 0;
-}
-.button-group{
-  white-space: nowrap;
-}
-.button-group button,
-.button-group .button,
-.button-group select,
-.button-group input {
-  border-left-width: 0;
-  border-radius: 0;
-  margin-right: 0
-}
-.button-group > :first-child,
-.button-group > [hidden] + * {
-  border-top-left-radius: 0.25rem;
-  border-bottom-left-radius: 0.25rem;
-  border-left-width: 1px;
-}
-.button-group > :last-child {
-  border-top-right-radius: 0.25rem;
-  border-bottom-right-radius: 0.25rem;
-  margin-right: 10px;
-}
+
+
 button, .button {
   border: 1px solid #DDDBDA;
   height: 32px;
@@ -470,32 +433,42 @@ button.contract .button-toggle-icon {
 .button.field-info .button-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce-inspector-logo.svg');
 }
-.cancel-btn {
-  color: #c23934;
-}
-.cancel-btn:not(:disabled):hover,
-.cancel-btn:not(:disabled):active,
-.cancel-btn:not(:disabled):focus {
-  color: #a12b2b;
-}
+
 .area.result-area {
   padding: 0;
 }
 
 #result-area {
   height: 100%;
+  margin-bottom: 10px;
+}
+
+.result-bar {
+  margin-bottom: 10px;
 }
 
 #result-table {
+  margin-top: 2px;
   overflow: auto;
-  max-height: 100vh;
+  max-height: calc(80vh - 100px);
   background-color: white;
 }
 
 .event-box {
+  background-color: #e9eef3;
+  margin: 4px;
   border: 0.5px solid rgb(196, 193, 193);
   padding: 5px;
-  width: 50%;
+  width: 30%;
+  white-space: pre-wrap;
+}
+
+.event-selected {
+  background-color: #e9eef3;
+  margin: 4px;
+  border: 2px solid rgb(3, 153, 63);
+  padding: 5px;
+  width: 30%;
   white-space: pre-wrap;
 }
 

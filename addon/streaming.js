@@ -29,8 +29,8 @@ class Model {
     this.sfHost = sfHost;
     this.sessionId = sessionId;
     this.sfLink = "https://" + this.sfHost;
-    //this.spinnerCount = 0;
-    //this.showHelp = false;
+    this.spinnerCount = 0;
+    this.showHelp = false;
     this.userInfo = "...";
     this.events = [];
     this.selectedChannelType = defaultChannelType;

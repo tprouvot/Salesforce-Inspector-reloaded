@@ -99,6 +99,23 @@ body {
     min-height: 130px;
 }
 
+.notification_container{
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  background-color: rgb(186, 5, 23);
+  color: white;
+  border-radius: 4px;
+  font-size: 16px;
+  padding: 12px 24px;
+  box-sizing: border-box;
+  text-align: left
+}
+
 .modalBlackBase{
   display: block;
   position: fixed;

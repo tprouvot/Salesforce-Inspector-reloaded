@@ -1015,6 +1015,7 @@ class App extends React.Component {
       importCsvContent: "",
       importError: "",
       objectSearch: "",
+      fieldErrorMessage: "",
       userInfo: "...",
       filteredObjects: []
     };
@@ -1237,11 +1238,12 @@ class App extends React.Component {
     return typeMap[uiType] || uiType;
   }
 
-  fetchObjects = () => { //Check objects if globaldescribe is cached / implement this? EntitiDefinition
+  fetchObjects = () => {
+  
     const accessToken = sfConn.sessionId;
     const instanceUrl = `https://${sfConn.instanceHostname}`;
     const objectsUrl = `${instanceUrl}/services/data/v${apiVersion}/sobjects`;
-
+  
     fetch(objectsUrl, {
       method: "GET",
       headers: {
@@ -1251,7 +1253,8 @@ class App extends React.Component {
     })
       .then(response => response.json())
       .then(data => {
-        this.setState({objects: data.sobjects});
+        const nonLayoutableObjects = data.sobjects.filter(obj => obj.layoutable === true);
+        this.setState({ objects: nonLayoutableObjects });
       })
       .catch(error => {
         console.error("Error fetching objects:", error);
@@ -1421,17 +1424,16 @@ class App extends React.Component {
       try {
         const errorData = JSON.parse(field.deploymentError);
         errorMessage = errorData[0]?.message || errorMessage;
+
       } catch (e) {
-        console.err("Catch error" + e);
+        console.error("Catch error", e);
         errorMessage = field.deploymentError || errorMessage;
       }
-      alert(`Deployment Error: ${errorMessage}`);
-    } else if (field.deploymentStatus === "success") {
-      alert("Field deployed successfully");
-    } else if (field.deploymentStatus === "pending") {
-      alert("Field deployment is in progress");
+      this.setState({ fieldErrorMessage: errorMessage });
+    }  else if (field.deploymentStatus === "pending") {
+      this.setState({ fieldErrorMessage: "Field deployment is in progress" });
     } else {
-      alert("Field has not been deployed yet");
+      this.setState({ fieldErrorMessage: "Field has not been deployed yet" });
     }
   };
 
@@ -1554,7 +1556,7 @@ class App extends React.Component {
   };
 
   render() {
-    const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject,  allFieldsHavePermissions    } = this.state;
+    const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject,  allFieldsHavePermissions,fieldErrorMessage    } = this.state;
 
     return (
       React.createElement("div", null,
@@ -1730,6 +1732,68 @@ class App extends React.Component {
         }, "Import")
         )
         )
+        ),
+        
+        this.state.fieldErrorMessage && React.createElement("div", {
+          className: "notification_container"
+        },
+          React.createElement("div", {
+            className: "slds-notify slds-notify_toast slds-theme_error",
+            role: "alert",
+            style: {
+              display: "flex",
+              alignItems: "center"
+            }
+          },
+            React.createElement("span", {
+              title: "Error",
+              style: {
+                display: "inline-flex",
+                alignItems: "center",
+                marginRight: "10px"
+              }
+            },
+              React.createElement("svg", {
+                className: "slds-icon",
+                "aria-hidden": "true",
+                style: {
+                  width: "24px",
+                  height: "24px"
+                }
+              },
+                React.createElement("use", {
+                  xlinkHref: "symbols.svg#error",
+                  style: {fill: "white"}
+                })
+              )
+            ),
+            React.createElement("span", {
+              className: "slds-text-heading_small"
+            }, this.state.fieldErrorMessage),
+            React.createElement("a", {
+              title: "Close",
+              onClick: () => this.setState({ fieldErrorMessage: null }),
+              style: {
+                marginLeft: "10px",
+                display: "inline-flex",
+                alignItems: "center"
+              }
+            },
+              React.createElement("svg", {
+                className: "slds-icon",
+                "aria-hidden": "true",
+                style: {
+                  width: "24px",
+                  height: "24px"
+                }
+              },
+                React.createElement("use", {
+                  xlinkHref: "symbols.svg#close",
+                  style: {fill: "white"}
+                })
+              )
+            )
+          )
         )
       )
     );

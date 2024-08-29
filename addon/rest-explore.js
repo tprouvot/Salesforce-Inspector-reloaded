@@ -95,6 +95,8 @@ class Model {
     this.canSendRequest = true;
     this.resultClass = "neutral";
     this.request = {endpoint: "", method: "get", body: ""};
+    this.apiList;
+    this.filteredApiList;
     this.requestTemplates = localStorage.getItem("requestTemplates") ? this.requestTemplates = localStorage.getItem("requestTemplates").split("//") : [
       {key: "getLimit", endpoint: `/services/data/v${apiVersion}/limits`, method: "GET", body: ""},
       {key: "getAccount", endpoint: `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name+FROM+Account+LIMIT+1`, method: "GET", body: ""},
@@ -113,9 +115,29 @@ class Model {
       this.request.method = args.get("method");
     } else if (this.queryHistory.list[0]) {
       this.request = this.queryHistory.list[0];
+      this.didUpdate();
     } else {
       this.request = this.requestTemplates[0];
     }
+
+    this.spinFor(sfConn.rest(`/services/data/v${apiVersion}/`, {})
+      .catch(err => {
+        if (err.name != "AbortError") {
+          this.autocompleteResults = {
+            title: "Error: " + err.message,
+            results: []
+          };
+        }
+        return null;
+      })
+      .then((result) => {
+        this.apiList = Object.keys(result)
+          .map(key => ({
+            key,
+            "endpoint": result[key]
+          }))
+          .sort((a, b) => a.key.localeCompare(b.key));
+      }));
 
     if (args.has("error")) {
       this.exportError = args.get("error") + " " + args.get("error_description");
@@ -205,9 +227,10 @@ class Model {
   }
 
   doSend() {
-    //sfConn.rest(recordUrl, {method: "PATCH", body: record, headers: this.headerCallout}).then(() => {
+    this.canSendRequest = false;
     this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress}, true)
       .catch(err => {
+        this.canSendRequest = true;
         if (err.name != "AbortError") {
           this.autocompleteResults = {
             title: "Error: " + err.message,
@@ -225,7 +248,7 @@ class Model {
           return;
         }
         this.parseResponse(result, "Success");
-        console.log(result);
+        this.canSendRequest = true;
       }));
   }
 
@@ -237,7 +260,20 @@ class Model {
       code: result.status,
       value: result.response ? JSON.stringify(result.response, null, "    ") : "NONE"
     };
-    // The results can be quite large and take a long time to render, so we only want to render a result once the user has explicitly selected it.
+    if (this.resultClass === "success"){
+      let newApis = Object.keys(result.response)
+        .filter(key => typeof result.response[key] == "string" && result.response[key].startsWith("/services/data/"))
+        .map(key => ({
+          key,
+          "endpoint": result.response[key]
+        }));
+      newApis.forEach(api => {
+        if (!this.apiList.some(existingApi => existingApi.key === api.key)) {
+          this.apiList.push(api);
+        }
+      });
+      this.filteredApiList = this.apiList.filter(api => api.endpoint.toLowerCase().includes(this.request.endpoint.toLowerCase()));
+    }
   }
 }
 
@@ -358,16 +394,19 @@ class App extends React.Component {
   onSetEndpoint(e){
     let {model} = this.props;
     model.request.endpoint = e.target.value;
+    model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(e.target.value.toLowerCase()));
     model.didUpdate();
   }
+
   componentDidMount() {
     let {model} = this.props;
     let endpointInput = this.refs.endpoint;
+    endpointInput.value = model.request.endpoint;
 
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
-        model.doExport();
+        model.doSend();
         model.didUpdate();
       }
     });
@@ -401,6 +440,15 @@ class App extends React.Component {
   canSendRequest(){
     let {model} = this.props;
     model.canSendRequest = model.request.method === "GET" || model.request.body.length > 1;
+  }
+  autocompleteClick(value){
+    let {model} = this.props;
+    model.request.method = "GET";
+    this.refs.endpoint.value = value.endpoint;
+    model.request.endpoint = value.endpoint;
+    model.request.body = "";
+    model.filteredApiList = [];
+    model.didUpdate();
   }
   recalculateSize() {
     //TODO
@@ -493,7 +541,15 @@ class App extends React.Component {
           ),
           h("input", {ref: "endpoint", className: "slds-input query-control slds-m-right_medium", type: "default", placeholder: "/services/data/v" + apiVersion, onChange: this.onSetEndpoint}),
           h("div", {className: "flex-right"},
-            h("button", {tabIndex: 1, disabled: !model.canSendRequest, onClick: this.onSend, title: "Ctrl+Enter / F5", className: "highlighted"}, "Send"),
+            h("button", {tabIndex: 1, disabled: !model.canSendRequest, onClick: this.onSend, title: "Ctrl+Enter / F5", className: "highlighted"}, "Send")
+          )
+        ),
+        h("div", {className: "autocomplete-box"},
+          h("div", {className: "autocomplete-header"}),
+          h("div", {className: "autocomplete-results"},
+            model.filteredApiList?.length > 0 ? model.filteredApiList.map(r =>
+              h("div", {className: "autocomplete-result", key: r.key}, h("a", {tabIndex: 0, title: r.key, onClick: e => { e.preventDefault(); this.autocompleteClick(r); model.didUpdate(); }, href: "#", className: "fieldName url"}, h("div", {className: "autocomplete-icon"}), r.key), " ")
+            ) : null
           ),
         ),
         h("div", {className: "autocomplete-box slds-m-top_medium"},

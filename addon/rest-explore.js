@@ -262,7 +262,7 @@ class Model {
     };
     if (this.resultClass === "success"){
       let newApis = Object.keys(result.response)
-        .filter(key => result.response[key].startsWith("/services/data/"))
+        .filter(key => typeof result.response[key] == "string" && result.response[key].startsWith("/services/data/"))
         .map(key => ({
           key,
           "endpoint": result.response[key]
@@ -575,10 +575,8 @@ class App extends React.Component {
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null},
           model.apiResponse && h("div", {},
-            h("div", {},
-              h("pre", {className: "language-json"}, // Set the language class to JSON for Prism to highlight
-                h("code", {className: "language-json"}, model.apiResponse.value)
-              )
+            h("pre", {className: "language-json"}, // Set the language class to JSON for Prism to highlight
+              h("code", {className: "language-json"}, model.apiResponse.value)
             )
           )
         )

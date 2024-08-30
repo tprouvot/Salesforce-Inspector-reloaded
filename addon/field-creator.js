@@ -1577,7 +1577,7 @@ class App extends React.Component {
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
           ),
-          h("a", {href: "https://github.com/SantiParris8/Salesforce-Inspector-reloaded-fieldCreator/blob/releaseCandidate/docs/field-creator.md", target: "_blank", id: "help-btn", title: "Field Creator Help", onClick: null},
+          h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/field-creator/", target: "_blank", id: "help-btn", title: "Field Creator Help", onClick: null},
             h("div", {className: "icon"})
           ),
         ),
@@ -1588,6 +1588,7 @@ class App extends React.Component {
               selectedObject && h("a", {
                 href: `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject}/FieldsAndRelationships/view`,
                 target: "_blank",
+                className:"fieldsLink",
                 rel: "noopener noreferrer",
                 style: {marginLeft: "10px"}
               }, "(Fields)"), h("br", null),

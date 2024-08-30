@@ -164,6 +164,10 @@ textarea {
   border: 1px solid #DDDBDA;
 }
 
+.fieldsLink:visited {
+  color: rgb(0, 0, 238)
+}
+
 textarea[hidden] {
   display: none;
 }

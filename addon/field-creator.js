@@ -1058,7 +1058,6 @@ class App extends React.Component {
         // Then sort alphabetically
         return aName.localeCompare(bName);
       });
-
     this.setState({
       objectSearch: e.target.value,
       filteredObjects: sortedFilteredObjects,
@@ -1091,7 +1090,10 @@ class App extends React.Component {
     const accessToken = sfConn.sessionId;
     const instanceUrl = `https://${sfConn.instanceHostname}`;
     const fieldPermissionUrl = `${instanceUrl}/services/data/v${apiVersion}/sobjects/FieldPermissions/`;
-
+    
+    if (!field.profiles || !Array.isArray(field.profiles)) {
+      return Promise.resolve([]);
+  }
     const permissionPromises = field.profiles.map(profile => {
       const permissionSetId = this.state.permissionSetMap[profile.name] || profile.name;
       const fieldPermissionBody = {
@@ -1322,25 +1324,31 @@ class App extends React.Component {
 
   onLabelChange = (index, label) => {
     this.setState((prevState) => ({
-      fields: prevState.fields.map((field, i) =>
-        i === index
-          ? {
-            ...field,
-            label,
-            name: label.replace(/\s+(\w)/g, (_, letter) => letter.toUpperCase())
-          }
-          : field
-      ),
+      fields: prevState.fields.map((field, i) => {
+        if (i === index) {
+          field.label = label;
+          field.name = label.replace(/\s+(\w)/g, (_, letter) => letter.toUpperCase());
+          delete field.deploymentStatus;
+          delete field.deploymentError;
+        }
+        return field;
+      }),
     }));
   };
 
   onNameChange = (index, name) => {
     this.setState((prevState) => ({
-      fields: prevState.fields.map((field, i) =>
-        i === index ? {...field, name} : field
-      ),
+      fields: prevState.fields.map((field, i) => {
+        if (i === index) {
+          field.name = name;
+          delete field.deploymentStatus;
+          delete field.deploymentError;
+        }
+        return field;
+      }),
     }));
   };
+  
 
   onTypeChange = (index, type) => {
     this.setState((prevState) => ({
@@ -1523,9 +1531,8 @@ class App extends React.Component {
   deploy = () => {
     const {fields} = this.state;
 
-    if (!this.checkAllFieldsHavePermissions()) {
-      return;
-    }
+    this.checkAllFieldsHavePermissions()
+    
 
     const fieldsToProcess = fields.filter(field => field.deploymentStatus !== "success");
 
@@ -1632,7 +1639,7 @@ class App extends React.Component {
               h("button", {"aria-label": "Clear Button", className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
               h("button", {"aria-label": "Open Import CSV modal button", className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
               h("button", {"disabled": !this.state.selectedObject, "aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
-              !this.state.allFieldsHavePermissions && h("p", {style: {color: "red"}}, "Some fields are missing permissions"),
+              !this.state.allFieldsHavePermissions && h("p", {style: {color: "red"}}, "Some fields are missing permissions."),
 
             )
           )

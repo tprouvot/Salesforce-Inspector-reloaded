@@ -2,6 +2,7 @@
 
 ## Version 1.25
 
+- Add response time in REST Explore [issue 539](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/539)
 - Add autocomplete feature for REST Explore page
 - Add option to increase the number of saved & history query in data export
 - Enable Salesforce Inspector Reloaded on Experience Builder

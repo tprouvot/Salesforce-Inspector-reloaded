@@ -469,7 +469,7 @@ class App extends React.Component {
           ),
           " Salesforce Home"
         ),
-        h("h1", {}, "REST Explore (beta)"),
+        h("h1", {}, "REST Explore"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
           h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},

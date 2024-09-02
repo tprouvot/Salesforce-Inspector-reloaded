@@ -493,7 +493,7 @@ class FaviconOption extends React.Component {
     if (smartMode && envType && this.colorShades[envType].length > 0) {
       // Select a random color from the corresponding environment shades
       const randomIndex = Math.floor(Math.random() * this.colorShades[envType].length);
-      const chosenColor = this.olorShades[envType][randomIndex];
+      const chosenColor = this.colorShades[envType][randomIndex];
       this.colorShades[envType].splice(randomIndex, 1); // Remove the used color from the list
       return chosenColor;
     } else {

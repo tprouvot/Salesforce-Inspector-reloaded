@@ -57,7 +57,8 @@ class Model {
     if (args.has("sobject")) {
       this.importType = args.get("sobject");
     }
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
+    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
       document.body.classList.add("prod");
     }

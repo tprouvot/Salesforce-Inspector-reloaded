@@ -9,7 +9,8 @@ class Model {
     this.sfHost = sfHost;
     this.sfLink = "https://" + this.sfHost;
     this.userInfo = "...";
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
+    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
       document.body.classList.add("prod");
     }

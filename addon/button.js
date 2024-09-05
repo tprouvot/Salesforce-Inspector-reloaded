@@ -2,9 +2,11 @@
 /* global showStdPageDetails */
 
 
-// sfdcBody = normal Salesforce page
-// ApexCSIPage = Developer Console
-// auraLoadingBox = Lightning / Salesforce1
+// sfdcBody: normal Salesforce page
+// ApexCSIPage: Developer Console
+// auraLoadingBox: Lightning / Salesforce1
+// studioBody: Exoperience Builder
+// flowContainer: Flow Debugger
 if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #studioBody, #flowContainer") || location.host.endsWith("visualforce.com")) {
   // We are in a Salesforce org
   chrome.runtime.sendMessage({message: "getSfHost", url: location.href}, sfHost => {

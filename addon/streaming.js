@@ -1,17 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-/* global initButton */
-import {csvParse} from "./csv-parse.js";
-import {DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
-
-// Import the CometD symbols.
+// Import the CometD library
 import {CometD} from "./cometd/cometd.js";
-
-const myEvent1 = {"schema":"wvzfKOWpumi4KAKipWNUVg","payload":{"FulfillmentOrderId":"0a3KD00000000mQYAQ","NewStatusCategory":"OPEN","CreatedById":"0050C000008stThQAI","OldStatus":"In Process","CreatedDate":"2024-08-07T12:12:19.078Z","OrderSummaryId":"1OsKD000000CaYS0A0","OldStatusCategory":"FULFILLING","NewStatus":"Fulfilled"},"event":{"EventUuid":"e5ba71b1-7070-4e3d-8b4a-3250c4d0385f","replayId":7661}};
-const myEvent2 = {"schema":"wvzfKOWpumi4KAKipWNUVg","payload":{"FulfillmentOrderId":"0a3KD00000000mQYAQ","NewStatusCategory":"PROCESS","CreatedById":"0050C000008stThQAI","OldStatus":"In Process","CreatedDate":"2024-08-07T12:12:19.078Z","OrderSummaryId":"1OsKD000000CaYS0A0","OldStatusCategory":"FULFILLING","NewStatus":"Fulfilled"},"event":{"EventUuid":"e5ba71b1-7078-4e3d-8b4a-3250c4d0385f","replayId":7661}};
-const myEvent3 = {"schema":"wvzfKOWpumi4KAKipWNUVg","payload":{"FulfillmentOrderId":"0a3KD00000000mQYAQ","NewStatusCategory":"CANCELLED","CreatedById":"0050C000008stThQAI","OldStatus":"In Process","CreatedDate":"2024-08-07T12:12:19.078Z","OrderSummaryId":"1OsKD000000CaYS0A0","OldStatusCategory":"FULFILLING","NewStatus":"Fulfilled"},"event":{"EventUuid":"e5ba71b1-7070-4e3d-8b4a-3250c470385f","replayId":7661}};
-const myEvent4 = {"schema":"wvzfKOWpumi4KAKipWNUVg","payload":{"FulfillmentOrderId":"0a3KD00000000mQYAQ","NewStatusCategory":"CLOSED","CreatedById":"0050C000008stThQAI","OldStatus":"In Process","CreatedDate":"2024-08-07T12:12:19.078Z","OrderSummaryId":"1OsKD000000CaYS0A0","OldStatusCategory":"FULFILLING","NewStatus":"Fulfilled"},"event":{"EventUuid":"e5ba71b1-7078-4e3d-8b4a-3250c480385f","replayId":7661}};
-
 
 const channelSuffix = "/event/";
 const channelTypes = [
@@ -39,9 +29,12 @@ class Model {
     this.channelListening = "";
     this.isListenning = false;
     this.selectedEvent = undefined;
+    this.replayId = -1;
     this.cometd = {};
     this.subscription = {};
-
+    this.confirmPopup = false;
+    this.popConfirmed = false
+    
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
     }));
@@ -105,6 +98,9 @@ class App extends React.Component {
     this.onUnsuscribeToChannel = this.onUnsuscribeToChannel.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
     this.onSelectEvent = this.onSelectEvent.bind(this);
+    this.onReplayIdChange = this.onReplayIdChange.bind(this);
+    this.confirmPopupYes = this.confirmPopupYes.bind(this);
+    this.confirmPopupNo = this.confirmPopupNo.bind(this);
     this.getEventChannels(defaultChannelType);
   }
 
@@ -161,18 +157,10 @@ class App extends React.Component {
             }
             model.channels.push({     
               name: channel.QualifiedApiName,
-              label: channel.Label
+              label: channel.Label + ' ('+channel.QualifiedApiName+')'
             });
           }
         });
-        /*
-        model.events.unshift(myEvent1);
-        model.events.unshift(myEvent2);
-        model.events.unshift(myEvent3);
-        model.events.unshift(myEvent4);
-        console.log('model.events');
-        console.log(model.events)
-        */
         model.didUpdate();
         
       }).catch(err => {
@@ -181,27 +169,31 @@ class App extends React.Component {
   }
 
   onChannelTypeChange(e) {
-    console.log("**onChannelTypeChange");
     let {model} = this.props;
     model.selectedChannelType = e.target.value;
-    console.log(model.selectedChannelType);
     this.getEventChannels(model.selectedChannelType);
   }
 
   onChannelSelection(e){
-    console.log("***onChannelSelection");
     let {model} = this.props;
     model.selectedChannel = channelSuffix + e.target.value;
-    console.log('selectedChannel : ' +model.selectedChannel);
+  }
+
+  onReplayIdChange(e) {
+    let {model} = this.props;
+    model.replayId = e.target.value;
+    model.popConfirmed = false; 
+    model.didUpdate();
   }
 
   async onSuscribeToChannel() {
-    console.log("***onSuscribeToChannel");
     let {model} = this.props;
-    console.log('sfHost');
-    console.log(model.sfLink);
-    console.log('sessionId');
-    console.log(model.sessionId);
+    //PopUp Confirmation in case of replay Id = -2
+    if(model.replayId == -2 && model.popConfirmed == false){
+      model.confirmPopup = true;
+      model.didUpdate();
+      return;
+    }
     
     // Create the CometD object.
     const cometd = new CometD();
@@ -215,37 +207,38 @@ class App extends React.Component {
     });
     cometd.websocketEnabled = false;
 
+    //Load Salesforce Replay Extension
+    var replayExtension = new cometdReplayExtension();
+    replayExtension.setChannel(model.selectedChannel);
+    replayExtension.setReplay(model.replayId);
+    replayExtension.setExtensionEnabled = true;
+    cometd.registerExtension('SalesforceReplayExtension', replayExtension);
+
     cometd.handshake(function(h) {
       if (h.successful) {
         model.cometd = cometd;
         // Subscribe to receive messages from the server.
         model.channelListening = 'Listening on ' + model.selectedChannel + ' ...';
         model.isListenning = true;
-        console.log(model.channelListening);
         model.didUpdate();
-        model.subscription = cometd.subscribe(model.selectedChannel, function(m) {
+        
+        model.subscription = cometd.subscribe(model.selectedChannel,function(m) {
             console.log(m.data);
             //console.log(JSON.stringify(m.data));
             model.events.unshift(JSON.parse(JSON.stringify(m.data)));
-            console.log('model.events');
-            console.log(model.events);
             model.didUpdate();
         });
       }
-    });  
+    });
   }
 
   async onUnsuscribeToChannel() {
-    console.log("***onUnsuscribeToChannel");
     let {model} = this.props;
-    console.log(model.subscription);
     model.cometd.unsubscribe(model.subscription, function(unsubscribeReply) {
       if (unsubscribeReply.successful) {
-        console.log("Unsubscribe sucessfully");
         model.channelListening = "";
         model.isListenning = false;
         model.didUpdate();
-          // Server truly received the disconnect request
       }
     });
     model.cometd.disconnect(function(disconnectReply) {
@@ -267,6 +260,20 @@ class App extends React.Component {
     //e.preventDefault();
     let {model} = this.props;
     model.toggleHelp();
+    model.didUpdate();
+  }
+
+  confirmPopupYes() {
+    let {model} = this.props;
+    model.popConfirmed = true;
+    model.confirmPopup = false;
+    this.onSuscribeToChannel();
+  }
+
+  confirmPopupNo() {
+    let {model} = this.props;
+    model.confirmPopup = false;
+    model.replayId = -1;
     model.didUpdate();
   }
 
@@ -304,7 +311,7 @@ class App extends React.Component {
               h("h1", {}, "Subscribe to a channel")
         ),
         h("div", {className: "conf-line"},
-          h("label", {className: "conf-input", title: "Channel Selection"},
+          h("label", {title: "Channel Selection"},
             h("span", {className: "conf-label"}, "Channel Type :"),
             h("span", {className: "conf-value"},
               h("select", { value: model.selectedChannelType, 
@@ -319,6 +326,10 @@ class App extends React.Component {
               h("select", {value: model.eventEntity, onChange:this.onChannelSelection, disabled: model.isListenning},
                   ...model.channels.map((entity, index) => h("option", {key: index, value: entity.name}, entity.label))
               )
+            ),
+            h("span", {className: "conf-label"}, "Replay From :"),
+            h("span", {className: "conf-value"},
+              h("input", {type: "number", className: "conf-replay-value", value: model.replayId, onChange:this.onReplayIdChange, disabled: model.isListenning})
             ),
             h("button", {onClick: this.onSuscribeToChannel, title: "Suscribe to channel", disabled: model.isListenning}, "Subscribe"),
             h("button", {onClick: this.onUnsuscribeToChannel, title: "Unsuscribe to channel", disabled: !model.isListenning}, "Unsubscribe")
@@ -340,14 +351,25 @@ class App extends React.Component {
           h("span", {className: "channel-listening" }, model.channelListening)
         ),
         h("div", {id: "result-table"},
-          /* the scroll table goes here*/
           h("div",{},
-            model.events.map((event, index) => h("div", {onClick: this.onSelectEvent,id: index, key: index, value: event, className:` ${model.selectedEvent == index ? 'event-selected' : 'event-box'}`},
+            model.events.map((event, index) => h("div", {onClick: this.onSelectEvent,id: index, key: index, value: event, className:`event-box ${model.selectedEvent == index ? 'event-selected' : 'event-not-selected'}`},
               JSON.stringify(event, null, 4))
           )
           )         
-        )
-      )  
+        ),
+        model.confirmPopup ? h("div", {},
+          h("div", {id: "confirm-replayId"},
+            h("div", {id: "confirm-dialog"},
+              h("h1", {}, "Important"),
+              h("p", {}, "Use this option sparingly. Subscribing with the -2 option when a large number of event messages are stored can slow performance."),
+              h("div", {className: "dialog-buttons"},
+                h("button", {onClick: this.confirmPopupYes}, "Subscribe"),
+                h("button", {onClick: this.confirmPopupNo, className: "cancel-btn"}, "Cancel")
+              )
+            )
+          )
+        ) : null  
+      ),
       // END BODY
     )
   }
@@ -378,3 +400,52 @@ class App extends React.Component {
 function stringIsEmpty(str) {
   return str == null || str == undefined || str.trim() == "";
 }
+
+var cometdReplayExtension = function() {
+	var REPLAY_FROM_KEY = "replay";
+	
+	var _cometd;
+	var _extensionEnabled;
+	var _replay;
+	var _channel;
+
+	this.setExtensionEnabled = function(extensionEnabled) {
+		_extensionEnabled = extensionEnabled;
+	}
+
+	this.setReplay = function (replay) {
+		_replay = parseInt(replay, 10);
+	}
+
+	this.setChannel = function(channel) {
+		_channel = channel;
+	}
+
+	this.registered = function(name, cometd) {
+		_cometd = cometd;
+	};
+
+	this.incoming = function(message) {
+		if (message.channel === '/meta/handshake') {
+			if (message.ext && message.ext[REPLAY_FROM_KEY] == true) {
+				_extensionEnabled = true;
+			}
+		} else if (message.channel === _channel && message.data && message.data.event && message.data.event.replayId) {
+			_replay = message.data.event.replayId;
+		}
+	}
+	
+	this.outgoing = function(message) {
+		if (message.channel === '/meta/subscribe') {
+			if (_extensionEnabled) {
+				if (!message.ext) { message.ext = {}; }
+
+				var replayFromMap = {};
+				replayFromMap[_channel] = _replay;
+
+				// add "ext : { "replay" : { CHANNEL : REPLAY_VALUE }}" to subscribe message
+				message.ext[REPLAY_FROM_KEY] = replayFromMap;
+			}
+		}
+	};
+}; 

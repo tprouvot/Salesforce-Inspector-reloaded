@@ -186,14 +186,22 @@ h1 {
   width: auto;
   padding-right: 0.5em;
 }
+
+.conf-value {
+  display: inline-block;
+  margin-right: 1em;
+  width: auto;
+}
+
+.conf-replay-value {
+  width:100px;
+}
+
 .radio-buttons label {
   margin-right: 10px;
   align-items: end;
 }
-.conf-value {
-  display: inline-block;
-  margin-right: 1em;;
-}
+
 .conf-line {
   margin-top: 5px;
 }
@@ -298,7 +306,6 @@ select,
 input[type=search],
 input[type=number],
 input[type=text] {
-  width: 335px;
   font-family: inherit;
   padding: 5px 13px;
   border: 1px solid #DDDBDA;
@@ -379,7 +386,6 @@ textarea {
   border: 1px solid #DDDBDA;
 }
 
-
 button, .button {
   border: 1px solid #DDDBDA;
   height: 32px;
@@ -455,21 +461,20 @@ button.contract .button-toggle-icon {
 }
 
 .event-box {
-  background-color: #e9eef3;
+  background-color: #f7f9fb;
   margin: 4px;
-  border: 0.5px solid rgb(196, 193, 193);
-  padding: 5px;
-  width: 30%;
+  padding: 8px;
+  clear:both;
+  float:left;
   white-space: pre-wrap;
 }
 
+.event-not-selected {
+  border: 0.5px solid rgb(196, 193, 193);
+}
+
 .event-selected {
-  background-color: #e9eef3;
-  margin: 4px;
   border: 2px solid rgb(3, 153, 63);
-  padding: 5px;
-  width: 30%;
-  white-space: pre-wrap;
 }
 
 .channel-listening {

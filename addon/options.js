@@ -92,7 +92,8 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: APIVersionOption, props: {key: 1}},
           {option: APIKeyOption, props: {key: 2}},
-          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders"}}
+          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders"}},
+          {option: Option, props: {type: "toggle", title: "Enable caching for EntityDefinition", key: "enableEntityDefinitionCaching", tooltip: "This will reduce the API calls made by the extension and improve performance"}}
         ]
       },
       {

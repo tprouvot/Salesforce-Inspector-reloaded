@@ -1064,9 +1064,11 @@ class App extends React.Component {
     });
   };
 
-  handleObjectSelect = (objectName) => {
+  handleObjectSelect = (obj) => {
+    console.log(obj)
+    let objectName = obj.name;
     this.setState({
-      selectedObject: objectName,
+      selectedObject: obj,
       objectSearch: objectName,
       filteredObjects: [],
     });
@@ -1245,27 +1247,28 @@ class App extends React.Component {
     return typeMap[uiType] || uiType;
   }
 
-  fetchObjects = () => {
-
-    const accessToken = sfConn.sessionId;
-    const instanceUrl = `https://${sfConn.instanceHostname}`;
-    const objectsUrl = `${instanceUrl}/services/data/v${apiVersion}/sobjects`;
-
-    fetch(objectsUrl, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json"
-      }
-    })
-      .then(response => response.json())
-      .then(data => {
-        const nonLayoutableObjects = data.sobjects.filter(obj => obj.layoutable === true);
-        this.setState({objects: nonLayoutableObjects});
-      })
-      .catch(error => {
-        console.error("Error fetching objects:", error);
+  fetchObjects = async () => {
+    const waitForCount = () => {
+      return new Promise((resolve) => {
+        const checkCount = () => {
+          const count = sessionStorage.getItem("entityDefinitionCount");
+          if (count) {
+            resolve(count);
+          } else {
+            setTimeout(checkCount, 100); // Check again after 100ms
+          }
+        };
+        checkCount();
       });
+    };
+  
+    try {
+      const count = await waitForCount();
+      let sObjectsFromEntity = JSON.parse(sessionStorage.getItem("sobjectsList"));
+      this.setState({objects: sObjectsFromEntity});
+    } catch (error) {
+      console.error("Error fetching objects:", error);
+    }
   };
 
 
@@ -1550,7 +1553,7 @@ class App extends React.Component {
 
     fieldsToProcess.forEach((field) => {
       const index = fields.findIndex(f => f === field);
-      this.createField(field, this.state.selectedObject)
+      this.createField(field, this.state.selectedObject.name)
         .then(() => {
           const newFields = [...this.state.fields];
           newFields[index].deploymentStatus = "success";
@@ -1593,7 +1596,9 @@ class App extends React.Component {
             h("div", {className: "form-group"},
               h("label", {htmlFor: "object_select"}, "Select Object"),
               selectedObject && h("a", {
-                href: `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject}/FieldsAndRelationships/view`,
+                href: selectedObject.name.endsWith('__mdt')
+              ? `https://${sfConn.instanceHostname}/lightning/setup/CustomMetadata/page?address=%2F${selectedObject.durableId}%3Fsetupid%3DCustomMetadata`
+              : `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject.name}/FieldsAndRelationships/view`,
                 target: "_blank",
                 className:"fieldsLink",
                 rel: "noopener noreferrer",
@@ -1615,7 +1620,7 @@ class App extends React.Component {
                 this.state.filteredObjects.map(obj =>
                   h("li", {
                     key: obj.name,
-                    onClick: () => this.handleObjectSelect(obj.name),
+                    onClick: () => this.handleObjectSelect(obj),
                     style: {
                       padding: "8px 12px",
                       cursor: "pointer",

@@ -2,6 +2,8 @@
 
 ## Version 1.25
 
+- Persist selected tab when reloading Options page.
+- Add button in Options page to reset API Version to extension's default [feature 541](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/541)
 - Enable Salesforce Inspector Reloaded on Debug flow page [feature 552](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/552) request by [Andrew Russo](https://github.com/mavtron-andrewrusso)
 - Add option to highlight PROD with a 2px top border
 - Add response time in REST Explore [issue 539](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/539)

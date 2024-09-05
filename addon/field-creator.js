@@ -1065,7 +1065,6 @@ class App extends React.Component {
   };
 
   handleObjectSelect = (obj) => {
-    console.log(obj)
     let objectName = obj.name;
     this.setState({
       selectedObject: obj,
@@ -1251,7 +1250,7 @@ class App extends React.Component {
     const waitForCount = () => {
       return new Promise((resolve) => {
         const checkCount = () => {
-          const count = sessionStorage.getItem("entityDefinitionCount");
+          const count = sessionStorage.getItem("sobjectsList");
           if (count) {
             resolve(count);
           } else {

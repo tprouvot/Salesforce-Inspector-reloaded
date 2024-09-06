@@ -25,7 +25,8 @@ class Model {
     this.selectedChannel = "";
     this.channelListening = "";
     this.isListenning = false;
-    this.selectedEvent = undefined;
+    this.selectedEvent;
+    this.selectedEventIndex = undefined;
     this.replayId = -1;
     this.cometd = {};
     this.subscription = {};
@@ -62,7 +63,7 @@ class Model {
   }
 
   copyAsJson() {
-    copyToClipboard(JSON.stringify(this.events, null, "    "), null, "  ");
+    copyToClipboard(JSON.stringify(this.selectedEvent ? this.selectedEvent : this.events, null, "    "), null, "  ");
   }
 
   /**
@@ -242,7 +243,8 @@ class App extends React.Component {
   onSelectEvent(e){
     e.preventDefault();
     let {model} = this.props;
-    model.selectedEvent = e.target.id;
+    model.selectedEventIndex = e.target.id;
+    model.selectedEvent = model.events[e.target.id];
     model.didUpdate();
   }
 
@@ -344,7 +346,7 @@ class App extends React.Component {
         ),
         h("div", {id: "result-table"},
           h("div", {},
-            model.events.map((event, index) => h("div", {onClick: this.onSelectEvent, id: index, key: index, value: event, className: `event-box ${model.selectedEvent == index ? "event-selected" : "event-not-selected"}`},
+            model.events.map((event, index) => h("div", {onClick: this.onSelectEvent, id: index, key: index, value: event, className: `event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
               JSON.stringify(event, null, 4))
             )
           )

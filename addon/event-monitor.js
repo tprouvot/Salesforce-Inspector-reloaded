@@ -2,6 +2,7 @@
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
+import {copyToClipboard} from "./data-load.js";
 
 const channelSuffix = "/event/";
 const channelTypes = [
@@ -60,6 +61,10 @@ class Model {
     }
   }
 
+  copyAsJson() {
+    copyToClipboard(JSON.stringify(this.events, null, "    "), null, "  ");
+  }
+
   /**
    * Show the spinner while waiting for a promise.
    * didUpdate() must be called after calling spinFor.
@@ -97,6 +102,7 @@ class App extends React.Component {
     this.onToggleHelp = this.onToggleHelp.bind(this);
     this.onSelectEvent = this.onSelectEvent.bind(this);
     this.onReplayIdChange = this.onReplayIdChange.bind(this);
+    this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.confirmPopupYes = this.confirmPopupYes.bind(this);
     this.confirmPopupNo = this.confirmPopupNo.bind(this);
     this.getEventChannels(channelTypes[0].value);
@@ -124,8 +130,6 @@ class App extends React.Component {
         type = "CDC";
 
     }
-    console.log(type);
-    console.log(query);
     return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
       .then(result => {
         console.log(result);
@@ -242,6 +246,12 @@ class App extends React.Component {
     model.didUpdate();
   }
 
+  onCopyAsJson() {
+    let {model} = this.props;
+    model.copyAsJson();
+    model.didUpdate();
+  }
+
   onToggleHelp(e) {
     let {model} = this.props;
     model.toggleHelp();
@@ -327,6 +337,9 @@ class App extends React.Component {
       h("div", {className: "area", id: "result-area"},
         h("div", {className: "result-bar"},
           h("h1", {}, "Event Result"),
+          h("div", {className: "button-group"},
+            h("button", {disabled: !model.events, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
+          ),
           h("span", {className: "channel-listening"}, model.channelListening)
         ),
         h("div", {id: "result-table"},

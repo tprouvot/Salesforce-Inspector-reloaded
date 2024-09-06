@@ -80,8 +80,8 @@ body {
 #user-info h1 {
   padding: 0 6px 0 10px;
 }
-#user-info span{
-  font-size: 1.2em;
+#user-info span {
+  font-size: 1em;
 }
 .sf-link {
   background-color: rgb(6, 28, 63);
@@ -154,18 +154,17 @@ body {
 .area-header {
   margin-bottom: 12px;
 }
-/*
-div[data-reactroot] > .area:last-child {
-  margin-bottom: 12px;
-}*/
 
 h1 {
-  font-size: 1.125rem;
-  margin: 0px;
+  font-size: 1rem;
   display: inline;
   color: #080707;
   font-weight: 700;
   line-height: 1.25;
+  margin: revert;
+}
+#result-area h1 {
+  margin-right: 1em;
 }
 
 @media (max-width: 670px) {
@@ -335,9 +334,9 @@ select:focus {
   outline: none;
   z-index: 1;
 }
-.button-group button:active:not(:first-child), 
+.button-group button:active:not(:first-child),
 .button-group button:focus:not(:first-child),
-.button-group input:active:not(:first-child), 
+.button-group input:active:not(:first-child),
 .button-group input:focus:not(:first-child),
 .button-group select:focus:not(:first-child),
 .button-group select:focus:not(:first-child) {
@@ -450,7 +449,8 @@ button.contract .button-toggle-icon {
 }
 
 .result-bar {
-  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
 }
 
 #result-table {
@@ -461,7 +461,6 @@ button.contract .button-toggle-icon {
 }
 
 .event-box {
-  background-color: #f7f9fb;
   margin: 4px;
   padding: 8px;
   clear:both;
@@ -470,7 +469,7 @@ button.contract .button-toggle-icon {
 }
 
 .event-not-selected {
-  border: 0.5px solid rgb(196, 193, 193);
+  border-bottom: 0.5px solid rgb(196, 193, 193);
 }
 
 .event-selected {

@@ -283,7 +283,7 @@ class App extends React.Component {
           ),
           " Salesforce Home"
         ),
-        h("h1", {}, "Streaming"),
+        h("h1", {}, "Event Monitor"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
 
@@ -328,7 +328,7 @@ class App extends React.Component {
           )
         ),
         h("div", {hidden: !model.showHelp, className: "help-text"},
-          h("h3", {}, "Streaming Help"),
+          h("h3", {}, "Event Monitor Help"),
           h("p", {}, "Use for monitor Platform Event queue."),
           h("p", {}, "Subscribe to a channel to see events in the result area. Use 'Replay From' to define the scope."),
           h("p", {}, "Supports Standard and Custom Platform Events")

@@ -153,7 +153,6 @@ body {
 .area-header {
   margin-bottom: 12px;
 }
-
 h1 {
   font-size: 1rem;
   display: inline;
@@ -165,15 +164,11 @@ h1 {
 #result-area h1 {
   margin-right: 1em;
 }
-
-
-
 @media (max-width: 670px) {
   .conf-section {
     display: block;
   }
 }
-
 .conf-label, .columns-label, label {
   font-weight: normal;
   color: #4a4a56;
@@ -186,22 +181,18 @@ h1 {
   width: auto;
   padding-right: 0.5em;
 }
-
 .conf-value {
   display: inline-block;
   margin-right: 1em;
   width: auto;
 }
-
 .conf-replay-value {
   width:100px;
 }
-
 .radio-buttons label {
   margin-right: 10px;
   align-items: end;
 }
-
 .conf-line {
   margin-top: 5px;
 }
@@ -385,7 +376,6 @@ textarea {
   border-radius: 0.25rem;
   border: 1px solid #DDDBDA;
 }
-
 button, .button {
   border: 1px solid #DDDBDA;
   height: 32px;
@@ -439,11 +429,9 @@ button.contract .button-toggle-icon {
 .button.field-info .button-icon {
   -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce-inspector-logo.svg');
 }
-
 .area.result-area {
   padding: 0;
 }
-
 #result-area {
   flex: 1 1 0;
   margin-bottom: 12px;
@@ -451,20 +439,17 @@ button.contract .button-toggle-icon {
   flex-direction: column;
   padding: 0;
 }
-
 .result-bar {
   display: flex;
   align-items: center;
   padding: 8px 12px;
 }
-
 #result-table {
   overflow: auto;
   flex: 1 1 0;
   background-color: #fff;
   border-top: 1px solid #DDDBDA;
 }
-
 .event-box {
   margin: 4px;
   padding: 8px;
@@ -472,15 +457,12 @@ button.contract .button-toggle-icon {
   float:left;
   white-space: pre-wrap;
 }
-
 .event-not-selected {
   border-bottom: 0.5px solid rgb(196, 193, 193);
 }
-
 .event-selected {
   border: 2px solid rgb(3, 153, 63);
 }
-
 .channel-listening {
   margin-left: 2%;
   color: green

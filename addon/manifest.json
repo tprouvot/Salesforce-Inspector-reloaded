@@ -69,7 +69,8 @@
         "explore-api.html",
         "rest-explore.html",
         "limits.html",
-        "options.html"
+        "options.html",
+        "streaming.html"
       ],
       "matches": ["https://*/*"],
       "extension_ids": []
@@ -101,6 +102,9 @@
     },
     "rest-explore": {
       "description": "REST Explore"
+    },
+    "event-monitor": {
+      "description": "Event Monitor"
     }
   }
 }

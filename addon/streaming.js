@@ -15,7 +15,7 @@ const defaultChannelType = "StandardPlatformEvent";
 
 class Model {
 
-  constructor(sfHost, sessionId, args) {
+  constructor(sfHost, sessionId) {
     this.sfHost = sfHost;
     this.sessionId = sessionId;
     this.sfLink = "https://" + this.sfHost;
@@ -33,8 +33,8 @@ class Model {
     this.cometd = {};
     this.subscription = {};
     this.confirmPopup = false;
-    this.popConfirmed = false
-    
+    this.popConfirmed = false;
+
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
     }));
@@ -44,7 +44,6 @@ class Model {
       document.body.classList.add("prod");
     }
   }
-  
   /**
    * Notify React that we changed something, so it will rerender the view.
    * Should only be called once at the end of an event or asynchronous operation, since each call can take some time.
@@ -105,8 +104,6 @@ class App extends React.Component {
   }
 
   getEventChannels(channelType){
-    console.log('***getEventChannels');
-    console.log(channelType);
     let {model} = this.props;
     let query;
     let type = 'PE';
@@ -362,6 +359,7 @@ class App extends React.Component {
             h("div", {id: "confirm-dialog"},
               h("h1", {}, "Important"),
               h("p", {}, "Use this option sparingly. Subscribing with the -2 option when a large number of event messages are stored can slow performance."),
+              h("p", {}, "It's your responsability to use it. It can impact the streaming limits !"),
               h("div", {className: "dialog-buttons"},
                 h("button", {onClick: this.confirmPopupYes}, "Subscribe"),
                 h("button", {onClick: this.confirmPopupNo, className: "cancel-btn"}, "Cancel")
@@ -380,8 +378,6 @@ class App extends React.Component {
   let sfHost = args.get("host");
   initButton(sfHost, true);
   sfConn.getSession(sfHost).then((res) => {
-    console.log('sessionId');
-    console.log(res);
 
     let root = document.getElementById("root");
     let model = new Model(sfHost, res, args);
@@ -397,22 +393,17 @@ class App extends React.Component {
   });
 }
 
-function stringIsEmpty(str) {
-  return str == null || str == undefined || str.trim() == "";
-}
+function cometdReplayExtension() {
+  let REPLAY_FROM_KEY = "replay";
+	let _cometd;
+	let _extensionEnabled;
+	let _replay;
+	let _channel;
 
-var cometdReplayExtension = function() {
-	var REPLAY_FROM_KEY = "replay";
-	
-	var _cometd;
-	var _extensionEnabled;
-	var _replay;
-	var _channel;
-
-	this.setExtensionEnabled = function(extensionEnabled) {
-		_extensionEnabled = extensionEnabled;
-	}
-
+  this.setExtensionEnabled = function(extensionEnabled) {
+    _extensionEnabled = extensionEnabled;
+  }
+  
 	this.setReplay = function (replay) {
 		_replay = parseInt(replay, 10);
 	}
@@ -448,4 +439,4 @@ var cometdReplayExtension = function() {
 			}
 		}
 	};
-}; 
+};

@@ -279,7 +279,7 @@ label.statusGroupEmpty {
   line-height: 14px;
   text-align: center;
 }
-#confirm-background {
+#confirm-replayId {
   position: fixed;
   top: 0;
   right: 0;

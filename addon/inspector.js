@@ -37,11 +37,9 @@ export let sfConn = {
         localStorage.setItem(sfHost + "_isSandbox", res.records[0].IsSandbox);
         localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
         localStorage.setItem(sfHost + "_trialExpirationDate", res.records[0].TrialExpirationDate);
-        localStorage.setItem(sfHost + "_trialExpirationDate", res.records[0].TrialExpirationDate);
       });
     }
     return this.sessionId;
-    setFavicon(sfHost);
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {

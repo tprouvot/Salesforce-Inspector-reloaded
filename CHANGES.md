@@ -2,6 +2,7 @@
 
 ## Version 1.25
 
+- Add `Event Monitor` page to subscribe to Platform Events (contribution by [Antoine Leleu](https://github.com/AntoineLeleu-Salesforce))
 - Hide "What's new banner" in incognito mode [feature 517](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/517)
 - Persist selected tab when reloading Options page.
 - Add button in Options page to reset API Version to extension's default [feature 541](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/541)
@@ -17,7 +18,7 @@
 
 ## Version 1.24
 
-- Add new REST Explore page to call Salesforce APIs from the extension
+- Add new `REST Explore` page to call Salesforce APIs from the extension
 - Add Global Search in Shortcut tab when no result was found
 - Enable users to configure custom headers on Data Import (AssignmentRuleHeader, DuplicateRuleHeader, OwnerChangeOptions ...) [feature 478](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/478)
 - Fix CustomSetting links in popup [issue 473](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/473) (contribution by [Boris Castellani](https://github.com/castellani))

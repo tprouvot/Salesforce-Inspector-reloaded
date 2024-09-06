@@ -70,8 +70,7 @@
         "rest-explore.html",
         "limits.html",
         "options.html",
-        "streaming.html",
-        "/images/favicons/*"
+        "streaming.html"
       ],
       "matches": ["https://*/*"],
       "extension_ids": []

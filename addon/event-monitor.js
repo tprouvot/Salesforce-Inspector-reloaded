@@ -340,7 +340,7 @@ class App extends React.Component {
         h("div", {className: "result-bar"},
           h("h1", {}, "Event Result"),
           h("div", {className: "button-group"},
-            h("button", {disabled: !model.events, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
+            h("button", {disabled: model.events.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
           ),
           h("span", {className: "channel-listening"}, model.channelListening)
         ),

@@ -1,17 +1,13 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
-import {CometD} from "./cometd/cometd.js";
+import {CometD} from "./lib/cometd/cometd.js";
 
 const channelSuffix = "/event/";
 const channelTypes = [
-  //{value: "GenericEvent", label: "Generic Event"},
   {value: "StandardPlatformEvent", label: "Standard Platform Event"},
   {value: "PlatformEvent", label: "Custom Platform Event"}
-  //{value: "GenericEvent", label: "Generic Event"},
-  //{value: "ChangeDataCaptureEvent", label: "Change Data Capture"}
 ];
-const defaultChannelType = "StandardPlatformEvent";
 
 class Model {
 
@@ -23,7 +19,7 @@ class Model {
     this.showHelp = false;
     this.userInfo = "...";
     this.events = [];
-    this.selectedChannelType = defaultChannelType;
+    this.selectedChannelType = channelTypes[0].value;
     this.channels = [];
     this.selectedChannel = "";
     this.channelListening = "";
@@ -34,14 +30,17 @@ class Model {
     this.subscription = {};
     this.confirmPopup = false;
     this.popConfirmed = false;
+    this.isProd = false;
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
     }));
 
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
+    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
       document.body.classList.add("prod");
+      this.isProd = true;
     }
   }
   /**
@@ -100,68 +99,61 @@ class App extends React.Component {
     this.onReplayIdChange = this.onReplayIdChange.bind(this);
     this.confirmPopupYes = this.confirmPopupYes.bind(this);
     this.confirmPopupNo = this.confirmPopupNo.bind(this);
-    this.getEventChannels(defaultChannelType);
+    this.getEventChannels(channelTypes[0].value);
   }
 
   getEventChannels(channelType){
     let {model} = this.props;
     let query;
-    let type = 'PE';
-    switch(channelType){
-      case 'StandardPlatformEvent':
-        console.log("StandardPlatformEvent");
-        query = "SELECT Label, QualifiedApiName, DeveloperName FROM EntityDefinition"+
-                  " WHERE IsCustomizable = FALSE AND IsEverCreatable = TRUE"+ 
-                  " AND QualifiedApiName LIKE '%Event' AND (NOT QualifiedApiName LIKE '%ChangeEvent')"+ 
-                  " ORDER BY Label ASC LIMIT 200";
+    let type = "PE";
+    switch (channelType){
+      case "StandardPlatformEvent":
+        query = "SELECT Label, QualifiedApiName, DeveloperName FROM EntityDefinition"
+                  + " WHERE IsCustomizable = FALSE AND IsEverCreatable = TRUE"
+                  + " AND QualifiedApiName LIKE '%Event' AND (NOT QualifiedApiName LIKE '%ChangeEvent')"
+                  + " ORDER BY Label ASC LIMIT 200";
         break;
-      case 'PlatformEvent':
-        console.log("PlatformEvent");
-        query = "SELECT QualifiedApiName, Label FROM EntityDefinition"+
-                  " WHERE isCustomizable = TRUE"+
-                  " AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
+      case "PlatformEvent":
+        query = "SELECT QualifiedApiName, Label FROM EntityDefinition"
+                  + " WHERE isCustomizable = TRUE"
+                  + " AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
         break;
-        case 'ChangeDataCaptureEvent':
-          console.log('ChangeDataCaptureEvent');
-          query = "SELECT Id, MasterLabel, DeveloperName FROM PlatformEventChannelMember";
-          type = 'CDC';
-      /*
-      case 'GenericEvent':
-        console.log("GenericEvent");
-        query = "SELECT Name FROM StreamingChannel ORDER BY Name";
-      */  
+      case "ChangeDataCaptureEvent":
+        console.log("ChangeDataCaptureEvent");
+        query = "SELECT Id, MasterLabel, DeveloperName FROM PlatformEventChannelMember";
+        type = "CDC";
+
     }
     console.log(type);
     console.log(query);
     return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
       .then(result => {
-        console.log('result');
         console.log(result);
         model.channels = [];
 
         result.records.forEach((channel, index) => {
-          if(type == 'CDC'){
-            if(index == 0){
+          if (type == "CDC"){
+            if (index == 0){
               model.selectedChannel = channelSuffix + channel.DeveloperName;
             }
-            model.channels.push({     
+            model.channels.push({
               name: channel.DeveloperName,
               label: channel.MasterLabel
             });
-          }else{
-            if(index == 0){
+          } else {
+            if (index == 0){
               model.selectedChannel = channelSuffix + channel.QualifiedApiName;
             }
-            model.channels.push({     
+            model.channels.push({
               name: channel.QualifiedApiName,
-              label: channel.Label + ' ('+channel.QualifiedApiName+')'
+              label: channel.Label + " (" + channel.QualifiedApiName + ")"
             });
           }
         });
         model.didUpdate();
-        
+
       }).catch(err => {
-          console.error("An error occured fetching Event Channels of type " + channelType+ ": ", err.message);
+        console.error("An error occured fetching Event Channels of type " + channelType + ": ", err.message);
       });
   }
 
@@ -179,51 +171,48 @@ class App extends React.Component {
   onReplayIdChange(e) {
     let {model} = this.props;
     model.replayId = e.target.value;
-    model.popConfirmed = false; 
+    model.popConfirmed = false;
     model.didUpdate();
   }
 
   async onSuscribeToChannel() {
     let {model} = this.props;
     //PopUp Confirmation in case of replay Id = -2
-    if(model.replayId == -2 && model.popConfirmed == false){
+    if (model.replayId == -2 && model.popConfirmed == false){
       model.confirmPopup = true;
       model.didUpdate();
       return;
     }
-    
+
     // Create the CometD object.
     const cometd = new CometD();
     cometd.configure({
-      url: model.sfLink + `/cometd/61.0`,
+      url: model.sfLink + "/cometd/" + apiVersion,
       requestHeaders: {
-        Authorization: `Bearer` +model.sessionId
+        Authorization: "Bearer" + model.sessionId
       },
       appendMessageTypeToURL: false
-      //logLevel: 'debug'
     });
     cometd.websocketEnabled = false;
 
     //Load Salesforce Replay Extension
-    var replayExtension = new cometdReplayExtension();
+    let replayExtension = new cometdReplayExtension();
     replayExtension.setChannel(model.selectedChannel);
     replayExtension.setReplay(model.replayId);
     replayExtension.setExtensionEnabled = true;
-    cometd.registerExtension('SalesforceReplayExtension', replayExtension);
+    cometd.registerExtension("SalesforceReplayExtension", replayExtension);
 
-    cometd.handshake(function(h) {
+    cometd.handshake((h) => {
       if (h.successful) {
         model.cometd = cometd;
         // Subscribe to receive messages from the server.
-        model.channelListening = 'Listening on ' + model.selectedChannel + ' ...';
+        model.channelListening = "Listening on " + model.selectedChannel + " ...";
         model.isListenning = true;
         model.didUpdate();
-        
-        model.subscription = cometd.subscribe(model.selectedChannel,function(m) {
-            console.log(m.data);
-            //console.log(JSON.stringify(m.data));
-            model.events.unshift(JSON.parse(JSON.stringify(m.data)));
-            model.didUpdate();
+
+        model.subscription = cometd.subscribe(model.selectedChannel, (m) => {
+          model.events.unshift(JSON.parse(JSON.stringify(m.data)));
+          model.didUpdate();
         });
       }
     });
@@ -231,14 +220,14 @@ class App extends React.Component {
 
   async onUnsuscribeToChannel() {
     let {model} = this.props;
-    model.cometd.unsubscribe(model.subscription, function(unsubscribeReply) {
+    model.cometd.unsubscribe(model.subscription, (unsubscribeReply) => {
       if (unsubscribeReply.successful) {
         model.channelListening = "";
         model.isListenning = false;
         model.didUpdate();
       }
     });
-    model.cometd.disconnect(function(disconnectReply) {
+    model.cometd.disconnect((disconnectReply) => {
       if (disconnectReply.successful) {
         console.log("cometD Disconnected");
       }
@@ -254,7 +243,6 @@ class App extends React.Component {
   }
 
   onToggleHelp(e) {
-    //e.preventDefault();
     let {model} = this.props;
     model.toggleHelp();
     model.didUpdate();
@@ -276,9 +264,8 @@ class App extends React.Component {
 
   render() {
     let {model} = this.props;
-    
+
     return h("div", {},
-      //START HEADER
       h("div", {id: "user-info"},
         h("a", {href: model.sfLink, className: "sf-link"},
           h("svg", {viewBox: "0 0 24 24"},
@@ -289,7 +276,7 @@ class App extends React.Component {
         h("h1", {}, "Streaming"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
-          
+
           h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
             h("span", {className: "slds-assistive-text"}),
             h("div", {className: "slds-spinner__dot-a"}),
@@ -300,33 +287,31 @@ class App extends React.Component {
           ),
         ),
       ),
-      // END HEADER
-      
-      //START SUBSCRIBE CHANNEL
       h("div", {className: "area"},
         h("div", {className: "area-header"},
-              h("h1", {}, "Subscribe to a channel")
+          h("h1", {}, "Subscribe to a channel")
         ),
         h("div", {className: "conf-line"},
           h("label", {title: "Channel Selection"},
             h("span", {className: "conf-label"}, "Channel Type :"),
             h("span", {className: "conf-value"},
-              h("select", { value: model.selectedChannelType, 
-                            onChange: this.onChannelTypeChange, disabled: model.isListenning
-                          },
-                          ...channelTypes.map((type, index) => h("option", {key: index, value: type.value}, type.label)
-                          )
+              h("select", {value: model.selectedChannelType,
+                onChange: this.onChannelTypeChange,
+                disabled: model.isListenning
+              },
+              ...channelTypes.map((type, index) => h("option", {key: index, value: type.value}, type.label)
+              )
               )
             ),
             h("span", {className: "conf-label"}, "Channel :"),
             h("span", {className: "conf-value"},
-              h("select", {value: model.eventEntity, onChange:this.onChannelSelection, disabled: model.isListenning},
-                  ...model.channels.map((entity, index) => h("option", {key: index, value: entity.name}, entity.label))
+              h("select", {value: model.eventEntity, onChange: this.onChannelSelection, disabled: model.isListenning},
+                ...model.channels.map((entity, index) => h("option", {key: index, value: entity.name}, entity.label))
               )
             ),
             h("span", {className: "conf-label"}, "Replay From :"),
             h("span", {className: "conf-value"},
-              h("input", {type: "number", className: "conf-replay-value", value: model.replayId, onChange:this.onReplayIdChange, disabled: model.isListenning})
+              h("input", {type: "number", className: "conf-replay-value", value: model.replayId, onChange: this.onReplayIdChange, disabled: model.isListenning})
             ),
             h("button", {onClick: this.onSuscribeToChannel, title: "Suscribe to channel", disabled: model.isListenning}, "Subscribe"),
             h("button", {onClick: this.onUnsuscribeToChannel, title: "Unsuscribe to channel", disabled: !model.isListenning}, "Unsubscribe")
@@ -335,41 +320,38 @@ class App extends React.Component {
         h("div", {hidden: !model.showHelp, className: "help-text"},
           h("h3", {}, "Streaming Help"),
           h("p", {}, "Use for monitor Platform Event queue."),
-          h("p", {}, "Subscribe to a channel to see events in the result area. Only new events will be catched."),
+          h("p", {}, "Subscribe to a channel to see events in the result area. Use 'Replay From' to define the scope."),
           h("p", {}, "Supports Standard and Custom Platform Events")
         )
       ),
-      // END SUBSCRIBE CHANNEL
-
-      // START BODY      
       h("div", {className: "area", id: "result-area"},
         h("div", {className: "result-bar"},
           h("h1", {}, "Event Result"),
-          h("span", {className: "channel-listening" }, model.channelListening)
+          h("span", {className: "channel-listening"}, model.channelListening)
         ),
         h("div", {id: "result-table"},
-          h("div",{},
-            model.events.map((event, index) => h("div", {onClick: this.onSelectEvent,id: index, key: index, value: event, className:`event-box ${model.selectedEvent == index ? 'event-selected' : 'event-not-selected'}`},
+          h("div", {},
+            model.events.map((event, index) => h("div", {onClick: this.onSelectEvent, id: index, key: index, value: event, className: `event-box ${model.selectedEvent == index ? "event-selected" : "event-not-selected"}`},
               JSON.stringify(event, null, 4))
+            )
           )
-          )         
         ),
         model.confirmPopup ? h("div", {},
           h("div", {id: "confirm-replayId"},
             h("div", {id: "confirm-dialog"},
               h("h1", {}, "Important"),
+              model.isProd ? h("p", {}, "WARNING : You are on a PRODUCTION.") : null,
               h("p", {}, "Use this option sparingly. Subscribing with the -2 option when a large number of event messages are stored can slow performance."),
-              h("p", {}, "It's your responsability to use it. It can impact the streaming limits !"),
+              h("p", {}, "Hitting the daily limit can break existing integration!"),
               h("div", {className: "dialog-buttons"},
                 h("button", {onClick: this.confirmPopupYes}, "Subscribe"),
                 h("button", {onClick: this.confirmPopupNo, className: "cancel-btn"}, "Cancel")
               )
             )
           )
-        ) : null  
-      ),
-      // END BODY
-    )
+        ) : null
+      )
+    );
   }
 }
 
@@ -389,54 +371,52 @@ class App extends React.Component {
     if (parent && parent.isUnitTest) { // for unit tests
       parent.insextTestLoaded({model});
     }
-
   });
 }
 
 function cometdReplayExtension() {
   let REPLAY_FROM_KEY = "replay";
-	let _cometd;
-	let _extensionEnabled;
-	let _replay;
-	let _channel;
+  let _cometd;
+  let _extensionEnabled;
+  let _replay;
+  let _channel;
 
   this.setExtensionEnabled = function(extensionEnabled) {
     _extensionEnabled = extensionEnabled;
-  }
-  
-	this.setReplay = function (replay) {
-		_replay = parseInt(replay, 10);
-	}
+  };
 
-	this.setChannel = function(channel) {
-		_channel = channel;
-	}
+  this.setReplay = function(replay) {
+    _replay = parseInt(replay, 10);
+  };
 
-	this.registered = function(name, cometd) {
-		_cometd = cometd;
-	};
+  this.setChannel = function(channel) {
+    _channel = channel;
+  };
 
-	this.incoming = function(message) {
-		if (message.channel === '/meta/handshake') {
-			if (message.ext && message.ext[REPLAY_FROM_KEY] == true) {
-				_extensionEnabled = true;
-			}
-		} else if (message.channel === _channel && message.data && message.data.event && message.data.event.replayId) {
-			_replay = message.data.event.replayId;
-		}
-	}
-	
-	this.outgoing = function(message) {
-		if (message.channel === '/meta/subscribe') {
-			if (_extensionEnabled) {
-				if (!message.ext) { message.ext = {}; }
+  this.registered = function(name, cometd) {
+    _cometd = cometd;
+  };
 
-				var replayFromMap = {};
-				replayFromMap[_channel] = _replay;
+  this.incoming = function(message) {
+    if (message.channel === "/meta/handshake") {
+      if (message.ext && message.ext[REPLAY_FROM_KEY] == true) {
+        _extensionEnabled = true;
+      }
+    } else if (message.channel === _channel && message.data && message.data.event && message.data.event.replayId) {
+      _replay = message.data.event.replayId;
+    }
+  };
 
-				// add "ext : { "replay" : { CHANNEL : REPLAY_VALUE }}" to subscribe message
-				message.ext[REPLAY_FROM_KEY] = replayFromMap;
-			}
-		}
-	};
+  this.outgoing = function(message) {
+    if (message.channel === "/meta/subscribe") {
+      if (_extensionEnabled) {
+        if (!message.ext) { message.ext = {}; }
+
+        let replayFromMap = {};
+        replayFromMap[_channel] = _replay;
+
+        message.ext[REPLAY_FROM_KEY] = replayFromMap;
+      }
+    }
+  };
 };

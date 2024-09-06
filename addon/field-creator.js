@@ -1264,7 +1264,8 @@ class App extends React.Component {
     try {
       const count = await waitForCount();
       let sObjectsFromEntity = JSON.parse(sessionStorage.getItem("sobjectsList"));
-      this.setState({objects: sObjectsFromEntity});
+      let layoutableObjects = sObjectsFromEntity.filter(obj => obj.layoutable === true);
+      this.setState({objects: layoutableObjects});
     } catch (error) {
       console.error("Error fetching objects:", error);
     }

@@ -495,7 +495,7 @@ class AllDataBox extends React.PureComponent {
   loadSobjects() {
     let entityMap = new Map();
 
-    function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported, isEverCreatable, newUrl}, api) {
+    function addEntity({name, label, keyPrefix, durableId, isCustomSetting, recordTypesSupported, isEverCreatable,layoutable, newUrl}, api) {
       label = label.match("__MISSING") ? "" : label; //Error is added to the label if no label exists
       let entity = entityMap.get(name);
       // Each API call enhances the data, only the Name fields are present for each call.
@@ -518,6 +518,9 @@ class AllDataBox extends React.PureComponent {
         if (!entity.isEverCreatable) {
           entity.isEverCreatable = isEverCreatable;
         }
+        if (!entity.layoutable) {
+          entity.layoutable = layoutable;
+        }
       } else {
         entity = {
           availableApis: [],
@@ -529,6 +532,7 @@ class AllDataBox extends React.PureComponent {
           availableKeyPrefix: null,
           recordTypesSupported,
           isEverCreatable,
+          layoutable,
           newUrl
         };
         entityMap.set(name, entity);

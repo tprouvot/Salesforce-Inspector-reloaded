@@ -81,6 +81,7 @@ class App extends React.PureComponent {
       isFieldsPresent: false,
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
+      eventMonitorHref: "event-monitor.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext
     };
@@ -109,6 +110,7 @@ class App extends React.PureComponent {
     this.setState({
       exportHref: "data-export.html?" + exportArg,
       importHref: "data-import.html?" + importArg,
+      eventMonitorHref: "event-monitor.html?" + importArg,
       limitsHref: "limits.html?" + limitsArg
     });
   }
@@ -133,7 +135,6 @@ class App extends React.PureComponent {
   onShortcutKey(e) {
     const refs = this.refs;
     const actionMap = {
-      "m": ["all", "clickShowDetailsBtn"],
       "a": ["all", "clickAllDataBtn"],
       "f": ["all", "clickShowFieldAPINameBtn"],
       "n": ["all", "clickNewBtn"],
@@ -144,6 +145,7 @@ class App extends React.PureComponent {
       "x": ["click", "apiExploreBtn"],
       "h": ["click", "homeBtn"],
       "p": ["click", "optionsBtn"],
+      "m": ["click", "eventMonitorBtn"],
       "o": ["tab", "objectTab"],
       "u": ["tab", "userTab"],
       "s": ["tab", "shortcutTab"],
@@ -214,7 +216,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -311,6 +313,9 @@ class App extends React.PureComponent {
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "restExploreBtn", href: "rest-explore.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "R"), "EST Explore"))
+            ),
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "eventMonitorBtn", href: eventMonitorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Event ", h("u", {}, "M"), "onitor"))
             ),
             localStorage.getItem("popupGenerateTokenButton") !== "false" ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a",

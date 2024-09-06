@@ -40,6 +40,7 @@ export let sfConn = {
         localStorage.setItem(sfHost + "_trialExpirationDate", res.records[0].TrialExpirationDate);
       });
     }
+    return this.sessionId;
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {

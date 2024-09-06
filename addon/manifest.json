@@ -103,6 +103,9 @@
     },
     "rest-explore": {
       "description": "REST Explore"
+    },
+    "event-monitor": {
+      "description": "Event Monitor"
     }
   }
 }

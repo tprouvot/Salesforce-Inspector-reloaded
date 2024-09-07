@@ -202,7 +202,7 @@ class ProfilesModal extends React.Component {
         )
       );
 
-    return h("div", {className: "modalBlackBase"},
+    return h("div", {className: "modalBlackBase", onClick: onClose},
       h("div", {
         className: "modal-dialog",
         style: {
@@ -276,9 +276,9 @@ class ProfilesModal extends React.Component {
           padding: "8px",
           border: "1px solid #ccc",
           borderRadius: "4px"
-        }}),h("p", {}, "Please consider granting field access to Permission Sets instead of Profiles ",
-          h("a", {href: "https://admin.salesforce.com/blog/2023/permissions-updates-learn-moar-spring-23", target: ""}, "?")
-        ),
+        }}), h("p", {}, "Please consider granting field access to Permission Sets instead of Profiles ",
+        h("a", {href: "https://admin.salesforce.com/blog/2023/permissions-updates-learn-moar-spring-23", target: ""}, "?")
+      ),
 
       renderTable(permissionSetsOnly, "Permission Sets"),
       renderTable(profiles, "Profiles")
@@ -731,6 +731,7 @@ class FieldOptionModal extends React.Component {
     return h("div", {
       className: "modal fade show modalBlackBase",
       id: "fieldOptionModal",
+      onClick: this.props.onClose,
       role: "dialog",
       "aria-labelledby": "fieldOptionModalLabel",
       "aria-hidden": "true"
@@ -1002,7 +1003,7 @@ class FieldsTable extends React.Component {
 
 class App extends React.Component {
 
-  
+
   constructor(props) {
     super(props);
     this.state = {
@@ -1035,41 +1036,41 @@ class App extends React.Component {
 
   handleObjectSearch = (e) => {
     const searchTerm = e.target.value.toLowerCase();
-  
+
     // Sort the filtered objects based on relevance
     const sortedFilteredObjects = this.state.objects
       .filter(obj =>
-        obj.name.toLowerCase().includes(searchTerm) ||
-        obj.label.toLowerCase().includes(searchTerm)
+        obj.name.toLowerCase().includes(searchTerm)
+        || obj.label.toLowerCase().includes(searchTerm)
       )
       .sort((a, b) => {
         const aName = a.name.toLowerCase();
         const bName = b.name.toLowerCase();
         const aLabel = a.label.toLowerCase();
         const bLabel = b.label.toLowerCase();
-  
+
         // Helper function to calculate match score
         const getMatchScore = (str) => {
           if (str === searchTerm) return 4; // Exact match
           if (str.startsWith(searchTerm)) return 3; // Starts with
           if (str.includes(searchTerm)) return 2; // Contains
           return 0; // No match
-        }
-  
+        };
+
         const aScore = Math.max(getMatchScore(aName), getMatchScore(aLabel));
         const bScore = Math.max(getMatchScore(bName), getMatchScore(bLabel));
-  
+
         if (aScore !== bScore) return bScore - aScore; // Higher score first
-  
+
         // If scores are equal, prioritize shorter strings
         const aLength = Math.min(aName.length, aLabel.length);
         const bLength = Math.min(bName.length, bLabel.length);
         if (aLength !== bLength) return aLength - bLength;
-  
+
         // If lengths are equal, sort alphabetically
         return aName.localeCompare(bName);
       });
-  
+
     this.setState({
       objectSearch: e.target.value,
       filteredObjects: sortedFilteredObjects,
@@ -1103,10 +1104,10 @@ class App extends React.Component {
     const accessToken = sfConn.sessionId;
     const instanceUrl = `https://${sfConn.instanceHostname}`;
     const fieldPermissionUrl = `${instanceUrl}/services/data/v${apiVersion}/sobjects/FieldPermissions/`;
-    
+
     if (!field.profiles || !Array.isArray(field.profiles)) {
       return Promise.resolve([]);
-  }
+    }
     const permissionPromises = field.profiles.map(profile => {
       const permissionSetId = this.state.permissionSetMap[profile.name] || profile.name;
       const fieldPermissionBody = {
@@ -1259,20 +1260,18 @@ class App extends React.Component {
   }
 
   fetchObjects = async () => {
-    const waitForCount = () => {
-      return new Promise((resolve) => {
-        const checkCount = () => {
-          const count = sessionStorage.getItem("sobjectsList");
-          if (count) {
-            resolve(count);
-          } else {
-            setTimeout(checkCount, 100); // Check again after 100ms
-          }
-        };
-        checkCount();
-      });
-    };
-  
+    const waitForCount = () => new Promise((resolve) => {
+      const checkCount = () => {
+        const count = sessionStorage.getItem("sobjectsList");
+        if (count) {
+          resolve(count);
+        } else {
+          setTimeout(checkCount, 100); // Check again after 100ms
+        }
+      };
+      checkCount();
+    });
+
     try {
       const count = await waitForCount();
       let sObjectsFromEntity = JSON.parse(sessionStorage.getItem("sobjectsList"));
@@ -1363,7 +1362,7 @@ class App extends React.Component {
       }),
     }));
   };
-  
+
 
   onTypeChange = (index, type) => {
     this.setState((prevState) => ({
@@ -1546,8 +1545,8 @@ class App extends React.Component {
   deploy = () => {
     const {fields} = this.state;
 
-    this.checkAllFieldsHavePermissions()
-    
+    this.checkAllFieldsHavePermissions();
+
 
     const fieldsToProcess = fields.filter(field => field.deploymentStatus !== "success");
 
@@ -1608,11 +1607,11 @@ class App extends React.Component {
             h("div", {className: "form-group"},
               h("label", {htmlFor: "object_select"}, "Select Object"),
               selectedObject && h("a", {
-                href: selectedObject.name.endsWith('__mdt')
-              ? `https://${sfConn.instanceHostname}/lightning/setup/CustomMetadata/page?address=%2F${selectedObject.durableId}%3Fsetupid%3DCustomMetadata`
-              : `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject.name}/FieldsAndRelationships/view`,
+                href: selectedObject.name.endsWith("__mdt")
+                  ? `https://${sfConn.instanceHostname}/lightning/setup/CustomMetadata/page?address=%2F${selectedObject.durableId}%3Fsetupid%3DCustomMetadata`
+                  : `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject.name}/FieldsAndRelationships/view`,
                 target: "_blank",
-                className:"fieldsLink",
+                className: "fieldsLink",
                 rel: "noopener noreferrer",
                 style: {marginLeft: "10px"}
               }, "(Fields)"), h("br", null),
@@ -1688,7 +1687,7 @@ class App extends React.Component {
           onSave: this.onSaveFieldOptions,
           onClose: this.onCloseModal
         }),
-        this.state.showImportModal && h("div", {
+        this.state.showImportModal && h("div", {onClick: this.closeImportModal,
           style: {
             position: "fixed",
             top: 0,

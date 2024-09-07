@@ -302,7 +302,7 @@ class ProfilesModal extends React.Component {
         className: "btn btn-default",
         onClick: onClose,
         style: {marginRight: "10px"}
-      }, "Close"),
+      }, "Cancel"),
       h("button", {
         type: "button",
         "aria-label": "Save permission for this field",
@@ -766,7 +766,8 @@ class FieldOptionModal extends React.Component {
             top: "0",
             background: "transparent",
             border: "none",
-            fontSize: "24px",
+            fontSize: "1.5rem",
+            fontWeight: "bold",
             cursor: "pointer"
           }
         },
@@ -787,7 +788,7 @@ class FieldOptionModal extends React.Component {
         className: "modal-footer",
         style: {
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "flex-end",
           padding: "10px 0 0 0",
           borderTop: "1px solid #e5e5e5"
         }
@@ -1755,7 +1756,7 @@ class App extends React.Component {
         h("button", {
           "aria-label": "Import button",
           onClick: this.importCsv,
-          className: "btn btn-primary"
+          className: "btn btn-primary highlighted"
         }, "Import")
         )
         )

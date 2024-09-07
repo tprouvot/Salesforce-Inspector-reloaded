@@ -1034,30 +1034,41 @@ class App extends React.Component {
 
   handleObjectSearch = (e) => {
     const searchTerm = e.target.value.toLowerCase();
-
+  
     // Sort the filtered objects based on relevance
     const sortedFilteredObjects = this.state.objects
       .filter(obj =>
-        obj.name.toLowerCase().includes(searchTerm)
-        || obj.label.toLowerCase().includes(searchTerm)
+        obj.name.toLowerCase().includes(searchTerm) ||
+        obj.label.toLowerCase().includes(searchTerm)
       )
       .sort((a, b) => {
         const aName = a.name.toLowerCase();
         const bName = b.name.toLowerCase();
         const aLabel = a.label.toLowerCase();
         const bLabel = b.label.toLowerCase();
-
-        // Prioritize exact matches
-        if (aName === searchTerm || aLabel === searchTerm) return -1;
-        if (bName === searchTerm || bLabel === searchTerm) return 1;
-
-        // Then prioritize matches at the beginning
-        if (aName.startsWith(searchTerm) || aLabel.startsWith(searchTerm)) return -1;
-        if (bName.startsWith(searchTerm) || bLabel.startsWith(searchTerm)) return 1;
-
-        // Then sort alphabetically
+  
+        // Helper function to calculate match score
+        const getMatchScore = (str) => {
+          if (str === searchTerm) return 4; // Exact match
+          if (str.startsWith(searchTerm)) return 3; // Starts with
+          if (str.includes(searchTerm)) return 2; // Contains
+          return 0; // No match
+        }
+  
+        const aScore = Math.max(getMatchScore(aName), getMatchScore(aLabel));
+        const bScore = Math.max(getMatchScore(bName), getMatchScore(bLabel));
+  
+        if (aScore !== bScore) return bScore - aScore; // Higher score first
+  
+        // If scores are equal, prioritize shorter strings
+        const aLength = Math.min(aName.length, aLabel.length);
+        const bLength = Math.min(bName.length, bLabel.length);
+        if (aLength !== bLength) return aLength - bLength;
+  
+        // If lengths are equal, sort alphabetically
         return aName.localeCompare(bName);
       });
+  
     this.setState({
       objectSearch: e.target.value,
       filteredObjects: sortedFilteredObjects,

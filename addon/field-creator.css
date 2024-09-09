@@ -673,6 +673,15 @@ button.toggle .button-icon {
 
 
 .modal-dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  background-color: #fff;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
   scrollbar-width: auto;
   scrollbar-color: #B0C4DF transparent;
 }

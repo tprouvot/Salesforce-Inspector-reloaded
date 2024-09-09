@@ -205,17 +205,8 @@ class ProfilesModal extends React.Component {
         onClick: (e) => e.stopPropagation(),
         style: {
           overflowY: "hidden",
-          position: "absolute",
-          top: "50%",
-          left: "50%",
           height: "80%",
-          transform: "translate(-50%, -50%)",
           maxWidth: "600px",
-          width: "90%",
-          backgroundColor: "#fff",
-          padding: "20px",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          borderRadius: "8px",
           display: "flex",
           flexDirection: "column"
         }
@@ -736,18 +727,9 @@ class FieldOptionModal extends React.Component {
       className: "modal-dialog",
       onClick: (e) => e.stopPropagation(),
       style: {
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
         maxWidth: "500px",
-        width: "90%",
         maxHeight: "90vh",
         overflowY: "auto",
-        backgroundColor: "#fff",
-        padding: "20px",
-        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-        borderRadius: "8px"
       }
     },
     h("div", {className: "modal-content", style: {border: "none", backgroundColor: "transparent"}},

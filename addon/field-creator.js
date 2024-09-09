@@ -18,8 +18,6 @@ class ProfilesModal extends React.Component {
     };
   }
 
-
-
   handleSearchChange = (event) => {
     this.setState({searchTerm: event.target.value});
   };
@@ -48,7 +46,6 @@ class ProfilesModal extends React.Component {
         }
       });
     }
-
     return permissions;
   }
 
@@ -322,7 +319,6 @@ class ProfilesModal extends React.Component {
             ...field,
             profiles: updatedProfiles
           };
-
           onSave(updatedField);
         },
         style: {marginRight: "10px"}
@@ -557,7 +553,6 @@ class FieldOptionModal extends React.Component {
               " Use first value as default"
             )
           ),
-          //this.renderRestrictToDefinedValues(),
           field.type === "MultiselectPicklist" && h("div", {className: "form-group"},
             h("label", {htmlFor: "picklist-multiVisibleLines"}, "# Visible Lines"),
             h("input", {
@@ -816,7 +811,7 @@ class FieldOptionModal extends React.Component {
 // Define the React components
 class FieldRow extends React.Component {
   render() {
-    document.title = "Field Creator";
+    document.title = "Field Creator (beta)";
 
     let deploymentStatus;
     switch (this.props.field.deploymentStatus) {
@@ -1003,7 +998,6 @@ class FieldsTable extends React.Component {
 
 class App extends React.Component {
 
-
   constructor(props) {
     super(props);
     this.state = {
@@ -1024,9 +1018,6 @@ class App extends React.Component {
       filteredObjects: []
     };
   }
-
-
-
 
   componentDidMount() {
     this.fetchObjects();
@@ -1086,7 +1077,6 @@ class App extends React.Component {
     });
   };
 
-
   fetchUserInfo() {
     const wsdl = sfConn.wsdl(apiVersion, "Partner");
     sfConn.soap(wsdl, "getUserInfo", {})
@@ -1098,7 +1088,6 @@ class App extends React.Component {
         console.error("Error fetching user info:", err);
       });
   }
-
 
   setFieldPermissions(field, fieldId, objectName) {
     const accessToken = sfConn.sessionId;
@@ -1131,7 +1120,6 @@ class App extends React.Component {
 
     return Promise.all(permissionPromises);
   }
-
 
   createField(field, objectName) {
     const accessToken = sfConn.sessionId;
@@ -1282,8 +1270,6 @@ class App extends React.Component {
     }
   };
 
-
-
   fetchPermissionSets = () => {
     const accessToken = sfConn.sessionId;
     const instanceUrl = `https://${sfConn.instanceHostname}`;
@@ -1362,7 +1348,6 @@ class App extends React.Component {
       }),
     }));
   };
-
 
   onTypeChange = (index, type) => {
     this.setState((prevState) => ({
@@ -1544,10 +1529,7 @@ class App extends React.Component {
 
   deploy = () => {
     const {fields} = this.state;
-
     this.checkAllFieldsHavePermissions();
-
-
     const fieldsToProcess = fields.filter(field => field.deploymentStatus !== "success");
 
     if (fieldsToProcess.length === 0) {
@@ -1591,7 +1573,7 @@ class App extends React.Component {
             ),
             " Salesforce Home"
           ),
-          h("h1", {}, "Field Creator"),
+          h("h1", {}, "Field Creator (beta)"),
           h("span", {}, " / " + userInfo),
           h("div", {className: "flex-right"},
             h("span", {className: "slds-assistive-text"}),
@@ -1839,4 +1821,3 @@ sfConn.getSession(sfHost).then(() => {
     root
   );
 });
-

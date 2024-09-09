@@ -303,7 +303,7 @@ class App extends React.PureComponent {
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ),
             h("div", {},
-              h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "F"), "ield Creator"))
+              h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "F"), "ield Creator (beta)"))
             ),
           ),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
@@ -566,17 +566,17 @@ class AllDataBox extends React.PureComponent {
           return 0;
         });
     }
-    
+
     function getEntityDefinitions() {
       return getEntityDefinitionCount().then(entityDefinitionCount => {
         const batchSize = 2000;
         const batches = Math.ceil(entityDefinitionCount / batchSize);
         const batchPromises = [];
-    
+
         for (let bucket = 0; bucket < batches; bucket++) {
           let offset = bucket > 0 ? " OFFSET " + (bucket * batchSize) : "";
           let query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT ${batchSize}${offset}`;
-          
+
           let batchPromise = sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
             .then(respEntity => {
               for (let record of respEntity.records) {
@@ -594,10 +594,10 @@ class AllDataBox extends React.PureComponent {
             }).catch(err => {
               console.error("list entity definitions: ", err);
             });
-          
+
           batchPromises.push(batchPromise);
         }
-    
+
         return Promise.all(batchPromises);
       });
     }

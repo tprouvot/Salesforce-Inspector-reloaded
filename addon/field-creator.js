@@ -202,6 +202,7 @@ class ProfilesModal extends React.Component {
     return h("div", {className: "modalBlackBase", onClick: onClose},
       h("div", {
         className: "modal-dialog",
+        onClick: (e) => e.stopPropagation(),
         style: {
           overflowY: "hidden",
           position: "absolute",
@@ -733,6 +734,7 @@ class FieldOptionModal extends React.Component {
     },
     h("div", {
       className: "modal-dialog",
+      onClick: (e) => e.stopPropagation(),
       style: {
         position: "absolute",
         top: "50%",

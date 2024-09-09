@@ -128,34 +128,34 @@ class ProfilesModal extends React.Component {
       allReadPermissionSets,
       searchTerm,
     } = this.state;
-
+  
     const filterItems = (items) => items.filter(([name, profile]) =>
       (profile || name).toLowerCase().includes(searchTerm.toLowerCase())
     );
-
+  
     const profiles = filterItems(Object.entries(permissionSets)
       .filter(([_, profile]) => profile !== null)
       .sort((a, b) => a[1].localeCompare(b[1])));
-
+  
     const permissionSetsOnly = filterItems(Object.entries(permissionSets)
       .filter(([_, profile]) => profile === null)
       .sort((a, b) => a[0].localeCompare(b[0])));
-
+  
     const renderTable = (items, title) =>
       h("div", {key: title},
         h("h5", {
           onClick: () => this.toggleSection(title),
-          style: {cursor: "pointer", userSelect: "none"}
+          className: "cursorPointer userSelectNone"
         },
         `${title} ${this.state[`is${title.replace(" ", "")}Expanded`] ? "▼" : "▶"}`
         ),
-        this.state[`is${title.replace(" ", "")}Expanded`] && h("table", {style: {width: "100%", borderCollapse: "collapse", marginBottom: "20px"}},
+        this.state[`is${title.replace(" ", "")}Expanded`] && h("table", {className: "fullWidth borderCollapse marginBottom20"},
           h("thead", null,
             h("tr", null,
-              h("th", {style: {padding: "8px", textAlign: "left", borderBottom: "1px solid #ddd"}}, "Name"),
-              h("th", {style: {padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd"}},
-                h("div", {style: {display: "flex", alignItems: "center", justifyContent: "center"}},
-                  h("span", {style: {marginRight: "5px"}}, "Edit"),
+              h("th", {className: "tableCell textAlignLeft"}, "Name"),
+              h("th", {className: "tableCell textAlignCenter"},
+                h("div", {className: "flexCenter"},
+                  h("span", {className: "marginRight5"}, "Edit"),
                   h("input", {
                     type: "checkbox",
                     checked: title === "Profiles" ? allEditProfiles : allEditPermissionSets,
@@ -163,9 +163,9 @@ class ProfilesModal extends React.Component {
                   })
                 )
               ),
-              h("th", {style: {padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd"}},
-                h("div", {style: {display: "flex", alignItems: "center", justifyContent: "center"}},
-                  h("span", {style: {marginRight: "5px"}}, "Read"),
+              h("th", {className: "tableCell textAlignCenter"},
+                h("div", {className: "flexCenter"},
+                  h("span", {className: "marginRight5"}, "Read"),
                   h("input", {
                     type: "checkbox",
                     checked: title === "Profiles" ? allReadProfiles : allReadPermissionSets,
@@ -178,15 +178,15 @@ class ProfilesModal extends React.Component {
           h("tbody", null,
             items.map(([name, profile]) =>
               h("tr", {key: name},
-                h("td", {style: {padding: "8px", borderBottom: "1px solid #ddd"}}, profile || name),
-                h("td", {style: {padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd"}},
+                h("td", {className: "tableCell"}, profile || name),
+                h("td", {className: "tableCell textAlignCenter"},
                   h("input", {
                     type: "checkbox",
                     checked: permissions[name].edit,
                     onChange: () => this.handlePermissionChange(name, "edit")
                   })
                 ),
-                h("td", {style: {padding: "8px", textAlign: "center", borderBottom: "1px solid #ddd"}},
+                h("td", {className: "tableCell textAlignCenter"},
                   h("input", {
                     type: "checkbox",
                     checked: permissions[name].read,
@@ -198,104 +198,47 @@ class ProfilesModal extends React.Component {
           )
         )
       );
-
+  
     return h("div", {className: "modalBlackBase", onClick: onClose},
       h("div", {
-        className: "modal-dialog",
-        onClick: (e) => e.stopPropagation(),
-        style: {
-          overflowY: "hidden",
-          height: "80%",
-          maxWidth: "600px",
-          display: "flex",
-          flexDirection: "column"
-        }
+        className: "modal-dialog overflowYHidden height80 maxWidth600 flexColumn",
+        onClick: (e) => e.stopPropagation()
       },
-      h("div", {
-        className: "modal-content",
-        style: {
-          position: "relative",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column"
-        }
-      },
-      h("div", {
-        className: "modal-header",
-        style: {
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "15px"
-        }
-      },
+      h("div", {className: "modal-content relativePosition height100 flexColumn"},
+      h("div", {className: "modal-header flexSpaceBetween alignItemsCenter marginBottom15"},
       h("h1", {className: "modal-title"}, "Set Field Permissions"),
       h("button", {
         type: "button",
         "aria-label": "Close permission modal button",
-        className: "close",
-        onClick: onClose,
-        style: {
-          cursor: "pointer",
-          background: "none",
-          border: "none",
-          fontSize: "1.5rem",
-          fontWeight: "bold"
-        }
+        className: "close cursorPointer backgroundNone borderNone fontSize1_5 fontWeightBold",
+        onClick: onClose
       }, "×")
       ),
-      h("div", {
-        className: "modal-body",
-        style: {
-          overflowY: "auto",
-          flexGrow: 1,
-          marginRight: "-10px",
-          paddingRight: "10px",
-          scrollbarWidth: "thin",
-          scrollbarColor: "#B0C4DF transparent"
-        }
-      },
+      h("div", {className: "modal-body overflowYAuto flexGrow1 marginRight-10 paddingRight10 scrollbarThin scrollbarColorBlue"},
       h("input", {
         type: "text",
         placeholder: "Search profiles and permission sets...",
         value: this.state.searchTerm,
         onChange: this.handleSearchChange,
-        style: {
-          width: "100%",
-          padding: "8px",
-          border: "1px solid #ccc",
-          borderRadius: "4px"
-        }}), h("p", {}, "Please consider granting field access to Permission Sets instead of Profiles ",
-        h("a", {href: "https://admin.salesforce.com/blog/2023/permissions-updates-learn-moar-spring-23", target: ""}, "?")
+        className: "fullWidth padding8 border1SolidCcc borderRadius4"
+      }), h("p", {}, "Please consider granting field access to Permission Sets instead of Profiles ",
+      h("a", {href: "https://admin.salesforce.com/blog/2023/permissions-updates-learn-moar-spring-23", target: ""}, "?")
       ),
-
+  
       renderTable(permissionSetsOnly, "Permission Sets"),
       renderTable(profiles, "Profiles")
       ),
-      h("div", {
-        className: "modal-footer",
-        style: {
-          marginTop: "15px",
-          display: "flex",
-          justifyContent: "flex-end",
-          borderTop: "1px solid #e5e5e5",
-          padding: "15px 0",
-          backgroundColor: "#fff",
-          position: "sticky",
-          bottom: 0
-        }
-      },
+      h("div", {className: "modal-footer marginTop15 flexEnd borderTop1SolidE5 padding15_0 backgroundWhite stickyBottom"},
       h("button", {
         type: "button",
         "aria-label": "Close button",
-        className: "btn btn-default",
-        onClick: onClose,
-        style: {marginRight: "10px"}
+        className: "btn btn-default marginRight10",
+        onClick: onClose
       }, "Cancel"),
       h("button", {
         type: "button",
         "aria-label": "Save permission for this field",
-        className: "btn btn-primary highlighted",
+        className: "btn btn-primary highlighted marginRight10",
         onClick: () => {
           const updatedProfiles = Object.entries(permissions).reduce((acc, [name, perm]) => {
             if (perm.edit || perm.read) {
@@ -306,14 +249,13 @@ class ProfilesModal extends React.Component {
             }
             return acc;
           }, []);
-
+  
           const updatedField = {
             ...field,
             profiles: updatedProfiles
           };
           onSave(updatedField);
-        },
-        style: {marginRight: "10px"}
+        }
       }, "Save"),
       h("button", {
         "aria-label": "Apply the permission to all fields in the table",
@@ -325,7 +267,7 @@ class ProfilesModal extends React.Component {
       )
       )
     );
-  }
+  } 
 }
 
 class FieldOptionModal extends React.Component {
@@ -724,66 +666,38 @@ class FieldOptionModal extends React.Component {
       "aria-hidden": "true"
     },
     h("div", {
-      className: "modal-dialog",
-      onClick: (e) => e.stopPropagation(),
-      style: {
-        maxWidth: "500px",
-        maxHeight: "90vh",
-        overflowY: "auto",
-      }
+      className: "modal-dialog maxWidth500 maxHeight90vh overflowYAuto",
+      onClick: (e) => e.stopPropagation()
     },
-    h("div", {className: "modal-content", style: {border: "none", backgroundColor: "transparent"}},
-      h("div", {className: "modal-header", style: {borderBottom: "none", padding: "0 0 10px 0", position: "relative"}},
-        h("h4", {className: "modal-title", style: {textAlign: "center", width: "100%", margin: "0"}}, "Set Field Options"),
+    h("div", {className: "modal-content borderNone backgroundTransparent"},
+      h("div", {className: "modal-header borderBottomNone padding0_0_10_0 relativePosition"},
+        h("h4", {className: "modal-title textAlignCenter width100 margin0"}, "Set Field Options"),
         h("button", {
           "aria-label": "Close Button",
           type: "button",
-          className: "close",
-          onClick: this.props.onClose,
-          style: {
-            position: "absolute",
-            right: "0",
-            top: "0",
-            background: "transparent",
-            border: "none",
-            fontSize: "1.5rem",
-            fontWeight: "bold",
-            cursor: "pointer"
-          }
+          className: "close absoluteRightTop backgroundTransparent borderNone fontSize1_5 fontWeightBold cursorPointer",
+          onClick: this.props.onClose
         },
         h("span", {"aria-hidden": "true"}, "×")
         )
       ),
       h("div", {
-        className: "modal-body",
-        style: {
-          padding: "10px 0 20px 0",
-          maxHeight: "calc(90vh - 150px)", // Adjust based on header and footer height
-          overflowY: "auto"
-        }
+        className: "modal-body padding10_0_20_0 maxHeightCalc90vh-150px overflowYAuto"
       },
       this.renderFieldOptions()
       ),
       h("div", {
-        className: "modal-footer",
-        style: {
-          display: "flex",
-          justifyContent: "flex-end",
-          padding: "10px 0 0 0",
-          borderTop: "1px solid #e5e5e5"
-        }
+        className: "modal-footer flexEnd padding10_0_0_0 borderTop1SolidE5"
       },
       h("button", {
         "aria-label": "Close Button",
         className: "btn btn-secondary",
-        onClick: this.props.onClose,
-
+        onClick: this.props.onClose
       }, "Cancel"),
       h("button", {
         "aria-label": "Save options button",
         className: "btn btn-primary highlighted",
-        onClick: this.handleSave,
-
+        onClick: this.handleSave
       }, "Save")
       )
     )
@@ -796,68 +710,63 @@ class FieldOptionModal extends React.Component {
 class FieldRow extends React.Component {
   render() {
     document.title = "Field Creator (beta)";
-
+  
     let deploymentStatus;
     switch (this.props.field.deploymentStatus) {
       case "pending":
         deploymentStatus = h("svg", {
-          className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
-          viewBox: "0 0 52 52",
-          style: {width: "20px"}
+          className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small width20px",
+          viewBox: "0 0 52 52"
         },
-        h("use", {xlinkHref: "symbols.svg#clock", style: {fill: "#005fb2"}})
+        h("use", {xlinkHref: "symbols.svg#clock", className: "fillBlue"})
         );
         break;
       case "success":
         deploymentStatus = h("svg", {
-          className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
-          viewBox: "0 0 52 52",
-          style: {width: "20px"}
+          className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small width20px",
+          viewBox: "0 0 52 52"
         },
-        h("use", {xlinkHref: "symbols.svg#success", style: {fill: "#2e844a"}})
+        h("use", {xlinkHref: "symbols.svg#success", className: "fillGreen"})
         );
         break;
       case "error":
         deploymentStatus = h("svg", {
-          className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
-          viewBox: "0 0 52 52",
-          style: {width: "20px"}
+          className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small width20px",
+          viewBox: "0 0 52 52"
         },
-        h("use", {xlinkHref: "symbols.svg#error", style: {fill: "#ba0517"}})
+        h("use", {xlinkHref: "symbols.svg#error", className: "fillRed"})
         );
         break;
       default:
         deploymentStatus = "";
     }
-
+  
     return (
       h("tr", null,
-        h("td", {className: "text-center", style: {verticalAlign: "middle"}},
-          h("div", {className: "text-center", style: {verticalAlign: "middle"}},
+        h("td", {className: "text-center verticalAlignMiddle"},
+          h("div", {className: "text-center verticalAlignMiddle"},
             h("svg", {
-              className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+              className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small cursorPointer width20px",
               viewBox: "0 0 52 52",
-              onClick: () => this.props.onClone(this.props.index),
-              style: {cursor: "pointer", width: "20px"}
+              onClick: () => this.props.onClone(this.props.index)
             },
-            h("use", {xlinkHref: "symbols.svg#clone", style: {fill: "#005fb2"}})
+            h("use", {xlinkHref: "symbols.svg#clone", className: "fillBlue"})
             )
           )
         ),
-        h("td", {className: "text-center", style: {verticalAlign: "middle"}},
-          h("div", {className: "text-center", style: {verticalAlign: "middle"}},
+        h("td", {className: "text-center verticalAlignMiddle"},
+          h("div", {className: "text-center verticalAlignMiddle"},
             h("svg", {
-              className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+              className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small cursorPointer width20px",
               viewBox: "0 0 52 52",
-              onClick: () => this.props.onDelete(this.props.index),
-              style: {cursor: "pointer", width: "20px"}
+              onClick: () => this.props.onDelete(this.props.index)
             },
-            h("use", {xlinkHref: "symbols.svg#delete", style: {fill: "#9c9c9c"}})
+            h("use", {xlinkHref: "symbols.svg#delete", className: "fillGray"})
             )
           )
         ),
-        h("td", {className: "form-control-cell", style: {verticalAlign: "middle"}},
-          h("div", {style: {display: "flex", justifyContent: "center"}},
+        h("td", {className: "form-control-cell verticalAlignMiddle"},
+          h("div", {className: "flexCenter"},
             h("input", {
               type: "text",
               className: "input-textBox",
@@ -867,8 +776,8 @@ class FieldRow extends React.Component {
             })
           )
         ),
-        h("td", {className: "form-control-cell", style: {verticalAlign: "middle"}},
-          h("div", {style: {display: "flex", justifyContent: "center"}},
+        h("td", {className: "form-control-cell verticalAlignMiddle"},
+          h("div", {className: "flexCenter"},
             h("input", {
               type: "text",
               className: "input-textBox",
@@ -878,8 +787,8 @@ class FieldRow extends React.Component {
             })
           )
         ),
-        h("td", {className: "form-control-cell", style: {verticalAlign: "middle"}},
-          h("div", {style: {display: "flex", justifyContent: "center"}},
+        h("td", {className: "form-control-cell verticalAlignMiddle"},
+          h("div", {className: "flexCenter"},
             h("select", {
               className: "form-control",
               value: this.props.field.type,
@@ -918,10 +827,9 @@ class FieldRow extends React.Component {
             onClick: () => this.props.onEditProfiles(this.props.index)
           }, "Permissions")
         ),
-        h("td", {className: "text-center", style: {verticalAlign: "middle"}},
+        h("td", {className: "text-center verticalAlignMiddle"},
           h("div", {
-            className: "text-center",
-            style: {verticalAlign: "middle", fontSize: "20px", cursor: "pointer"},
+            className: "text-center verticalAlignMiddle fontSize20 cursorPointer",
             onClick: () => this.props.onShowDeploymentStatus(this.props.index)
           },
           deploymentStatus
@@ -950,7 +858,7 @@ class FieldsTable extends React.Component {
             h("th", {style: {width: "5%"}}),
             h("th", {style: {width: "5%"}}),
             h("th", {style: {width: "20%"}}, "Label"),
-            h("th", {style: {width: "20%"}}, "API Name (__c)"), // make the lables/th clearly part of the table.
+            h("th", {style: {width: "20%"}}, "API Name (__c)"), 
             h("th", {style: {width: "20%"}}, "Type"),
             h("th", {style: {width: "10%"}}, "Options"),
             h("th", {style: {width: "10%"}}, "Permissions"),
@@ -1547,7 +1455,7 @@ class App extends React.Component {
 
   render() {
     const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject} = this.state;
-
+  
     return (
       h("div", null,
         h("div", {id: "user-info"},
@@ -1568,8 +1476,8 @@ class App extends React.Component {
             h("div", {className: "icon"})
           ),
         ),
-        h("div", {style: {position: "relative"}}, // Increased z-index
-          h("div", {className: "area firstHeader", style: {position: "relative", zIndex: 1}}, // Lower z-index
+        h("div", {className: "relativePosition"},
+          h("div", {className: "area firstHeader relativePosition zIndex1"},
             h("div", {className: "form-group"},
               h("label", {htmlFor: "object_select"}, "Select Object"),
               selectedObject && h("a", {
@@ -1577,19 +1485,17 @@ class App extends React.Component {
                   ? `https://${sfConn.instanceHostname}/lightning/setup/CustomMetadata/page?address=%2F${selectedObject.durableId}%3Fsetupid%3DCustomMetadata`
                   : `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject.name}/FieldsAndRelationships/view`,
                 target: "_blank",
-                className: "fieldsLink",
-                rel: "noopener noreferrer",
-                style: {marginLeft: "10px"}
+                className: "fieldsLink marginLeft10",
+                rel: "noopener noreferrer"
               }, "(Fields)"), h("br", null),
-              h("div", {style: {position: "relative", width: "400px"}},
+              h("div", {className: "relativePosition width400"},
                 h("input", {
                   type: "text",
                   id: "object_select",
-                  className: "form-control input-textBox",
+                  className: "form-control input-textBox width100",
                   placeholder: "Search and select object...",
                   value: this.state.objectSearch,
-                  onChange: this.handleObjectSearch,
-                  style: {width: "100%"}
+                  onChange: this.handleObjectSearch
                 }),
                 this.state.filteredObjects.length > 0 && h("ul", {
                   className: "ulItem"
@@ -1598,17 +1504,7 @@ class App extends React.Component {
                   h("li", {
                     key: obj.name,
                     onClick: () => this.handleObjectSelect(obj),
-                    style: {
-                      padding: "8px 12px",
-                      cursor: "pointer",
-                      transition: "background-color 0.2s",
-                    },
-                    onMouseEnter: (e) => {
-                      e.target.style.backgroundColor = "#f0f0f0";
-                    },
-                    onMouseLeave: (e) => {
-                      e.target.style.backgroundColor = "transparent";
-                    }
+                    className: "objectListItem"
                   },
                   `${obj.name} (${obj.label})`
                   )
@@ -1621,8 +1517,7 @@ class App extends React.Component {
               h("button", {"aria-label": "Clear Button", className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
               h("button", {"aria-label": "Open Import CSV modal button", className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
               h("button", {"disabled": !this.state.selectedObject, "aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
-              !this.state.allFieldsHavePermissions && h("p", {style: {color: "red"}}, "Some fields are missing permissions."),
-
+              !this.state.allFieldsHavePermissions && h("p", {className: "errorText"}, "Some fields are missing permissions."),
             )
           )
         ),
@@ -1638,9 +1533,9 @@ class App extends React.Component {
             onEditProfiles: this.onEditProfiles,
             onShowDeploymentStatus: this.onShowDeploymentStatus
           }),
-          h("button", {"aria-label": "Add Row/New field to table", className: "btn btn-sm highlighted", id: "add_row", onClick: this.addRow, style: {maxWidth: "18%"}}, "Add Row")
+          h("button", {"aria-label": "Add Row/New field to table", className: "btn btn-sm highlighted maxWidth18", id: "add_row", onClick: this.addRow}, "Add Row")
         ),
-
+  
         showProfilesModal && h(ProfilesModal, {
           field: fields[currentFieldIndex],
           permissionSets: this.state.permissionSets,
@@ -1653,140 +1548,56 @@ class App extends React.Component {
           onSave: this.onSaveFieldOptions,
           onClose: this.onCloseModal
         }),
-        this.state.showImportModal && h("div", {onClick: this.closeImportModal,
-          style: {
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000
-          }
-        },
-        h("div", {
-          style: {
-            backgroundColor: "white",
-            padding: "20px",
-            borderRadius: "8px",
-            width: "500px",
-            maxWidth: "90%"
-          }
-        },
-        h("div", {
-          style: {
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "15px"
-          }
-        },
-        h("h2", null, "CSV Import (beta)"),
-        h("button", {
-          onClick: this.closeImportModal,
-          "aria-label": "Close Import Modal",
-          style: {
-            background: "none",
-            border: "none",
-            fontSize: "1.5rem",
-            cursor: "pointer"
-          }
-        }, "×")
+        this.state.showImportModal && h("div", {onClick: this.closeImportModal, className: "modalOverlay"},
+          h("div", {onClick: (e) => e.stopPropagation(),className: "modalContent"},
+            h("div", {className: "modalHeader"},
+              h("h2", null, "CSV Import (beta)"),
+              h("button", {
+                onClick: this.closeImportModal,
+                "aria-label": "Close Import Modal",
+                className: "closeButton"
+              }, "×")
+            ),
+            h("p", null, "Enter " + (localStorage.getItem("csvSeparator") || ",") + "  separated values of Label, ApiName, Type."),
+            h("textarea", {
+              value: this.state.importCsvContent,
+              onChange: this.handleImportCsvChange,
+              className: "importTextarea"
+            }),
+            this.state.importError && h("p", {className: "errorText"}, this.state.importError),
+            h("div", {className: "modalFooter"},
+              h("button", {
+                "aria-label": "Cancel button",
+                onClick: this.closeImportModal,
+                className: "marginRight10"
+              }, "Cancel"),
+              h("button", {
+                "aria-label": "Import button",
+                onClick: this.importCsv,
+                className: "btn btn-primary highlighted"
+              }, "Import")
+            )
+          )
         ),
-        h("p", null, "Enter " + (localStorage.getItem("csvSeparator") || ",") + "  separated values of Label, ApiName, Type."),
-        h("textarea", {
-          value: this.state.importCsvContent,
-          onChange: this.handleImportCsvChange,
-          style: {
-            width: "100%",
-            height: "200px",
-            marginBottom: "15px"
-          }
-        }),
-        this.state.importError && h("p", {style: {color: "red"}}, this.state.importError),
-        h("div", {
-          style: {
-            display: "flex",
-            justifyContent: "flex-end"
-          }
-        },
-        h("button", {
-          "aria-label": "Cancel button",
-          onClick: this.closeImportModal,
-          style: {marginRight: "10px"}
-        }, "Cancel"),
-        h("button", {
-          "aria-label": "Import button",
-          onClick: this.importCsv,
-          className: "btn btn-primary highlighted"
-        }, "Import")
-        )
-        )
-        ),
-
-        this.state.fieldErrorMessage && h("div", {
-          className: "notification_container"
-        },
-        h("div", {
-          className: "slds-notify slds-notify_toast slds-theme_error",
-          role: "alert",
-          style: {
-            display: "flex",
-            alignItems: "center"
-          }
-        },
-        h("span", {
-          title: "Error",
-          style: {
-            display: "inline-flex",
-            alignItems: "center",
-            marginRight: "10px"
-          }
-        },
-        h("svg", {
-          className: "slds-icon",
-          "aria-hidden": "true",
-          style: {
-            width: "24px",
-            height: "24px"
-          }
-        },
-        h("use", {
-          xlinkHref: "symbols.svg#error",
-          style: {fill: "white"}
-        })
-        )
-        ),
-        h("span", {
-          className: "slds-text-heading_small"
-        }, this.state.fieldErrorMessage),
-        h("a", {
-          title: "Close",
-          onClick: () => this.setState({fieldErrorMessage: null}),
-          style: {
-            marginLeft: "10px",
-            display: "inline-flex",
-            alignItems: "center"
-          }
-        },
-        h("svg", {
-          className: "slds-icon",
-          "aria-hidden": "true",
-          style: {
-            width: "24px",
-            height: "24px"
-          }
-        },
-        h("use", {
-          xlinkHref: "symbols.svg#close",
-          style: {fill: "white"}
-        })
-        )
-        )
-        )
+  
+        this.state.fieldErrorMessage && h("div", {className: "notification_container"},
+          h("div", {className: "slds-notify slds-notify_toast slds-theme_error notificationContent"},
+            h("span", {className: "errorIcon"},
+              h("svg", {className: "slds-icon width24px height24px", "aria-hidden": "true"},
+                h("use", {xlinkHref: "symbols.svg#error", className: "iconFill"})
+              )
+            ),
+            h("span", {className: "slds-text-heading_small"}, this.state.fieldErrorMessage),
+            h("a", {
+              title: "Close",
+              onClick: () => this.setState({fieldErrorMessage: null}),
+              className: "closeIcon"
+            },
+              h("svg", {className: "slds-icon width24px height24px", "aria-hidden": "true"},
+                h("use", {xlinkHref: "symbols.svg#close", className: "iconFill"})
+              )
+            )
+          )
         )
       )
     );

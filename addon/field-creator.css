@@ -368,8 +368,6 @@ button[hidden],
   display: none;}
 .button-group {
   white-space: nowrap;}
-.btn100{
-  width: 100%;}
 .button-group button,
 .button-group .button,
 .button-group select,
@@ -647,7 +645,6 @@ button.toggle .button-icon {
 .flexColumn { 
   display: flex;
   flex-direction: column;}
-.relativePosition { position: relative;}
 .height100 { height: 100%;}
 .flexSpaceBetween { 
   display: flex;
@@ -668,9 +665,6 @@ button.toggle .button-icon {
 .border1SolidCcc { border: 1px solid #ccc;}
 .borderRadius4 { border-radius: 4px;}
 .marginTop15 { margin-top: 15px;}
-.flexEnd { 
-  display: flex;
-  justify-content: flex-end;}
 .borderTop1SolidE5 { border-top: 1px solid #e5e5e5;}
 .padding15_0 { padding: 15px 0;}
 .backgroundWhite { background-color: #fff;}
@@ -688,7 +682,6 @@ button.toggle .button-icon {
   position: absolute;
   right: 0;
   top: 0;}
-.cursorPointer { cursor: pointer;}
 .padding10_0_20_0 { padding: 10px 0 20px 0;}
 .maxHeightCalc90vh-150px { max-height: calc(90vh - 150px);}
 .flexEnd {
@@ -703,8 +696,5 @@ button.toggle .button-icon {
 .fillRed { fill: #ba0517;}
 .fillGray { fill: #9c9c9c;}
 .verticalAlignMiddle { vertical-align: middle;}
-.flexCenter {
-  display: flex;
-  justify-content: center;}
 .fontSize20 { font-size: 20px;}
 .btn100 { width: 100%;}

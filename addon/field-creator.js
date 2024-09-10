@@ -1597,7 +1597,7 @@ class App extends React.Component {
               )
             ),
             h("span", {className: "slds-text-heading_small"},
-              'Enable "Entity Definition Caching" to use Field Creator (beta). ',
+              this.state.fieldErrorMessage,
               this.state.errorMessageClickable && h("a", {
                 href: "#",
                 onClick: (e) => {

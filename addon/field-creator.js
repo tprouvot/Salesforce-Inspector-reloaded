@@ -128,19 +128,19 @@ class ProfilesModal extends React.Component {
       allReadPermissionSets,
       searchTerm,
     } = this.state;
-  
+
     const filterItems = (items) => items.filter(([name, profile]) =>
       (profile || name).toLowerCase().includes(searchTerm.toLowerCase())
     );
-  
+
     const profiles = filterItems(Object.entries(permissionSets)
       .filter(([_, profile]) => profile !== null)
       .sort((a, b) => a[1].localeCompare(b[1])));
-  
+
     const permissionSetsOnly = filterItems(Object.entries(permissionSets)
       .filter(([_, profile]) => profile === null)
       .sort((a, b) => a[0].localeCompare(b[0])));
-  
+
     const renderTable = (items, title) =>
       h("div", {key: title},
         h("h5", {
@@ -198,76 +198,76 @@ class ProfilesModal extends React.Component {
           )
         )
       );
-  
+
     return h("div", {className: "modalBlackBase", onClick: onClose},
       h("div", {
         className: "modal-dialog overflowYHidden height80 maxWidth600 flexColumn",
         onClick: (e) => e.stopPropagation()
       },
       h("div", {className: "modal-content relativePosition height100 flexColumn"},
-      h("div", {className: "modal-header flexSpaceBetween alignItemsCenter marginBottom15"},
-      h("h1", {className: "modal-title"}, "Set Field Permissions"),
-      h("button", {
-        type: "button",
-        "aria-label": "Close permission modal button",
-        className: "close cursorPointer backgroundNone borderNone fontSize1_5 fontWeightBold",
-        onClick: onClose
-      }, "×")
-      ),
-      h("div", {className: "modal-body overflowYAuto flexGrow1 marginRight-10 paddingRight10 scrollbarThin scrollbarColorBlue"},
-      h("input", {
-        type: "text",
-        placeholder: "Search profiles and permission sets...",
-        value: this.state.searchTerm,
-        onChange: this.handleSearchChange,
-        className: "fullWidth padding8 border1SolidCcc borderRadius4"
-      }), h("p", {}, "Please consider granting field access to Permission Sets instead of Profiles ",
-      h("a", {href: "https://admin.salesforce.com/blog/2023/permissions-updates-learn-moar-spring-23", target: ""}, "?")
-      ),
-  
-      renderTable(permissionSetsOnly, "Permission Sets"),
-      renderTable(profiles, "Profiles")
-      ),
-      h("div", {className: "modal-footer marginTop15 flexEnd borderTop1SolidE5 padding15_0 backgroundWhite stickyBottom"},
-      h("button", {
-        type: "button",
-        "aria-label": "Close button",
-        className: "btn btn-default marginRight10",
-        onClick: onClose
-      }, "Cancel"),
-      h("button", {
-        type: "button",
-        "aria-label": "Save permission for this field",
-        className: "btn btn-primary highlighted marginRight10",
-        onClick: () => {
-          const updatedProfiles = Object.entries(permissions).reduce((acc, [name, perm]) => {
-            if (perm.edit || perm.read) {
-              acc.push({
-                name,
-                access: perm.edit ? "edit" : "read"
-              });
+        h("div", {className: "modal-header flexSpaceBetween alignItemsCenter marginBottom15"},
+          h("h1", {className: "modal-title"}, "Set Field Permissions"),
+          h("button", {
+            type: "button",
+            "aria-label": "Close permission modal button",
+            className: "close cursorPointer backgroundNone borderNone fontSize1_5 fontWeightBold",
+            onClick: onClose
+          }, "×")
+        ),
+        h("div", {className: "modal-body overflowYAuto flexGrow1 marginRight-10 paddingRight10 scrollbarThin scrollbarColorBlue"},
+          h("input", {
+            type: "text",
+            placeholder: "Search profiles and permission sets...",
+            value: this.state.searchTerm,
+            onChange: this.handleSearchChange,
+            className: "fullWidth padding8 border1SolidCcc borderRadius4"
+          }), h("p", {}, "Please consider granting field access to Permission Sets instead of Profiles ",
+            h("a", {href: "https://admin.salesforce.com/blog/2023/permissions-updates-learn-moar-spring-23", target: ""}, "?")
+          ),
+
+          renderTable(permissionSetsOnly, "Permission Sets"),
+          renderTable(profiles, "Profiles")
+        ),
+        h("div", {className: "modal-footer marginTop15 flexEnd borderTop1SolidE5 padding15_0 backgroundWhite stickyBottom"},
+          h("button", {
+            type: "button",
+            "aria-label": "Close button",
+            className: "btn btn-default marginRight10",
+            onClick: onClose
+          }, "Cancel"),
+          h("button", {
+            type: "button",
+            "aria-label": "Save permission for this field",
+            className: "btn btn-primary highlighted marginRight10",
+            onClick: () => {
+              const updatedProfiles = Object.entries(permissions).reduce((acc, [name, perm]) => {
+                if (perm.edit || perm.read) {
+                  acc.push({
+                    name,
+                    access: perm.edit ? "edit" : "read"
+                  });
+                }
+                return acc;
+              }, []);
+
+              const updatedField = {
+                ...field,
+                profiles: updatedProfiles
+              };
+              onSave(updatedField);
             }
-            return acc;
-          }, []);
-  
-          const updatedField = {
-            ...field,
-            profiles: updatedProfiles
-          };
-          onSave(updatedField);
-        }
-      }, "Save"),
-      h("button", {
-        "aria-label": "Apply the permission to all fields in the table",
-        type: "button",
-        className: "btn btn-secondary",
-        onClick: this.applyToAllFields
-      }, "Apply to All Fields")
-      )
+          }, "Save"),
+          h("button", {
+            "aria-label": "Apply the permission to all fields in the table",
+            type: "button",
+            className: "btn btn-secondary",
+            onClick: this.applyToAllFields
+          }, "Apply to All Fields")
+        )
       )
       )
     );
-  } 
+  }
 }
 
 class FieldOptionModal extends React.Component {
@@ -710,7 +710,7 @@ class FieldOptionModal extends React.Component {
 class FieldRow extends React.Component {
   render() {
     document.title = "Field Creator (beta)";
-  
+
     let deploymentStatus;
     switch (this.props.field.deploymentStatus) {
       case "pending":
@@ -740,7 +740,7 @@ class FieldRow extends React.Component {
       default:
         deploymentStatus = "";
     }
-  
+
     return (
       h("tr", null,
         h("td", {className: "text-center verticalAlignMiddle"},
@@ -858,7 +858,7 @@ class FieldsTable extends React.Component {
             h("th", {style: {width: "5%"}}),
             h("th", {style: {width: "5%"}}),
             h("th", {style: {width: "20%"}}, "Label"),
-            h("th", {style: {width: "20%"}}, "API Name (__c)"), 
+            h("th", {style: {width: "20%"}}, "API Name (__c)"),
             h("th", {style: {width: "20%"}}, "Type"),
             h("th", {style: {width: "10%"}}, "Options"),
             h("th", {style: {width: "10%"}}, "Permissions"),
@@ -906,6 +906,7 @@ class App extends React.Component {
       importError: "",
       objectSearch: "",
       fieldErrorMessage: "",
+      errorMessageClickable: false,
       userInfo: "...",
       filteredObjects: []
     };
@@ -1140,25 +1141,33 @@ class App extends React.Component {
   }
 
   fetchObjects = async () => {
-    const waitForCount = () => new Promise((resolve) => {
-      const checkCount = () => {
-        const count = sessionStorage.getItem("sobjectsList");
-        if (count) {
-          resolve(count);
-        } else {
-          setTimeout(checkCount, 100); // Check again after 100ms
-        }
-      };
-      checkCount();
-    });
+    let isEntityCachingEnabled = localStorage.getItem("enableEntityDefinitionCaching") === "true";
 
-    try {
-      const count = await waitForCount();
-      let sObjectsFromEntity = JSON.parse(sessionStorage.getItem("sobjectsList"));
-      let layoutableObjects = sObjectsFromEntity.filter(obj => obj.layoutable === true);
-      this.setState({objects: layoutableObjects});
-    } catch (error) {
-      console.error("Error fetching objects:", error);
+    if (isEntityCachingEnabled){
+      const waitForCount = () => new Promise((resolve) => {
+        const checkCount = () => {
+          const count = sessionStorage.getItem("sobjectsList");
+          if (count) {
+            resolve(count);
+          } else {
+            setTimeout(checkCount, 100); // Check again after 100ms
+          }
+        };
+        checkCount();
+      });
+
+      try {
+        const count = await waitForCount();
+        let sObjectsFromEntity = JSON.parse(sessionStorage.getItem("sobjectsList"));
+        let layoutableObjects = sObjectsFromEntity.filter(obj => obj.layoutable === true);
+        this.setState({objects: layoutableObjects});
+      } catch (error) {
+        console.error("Error fetching objects:", error);
+      }
+    } else {
+      this.setState({fieldErrorMessage: 'Enable "Entity Definition Caching" to use Field Creator (beta).'});
+      this.setState({errorMessageClickable: true});
+
     }
   };
 
@@ -1455,7 +1464,7 @@ class App extends React.Component {
 
   render() {
     const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject} = this.state;
-  
+
     return (
       h("div", null,
         h("div", {id: "user-info"},
@@ -1535,7 +1544,7 @@ class App extends React.Component {
           }),
           h("button", {"aria-label": "Add Row/New field to table", className: "btn btn-sm highlighted maxWidth18", id: "add_row", onClick: this.addRow}, "Add Row")
         ),
-  
+
         showProfilesModal && h(ProfilesModal, {
           field: fields[currentFieldIndex],
           permissionSets: this.state.permissionSets,
@@ -1549,7 +1558,7 @@ class App extends React.Component {
           onClose: this.onCloseModal
         }),
         this.state.showImportModal && h("div", {onClick: this.closeImportModal, className: "modalOverlay"},
-          h("div", {onClick: (e) => e.stopPropagation(),className: "modalContent"},
+          h("div", {onClick: (e) => e.stopPropagation(), className: "modalContent"},
             h("div", {className: "modalHeader"},
               h("h2", null, "CSV Import (beta)"),
               h("button", {
@@ -1579,7 +1588,7 @@ class App extends React.Component {
             )
           )
         ),
-  
+
         this.state.fieldErrorMessage && h("div", {className: "notification_container"},
           h("div", {className: "slds-notify slds-notify_toast slds-theme_error notificationContent"},
             h("span", {className: "errorIcon"},
@@ -1587,19 +1596,30 @@ class App extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#error", className: "iconFill"})
               )
             ),
-            h("span", {className: "slds-text-heading_small"}, this.state.fieldErrorMessage),
+            h("span", {className: "slds-text-heading_small"},
+              'Enable "Entity Definition Caching" to use Field Creator (beta). ',
+              this.state.errorMessageClickable && h("a", {
+                href: "#",
+                onClick: (e) => {
+                  e.preventDefault();
+                  localStorage.setItem("enableEntityDefinitionCaching", true);
+                  this.setState({fieldErrorMessage: null, errorMessageClickable: false});
+                  this.fetchObjects();
+                },
+                style: {color: "inherit", textDecoration: "underline"}
+              }, "Click here to enable")
+            ),
             h("a", {
               title: "Close",
-              onClick: () => this.setState({fieldErrorMessage: null}),
+              onClick: () => this.setState({fieldErrorMessage: null, errorMessageClickable: false}),
               className: "closeIcon"
             },
-              h("svg", {className: "slds-icon width24px height24px", "aria-hidden": "true"},
-                h("use", {xlinkHref: "symbols.svg#close", className: "iconFill"})
-              )
+            h("svg", {className: "slds-icon width24px height24px", "aria-hidden": "true"},
+              h("use", {xlinkHref: "symbols.svg#close", className: "iconFill"})
+            )
             )
           )
-        )
-      )
+        ))
     );
   }
 }

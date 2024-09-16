@@ -1141,33 +1141,100 @@ class App extends React.Component {
   }
 
   fetchObjects = async () => {
-    let isEntityCachingEnabled = localStorage.getItem("enableEntityDefinitionCaching") === "true";
-
-    if (isEntityCachingEnabled){
-      const waitForCount = () => new Promise((resolve) => {
-        const checkCount = () => {
-          const count = sessionStorage.getItem("sobjectsList");
-          if (count) {
-            resolve(count);
-          } else {
-            setTimeout(checkCount, 100); // Check again after 100ms
+    try {
+      const entityMap = new Map();
+      
+      const addEntity = (entity, api) => {
+        let existingEntity = entityMap.get(entity.name);
+        if (existingEntity) {
+          // Update existing entity
+          Object.assign(existingEntity, entity);
+          if (!existingEntity.availableApis.includes(api)) {
+            existingEntity.availableApis.push(api);
           }
-        };
-        checkCount();
-      });
-
-      try {
-        const count = await waitForCount();
-        let sObjectsFromEntity = JSON.parse(sessionStorage.getItem("sobjectsList"));
-        let layoutableObjects = sObjectsFromEntity.filter(obj => obj.layoutable === true);
-        this.setState({objects: layoutableObjects});
-      } catch (error) {
-        console.error("Error fetching objects:", error);
-      }
-    } else {
-      this.setState({fieldErrorMessage: 'Enable "Entity Definition Caching" to use Field Creator (beta).'});
-      this.setState({errorMessageClickable: true});
-
+          // Keep layoutable true if it was true in either call
+          existingEntity.layoutable = existingEntity.layoutable || entity.layoutable;
+        } else {
+          // Add new entity
+          entityMap.set(entity.name, {
+            ...entity,
+            availableApis: [api],
+            availableKeyPrefix: entity.keyPrefix || null,
+            layoutable: entity.layoutable || false // Default to false if not specified
+          });
+        }
+      };
+  
+      const getObjects = async (url, api) => {
+        try {
+          const describe = await sfConn.rest(url);
+          describe.sobjects.forEach(sobject => {
+            addEntity({...sobject, layoutable: sobject.layoutable || false}, api);
+          });
+        } catch (err) {
+          console.error("list " + api + " sobjects", err);
+        }
+      };
+  
+      const getEntityDefinitionCount = async () => {
+        try {
+          const res = await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT COUNT() FROM EntityDefinition"));
+          return res.totalSize;
+        } catch (err) {
+          console.error("count entity definitions: ", err);
+          return 0;
+        }
+      };
+  
+      const getEntityDefinitions = async () => {
+        const entityDefinitionCount = await getEntityDefinitionCount();
+        const batchSize = 2000;
+        const batches = Math.ceil(entityDefinitionCount / batchSize);
+        const batchPromises = [];
+      
+        for (let bucket = 0; bucket < batches; bucket++) {
+          let offset = bucket > 0 ? " OFFSET " + (bucket * batchSize) : "";
+          let query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT ${batchSize}${offset}`;
+      
+          let batchPromise = sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
+            .then(respEntity => {
+              for (let record of respEntity.records) {
+                addEntity({
+                  name: record.QualifiedApiName,
+                  label: record.Label,
+                  keyPrefix: record.KeyPrefix,
+                  durableId: record.DurableId,
+                  isCustomSetting: record.IsCustomSetting,
+                  recordTypesSupported: record.RecordTypesSupported,
+                  newUrl: record.NewUrl,
+                  isEverCreatable: record.IsEverCreatable,
+                  // Don't set layoutable here, as it should come from describe calls
+                }, 'EntityDef');
+              }
+            }).catch(err => {
+              console.error("list entity definitions: ", err);
+            });
+      
+          batchPromises.push(batchPromise);
+        }
+      
+        return Promise.all(batchPromises);
+      };
+  
+      // Fetch objects from different APIs
+      await Promise.all([
+        getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
+        getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi"),
+        getEntityDefinitions(),
+      ]);
+  
+      const sObjectsList = Array.from(entityMap.values());
+      sessionStorage.setItem("sobjects", JSON.stringify(sObjectsList));
+      const layoutableObjects = sObjectsList.filter(obj => obj.layoutable === true);
+      this.setState({ objects: layoutableObjects });
+    } catch (error) {
+      console.error("Error fetching objects:", error);
+      this.setState({ fieldErrorMessage: 'Error fetching object data.' });
     }
   };
 

@@ -1,4 +1,5 @@
-export let apiVersion = localStorage.getItem("apiVersion") == null ? "61.0" : localStorage.getItem("apiVersion");
+export let defaultApiVersion = "61.0";
+export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 export let sessionError;
 export function nullToEmptyString(value) {
   // For react input fields, the value may not be null or undefined, so this will clean the value
@@ -39,6 +40,7 @@ export let sfConn = {
         localStorage.setItem(sfHost + "_trialExpirationDate", res.records[0].TrialExpirationDate);
       });
     }
+    return this.sessionId;
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {

@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, nullToEmptyString} from "./inspector.js";
+import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString} from "./inspector.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 
@@ -9,7 +9,8 @@ class Model {
     this.sfHost = sfHost;
     this.sfLink = "https://" + this.sfHost;
     this.userInfo = "...";
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
+    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
       document.body.classList.add("prod");
     }
@@ -63,9 +64,15 @@ class OptionsTabSelector extends React.Component {
     super(props);
     this.model = props.model;
     this.sfHost = this.model.sfHost;
+
+    // Get the tab from the URL or default to 1
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTabId = parseInt(urlParams.get("selectedTab")) || 1;
+
     this.state = {
-      selectedTabId: 1
+      selectedTabId: initialTabId
     };
+
     this.tabs = [
       {
         id: 1,
@@ -82,7 +89,8 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
           {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
-          {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}}
+          {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
+          {option: Option, props: {type: "toggle", title: "Highlight PROD with a top border (color from favicon)", key: "colorizeProdBanner"}}
         ]
       },
       {
@@ -134,7 +142,14 @@ class OptionsTabSelector extends React.Component {
 
   onTabSelect(e) {
     e.preventDefault();
-    this.setState({selectedTabId: e.target.tabIndex});
+    const selectedTabId = e.target.tabIndex;
+
+    // Update the URL with the selected tab
+    const url = new URL(window.location);
+    url.searchParams.set("selectedTab", selectedTabId);
+    window.history.pushState({}, "", url);
+
+    this.setState({selectedTabId});
   }
 
   render() {
@@ -240,6 +255,7 @@ class APIVersionOption extends React.Component {
   constructor(props) {
     super(props);
     this.onChangeApiVersion = this.onChangeApiVersion.bind(this);
+    this.onRestoreDefaultApiVersion = this.onRestoreDefaultApiVersion.bind(this);
     this.state = {apiVersion: localStorage.getItem("apiVersion") ? localStorage.getItem("apiVersion") : apiVersion};
   }
 
@@ -249,15 +265,23 @@ class APIVersionOption extends React.Component {
     localStorage.setItem("apiVersion", apiVersion + ".0");
   }
 
+  onRestoreDefaultApiVersion(){
+    localStorage.removeItem("apiVersion");
+    this.setState({apiVersion: defaultApiVersion});
+  }
+
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "API Version")
       ),
-      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-form-element__control"},
+          h("button", {className: "button button-brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
+        ) : null,
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          h("input", {type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
+          h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
         )
       )
     );

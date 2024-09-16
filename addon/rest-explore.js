@@ -72,7 +72,6 @@ class Model {
     this.spinnerCount = 0;
     this.userInfo = "...";
     this.winInnerHeight = 0;
-    this.queryAll = false;
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
@@ -85,7 +84,6 @@ class Model {
     this.selectedSavedEntry = null;
     this.expandSavedOptions = false;
     this.startTime = null;
-    this.lastStartTime = null;
     this.totalTime = 0;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
@@ -227,10 +225,12 @@ class Model {
   }
 
   doSend() {
+    this.startTime = performance.now();
     this.canSendRequest = false;
     this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress}, true)
       .catch(err => {
         this.canSendRequest = true;
+        this.totalTime = performance.now() - this.startTime;
         if (err.name != "AbortError") {
           this.autocompleteResults = {
             title: "Error: " + err.message,
@@ -241,6 +241,7 @@ class Model {
       })
       .then((result) => {
         //generate key with timestamp
+        this.totalTime = performance.now() - this.startTime;
         this.request.key = Date.now();
         this.queryHistory.add(this.request);
         if (!result) {
@@ -468,7 +469,7 @@ class App extends React.Component {
           ),
           " Salesforce Home"
         ),
-        h("h1", {}, "REST Explore (beta)"),
+        h("h1", {}, "REST Explore"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
           h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
@@ -566,7 +567,9 @@ class App extends React.Component {
             h("button", {disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy")
           ),
           model.apiResponse && h("span", {className: "result-status flex-right"},
-            h("span", {className: "status-code"}, "Status: " + model.apiResponse.code)
+
+            h("span", {}, model.totalTime.toFixed(1) + "ms"),
+            h("span", {className: "slds-m-left_medium status-code"}, "Status: " + model.apiResponse.code)
           ),
         ),
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),

@@ -1,7 +1,7 @@
 {
   "name": "Salesforce Inspector Reloaded BETA",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.25",
+  "version": "1.25.1",
   "version_name": "1.25 beta",
   "icons": {
     "128": "icon128.png"
@@ -69,7 +69,8 @@
         "explore-api.html",
         "rest-explore.html",
         "limits.html",
-        "options.html"
+        "options.html",
+        "streaming.html"
       ],
       "matches": ["https://*/*"],
       "extension_ids": []
@@ -101,6 +102,9 @@
     },
     "rest-explore": {
       "description": "REST Explore"
+    },
+    "event-monitor": {
+      "description": "Event Monitor"
     }
   }
 }

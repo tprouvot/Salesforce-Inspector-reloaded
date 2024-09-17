@@ -122,6 +122,8 @@ Example:
 - Org <ins>L</ins>imits : l
 - <ins>D</ins>ownload Metadata : d
 - E<ins>x</ins>plore API : x
+- Event <ins>M</ins>onitor : m
+- <ins>F</ins>ield Creator : f
 
 ## Disable metadata search from Shortcut tab
 

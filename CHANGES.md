@@ -1,20 +1,25 @@
 # Release Notes
 
-
-## Version 1.25
-- [feature 511] Added new Field Creator section
-- [feature 511] Added the Field Creator button to the pop-up and to the sortcuts
-
-
 ## Version 1.25
 
-- Ad option to colorize sandbox banner in the same color as the favicon
+- Add `Field Creator` page to bulk create fields from the extension (contribution by [Santiago Parris](https://github.com/SantiParris8))
+- Add `Event Monitor` page to subscribe to Platform Events (contribution by [Antoine Leleu](https://github.com/AntoineLeleu-Salesforce))
+- Hide "What's new banner" in incognito mode [feature 517](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/517)
+- Persist selected tab when reloading Options page.
+- Add button in Options page to reset API Version to extension's default [feature 541](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/541)
+- Enable Salesforce Inspector Reloaded on Debug flow page [feature 552](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/552) request by [Andrew Russo](https://github.com/mavtron-andrewrusso)
+- Add option to highlight PROD with a 2px top border
+- Add response time in REST Explore [issue 539](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/539)
+- Add autocomplete feature for REST Explore page
+- Add option to increase the number of saved & history query in data export
+- Enable Salesforce Inspector Reloaded on Experience Builder
+- Add option to colorize sandbox banner in the same color as the favicon [doc](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=favico#customize-sandbox-banner-color)
 - Add "Object Access" link in Object popup tab to display Object permission details (Winter 25 feature)
 - Fix Platform Event links on popup [issue 500](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/500)
 
 ## Version 1.24
 
-- Add new REST Explore page to call Salesforce APIs from the extension
+- Add new `REST Explore` page to call Salesforce APIs from the extension
 - Add Global Search in Shortcut tab when no result was found
 - Enable users to configure custom headers on Data Import (AssignmentRuleHeader, DuplicateRuleHeader, OwnerChangeOptions ...) [feature 478](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/478)
 - Fix CustomSetting links in popup [issue 473](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/473) (contribution by [Boris Castellani](https://github.com/castellani))

@@ -82,6 +82,7 @@ class App extends React.PureComponent {
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
       eventMonitorHref: "event-monitor.html?" + hostArg,
+      fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext
     };

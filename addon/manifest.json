@@ -68,7 +68,8 @@
         "rest-explore.html",
         "limits.html",
         "field-creator.html",
-        "options.html"
+        "options.html",
+        "streaming.html"
       ],
       "matches": ["https://*/*"],
       "extension_ids": []
@@ -103,6 +104,9 @@
     },
     "rest-explore": {
       "description": "REST Explore"
+    },
+    "event-monitor": {
+      "description": "Event Monitor"
     }
   }
 }

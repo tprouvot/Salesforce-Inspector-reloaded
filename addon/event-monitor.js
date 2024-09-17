@@ -191,11 +191,17 @@ class App extends React.Component {
     model.didUpdate();
   }
 
-  onChannelSelection(e){
-    let {model} = this.props;
+  onChannelSelection(e) {
+    let { model } = this.props;
     model.selectedChannel = e.target.value;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('channel', model.selectedChannel);
+    window.history.replaceState(null, '', '?' + urlParams.toString());
+
     model.didUpdate();
   }
+
 
   onReplayIdChange(e) {
     let {model} = this.props;

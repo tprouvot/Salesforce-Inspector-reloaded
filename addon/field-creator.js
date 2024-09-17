@@ -1140,10 +1140,10 @@ class App extends React.Component {
     return typeMap[uiType] || uiType;
   }
 
+  //TODO cache entity from popup.js
   fetchObjects = async () => {
     try {
       const entityMap = new Map();
-      
       const addEntity = (entity, api) => {
         let existingEntity = entityMap.get(entity.name);
         if (existingEntity) {
@@ -1164,7 +1164,7 @@ class App extends React.Component {
           });
         }
       };
-  
+
       const getObjects = async (url, api) => {
         try {
           const describe = await sfConn.rest(url);
@@ -1175,7 +1175,8 @@ class App extends React.Component {
           console.error("list " + api + " sobjects", err);
         }
       };
-  
+
+      //TODO cache entityDefinitionCount from popup.js
       const getEntityDefinitionCount = async () => {
         try {
           const res = await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT COUNT() FROM EntityDefinition"));
@@ -1185,17 +1186,17 @@ class App extends React.Component {
           return 0;
         }
       };
-  
+
       const getEntityDefinitions = async () => {
         const entityDefinitionCount = await getEntityDefinitionCount();
         const batchSize = 2000;
         const batches = Math.ceil(entityDefinitionCount / batchSize);
         const batchPromises = [];
-      
+
         for (let bucket = 0; bucket < batches; bucket++) {
           let offset = bucket > 0 ? " OFFSET " + (bucket * batchSize) : "";
           let query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT ${batchSize}${offset}`;
-      
+
           let batchPromise = sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
             .then(respEntity => {
               for (let record of respEntity.records) {
@@ -1214,20 +1215,20 @@ class App extends React.Component {
             }).catch(err => {
               console.error("list entity definitions: ", err);
             });
-      
+
           batchPromises.push(batchPromise);
         }
-      
+
         return Promise.all(batchPromises);
       };
-  
+
       // Fetch objects from different APIs
       await Promise.all([
         getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
         getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi"),
         getEntityDefinitions(),
       ]);
-  
+
       const sObjectsList = Array.from(entityMap.values());
       sessionStorage.setItem("sobjects", JSON.stringify(sObjectsList));
       const layoutableObjects = sObjectsList.filter(obj => obj.layoutable === true);
@@ -1468,8 +1469,7 @@ class App extends React.Component {
       currentFieldIndex: null});
 
     this.checkAllFieldsHavePermissions();
-  }
-    ;
+  };
 
   onSaveFieldOptions = (updatedField) => {
     const {fields, currentFieldIndex} = this.state;
@@ -1611,7 +1611,6 @@ class App extends React.Component {
           }),
           h("button", {"aria-label": "Add Row/New field to table", className: "btn btn-sm highlighted maxWidth18", id: "add_row", onClick: this.addRow}, "Add Row")
         ),
-
         showProfilesModal && h(ProfilesModal, {
           field: fields[currentFieldIndex],
           permissionSets: this.state.permissionSets,

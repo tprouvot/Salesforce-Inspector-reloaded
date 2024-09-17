@@ -6,26 +6,28 @@ import {copyToClipboard} from "./data-load.js";
 
 const channelSuffix = "/event/";
 const channelTypes = [
-  {value: "StandardPlatformEvent", label: "Standard Platform Event"},
-  {value: "PlatformEvent", label: "Custom Platform Event"}
+  {value: "standardPlatformEvent", label: "Standard Platform Event"},
+  {value: "platformEvent", label: "Custom Platform Event"}
 ];
 
 class Model {
 
-  constructor(sfHost, sessionId) {
+  constructor(sfHost, sessionId, args) {
     this.sfHost = sfHost;
     this.sessionId = sessionId;
+    this.args = args;
     this.sfLink = "https://" + this.sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
     this.userInfo = "...";
     this.events = [];
-    this.selectedChannelType = channelTypes[0].value;
+    this.selectedChannelType = "";
     this.channels = [];
     this.stdPlatformEvent = [];
     this.customPlatformEvent = [];
     this.selectedChannel = null;
     this.channelListening = "";
+    this.channelError = "";
     this.isListenning = false;
     this.selectedEvent;
     this.selectedEventIndex = undefined;
@@ -45,6 +47,18 @@ class Model {
       //change background color for production
       document.body.classList.add("prod");
       this.isProd = true;
+    }
+
+    if (args.has("channel")) {
+      let channel = args.get("channel");
+      if (channel.endsWith("__e")){
+        this.selectedChannelType = "platformEvent";
+      } else {
+        this.selectedChannelType = "standardPlatformEvent";
+      }
+      this.selectedChannel = channel;
+    } else {
+      this.selectedChannelType = channelTypes[0].value;
     }
   }
   /**
@@ -110,18 +124,18 @@ class App extends React.Component {
     this.confirmPopupNo = this.confirmPopupNo.bind(this);
     this.retrievePlatformEvent = this.retrievePlatformEvent.bind(this);
     this.disableSubscribe = this.disableSubscribe.bind(this);
-    this.getEventChannels(channelTypes[0].value);
+    this.getEventChannels();
   }
 
   async retrievePlatformEvent(channelType){
     let channels = [];
     let query;
-    if (channelType == "StandardPlatformEvent"){
+    if (channelType == "standardPlatformEvent"){
       query = "SELECT Label, QualifiedApiName, DeveloperName FROM EntityDefinition"
                   + " WHERE IsCustomizable = FALSE AND IsEverCreatable = TRUE"
                   + " AND QualifiedApiName LIKE '%Event' AND (NOT QualifiedApiName LIKE '%ChangeEvent')"
                   + " ORDER BY Label ASC LIMIT 200";
-    } else if (channelType == "PlatformEvent") {
+    } else if (channelType == "platformEvent") {
       query = "SELECT QualifiedApiName, Label FROM EntityDefinition"
                   + " WHERE isCustomizable = TRUE"
                   + " AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
@@ -141,18 +155,18 @@ class App extends React.Component {
     return channels;
   }
 
-  async getEventChannels(channelType){
+  async getEventChannels(){
     let {model} = this.props;
-    switch (channelType){
-      case "StandardPlatformEvent":
+    switch (model.selectedChannelType){
+      case "standardPlatformEvent":
         if (!model.stdPlatformEvent.length){
-          model.stdPlatformEvent = await this.retrievePlatformEvent(channelType);
+          model.stdPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType);
         }
         model.channels = model.stdPlatformEvent;
         break;
-      case "PlatformEvent":
+      case "platformEvent":
         if (!model.customPlatformEvent.length){
-          model.customPlatformEvent = await this.retrievePlatformEvent(channelType);
+          model.customPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType);
           if (!model.customPlatformEvent.length){
             model.customPlatformEvent.push({
               name: null,
@@ -162,19 +176,25 @@ class App extends React.Component {
         }
         model.channels = model.customPlatformEvent;
     }
-    model.selectedChannel =  channelSuffix + model.channels[0].name;
+    if (model.args.has("channel")) {
+      model.selectedChannel = model.args.get("channel");
+    } else {
+      model.selectedChannel = model.channels[0].name;
+    }
     model.didUpdate();
   }
 
   onChannelTypeChange(e) {
     let {model} = this.props;
     model.selectedChannelType = e.target.value;
-    this.getEventChannels(model.selectedChannelType);
+    this.getEventChannels();
+    model.didUpdate();
   }
 
   onChannelSelection(e){
     let {model} = this.props;
-    model.selectedChannel = channelSuffix + e.target.value;
+    model.selectedChannel = e.target.value;
+    model.didUpdate();
   }
 
   onReplayIdChange(e) {
@@ -192,6 +212,8 @@ class App extends React.Component {
       model.didUpdate();
       return;
     }
+    model.channelError = "";
+    model.isListenning = true;
 
     // Create the CometD object.
     const cometd = new CometD();
@@ -207,7 +229,7 @@ class App extends React.Component {
 
     //Load Salesforce Replay Extension
     let replayExtension = new cometdReplayExtension();
-    replayExtension.setChannel(model.selectedChannel);
+    replayExtension.setChannel(channelSuffix +model.selectedChannel);
     replayExtension.setReplay(model.replayId);
     replayExtension.setExtensionEnabled = true;
     cometd.registerExtension("SalesforceReplayExtension", replayExtension);
@@ -216,17 +238,18 @@ class App extends React.Component {
       if (h.successful) {
         model.cometd = cometd;
         // Subscribe to receive messages from the server.
-        model.subscription = cometd.subscribe(model.selectedChannel,
+        model.subscription = cometd.subscribe(channelSuffix + model.selectedChannel,
           (message) => {
             model.events.unshift(JSON.parse(JSON.stringify(message.data)));
             model.didUpdate();
           }, (subscribeReply) => {
             if (subscribeReply.successful) {
-              console.log("subscribe sucesfully");
-              model.channelListening = "Listening on " + model.selectedChannel + " ...";
-              model.isListenning = true;
-              model.didUpdate();
+              model.channelListening = "Listening on " + channelSuffix + model.selectedChannel + " ...";
+            } else {
+              model.channelError = "Error : " + subscribeReply.error;
+              model.isListenning = false;
             }
+            model.didUpdate();
           }
         );
       }
@@ -235,8 +258,6 @@ class App extends React.Component {
 
   async onUnsuscribeToChannel() {
     let {model} = this.props;
-    console.log("model.subscription");
-    console.log(model.subscription);
     model.cometd.unsubscribe(model.subscription, (unsubscribeReply) => {
       console.log("unsubscribeReply");
       console.log(unsubscribeReply);
@@ -333,7 +354,7 @@ class App extends React.Component {
             ),
             h("span", {className: "conf-label"}, "Channel :"),
             h("span", {className: "conf-value"},
-              h("select", {value: model.eventEntity, onChange: this.onChannelSelection, disabled: model.isListenning},
+              h("select", {value: model.selectedChannel, onChange: this.onChannelSelection, disabled: model.isListenning},
                 ...model.channels.map((entity, index) => h("option", {key: index, value: entity.name}, entity.label))
               )
             ),
@@ -358,7 +379,8 @@ class App extends React.Component {
           h("div", {className: "button-group"},
             h("button", {disabled: model.events.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
           ),
-          h("span", {className: "channel-listening"}, model.channelListening)
+          h("span", {className: "channel-listening"}, model.channelListening),
+          h("span", {className: "channel-error"}, model.channelError)
         ),
         h("div", {id: "result-table"},
           h("div", {},

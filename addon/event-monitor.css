@@ -467,3 +467,8 @@ button.contract .button-toggle-icon {
   margin-left: 2%;
   color: green
 }
+
+.channel-error {
+  margin-left: 2%;
+  color: red;
+}

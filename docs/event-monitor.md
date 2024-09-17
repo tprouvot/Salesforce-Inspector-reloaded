@@ -3,7 +3,7 @@
 ## Overview
 The Event Monitor page allows users to subscribe to and display Salesforce Platform Events in real-time. It supports both Standard and Custom Platform Events. The page uses the CometD library to connect to Salesforce and stream events directly to the user's browser.
 
-![image](https://github.com/user-attachments/assets/3194c752-01ef-4ecf-9ce3-d4d06c3eeb1c)
+![image](https://github.com/user-attachments/assets/e24e10cf-2b6c-4d04-ad6e-3377c833ef1d)
 
 
 ## Key Features
@@ -11,6 +11,11 @@ The Event Monitor page allows users to subscribe to and display Salesforce Platf
 - **View Events:** Events are displayed in a structured format, allowing users to monitor event data as it arrives.
 - **Replay Events:** Users can specify a `Replay From` value to replay past events from a specific point in time.
 - **Copy Event Data:** Users can copy the event data in JSON format for further analysis or troubleshooting.
+
+## Subscribe to an Event from the Popup
+You can also directly access to the Event Monitor page and pre-select the Event from the popup by click the `Subscribe to Event` button.
+
+<img width="278" alt="Subscribe from popup" src="https://github.com/user-attachments/assets/a087944d-df38-4e38-a05f-dcdd3bf57b28">
 
 ## Replay From Parameter Warning
 The `Replay From` parameter is a powerful feature that allows users to replay past events by specifying an event replay ID. However, it must be used with **great caution** in production environments.

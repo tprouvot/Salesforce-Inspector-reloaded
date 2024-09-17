@@ -217,7 +217,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, fieldCreatorHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -300,7 +300,7 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
             ),
-            h("div", {},
+            h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ),
             h("div", {},

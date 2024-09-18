@@ -230,8 +230,7 @@ class App extends React.Component {
       requestHeaders: {
         Authorization: "Bearer" + model.sessionId
       },
-      appendMessageTypeToURL: false,
-      //logLevel: "debug"
+      appendMessageTypeToURL: false
     });
     cometd.websocketEnabled = false;
 

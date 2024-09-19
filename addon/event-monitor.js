@@ -76,6 +76,9 @@ class Model {
     if (this.testCallback) {
       this.testCallback();
     }
+    if (window.Prism) {
+      window.Prism.highlightAll();
+    }
   }
 
   copyAsJson() {
@@ -392,8 +395,10 @@ class App extends React.Component {
         ),
         h("div", {id: "result-table"},
           h("div", {},
-            model.events.map((event, index) => h("div", {onClick: this.onSelectEvent, id: index, key: index, value: event, className: `event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
-              JSON.stringify(event, null, 4))
+            h("pre", {className: "language-json reset-margin"}, // Set the language class to JSON for Prism to highlight
+              model.events.map((event, index) => h("code", {onClick: this.onSelectEvent, id: index, key: index, value: event, className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
+                JSON.stringify(event, null, 4))
+              )
             )
           )
         ),

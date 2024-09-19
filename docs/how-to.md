@@ -122,6 +122,8 @@ Example:
 - Org <ins>L</ins>imits : l
 - <ins>D</ins>ownload Metadata : d
 - E<ins>x</ins>plore API : x
+- Event <ins>M</ins>onitor : m
+- <ins>F</ins>ield Creator : f
 
 ## Disable metadata search from Shortcut tab
 
@@ -308,3 +310,11 @@ ie for KeepAccountTeam:
 ```
 
 <img width="503" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/e2d21970-ddc5-4c42-a54e-ffb7ffdcb278">
+
+## Highlight PROD with a top border
+
+Production environment are critical, to avoid confusion with other orgs, you can enable an option which will add a 2px border on the top of the Salesforce UI and also in the extension's pages.
+
+Under `User Experience` tab, enable the option `Highlight PROD with a top border (color from favicon)`.
+
+<img width="955" alt="highlight prod with a top border" src="https://github.com/user-attachments/assets/4ff26e23-08b2-447a-be8d-004488f2a3a1">

@@ -69,7 +69,9 @@
         "explore-api.html",
         "rest-explore.html",
         "limits.html",
-        "options.html"
+        "field-creator.html",
+        "options.html",
+        "streaming.html"
       ],
       "matches": ["https://*/*"],
       "extension_ids": []
@@ -96,11 +98,17 @@
     "limits": {
       "description": "Org Limits"
     },
+    "field-creator": {
+      "description": "Field Creator"
+    },
     "explore-api": {
       "description": "Explore API"
     },
     "rest-explore": {
       "description": "REST Explore"
+    },
+    "event-monitor": {
+      "description": "Event Monitor"
     }
   }
 }

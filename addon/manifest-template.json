@@ -69,6 +69,7 @@
         "explore-api.html",
         "rest-explore.html",
         "limits.html",
+        "field-creator.html",
         "options.html"
       ],
       "matches": ["https://*/*"],
@@ -96,11 +97,17 @@
     "limits": {
       "description": "Org Limits"
     },
+    "field-creator": {
+      "description": "Field Creator"
+    },
     "explore-api": {
       "description": "Explore API"
     },
     "rest-explore": {
       "description": "REST Explore"
+    },
+    "event-monitor": {
+      "description": "Event Monitor"
     }
   }
 }

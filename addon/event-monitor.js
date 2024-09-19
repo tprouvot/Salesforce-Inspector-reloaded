@@ -212,6 +212,8 @@ class App extends React.Component {
 
   async onSuscribeToChannel() {
     let {model} = this.props;
+    model.spinnerCount++;
+    model.didUpdate();
     //PopUp Confirmation in case of replay Id = -2
     if (model.replayId == -2 && model.popConfirmed == false){
       model.confirmPopup = true;
@@ -228,8 +230,7 @@ class App extends React.Component {
       requestHeaders: {
         Authorization: "Bearer" + model.sessionId
       },
-      appendMessageTypeToURL: false,
-      logLevel: "debug"
+      appendMessageTypeToURL: false
     });
     cometd.websocketEnabled = false;
 
@@ -255,6 +256,7 @@ class App extends React.Component {
               model.channelError = "Error : " + subscribeReply.error;
               model.isListenning = false;
             }
+            model.spinnerCount--;
             model.didUpdate();
           }
         );

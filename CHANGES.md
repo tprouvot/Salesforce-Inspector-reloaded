@@ -12,7 +12,7 @@
 - Add response time in REST Explore [issue 539](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/539)
 - Add autocomplete feature for REST Explore page
 - Add option to increase the number of saved & history query in data export
-- Enable Salesforce Inspector Reloaded on Experience Builder
+- Enable Salesforce Inspector Reloaded on Experience Builder and add compatibility for custom favicon
 - Add option to colorize sandbox banner in the same color as the favicon [doc](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=favico#customize-sandbox-banner-color)
 - Add "Object Access" link in Object popup tab to display Object permission details (Winter 25 feature)
 - Fix Platform Event links on popup [issue 500](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/500)

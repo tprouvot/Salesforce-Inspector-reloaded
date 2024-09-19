@@ -131,7 +131,8 @@ function initButton(sfHost, inInspector) {
     // Only update favicon if enabled, otherwise keep default
     let {[sfHost + "_customFavicon"]: fav, "colorizeProdBanner": colorizeProd, [sfHost + "_isSandbox"]: isSandbox, [sfHost + "_trialExpirationDate"]: trialExpDate} = iFrameLocalStorage;
     if (fav) {
-      let link = document.createElement("link");
+      let current = document.querySelector('link[rel="shortcut icon"]');
+      let link = current ? current : document.createElement("link");
       link.setAttribute("rel", "icon");
       link.orgType = "image/x-icon";
       if (iFrameLocalStorage.colorizeSandboxBanner && fav.indexOf("http") == -1){

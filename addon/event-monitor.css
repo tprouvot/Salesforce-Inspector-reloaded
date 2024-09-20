@@ -458,7 +458,8 @@ button.contract .button-toggle-icon {
   white-space: pre-wrap;
 }
 .event-not-selected {
-  border-bottom: 0.5px solid rgb(196, 193, 193);
+  /*border-bottom: 0.5px solid rgb(196, 193, 193);*/
+  border-bottom: 1px solid #DDDBDA;
 }
 .event-selected {
   border: 2px solid rgb(3, 153, 63);
@@ -471,4 +472,7 @@ button.contract .button-toggle-icon {
 .channel-error {
   margin-left: 2%;
   color: red;
+}
+.reset-margin{
+  margin: 0;;
 }

@@ -725,3 +725,6 @@ button.toggle .button-icon {
 .blue{
   color:#0070d2;
 }
+.reset-margin{
+  margin: 0;;
+}

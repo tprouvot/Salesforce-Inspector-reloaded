@@ -8,13 +8,13 @@
     "chrome-release-build": "node scripts/release-build.js chrome"
   },
   "devDependencies": {
-    "@eslint/compat": "^1.0.3",
-    "@eslint/js": "^9.4.0",
-    "eslint": "^9.9.0",
-    "eslint-plugin-react": "^7.34.2",
+    "@eslint/compat": "^1.1.1",
+    "@eslint/js": "^9.9.1",
+    "eslint": "^9.9.1",
+    "eslint-plugin-react": "^7.35.0",
     "fs-extra": "11.2.0",
-    "globals": "^15.3.0",
-    "replace-in-file": "7.1.0",
+    "globals": "^15.9.0",
+    "replace-in-file": "8.1.0",
     "zip-dir": "2.0.0"
   }
 }

@@ -458,7 +458,6 @@ button.contract .button-toggle-icon {
   white-space: pre-wrap;
 }
 .event-not-selected {
-  /*border-bottom: 0.5px solid rgb(196, 193, 193);*/
   border-bottom: 1px solid #DDDBDA;
 }
 .event-selected {

@@ -19,6 +19,14 @@ a:active {
     background-color: var(--inspector-background);
     border-color: var(--inspector-button-border);
     color: var(--inspector-button-text);
+
+    &:hover {
+        color: var(--inspector-link);
+    }
+}
+
+.slds-button_neutral:hover {
+    background-color: var(--inspector-shade);
 }
 
 .slds-card {

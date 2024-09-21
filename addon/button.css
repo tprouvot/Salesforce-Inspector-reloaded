@@ -10,10 +10,11 @@
     width: 280px;
     height: 450px;
     position:absolute;
-    background-color: var(--inspector-background);
+    background-color: var(--inspector-background, #FFFFFF);
     border-radius: 4px;
     z-index: 1;
-    border: 1px solid var(--inspector-neutral);
+    /*border: 1px solid #d8dde6;*/
+    border: none;
     display: none;
 }
 
@@ -49,10 +50,10 @@
 }
 #insext .insext-btn {
     box-sizing: border-box;
-    background-color: var(--inspector-button);
+    background-color: var(--inspector-primary, #226B86);
     border-width: 4px;
     border-style: solid;
-    border-color: var(--inspector-shade);
+    border-color: var(--inspector-shade, #FFFFFF);
     opacity: .4;
 }
 #insext .insext-btn-vertical {
@@ -62,7 +63,7 @@
     border-right-style: none;
     border-top-left-radius: 5px;
     border-bottom-left-radius: 5px;
-    box-shadow: -2px 0 2px var(--inspector-neutral);
+    box-shadow: -2px 0 2px var(--inspector-neutral, #A0A6AB);
 }
 #insext .insext-btn-horizontal {
     height: 15px;
@@ -71,7 +72,7 @@
     border-bottom-style: none;
     border-top-left-radius: 5px;
     border-top-right-radius: 5px;
-    box-shadow: 0 -2px 2px var(--inspector-neutral);
+    box-shadow: 0 -2px 2px var(--inspector-neutral, #A0A6AB);
 }
 
 #insext .insext-btn-vertical:hover,

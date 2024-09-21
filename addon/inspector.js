@@ -344,6 +344,7 @@ function setFavicon(sfHost){
 
 export function setupColorListeners(sendMessage = false){
   const html = document.documentElement;
+  console.log("setupColorListeners");
 
   // listen to changes from the options page
   window.addEventListener("storage", e => {
@@ -353,6 +354,7 @@ export function setupColorListeners(sendMessage = false){
 
     const isThemeKey = e.key === "enableDarkMode";
     const newValueBool = e.newValue === "true";
+    console.log({isThemeKey, newValueBool});
 
     const category = isThemeKey ? "theme" : "accent";
     const value = isThemeKey ? (newValueBool ? "dark" : "light") : (newValueBool ? "accent" : "default");
@@ -370,11 +372,21 @@ export function setupColorListeners(sendMessage = false){
 function handleSystemColorSchemeChange(e){
   // check if theme has to be changed
   const systemThemeValue = e.matches ? "dark" : "light";
-  const htmlThemeValue = document.documentElement.dataset["theme"];
-  if (htmlThemeValue != systemThemeValue){
-    // find the theme button and click it (to trigger theme change
-    document.querySelector("#enableDarkMode > span.slds-checkbox_faux").click();
+  const htmlThemeValue = document.documentElement.dataset.theme;
+  if (htmlThemeValue === systemThemeValue){
+    return;
   }
+  // find the theme button and click it (to trigger theme change
+  const optionsThemeBtn = document.querySelector("#enableDarkMode > span.slds-checkbox_faux");
+  if (optionsThemeBtn != null){
+    optionsThemeBtn.click();
+    return;
+  }
+
+  // not in options page, fake the behaviour
+  localStorage.setItem("enableDarkMode", JSON.stringify(e.matches));
+  document.documentElement.dataset.theme = systemThemeValue;
+  document.getElementById("insext").dataset.theme = systemThemeValue;
 }
 let systemColorListener = null;
 

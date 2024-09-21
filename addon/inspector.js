@@ -347,14 +347,15 @@ export function setupColorListeners(sendMessage = false){
 
   // listen to changes from the options page
   window.addEventListener("storage", e => {
-    if (!e.isTrusted || (e.key !== "enableDarkMode" && e.key !== "enableAccentColors"))
+    if (!e.isTrusted || (e.key !== "enableDarkMode" && e.key !== "enableAccentColors")){
       return;
+    }
 
     const isThemeKey = e.key === "enableDarkMode";
     const newValueBool = e.newValue === "true";
 
     const category = isThemeKey ? "theme" : "accent";
-    const value = isThemeKey ? (newValueBool ?  "dark" : "light") : (newValueBool ? "accent" : "default");
+    const value = isThemeKey ? (newValueBool ? "dark" : "light") : (newValueBool ? "accent" : "default");
     const htmlValue = html.dataset[category];
 
     if (value != htmlValue) { // avoid recursion
@@ -364,4 +365,34 @@ export function setupColorListeners(sendMessage = false){
       }
     }
   });
+}
+
+function handleSystemColorSchemeChange(e){
+  // check if theme has to be changed
+  const systemThemeValue = e.matches ? "dark" : "light";
+  const htmlThemeValue = document.documentElement.dataset["theme"];
+  if (htmlThemeValue != systemThemeValue){
+    // find the theme button and click it (to trigger theme change
+    document.querySelector("#enableDarkMode > span.slds-checkbox_faux").click();
+  }
+}
+let systemColorListener = null;
+
+export function systemColorSchemeListener(enable = true){
+  if (enable == null || (enable && systemColorListener != null) || (!enable && systemColorListener == null)){
+    console.warn({enable, systemColorListener});
+    return;
+  }
+
+  if (enable) {
+    // If enabling, add the systemColorListener
+    systemColorListener = window.matchMedia("(prefers-color-scheme: dark)");
+    systemColorListener.addEventListener("change", handleSystemColorSchemeChange);
+    // Initial check for the current color scheme
+    handleSystemColorSchemeChange(systemColorListener);
+  } else {
+    // If disabling, remove the systemColorListener if it exists
+    systemColorListener.removeEventListener("change", handleSystemColorSchemeChange);
+    systemColorListener = null;
+  }
 }

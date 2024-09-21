@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, sessionError, setupColorListeners} from "./inspector.js";
+import {sfConn, apiVersion, sessionError, setupColorListeners, systemColorSchemeListener} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.mjs";
 
@@ -83,6 +83,9 @@ class App extends React.PureComponent {
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion
     };
     setupColorListeners(true);
+    const isSystemThemeEnabled = window.localStorage.getItem("enableDynamicAppearance") === "true";
+    systemColorSchemeListener(isSystemThemeEnabled);
+
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);

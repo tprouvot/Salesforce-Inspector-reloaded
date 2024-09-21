@@ -1,5 +1,6 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, systemColorSchemeListener} from "./inspector.js";
+systemColorSchemeListener(window.localStorage.getItem("enableDynamicAppearance") === "true");
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 
@@ -67,6 +68,7 @@ class OptionsTabSelector extends React.Component {
     this.state = {
       selectedTabId: 1
     };
+    const navigatorData = (navigator.userAgentData?.platform || navigator.userAgent).toLowerCase();
     this.tabs = [
       {
         id: 1,
@@ -128,6 +130,7 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Tab6",
         title: "User Interface",
         content: [
+          window.matchMedia != null ? {option: Option, props: {type: "toggle", title: `Match Theme to ${navigatorData.indexOf("mac") > -1 ? "MacOS" : (navigatorData.indexOf("windows") > -1 ? "Windows" : (navigatorData.indexOf("linux") > -1 ? "Linux" : "System"))} Appearance`, storageKey: "enableDynamicAppearance", default: false}} : {option: "span"},
           {option: Option, props: {type: "toggle", title: "Enable Dark Mode", storageKey: "enableDarkMode", default: false}},
           {option: Option, props: {type: "toggle", title: "Enable Accent colors", storageKey: "enableAccentColors", default: false}},
         ]
@@ -311,11 +314,20 @@ class Option extends React.Component {
     }
     this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value) : value};
     this.title = props.title;
+    this.systemThemeListener = null;
   }
 
   // change Theme or Accent
   updateUI(key, enabled){
-    if (key !== "enableDarkMode" && key !== "enableAccentColors") {
+    const updateUIkeys = ["enableDarkMode", "enableAccentColors", "enableDynamicAppearance"];
+    if (!updateUIkeys.includes(key)) {
+      return;
+    }
+    const html = document.documentElement;
+
+    if (key === "enableDynamicAppearance"){
+      // add or remove listener to the system's color-scheme
+      systemColorSchemeListener(enabled);
       return;
     }
 
@@ -323,7 +335,6 @@ class Option extends React.Component {
 
     const category = isThemeKey ? "theme" : "accent";
     const value = isThemeKey ? (enabled ? "dark" : "light") : (enabled ? "accent" : "default");
-    const html = document.documentElement;
     html.dataset[category] = value;
   }
 

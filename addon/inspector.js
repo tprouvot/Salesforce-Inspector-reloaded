@@ -342,9 +342,36 @@ function setFavicon(sfHost){
 
 }
 
+function setSessionStorageForUpdatingButtonsAndClickThem(btn){
+  sessionStorage.setItem("updatingFromOtherBtn", true);
+  btn.click();
+  setTimeout(() => {
+    sessionStorage.setItem("updatingFromOtherBtn", false);
+  }, 100);
+}
+
+export function alignDynamicAppearanceButton(isThemeKey){
+  if (isThemeKey && window.matchMedia != null && sessionStorage.getItem("updatingFromOtherBtn") === "false"){
+    // change toggle for enableDynamicAppearance if needed
+    const systemThemeValue = localStorage.getItem("enableDynamicAppearance");
+    if (systemThemeValue === "false"){
+      return; // already updated
+    }
+
+    const dynamicThemeBtn = document.querySelector("#enableDynamicAppearance > span.slds-checkbox_faux") || parent.document.querySelector("#enableDynamicAppearance > span.slds-checkbox_faux");
+    if (dynamicThemeBtn != null){
+      setSessionStorageForUpdatingButtonsAndClickThem(dynamicThemeBtn);
+      return;
+    }
+
+    // not in options page, fake the behaviour
+    localStorage.setItem("enableDynamicAppearance", JSON.stringify(false)); // always false because the user is overriding with the theme toggle
+    systemColorSchemeListener(false); // remove the listener
+  }
+}
+
 export function setupColorListeners(sendMessage = false){
   const html = document.documentElement;
-  console.log("setupColorListeners");
 
   // listen to changes from the options page
   window.addEventListener("storage", e => {
@@ -354,44 +381,51 @@ export function setupColorListeners(sendMessage = false){
 
     const isThemeKey = e.key === "enableDarkMode";
     const newValueBool = e.newValue === "true";
-    console.log({isThemeKey, newValueBool});
 
-    const category = isThemeKey ? "theme" : "accent";
     const value = isThemeKey ? (newValueBool ? "dark" : "light") : (newValueBool ? "accent" : "default");
+    const category = isThemeKey ? "theme" : "accent";
     const htmlValue = html.dataset[category];
-
-    if (value != htmlValue) { // avoid recursion
-      html.dataset[category] = value;
-      if (sendMessage) {
-        parent.postMessage({category, value}, "*"); //update #insext (button.js)
-      }
+    if (value == htmlValue) {
+      return; // avoid recursion
     }
+
+    html.dataset[category] = value;
+    if (sendMessage) {
+      parent.postMessage({category, value}, "*"); //update #insext (button.js)
+    }
+
+    alignDynamicAppearanceButton(isThemeKey);
   });
 }
+
+let systemColorListener = null;
 
 function handleSystemColorSchemeChange(e){
   // check if theme has to be changed
   const systemThemeValue = e.matches ? "dark" : "light";
   const htmlThemeValue = document.documentElement.dataset.theme;
-  if (htmlThemeValue === systemThemeValue){
+  if (htmlThemeValue === systemThemeValue || sessionStorage.getItem("updatingFromOtherBtn") == true){
     return;
   }
-  // find the theme button and click it (to trigger theme change
-  const optionsThemeBtn = document.querySelector("#enableDarkMode > span.slds-checkbox_faux");
+
+  // find the theme button and click it (to trigger theme change)
+  const optionsThemeBtn = document.querySelector("#enableDarkMode > span.slds-checkbox_faux") || parent.document.querySelector("#enableDarkMode > span.slds-checkbox_faux");
   if (optionsThemeBtn != null){
-    optionsThemeBtn.click();
+    setSessionStorageForUpdatingButtonsAndClickThem(optionsThemeBtn);
     return;
   }
 
   // not in options page, fake the behaviour
   localStorage.setItem("enableDarkMode", JSON.stringify(e.matches));
   document.documentElement.dataset.theme = systemThemeValue;
-  document.getElementById("insext").dataset.theme = systemThemeValue;
+  const insext = document.getElementById("insext");
+  if (insext != null){
+    insext.dataset.theme = systemThemeValue;
+  }
 }
-let systemColorListener = null;
 
 export function systemColorSchemeListener(enable = true){
-  if (enable == null || (enable && systemColorListener != null) || (!enable && systemColorListener == null)){
+  if (window.matchMedia == null || enable == null || (enable && systemColorListener != null) || (!enable && systemColorListener == null)){
     console.warn({enable, systemColorListener});
     return;
   }
@@ -407,4 +441,7 @@ export function systemColorSchemeListener(enable = true){
     systemColorListener.removeEventListener("change", handleSystemColorSchemeChange);
     systemColorListener = null;
   }
+  localStorage.setItem("enableDynamicAppearance", JSON.stringify(enable));
 }
+
+sessionStorage.setItem("updatingFromOtherBtn", false);

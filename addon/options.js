@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, systemColorSchemeListener} from "./inspector.js";
+import {sfConn, apiVersion, alignDynamicAppearanceButton, systemColorSchemeListener} from "./inspector.js";
 systemColorSchemeListener(window.localStorage.getItem("enableDynamicAppearance") === "true");
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
@@ -323,7 +323,6 @@ class Option extends React.Component {
     if (!updateUIkeys.includes(key)) {
       return;
     }
-    const html = document.documentElement;
 
     if (key === "enableDynamicAppearance"){
       // add or remove listener to the system's color-scheme
@@ -335,7 +334,10 @@ class Option extends React.Component {
 
     const category = isThemeKey ? "theme" : "accent";
     const value = isThemeKey ? (enabled ? "dark" : "light") : (enabled ? "accent" : "default");
+    const html = document.documentElement;
     html.dataset[category] = value;
+
+    alignDynamicAppearanceButton(isThemeKey);
   }
 
   onChangeToggle(e) {

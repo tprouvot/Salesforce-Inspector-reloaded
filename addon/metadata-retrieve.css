@@ -91,7 +91,6 @@ body {
 }
 .body {
   padding: 4.3em 8px 8px;
-  background-color: var(--inspector-background);
 }
 .flex {
   flex: 1;
@@ -110,6 +109,7 @@ html {
   transition-duration: 500ms;
   transition-timing-function: ease-in-out;
   scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
+  background-color: var(--inspector-background);
 }
 
 

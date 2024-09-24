@@ -1533,7 +1533,9 @@ class App extends React.Component {
     const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject} = this.state;
 
     return (
-      h("div", null,
+      h("div", {onClick: (e) =>this.setState({
+        filteredObjects: []
+      })},
         h("div", {id: "user-info"},
           h("a", {href: `https://${sfConn.instanceHostname}`, className: "sf-link"},
             h("svg", {viewBox: "0 0 24 24"},
@@ -1574,6 +1576,7 @@ class App extends React.Component {
                   onChange: this.handleObjectSearch
                 }),
                 this.state.filteredObjects.length > 0 && h("ul", {
+                  onClick: (e) => e.stopPropagation(),
                   className: "ulItem"
                 },
                 this.state.filteredObjects.map(obj =>

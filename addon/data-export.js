@@ -1775,6 +1775,9 @@ function RecordTable(vm) {
     }
   }
   function convertDate(field, format) {
+    if (!field) {
+      return "";
+    }
     let dt = new Date(field);
     let formatedDate = "";
     let remaining = format;

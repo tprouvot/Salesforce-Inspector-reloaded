@@ -51,13 +51,11 @@ class Model {
 
     if (args.has("channel")) {
       let channel = args.get("channel");
-      if (channel.endsWith("__e")){
-        this.selectedChannelType = "platformEvent";
-      } else {
-        this.selectedChannelType = "standardPlatformEvent";
-      }
       this.selectedChannel = channel;
-    } else {
+      this.selectedChannelType = channel.endsWith("__e") ? "platformEvent" : "standardPlatformEvent";
+    } else if(args.get("channelType")){
+      this.selectedChannelType = args.get("channelType")
+    } else{
       this.selectedChannelType = channelTypes[0].value;
     }
   }
@@ -130,20 +128,23 @@ class App extends React.Component {
     this.getEventChannels();
   }
 
-  async retrievePlatformEvent(channelType){
-    let channels = [];
+  async retrievePlatformEvent(channelType, sfHost){
+    let sessionChannel = JSON.parse(sessionStorage.getItem(sfHost + "_" + channelType));
+    let channels = sessionChannel ? sessionChannel : [];
     let query;
-    if (channelType == "standardPlatformEvent"){
-      query = "SELECT Label, QualifiedApiName, DeveloperName FROM EntityDefinition"
-                  + " WHERE IsCustomizable = FALSE AND IsEverCreatable = TRUE"
-                  + " AND QualifiedApiName LIKE '%Event' AND (NOT QualifiedApiName LIKE '%ChangeEvent')"
-                  + " ORDER BY Label ASC LIMIT 200";
-    } else if (channelType == "platformEvent") {
-      query = "SELECT QualifiedApiName, Label FROM EntityDefinition"
-                  + " WHERE isCustomizable = TRUE"
-                  + " AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
-    }
-    await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
+
+    if(channels.length == 0){
+      if (channelType == "standardPlatformEvent"){
+        query = "SELECT Label, QualifiedApiName, DeveloperName FROM EntityDefinition"
+                    + " WHERE IsCustomizable = FALSE AND IsEverCreatable = TRUE"
+                    + " AND QualifiedApiName LIKE '%Event' AND (NOT QualifiedApiName LIKE '%ChangeEvent')"
+                    + " ORDER BY Label ASC LIMIT 200";
+      } else if (channelType == "platformEvent") {
+        query = "SELECT QualifiedApiName, Label FROM EntityDefinition"
+                    + " WHERE isCustomizable = TRUE"
+                    + " AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
+      }
+      await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
       .then(result => {
         result.records.forEach((channel) => {
           channels.push({
@@ -155,6 +156,8 @@ class App extends React.Component {
       .catch(err => {
         console.error("An error occured fetching Event Channels of type " + channelType + ": ", err.message);
       });
+      sessionStorage.setItem(sfHost + "_" + channelType,  JSON.stringify(channels));
+    }
     return channels;
   }
 
@@ -163,13 +166,13 @@ class App extends React.Component {
     switch (model.selectedChannelType){
       case "standardPlatformEvent":
         if (!model.stdPlatformEvent.length){
-          model.stdPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType);
+          model.stdPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
         }
         model.channels = model.stdPlatformEvent;
         break;
       case "platformEvent":
         if (!model.customPlatformEvent.length){
-          model.customPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType);
+          model.customPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
           if (!model.customPlatformEvent.length){
             model.customPlatformEvent.push({
               name: null,
@@ -190,6 +193,11 @@ class App extends React.Component {
   onChannelTypeChange(e) {
     let {model} = this.props;
     model.selectedChannelType = e.target.value;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('channelType', model.selectedChannelType);
+    window.history.replaceState(null, '', '?' + urlParams.toString());
+
     this.getEventChannels();
     model.didUpdate();
   }

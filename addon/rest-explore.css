@@ -264,6 +264,7 @@ input[type="checkbox"] {
 }
 
 input.query-control{
+  width: -moz-available;
   width: -webkit-fill-available;
 }
 textarea:not([readonly]):focus,

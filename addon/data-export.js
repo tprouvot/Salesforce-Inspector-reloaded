@@ -1472,7 +1472,7 @@ class App extends React.Component {
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
-          h("label", {title: "With this option, additionnal columns corresponding to Object names are removed from the query results and the exported data. These columns are useful during data import to automatically map objects."},
+          h("label", {title: "With this option, additional columns corresponding to Object names are removed from the query results and the exported data. These columns are useful during data import to automatically map objects."},
             h("input", {type: "checkbox", checked: model.prefHideRelations, onChange: this.onPrefHideRelationsChange}),
             " ",
             h("span", {}, "Hide Object Columns")

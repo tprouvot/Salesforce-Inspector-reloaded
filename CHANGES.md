@@ -12,14 +12,15 @@
 
 ## Version 1.28
 
-- #130 Fields() do not handle metadata and address field  by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/133
-- #84 Explore api: new ux by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/142
-- #139 Flamgraph on other mesures (SOQL, Heap,...) by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/145
-- #126 : suggestion on data export edit by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/146
-- #138 Favicon by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/147
-- #125 add roll up summary info by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/148
-- #141 #140 shortcut and default action by @dufoli in https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/149
-- #135 import guess sobject based on id prefix if no type column
+- Fields() do not handle metadata and address field [issue 130](https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/130)
+- Explore api: new ux  [issue 84](https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/84)
+- Flamgraph on other mesures (SOQL, Heap,...) [issue 139](https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/139)
+- Suggestion on data export edit [issue 126](https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/126)
+- Custom Favicon for Salesforce environment and extension [issue 138](https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/138)
+- Add roll up summary info [issue 125](https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/125)
+- Shortcut insid screen instead of popup [issue 141](https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/141)
+- Default action [issue 140](https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/140)
+- Import guess sobject based on id prefix if no type column [issue 135](https://github.com/dufoli/Salesforce-Inspector-Advanced/pull/135)
 - Data export: select child object field remove parent (exemple: RecordType.Dev => DeveloperName = remove recordType)
 - Data export : Fix __r must display all custom relationship
 - Data export : field in subquery failed to suggest

@@ -34,6 +34,21 @@ In data Export, you run an SOSL query in order to retreive some data across mult
 
 In data import, you can choose to use assigment rules or not for lead, case and even Account (territory management).
 
+## SOQL editor and data export
+
+The SOQL editor support color, suggestion over text, and we have fixed a lot of issue in suggestion of original Salesforce inspector (subquery object name, subquery field suggestion, in list suggestion, __r suggest all custom relation, ...)
+
+Technical column (done, count, object type) can be skipped with an option.
+
+Date format and date time format is now customizable in option. So data can fit directly to your need.
+By the way, Data import date format can be customized too.
+
+## Data export inline edit and picklist
+
+On Data export, you can dit directly a field by double clicking on cell. Id must be present on SOQL and only field of main object is editable.
+For picklist, a list of picklist value is displayed with auto suggestion.
+
+
 ## Use Sf Inspector with a connected app
 
 ---
@@ -250,5 +265,7 @@ From the option page, you can customize the default favicon by:
 - a custom favicon url (ie "https://stackoverflow.com/favicon.ico")
 
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
+
+You can choose to autogenerate color by environment. The same color will be used for Salesforce extension and Salesforce environment but salesforce inspector extension have a different icon. So you can find quickly the right envionment from tab.
 
 ![Option User experince tab](screenshots/options_ux_tab.png)

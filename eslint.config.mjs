@@ -30,7 +30,6 @@ export default [
       "target/"
     ],
     rules: {
-      "react/prop-types": 0,
       "indent": ["error", 2, {"SwitchCase": 1, "flatTernaryExpressions": true}],
       "quotes": ["error", "double", {"avoidEscape": true}],
       "semi": ["error", "always"],

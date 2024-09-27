@@ -6,24 +6,28 @@ import {copyToClipboard} from "./data-load.js";
 
 const channelSuffix = "/event/";
 const channelTypes = [
-  {value: "StandardPlatformEvent", label: "Standard Platform Event"},
-  {value: "PlatformEvent", label: "Custom Platform Event"}
+  {value: "standardPlatformEvent", label: "Standard Platform Event"},
+  {value: "platformEvent", label: "Custom Platform Event"}
 ];
 
 class Model {
 
-  constructor(sfHost, sessionId) {
+  constructor(sfHost, sessionId, args) {
     this.sfHost = sfHost;
     this.sessionId = sessionId;
+    this.args = args;
     this.sfLink = "https://" + this.sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
     this.userInfo = "...";
     this.events = [];
-    this.selectedChannelType = channelTypes[0].value;
+    this.selectedChannelType = "";
     this.channels = [];
-    this.selectedChannel = "";
+    this.stdPlatformEvent = [];
+    this.customPlatformEvent = [];
+    this.selectedChannel = null;
     this.channelListening = "";
+    this.channelError = "";
     this.isListenning = false;
     this.selectedEvent;
     this.selectedEventIndex = undefined;
@@ -44,6 +48,16 @@ class Model {
       document.body.classList.add("prod");
       this.isProd = true;
     }
+
+    if (args.has("channel")) {
+      let channel = args.get("channel");
+      this.selectedChannel = channel;
+      this.selectedChannelType = channel.endsWith("__e") ? "platformEvent" : "standardPlatformEvent";
+    } else if(args.get("channelType")){
+      this.selectedChannelType = args.get("channelType")
+    } else{
+      this.selectedChannelType = channelTypes[0].value;
+    }
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -59,6 +73,9 @@ class Model {
     }
     if (this.testCallback) {
       this.testCallback();
+    }
+    if (window.Prism) {
+      window.Prism.highlightAll();
     }
   }
 
@@ -106,72 +123,96 @@ class App extends React.Component {
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.confirmPopupYes = this.confirmPopupYes.bind(this);
     this.confirmPopupNo = this.confirmPopupNo.bind(this);
-    this.getEventChannels(channelTypes[0].value);
+    this.retrievePlatformEvent = this.retrievePlatformEvent.bind(this);
+    this.disableSubscribe = this.disableSubscribe.bind(this);
+    this.getEventChannels();
   }
 
-  getEventChannels(channelType){
-    let {model} = this.props;
+  async retrievePlatformEvent(channelType, sfHost){
+    let sessionChannel = JSON.parse(sessionStorage.getItem(sfHost + "_" + channelType));
+    let channels = sessionChannel ? sessionChannel : [];
     let query;
-    let type = "PE";
-    switch (channelType){
-      case "StandardPlatformEvent":
+
+    if(channels.length == 0){
+      if (channelType == "standardPlatformEvent"){
         query = "SELECT Label, QualifiedApiName, DeveloperName FROM EntityDefinition"
-                  + " WHERE IsCustomizable = FALSE AND IsEverCreatable = TRUE"
-                  + " AND QualifiedApiName LIKE '%Event' AND (NOT QualifiedApiName LIKE '%ChangeEvent')"
-                  + " ORDER BY Label ASC LIMIT 200";
-        break;
-      case "PlatformEvent":
+                    + " WHERE IsCustomizable = FALSE AND IsEverCreatable = TRUE"
+                    + " AND QualifiedApiName LIKE '%Event' AND (NOT QualifiedApiName LIKE '%ChangeEvent')"
+                    + " ORDER BY Label ASC LIMIT 200";
+      } else if (channelType == "platformEvent") {
         query = "SELECT QualifiedApiName, Label FROM EntityDefinition"
-                  + " WHERE isCustomizable = TRUE"
-                  + " AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
-        break;
-      case "ChangeDataCaptureEvent":
-        console.log("ChangeDataCaptureEvent");
-        query = "SELECT Id, MasterLabel, DeveloperName FROM PlatformEventChannelMember";
-        type = "CDC";
-
-    }
-    return sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
+                    + " WHERE isCustomizable = TRUE"
+                    + " AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
+      }
+      await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
       .then(result => {
-        console.log(result);
-        model.channels = [];
-
-        result.records.forEach((channel, index) => {
-          if (type == "CDC"){
-            if (index == 0){
-              model.selectedChannel = channelSuffix + channel.DeveloperName;
-            }
-            model.channels.push({
-              name: channel.DeveloperName,
-              label: channel.MasterLabel
-            });
-          } else {
-            if (index == 0){
-              model.selectedChannel = channelSuffix + channel.QualifiedApiName;
-            }
-            model.channels.push({
-              name: channel.QualifiedApiName,
-              label: channel.Label + " (" + channel.QualifiedApiName + ")"
-            });
-          }
+        result.records.forEach((channel) => {
+          channels.push({
+            name: channel.QualifiedApiName,
+            label: channel.Label + " (" + channel.QualifiedApiName + ")"
+          });
         });
-        model.didUpdate();
-
-      }).catch(err => {
+      })
+      .catch(err => {
         console.error("An error occured fetching Event Channels of type " + channelType + ": ", err.message);
       });
+      sessionStorage.setItem(sfHost + "_" + channelType,  JSON.stringify(channels));
+    }
+    return channels;
+  }
+
+  async getEventChannels(){
+    let {model} = this.props;
+    switch (model.selectedChannelType){
+      case "standardPlatformEvent":
+        if (!model.stdPlatformEvent.length){
+          model.stdPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
+        }
+        model.channels = model.stdPlatformEvent;
+        break;
+      case "platformEvent":
+        if (!model.customPlatformEvent.length){
+          model.customPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
+          if (!model.customPlatformEvent.length){
+            model.customPlatformEvent.push({
+              name: null,
+              label: "! No custom platform event found !"
+            });
+          }
+        }
+        model.channels = model.customPlatformEvent;
+    }
+    if (model.args.has("channel")) {
+      model.selectedChannel = model.args.get("channel");
+    } else {
+      model.selectedChannel = model.channels[0].name;
+    }
+    model.didUpdate();
   }
 
   onChannelTypeChange(e) {
     let {model} = this.props;
     model.selectedChannelType = e.target.value;
-    this.getEventChannels(model.selectedChannelType);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('channelType', model.selectedChannelType);
+    window.history.replaceState(null, '', '?' + urlParams.toString());
+
+    this.getEventChannels();
+    model.didUpdate();
   }
 
-  onChannelSelection(e){
-    let {model} = this.props;
-    model.selectedChannel = channelSuffix + e.target.value;
+  onChannelSelection(e) {
+    let { model } = this.props;
+    model.selectedChannel = e.target.value;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('channel', model.selectedChannel);
+    window.history.replaceState(null, '', '?' + urlParams.toString());
+
+    model.didUpdate();
   }
+
 
   onReplayIdChange(e) {
     let {model} = this.props;
@@ -182,12 +223,16 @@ class App extends React.Component {
 
   async onSuscribeToChannel() {
     let {model} = this.props;
+    model.spinnerCount++;
+    model.didUpdate();
     //PopUp Confirmation in case of replay Id = -2
     if (model.replayId == -2 && model.popConfirmed == false){
       model.confirmPopup = true;
       model.didUpdate();
       return;
     }
+    model.channelError = "";
+    model.isListenning = true;
 
     // Create the CometD object.
     const cometd = new CometD();
@@ -202,7 +247,7 @@ class App extends React.Component {
 
     //Load Salesforce Replay Extension
     let replayExtension = new cometdReplayExtension();
-    replayExtension.setChannel(model.selectedChannel);
+    replayExtension.setChannel(channelSuffix +model.selectedChannel);
     replayExtension.setReplay(model.replayId);
     replayExtension.setExtensionEnabled = true;
     cometd.registerExtension("SalesforceReplayExtension", replayExtension);
@@ -211,14 +256,21 @@ class App extends React.Component {
       if (h.successful) {
         model.cometd = cometd;
         // Subscribe to receive messages from the server.
-        model.channelListening = "Listening on " + model.selectedChannel + " ...";
-        model.isListenning = true;
-        model.didUpdate();
-
-        model.subscription = cometd.subscribe(model.selectedChannel, (m) => {
-          model.events.unshift(JSON.parse(JSON.stringify(m.data)));
-          model.didUpdate();
-        });
+        model.subscription = cometd.subscribe(channelSuffix + model.selectedChannel,
+          (message) => {
+            model.events.unshift(JSON.parse(JSON.stringify(message.data)));
+            model.didUpdate();
+          }, (subscribeReply) => {
+            if (subscribeReply.successful) {
+              model.channelListening = "Listening on " + channelSuffix + model.selectedChannel + " ...";
+            } else {
+              model.channelError = "Error : " + subscribeReply.error;
+              model.isListenning = false;
+            }
+            model.spinnerCount--;
+            model.didUpdate();
+          }
+        );
       }
     });
   }
@@ -226,15 +278,14 @@ class App extends React.Component {
   async onUnsuscribeToChannel() {
     let {model} = this.props;
     model.cometd.unsubscribe(model.subscription, (unsubscribeReply) => {
-      if (unsubscribeReply.successful) {
-        model.channelListening = "";
-        model.isListenning = false;
-        model.didUpdate();
-      }
+      console.log("unsubscribeReply");
+      console.log(unsubscribeReply);
     });
     model.cometd.disconnect((disconnectReply) => {
       if (disconnectReply.successful) {
-        console.log("cometD Disconnected");
+        model.channelListening = "";
+        model.isListenning = false;
+        model.didUpdate();
       }
     });
     model.didUpdate();
@@ -272,6 +323,11 @@ class App extends React.Component {
     model.confirmPopup = false;
     model.replayId = -1;
     model.didUpdate();
+  }
+
+  disableSubscribe(){
+    let {model} = this.props;
+    return model.isListenning || model.selectedChannel == null;
   }
 
   render() {
@@ -317,7 +373,7 @@ class App extends React.Component {
             ),
             h("span", {className: "conf-label"}, "Channel :"),
             h("span", {className: "conf-value"},
-              h("select", {value: model.eventEntity, onChange: this.onChannelSelection, disabled: model.isListenning},
+              h("select", {value: model.selectedChannel, onChange: this.onChannelSelection, disabled: model.isListenning},
                 ...model.channels.map((entity, index) => h("option", {key: index, value: entity.name}, entity.label))
               )
             ),
@@ -325,7 +381,7 @@ class App extends React.Component {
             h("span", {className: "conf-value"},
               h("input", {type: "number", className: "conf-replay-value", value: model.replayId, onChange: this.onReplayIdChange, disabled: model.isListenning})
             ),
-            h("button", {onClick: this.onSuscribeToChannel, title: "Suscribe to channel", disabled: model.isListenning}, "Subscribe"),
+            h("button", {onClick: this.onSuscribeToChannel, title: "Suscribe to channel", disabled: this.disableSubscribe()}, "Subscribe"),
             h("button", {onClick: this.onUnsuscribeToChannel, title: "Unsuscribe to channel", disabled: !model.isListenning}, "Unsubscribe")
           )
         ),
@@ -342,12 +398,15 @@ class App extends React.Component {
           h("div", {className: "button-group"},
             h("button", {disabled: model.events.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
           ),
-          h("span", {className: "channel-listening"}, model.channelListening)
+          h("span", {className: "channel-listening"}, model.channelListening),
+          h("span", {className: "channel-error"}, model.channelError)
         ),
         h("div", {id: "result-table"},
           h("div", {},
-            model.events.map((event, index) => h("div", {onClick: this.onSelectEvent, id: index, key: index, value: event, className: `event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
-              JSON.stringify(event, null, 4))
+            h("pre", {className: "language-json reset-margin"}, // Set the language class to JSON for Prism to highlight
+              model.events.map((event, index) => h("code", {onClick: this.onSelectEvent, id: index, key: index, value: event, className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
+                JSON.stringify(event, null, 4))
+              )
             )
           )
         ),

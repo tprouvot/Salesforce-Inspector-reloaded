@@ -944,7 +944,7 @@ class App extends React.Component {
     model.apiType = e.target.value;
     model.updateAvailableActions();
     model.importAction = model.availableActions[0].value;
-    model.importActionName = model.allActions.find(action => action.value == model.importAction).label;
+    model.importActionName = allActions.find(action => action.value == model.importAction).label;
     model.updateImportTableResult();
     model.didUpdate();
   }

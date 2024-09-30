@@ -286,9 +286,6 @@ label.statusGroupEmpty {
   color: var(--inspector-neutral);
   font-weight: normal;
 }
-.batch-size {
-  width: 3.4em;
-}
 .char-btn {
   color: var(--inspector-text);
   text-decoration: none;
@@ -326,14 +323,15 @@ label.statusGroupEmpty {
 select,
 input[type=search],
 input[type=number],
-input[type=text] {
+input[type=text],
+div.batch-size {
   width: 335px;
   font-family: inherit;
   padding: 5px 13px;
   border: 1px solid var(--inspector-neutral);
   border-radius: 0.25rem;
   height: 32px;
-  position: relative;
+  /*position: relative;*/
   color: var(--inspector-text);
   background-color: var(--inspector-background);
 }
@@ -371,7 +369,7 @@ select:focus {
 button:active,
 button:focus {
   background-color: var(--inspector-background);
-  color: var(--inspector-primary);
+  color: var(--inspector-middle);
 }
 button:disabled,
 input:disabled {
@@ -477,10 +475,14 @@ button.toggle {
 }
 button.toggle:hover .button-icon,
 button.toggle:hover .button-toggle-icon  {
-  background-color: var(--inspector-accent);
+  background-color: var(--inspector-hover);
 }
 svg.slds-icon {
     fill: var(--inspector-text);
+}
+button:not(:disabled, .highlighted):hover {
+  background-color: var(--inspector-hover);
+  color: var(--inspector-middle);
 }
 .flex-right button:last-child {
   margin-right: 0;
@@ -499,7 +501,7 @@ button.contract .button-toggle-icon {
 .cancel-btn:not(:disabled):hover,
 .cancel-btn:not(:disabled):active,
 .cancel-btn:not(:disabled):focus {
-  color: var(--inspector-text-neutral);
+  color: var(--inspector-middle);
 }
 .area.result-area {
   padding: 0;
@@ -510,6 +512,43 @@ button.contract .button-toggle-icon {
   background-color: var(--inspector-background);
   margin: 0;
   height: 100%;
+}
+
+.conf-value:has(.change-value-holder, .change-value) {
+  display: flex;
+  flex-direction: row;
+  width: 335px;
+  align-items: center;
+
+  & > .batch-size {
+    /*width: calc(225px - calc(2*2.5rem));*/
+  }
+
+  & > .change-value-holder {
+    width: 2.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background-color: var(--inspector-neutral);
+
+  }
+
+  & > .increaser {
+    margin-right: 0;
+    margin-left: 10px;
+  }
+}
+
+.change-value {
+  width: 3rem;
+  height: 90%;
+  padding: 0;
+  border-width: 1px;
+  border-color: var(--inspector-neutral);
+
+  background-color: var(--inspector-background);
+  color: var(--inspector-text);
 }
 
 /* transitions */

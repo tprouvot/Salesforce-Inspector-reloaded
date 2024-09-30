@@ -921,6 +921,8 @@ class App extends React.Component {
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
+    this.clickDecrease = this.clickDecrease.bind(this);
+    this.clickIncrease = this.clickIncrease.bind(this);
     this.unloadListener = null;
   }
   onApiTypeChange(e) {
@@ -1082,6 +1084,22 @@ class App extends React.Component {
     }
   }
 
+  changeValue(e, shouldIncrease = false) {
+    const inputTarget = document.getElementById(e.target.dataset.targetid);
+    const oldValue = +inputTarget.value;
+    inputTarget.value = shouldIncrease ? oldValue + 1 : oldValue - 1;
+    // trigger the onChange listener
+    const event = new Event('input', { bubbles: true });
+    inputTarget.dispatchEvent(event);
+  }
+
+  clickDecrease(e) {
+    this.changeValue(e, false);
+  }
+  clickIncrease(e) {
+    this.changeValue(e, true);
+  }
+
   render() {
     let {model} = this.props;
     //console.log(model);
@@ -1184,8 +1202,10 @@ class App extends React.Component {
             h("div", {className: "conf-line"},
               h("label", {className: "conf-input", title: "The number of records per batch. A higher value is faster but increases the risk of errors due to governor limits."},
                 h("span", {className: "conf-label"}, "Batch size"),
-                h("span", {className: "conf-value"},
-                  h("input", {type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, className: (model.batchSizeError() ? "confError" : "") + " batch-size"}),
+                h("div", {className: "conf-value"},
+                  h("button", {className: "change-value decreaser", title: "Decrease the value by 1", onClick: this.clickDecrease, "data-targetid": "batchSize"}, "-"),
+                  h("input", {id: "batchSize", type: "text", value: model.batchSize, onChange: this.onBatchSizeChange, className: (model.batchSizeError() ? "confError " : "") + "batch-size", "data-input-type": "value"}),
+                  h("button", {className: "change-value increaser", title: "Increase the value by 1", onClick: this.clickIncrease, "data-targetid": "batchSize"}, "+"),
                   h("div", {className: "conf-error", hidden: !model.batchSizeError()}, model.batchSizeError())
                 )
               )

@@ -29,7 +29,7 @@ html {
     --inspector-prod-background: #E0A4B5;
 
     /* accent */ 
-    --inspector-accent-black: #2B2A33;
+    --inspector-accent-black: #201C24;
     --inspector-accent-white: #E8E9EB;
 
     --inspector-accent-dark-white: #DCDCDC;
@@ -44,7 +44,7 @@ html {
     --inspector-accent-light-yellow: #E7EC41;
 
     --inspector-accent-dark-blue: #163460;
-    --inspector-accent-dark-gray: #404E4D;
+    --inspector-accent-dark-gray: #1C1C24;
     --inspector-accent-dark-green: #17894D;
     --inspector-accent-dark-pink: #D34A77;
     --inspector-accent-dark-purple: #5F3C78;
@@ -61,8 +61,10 @@ html {
     --inspector-text: var(--inspector-black);
     --inspector-inverted-text: var(--inspector-background);
     --inspector-text-neutral: var(--inspector-neutral);
+    --inspector-hover: var(--inspector-accent-white);
 
     --inspector-primary: var(--inspector-light-blue);
+    --inspector-middle: var(--inspector-accent-dark-blue);
     --inspector-accent: var(--inspector-dark-blue);
     --inspector-neutral: var(--inspector-light-gray);
     --inspector-shade: var(--inspector-dark-white);
@@ -92,11 +94,6 @@ html {
     --inspector-svg-background: var(--inspector-accent);
 
     --inspector-working: var(--inspector-number);
-
-    --inspector-default-background-preview: var(--inspector-background);
-    --inspector-default-text-preview: var(--inspector-text);
-    --inspector-accent-background-preview: var(--inspector-accent-white);
-    --inspector-accent-text-preview: var(--inspector-accent-black);
 }
 
 :is(html, #insext)[data-theme="dark"] {
@@ -104,8 +101,10 @@ html {
     --inspector-text: var(--inspector-white);
     --inspector-inverted-text: var(--inspector-background);
     --inspector-text-neutral: var(--inspector-very-light-gray);
+    --inspector-hover: var(--inspector-accent-black);
     
     --inspector-primary: var(--inspector-dark-blue);
+    --inspector-middle: var(--inspector-accent-light-blue);
     --inspector-accent: var(--inspector-light-blue);
     --inspector-neutral: var(--inspector-light-gray);
     --inspector-shade: var(--inspector-dark-gray);
@@ -135,11 +134,6 @@ html {
     --inspector-svg-background: var(--inspector-primary);
 
     --inspector-working: var(--inspector-light-purple);
-
-    --inspector-default-background-preview: var(--inspector-background);
-    --inspector-default-text-preview: var(--inspector-text);
-    --inspector-accent-background-preview: var(--inspector-accent-black);
-    --inspector-accent-text-preview: var(--inspector-accent-white);
 }
 
 :is(html, #insext)[data-theme="light"][data-accent="accent"] {
@@ -147,8 +141,10 @@ html {
     --inspector-text: var(--inspector-accent-black);
     --inspector-inverted-text: var(--inspector-background);
     --inspector-text-neutral: var(--inspector-neutral);
+    --inspector-hover: var(--inspector-white);
 
     --inspector-primary: var(--inspector-accent-light-blue);
+    --inspector-middle: var(--inspector-dark-blue);
     --inspector-accent: var(--inspector-accent-dark-blue);
     --inspector-neutral: var(--inspector-accent-light-gray);
     --inspector-shade: var(--inspector-accent-dark-white);
@@ -178,11 +174,6 @@ html {
     --inspector-svg-background: var(--inspector-accent);
 
     --inspector-working: var(--inspector-number);
-
-    --inspector-default-background-preview: var(--inspector-white);
-    --inspector-default-text-preview: var(--inspector-black);
-    --inspector-accent-background-preview: var(--inspector-background);
-    --inspector-accent-text-preview: var(--inspector-text);
 }
 
 :is(html, #insext)[data-theme="dark"][data-accent="accent"] {
@@ -190,15 +181,17 @@ html {
     --inspector-text: var(--inspector-accent-white);
     --inspector-inverted-text: var(--inspector-background);
     --inspector-text-neutral: var(--inspector-accent-very-light-gray);
+    --inspector-hover: var(--inspector-black);
     
     --inspector-primary: var(--inspector-accent-dark-blue);
+    --inspector-middle: var(--inspector-light-blue);
     --inspector-accent: var(--inspector-accent-light-blue);
     --inspector-neutral: var(--inspector-accent-light-gray);
     --inspector-shade: var(--inspector-accent-dark-gray);
     --inspector-dark-neutral: var(--inspector-other-half-gray);
     --inspector-subtle-neutral: var(--inspector-subtle-gray);
 
-    --inspector-link: var(--inspector-light-blue);
+    --inspector-link: var(--inspector-accent);
     --inspector-visited-link: var(--inspector-link);
 
     --inspector-button: var(--inspector-primary);
@@ -221,11 +214,6 @@ html {
     --inspector-svg-background: var(--inspector-primary);
 
     --inspector-working: var(--inspector-accent-light-purple);
-
-    --inspector-default-background-preview: var(--inspector-black);
-    --inspector-default-text-preview: var(--inspector-white);
-    --inspector-accent-background-preview: var(--inspector-background);
-    --inspector-accent-text-preview: var(--inspector-text);
 }
 
 :is(div, input, ul, a):not(:has([style*=transparent])) /* all */ {

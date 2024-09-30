@@ -281,7 +281,7 @@ select:focus {
 
 button:active,
 button:focus {
-  background-color: var(--inspector-background);
+  background-color: var(--inspector-hover);
   color: var(--inspector-primary);
 }
 
@@ -293,8 +293,8 @@ input:disabled {
 
 button:disabled:hover,
 input:disabled:hover {
-  background-color: var(--inspector-background);
-  color: var(--inspector-neutral);
+  background-color: var(--inspector-neutral);
+  color: var(--inspector-inverted-text);
 }
 
 .highlighted {
@@ -305,7 +305,7 @@ input:disabled:hover {
 
 .highlighted:hover,
 .highlighted:active {
-  background-color: var(--inspector-primary);
+  background-color: var(--inspector-middle);
   color: var(--inspector-text);
 }
 
@@ -481,8 +481,8 @@ button,
 
 button:hover,
 .button:hover {
-  background-color: var(--inspector-background);
- color: var(--inspector-primary);
+  background-color: var(--inspector-hover);
+  color: var(--inspector-middle);
 }
 
 button.toggle {
@@ -504,6 +504,7 @@ button.toggle .button-icon {
 button.toggle:hover .button-icon,
 button.toggle:hover .button-toggle-icon {
   background-color: var(--inspector-primary);
+  color: var(--inspector-middle);
 }
 
 .flex-right button:last-child {
@@ -556,8 +557,8 @@ button.toggle .button-icon {
 
 .autocomplete-results a:hover,
 .autocomplete-results a:active {
-  background-color: var(--inspector-background);
-  color: var(--inspector-primary);
+  background-color: var(--inspector-hover);
+  color: var(--inspector-middle);
 }
 
 .autocomplete-result,
@@ -788,6 +789,7 @@ button.toggle .button-icon {
 div#result-area > div.result-bar input,
 button.cancel-btn,
 div.autocomplete-header > div.flex-right > button,
+div.autocomplete-results > div.autocomplete-result > a,
 div.button-group > :is(button, input),
 select.query-history {
     transition-property: color, background-color;

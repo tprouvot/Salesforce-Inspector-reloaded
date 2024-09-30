@@ -85,6 +85,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
   margin: 0;
+  background-color: var(--inspector-background);
 }
 .sf-link {
   margin-right: 1em;

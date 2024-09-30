@@ -525,6 +525,7 @@ button.contract .button-toggle-icon {
       height: 90%;
       padding: 0;
       border-width: 1px;
+      border-radius: 3px;
 
       color: var(--inspector-text);
       background-color: var(--inspector-background);

@@ -247,6 +247,8 @@ class APIVersionOption extends React.Component {
   constructor(props) {
     super(props);
     this.onChangeApiVersion = this.onChangeApiVersion.bind(this);
+    this.clickDecrease = this.clickDecrease.bind(this);
+    this.clickIncrease = this.clickIncrease.bind(this);
     this.state = {apiVersion: localStorage.getItem("apiVersion") ? localStorage.getItem("apiVersion") : apiVersion};
   }
 
@@ -256,15 +258,35 @@ class APIVersionOption extends React.Component {
     localStorage.setItem("apiVersion", apiVersion + ".0");
   }
 
+  changeValue(e, shouldIncrease = false) {
+    const inputTarget = document.getElementById(e.target.dataset.targetid);
+    const oldValue = +inputTarget.value;
+    if((""+oldValue) == "NaN")
+      return;
+    inputTarget.value = shouldIncrease ? oldValue + 1 : oldValue - 1;
+    // trigger the onChange listener
+    const event = new Event('input', { bubbles: true });
+    inputTarget.dispatchEvent(event);
+  }
+
+  clickDecrease(e) {
+    this.changeValue(e, false);
+  }
+  clickIncrease(e) {
+    this.changeValue(e, true);
+  }
+
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "API Version")
       ),
-      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          h("input", {type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: this.state.apiVersion.split(".0")[0], onChange: this.onChangeApiVersion}),
+          h("button", {className: "change-value decreaser", title: "Decrease the value by 1", onClick: this.clickDecrease, "data-targetid": "apiVersionInput"}, "-"),
+          h("input", {type: "text", required: true, id: "apiVersionInput", className: "slds-input", value: this.state.apiVersion.split(".0")[0], onChange: this.onChangeApiVersion}),
+          h("button", {className: "change-value increaser", title: "Increase the value by 1", onClick: this.clickIncrease, "data-targetid": "apiVersionInput"}, "+"),
         )
       )
     );

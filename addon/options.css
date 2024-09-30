@@ -156,6 +156,24 @@ body {
     text-align: center;
 }
 
+.slds-col.slds-size_2-of-12.slds-form-element.slds-grid.slds-grid_align-end.slds-grid_vertical-align-center.slds-gutters_small > .slds-form-element__control.slds-col.slds-size_2-of-12:has(button.change-value) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  & > button.change-value {
+      width: 3rem;
+      height: 2rem;
+      padding: 0;
+      border-width: 1px;
+      border-radius: 3px;
+
+      color: var(--inspector-text);
+      background-color: var(--inspector-background);
+      border-color: var(--inspector-subtle-neutral);
+  }
+}
+
 /* transitions */
 a.slds-tabs_default__link {
     transition-property: color, background-color;

@@ -514,42 +514,29 @@ button.contract .button-toggle-icon {
   height: 100%;
 }
 
-.conf-value:has(.change-value-holder, .change-value) {
+.conf-value:has(button.change-value) {
   display: flex;
   flex-direction: row;
   width: 335px;
   align-items: center;
 
-  & > .batch-size {
-    /*width: calc(225px - calc(2*2.5rem));*/
+  & > button.change-value {
+      width: 3rem;
+      height: 90%;
+      padding: 0;
+      border-width: 1px;
+      border-color: var(--inspector-neutral);
+
+      background-color: var(--inspector-background);
+      color: var(--inspector-text);
   }
 
-  & > .change-value-holder {
-    width: 2.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    background-color: var(--inspector-neutral);
-
-  }
-
-  & > .increaser {
+  & > button.increaser {
     margin-right: 0;
     margin-left: 10px;
   }
 }
 
-.change-value {
-  width: 3rem;
-  height: 90%;
-  padding: 0;
-  border-width: 1px;
-  border-color: var(--inspector-neutral);
-
-  background-color: var(--inspector-background);
-  color: var(--inspector-text);
-}
 
 /* transitions */
 div.area > div.conf-value {

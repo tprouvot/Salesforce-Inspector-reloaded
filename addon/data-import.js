@@ -1087,6 +1087,8 @@ class App extends React.Component {
   changeValue(e, shouldIncrease = false) {
     const inputTarget = document.getElementById(e.target.dataset.targetid);
     const oldValue = +inputTarget.value;
+    if((""+oldValue) == "NaN")
+      return;
     inputTarget.value = shouldIncrease ? oldValue + 1 : oldValue - 1;
     // trigger the onChange listener
     const event = new Event('input', { bubbles: true });
@@ -1204,7 +1206,7 @@ class App extends React.Component {
                 h("span", {className: "conf-label"}, "Batch size"),
                 h("div", {className: "conf-value"},
                   h("button", {className: "change-value decreaser", title: "Decrease the value by 1", onClick: this.clickDecrease, "data-targetid": "batchSize"}, "-"),
-                  h("input", {id: "batchSize", type: "text", value: model.batchSize, onChange: this.onBatchSizeChange, className: (model.batchSizeError() ? "confError " : "") + "batch-size", "data-input-type": "value"}),
+                  h("input", {id: "batchSize", type: "text", value: model.batchSize, onChange: this.onBatchSizeChange, className: (model.batchSizeError() ? "confError " : "") + "batch-size"}),
                   h("button", {className: "change-value increaser", title: "Increase the value by 1", onClick: this.clickIncrease, "data-targetid": "batchSize"}, "+"),
                   h("div", {className: "conf-error", hidden: !model.batchSizeError()}, model.batchSizeError())
                 )
@@ -1214,7 +1216,9 @@ class App extends React.Component {
               h("label", {className: "conf-input", title: "The number of batches to execute concurrently. A higher number is faster but increases the risk of errors due to lock congestion."},
                 h("span", {className: "conf-label"}, "Threads"),
                 h("span", {className: "conf-value"},
-                  h("input", {type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, className: (model.batchConcurrencyError() ? "confError" : "") + " batch-size"}),
+                  h("button", {className: "change-value decreaser", title: "Decrease the value by 1", onClick: this.clickDecrease, "data-targetid": "batchConcurrency"}, "-"),
+                  h("input", {id: "batchConcurrency", type: "text", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, className: (model.batchConcurrencyError() ? "confError" : "") + " batch-size"}),
+                  h("button", {className: "change-value increaser", title: "Increase the value by 1", onClick: this.clickIncrease, "data-targetid": "batchConcurrency"}, "+"),
                   h("span", {hidden: !model.isWorking()}, model.activeBatches),
                   h("div", {className: "conf-error", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
                 )

@@ -91,6 +91,8 @@ class App extends React.PureComponent {
     this.onChangeApi = this.onChangeApi.bind(this);
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
     this.updateReleaseNotesViewed = this.updateReleaseNotesViewed.bind(this);
+    this.clickDecrease = this.clickDecrease.bind(this);
+    this.clickIncrease = this.clickIncrease.bind(this);
   }
   onContextRecordChange(e) {
     let {sfHost} = this.props;
@@ -200,6 +202,24 @@ class App extends React.PureComponent {
     }
     url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     return {title, url, text};
+  }
+
+  changeValue(e, shouldIncrease = false) {
+    const inputTarget = document.getElementById(e.target.dataset.targetid);
+    const oldValue = +inputTarget.value;
+    if((""+oldValue) == "NaN")
+      return;
+    inputTarget.value = shouldIncrease ? oldValue + 1 : oldValue - 1;
+    // trigger the onChange listener
+    const event = new Event('input', { bubbles: true });
+    inputTarget.dispatchEvent(event);
+  }
+
+  clickDecrease(e) {
+    this.changeValue(e, false);
+  }
+  clickIncrease(e) {
+    this.changeValue(e, true);
   }
 
   render() {
@@ -349,13 +369,16 @@ class App extends React.PureComponent {
           h("div", {className: "slds-col slds-size_5-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
+            h("button", {className: "change-value decreaser", title: "Decrease the value by 1", onClick: this.clickDecrease, "data-targetid": "apiVersion"}, "-"),
             h("input", {
+              id: "apiVersion",
               className: "api-input",
-              type: "number",
+              type: "text",
               title: "Update api version",
               onChange: this.onChangeApi,
               value: apiVersionInput.split(".0")[0]
-            })
+            }),
+            h("button", {className: "change-value increaser", title: "Increase the value by 1", onClick: this.clickIncrease, "data-targetid": "apiVersion"}, "+"),
           ),
           h("div", {className: "slds-col slds-size_3-of-12 slds-text-align_left slds-grid slds-grid_vertical slds-grid_vertical-align-center"},
             h("span", {className: "footer-small-text"}, (navigator.userAgentData?.platform.indexOf("mac") > -1 || navigator.userAgent.indexOf("mac") > -1) ? "[ctrl+option+i]" : "[ctrl+alt+i]" + " to open")

@@ -401,6 +401,24 @@ a.icon {
   }
 }
 
+.slds-col.slds-size_5-of-12.footer-small-text.slds-m-top_xx-small:has(button.change-value) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  & > button.change-value {
+      width: 1rem;
+      height: 70%;
+      padding: 0;
+      border-width: 1px;
+
+      color: var(--inspector-text);
+      background-color: var(--inspector-background);
+      border-color: var(--inspector-neutral);
+  }
+}
+
+
 /* transitions */
 a.slds-button {
     &:has(> span) {

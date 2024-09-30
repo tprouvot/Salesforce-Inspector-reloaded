@@ -525,10 +525,10 @@ button.contract .button-toggle-icon {
       height: 90%;
       padding: 0;
       border-width: 1px;
-      border-color: var(--inspector-neutral);
 
-      background-color: var(--inspector-background);
       color: var(--inspector-text);
+      background-color: var(--inspector-background);
+      border-color: var(--inspector-neutral);
   }
 
   & > button.increaser {

@@ -31,7 +31,7 @@ a:active {
 
 .slds-card {
     background: var(--inspector-background);
-    border-color: var(--inspector-subtle-gray);
+    border-color: var(--inspector-silver-sand);
     color: var(--inspector-text);
 }
 
@@ -93,7 +93,7 @@ a:active {
 }
 
 .slds-input {
-    border-color: var(--inspector-subtle-gray);
+    border-color: var(--inspector-silver-sand);
     background-color: var(--inspector-background);
     color: var(--inspector-text);
 }

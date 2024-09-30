@@ -3,53 +3,53 @@ html {
     --inspector-black: #000000;
     --inspector-white: #FFFFFF;
 
-    --inspector-dark-white: #F3F3F3;
-    --inspector-very-light-gray: #AFAFAF;
-    --inspector-subtle-gray: #C9C9C9;
-    --inspector-half-gray: #444444;
-    --inspector-other-half-gray: #BBBBBB;
+    --inspector-concrete: #F3F3F3;
+    --inspector-silver-chalice: #AFAFAF;
+    --inspector-silver-sand: #C9C9C9;
+    --inspector-cape-cod: #444444;
+    --inspector-silver: #BBBBBB;
 
-    --inspector-light-blue: #1789EE;
-    --inspector-light-gray: #787878;
-    --inspector-light-green: #9BC53D;
-    --inspector-light-pink: #E0A4B5;
-    --inspector-light-purple: #990099;
-    --inspector-light-red: #C3423F;
-    --inspector-light-yellow: #FDE74C;
+    --inspector-dodger-blue: #1789EE;
+    --inspector-boulder: #787878;
+    --inspector-conifer: #9BC53D;
+    --inspector-careys-pink: #E0A4B5;
+    --inspector-violet-eggplant: #990099;
+    --inspector-well-read: #C3423F;
+    --inspector-gorse: #FDE74C;
 
-    --inspector-dark-blue: #00396B;
-    --inspector-dark-gray: #252525;
-    --inspector-dark-green: #018E42;
-    --inspector-dark-pink: #BD4F6C;
-    --inspector-dark-purple: #49416D;
-    --inspector-dark-red: #A31914;
-    --inspector-dark-yellow: #999900;
+    --inspector-midnight-blue: #00396B;
+    --inspector-shark-dark: #252525;
+    --inspector-chateau-green: #018E42;
+    --inspector-blush: #BD4F6C;
+    --inspector-east-bay: #49416D;
+    --inspector-tamarillo: #A31914;
+    --inspector-citron: #999900;
 
     --inspector-sand-background: #B0C4DF;
     --inspector-prod-background: #E0A4B5;
 
     /* accent */ 
-    --inspector-accent-black: #201C24;
-    --inspector-accent-white: #E8E9EB;
+    --inspector-baltic-sea: #201C24;
+    --inspector-mercury: #E8E9EB;
 
-    --inspector-accent-dark-white: #DCDCDC;
-    --inspector-accent-very-light-gray: #989898;
+    --inspector-alto: #DCDCDC;
+    --inspector-star-dust: #989898;
 
-    --inspector-accent-light-blue: #0176d3;
-    --inspector-accent-light-gray: #616161;
-    --inspector-accent-light-green: #85C852;
-    --inspector-accent-light-pink: #CAA9AA;
-    --inspector-accent-light-purple: #63058E;
-    --inspector-accent-light-red: #AD4734;
-    --inspector-accent-light-yellow: #E7EC41;
+    --inspector-mariner: #0176d3;
+    --inspector-storm-dust: #616161;
+    --inspector-mantis: #85C852;
+    --inspector-clam-shell: #CAA9AA;
+    --inspector-purple: #63058E;
+    --inspector-medium-carmine: #AD4734;
+    --inspector-starship: #E7EC41;
 
-    --inspector-accent-dark-blue: #163460;
-    --inspector-accent-dark-gray: #1C1C24;
-    --inspector-accent-dark-green: #17894D;
-    --inspector-accent-dark-pink: #D34A77;
-    --inspector-accent-dark-purple: #5F3C78;
-    --inspector-accent-dark-red: #B9141F;
-    --inspector-accent-dark-yellow: #AF940B;
+    --inspector-biscay: #163460;
+    --inspector-shark: #1C1C24;
+    --inspector-salem: #17894D;
+    --inspector-cranberry: #D34A77;
+    --inspector-bossanova: #5F3C78;
+    --inspector-monza: #B9141F;
+    --inspector-lucky: #AF940B;
 
     --inspector-transition-time-fast: 1ms;
     --inspector-transition-time-slow: 500ms;
@@ -61,36 +61,36 @@ html {
     --inspector-text: var(--inspector-black);
     --inspector-inverted-text: var(--inspector-background);
     --inspector-text-neutral: var(--inspector-neutral);
-    --inspector-hover: var(--inspector-accent-white);
+    --inspector-hover: var(--inspector-mercury);
 
-    --inspector-primary: var(--inspector-light-blue);
-    --inspector-middle: var(--inspector-accent-dark-blue);
-    --inspector-accent: var(--inspector-dark-blue);
-    --inspector-neutral: var(--inspector-light-gray);
-    --inspector-shade: var(--inspector-dark-white);
-    --inspector-dark-neutral: var(--inspector-half-gray);
-    --inspector-subtle-neutral: var(--inspector-subtle-gray);
+    --inspector-primary: var(--inspector-dodger-blue);
+    --inspector-middle: var(--inspector-biscay);
+    --inspector-accent: var(--inspector-midnight-blue);
+    --inspector-neutral: var(--inspector-boulder);
+    --inspector-shade: var(--inspector-concrete);
+    --inspector-dark-neutral: var(--inspector-cape-cod);
+    --inspector-subtle-neutral: var(--inspector-silver-sand);
 
     --inspector-link: var(--inspector-primary);
     --inspector-visited-link: var(--inspector-link);
 
     --inspector-button: var(--inspector-accent);
     --inspector-button-text: var(--inspector-link);
-    --inspector-button-border: var(--inspector-subtle-gray);
+    --inspector-button-border: var(--inspector-silver-sand);
     --inspector-button-active-border: var(--inspector-primary);
 
-    --inspector-success: var(--inspector-light-green);
-    --inspector-warning: var(--inspector-light-yellow);
-    --inspector-error: var(--inspector-light-red);
-    --inspector-strong-error: var(--inspector-dark-red);
+    --inspector-success: var(--inspector-conifer);
+    --inspector-warning: var(--inspector-gorse);
+    --inspector-error: var(--inspector-well-read);
+    --inspector-strong-error: var(--inspector-tamarillo);
 
-    --inspector-object: var(--inspector-dark-yellow);
-    --inspector-number: var(--inspector-dark-pink);
+    --inspector-object: var(--inspector-citron);
+    --inspector-number: var(--inspector-blush);
     --inspector-false-boolean: var(--inspector-error);
     --inspector-true-boolean: var(--inspector-accent);
 
     --inspector-svg-text: var(--inspector-shade);
-    --inspector-svg-picture: var(--inspector-light-pink);
+    --inspector-svg-picture: var(--inspector-careys-pink);
     --inspector-svg-background: var(--inspector-accent);
 
     --inspector-working: var(--inspector-number);
@@ -100,16 +100,16 @@ html {
     --inspector-background: var(--inspector-black);
     --inspector-text: var(--inspector-white);
     --inspector-inverted-text: var(--inspector-background);
-    --inspector-text-neutral: var(--inspector-very-light-gray);
-    --inspector-hover: var(--inspector-accent-black);
+    --inspector-text-neutral: var(--inspector-silver-chalice);
+    --inspector-hover: var(--inspector-baltic-sea);
     
-    --inspector-primary: var(--inspector-dark-blue);
-    --inspector-middle: var(--inspector-accent-light-blue);
-    --inspector-accent: var(--inspector-light-blue);
-    --inspector-neutral: var(--inspector-light-gray);
-    --inspector-shade: var(--inspector-dark-gray);
-    --inspector-dark-neutral: var(--inspector-other-half-gray);
-    --inspector-subtle-neutral: var(--inspector-subtle-gray);
+    --inspector-primary: var(--inspector-midnight-blue);
+    --inspector-middle: var(--inspector-mariner);
+    --inspector-accent: var(--inspector-dodger-blue);
+    --inspector-neutral: var(--inspector-boulder);
+    --inspector-shade: var(--inspector-shark-dark);
+    --inspector-dark-neutral: var(--inspector-silver);
+    --inspector-subtle-neutral: var(--inspector-silver-sand);
 
     --inspector-link: var(--inspector-accent);
     --inspector-visited-link: var(--inspector-link);
@@ -119,37 +119,37 @@ html {
     --inspector-button-border: var(--inspector-neutral);
     --inspector-button-active-border: var(--inspector-accent);
 
-    --inspector-success: var(--inspector-dark-green);
-    --inspector-warning: var(--inspector-dark-yellow);
-    --inspector-error: var(--inspector-light-red);
-    --inspector-strong-error: var(--inspector-dark-red);
+    --inspector-success: var(--inspector-chateau-green);
+    --inspector-warning: var(--inspector-citron);
+    --inspector-error: var(--inspector-well-read);
+    --inspector-strong-error: var(--inspector-tamarillo);
 
-    --inspector-object: var(--inspector-light-yellow);
+    --inspector-object: var(--inspector-gorse);
     --inspector-number: var(--inspector-visited-link);
     --inspector-false-boolean: var(--inspector-error);
     --inspector-true-boolean: var(--inspector-accent);
 
     --inspector-svg-text: var(--inspector-text);
-    --inspector-svg-picture: var(--inspector-dark-pink);
+    --inspector-svg-picture: var(--inspector-blush);
     --inspector-svg-background: var(--inspector-primary);
 
-    --inspector-working: var(--inspector-light-purple);
+    --inspector-working: var(--inspector-violet-eggplant);
 }
 
 :is(html, #insext)[data-theme="light"][data-accent="accent"] {
-    --inspector-background: var(--inspector-accent-white);
-    --inspector-text: var(--inspector-accent-black);
+    --inspector-background: var(--inspector-mercury);
+    --inspector-text: var(--inspector-baltic-sea);
     --inspector-inverted-text: var(--inspector-background);
     --inspector-text-neutral: var(--inspector-neutral);
     --inspector-hover: var(--inspector-white);
 
-    --inspector-primary: var(--inspector-accent-light-blue);
-    --inspector-middle: var(--inspector-dark-blue);
-    --inspector-accent: var(--inspector-accent-dark-blue);
-    --inspector-neutral: var(--inspector-accent-light-gray);
-    --inspector-shade: var(--inspector-accent-dark-white);
-    --inspector-dark-neutral: var(--inspector-half-gray);
-    --inspector-subtle-neutral: var(--inspector-subtle-gray);
+    --inspector-primary: var(--inspector-mariner);
+    --inspector-middle: var(--inspector-midnight-blue);
+    --inspector-accent: var(--inspector-biscay);
+    --inspector-neutral: var(--inspector-storm-dust);
+    --inspector-shade: var(--inspector-alto);
+    --inspector-dark-neutral: var(--inspector-cape-cod);
+    --inspector-subtle-neutral: var(--inspector-silver-sand);
 
     --inspector-link: var(--inspector-primary);
     --inspector-visited-link: var(--inspector-link);
@@ -159,37 +159,37 @@ html {
     --inspector-button-border: var(--inspector-neutral);
     --inspector-button-active-border: var(--inspector-primary);
 
-    --inspector-success: var(--inspector-accent-light-green);
-    --inspector-warning: var(--inspector-accent-light-yellow);
-    --inspector-error: var(--inspector-accent-light-red);
-    --inspector-strong-error: var(--inspector-accent-dark-red);
+    --inspector-success: var(--inspector-mantis);
+    --inspector-warning: var(--inspector-starship);
+    --inspector-error: var(--inspector-medium-carmine);
+    --inspector-strong-error: var(--inspector-monza);
 
-    --inspector-object: var(--inspector-accent-dark-yellow);
-    --inspector-number: var(--inspector-accent-dark-pink);
+    --inspector-object: var(--inspector-lucky);
+    --inspector-number: var(--inspector-cranberry);
     --inspector-false-boolean: var(--inspector-error);
-    --inspector-true-boolean: var(--inspector-accent-dark-blue);
+    --inspector-true-boolean: var(--inspector-biscay);
 
-    --inspector-svg-text: var(--inspector-dark-white);
-    --inspector-svg-picture: var(--inspector-accent-light-pink);
+    --inspector-svg-text: var(--inspector-concrete);
+    --inspector-svg-picture: var(--inspector-clam-shell);
     --inspector-svg-background: var(--inspector-accent);
 
     --inspector-working: var(--inspector-number);
 }
 
 :is(html, #insext)[data-theme="dark"][data-accent="accent"] {
-    --inspector-background: var(--inspector-accent-black);
-    --inspector-text: var(--inspector-accent-white);
+    --inspector-background: var(--inspector-baltic-sea);
+    --inspector-text: var(--inspector-mercury);
     --inspector-inverted-text: var(--inspector-background);
-    --inspector-text-neutral: var(--inspector-accent-very-light-gray);
+    --inspector-text-neutral: var(--inspector-star-dust);
     --inspector-hover: var(--inspector-black);
     
-    --inspector-primary: var(--inspector-accent-dark-blue);
-    --inspector-middle: var(--inspector-light-blue);
-    --inspector-accent: var(--inspector-accent-light-blue);
-    --inspector-neutral: var(--inspector-accent-light-gray);
-    --inspector-shade: var(--inspector-accent-dark-gray);
-    --inspector-dark-neutral: var(--inspector-other-half-gray);
-    --inspector-subtle-neutral: var(--inspector-subtle-gray);
+    --inspector-primary: var(--inspector-biscay);
+    --inspector-middle: var(--inspector-dodger-blue);
+    --inspector-accent: var(--inspector-mariner);
+    --inspector-neutral: var(--inspector-storm-dust);
+    --inspector-shade: var(--inspector-shark);
+    --inspector-dark-neutral: var(--inspector-silver);
+    --inspector-subtle-neutral: var(--inspector-silver-sand);
 
     --inspector-link: var(--inspector-accent);
     --inspector-visited-link: var(--inspector-link);
@@ -199,21 +199,21 @@ html {
     --inspector-button-border: var(--inspector-neutral);
     --inspector-button-active-border: var(--inspector-accent);
 
-    --inspector-success: var(--inspector-accent-dark-green);
-    --inspector-warning: var(--inspector-accent-dark-yellow);
-    --inspector-error: var(--inspector-accent-light-red);
-    --inspector-strong-error: var(--inspector-accent-dark-red);
+    --inspector-success: var(--inspector-salem);
+    --inspector-warning: var(--inspector-lucky);
+    --inspector-error: var(--inspector-medium-carmine);
+    --inspector-strong-error: var(--inspector-monza);
 
-    --inspector-object: var(--inspector-accent-light-yellow);
+    --inspector-object: var(--inspector-starship);
     --inspector-number: var(--inspector-visited-link);
     --inspector-false-boolean: var(--inspector-error);
     --inspector-true-boolean: var(--inspector-accent);
 
     --inspector-svg-text: var(--inspector-text);
-    --inspector-svg-picture: var(--inspector-accent-dark-pink);
+    --inspector-svg-picture: var(--inspector-cranberry);
     --inspector-svg-background: var(--inspector-primary);
 
-    --inspector-working: var(--inspector-accent-light-purple);
+    --inspector-working: var(--inspector-purple);
 }
 
 :is(div, input, ul, a):not(:has([style*=transparent])) /* all */ {

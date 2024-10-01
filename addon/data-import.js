@@ -658,26 +658,12 @@ class Model {
       columnIndex: index,
       columnValue: column.trim(),
       columnOriginalValue: column,
-      format: "",
-      isFormatDisplayed: false,
       columnIgnore() { return columnVm.columnValue.startsWith("_"); },
       columnSkip() {
         columnVm.columnValue = "_" + columnVm.columnValue;
-        columnVm.format = "";
-      },
-      toggleFormatDisplay() {
-        columnVm.isFormatDisplayed = !this.isFormatDisplayed;
       },
       setColumnValue(colval) {
         columnVm.columnValue = colval;
-        let fieldType = columnVm.getColumnType();
-        if (fieldType == "date") {
-          columnVm.format = "yyyy-MM-dd";
-        } else if (fieldType == "datetime") {
-          columnVm.format = "yyyy-MM-ddTHH:mm:ss.SSSZ";
-        } else {
-          columnVm.format = "";
-        }
       },
       getColumnType(){
         let sobjectName = self.importType;
@@ -844,16 +830,11 @@ class Model {
     let {statusColumnIndex, resultIdColumnIndex, actionColumnIndex, errorColumnIndex, importAction, sobjectType, idFieldName, inputIdColumnIndex} = this.importState;
     let data = this.importData.importTable.data;
     let header = this.importData.importTable.header.map(c => c.columnValue);
-    let self = this;
-    let format = this.importData.importTable.header.map(c => {
-      if (c.getColumnType() == "date") {
-        return self.calculateDateFormat(c.format);
-      } else if (c.getColumnType() == "datetime") {
-        return self.calculateDatetimeFormat(c.format);
-      } else {
-        return null;
-      }
-    });
+
+    let dateFormat = localStorage.getItem("dateFormat") || "yyyy-MM-dd";
+    let datetimeFormat = localStorage.getItem("datetimeFormat") || "yyyy-MM-ddTHH:mm:ss.SSSZ";
+    let dateFormatRegex = this.calculateDateFormat(dateFormat);
+    let datetimeFormatRegex = this.calculateDatetimeFormat(datetimeFormat);
     let batchRows = [];
     let importArgs = {};
     if (importAction == "upsert") {
@@ -899,12 +880,12 @@ class Model {
           let fieldName = header[c];
           let fieldValue = row[c];
           if ((fieldTypes[fieldName] == "Date")
-            && format[c] != "yyyy-MM-dd") {
-            fieldValue = this.convertDate(fieldValue, format[c]);
+            && dateFormatRegex.convertRegEx.source != "yyyy-MM-dd") {
+            fieldValue = this.convertDate(fieldValue, dateFormatRegex);
           } else if ((fieldTypes[fieldName] == "DateTime")
-            && format[c] != "yyyy-MM-ddTHH:mm:ss.SSS+/-HH:mm"
-            && format[c] != "yyyy-MM-ddTHH:mm:ss.SSSZ") {
-            fieldValue = this.convertDatetime(fieldValue, format[c]);
+            && datetimeFormatRegex.convertRegEx.source != "yyyy-MM-ddTHH:mm:ss.SSS+/-HH:mm"
+            && datetimeFormatRegex.convertRegEx.source != "yyyy-MM-ddTHH:mm:ss.SSSZ") {
+            fieldValue = this.convertDatetime(fieldValue, datetimeFormatRegex);
           }
           if (fieldName.startsWith("_")) {
             continue;
@@ -963,12 +944,12 @@ class Model {
             } else if (columnName.length == 1) { // Our validation ensures there are always one or three elements in the array
               let [fieldName] = columnName;
               if ((fieldTypes[fieldName] == "date")
-                  && format[c] != "yyyy-MM-dd") {
-                sobject[fieldName] = this.convertDate(row[c], format[c]);
+                  && dateFormatRegex.convertRegEx.source != "yyyy-MM-dd") {
+                sobject[fieldName] = this.convertDate(row[c], dateFormatRegex);
               } else if ((fieldTypes[fieldName] == "datetime")
-                  && format[c] != "yyyy-MM-ddTHH:mm:ss.SSS+/-HH:mm"
-                  && format[c] != "yyyy-MM-ddTHH:mm:ss.SSSZ") {
-                sobject[fieldName] = this.convertDatetime(row[c], format[c]);
+                  && datetimeFormatRegex.convertRegEx.source != "yyyy-MM-ddTHH:mm:ss.SSS+/-HH:mm"
+                  && datetimeFormatRegex.convertRegEx.source != "yyyy-MM-ddTHH:mm:ss.SSSZ") {
+                sobject[fieldName] = this.convertDatetime(row[c], datetimeFormatRegex);
               } else {
                 sobject[fieldName] = row[c];
               }
@@ -1474,18 +1455,11 @@ class ColumnMapper extends React.Component {
   constructor(props) {
     super(props);
     this.onColumnValueChange = this.onColumnValueChange.bind(this);
-    this.onColumnFormatChange = this.onColumnFormatChange.bind(this);
     this.onColumnSkipClick = this.onColumnSkipClick.bind(this);
-    this.onToggleFormatDisplay = this.onToggleFormatDisplay.bind(this);
   }
   onColumnValueChange(e) {
     let {model, column} = this.props;
     column.setColumnValue(e.target.value);
-    model.didUpdate();
-  }
-  onColumnFormatChange(e) {
-    let {model, column} = this.props;
-    column.format = e.target.value;
     model.didUpdate();
   }
   onColumnSkipClick(e) {
@@ -1494,25 +1468,13 @@ class ColumnMapper extends React.Component {
     column.columnSkip();
     model.didUpdate();
   }
-  onToggleFormatDisplay(e) {
-    let {model, column} = this.props;
-    e.preventDefault();
-    column.toggleFormatDisplay();
-    model.didUpdate();
-  }
   render() {
     let {model, column} = this.props;
     return h("div", {className: "conf-line"},
       h("label", {htmlFor: "col-" + column.columnIndex, className: "column-label"}, column.columnOriginalValue),
       h("div", {className: "flex-wrapper"},
         h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: column.columnError() ? "confError" : "", disabled: model.isWorking(), id: "col-" + column.columnIndex}),
-        h("button", {className: column.isFormatDisplayed ? "toggle contract" : "toggle expand", hidden: !column.isDate(), title: "Show Format", onClick: this.onToggleFormatDisplay}, h("div", {className: "button-toggle-icon"})),
         h("div", {className: "conf-error", hidden: !column.columnError()}, h("span", {}, column.columnError()), " ", h("button", {onClick: this.onColumnSkipClick, hidden: model.isWorking(), title: "Don't import this column"}, "Skip"))
-      ),
-      h("div", {hidden: !column.isFormatDisplayed, className: "format-line"},
-        h("label", {htmlFor: "colformat-" + column.columnIndex, className: "format-label"}, "Format"),
-        h("input", {type: "text", value: column.format, onChange: this.onColumnFormatChange, disabled: model.isWorking(), id: "colformat-" + column.columnIndex}),
-        h("span", {className: "help-format"}, column.getColumnType() == "date" ? "yyyy-MM-dd" : "yyyy-MM-ddTHH:mm:ss.SSSZ")
       )
     );
   }

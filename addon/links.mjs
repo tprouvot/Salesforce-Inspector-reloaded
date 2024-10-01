@@ -20,6 +20,7 @@ export const setupLinks = [
   {label: "Public Groups", link: `${setup}/PublicGroups/home`, section: "Administration > Users", prod: false},
   {label: "Queues", link: `${setup}/Queues/home`, section: "Administration > Users", prod: false},
   {label: "Roles", link: `${setup}/Roles/home`, section: "Administration > Users", prod: false},
+  {label: "User Access Policies", link: `${setup}/UserAccessPolicies/home`, section: "Administration > Users", prod: false},
   {label: "User Management Settings", link: `${setup}/UserManagementSettings/home`, section: "Administration > Users", prod: false},
   {label: "Users", link: `${setup}/ManageUsers/home`, section: "Administration > Users", prod: false},
   //Administration > Data
@@ -93,6 +94,7 @@ export const setupLinks = [
   {label: "Themes", link: `${setup}/CommunityThemeDefinitionList/home`, section: "Platform Tools > Feature Settings > Digital Experiences", prod: false},
 
   //Platform Tools > Feature Settings
+  {label: "Field History Tracking", link: `${setup}/FieldHistoryTracking/home`, section: "Platform Tools > Feature Settings", prod: false},
   {label: "Functions", link: `${setup}/Functions/home`, section: "Platform Tools > Feature Settings", prod: false},
   {label: "Home", link: `${setup}/Home/home`, section: "Platform Tools > Feature Settings", prod: false},
   {label: "Quip (Salesforce Anywhere)", link: `${setup}/SalesforceAnywhereSetupPage/home`, section: "Platform Tools > Feature Settings", prod: false},
@@ -361,6 +363,8 @@ export const setupLinks = [
   {label: "Session Management", link: `${setup}/SessionManagementPage/home`, section: "Settings > Security", prod: false},
   {label: "Session Settings", link: `${setup}/SecuritySession/home`, section: "Settings > Security", prod: false},
   {label: "Sharing Settings", link: `${setup}/SecuritySharing/home`, section: "Settings > Security", prod: false},
+  {label: "Trusted URL and Browser Policy Violations", link: `${setup}/BrowserPolicyViolations/home`, section: "Settings > Security", prod: false},
+  {label: "Trusted URLs", link: `${setup}/SecurityCspTrustedSite/home`, section: "Settings > Security", prod: false},
   {label: "Trusted URLs for Redirects", link: `${setup}/SecurityRedirectWhitelistUrl/home`, section: "Settings > Security", prod: false},
   {label: "View Setup Audit Trail", link: `${setup}/SecurityEvents/home`, section: "Settings > Security", prod: false},
 

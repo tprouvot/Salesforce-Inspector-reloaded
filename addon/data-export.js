@@ -1599,6 +1599,14 @@ class Model {
     vm.spinFor(batchHandler(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query), {progressHandler: vm.exportProgress}))
       .catch(error => {
         console.error(error);
+        if (error && error.name == "Unauthorized") {
+          let rootEl = document.getElementById("insext");
+          let popupEl = document.getElementsByClassName("insext-popup-iframe")[0];
+          popupEl.contentWindow.postMessage({
+            showInvalidTokenBanner: true
+          }, "*");
+          rootEl.classList.add("insext-active");
+        }
         vm.isWorking = false;
         vm.exportStatus = "Error";
         vm.exportError = "UNEXPECTED EXCEPTION:" + error;

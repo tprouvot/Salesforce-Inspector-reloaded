@@ -170,6 +170,13 @@ class App extends React.PureComponent {
     } else if (e.data.showFlowVersionDetails) {
       this.showFlowVersionDetails(JSON.parse(e.data.showFlowVersionDetails));
       return;
+    } else if (e.data.showInvalidTokenBanner) {
+      //TODO use model to store if displayed or not.
+      const containerToShow = document.getElementById("invalidTokenBanner");
+      if (containerToShow) { containerToShow.classList.remove("hide"); }
+      const containerToMask = document.getElementById("mainTabs");
+      if (containerToMask) { containerToMask.classList.add("mask"); }
+      return;
     }
     this.setState({
       isFieldsPresent: e.data.isFieldsPresent
@@ -399,7 +406,7 @@ class App extends React.PureComponent {
               text: bannerUrlAction.title,
               props: {
                 href: bannerUrlAction.url,
-                target: linkTarget
+                target: "_blank"
               }
             }
           }),
@@ -413,7 +420,7 @@ class App extends React.PureComponent {
               text: "Install connected App",
               props: {
                 href: `https://${sfHost}/lightning/setup/ConnectedAppsUsage/home`,
-                target: linkTarget
+                target: "_blank"
               }
             }
           })

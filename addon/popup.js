@@ -402,6 +402,20 @@ class App extends React.PureComponent {
                 target: linkTarget
               }
             }
+          }),
+          h(AlertBanner, {type: "warning",
+            bannerText: "If it fail, navigate to Setup | Connected Apps OAuth Usage, and click \"Install\" on the Salesforce Inspector Advanced app.",
+            iconName: "warning",
+            iconTitle: "Warning",
+            assistiveTest: "If not yet done, install connected App.",
+            onClose: null,
+            link: {
+              text: "Install connected App",
+              props: {
+                href: `https://${sfHost}/lightning/setup/ConnectedAppsUsage/home`,
+                target: linkTarget
+              }
+            }
           })
         ),
         h("div", {className: "main", id: "mainTabs"},

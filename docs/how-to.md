@@ -243,38 +243,31 @@ The customization is linked to the org, it means you can have different colors f
 <img width="901" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
 
 ## Change Color Scheme
-There are two ways to set your preferred color scheme.
+From the options page, navigate to the options page.
+#### Automatically follow your system color scheme
+Activate the toggle corresponding to "Match Theme to {system} Appearance"
 
-### From the popup
-Be sure to have the popup open (click on the arrow to invoke it).
-#### Change to light theme
-Click on the Sun at the bottom of the popup to change the color scheme to light.
+![Follow System - Light](./screenshots/color-scheme/theme-white-mode.png)
 
-![Change to light from the popup](./screenshots/color-scheme/popup-to-light.png)
-#### Change to dark theme
-Click on the Moon at the bottom of the popup to change the color scheme to dark.
+![Follow System - Dark](./screenshots/color-scheme/theme-dark-mode.png)
 
-![Change to dark from the popup](./screenshots/color-scheme/popup-to-dark.png)
+If you no longer want to follow your system's appearance, click on the toggle again.
+#### Manually set to dark mode
+Activate the toggle corresponding to "Enable Dark Mode".
 
-### From the options page
-Navigate to the options page (open the popup > scroll down to "Options" > click on the "User Interface" tab)
-#### Change to light theme
-Deactivate the toggle corresponding to "Set default theme to".
+![Change to dark mode](./screenshots/color-scheme/theme-dark-mode.png)
+#### Manually set to light mode
+Deactivate the toggle corresponding to "Enable Dark Mode".
 
-![Change to light from the options page](./screenshots/color-scheme/options-to-light.png)
-#### Change to dark theme
-Activate the toggle corresponding to "Set default theme to".
-
-![Change to dark from the options page](./screenshots/color-scheme/options-to-dark.png)
-
+![Change to light mode](./screenshots/color-scheme/theme-white-mode.png)
 ## Change Accent of Theme
-You may change the accent of your preferred theme from the options page.
+You may change the accent of your preferred theme as well.
 The default accent is true-color and has great contrast, the other one is easier on the eyes.
 
-![Default light theme](./screenshots/accent-scheme/light-default.png)
+![Dark mode with accent](./screenshots/color-scheme/theme-dark-accent.png)
 
-![Accent light theme](./screenshots/accent-scheme/light-accent.png)
-j
-![Default dark theme](./screenshots/accent-scheme/dark-default.png)
-
-![Accent dark theme](./screenshots/accent-scheme/dark-accent.png)
+![Light mode with accent](./screenshots/color-scheme/theme-light-accent.png)
+#### Activate the accent color
+Activate the toggle corresponding to "Enable accent colors".
+#### Deactivate the accent color
+Deactivate the toggle corresponding to "Enable accent colors".

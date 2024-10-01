@@ -1,0 +1,1 @@
+import{Extension as t}from"./Extension.js";import{Z85 as a}from"./Z85.js";export class BinaryExtension extends t{incoming(t){if(!/^\/meta\//.test(t.channel)){let e=t.ext;if(e){let n=e.binary;n&&(t.data.data=a.decode(t.data.data))}}return t}outgoing(t){if(!/^\/meta\//.test(t.channel)){let e=t.ext;if(e){let n=e.binary;n&&(t.data.data=a.encode(t.data.data))}}return t}}

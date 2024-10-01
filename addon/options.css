@@ -45,8 +45,8 @@ body {
   margin: 0;
   height: 100%;
   display: flex;
-  background-color: var(--inspector-sand-background) !important;
-  background-image: url('/images/lightning_blue_background.png') !important;
+  background-color: #B0C4DF !important;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png') !important;
   background-repeat: no-repeat !important;
   background-size: contain !important;
   background-position: 0px 48px !important;
@@ -145,8 +145,8 @@ body {
 }
 
 .prod {
-  background-color: var(--inspector-prod-background) !important;
-  background-image: url('/images/lightning_red_background.png') !important;
+  background-color: #e0a4b5 !important;
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png') !important;
   background-repeat: no-repeat !important;
   background-size: contain !important;
   background-position: 0px 48px !important;
@@ -154,60 +154,4 @@ body {
 
 .center-label {
     text-align: center;
-}
-
-.slds-col.slds-size_2-of-12.slds-form-element.slds-grid.slds-grid_align-end.slds-grid_vertical-align-center.slds-gutters_small > .slds-form-element__control.slds-col.slds-size_2-of-12:has(button.change-value) {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-
-  & > button.change-value {
-      width: 3rem;
-      height: 2rem;
-      padding: 0;
-      border-width: 1px;
-      border-radius: 3px;
-
-      color: var(--inspector-text);
-      background-color: var(--inspector-background);
-      border-color: var(--inspector-subtle-neutral);
-  }
-}
-
-/* transitions */
-a.slds-tabs_default__link {
-    transition-property: color, background-color;
-    transition-duration: var(--inspector-transition-time-slow);
-    transition-timing-function: var(--inspector-transition-function);
-}
-
-span.slds-checkbox_faux {
-    transition-property: background-color, border-color;
-    transition-duration: var(--inspector-transition-time-slow);
-    transition-timing-function: var(--inspector-transition-function);
-
-    &:before, &:after {
-        transition-property: background-color;
-        transition-duration: var(--inspector-transition-time-slow);
-        transition-timing-function: var(--inspector-transition-function);
-    }
-
-}
-
-div.slds-show  div.slds-border_bottom {
-    transition-property: background-color, border-color;
-    transition-duration: var(--inspector-transition-time-slow);
-    transition-timing-function: var(--inspector-transition-function);
-}
-
-div.slds-tabs_default > ul.options-tab-container > li:after {
-    transition-property: background-color;
-    transition-duration: var(--inspector-transition-time-slow);
-    transition-timing-function: var(--inspector-transition-function);
-}
-
-#root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg > use {
-    transition-property: color, fill;
-    transition-duration: var(--inspector-transition-time-slow);
-    transition-timing-function: var(--inspector-transition-function);
 }

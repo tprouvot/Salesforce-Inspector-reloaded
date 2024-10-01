@@ -28,7 +28,7 @@ Enumerable.prototype = {
     yield* other;
   },
   some() {
-    for (let e of this) { // eslint-disable-line no-unused-vars
+    for (let e of this) {
       return true;
     }
     return false;

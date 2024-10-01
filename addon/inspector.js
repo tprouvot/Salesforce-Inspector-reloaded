@@ -1,5 +1,11 @@
-export let apiVersion = localStorage.getItem("apiVersion") == null ? "60.0" : localStorage.getItem("apiVersion");
+export let defaultApiVersion = "61.0";
+export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 export let sessionError;
+export function nullToEmptyString(value) {
+  // For react input fields, the value may not be null or undefined, so this will clean the value
+  return (value == null) ? "" : value;
+}
+
 export let sfConn = {
 
   async getSession(sfHost) {
@@ -27,17 +33,17 @@ export let sfConn = {
         this.sessionId = message.key;
       }
     }
-    const IS_SANDBOX = "isSandbox";
-    if (localStorage.getItem(sfHost + "_" + IS_SANDBOX) == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+FROM+Organization").then(res => {
-        localStorage.setItem(sfHost + "_" + IS_SANDBOX, res.records[0].IsSandbox);
+    if (localStorage.getItem(sfHost + "_trialExpirationDate") == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+,TrialExpirationDate+FROM+Organization").then(res => {
+        localStorage.setItem(sfHost + "_isSandbox", res.records[0].IsSandbox);
         localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
+        localStorage.setItem(sfHost + "_trialExpirationDate", res.records[0].TrialExpirationDate);
       });
     }
-    setFavicon(sfHost);
+    return this.sessionId;
   },
 
-  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}) {
+  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {
     if (!this.instanceHostname) {
       throw new Error("Instance Hostname not found");
     }
@@ -58,9 +64,9 @@ export let sfConn = {
     }
 
     if (body !== undefined) {
+      xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
       if (bodyType == "json") {
         body = JSON.stringify(body);
-        xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
       } else if (bodyType == "raw") {
         // Do nothing
       } else {
@@ -90,7 +96,9 @@ export let sfConn = {
       };
       xhr.send(body);
     });
-    if (xhr.status >= 200 && xhr.status < 300) {
+    if (rawResponse){
+      return xhr;
+    } else if (xhr.status >= 200 && xhr.status < 300) {
       return xhr.response;
     } else if (xhr.status == 0) {
       if (!logErrors) { console.error("Received no response from Salesforce REST API", xhr); }
@@ -341,107 +349,3 @@ function setFavicon(sfHost){
   }
 
 }
-
-function setSessionStorageForUpdatingButtonsAndClickThem(btn){
-  sessionStorage.setItem("updatingFromOtherBtn", true);
-  btn.click();
-  setTimeout(() => {
-    sessionStorage.setItem("updatingFromOtherBtn", false);
-  }, 100);
-}
-
-export function alignDynamicAppearanceButton(isThemeKey){
-  if (isThemeKey && window.matchMedia != null && sessionStorage.getItem("updatingFromOtherBtn") === "false"){
-    // change toggle for enableDynamicAppearance if needed
-    const systemThemeValue = localStorage.getItem("enableDynamicAppearance");
-    if (systemThemeValue === "false"){
-      return; // already updated
-    }
-
-    const dynamicThemeBtn = document.querySelector("#enableDynamicAppearance > span.slds-checkbox_faux") || parent.document.querySelector("#enableDynamicAppearance > span.slds-checkbox_faux");
-    if (dynamicThemeBtn != null){
-      setSessionStorageForUpdatingButtonsAndClickThem(dynamicThemeBtn);
-      return;
-    }
-
-    // not in options page, fake the behaviour
-    localStorage.setItem("enableDynamicAppearance", JSON.stringify(false)); // always false because the user is overriding with the theme toggle
-    systemColorSchemeListener(false); // remove the listener
-  }
-}
-
-export function setupColorListeners(sendMessage = false){
-  const html = document.documentElement;
-
-  // listen to changes from the options page
-  window.addEventListener("storage", e => {
-    if (!e.isTrusted || (e.key !== "enableDarkMode" && e.key !== "enableAccentColors")){
-      return;
-    }
-
-    const isThemeKey = e.key === "enableDarkMode";
-    const newValueBool = e.newValue === "true";
-
-    const value = isThemeKey ? (newValueBool ? "dark" : "light") : (newValueBool ? "accent" : "default");
-    const category = isThemeKey ? "theme" : "accent";
-    const htmlValue = html.dataset[category];
-    if (value == htmlValue) {
-      return; // avoid recursion
-    }
-
-    html.dataset[category] = value;
-    if (sendMessage) {
-      parent.postMessage({category, value}, "*"); //update #insext (button.js)
-    }
-
-    alignDynamicAppearanceButton(isThemeKey);
-  });
-}
-
-let systemColorListener = null;
-
-function handleSystemColorSchemeChange(e){
-  // check if theme has to be changed
-  const systemThemeValue = e.matches ? "dark" : "light";
-  const htmlThemeValue = document.documentElement.dataset.theme;
-  if (htmlThemeValue === systemThemeValue || sessionStorage.getItem("updatingFromOtherBtn") == true){
-    return;
-  }
-
-  // find the theme button and click it (to trigger theme change)
-  const optionsThemeBtn = document.querySelector("#enableDarkMode > span.slds-checkbox_faux") || parent.document.querySelector("#enableDarkMode > span.slds-checkbox_faux");
-  if (optionsThemeBtn != null){
-    setSessionStorageForUpdatingButtonsAndClickThem(optionsThemeBtn);
-    return;
-  }
-
-  // not in options page, fake the behaviour
-  localStorage.setItem("enableDarkMode", JSON.stringify(e.matches));
-  document.documentElement.dataset.theme = systemThemeValue;
-  const insext = document.getElementById("insext");
-  if (insext != null){
-    insext.dataset.theme = systemThemeValue;
-  }
-}
-
-export function systemColorSchemeListener(enable = true){
-  if (window.matchMedia == null || enable == null || (enable && systemColorListener != null) || (!enable && systemColorListener == null)){
-    console.warn({enable, systemColorListener});
-    return;
-  }
-
-  if (enable) {
-    // If enabling, add the systemColorListener
-    systemColorListener = window.matchMedia("(prefers-color-scheme: dark)");
-    systemColorListener.addEventListener("change", handleSystemColorSchemeChange);
-    // Initial check for the current color scheme
-    handleSystemColorSchemeChange(systemColorListener);
-  } else {
-    // If disabling, remove the systemColorListener if it exists
-    systemColorListener.removeEventListener("change", handleSystemColorSchemeChange);
-    systemColorListener = null;
-  }
-  localStorage.setItem("enableDynamicAppearance", JSON.stringify(enable));
-}
-
-sessionStorage.setItem("updatingFromOtherBtn", false);

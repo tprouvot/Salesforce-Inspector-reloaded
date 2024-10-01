@@ -189,6 +189,10 @@ h1 {
   color: var(--inspector-text);
   font-weight: 700;
   line-height: 1.25;
+  margin: revert;
+}
+.user-info h1 {
+  padding: 0 6px 0 10px;
 }
 
 .query-controls {
@@ -251,6 +255,14 @@ input[type=search] {
   padding-left: 35px;
 }
 
+input[type=save] {
+  background-image: url('/images/save.svg');
+  background-repeat: no-repeat;
+  background-size: 1rem;
+  background-position: 10px 7px;
+  padding-left: 35px;
+}
+
 input[type="checkbox"] {
   width: 1rem;
   height: 1rem;
@@ -295,6 +307,10 @@ button:disabled:hover,
 input:disabled:hover {
   background-color: var(--inspector-neutral);
   color: var(--inspector-inverted-text);
+}
+
+button:disabled > svg.button-icon{
+  fill: var(--inspector-neutral);
 }
 
 .highlighted {
@@ -445,9 +461,6 @@ button[hidden],
   margin-right: 0
 }
 
-/* div.button-group:not(:only-of-type) {
-  margin-left: 10px;
-} */
 .button-group> :first-child,
 .button-group>[hidden]+* {
   border-top-left-radius: 0.25rem;

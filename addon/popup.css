@@ -68,6 +68,9 @@ body,
 a:visited {
     color: var(--inspector-visited-link);
 }
+a > span {
+    color: var(--inspector-visited-link);
+}
 
 .main {
     flex: 1;
@@ -129,7 +132,7 @@ input.api-input {
     display: flex;
     flex-direction: column;
     min-height: 12em;
-    /* should be heigh enough so the buttons below don't jump around when the contents of this box loads */
+    /* should be high enough so the buttons below don't jump around when the contents of this box loads */
     color: var(--inspector-text-neutral);
     line-height: 1.5;
 }

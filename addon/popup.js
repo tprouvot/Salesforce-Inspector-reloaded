@@ -267,8 +267,8 @@ class App extends React.PureComponent {
       "s": ["tab", "shortcutTab"],
       "t": ["click", "streamingBtn"],
       "r": ["tab", "orgTab"],
-      "c": ["click", "apexRunnerBtn"]
-    };
+      "g": ["click", "apexRunnerBtn"]
+    };//zyqgjkwvbc
 
     if (!actionMap[e.key]) {
       return;
@@ -461,7 +461,7 @@ class App extends React.PureComponent {
                 target: linkTarget,
                 className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-large",
                 title: "Run Apex Code",
-                onMouseEnter: () => { this.setButtonTooltip("Run Apex Code - Shortcut [c]"); },
+                onMouseEnter: () => { this.setButtonTooltip("Run Apex Code - Shortcut [g]"); },
                 onMouseLeave: () => { this.setButtonTooltip(""); }
               },
               h("svg", {className: "slds-button__icon_large"}, h("use", {xlinkHref: "symbols.svg#apex", style: {fill: "#706E6B"}})),

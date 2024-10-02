@@ -1230,7 +1230,6 @@ class App extends React.Component {
       ]);
 
       const sObjectsList = Array.from(entityMap.values());
-      sessionStorage.setItem("sobjects", JSON.stringify(sObjectsList));
       const layoutableObjects = sObjectsList.filter(obj => obj.layoutable === true);
       this.setState({ objects: layoutableObjects });
     } catch (error) {

@@ -9,9 +9,8 @@
   "action": {
     "default_title": "Open popup"
   },
-  "minimum_chrome_version": "88",
-  "permissions": ["cookies"],
-  "host_permissions": [
+  "minimum_chrome_version": "61",
+  "permissions": [
     "https://*.salesforce.com/*",
     "https://*.salesforce-setup.com/*",
     "https://*.force.com/*",
@@ -50,13 +49,12 @@
         "https://*.builder.salesforce-experience.com/*"
       ],
       "all_frames": true,
-      "css": ["button.css", "inspect-inline.css"],
+      "css": ["inspector.css", "button.css", "inspect-inline.css"],
       "js": ["button.js", "inspect-inline.js"]
     }
   ],
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "scripts": ["background.js"]
   },
   "web_accessible_resources": [
     {
@@ -76,38 +74,6 @@
       "extension_ids": []
     }
   ],
-  "incognito": "split",
-  "manifest_version": 3,
-  "commands": {
-    "open-popup": {
-      "description": "Open popup"
-    },
-    "data-export": {
-      "description": "Data Export"
-    },
-    "data-import": {
-      "description": "Data Import"
-    },
-    "options": {
-      "description": "Options"
-    },
-    "metadata-retrieve": {
-      "description": "Retrieve Metadata"
-    },
-    "limits": {
-      "description": "Org Limits"
-    },
-    "field-creator": {
-      "description": "Field Creator"
-    },
-    "explore-api": {
-      "description": "Explore API"
-    },
-    "rest-explore": {
-      "description": "REST Explore"
-    },
-    "event-monitor": {
-      "description": "Event Monitor"
-    }
-  }
+  "incognito": "replaced-at-build",
+  "manifest_version": 3
 }

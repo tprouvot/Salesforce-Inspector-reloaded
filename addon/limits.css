@@ -36,7 +36,7 @@ figcaption > div {
 }
 .gauge:before { 
   border-radius:5rem 5rem 0 0; 
-  background:grey; 
+  background:var(--inspector-neutral);
 }
 .gauge:after {
   position:absolute;
@@ -44,7 +44,7 @@ figcaption > div {
   left:2.5rem;
   width:5rem;
   height:2.5rem;
-  background:#ffffff;
+  background:var(--inspector-background);;
   border-radius:2.5rem 2.5rem 0 0;
 }
 .meter {
@@ -52,7 +52,7 @@ figcaption > div {
   transition:1.5s;
   transform-origin:center top;
   border-radius:0 0 6rem 6rem;
-  background:deepskyblue;
+  background:var(--inspector-primary);
 }
 .meter-value-container {
   position:absolute;
@@ -66,7 +66,7 @@ figcaption > div {
 }
 .meter-value {
   font:bold 1.25rem/1.6 sans-serif;
-  color:#333;
+  color:var(--inspector-neutral);;
   line-height:2.5rem;
   white-space:pre;
   transition:1.5s;
@@ -85,16 +85,17 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
   margin: 0;
+  background-color: var(--inspector-background);
 }
 .sf-link {
   margin-right: 1em;
-  background-color: rgb(6, 28, 63);
+  background-color: var(--inspector-svg-background);
   border-radius: 3px;
   line-height: 2em;
   text-decoration: none;
   display: inline-block;
   padding: 2px;
-  color: white;
+  color: var(--inspector-svg-text);
   padding-right: 1em;
 }
 .sf-link svg {
@@ -104,9 +105,9 @@ body {
   margin-left: 1px;
   margin-right: 1em;
   float: left;
-  background-color: #ef7ead;
+  background-color: var(--inspector-svg-picture);
   border-radius: 2px;
-  fill: white;
+  fill: var(--inspector-svg-text);
 }
 
 
@@ -114,7 +115,7 @@ body {
   font-size: 1.2em;
   font-weight: bold;
   margin: .5em 0;
-  background-color: #fe3;
+  background-color: var(--inspector-warning);
   padding: .5em;
   border: 1px solid red;
   border-radius: 7px;
@@ -126,7 +127,7 @@ body {
 }
 .object-bar {
   position: fixed;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--inspector-shade);
   width: 100%;
   padding: 8px;
   box-sizing: border-box;
@@ -143,7 +144,7 @@ body {
 }
 .object-actions a, .object-actions button {
   display: inline-block;
-  border: 1px solid #ddd;
+  border: 1px solid var(--inspector-shade);
   padding: 6px 10px;
   border-radius: 3px;
   font: unset;
@@ -153,7 +154,7 @@ body {
   display: inline-block;
 }
 .column-popup {
-  background: #ddd;
+  background: var(--inspector-shade);
   padding: 1em;
   overflow: auto;
   max-height: 500px;
@@ -177,3 +178,22 @@ body {
   animation: spin 4s linear infinite;
 }
 
+html {
+  scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
+  transition-duration: 500ms;
+  transition-timing-function: ease-in-out;
+  scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
+}
+
+/* transitions */
+figcaption, .meter-value {
+    transition-property: color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+.gauge::before, .gauge::after {
+    transition-property: background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}

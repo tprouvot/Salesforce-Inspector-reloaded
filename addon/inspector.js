@@ -331,3 +331,21 @@ function showInvalidTokenBanner(){
   const containerToMask = document.getElementById("mainTabs");
   if (containerToMask) { containerToMask.classList.add("mask"); }
 }
+
+function setFavicon(sfHost){
+  let fav = localStorage.getItem(sfHost + "_customFavicon");
+  if (fav){
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    //check if custom favicon from the extension or web
+    if (fav.indexOf("http") == -1){
+      fav = "./images/favicons/" + fav + ".png";
+    }
+    link.href = fav;
+  }
+
+}

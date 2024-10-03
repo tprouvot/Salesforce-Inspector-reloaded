@@ -253,75 +253,34 @@ From the option page, you can customize the default favicon by:
 
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
 
-<img width="878" alt="image" src="https://github.com/user-attachments/assets/fdf24a37-2cab-402e-a101-4a20bc4e1ae4">
+<img width="901" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
 
-Now if you want to populate all the orgs you visited with a custom favicon, you have two options:
-- Smart mode enabled: this will analyze your environment name and populate a favicon based on this (blue for dev, green for int, purple for uat and orange for full)
-- Random: this will choose a random color among all the predefined colors
+## Change Color Scheme
+From the options page, navigate to the options page.
+#### Automatically follow your system color scheme
+Activate the toggle corresponding to "Match Theme to {system} Appearance"
 
-Then you click on Populate All and that's it!
-Note: orgs with an existing customized favicon won't be affected.
+![Follow System - Light](./screenshots/color-scheme/theme-white-mode.png)
 
-## Customize sandbox banner color
+![Follow System - Dark](./screenshots/color-scheme/theme-dark-mode.png)
 
-From the option page, enable "Use favicon color on sandbox banner"
-<img width="772" alt="image" src="https://github.com/user-attachments/assets/28cb7f5f-01fd-48b9-a5da-f50f6cbb2f81">
+If you no longer want to follow your system's appearance, click on the toggle again.
+#### Manually set to dark mode
+Activate the toggle corresponding to "Enable Dark Mode".
 
+![Change to dark mode](./screenshots/color-scheme/theme-dark-mode.png)
+#### Manually set to light mode
+Deactivate the toggle corresponding to "Enable Dark Mode".
 
-<img width="1087" alt="image" src="https://github.com/user-attachments/assets/f90999c2-f93e-423a-bcb7-18a8aa717a17">
+![Change to light mode](./screenshots/color-scheme/theme-white-mode.png)
+## Change Accent of Theme
+You may change the accent of your preferred theme as well.
+The default accent is true-color and has great contrast, the other one is easier on the eyes.
 
+![Dark mode with accent](./screenshots/color-scheme/theme-dark-accent.png)
 
-
-## Select all fields in a query
-
-This functionality already exists in the legacy version but since many users don't know about it, I would like to document it.
-When on the export page, put the cursor between `SaELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
-If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM`.
-
-![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)
-
-## Exclude formula fields from data export autocomplete
-
-You can exclude formula fields to be included in the autocomplete by disable the toogle
-
-<img width="898" alt="Exclude formula fields from autocomplete" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/aa9db6c4-099d-49ea-a343-7c64e472450d">
-
-## Customize extension's shortcuts
-
-Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.
-
-<img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">
-
-## Hide additional columns in query results
-
-After running a query in the "Data Export" page, you can hide additional columns in the query results. These columns represent the name of the objects included in your query. They are useful to automatically map the fields to the correct object in the "Data Import" page. The columns are hidden in the exported files (CSV or Excel) as well. You can set a default value, using the 'Hide additionnal Object Name Columns by default on Data Export' option ("Options" -> "Data Export" tab).
-
-![2024-05-16_17-54-24 (1)](https://github.com/guillaumeSF/Salesforce-Inspector-reloaded/assets/166603639/45fda19b-b426-4b11-91cb-4f0fbc5c47d7)
-
-## Configure Import options in Data Import
-
-You can configure the [SOAP headers](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/soap_headers.htm) when importing records to specify Assignment Rule, Duplicate Rule or OwnerChangeOptions.
-Because custom headers can be hard to configure, you could iterate through suggestions by pressing down key.
-If you want to include new suggestions, feel free to open a new [feature request](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=enhancement&projects=&template=feature_request.md).
-
-ie for KeepAccountTeam:
-``` json
-{"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}
-```
-
-<img width="503" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/e2d21970-ddc5-4c42-a54e-ffb7ffdcb278">
-
-## Highlight PROD with a top border
-
-Production environment are critical, to avoid confusion with other orgs, you can enable an option which will add a 2px border on the top of the Salesforce UI and also in the extension's pages.
-
-Under `User Experience` tab, enable the option `Highlight PROD with a top border (color from favicon)`.
-
-<img width="955" alt="highlight prod with a top border" src="https://github.com/user-attachments/assets/4ff26e23-08b2-447a-be8d-004488f2a3a1">
-
-
-## Import / Export configuration (saved query etc.)
-
-To export and import your current configuration, go to the options page and click the corresponding icon in the header:
-
-<img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753">
+![Light mode with accent](./screenshots/color-scheme/theme-light-accent.png)
+#### Activate the accent color
+Activate the toggle corresponding to "Enable accent colors".
+#### Deactivate the accent color
+Deactivate the toggle corresponding to "Enable accent colors".

@@ -585,8 +585,8 @@ ul{
 a{
   color:#0176d3;
   text-decoration:none;
-  -webkit-transition:color 0.1s linear;
-  transition:color 0.1s linear;
+  /*-webkit-transition:color 0.1s linear;*/
+  /*transition:color 0.1s linear;*/
 }
 
 a:active{
@@ -704,6 +704,7 @@ img{
   text-decoration:none;
   color:var(--slds-c-button-text-color, var(--sds-c-button-text-color, #0176d3));
   -webkit-appearance:none;
+  appearance:none;
   white-space:normal;
   -webkit-user-select:none;
      -moz-user-select:none;
@@ -1242,8 +1243,6 @@ a.slds-button--inverse:focus{
       -ms-flex-align:center;
           align-items:center;
 }
-.slds-not-selected{
-}
 .slds-not-selected .slds-text-selected{
   display:none;
 }
@@ -1296,8 +1295,6 @@ a.slds-button--inverse:focus{
   display:-webkit-inline-box;
   display:-ms-inline-flexbox;
   display:inline-flex;
-}
-.slds-button_dual-stateful{
 }
 .slds-button_dual-stateful .slds-text-not-pressed{
   display:block;
@@ -1750,11 +1747,6 @@ a.slds-button--inverse:focus{
           box-shadow:none;
 }
 
-.slds-card,
-.slds-modal,
-.slds-tabs_default,
-.slds-tabs--default{
-}
 .slds-card .slds-card_boundary,
 .slds-modal .slds-card_boundary,
 .slds-tabs_default .slds-card_boundary,
@@ -2301,9 +2293,6 @@ a.slds-button--inverse:focus{
   .slds-checkbox--toggle [type=checkbox][disabled]:checked + .slds-checkbox_faux_container .slds-checkbox_faux:after,
   .slds-checkbox--toggle [type=checkbox][disabled]:checked + .slds-checkbox--faux_container .slds-checkbox--faux:after{
     background-color:transparent;
-  }
-  .slds-checkbox_add-button,
-  .slds-checkbox--add-button{
   }
   .slds-checkbox_add-button .slds-checkbox_faux,
   .slds-checkbox_add-button .slds-checkbox--faux,
@@ -3674,9 +3663,6 @@ a.slds-button--inverse:focus{
 .slds-input-has-icon--right .slds-input--bare{
   /*! @css-var-fallback padding-right */
   --slds-c-input-spacing-horizontal-end:2rem;
-}
-.slds-input-has-icon_left-right,
-.slds-input-has-icon--left-right{
 }
 .slds-input-has-icon_left-right .slds-input__icon_left,
 .slds-input-has-icon_left-right .slds-input__icon--left,
@@ -5249,6 +5235,7 @@ a.slds-button--inverse:focus{
   padding:.2rem .2rem;
   border-bottom:1px solid var(--slds-g-color-border-base-1, #c9c9c9);
   border-radius:0.25rem;
+  background: #f3f3f3;
   background-clip:padding-box;
   -webkit-box-shadow:0 2px 2px 0 rgba(0, 0, 0, 0.1);
           box-shadow:0 2px 2px 0 rgba(0, 0, 0, 0.1);

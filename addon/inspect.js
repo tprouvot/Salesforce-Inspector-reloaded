@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setupColorListeners} from "./inspector.js";
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 
@@ -979,6 +979,7 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
+    setupColorListeners();
     this.onUseAllTab = this.onUseAllTab.bind(this);
     this.onUseFieldsTab = this.onUseFieldsTab.bind(this);
     this.onUseChildsTab = this.onUseChildsTab.bind(this);
@@ -1080,6 +1081,7 @@ class App extends React.Component {
     model.didUpdate();
     // Save to local storage
   }
+
   handleClick(e){
     const {model} = this.props;
     if (model.popupReactElement){ // There is a popup
@@ -1101,6 +1103,7 @@ class App extends React.Component {
     const {model} = this.props;
     model.popupTmpReactElement = elem;
   }
+
   render() {
     let {model} = this.props;
     document.title = model.title();

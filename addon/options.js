@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString} from "./inspector.js";
+import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 
@@ -72,7 +72,6 @@ class OptionsTabSelector extends React.Component {
     this.state = {
       selectedTabId: initialTabId
     };
-
     this.tabs = [
       {
         id: 1,
@@ -86,7 +85,6 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
           {option: Option, props: {type: "toggle", title: "Search metadata from Shortcut tab", key: "metadataShortcutSearch"}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
-          {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
           {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
@@ -134,6 +132,16 @@ class OptionsTabSelector extends React.Component {
         title: "Enable Logs",
         content: [
           {option: enableLogsOption, props: {key: 1}}
+        ]
+      },
+      {
+        id: 6,
+        tabTitle: "Tab6",
+        title: "User Interface",
+        content: [
+          window.matchMedia != null ? {option: Option, props: {type: "toggle", title: `Match Theme to ${navigatorData.indexOf("mac") > -1 ? "MacOS" : (navigatorData.indexOf("windows") > -1 ? "Windows" : (navigatorData.indexOf("linux") > -1 ? "Linux" : "System"))} Appearance`, storageKey: "enableDynamicAppearance", default: false}} : {option: "span"},
+          {option: Option, props: {type: "toggle", title: "Enable Dark Mode", storageKey: "enableDarkMode", default: false}},
+          {option: Option, props: {type: "toggle", title: "Enable Accent colors", storageKey: "enableAccentColors", default: false}},
         ]
       }
     ];
@@ -255,7 +263,6 @@ class APIVersionOption extends React.Component {
   constructor(props) {
     super(props);
     this.onChangeApiVersion = this.onChangeApiVersion.bind(this);
-    this.onRestoreDefaultApiVersion = this.onRestoreDefaultApiVersion.bind(this);
     this.state = {apiVersion: localStorage.getItem("apiVersion") ? localStorage.getItem("apiVersion") : apiVersion};
   }
 
@@ -265,23 +272,15 @@ class APIVersionOption extends React.Component {
     localStorage.setItem("apiVersion", apiVersion + ".0");
   }
 
-  onRestoreDefaultApiVersion(){
-    localStorage.removeItem("apiVersion");
-    this.setState({apiVersion: defaultApiVersion});
-  }
-
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "API Version")
       ),
-      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-form-element__control"},
-          h("button", {className: "button button-brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
-        ) : null,
+      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
+          h("input", {type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: this.state.apiVersion.split(".0")[0], onChange: this.onChangeApiVersion}),
         )
       )
     );
@@ -379,12 +378,37 @@ class Option extends React.Component {
     }
     this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value) : value};
     this.title = props.title;
+    this.systemThemeListener = null;
+  }
+
+  // change Theme or Accent
+  updateUI(key, enabled){
+    const updateUIkeys = ["enableDarkMode", "enableAccentColors", "enableDynamicAppearance"];
+    if (!updateUIkeys.includes(key)) {
+      return;
+    }
+
+    if (key === "enableDynamicAppearance"){
+      // add or remove listener to the system's color-scheme
+      systemColorSchemeListener(enabled);
+      return;
+    }
+
+    const isThemeKey = key === "enableDarkMode";
+
+    const category = isThemeKey ? "theme" : "accent";
+    const value = isThemeKey ? (enabled ? "dark" : "light") : (enabled ? "accent" : "default");
+    const html = document.documentElement;
+    html.dataset[category] = value;
+
+    alignDynamicAppearanceButton(isThemeKey);
   }
 
   onChangeToggle(e) {
     const enabled = e.target.checked;
     this.setState({[this.key]: enabled});
     localStorage.setItem(this.key, JSON.stringify(enabled));
+    this.updateUI(this.key, enabled);
   }
 
   onChange(e) {
@@ -684,49 +708,6 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.foo = undefined;
-
-    this.exportOptions = this.exportOptions.bind(this);
-    this.importOptions = this.importOptions.bind(this);
-    this.state = {importTitle: "Export Options"};
-  }
-
-  exportOptions() {
-    const localStorageData = { ...localStorage };
-    const jsonData = JSON.stringify(localStorageData, null, 2);
-    const blob = new Blob([jsonData], { type: "application/json" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-    link.download = "reloadedConfiguration.json";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  importOptions() {
-    const fileInput = this.refs.fileInput;
-
-    if (!fileInput.files.length) {
-      console.error('No file selected.');
-      return;
-    }
-
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-
-    reader.onload = (event) => {
-      try {
-        const importedData = JSON.parse(event.target.result);
-        for (const [key, value] of Object.entries(importedData)) {
-          localStorage.setItem(key, value);
-        }
-        this.setState({ importStyle: "green", importTitle: "Import Successful" });
-      } catch (error) {
-        this.setState({ importStyle: "red", importTitle: "Import Failed" });
-        console.error('Error parsing JSON file:', error);
-      }
-    };
-    reader.readAsText(file);
   }
 
   render() {

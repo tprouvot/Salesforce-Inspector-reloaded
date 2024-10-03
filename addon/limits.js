@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import { sfConn, apiVersion } from "./inspector.js";
 /* global initButton */
 
 class Model {
@@ -116,6 +116,11 @@ class LimitData extends React.Component {
 }
 
 class App extends React.Component {
+  constructor(props) {
+    super(props);
+    setupColorListeners();
+  }
+
   render() {
     let vm = this.props.vm;
     document.title = vm.title();

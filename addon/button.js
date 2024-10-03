@@ -1,6 +1,6 @@
 /* exported initButton */
 /* global showStdPageDetails */
-
+"use strict";
 
 // sfdcBody: normal Salesforce page
 // ApexCSIPage: Developer Console
@@ -209,12 +209,20 @@ function initButton(sfHost, inInspector) {
       if (e.data.insextInitRequest) {
         // Set CSS classes for arrow button position
         iFrameLocalStorage = e.data.iFrameLocalStorage;
-        const {popupArrowPosition: pos} = iFrameLocalStorage;
-        const o = getOrientation("iframe");
-        const dir = calcDirection(pos, o);
-        resetPopupClass(o);
-        if (dir) {
-          popupEl.classList.add(`insext-popup-${o}-${dir}`);
+        setupColorChange();
+        popupEl.classList.add(iFrameLocalStorage.popupArrowOrientation == "horizontal" ? "insext-popup-horizontal" : "insext-popup-vertical");
+        if (iFrameLocalStorage.popupArrowOrientation == "horizontal") {
+          if (iFrameLocalStorage.popupArrowPosition < 8) {
+            popupEl.classList.add("insext-popup-horizontal-left");
+          } else if (iFrameLocalStorage.popupArrowPosition >= 90) {
+            popupEl.classList.add("insext-popup-horizontal-right");
+          } else {
+            popupEl.classList.add("insext-popup-horizontal-centered");
+          }
+        } else if (iFrameLocalStorage.popupArrowOrientation == "vertical") {
+          if (iFrameLocalStorage.popupArrowPosition >= 55) {
+            popupEl.classList.add("insext-popup-vertical-up");
+          }
         }
         setRootCSSProperties(rootEl, btn);
         addFlowScrollability(popupEl);
@@ -249,6 +257,16 @@ function initButton(sfHost, inInspector) {
           });
         } else {
           document.querySelectorAll("." + apiNamesClass).forEach(e => e.remove());
+        }
+      }
+      if (e.data.category && e.data.value) {
+        const category = e.data.category;
+        const value = e.data.value;
+        //rootEl is #insext
+        const insextValue = rootEl.dataset[category];
+
+        if (insextValue == null || value != insextValue) {
+            rootEl.dataset[category] = value;
         }
       }
     });
@@ -315,5 +333,13 @@ function initButton(sfHost, inInspector) {
         closePopup();
       }
     }
+  }
+
+  function setupColorChange() {
+    const themeValue = iFrameLocalStorage.enableDarkMode === true ? "dark" : "light";
+    const accentValue = iFrameLocalStorage.enableAccentColors === true ? "accent" : "default";
+    //rootEl is #insext
+    rootEl.dataset.theme = themeValue;
+    rootEl.dataset.accent = accentValue;
   }
 }

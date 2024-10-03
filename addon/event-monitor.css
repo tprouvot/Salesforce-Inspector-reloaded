@@ -122,7 +122,7 @@ body {
   height: 1.4rem;;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1.4rem;;
-  -webkit-mask-image: url(images/help.svg');
+  -webkit-mask-image: url(images/help.svg);
   -webkit-mask-position: center;
   background-color: #919191;
 }
@@ -421,13 +421,13 @@ button.toggle:hover .button-toggle-icon  {
   margin-right: 0;
 }
 button.expand .button-toggle-icon {
-  -webkit-mask-image: url(images/down.svg');
+  -webkit-mask-image: url(images/down.svg);
 }
 button.contract .button-toggle-icon {
-  -webkit-mask-image: url(images/up.svg');
+  -webkit-mask-image: url(images/up.svg);
 }
 .button.field-info .button-icon {
-  -webkit-mask-image: url(images/salesforce-inspector-logo.svg');
+  -webkit-mask-image: url(images/salesforce-inspector-logo.svg);
 }
 .area.result-area {
   padding: 0;

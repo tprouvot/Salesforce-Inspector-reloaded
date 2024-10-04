@@ -1593,7 +1593,7 @@ class App extends React.Component {
             h("br", null),
             h("div", {className: "col-xs-12 text-center", id: "deploy"},
               h("button", {"aria-label": "Clear Button", className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
-              h("button", {"aria-label": "Open Import CSV modal button", className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
+              h("button", {"aria-label": "Open Import modal button", className: "btn btn-large", onClick: this.openImportModal}, "Import"),
               h("button", {"disabled": !this.state.selectedObject, "aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
               !this.state.allFieldsHavePermissions && h("p", {className: "errorText"}, "Some fields are missing permissions."),
             )

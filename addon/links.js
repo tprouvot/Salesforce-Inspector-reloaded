@@ -337,6 +337,7 @@ export let setupLinks = [
   {label: "Certificate and Key Management", link: "/lightning/setup/CertificatesAndKeysManagement/home", section: "Settings > Security", prod: false},
   {label: "Delegated Administration", link: "/lightning/setup/DelegateGroups/home", section: "Settings > Security", prod: false},
   //Settings > Security > Event Monitoring
+  {label: "Event Log File Browser", link: "/lightning/setup/ElfBrowser/home", section: "Settings > Security > Event Monitoring", prod: false},
   {label: "Event Monitoring Settings", link: "/lightning/setup/EventMonitoringSetup/home", section: "Settings > Security > Event Monitoring", prod: false},
   {label: "Transaction Security Policies", link: "/lightning/setup/TransactionSecurityNew/home", section: "Settings > Security > Event Monitoring", prod: false},
   //Settings > Security

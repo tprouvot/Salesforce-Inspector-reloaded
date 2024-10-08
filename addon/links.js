@@ -183,6 +183,7 @@ export let setupLinks = [
   {label: "Approval Processes", link: "/lightning/setup/ApprovalProcesses/home", section: "Platform Tools > Process Automation", prod: false},
   {label: "Automation Home", link: "/lightning/setup/ProcessHome/home", section: "Platform Tools > Process Automation", prod: false},
   {label: "Flows", link: "/lightning/setup/Flows/home", section: "Platform Tools > Process Automation", prod: false},
+  {label: "Flow Trigger Explorer", link: "/interaction_explorer/flowExplorer.app", section: "Platform Tools > Process Automation", prod: false},
   {label: "Migrate to Flow", link: "/lightning/setup/MigrateToFlowTool/home", section: "Platform Tools > Process Automation", prod: false},
   {label: "Next Best Action", link: "/lightning/setup/NextBestAction/home", section: "Platform Tools > Process Automation", prod: false},
   {label: "Paused And Failed Flow Interviews", link: "/lightning/setup/Pausedflows/home", section: "Platform Tools > Process Automation", prod: false},

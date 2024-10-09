@@ -2,6 +2,7 @@
 
 ## Version 1.25
 
+- Fix `Field Creator` shortcut key [issue 608](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/608)
 - Add `Flow Trigger Explorer` in shortcut links [feature 610](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/610) request by [JeffKrakowski](https://github.com/JeffKrakowski)
 - Add `Import` / `Export` configuration from Option page [feature 570](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/570)
 - Add `Field Creator` page to bulk create fields from the extension (contribution by [Santiago Parris](https://github.com/SantiParris8))

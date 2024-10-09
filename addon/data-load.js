@@ -409,11 +409,11 @@ export function initScrollTable(scroller) {
     // Recalculate buffers when viewport changes
     bufferHeight = Math.min(500, scroller.offsetHeight);
     bufferWidth = Math.min(500, scroller.offsetWidth);
-    console.log('Buffers updated:', { bufferHeight, bufferWidth });
+    console.log("Buffers updated:", {bufferHeight, bufferWidth});
   }
 
   function dataChange(newData) {
-    console.log('Data changed');
+    console.log("Data changed");
     data = newData;
     if (data == null || data.rowVisibilities.length == 0 || data.colVisibilities.length == 0) {
       rowHeights = [];
@@ -481,9 +481,9 @@ export function initScrollTable(scroller) {
     let newOffsetHeight = scroller.offsetHeight;
     let newOffsetWidth = scroller.offsetWidth;
 
-    if (scrollTop !== newScrollTop || scrollLeft !== newScrollLeft || 
-        offsetHeight !== newOffsetHeight || offsetWidth !== newOffsetWidth) {
-      console.log('Viewport changed:', {
+    if (scrollTop !== newScrollTop || scrollLeft !== newScrollLeft
+        || offsetHeight !== newOffsetHeight || offsetWidth !== newOffsetWidth) {
+      console.log("Viewport changed:", {
         scrollTop: newScrollTop,
         scrollLeft: newScrollLeft,
         offsetHeight: newOffsetHeight,
@@ -500,7 +500,7 @@ export function initScrollTable(scroller) {
 
   function renderData({force}) {
     try {
-      console.log('Rendering data. Force:', force);
+      console.log("Rendering data. Force:", force);
       scrollTop = scroller.scrollTop;
       scrollLeft = scroller.scrollLeft;
       offsetHeight = scroller.offsetHeight;
@@ -637,11 +637,11 @@ export function initScrollTable(scroller) {
           td = td.nextElementSibling;
         }
       }
-      console.log('Render complete');
+      console.log("Render complete");
     } catch (error) {
-      console.error('Error in renderData:', error);
+      console.error("Error in renderData:", error);
       // Enhanced error logging
-      console.log('Current state:', {
+      console.log("Current state:", {
         rowCount,
         colCount,
         firstRowIdx,

@@ -109,12 +109,12 @@ class ProfilesModal extends React.Component {
     const {searchTerm} = this.state;
 
     const items = Object.entries(permissionSets)
-      .filter(([_, profile]) => 
+      .filter(([_, profile]) =>
         tableType === "Profiles" ? profile !== null : profile === null
       )
-      .sort((a, b) => 
-        tableType === "Profiles" 
-          ? a[1].localeCompare(b[1]) 
+      .sort((a, b) =>
+        tableType === "Profiles"
+          ? a[1].localeCompare(b[1])
           : a[0].localeCompare(b[0])
       );
 

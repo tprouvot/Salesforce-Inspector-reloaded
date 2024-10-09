@@ -19,7 +19,7 @@ class ProfilesModal extends React.Component {
   }
 
   handleSearchChange = (event) => {
-    this.setState({searchTerm: event.target.value});
+    this.setState({searchTerm: event.target.value}, this.updateAllCheckboxes);
   };
 
   componentDidUpdate(prevProps) {
@@ -66,17 +66,16 @@ class ProfilesModal extends React.Component {
     const stateKey = `all${type.charAt(0).toUpperCase() + type.slice(1)}${tableType}`;
     const allSelected = !this.state[stateKey];
 
+    const filteredItems = this.getFilteredItems(tableType);
+
     this.setState(prevState => {
       const updatedPermissions = {...prevState.permissions};
-      Object.keys(this.props.permissionSets).forEach(name => {
-        if ((tableType === "Profiles" && this.props.permissionSets[name] !== null)
-          || (tableType === "PermissionSets" && this.props.permissionSets[name] === null)) {
-          updatedPermissions[name] = {
-            ...updatedPermissions[name],
-            [type]: allSelected,
-            ...(type === "edit" ? {read: true} : {})
-          };
-        }
+      filteredItems.forEach(([name]) => {
+        updatedPermissions[name] = {
+          ...updatedPermissions[name],
+          [type]: allSelected,
+          ...(type === "edit" ? {read: true} : {})
+        };
       });
 
       return {
@@ -88,15 +87,14 @@ class ProfilesModal extends React.Component {
 
   updateAllCheckboxes = () => {
     const {permissions} = this.state;
-    const {permissionSets} = this.props;
 
-    const profilesEntries = Object.entries(permissions).filter(([name]) => permissionSets[name] !== null);
-    const permissionSetsEntries = Object.entries(permissions).filter(([name]) => permissionSets[name] === null);
+    const filteredProfiles = this.getFilteredItems("Profiles");
+    const filteredPermissionSets = this.getFilteredItems("PermissionSets");
 
-    const allEditProfiles = profilesEntries.every(([_, p]) => p.edit);
-    const allReadProfiles = profilesEntries.every(([_, p]) => p.read);
-    const allEditPermissionSets = permissionSetsEntries.every(([_, p]) => p.edit);
-    const allReadPermissionSets = permissionSetsEntries.every(([_, p]) => p.read);
+    const allEditProfiles = filteredProfiles.every(([name]) => permissions[name].edit);
+    const allReadProfiles = filteredProfiles.every(([name]) => permissions[name].read);
+    const allEditPermissionSets = filteredPermissionSets.every(([name]) => permissions[name].edit);
+    const allReadPermissionSets = filteredPermissionSets.every(([name]) => permissions[name].read);
 
     this.setState({
       allEditProfiles,
@@ -104,6 +102,25 @@ class ProfilesModal extends React.Component {
       allEditPermissionSets,
       allReadPermissionSets
     });
+  };
+
+  getFilteredItems = (tableType) => {
+    const {permissionSets} = this.props;
+    const {searchTerm} = this.state;
+
+    const items = Object.entries(permissionSets)
+      .filter(([_, profile]) =>
+        tableType === "Profiles" ? profile !== null : profile === null
+      )
+      .sort((a, b) =>
+        tableType === "Profiles"
+          ? a[1].localeCompare(b[1])
+          : a[0].localeCompare(b[0])
+      );
+
+    return items.filter(([name, profile]) =>
+      (profile || name).toLowerCase().includes(searchTerm.toLowerCase())
+    );
   };
 
   applyToAllFields = () => {

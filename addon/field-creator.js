@@ -1287,6 +1287,7 @@ class App extends React.Component {
     this.setState((prevState) => ({
       fields: [...prevState.fields, {label: "", name: "", type: "Text"}],
     }));
+    this.checkAllFieldsHavePermissions();
   };
 
   removeRow = (index) => {
@@ -1478,13 +1479,15 @@ class App extends React.Component {
       }, []);
       return {...field, profiles: updatedProfiles};
     });
-
+  
     this.setState({
       fields: updatedFields,
       showProfilesModal: false,
-      currentFieldIndex: null});
-
-    this.checkAllFieldsHavePermissions();
+      currentFieldIndex: null
+    }, () => {
+      // This callback will be executed after the state has been updated
+      this.checkAllFieldsHavePermissions();
+    });
   };
 
   onSaveFieldOptions = (updatedField) => {

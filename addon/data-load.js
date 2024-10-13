@@ -242,6 +242,7 @@ export class TableModel {
     this.rows = [];
     this.scrolledHeight = 0;
     this.scrolledWidth = 0;
+    this.editedRows = new Map();//idx to {cellidx: val, cellIdx2: val2}
   }
   setScrollerElement(scroller, scrolled) {
     this.scrolled = scrolled;
@@ -305,25 +306,57 @@ export class TableModel {
       }
     }
   }
+  doSaveAll(){
+    this.editedRows.forEach((cellMap, rowIdx) => {
+      let record = {};
+      cellMap.forEach((val, cellIdx) => {
+        record[this.data.table[0][cellIdx]] = val;
+      });
+      let recordUrl;
+      let firstCell = this.data.table[rowIdx][0];
+      if (typeof firstCell == "object" && firstCell != null && firstCell.attributes && firstCell.attributes.url) {
+        recordUrl = firstCell.attributes.url;
+      }
+      sfConn.rest(recordUrl, {method: "PATCH", body: record, headers: this.headerCallout}).then(() => {
+        this.editedRows.delete(rowIdx);
+        let row = this.rows.find(r => r.idx == rowIdx);
+        row.cells.filter(c => c.dataEditValue !== undefined).forEach(c => {
+          c.label = c.dataEditValue;
+          c.dataEditValue = undefined;
+          c.isEditing = false;
+        });
+        if (this.editedRows.size == 0) {
+          this.didUpdate();
+        }
+      }).catch(error => {
+        //TODO handle error and display
+        //row.error = error.message;
+        console.log(error);
+        this.didUpdate();
+      });
+    });
+  }
   doSave(rowId) {
     let row = this.rows[rowId];
     let record = {};
     row.cells.filter(c => c.dataEditValue !== undefined).forEach(c => {
-      record[this.header[c.id].name] = c.dataEditValue;
+      record[this.data.table[0][c.idx]] = c.dataEditValue;
     });
     let recordUrl;
     let firstCell = this.data.table[row.idx][0];
-    if (typeof firstCell == "object" && firstCell != null && firstCell.attributes && firstCell.attributes.url) {
-      recordUrl = firstCell.attributes.url;
+    let idFieldIdx = this.data.table[0].indexOf("Id");
+    let recordId = this.data.table[row.idx][idFieldIdx];
+    let toolingUrl = (this.data.isTooling ? "tooling/" : "");
+    if (typeof firstCell == "object" && firstCell != null && firstCell.attributes && firstCell.attributes.type) {
+      //recordUrl = firstCell.attributes.url; wrong on entityDfinition
+      recordUrl = `/services/data/v${apiVersion}${toolingUrl}/sobjects/${firstCell.attributes.type}/${recordId}`;
     } else {
-      let idFieldIdx = this.data.table[0].indexOf("Id");
-      let recordId = this.data.table[row.idx][idFieldIdx];
       let {globalDescribe} = this.data.describeInfo.describeGlobal(this.data.isTooling);
       if (globalDescribe) {
         let keyPrefix = recordId.substring(0, 3);
         let desc = globalDescribe.sobjects.find(sobject => sobject.keyPrefix == keyPrefix);
         if (desc){
-          recordUrl = `/services/data/v${apiVersion}/sobjects/${desc.name}/${recordId}`;
+          recordUrl = `/services/data/v${apiVersion}${toolingUrl}/sobjects/${desc.name}/${recordId}`;
         }
       }
     }
@@ -339,18 +372,43 @@ export class TableModel {
     });
   }
   endEdit(rowId) {
-    this.rows[rowId].cells.filter(c => c.dataEditValue !== undefined).forEach(c => {
+    let row = this.rows[rowId];
+    if (!row) {
+      return;
+    }
+    row.cells.filter(c => c.dataEditValue !== undefined).forEach(c => {
       c.label = c.dataEditValue;
       c.dataEditValue = undefined;
       c.isEditing = false;
+      this.editedRows.delete(row.idx);
     });
     this.didUpdate();
   }
   cancelEditCell(rowId, cellId) {
-    let cell = this.rows[rowId].cells[cellId];
+    let row = this.rows[rowId];
+    let cell = row.cells[cellId];
     cell.dataEditValue = cell.label;
     cell.isEditing = false;
+    let prevEditedRow = this.editedRows.get(row.idx);
+    if (prevEditedRow){
+      prevEditedRow.delete(cell.idx);
+      if (prevEditedRow.size == 0) {
+        this.editedRows.delete(row.idx);
+      }
+    }
     this.didUpdate();
+  }
+  setEditCell(rowId, cellId, newValue){
+    let row = this.rows[rowId];
+    let cell = row.cells[cellId];
+    cell.dataEditValue = newValue;
+    cell.isEditing = false;
+    let prevEditedRow = this.editedRows.get(rowId);
+    if (!prevEditedRow){
+      prevEditedRow = new Map();
+      this.editedRows.set(row.idx, prevEditedRow);
+    }
+    prevEditedRow.set(cell.idx, newValue);
   }
   editCell(rowId, cellId) {
     let row = this.rows[rowId];
@@ -389,6 +447,12 @@ export class TableModel {
 
     cell.dataEditValue = cell.label;
     cell.isEditing = true;
+    let prevEditedRow = this.editedRows.get(row.idx);
+    if (!prevEditedRow){
+      prevEditedRow = new Map();
+      this.editedRows.set(row.idx, prevEditedRow);
+    }
+    prevEditedRow.set(cell.idx, cell.label);
     this.didUpdate();
   }
   renderData({force}) {
@@ -464,6 +528,7 @@ export class TableModel {
 
       let row = this.data.table[r];
       let dataRow = {cells: []};
+      let editedRow = this.editedRows.get(r);
       for (let c = this.firstColIdx; c < this.lastColIdx; c++) {
         if (this.colVisible[c] == 0) {
           continue;
@@ -502,6 +567,13 @@ export class TableModel {
         }
         dataCell.id = dataRow.cells.length;
         dataCell.idx = c;
+        if (editedRow){
+          let editedVal = editedRow.get(c);
+          if (editedVal != undefined) {
+            dataCell.dataEditValue = editedVal;
+            dataCell.isEditing = true;
+          }
+        }
         dataRow.cells.push(dataCell);
       }
       dataRow.id = this.rows.length;
@@ -735,7 +807,7 @@ class ScrollTableCell extends React.Component {
     }, 100); // Set timeout for 500ms
   }
   onDataEditValueInput(e) {
-    let {model, cell} = this.props;
+    let {model, cell, row} = this.props;
     const userInput = e.target.value;
     //TODO state
     if (cell.suggestions){
@@ -749,6 +821,7 @@ class ScrollTableCell extends React.Component {
       showSuggestions: true
     });
     cell.dataEditValue = userInput;
+    model.setEditCell(row.id, cell.id, userInput);
     model.didUpdate();
   }
   onSuggestionClick(e) {
@@ -924,7 +997,16 @@ export class ScrollTable extends React.Component {
               return result;
             })
           )
-        )
+        ),
+        model.editedRows.size ? h("div", {className: "footer-edit-bar"}, h("span", {className: "edit-bar"},
+          h("button", {
+            name: "saveBtn",
+            title: "Save all editd records",
+            className: "button button-brand",
+            disabled: model.spinnerCount != 0 ? true : false,
+            onClick: this.onDoSaveAll
+          }, "Save all")
+        )) : null
       )
     );
   }

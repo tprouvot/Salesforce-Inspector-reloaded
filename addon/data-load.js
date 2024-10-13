@@ -311,13 +311,23 @@ export class TableModel {
     row.cells.filter(c => c.dataEditValue !== undefined).forEach(c => {
       record[this.header[c.id].name] = c.dataEditValue;
     });
-    let recordId = "";
-    let objectType = "";
-    row.cells.filter(c => this.header[c.id].name == "Id").forEach(h => {
-      recordId = h.label == "" ? null : h.label;
-      objectType = h.objectTypes[0];
-    });
-    let recordUrl = `/services/data/v${apiVersion}/sobjects/${objectType}/${recordId}`;
+    let recordUrl;
+    let firstCell = this.data.table[row.idx][0];
+    if (typeof firstCell == "object" && firstCell != null && firstCell.attributes && firstCell.attributes.url) {
+      recordUrl = firstCell.attributes.url;
+    } else {
+      let idFieldIdx = this.data.table[0].indexOf("Id");
+      let recordId = this.data.table[row.idx][idFieldIdx];
+      let {globalDescribe} = this.data.describeInfo.describeGlobal(this.data.isTooling);
+      if (globalDescribe) {
+        let keyPrefix = recordId.substring(0, 3);
+        let desc = globalDescribe.sobjects.find(sobject => sobject.keyPrefix == keyPrefix);
+        if (desc){
+          recordUrl = `/services/data/v${apiVersion}/sobjects/${desc.name}/${recordId}`;
+        }
+      }
+    }
+
     //TODO spinfor
     sfConn.rest(recordUrl, {method: "PATCH", body: record, headers: this.headerCallout}).then(() => {
       //do not refresh trigger data update because too complicated.
@@ -350,7 +360,7 @@ export class TableModel {
       return;
     }
     // do not allow edit if no id column
-    if (!this.header.some(c => this.header[c.id].name == "Id")) {
+    if (!this.data.table[0].some(c => c == "Id")) {
       return;
     }
     //do not allow edit of object column
@@ -818,7 +828,7 @@ class ScrollTableCell extends React.Component {
         className += " scrolltable-cell-diff";
       }
       return h("td", {className, style: {minWidth: colWidth + "px", height: rowHeight + "px"}},
-        cell.linkable ? h("a", {href: "about:blank", title: "Show all data", onClick: this.onClick, onDoubleClick: this.onTryEdit}, cellLabel) : h("div", {onDoubleClick: this.onTryEdit}, cellLabel),
+        cell.linkable ? h("a", {href: "about:blank", title: "Show all data", onClick: this.onClick, onDoubleClick: this.onTryEdit}, cellLabel) : h("div", {style: {height: "100%"}, onDoubleClick: this.onTryEdit}, cellLabel),
         cell.showMenu ? h("div", {className: "pop-menu"},
           cell.links.map((l, idx) => {
             let arr = [];
@@ -1330,7 +1340,7 @@ export class Editor extends React.Component {
           )
         ),
         h("div", {className: "editor-wrapper"},
-          h("div", {ref: "editorMirror", className: "editor_container_mirror"}, highlighted.map((s, i) => h("span", s.attributes, s.value)),
+          h("div", {ref: "editorMirror", className: "editor_container_mirror"}, highlighted.map((s) => h("span", s.attributes, s.value)),
             endOfText
           ),
           h("textarea", {id: "editor", autoComplete: "off", autoCorrect: "off", spellCheck: "false", autoCapitalize: "off", className: "editor_textarea", ref: "editor", onScroll: this.onScroll, onKeyUp: this.editorAutocompleteEvent, onMouseUp: this.handleMouseUp, onSelect: this.editorAutocompleteEvent, onInput: this.editorAutocompleteEvent, onKeyDown: this.handlekeyDown, onBlur: this.onBlur})

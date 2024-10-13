@@ -102,6 +102,10 @@ export let sfConn = {
     } else if (xhr.status == 401) {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
       sessionError = error;
+      //TODO check if login again but no token else modfy getSession when oldToken exists
+      //const ACCESS_TOKEN = "access_token";
+      //localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
+      //localStorage.removeItem(sfHost + "_" + ACCESS_TOKEN);
       showInvalidTokenBanner();
       let err = new Error();
       err.name = "Unauthorized";

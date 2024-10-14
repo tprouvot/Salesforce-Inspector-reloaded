@@ -61,7 +61,7 @@ body {
   overflow: hidden;
   margin: 0;
   background-color: #B0C4DF;
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png');
+  background-image: url(images/lightning_blue_background.png);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: 0px 48px;
@@ -243,7 +243,7 @@ input[type=default] {
 }
 
 input[type=search] {
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/search.svg');
+  background-image: url(images/search.svg);
   background-repeat: no-repeat;
   background-size: 1rem;
   background-position: 10px 7px;
@@ -251,7 +251,7 @@ input[type=search] {
 }
 
 input[type=save] {
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/save.svg');
+  background-image: url(images/save.svg);
   background-repeat: no-repeat;
   background-size: 1rem;
   background-position: 10px 7px;
@@ -264,7 +264,9 @@ input[type="checkbox"] {
 }
 
 input.query-control{
+  width: -moz-available;
   width: -webkit-fill-available;
+  width: fill-available;
 }
 textarea:not([readonly]):focus,
 button:active,
@@ -367,7 +369,7 @@ textarea[readonly] {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1.4rem;
   ;
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
+  -webkit-mask-image: url(images/help.svg);
   -webkit-mask-position: center;
   background-color: #919191;
 }
@@ -517,15 +519,15 @@ button.toggle:hover .button-toggle-icon {
 }
 
 button.expand .button-toggle-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/down.svg');
+  -webkit-mask-image: url(images/down.svg);
 }
 
 button.contract .button-toggle-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/up.svg');
+  -webkit-mask-image: url(images/up.svg);
 }
 
 button.toggle .button-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/light_bulb.svg');
+  -webkit-mask-image: url(images/light_bulb.svg);
 }
 
 .autocomplete-header {
@@ -584,112 +586,112 @@ button.toggle .button-icon {
 }
 
 .relationshipName .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/relate.svg');
+  -webkit-mask-image: url(images/relate.svg);
   background-color: #0070d2;
 }
 
 .object .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/sobject.svg');
+  -webkit-mask-image: url(images/sobject.svg);
   background-color: #04844B;
 }
 
 .variable .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/variable.svg');
+  -webkit-mask-image: url(images/variable.svg);
 }
 
 .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/quotation_marks.svg');
+  -webkit-mask-image: url(images/quotation_marks.svg);
 }
 
 .null .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/steps.svg');
+  -webkit-mask-image: url(images/steps.svg);
 }
 
 .fieldName .autocomplete-icon {
   /* default icon */
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/question_mark.svg');
+  -webkit-mask-image: url(images/question_mark.svg);
 }
 
 .fieldName.reference .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/record_lookup.svg');
+  -webkit-mask-image: url(images/record_lookup.svg);
 }
 
 .fieldName.string .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/string.svg');
+  -webkit-mask-image: url(images/string.svg);
 }
 
 .fieldName.id .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/anchor.svg');
+  -webkit-mask-image: url(images/anchor.svg);
 }
 
 .fieldName.picklist .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/picklist.svg');
+  -webkit-mask-image: url(images/picklist.svg);
 }
 
 .fieldName.multipicklist .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/multi-picklist.svg');
+  -webkit-mask-image: url(images/multi-picklist.svg);
 }
 
 .fieldName.boolean .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/boolean.svg');
+  -webkit-mask-image: url(images/boolean.svg);
 }
 
 .fieldName.phone .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/call.svg');
+  -webkit-mask-image: url(images/call.svg);
 }
 
 .fieldName.textarea .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/textarea.svg');
+  -webkit-mask-image: url(images/textarea.svg);
 }
 
 .fieldName.url .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/link.svg');
+  -webkit-mask-image: url(images/link.svg);
 }
 
 .fieldName.int .autocomplete-icon,
 .fieldName.double .autocomplete-icon,
 .fieldName.long .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/number.svg');
+  -webkit-mask-image: url(images/number.svg);
 }
 
 .fieldName.address .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/home.svg');
+  -webkit-mask-image: url(images/home.svg);
 }
 
 .fieldName.datetime .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/date-time.svg');
+  -webkit-mask-image: url(images/date-time.svg);
 }
 
 .fieldName.date .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/date.svg');
+  -webkit-mask-image: url(images/date.svg);
 }
 
 .fieldName.currency .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/currency.svg');
+  -webkit-mask-image: url(images/currency.svg);
 }
 
 .fieldName.email .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/email.svg');
+  -webkit-mask-image: url(images/email.svg);
 }
 
 .fieldName.location .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/checkin.svg');
+  -webkit-mask-image: url(images/checkin.svg);
 }
 
 .fieldName.percent .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/percent.svg');
+  -webkit-mask-image: url(images/percent.svg);
 }
 
 .fieldName.encryptedstring .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/lock.svg');
+  -webkit-mask-image: url(images/lock.svg);
 }
 
 .fieldName.time .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/clock.svg');
+  -webkit-mask-image: url(images/clock.svg);
 }
 
 .fieldName.complexvalue .autocomplete-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/advanced_function.svg');
+  -webkit-mask-image: url(images/advanced_function.svg);
 }
 
 .header {
@@ -724,4 +726,7 @@ button.toggle .button-icon {
 }
 .blue{
   color:#0070d2;
+}
+.reset-margin{
+  margin: 0;;
 }

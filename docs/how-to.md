@@ -112,7 +112,7 @@ Example:
 
 If you want to _always_ open extension's links in a new tab, you can set the `openLinksInNewTab` property to `true`
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/e6ae08a9-1ee9-4809-a820-1377aebcd547)
+<img width="904" alt="Open link in a new tab" src="https://github.com/user-attachments/assets/c2586ae8-49e9-4e3f-8a3f-31b2a3689ea1">
 
 If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
 Example:
@@ -122,13 +122,15 @@ Example:
 - Org <ins>L</ins>imits : l
 - <ins>D</ins>ownload Metadata : d
 - E<ins>x</ins>plore API : x
+- Event <ins>M</ins>onitor : m
+- <ins>F</ins>ield Creator : f
 
 ## Disable metadata search from Shortcut tab
 
 By default when you enter keyword in the Shortcut tab, the search is performed on the Setup link shortcuts _AND_ metadata (Flows, PermissionSets and Profiles).
-If you want to disable the search on the metadata, set `metadataShortcutSearch` to `false`
+If you want to disable the search on the metadata, update related option:
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/a31566d8-0ad4-47e5-a1ab-3eada43b3430)
+<img width="892" alt="image" src="https://github.com/user-attachments/assets/2541fc22-9f1b-4cd1-90cd-d4615b313d96">
 
 ## Enable / Disable Flow scrollability
 
@@ -173,9 +175,9 @@ Since Winter 24, there is a beta functionality to view a summary of the Permissi
 
 <img width="718" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/36448cd1-260e-49bd-9dfd-c61910f813f4">
 
-You can enable this view for the Shortcut search by creating a new localVariable as shown below.
+You can enable this view for the Shortcut search by enabling the option as shown below.
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/f3093e4b-438c-4795-b64a-8d37651906a5)
+<img width="883" alt="Enable Summary" src="https://github.com/user-attachments/assets/4487d0a4-8ed0-4467-993a-17900bc79ce6">
 
 Then when you click on a PermissionSet / PermissionSetGroups search result, you'll be redirected to the summary.
 
@@ -194,7 +196,7 @@ If you want to prevent auto assignment rules, set the `createUpdateRestCalloutHe
 Since the plugin's api version is only updated when all productions have been updated to the new release, you may want to use the latest version during preview windows.
 
 > [!IMPORTANT]
-> When you manually update the API version, it won't be overriden by extension future updates.
+> When you manually update the API version, it won't be overridden by extension future updates.
 
 ![2023-11-10_09-50-55 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6ae51a29-9887-41a6-8148-d9e12c2dc10d)
 
@@ -229,6 +231,10 @@ are displayed.
 
 ## Test GraphQL query
 
+> [!WARNING]
+> DEPRECATED : Since you can use Data Export to test GraphQL and also REST Explore to run the request, this should not be useful anymore.
+
+
 - Open popup and click on "Explore API" button.
 - Right click on the page and select "Inspect"
 - Execute the code in dev console:
@@ -247,42 +253,14 @@ From the option page, you can customize the default favicon by:
 
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
 
-<img width="901" alt="Customize favicon" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
+<img width="878" alt="image" src="https://github.com/user-attachments/assets/fdf24a37-2cab-402e-a101-4a20bc4e1ae4">
 
-Now if you want to set a random favicon for all of your visited orgs, open dev console from one of the extension page and paste following code in dev console:
+Now if you want to populate all the orgs you visited with a custom favicon, you have two options:
+- Smart mode enabled: this will analyze your environment name and populate a favicon based on this (blue for dev, green for int, purple for uat and orange for full)
+- Random: this will choose a random color among all the predefined colors
 
-``` js
-let colors = [
-    'olive', 'darkorange', 'pink', 'purple', 'firebrick', 'hotpink', 'skyblue',
-    'lightcoral', 'gold', 'indigo', 'teal', 'lime', 'crimson', 'peru', 'cyan',
-    'tomato', 'orchid', 'magenta', 'mediumvioletred', 'dodgerblue', 'slateblue',
-    'sienna', 'maroon', 'mediumseagreen', 'plum', 'turquoise', 'deepskyblue',
-    'rosybrown', 'slategray', 'darkslateblue', 'palevioletred'
-];
-
-let orgs = Object.keys(localStorage).filter((localKey) =>
-    localKey.endsWith("_isSandbox")
-);
-
-orgs.forEach((org) => {
-    let sfHost = org.substring(0, org.indexOf("_isSandbox"));
-    let existingColor = localStorage.getItem(sfHost + "_customFavicon");
-
-    if (!existingColor) {  // Only assign a color if none is set
-        if (colors.length === 0) {
-            console.warn("No more colors available.");
-            return;
-        }
-        let randomIndex = Math.floor(Math.random() * colors.length);
-        let randomFavicon = colors[randomIndex];
-        colors.splice(randomIndex, 1);  // Remove the used color from the list
-        console.info(sfHost + "_customFavicon", randomFavicon);
-        localStorage.setItem(sfHost + "_customFavicon", randomFavicon);
-    } else {
-        console.info(sfHost + " already has a customFavicon: " + existingColor);
-    }
-});
-```
+Then you click on Populate All and that's it!
+Note: orgs with an existing customized favicon won't be affected.
 
 ## Customize sandbox banner color
 
@@ -332,3 +310,18 @@ ie for KeepAccountTeam:
 ```
 
 <img width="503" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/e2d21970-ddc5-4c42-a54e-ffb7ffdcb278">
+
+## Highlight PROD with a top border
+
+Production environment are critical, to avoid confusion with other orgs, you can enable an option which will add a 2px border on the top of the Salesforce UI and also in the extension's pages.
+
+Under `User Experience` tab, enable the option `Highlight PROD with a top border (color from favicon)`.
+
+<img width="955" alt="highlight prod with a top border" src="https://github.com/user-attachments/assets/4ff26e23-08b2-447a-be8d-004488f2a3a1">
+
+
+## Import / Export configuration (saved query etc.)
+
+To export and import your current configuration, go to the options page and click the corresponding icon in the header:
+
+<img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753">

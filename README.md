@@ -88,7 +88,7 @@ Why Beta Testing?
 
 Report Bugs: If you discover a bug, please fill in an issue [here](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=bug,beta&projects=&template=bug_report.md&title=[BETA]). Detailed bug reports help us address issues quickly.
 
-To become a beta tester, [install the release candidate version](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf).
+To become a beta tester, [install the beta version](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf).
 Thank you for shaping our extension's future! Your feedback makes it better.
 
 ### Local Installation

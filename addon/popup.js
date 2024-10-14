@@ -142,7 +142,7 @@ class App extends React.PureComponent {
       "e": ["click", "dataExportBtn"],
       "i": ["click", "dataImportBtn"],
       "l": ["click", "limitsBtn"],
-      "c": ["click", "fieldCreatorBtn"],
+      "t": ["click", "fieldCreatorBtn"],
       "d": ["click", "metaRetrieveBtn"],
       "x": ["click", "apiExploreBtn"],
       "h": ["click", "homeBtn"],
@@ -305,7 +305,7 @@ class App extends React.PureComponent {
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ),
             h("div", {},
-              h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Field ", h("u", {}, "C"), "reator (beta)"))
+              h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Field Crea", h("u", {}, "t"), "or (beta)"))
             ),
           ),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},

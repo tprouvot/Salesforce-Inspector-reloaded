@@ -389,10 +389,10 @@ export class TableModel {
     let cell = row.cells[cellId];
     cell.dataEditValue = cell.label;
     cell.isEditing = false;
-    let prevEditedRow = this.editedRows.get(row.idx);
-    if (prevEditedRow){
-      prevEditedRow.delete(cell.idx);
-      if (prevEditedRow.size == 0) {
+    let rowEditedCells = this.editedRows.get(row.idx);
+    if (rowEditedCells){
+      rowEditedCells.delete(cell.idx);
+      if (rowEditedCells.size == 0) {
         this.editedRows.delete(row.idx);
       }
     }
@@ -403,12 +403,58 @@ export class TableModel {
     let cell = row.cells[cellId];
     cell.dataEditValue = newValue;
     cell.isEditing = false;
-    let prevEditedRow = this.editedRows.get(rowId);
-    if (!prevEditedRow){
-      prevEditedRow = new Map();
-      this.editedRows.set(row.idx, prevEditedRow);
+    let rowEditedCells = this.editedRows.get(rowId);
+    if (!rowEditedCells){
+      rowEditedCells = new Map();
+      this.editedRows.set(row.idx, rowEditedCells);
     }
-    prevEditedRow.set(cell.idx, newValue);
+    rowEditedCells.set(cell.idx, newValue);
+  }
+  editRow(rowId) {
+    let row = this.rows[rowId];
+    let rowEditedCells = this.editedRows.get(row.idx);
+    if (!rowEditedCells){
+      rowEditedCells = new Map();
+      this.editedRows.set(row.idx, rowEditedCells);
+    }
+    for (let cellId = 0; cellId < row.cells.length; cellId++) {
+      let cell = row.cells[cellId];
+      //do not allow edit of id
+      if (this.header[cellId] && this.header[cellId].name && this.header[cellId].name.toLowerCase() == "Id") {
+        continue;
+      }
+      // do not allow edit if no id column
+      if (!this.data.table[0].some(c => c == "Id")) {
+        continue;
+      }
+      //do not allow edit of object column
+      if (cell.linkable && !this.isRecordId(cell.label)){
+        continue;
+      }
+      // not sub record for moment
+      if (this.header[cell.id].name && this.header[cell.id].name.includes(".")){
+        continue;
+      }
+      let tableRow = this.data.table[row.idx];
+      let objectCell = tableRow && tableRow.length ? tableRow[0] : null;
+      if (objectCell && objectCell.attributes && objectCell.attributes.type) {
+        let {sobjectStatus, sobjectDescribe} = this.data.describeInfo.describeSobject(this.data.isTooling, objectCell.attributes.type);
+        if (sobjectStatus == "ready") {
+          let picklistValues = sobjectDescribe.fields
+            .filter(f => f.name.toLowerCase() == this.header[cell.id].name.toLowerCase())
+            .flatMap(f => f.picklistValues)
+            .map(pv => pv.value);
+          if (picklistValues && picklistValues.length) {
+            cell.suggestions = picklistValues;
+            cell.filteredSuggestions = cell.suggestions;
+          }
+        }
+      }
+      cell.dataEditValue = cell.label;
+      cell.isEditing = true;
+      rowEditedCells.set(cell.idx, cell.label);
+    }
+    this.didUpdate();
   }
   editCell(rowId, cellId) {
     let row = this.rows[rowId];
@@ -447,12 +493,12 @@ export class TableModel {
 
     cell.dataEditValue = cell.label;
     cell.isEditing = true;
-    let prevEditedRow = this.editedRows.get(row.idx);
-    if (!prevEditedRow){
-      prevEditedRow = new Map();
-      this.editedRows.set(row.idx, prevEditedRow);
+    let rowEditedCells = this.editedRows.get(row.idx);
+    if (!rowEditedCells){
+      rowEditedCells = new Map();
+      this.editedRows.set(row.idx, rowEditedCells);
     }
-    prevEditedRow.set(cell.idx, cell.label);
+    rowEditedCells.set(cell.idx, cell.label);
     this.didUpdate();
   }
   renderData({force}) {
@@ -699,6 +745,7 @@ export class TableModel {
       } else {
         cell.links.push({withIcon: true, href: cell.recordId, label: "Copy Id", className: "copy-id", action: "copy"});
       }
+      cell.links.push({withIcon: true, href: cell.recordId, label: "Edit", title: "Double click on cell to edit", className: "edit-record", action: "edit"});
       self.didUpdate();
     }
     if (cell.showMenu) {
@@ -747,6 +794,7 @@ class ScrollTableCell extends React.Component {
     this.onBlur = this.onBlur.bind(this);
     this.onSuggestionClick = this.onSuggestionClick.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
+    this.onEditRecord = this.onEditRecord.bind(this);
     this.state = {
       activeSuggestion: 0,
       showSuggestions: false
@@ -755,6 +803,11 @@ class ScrollTableCell extends React.Component {
   onTryEdit() {
     let {model} = this.props;
     model.editCell(this.row.id, this.cell.id);
+  }
+  onEditRecord(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.editRow(this.row.id);
   }
   componentDidMount() {
 
@@ -910,8 +963,13 @@ class ScrollTableCell extends React.Component {
             }
             arr.push(l.label);
             let attributes = {href: l.href, target: "_blank", className: l.className, key: "link" + idx};
+            if (l.title) {
+              attributes.title = l.title;
+            }
             if (l.action == "copy") {
               attributes.onClick = this.copyToClipboard;
+            } else if (l.action == "edit") {
+              attributes.onClick = this.onEditRecord;
             } else if (l.action == "download") {
               attributes.onClick = this.downloadFile;
             } else if (l.action == "abord") {

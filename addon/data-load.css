@@ -175,6 +175,14 @@ td.scrolltable-cell-diff {
   background-color: #706E6B;
 }
 
+.pop-menu a.edit-record .icon {
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/edit.svg');
+  -webkit-mask-position: center;
+  background-color: #706E6B;
+}
+
 .pop-menu a.download-salesforce .icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;

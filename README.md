@@ -43,7 +43,11 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://tprouvot.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
 
-- SalesforceBen [article](https://www.salesforceben.com/salesforce-inspector-reloaded/), [video](https://youtu.be/dvYp5mKxxzM?si=hBCIaGOyqAJlerea)
+- SalesforceBen
+  - [Salesforce Inspector Reloaded](https://www.salesforceben.com/salesforce-inspector-reloaded/)
+  - [Video](https://youtu.be/dvYp5mKxxzM?si=hBCIaGOyqAJlerea)
+  - [Explore REST API With Salesforce Inspector Reloaded](https://www.salesforceben.com/explore-rest-api-with-salesforce-inspector-reloaded/)
+  - [Inspector Reloaded Update: Salesforce Event Monitor, Field Creator, and Export Config](https://www.salesforceben.com/inspector-reloaded-update-salesforce-event-monitor-field-creator-and-export-config/)
 - ApexHours [article](https://www.apexhours.com/salesforce-inspector-reloaded/)
 - SalesforceWay [podcast](https://salesforceway.com/podcast/salesforce-inspector-reloaded/)
 

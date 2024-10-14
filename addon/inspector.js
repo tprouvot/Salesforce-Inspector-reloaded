@@ -25,6 +25,7 @@ export let sfConn = {
       if (message) {
         this.instanceHostname = getMyDomain(message.hostname);
         this.sessionId = message.key;
+        localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, message.key);
       }
     }
     const IS_SANDBOX = "isSandbox";
@@ -102,15 +103,22 @@ export let sfConn = {
     } else if (xhr.status == 401) {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
       sessionError = error;
-      //TODO check if login again but no token else modfy getSession when oldToken exists
-      //const ACCESS_TOKEN = "access_token";
-      //localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
-      //localStorage.removeItem(sfHost + "_" + ACCESS_TOKEN);
-      showInvalidTokenBanner();
-      let err = new Error();
-      err.name = "Unauthorized";
-      err.message = error;
-      throw err;
+      let message = await new Promise(resolve =>
+        chrome.runtime.sendMessage({message: "getSession", sfHost: this.instanceHostname}, resolve));
+      const ACCESS_TOKEN = "access_token";
+      let oldToken = localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
+      if (message && message.key && message.key != oldToken) {
+        this.instanceHostname = getMyDomain(message.hostname);
+        this.sessionId = message.key;
+        localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, message.key);
+        return await this.rest(url, {logErrors, method, api, body, bodyType, responseType, headers, progressHandler, withoutCache: true});
+      } else {
+        showInvalidTokenBanner();
+        let err = new Error();
+        err.name = "Unauthorized";
+        err.message = error;
+        throw err;
+      }
     } else if (xhr.status == 431) {
       let err = new Error();
       err.name = "Bad Message";

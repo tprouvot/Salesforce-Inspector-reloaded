@@ -325,3 +325,10 @@ Under `User Experience` tab, enable the option `Highlight PROD with a top border
 To export and import your current configuration, go to the options page and click the corresponding icon in the header:
 
 <img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753">
+
+## Hide some buttons in the popup
+
+Since the extension offers more features, the number of button is increasing.
+Some of the users may don't need some of those, to make the popup lighter some of the buttons can be hidden:
+
+<img width="1024" alt="Hide Buttons" src="https://github.com/user-attachments/assets/50b4cb3c-7886-4b38-96a9-b5a6d93b69e6">

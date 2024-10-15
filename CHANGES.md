@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.26
+
+- Add new options to hide buttons in popup
+
 ## Version 1.25
 
 - Fix `Field Creator` shortcut key [issue 608](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/608)

@@ -1,4 +1,4 @@
-export let apiVersion = localStorage.getItem("apiVersion") == null ? "60.0" : localStorage.getItem("apiVersion");
+export let apiVersion = localStorage.getItem("apiVersion") == null ? "61.0" : localStorage.getItem("apiVersion");
 export let sessionError;
 export let sfConn = {
 
@@ -102,22 +102,24 @@ export let sfConn = {
       throw err;
     } else if (xhr.status == 401) {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
-      sessionError = error;
-      let message = await new Promise(resolve =>
-        chrome.runtime.sendMessage({message: "getSession", sfHost: this.instanceHostname}, resolve));
-      const ACCESS_TOKEN = "access_token";
-      let oldToken = localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
-      if (message && message.key && message.key != oldToken) {
-        this.instanceHostname = getMyDomain(message.hostname);
-        this.sessionId = message.key;
-        localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, message.key);
-        return await this.rest(url, {logErrors, method, api, body, bodyType, responseType, headers, progressHandler, withoutCache: true});
-      } else {
-        showInvalidTokenBanner();
-        let err = new Error();
-        err.name = "Unauthorized";
-        err.message = error;
-        throw err;
+      const ACCESS_TOKEN = "_access_token";
+      let oldToken = localStorage.getItem(this.instanceHostname + ACCESS_TOKEN);
+      if (oldToken){
+        sessionError = error;
+        let message = await new Promise(resolve =>
+          chrome.runtime.sendMessage({message: "getSession", sfHost: this.instanceHostname}, resolve));
+        if (message && message.key && message.key != oldToken) {
+          this.instanceHostname = getMyDomain(message.hostname);
+          this.sessionId = message.key;
+          localStorage.setItem(this.instanceHostname + ACCESS_TOKEN, message.key);
+          return await this.rest(url, {logErrors, method, api, body, bodyType, responseType, headers, progressHandler, withoutCache: true});
+        } else {
+          showInvalidTokenBanner();
+          let err = new Error();
+          err.name = "Unauthorized";
+          err.message = error;
+          throw err;
+        }
       }
     } else if (xhr.status == 431) {
       let err = new Error();

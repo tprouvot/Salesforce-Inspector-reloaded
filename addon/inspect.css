@@ -50,7 +50,7 @@ body,
 
 .prod {
   background-color: #e0a4b5;
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png');
+  background-image: url(images/lightning_red_background.png);
 }
 
 [data-reactroot] {
@@ -71,7 +71,7 @@ body {
   font-size: .8125rem;
   margin: 0;
   background-color: #B0C4DF;
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png');
+  background-image: url(images/lightning_blue_background.png);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: 0px 48px;
@@ -293,7 +293,7 @@ thead{
   display: inline-block;
   width: 16px;
   height: 16px;
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/settings.svg');
+  -webkit-mask-image: url(images/settings.svg);
   margin: 3px 0px -3px 0px;
 }
 

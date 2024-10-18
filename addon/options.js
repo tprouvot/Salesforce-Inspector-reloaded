@@ -441,7 +441,7 @@ class FaviconOption extends React.Component {
         "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue", "CornflowerBlue",
         "SlateBlue", "SteelBlue", "SkyBlue", "PowderBlue", "MediumSlateBlue",
         "Indigo", "BlueViolet", "MediumPurple", "CadetBlue", "Aqua",
-        "Turquoise", "DarkTurquoise", "Teal", "LightSlateGray", "DarkCyan"
+        "Turquoise", "DarkTurquoise", "Teal", "LightSlateGray", "MidnightBlue"
       ],
       uat: [
         "MediumOrchid", "Orchid", "DarkOrchid", "DarkViolet", "DarkMagenta",
@@ -453,7 +453,7 @@ class FaviconOption extends React.Component {
         "LimeGreen", "SeaGreen", "MediumSeaGreen", "ForestGreen", "Green",
         "DarkGreen", "YellowGreen", "OliveDrab", "DarkOliveGreen",
         "SpringGreen", "LawnGreen", "DarkKhaki",
-        "GreenYellow", "DarkSeaGreen", "MediumAquamarine", "Aquamarine",
+        "GreenYellow", "DarkSeaGreen", "MediumAquamarine", "DarkCyan",
         "Teal", "Jade", "MediumForestGreen", "HunterGreen"
       ],
       full: [

@@ -46,14 +46,14 @@ body {
   height: 100%;
   display: flex;
   background-color: #B0C4DF;
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png');
+  background-image: url(images/lightning_blue_background.png);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: 0px 48px;
 }
 .prod {
   background-color: #e0a4b5;
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_red_background.png');
+  background-image: url(images/lightning_red_background.png);
 }
 #root {
   display: flex;
@@ -122,7 +122,7 @@ body {
   height: 1.4rem;;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1.4rem;;
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/help.svg');
+  -webkit-mask-image: url(images/help.svg);
   -webkit-mask-position: center;
   background-color: #919191;
 }
@@ -421,13 +421,13 @@ button.toggle:hover .button-toggle-icon  {
   margin-right: 0;
 }
 button.expand .button-toggle-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/down.svg');
+  -webkit-mask-image: url(images/down.svg);
 }
 button.contract .button-toggle-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/up.svg');
+  -webkit-mask-image: url(images/up.svg);
 }
 .button.field-info .button-icon {
-  -webkit-mask-image: url('chrome-extension://__MSG_@@extension_id__/images/salesforce-inspector-logo.svg');
+  -webkit-mask-image: url(images/salesforce-inspector-logo.svg);
 }
 .area.result-area {
   padding: 0;

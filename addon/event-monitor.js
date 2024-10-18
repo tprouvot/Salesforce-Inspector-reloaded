@@ -83,6 +83,11 @@ class Model {
     copyToClipboard(JSON.stringify(this.selectedEvent ? this.selectedEvent : this.events, null, "    "), null, "  ");
   }
 
+  clearEvents(){
+    this.events = [];
+  }
+
+
   /**
    * Show the spinner while waiting for a promise.
    * didUpdate() must be called after calling spinFor.
@@ -121,6 +126,7 @@ class App extends React.Component {
     this.onSelectEvent = this.onSelectEvent.bind(this);
     this.onReplayIdChange = this.onReplayIdChange.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
+    this.onClearEvents = this.onClearEvents.bind(this);
     this.confirmPopupYes = this.confirmPopupYes.bind(this);
     this.confirmPopupNo = this.confirmPopupNo.bind(this);
     this.retrievePlatformEvent = this.retrievePlatformEvent.bind(this);
@@ -305,6 +311,12 @@ class App extends React.Component {
     model.didUpdate();
   }
 
+  onClearEvents(){
+    let {model} = this.props;
+    model.clearEvents();
+    model.didUpdate();
+  }
+
   onToggleHelp(e) {
     let {model} = this.props;
     model.toggleHelp();
@@ -399,7 +411,12 @@ class App extends React.Component {
             h("button", {disabled: model.events.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
           ),
           h("span", {className: "channel-listening"}, model.channelListening),
-          h("span", {className: "channel-error"}, model.channelError)
+          h("span", {className: "channel-error"}, model.channelError),
+          h("span", {className: "result-status flex-right"},
+            h("div", {className: "button-group"},
+              h("button", {disabled: model.events.length == 0, onClick: this.onClearEvents, title: "Clear Events"}, "Clear")
+            )
+          ),
         ),
         h("div", {id: "result-table"},
           h("div", {},

@@ -2232,7 +2232,7 @@ class App extends React.Component {
               )
             ),
             h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records"),
-            model.tableModel.editedRows.size ? h("button", {onClick: this.onSaveAll, title: "Save all edited records", className: "highlighted"}, "Save all") : null
+            model.tableModel.editedRows.values().some(r => r.values().some(cell => (cell.dataEditValue != null))) ? h("button", {onClick: this.onSaveAll, title: "Save all edited records", className: "highlighted"}, "Save all") : null
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
           h("span", {className: "result-status flex-right"},

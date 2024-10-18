@@ -242,7 +242,7 @@ export class TableModel {
     this.rows = [];
     this.scrolledHeight = 0;
     this.scrolledWidth = 0;
-    this.editedRows = new Map();//idx to {cellidx: val, cellIdx2: val2}
+    this.editedRows = new Map();//idx to {cellidx: {dataEditValue:}, cellIdx2: {dataEditValue:}}
   }
   setScrollerElement(scroller, scrolled) {
     this.scrolled = scrolled;
@@ -307,10 +307,20 @@ export class TableModel {
     }
   }
   doSaveAll(){
+    let cnt = this.editedRows.size;
     this.editedRows.forEach((cellMap, rowIdx) => {
+      cnt--;
       let record = {};
-      cellMap.forEach((val, cellIdx) => {
-        record[this.data.table[0][cellIdx]] = val;
+      if (!cellMap.values().some(cell => (cell.dataEditValue != null))) {
+        if (cnt == 0) {
+          this.didUpdate();
+        }
+        return;
+      }
+      cellMap.forEach((cell, cellIdx) => {
+        if (cell.dataEditValue != null) {
+          record[this.data.table[0][cellIdx]] = cell.dataEditValue;
+        }
       });
       let recordUrl;
       let firstCell = this.data.table[rowIdx][0];
@@ -318,14 +328,19 @@ export class TableModel {
         recordUrl = firstCell.attributes.url;
       }
       sfConn.rest(recordUrl, {method: "PATCH", body: record, headers: this.headerCallout}).then(() => {
-        this.editedRows.delete(rowIdx);
         let row = this.rows.find(r => r.idx == rowIdx);
-        row.cells.filter(c => c.dataEditValue !== undefined).forEach(c => {
+        row.cells.filter(c => c.dataEditValue !== null).forEach(c => {
           c.label = c.dataEditValue;
-          c.dataEditValue = undefined;
+          c.dataEditValue = null;
           c.isEditing = false;
         });
-        if (this.editedRows.size == 0) {
+        cellMap.forEach(cell => {
+          cell.label = cell.dataEditValue;
+          cell.dataEditValue = null;
+          cell.isEditing = false;
+        });
+
+        if (cnt == 0) {
           this.didUpdate();
         }
       }).catch(error => {
@@ -380,21 +395,26 @@ export class TableModel {
       c.label = c.dataEditValue;
       c.dataEditValue = undefined;
       c.isEditing = false;
-      this.editedRows.delete(row.idx);
+    });
+    this.editedRows.get(row.idx).forEach((cell) => {
+      if (cell.dataEditValue != null) {
+        cell.label = cell.dataEditValue;
+        cell.dataEditValue = null;
+        cell.isEditing = false;
+      }
     });
     this.didUpdate();
   }
   cancelEditCell(rowId, cellId) {
     let row = this.rows[rowId];
     let cell = row.cells[cellId];
-    cell.dataEditValue = cell.label;
+    cell.dataEditValue = null;
     cell.isEditing = false;
     let rowEditedCells = this.editedRows.get(row.idx);
     if (rowEditedCells){
-      rowEditedCells.delete(cell.idx);
-      if (rowEditedCells.size == 0) {
-        this.editedRows.delete(row.idx);
-      }
+      let c = rowEditedCells.get(cell.idx);
+      c.dataEditValue = null;
+      c.isEditing = false;
     }
     this.didUpdate();
   }
@@ -402,19 +422,26 @@ export class TableModel {
     let row = this.rows[rowId];
     let cell = row.cells[cellId];
     cell.dataEditValue = newValue;
-    cell.isEditing = false;
-    let rowEditedCells = this.editedRows.get(rowId);
+    cell.isEditing = true;
+    let rowEditedCells = this.editedRows.get(row.idx);
     if (!rowEditedCells){
       rowEditedCells = new Map();
       this.editedRows.set(row.idx, rowEditedCells);
     }
-    rowEditedCells.set(cell.idx, newValue);
+    let c = rowEditedCells.get(cell.idx);
+    if (!c){
+      c = {};
+      rowEditedCells.set(cell.idx, c);
+    }
+    c.dataEditValue = newValue;
+    c.isEditing = true;
   }
   editRow(rowId) {
     let row = this.rows[rowId];
     let rowEditedCells = this.editedRows.get(row.idx);
     if (!rowEditedCells){
       rowEditedCells = new Map();
+      //TODO editdrows
       this.editedRows.set(row.idx, rowEditedCells);
     }
     for (let cellId = 0; cellId < row.cells.length; cellId++) {
@@ -452,7 +479,13 @@ export class TableModel {
       }
       cell.dataEditValue = cell.label;
       cell.isEditing = true;
-      rowEditedCells.set(cell.idx, cell.label);
+      let c = rowEditedCells.get(cell.idx);
+      if (!c){
+        c = {};
+        rowEditedCells.set(cell.idx, c);
+      }
+      c.dataEditValue = cell.label;
+      c.isEditing = true;
     }
     this.didUpdate();
   }
@@ -498,7 +531,13 @@ export class TableModel {
       rowEditedCells = new Map();
       this.editedRows.set(row.idx, rowEditedCells);
     }
-    rowEditedCells.set(cell.idx, cell.label);
+    let c = rowEditedCells.get(cell.idx);
+    if (!c){
+      c = {};
+      rowEditedCells.set(cell.idx, c);
+    }
+    c.dataEditValue = cell.label;
+    c.isEditing = true;
     this.didUpdate();
   }
   renderData({force}) {
@@ -580,7 +619,16 @@ export class TableModel {
           continue;
         }
         let cell = row[c];
-        let dataCell = {linkable: false, label: "", showMenu: false, links: []};
+        let dataCell;
+        if (editedRow){
+          let editedVal = editedRow.get(c);
+          if (editedVal != null) {
+            dataCell = editedVal;
+          }
+        }
+        if (dataCell == null) {
+          dataCell = {linkable: false, label: "", showMenu: false, links: []};
+        }
 
         //row.height
         if (typeof cell == "object" && cell != null && cell.attributes && cell.attributes.type) {
@@ -613,13 +661,6 @@ export class TableModel {
         }
         dataCell.id = dataRow.cells.length;
         dataCell.idx = c;
-        if (editedRow){
-          let editedVal = editedRow.get(c);
-          if (editedVal != undefined) {
-            dataCell.dataEditValue = editedVal;
-            dataCell.isEditing = true;
-          }
-        }
         dataRow.cells.push(dataCell);
       }
       dataRow.id = this.rows.length;
@@ -649,6 +690,7 @@ export class TableModel {
       this.firstColLeft = 0;
       this.lastColIdx = 0;
       this.lastColLeft = 0;
+      this.editedRows = new Map();
       this.renderData({force: true});
     } else {
       // Data or visibility was changed
@@ -702,8 +744,20 @@ export class TableModel {
     return /^\/services\/data\/v[0-9]{2,3}.[0-9]{1}\/sobjects\/EventLogFile\/[a-z0-9]{5}0000[a-z0-9]{9}\/LogFile$/i.exec(text);
   }
   toggleMenu(rowId, cellId) {
-    let cell = this.rows[rowId].cells[cellId];
+    let row = this.rows[rowId];
+    let cell = row.cells[cellId];
     cell.showMenu = !cell.showMenu;
+    let editedRow = this.editedRows.get(row.idx);
+    if (editedRow == null) {
+      editedRow = new Map();
+      this.editedRows.set(row.idx, editedRow);
+    }
+    let editedCell = editedRow.get(cell.idx);
+    if (editedCell == null) {
+      editedCell = new Map();
+      editedRow.set(cell.idx, editedCell);
+    }
+    editedCell.showMenu = cell.showMenu;
     let self = this;
     function setLinks(){
       cell.links = [];
@@ -746,6 +800,7 @@ export class TableModel {
         cell.links.push({withIcon: true, href: cell.recordId, label: "Copy Id", className: "copy-id", action: "copy"});
       }
       cell.links.push({withIcon: true, href: cell.recordId, label: "Edit", title: "Double click on cell to edit", className: "edit-record", action: "edit"});
+      editedCell.links = cell.links;
       self.didUpdate();
     }
     if (cell.showMenu) {
@@ -753,10 +808,12 @@ export class TableModel {
       if (!cell.links || cell.links.length === 0) {
         if (cell.objectTypes.length === 1){
           cell.objectType = cell.objectTypes[0];
+          editedCell.objectType = cell.objectType;
           setLinks();
         } else {
           sfConn.rest(`/services/data/v${apiVersion}/ui-api/records/${cell.recordId}?layoutTypes=Compact`).then(res => {
             cell.objectType = res.apiName;
+            editedCell.objectType = cell.objectType;
             setLinks();
           });
         }

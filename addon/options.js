@@ -81,6 +81,7 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: ArrowButtonOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Flow Scrollability", key: "scrollOnFlowBuilder"}},
+          {option: Option, props: {type: "number", title: "Popup Height", key: "popupHeight", tooltip: "Default value is '450px'" }},
           {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
           {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab"}},
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
@@ -92,6 +93,7 @@ class OptionsTabSelector extends React.Component {
               {label: "Explore API", name: "explore-api", checked: true },
               {label: "Org Limits", name: "org-limits", checked: true },
               {label: "Options", name: "options", checked: true },
+              {label: "Download Meta", name: "dl-meta", checked: true },
               {label: "Generate Access Token", name: "generate-token", checked: true }
             ]}
           },

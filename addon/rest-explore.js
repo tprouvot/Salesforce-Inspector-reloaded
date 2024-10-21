@@ -103,6 +103,9 @@ class Model {
       {key: "deleteccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "DELETE", body: ""}
     ];
     this.selectedTemplate = "";
+    this.lookupOptions = [{key: "all", label: "All Types"}, {key: "history", label: "History"}, {key: "saved", label: "Saved"}, {key: "template", label: "Template"}];
+    this.lookupOption = this.lookupOptions[0];
+    this.suggestedQueries = this.getSearchedList();
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -163,7 +166,7 @@ class Model {
     copyToClipboard(this.apiResponse.value, null, "  ");
   }
   clear(){
-      this.apiResponse.value = "";
+    this.apiResponse.value = "";
   }
   selectSavedEntry() {
     let delimiter = ":";
@@ -279,6 +282,19 @@ class Model {
       this.filteredApiList = this.apiList.filter(api => api.endpoint.toLowerCase().includes(this.request.endpoint.toLowerCase()));
     }
   }
+  getSearchedList(){
+    switch (this.lookupOption.key) {
+      case "all":
+        return this.queryHistory.list.concat(this.savedHistory.list, this.requestTemplates);
+      case "history":
+        return this.queryHistory.list;
+      case "saved":
+        return this.savedHistory.list;
+      case "template":
+        return this.requestTemplates;
+    }
+    return null;
+  }
 }
 
 
@@ -302,7 +318,10 @@ class App extends React.Component {
     this.onUpdateBody = this.onUpdateBody.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetEndpoint = this.onSetEndpoint.bind(this);
+    this.handleLookupSelection = this.handleLookupSelection.bind(this);
+    this.handleQuerySelection = this.handleQuerySelection.bind(this);
   }
+  //TODO REMOVE START
   onSelectEntry(e, list) {
     let {model} = this.props;
     model.request = list.filter(template => template.key.toString() === e.target.value)[0];
@@ -322,6 +341,7 @@ class App extends React.Component {
     let {model} = this.props;
     this.onSelectEntry(e, model.savedHistory.list);
   }
+  //TODO REMOVE END
   resetRequest(model){
     model.apiResponse = "";
     this.refs.resultBar.classList.remove("success");
@@ -468,8 +488,40 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     //this.scrollTable.viewportChange();
   }
+  /*
   toggleQueryMoreMenu(){
     this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
+  }*/
+  handleLookupSelection(target){
+    let {model} = this.props;
+    model.lookupOption = target;
+    model.suggestedQueries = model.getSearchedList();
+    model.didUpdate();
+  }
+  handleQuerySelection(target){
+    let {model} = this.props;
+    model.request = target;
+    this.refs.endpoint.value = model.request.endpoint;
+    this.resetRequest(model);
+    model.didUpdate();
+    this.toggleSuggestedQuery();
+  }
+  toggleQueryMenu(){
+    this.refs.queryMenu.classList.toggle("slds-is-open");
+  }
+  toggleSuggestedQuery(){
+    this.refs.querySuggestions.classList.toggle("slds-is-open");
+  }
+  searchQuery(){
+    let {model} = this.props;
+    const searchTerm = this.refs.lookupSearch.value.toLowerCase();
+    const searchedList = model.getSearchedList();
+    model.suggestedQueries = searchedList.filter(query => {
+      const bodyMatch = query.body?.toLowerCase().includes(searchTerm);
+      const endpointMatch = query.endpoint.toLowerCase().includes(searchTerm);
+      return bodyMatch || endpointMatch;
+    });
+    model.didUpdate();
   }
   render() {
     let {model} = this.props;
@@ -494,10 +546,141 @@ class App extends React.Component {
       h("div", {className: "area"},
         h("div", {className: "area-header"},
         ),
+        h("div", {className: "slds-form-element float-left"},
+          h("div", {className: "slds-form-element__control"},
+            h("div", {className: "slds-combobox-group"},
+              h("div", {className: "slds-combobox_object-switcher slds-combobox-addon_start"},
+                h("div", {className: "slds-form-element"},
+                  h("label", {className: "slds-form-element__label slds-assistive-text", htmlFor: "combobox-id-1", id: "combobox-label-id-34"}, "Filter Search by:"),
+                  h("div", {className: "slds-form-element__control"},
+                    h("div", {className: "slds-combobox_container"},
+                      h("div", {ref: "queryMenu", className: "slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click", onClick: () => this.toggleQueryMenu(), "aria-controls": "primary-combobox-id-1"},
+                        h("div", {className: "slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right", role: "none"},
+                          h("div", {
+                            role: "combobox",
+                            tabIndex: "0",
+                            className: "slds-input_faux slds-combobox__input slds-combobox__input-value",
+                            "aria-labelledby": "combobox-label-id-34",
+                            id: "combobox-id-1-selected-value",
+                            "aria-controls": "objectswitcher-listbox-id-1",
+                            "aria-expanded": "false",
+                            "aria-haspopup": "listbox"
+                          },
+                          h("span", {className: "slds-truncate", id: "combobox-value-id-25"}, model.lookupOption.label)
+                          ),
+                          h("span", {className: "slds-icon_container slds-icon-utility-down slds-input__icon slds-input__icon_right"},
+                            h("svg", {className: "slds-icon slds-icon slds-icon_xx-small slds-icon-text-default", "aria-hidden": "true"},
+                              h("use", {xlinkHref: "symbols.svg#down"})
+                            )
+                          )
+                        ),
+                        h("div", {
+                          id: "objectswitcher-listbox-id-1",
+                          className: "slds-dropdown slds-dropdown_length-5 slds-dropdown_x-small slds-dropdown_left",
+                          role: "listbox",
+                          "aria-label": "{{Placeholder for Dropdown Items}}",
+                          tabIndex: "0",
+                          "aria-busy": "false"
+                        },
+                        h("ul", {className: "slds-listbox slds-listbox_vertical", role: "group", "aria-label": "{{Placeholder for Dropdown Options}}"},
+                          h("li", {role: "presentation", className: "slds-listbox__item"},
+                            h("div", {id: "option232", className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small", role: "presentation"},
+                              h("h3", {className: "slds-listbox__option-header", role: "presentation"}, "Select Query Type")
+                            )
+                          ),
+                          h("div", {id: "lookup-listbox", role: "listbox", "aria-orientation": "vertical"}, [
+                            h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation"}, [
+                              ...model.lookupOptions.map((option) =>
+                                h("li", {
+                                  className: "slds-listbox__item",
+                                  role: "presentation",
+                                  "data-id": option.key,
+                                  onClick: () => this.handleLookupSelection(option)
+                                }, [
+                                  h("span", {className: "slds-media slds-listbox__option slds-listbox__option_entity"}, [
+                                    h("span", {className: "slds-media__body"}, option.label)
+                                  ])
+                                ])
+                              )
+                            ])
+                          ])
+                        )
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
+              h("div", {className: "slds-combobox_container slds-combobox-addon_end"},
+                h("div", {ref: "querySuggestions", className: "slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click", id: "primary-combobox-id-1"},
+                  h("div", {className: "slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right", role: "none"},
+                    h("input", {
+                      type: "text",
+                      className: "slds-input slds-combobox__input",
+                      ref: "lookupSearch",
+                      id: "combobox-id-1",
+                      "aria-autocomplete": "list",
+                      "aria-controls": "listbox-id-1",
+                      "aria-expanded": "false",
+                      "aria-haspopup": "listbox",
+                      autoComplete: "off",
+                      role: "combobox",
+                      placeholder: "Search query...",
+                      onClick: () => this.toggleSuggestedQuery(),
+                      onKeyUp: () => this.searchQuery()
+                    }),
+                    h("span", {className: "slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right", title: "Search icon"},
+                      h("svg", {className: "slds-icon slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
+                        h("use", {xlinkHref: "symbols.svg#search"})
+                      )
+                    )
+                  ),
+                  h("div", {
+                    id: "listbox-id-1",
+                    className: "slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid",
+                    role: "listbox",
+                    tabIndex: "0",
+                    "aria-busy": "false"
+                  },
+                  h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation"},
+                    model.suggestedQueries.map((query, index) =>
+                      h("li", {
+                        role: "presentation",
+                        className: "slds-listbox__item",
+                        key: index,
+                        onClick: () => this.handleQuerySelection(query)
+                      },
+                      h("div", {
+                        id: `option${index}`,
+                        className: "slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta",
+                        role: "option"
+                      },
+                      h("span", {className: "slds-media__figure slds-listbox__option-icon"},
+                        h("span", {className: "slds-icon_container slds-icon-standard-account"},
+                          h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
+                            h("use", {xlinkHref: "symbols.svg#query_editor"})
+                          )
+                        )
+                      ),
+                      h("span", {className: "slds-media__body"},
+                        h("span", {className: "slds-listbox__option-text slds-listbox__option-text_entity"}, query.endpoint),
+                        h("span", {className: "slds-listbox__option-meta slds-listbox__option-meta_entity"}, model.lookupOption.label + " • " + query.method)
+                      )
+                      )
+                      )
+                    )
+                  )
+                  )
+                )
+              )
+            )
+          )
+        ),
         h("div", {className: "query-controls"},
           h("h1", {}, "Request"),
           h("div", {className: "query-history-controls"},
-            h("select", {value: model.selectedTemplate, onChange: this.onSelectRequestTemplate, className: "query-template", title: "Check documentation to customize templates"},
+
+            /*h("select", {value: model.selectedTemplate, onChange: this.onSelectRequestTemplate, className: "query-template", title: "Check documentation to customize templates"},
               h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
               model.requestTemplates.map(req => h("option", {key: req.key, value: req.key}, req.method + " " + req.endpoint))
             ),
@@ -541,7 +724,7 @@ class App extends React.Component {
                   )
                 )
               ),
-            ),
+            ),*/
           ),
         ),
         h("div", {className: "query-controls slds-form-element__control"},

@@ -5971,3 +5971,267 @@ a.slds-button--inverse:focus{
 .slds-button-group-list li:only-child .slds-button{
   border-radius:0.25rem;
 }
+.slds-icon-standard-record-lookup{
+  background-color:#ff538a;
+}
+.slds-picklist_fluid .slds-picklist__input,
+.slds-picklist_fluid .slds-picklist__label,
+.slds-picklist_fluid .slds-dropdown,
+.slds-picklist_fluid .slds-lookup,
+.slds-picklist--fluid .slds-picklist__input,
+.slds-picklist--fluid .slds-picklist__label,
+.slds-picklist--fluid .slds-dropdown,
+.slds-picklist--fluid .slds-lookup{
+  width:auto;
+  min-width:0;
+  max-width:15rem;
+}
+.slds-lookup{
+  position:relative;
+  width:100%;
+}
+.slds-lookup mark{
+  font-weight:700;
+  background-color:transparent;
+  color:inherit;
+}
+.slds-lookup.slds-is-open .slds-lookup__menu{
+  display:block;
+}
+.slds-lookup.slds-has-selection .slds-input,
+.slds-lookup.slds-has-selection .slds-input__icon,
+.slds-lookup.slds-has-selection .slds-lookup__search-input{
+  display:none;
+}
+.slds-lookup.slds-has-selection .slds-pill{
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+}
+.slds-lookup.slds-has-selection .slds-pill__remove{
+  margin-left:auto;
+}
+.slds-lookup__list{
+  max-height:calc((((1.5 * 0.8125rem) + (1.5 * 0.75rem) - 0.25rem) + (0.25rem * 2)) * 8);
+  overflow-y:auto;
+}
+.slds-lookup__menu{
+  background:100, white;
+  border:1px solid 4, #e5e5e5;
+  border-radius:0.25rem;
+  z-index:7000;
+  position:absolute;
+  width:100%;
+  padding:0.5rem 0;
+  display:none;
+}
+
+.slds-lookup__item > a,
+.slds-lookup__item > span,
+.slds-lookup__item > button{
+  display:block;
+  padding:0.5rem;
+  color:10, #181818;
+  text-align:left;
+  width:100%;
+  line-height:1.5;
+  border-radius:0;
+}
+.slds-lookup__item > a:hover, .slds-lookup__item > a:focus,
+.slds-lookup__item > span:hover,
+.slds-lookup__item > span:focus,
+.slds-lookup__item > button:hover,
+.slds-lookup__item > button:focus{
+  outline:0;
+  background-color:95, #f3f3f3;
+  color:10, #181818;
+  text-decoration:none;
+}
+.slds-lookup__item > a .slds-icon,
+.slds-lookup__item > span .slds-icon,
+.slds-lookup__item > button .slds-icon{
+  margin-right:0.5rem;
+}
+.slds-lookup__item_label,
+.slds-lookup__item--label{
+  font-size:0.875rem;
+  font-weight:700;
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+  -webkit-box-align:center;
+      -ms-flex-align:center;
+          align-items:center;
+  padding:0.5rem 1rem;
+}
+.slds-lookup__item-action{
+  font-size:0.8125rem;
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+  -webkit-box-align:center;
+      -ms-flex-align:center;
+          align-items:center;
+  padding:0.25rem 1rem;
+  color:10, #181818;
+  text-align:left;
+  width:100%;
+  line-height:1.5;
+  border-radius:0;
+}
+.slds-lookup__item-action:hover, .slds-lookup__item-action:focus, .slds-lookup__item-action.slds-has-focus{
+  outline:0;
+  cursor:pointer;
+  background-color:95, #f3f3f3;
+  color:10, #181818;
+  text-decoration:none;
+}
+.slds-lookup__item-action:focus, .slds-lookup__item-action.slds-has-focus{
+  -webkit-box-shadow:1, 0 0 3px #0176d3;
+          box-shadow:1, 0 0 3px #0176d3;
+}
+.slds-lookup__item-action .slds-media__figure{
+  margin-right:0.5rem;
+  margin-top:0.25rem;
+}
+.slds-lookup__item-action_label,
+.slds-lookup__item-action--label{
+  padding:0.5rem 1rem;
+}
+.slds-lookup__item-action_label > .slds-icon,
+.slds-lookup__item-action--label > .slds-icon{
+  margin-left:0.25rem;
+  margin-right:0.75rem;
+}
+.slds-lookup__search-input{
+  width:100%;
+}
+.slds-lookup__result-text{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  display:block;
+  margin-bottom:0.125rem;
+}
+.slds-lookup__result-meta{
+  display:block;
+  margin-top:-0.25rem;
+  color:30, #444444;
+}
+
+.slds-lookup__pill-container{
+  padding:0 0.5rem 0.25rem;
+}
+/* Combobox */
+.slds-combobox_container{
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+  -webkit-box-orient:vertical;
+  -webkit-box-direction:normal;
+      -ms-flex-direction:column;
+          flex-direction:column;
+  position:relative;
+}
+.slds-combobox_container.slds-is-open .slds-dropdown{
+  display:block;
+}
+.slds-combobox_container.slds-has-selection .slds-combobox__input-value,
+.slds-combobox_container.slds-has-selection .slds-combobox__input-value:focus{
+  -webkit-box-shadow:0 0 0 2px 100, white inset, 0 0 0 3px 1, #e5e5e5 inset;
+          box-shadow:0 0 0 2px 100, white inset, 0 0 0 3px 1, #e5e5e5 inset;
+}
+.slds-combobox_container.slds-has-icon-only .slds-combobox__input,
+.slds-combobox_container.slds-has-icon-only .slds-combobox__input:focus,
+.slds-combobox_container.slds-has-icon-only .slds-combobox__input.slds-has-focus{
+  width:0;
+  pointer-events:auto;
+}
+.slds-combobox_container.slds-has-icon-only .slds-input__icon{
+  z-index:2;
+  pointer-events:none;
+}
+.slds-combobox_container.slds-has-object-switcher .slds-listbox_object-switcher .slds-button:focus{
+  outline-offset:0;
+}
+
+.slds-combobox-group{
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+  -webkit-box-orient:horizontal;
+  -webkit-box-direction:normal;
+      -ms-flex-direction:row;
+          flex-direction:row;
+}
+.slds-combobox-group .slds-combobox_container{
+  -webkit-box-flex:1;
+      -ms-flex:1 1 auto;
+          flex:1 1 auto;
+}
+.slds-combobox-group .slds-combobox__input,
+.slds-combobox-group .slds-combobox_object-switcher__button{
+  border-radius:0;
+  margin-left:-1px;
+  margin-right:-1px;
+  position:relative;
+}
+.slds-combobox-group .slds-combobox__input:focus, .slds-combobox-group .slds-combobox__input.slds-has-focus,
+.slds-combobox-group .slds-combobox_object-switcher__button:focus,
+.slds-combobox-group .slds-combobox_object-switcher__button.slds-has-focus{
+  z-index:1;
+}
+.slds-combobox-group.slds-has-selection .slds-combobox-addon_start .slds-combobox__input{
+  border-bottom-left-radius:0;
+}
+.slds-combobox-group.slds-has-selection .slds-combobox-addon_end .slds-combobox__input{
+  border-bottom-right-radius:0;
+}
+.slds-combobox-group.slds-has-selection ~ .slds-listbox_selection-group{
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+  position:relative;
+  background:100, white;
+  border:1px solid 4, #e5e5e5;
+  border-top:0;
+  border-bottom-left-radius:0.25rem;
+  border-bottom-right-radius:0.25rem;
+  left:-1px;
+}
+.slds-combobox-group .slds-listbox_horizontal li + li{
+  padding:0.125rem;
+}
+.slds-combobox_object-switcher{
+  -ms-flex-negative:0;
+      flex-shrink:0;
+}
+.slds-combobox_object-switcher .slds-combobox__input{
+  width:7.5rem;
+  -webkit-transition:width 80ms linear;
+  transition:width 80ms linear;
+  font-size:0.75rem;
+  color:50, #747474;
+}
+.slds-combobox_object-switcher .slds-combobox__input:focus, .slds-combobox_object-switcher .slds-combobox__input.slds-has-focus{
+  width:10rem;
+}
+.slds-combobox-group .slds-combobox__input,
+.slds-combobox-group .slds-combobox_object-switcher__button{
+  border-radius:0;
+  margin-left:-1px;
+  margin-right:-1px;
+  position:relative;
+}
+.slds-combobox-group .slds-combobox__input:focus, .slds-combobox-group .slds-combobox__input.slds-has-focus,
+.slds-combobox-group .slds-combobox_object-switcher__button:focus,
+.slds-combobox-group .slds-combobox_object-switcher__button.slds-has-focus{
+  z-index:1;
+}
+.slds-combobox-addon_start .slds-combobox__input{
+  border-top-right-radius:0;
+  border-bottom-right-radius:0;
+  border-top-left-radius:4px;
+  border-bottom-left-radius:4px;
+}

@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.26
+
+- Add new options to hide buttons in popup
+
 ## Version 1.25
 
 - Add `Clear` button in Event Monitor and REST Explorer

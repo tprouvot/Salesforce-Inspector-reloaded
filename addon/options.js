@@ -87,6 +87,14 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Search metadata from Shortcut tab", key: "metadataShortcutSearch"}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
+          {option: MultiCheckboxButtonGroup, props: {title: "Show buttons", key: "hideButtonsOption",
+            checkboxes: [
+              {label: "Explore API", name: "explore-api", checked: true },
+              {label: "Org Limits", name: "org-limits", checked: true },
+              {label: "Options", name: "options", checked: true },
+              {label: "Generate Access Token", name: "generate-token", checked: true }
+            ]}
+          },
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
           {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
@@ -566,6 +574,69 @@ class FaviconOption extends React.Component {
         ),
         h("div", {className: "slds-form-element__control"},
           h("button", {className: "button button-brand", onClick: this.populateFaviconColors, title: "Use favicon for all orgs I've visited"}, "Populate All")
+        )
+      )
+    );
+  }
+}
+
+class MultiCheckboxButtonGroup extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.handleCheckboxChange = this.handleCheckboxChange.bind(this);
+
+    this.title = props.title;
+    this.storageKey = props.storageKey;
+
+    // Load checkboxes from localStorage or default to props.checkboxes
+    const storedCheckboxes = localStorage.getItem(this.storageKey) ? JSON.parse(localStorage.getItem(this.storageKey)) : [];
+
+    // Merge checkboxes only if the size is different
+    const mergedCheckboxes = storedCheckboxes.length === props.checkboxes.length
+      ? storedCheckboxes
+      : this.mergeCheckboxes(storedCheckboxes, props.checkboxes);
+
+    this.state = { checkboxes: mergedCheckboxes };
+    if (storedCheckboxes.length !== props.checkboxes.length) {
+      localStorage.setItem(this.storageKey, JSON.stringify(mergedCheckboxes)); // Save the merged state to localStorage
+    }
+  }
+
+  mergeCheckboxes = (storedCheckboxes, propCheckboxes) => {
+    return propCheckboxes.map((checkbox) => {
+      const storedCheckbox = storedCheckboxes.find((item) => item.name === checkbox.name);
+      return storedCheckbox || checkbox;
+    });
+  };
+
+  handleCheckboxChange = (event) => {
+    const { name, checked } = event.target;
+    const updatedCheckboxes = this.state.checkboxes.map((checkbox) =>
+      checkbox.name === name ? { ...checkbox, checked } : checkbox
+    );
+    localStorage.setItem(this.storageKey, JSON.stringify(updatedCheckboxes));
+    this.setState({ checkboxes: updatedCheckboxes });
+  };
+
+  render() {
+    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, this.title)
+      ),
+      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", { className: "slds-form-element__control" },
+          h( "div", { className: "slds-checkbox_button-group" },
+            this.state.checkboxes.map((checkbox, index) =>
+              h( "span", { className: "slds-button slds-checkbox_button", key: index },
+                h("input", { type: "checkbox",  id: `unique-id-${checkbox.value}-${index}`, name: checkbox.name, checked: checkbox.checked, onChange: this.handleCheckboxChange, title: checkbox.title}),
+                h("label",  { className: "slds-checkbox_button__label",  htmlFor: `unique-id-${checkbox.value}-${index}`},
+                  h("span", { className: "slds-checkbox_faux" }, checkbox.label)
+                )
+              )
+            )
+          )
         )
       )
     );

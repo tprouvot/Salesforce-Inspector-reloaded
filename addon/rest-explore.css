@@ -730,3 +730,6 @@ button.toggle .button-icon {
 .reset-margin{
   margin: 0;;
 }
+#queryLabel{
+  width:auto;
+}

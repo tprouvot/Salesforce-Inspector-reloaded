@@ -672,7 +672,9 @@ class App extends React.Component {
                   )
                   )
                 )
-              )
+              ),
+              h("input", {type: "text", id: "queryLabel", className: "slds-input slds-m-left_xx-small", placeholder: "Query Name"}),
+              h("button", {tabIndex: 2, onClick: this.onSaveQuery, title: "Save Query", className: "slds-m-left_xx-small"}, "Save")
             )
           )
         ),

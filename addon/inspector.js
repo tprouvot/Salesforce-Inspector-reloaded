@@ -106,20 +106,24 @@ export let sfConn = {
       let oldToken = localStorage.getItem(this.instanceHostname + ACCESS_TOKEN);
       if (oldToken){
         sessionError = error;
-        let message = await new Promise(resolve =>
-          chrome.runtime.sendMessage({message: "getSession", sfHost: this.instanceHostname}, resolve));
-        if (message && message.key && message.key != oldToken) {
-          this.instanceHostname = getMyDomain(message.hostname);
-          this.sessionId = message.key;
-          localStorage.setItem(this.instanceHostname + ACCESS_TOKEN, message.key);
-          return await this.rest(url, {logErrors, method, api, body, bodyType, responseType, headers, progressHandler, withoutCache: true});
-        } else {
-          showInvalidTokenBanner();
-          let err = new Error();
-          err.name = "Unauthorized";
-          err.message = error;
-          throw err;
+        let cookies = await new Promise(resolve =>
+          chrome.runtime.sendMessage({message: "getAllSessions", sfHost: this.instanceHostname}, resolve));
+        if (cookies && cookies.length > 0) {
+          //first new token
+          //potentially 2 old tokens so not perfect
+          let message = cookies.find(c => c.key && c.key != oldToken);
+          if (message) {
+            this.instanceHostname = getMyDomain(message.hostname);
+            this.sessionId = message.key;
+            localStorage.setItem(this.instanceHostname + ACCESS_TOKEN, message.key);
+            return await this.rest(url, {logErrors, method, api, body, bodyType, responseType, headers, progressHandler, withoutCache: true});
+          }
         }
+        showInvalidTokenBanner();
+        let err = new Error();
+        err.name = "Unauthorized";
+        err.message = error;
+        throw err;
       }
     } else if (xhr.status == 431) {
       let err = new Error();

@@ -20,7 +20,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return;
       }
       const [orgId] = cookie.value.split("!");
-      const orderedDomains = ["salesforce.com", "cloudforce.com", "salesforce.mil", "cloudforce.mil", "sfcrmproducts.cn", "force.com", "salesforce-setup.com"];
+      const orderedDomains = ["salesforce.com", "cloudforce.com", "salesforce.mil", "cloudforce.mil", "sfcrmproducts.cn", "force.com", "salesforce-setup.com", "visualforce.com", "sfcrmapps.cn", "force.mil", "visualforce.mil", "crmforce.mil"];
 
       orderedDomains.forEach(currentDomain => {
         chrome.cookies.getAll({name: "sid", domain: currentDomain, secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
@@ -42,6 +42,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       let session = {key: sessionCookie.value, hostname: sessionCookie.domain};
       sendResponse(session);
+    });
+    return true; // Tell Chrome that we want to call sendResponse asynchronously.
+  }
+  if (request.message == "getAllSessions") {
+    chrome.cookies.get({url: "https://" + request.sfHost, name: "sid", storeId: sender.tab.cookieStoreId}, cookie => {
+      if (!cookie) { //Domain used by Microsoft Defender for Cloud Apps, where sid exists but cannot be read
+        sendResponse(null);
+        return;
+      }
+      const [orgId] = cookie.value.split("!");
+      const orderedDomains = ["salesforce.com", "cloudforce.com", "salesforce.mil", "cloudforce.mil", "sfcrmproducts.cn", "force.com", "salesforce-setup.com", "visualforce.com", "sfcrmapps.cn", "force.mil", "visualforce.mil", "crmforce.mil"];
+
+      orderedDomains.forEach(currentDomain => {
+        chrome.cookies.getAll({name: "sid", domain: currentDomain, secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
+          sendResponse(cookies.filter(c => c.value.startsWith(orgId + "!")).map(c => ({key: c.value, hostname: c.domain})));
+        });
+      });
     });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
   }

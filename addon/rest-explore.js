@@ -163,7 +163,7 @@ class Model {
     copyToClipboard(this.apiResponse.value, null, "  ");
   }
   clear(){
-      this.apiResponse.value = "";
+    this.apiResponse.value = "";
   }
   selectSavedEntry() {
     let delimiter = ":";

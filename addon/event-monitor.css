@@ -475,3 +475,8 @@ button.contract .button-toggle-icon {
 .reset-margin{
   margin: 0;;
 }
+code {
+  width: -moz-available;
+  width: -webkit-fill-available;
+  width: fill-available;
+}

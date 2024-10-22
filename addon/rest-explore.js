@@ -28,7 +28,7 @@ class QueryHistory {
 
   add(entry) {
     let history = this._get();
-    let historyIndex = history.findIndex(e => e.endpoint == entry.endpoint);
+    let historyIndex = history.findIndex(e => e.key == entry.key);
     if (historyIndex > -1) {
       history.splice(historyIndex, 1);
     }
@@ -42,7 +42,7 @@ class QueryHistory {
 
   remove(entry) {
     let history = this._get();
-    let historyIndex = history.findIndex(e => e.endpoint == entry.endpoint);
+    let historyIndex = history.findIndex(e => e.key == entry.key);
     if (historyIndex > -1) {
       history.splice(historyIndex, 1);
     }
@@ -57,7 +57,7 @@ class QueryHistory {
 
   sort(storageKey, history) {
     if (storageKey === "restSavedQueryHistory") {
-      history.sort((a, b) => (a.endpoint > b.endpoint) ? 1 : ((b.endpoint > a.endpoint) ? -1 : 0));
+      history.sort((a, b) => (a.key > b.key) ? 1 : ((b.key > a.key) ? -1 : 0));
     }
     this.list = history;
   }
@@ -386,7 +386,6 @@ class App extends React.Component {
     model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(e.target.value.toLowerCase()));
     model.didUpdate();
   }
-
   componentDidMount() {
     let {model} = this.props;
     let endpointInput = this.refs.endpoint;
@@ -453,7 +452,7 @@ class App extends React.Component {
     model.suggestedQueries = model.getSearchedList();
     model.didUpdate();
   }
-  handleQuerySelection(target){
+  handleQuerySelection(event, target){
     let {model} = this.props;
     model.request = target;
     this.refs.endpoint.value = model.request.endpoint;
@@ -466,19 +465,27 @@ class App extends React.Component {
     //TODO
     let {model} = this.props;
     console.log(query);
+    this.toggleSuggestedQuery();
   }
-  onSaveQuery(){
+  onSaveQuery() {
     //TODO
     let {model} = this.props;
-    model.request;
-    //depending on model.lookupOption.key, replace (if the list contains a request with the same key) or add (if the list does not contain a request with the same key)
-    //if  model.lookupOption.key == "saved" then save and persist in
-    //model.queryHistory.list.filter(q => )
-    model.lookupOption.key;
-    if (model.request.key){
-      model.request.label = this.refs.queryName.value;
+    model.request.label = this.refs.queryName.value;
+
+    // Determine the correct list based on lookupOption key
+    let targetList = model.lookupOption.key === "template" ? model.requestTemplates : model.savedHistory.list;
+    const localStorageKey = model.lookupOption.key === "template" ? "requestTemplates" : "savedHistory";
+
+    // Find the index of the existing request with the same key
+    let existingRequestIndex = targetList.findIndex(q => q.key === model.request.key);
+
+    // Replace the existing request if found, otherwise add a new one
+    if (existingRequestIndex !== -1) {
+      targetList[existingRequestIndex] = {...model.request};
+    } else {
+      targetList.push({...model.request});
     }
-    //by default choose to save in saved queries, else in template
+    model.didUpdate();
   }
   toggleQueryMenu(){
     this.refs.queryMenu.classList.toggle("slds-is-open");
@@ -654,10 +661,15 @@ class App extends React.Component {
                         h("span", {className: "slds-listbox__option-text slds-listbox__option-text_entity"}, query.endpoint),
                         h("span", {className: "slds-listbox__option-meta slds-listbox__option-meta_entity"}, query.list.label + " • " + query.method + (query.label ? " • " + query.label : ""))
                       ),
-                      h("button", {className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right", title: "Delete Query", onClick: () => this.onDeleteQuery(query)},
-                        h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-                          h("use", {xlinkHref: "symbols.svg#delete"})
-                        )
+                      h("button", {className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right",
+                        title: "Delete Query",
+                        onClick: (event) => {
+                          event.stopPropagation(); //prevent triggering handleQuerySelection
+                          this.onDeleteQuery(query);
+                        }},
+                      h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                        h("use", {xlinkHref: "symbols.svg#delete"})
+                      )
                       )
                       )
                       )
@@ -678,54 +690,8 @@ class App extends React.Component {
         ),
         h("div", {className: "query-controls"},
           h("h1", {}, "Request"),
-          h("div", {className: "query-history-controls"},
-
-            /*h("select", {value: model.selectedTemplate, onChange: this.onSelectRequestTemplate, className: "query-template", title: "Check documentation to customize templates"},
-              h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
-              model.requestTemplates.map(req => h("option", {key: req.key, value: req.key}, req.method + " " + req.endpoint))
-            ),
-            h("div", {className: "button-group"},
-              h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "History"),
-                model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.method + " " + q.endpoint))
-              ),
-              h("button", {onClick: this.onClearHistory, title: "Clear Request History"}, "Clear")
-            ),
-            h("div", {className: "button-group"},
-              h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "Saved"),
-                model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.label + " " + q.method + " " + q.endpoint))
-              ),
-              h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
-              h("button", {onClick: this.onAddToHistory, title: "Add request to saved history"}, "Save Query"),
-              h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
-                h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleQueryMoreMenu(), title: "Show more options"},
-                  h("svg", {className: "slds-button__icon"},
-                    h("use", {xlinkHref: "symbols.svg#down"})
-                  ),
-                  h("span", {className: "slds-assistive-text"}, "Show more options")
-                ),
-                h("div", {className: "slds-dropdown slds-dropdown_right", onMouseLeave: () => this.toggleQueryMoreMenu()},
-                  h("ul", {className: "slds-dropdown__list", role: "menu"},
-                    h("li", {className: "slds-dropdown__item", role: "presentation"},
-                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
-                        h("span", {className: "slds-truncate"},
-                          h("span", {className: "slds-truncate blue", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
-                        )
-                      )
-                    ),
-                    h("li", {className: "slds-dropdown__item", role: "presentation"},
-                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
-                        h("span", {className: "slds-truncate"},
-                          h("span", {className: "slds-truncate blue", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
-                        )
-                      )
-                    )
-                  )
-                )
-              ),
-            ),*/
-          ),
+          h("div", {className: "query-history-controls"}//TODO remove div ?
+          )
         ),
         h("div", {className: "query-controls slds-form-element__control"},
           h("select", {value: model.request.method, onChange: this.onSelectQueryMethod, className: "query-history slds-m-right_medium", title: "Choose rest method"},

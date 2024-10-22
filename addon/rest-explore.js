@@ -103,7 +103,7 @@ class Model {
       {key: "deleteccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "DELETE", body: ""}
     ];
     this.selectedTemplate = "";
-    this.lookupOptions = [{key: "all", label: "All Types"}, {key: "history", label: "History"}, {key: "saved", label: "Saved"}, {key: "template", label: "Template"}];
+    this.lookupOptions = [{key: "all", label: "All Types"}, {key: "history", label: "History", icon: "recent"}, {key: "saved", label: "Saved", icon: "individual"}, {key: "template", label: "Template", icon: "query_editor"}];
     this.lookupOption = this.lookupOptions[0];
     this.suggestedQueries = this.getSearchedList();
 
@@ -282,21 +282,24 @@ class Model {
       this.filteredApiList = this.apiList.filter(api => api.endpoint.toLowerCase().includes(this.request.endpoint.toLowerCase()));
     }
   }
-  getSearchedList(){
+  getSearchedList() {
+    const addListProperty = (arr, option) => arr.map(item => ({...item, list: option}));
+    const getOption = (key) => this.lookupOptions.find(option => option.key === key);
+
     switch (this.lookupOption.key) {
       case "all":
-        return this.queryHistory.list.concat(this.savedHistory.list, this.requestTemplates);
+        return addListProperty(this.queryHistory.list, getOption("history"))
+          .concat(addListProperty(this.savedHistory.list, getOption("saved")), addListProperty(this.requestTemplates, getOption("template")));
       case "history":
-        return this.queryHistory.list;
+        return addListProperty(this.queryHistory.list, this.lookupOption);
       case "saved":
-        return this.savedHistory.list;
+        return addListProperty(this.savedHistory.list, this.lookupOption);
       case "template":
-        return this.requestTemplates;
+        return addListProperty(this.requestTemplates, this.lookupOption);
     }
     return null;
   }
 }
-
 
 let h = React.createElement;
 
@@ -488,10 +491,6 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     //this.scrollTable.viewportChange();
   }
-  /*
-  toggleQueryMoreMenu(){
-    this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
-  }*/
   handleLookupSelection(target){
     let {model} = this.props;
     model.lookupOption = target;
@@ -505,6 +504,10 @@ class App extends React.Component {
     this.resetRequest(model);
     model.didUpdate();
     this.toggleSuggestedQuery();
+  }
+  onDeleteQuery(query){
+    let {model} = this.props;
+    console.log(query);
   }
   toggleQueryMenu(){
     this.refs.queryMenu.classList.toggle("slds-is-open");
@@ -658,13 +661,18 @@ class App extends React.Component {
                       h("span", {className: "slds-media__figure slds-listbox__option-icon"},
                         h("span", {className: "slds-icon_container slds-icon-standard-account"},
                           h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
-                            h("use", {xlinkHref: "symbols.svg#query_editor"})
+                            h("use", {xlinkHref: `symbols.svg#${query.list.icon}`})
                           )
                         )
                       ),
                       h("span", {className: "slds-media__body"},
                         h("span", {className: "slds-listbox__option-text slds-listbox__option-text_entity"}, query.endpoint),
-                        h("span", {className: "slds-listbox__option-meta slds-listbox__option-meta_entity"}, model.lookupOption.label + " • " + query.method)
+                        h("span", {className: "slds-listbox__option-meta slds-listbox__option-meta_entity"}, query.list.label + " • " + query.method)
+                      ),
+                      h("button", {className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right", title: "Delete Query", onClick: () => this.onDeleteQuery(query)},
+                        h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                          h("use", {xlinkHref: "symbols.svg#delete"})
+                        )
                       )
                       )
                       )

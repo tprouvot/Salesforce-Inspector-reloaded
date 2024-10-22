@@ -82,7 +82,6 @@ class Model {
     this.selectedHistoryEntry = null;
     this.savedHistory = new QueryHistory("restSavedQueryHistory", 50);
     this.selectedSavedEntry = null;
-    this.expandSavedOptions = false;
     this.startTime = null;
     this.totalTime = 0;
     this.autocompleteState = "";
@@ -103,8 +102,8 @@ class Model {
       {key: "deleteccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "DELETE", body: ""}
     ];
     this.selectedTemplate = "";
-    this.lookupOptions = [{key: "all", label: "All Types"}, {key: "history", label: "History", icon: "recent"}, {key: "saved", label: "Saved", icon: "individual"}, {key: "template", label: "Template", icon: "query_editor"}];
-    this.lookupOption = this.lookupOptions[0];
+    this.lookupOptions = [{key: "all", label: "All Types", icon: "filter"}, {key: "history", label: "History", icon: "recent"}, {key: "saved", label: "Saved", icon: "individual"}, {key: "template", label: "Template", icon: "query_editor"}];
+    this.lookupOption = this.lookupOptions[0];//TODO add option to persist preference in localStorage
     this.suggestedQueries = this.getSearchedList();
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
@@ -149,9 +148,6 @@ class Model {
   }
   setQueryName(value) {
     this.queryName = value;
-  }
-  toggleSavedOptions() {
-    this.expandSavedOptions = !this.expandSavedOptions;
   }
   showDescribeUrl() {
     let args = new URLSearchParams();
@@ -306,15 +302,10 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
-    this.onSelectRequestTemplate = this.onSelectRequestTemplate.bind(this);
     this.onSelectQueryMethod = this.onSelectQueryMethod.bind(this);
-    this.onClearHistory = this.onClearHistory.bind(this);
-    this.onSelectSavedEntry = this.onSelectSavedEntry.bind(this);
     this.onAddToHistory = this.onAddToHistory.bind(this);
     this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
-    this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onSend = this.onSend.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onClearResponse = this.onClearResponse.bind(this);
@@ -323,28 +314,8 @@ class App extends React.Component {
     this.onSetEndpoint = this.onSetEndpoint.bind(this);
     this.handleLookupSelection = this.handleLookupSelection.bind(this);
     this.handleQuerySelection = this.handleQuerySelection.bind(this);
+    this.onSaveQuery = this.onSaveQuery.bind(this);
   }
-  //TODO REMOVE START
-  onSelectEntry(e, list) {
-    let {model} = this.props;
-    model.request = list.filter(template => template.key.toString() === e.target.value)[0];
-    this.refs.endpoint.value = model.request.endpoint;
-    this.resetRequest(model);
-    model.didUpdate();
-  }
-  onSelectHistoryEntry(e) {
-    let {model} = this.props;
-    this.onSelectEntry(e, model.queryHistory.list);
-  }
-  onSelectRequestTemplate(e) {
-    let {model} = this.props;
-    this.onSelectEntry(e, model.requestTemplates);
-  }
-  onSelectSavedEntry(e) {
-    let {model} = this.props;
-    this.onSelectEntry(e, model.savedHistory.list);
-  }
-  //TODO REMOVE END
   resetRequest(model){
     model.apiResponse = "";
     this.refs.resultBar.classList.remove("success");
@@ -356,15 +327,6 @@ class App extends React.Component {
     model.request.method = e.target.value;
     this.canSendRequest();
     model.didUpdate();
-  }
-  onClearHistory(e) {
-    e.preventDefault();
-    let r = confirm("Are you sure you want to clear the query history?");
-    if (r == true) {
-      let {model} = this.props;
-      model.clearHistory();
-      model.didUpdate();
-    }
   }
   onAddToHistory(e) {
     e.preventDefault();
@@ -389,12 +351,6 @@ class App extends React.Component {
     if (r == true) {
       model.clearSavedHistory();
     }
-    model.toggleSavedOptions();
-    model.didUpdate();
-  }
-  onToggleSavedOptions(e) {
-    e.preventDefault();
-    let {model} = this.props;
     model.toggleSavedOptions();
     model.didUpdate();
   }
@@ -501,13 +457,28 @@ class App extends React.Component {
     let {model} = this.props;
     model.request = target;
     this.refs.endpoint.value = model.request.endpoint;
+    this.refs.queryName.value = model.request.label ? model.request.label : "";
     this.resetRequest(model);
     model.didUpdate();
     this.toggleSuggestedQuery();
   }
   onDeleteQuery(query){
+    //TODO
     let {model} = this.props;
     console.log(query);
+  }
+  onSaveQuery(){
+    //TODO
+    let {model} = this.props;
+    model.request;
+    //depending on model.lookupOption.key, replace (if the list contains a request with the same key) or add (if the list does not contain a request with the same key)
+    //if  model.lookupOption.key == "saved" then save and persist in
+    //model.queryHistory.list.filter(q => )
+    model.lookupOption.key;
+    if (model.request.key){
+      model.request.label = this.refs.queryName.value;
+    }
+    //by default choose to save in saved queries, else in template
   }
   toggleQueryMenu(){
     this.refs.queryMenu.classList.toggle("slds-is-open");
@@ -597,11 +568,25 @@ class App extends React.Component {
                                 h("li", {
                                   className: "slds-listbox__item",
                                   role: "presentation",
+                                  key: option.key,
                                   "data-id": option.key,
                                   onClick: () => this.handleLookupSelection(option)
                                 }, [
-                                  h("span", {className: "slds-media slds-listbox__option slds-listbox__option_entity"}, [
-                                    h("span", {className: "slds-media__body"}, option.label)
+                                  h("div", {
+                                    id: `option${option.key}`,
+                                    className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small slds-is-selected",
+                                    role: "option"
+                                  }, [
+                                    h("span", {className: "slds-media__figure slds-listbox__option-icon"}, [
+                                      h("span", {className: "slds-icon_container slds-icon-utility-check slds-current-color"}, [
+                                        h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"}, [
+                                          h("use", {xlinkHref: `symbols.svg#${option.icon}`})
+                                        ])
+                                      ])
+                                    ]),
+                                    h("span", {className: "slds-media__body"}, [
+                                      h("span", {className: "slds-truncate", title: option.label}, option.label)
+                                    ])
                                   ])
                                 ])
                               )
@@ -667,7 +652,7 @@ class App extends React.Component {
                       ),
                       h("span", {className: "slds-media__body"},
                         h("span", {className: "slds-listbox__option-text slds-listbox__option-text_entity"}, query.endpoint),
-                        h("span", {className: "slds-listbox__option-meta slds-listbox__option-meta_entity"}, query.list.label + " • " + query.method)
+                        h("span", {className: "slds-listbox__option-meta slds-listbox__option-meta_entity"}, query.list.label + " • " + query.method + (query.label ? " • " + query.label : ""))
                       ),
                       h("button", {className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right", title: "Delete Query", onClick: () => this.onDeleteQuery(query)},
                         h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
@@ -681,8 +666,13 @@ class App extends React.Component {
                   )
                 )
               ),
-              h("input", {type: "text", id: "queryLabel", className: "slds-input slds-m-left_xx-small", placeholder: "Query Name"}),
-              h("button", {tabIndex: 2, onClick: this.onSaveQuery, title: "Save Query", className: "slds-m-left_xx-small"}, "Save")
+              h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left-right"},
+                h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default"},
+                  h("use", {xlinkHref: "symbols.svg#save"})
+                ),
+                h("input", {type: "text", ref: "queryName", id: "queryLabel", className: "slds-input slds-m-left_xx-small", placeholder: "Query Label"}),
+                h("button", {onClick: this.onSaveQuery, title: "Save Query", className: "slds-m-left_xx-small"}, "Save")
+              )
             )
           )
         ),

@@ -927,6 +927,11 @@ class App extends React.Component {
       userInfo: "...",
       filteredObjects: []
     };
+    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
+      //change background color for production
+      document.body.classList.add("prod");
+    }
   }
 
   componentDidMount() {

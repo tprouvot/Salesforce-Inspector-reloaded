@@ -404,10 +404,11 @@ class App extends React.Component {
   onSetEndpoint(e){
     let {model} = this.props;
     model.request.endpoint = e.target.value;
-    model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(e.target.value.toLowerCase()));
+    //replace current endpoint with latest on the have the autocomplete works for all api versions
+    let updatedApiEndpoint = e.target.value.replace(/\/data\/v\d+\.0\//, `/data/v${apiVersion}/`);
+    model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(updatedApiEndpoint.toLowerCase()));
     model.didUpdate();
   }
-
   componentDidMount() {
     let {model} = this.props;
     let endpointInput = this.refs.endpoint;

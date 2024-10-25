@@ -212,8 +212,8 @@ class App extends React.PureComponent {
     return {title, url, text};
   }
   displayButton(name){
-    const button = this.state.hideButtonsOption.find((element) => element.name == name);
-    if(button){
+    const button = this.state.hideButtonsOption?.find((element) => element.name == name);
+    if (button){
       return button.checked;
     }
     //if no option was found, display the button
@@ -1730,7 +1730,7 @@ class AllDataSelection extends React.PureComponent {
     return "https://" + sfHost + newUrl;
   }
   getSubscribeUrl(name){
-    return this.props.eventMonitorHref + '&channel=' + name;
+    return this.props.eventMonitorHref + "&channel=" + name;
   }
   setFlowDefinitionId(recordId){
     if (recordId && !this.state.flowDefinitionId){
@@ -1829,7 +1829,7 @@ class AllDataSelection extends React.PureComponent {
         ))),
         isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
         selectedValue.sobject.isEverCreatable && !selectedValue.sobject.name.endsWith("__e") ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
-        selectedValue.sobject.name.endsWith("__e") ? h("a", { href: this.getSubscribeUrl(selectedValue.sobject.name), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}), "Subscribe to Event")) : null,
+        selectedValue.sobject.name.endsWith("__e") ? h("a", {href: this.getSubscribeUrl(selectedValue.sobject.name), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}), "Subscribe to Event")) : null,
       )
     );
   }

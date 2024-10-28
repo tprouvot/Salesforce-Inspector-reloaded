@@ -50,7 +50,7 @@ body,
 
 .prod {
   background-color: var(--inspector-prod-background);
-  background-image: url('/images/lightning_red_background.png');
+  background-image: url(images/lightning_red_background.png);
 }
 
 [data-reactroot] {
@@ -71,7 +71,7 @@ body {
   font-size: .8125rem;
   margin: 0;
   background-color: var(--inspector-sand-background);
-  background-image: url('/images/lightning_blue_background.png');
+  background-image: url(images/lightning_blue_background.png);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: 0px 48px;
@@ -306,8 +306,8 @@ thead{
   display: inline-block;
   width: 16px;
   height: 16px;
-  -webkit-mask-image: url('/images/settings.svg');
-  mask-image: url('/images/settings.svg');
+  -webkit-mask-image: url(images/settings.svg);
+  mask-image: url(images/settings.svg);
   margin: 3px 0px -3px 0px;
 }
 
@@ -530,7 +530,7 @@ div.mainContent > input {
 .object-name {
   flex: 1 1 0;
   margin: 0 1em;
-  font-size: 1.2em;
+  font-size: 1.1em;
   font-weight: normal;
   text-overflow: ellipsis;
   white-space: nowrap;

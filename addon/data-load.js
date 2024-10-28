@@ -28,7 +28,7 @@ Enumerable.prototype = {
     yield* other;
   },
   some() {
-    for (let e of this) { // eslint-disable-line no-unused-vars
+    for (let e of this) {
       return true;
     }
     return false;
@@ -380,34 +380,42 @@ export function initScrollTable(scroller) {
   scrolled.className = "scrolltable-scrolled";
   scroller.appendChild(scrolled);
 
-  let initialRowHeight = 15; // constant: The initial estimated height of a row before it is rendered
-  let initialColWidth = 50; // constant: The initial estimated width of a column before it is rendered
-  let bufferHeight = 500; // constant: The number of pixels to render above and below the current viewport
-  let bufferWidth = 500; // constant: The number of pixels to render to the left and right of the current viewport
-  let headerRows = 1; // constant: The number of header rows
-  let headerCols = 0; // constant: The number of header columns
+  let initialRowHeight = 15;
+  let initialColWidth = 50;
+  // Dynamic buffer calculation based on viewport size
+  let bufferHeight = Math.min(500, scroller.offsetHeight);
+  let bufferWidth = Math.min(500, scroller.offsetWidth);
+  let headerRows = 1;
+  let headerCols = 0;
 
-  let rowHeights = []; // The height in pixels of each row
-  let rowVisible = []; // The visibility of each row. 0 = hidden, 1 = visible
+  let rowHeights = [];
+  let rowVisible = [];
   let rowCount = 0;
-  let totalHeight = 0; // The sum of heights of visible cells
-  let firstRowIdx = 0; // The index of the first rendered row
-  let firstRowTop = 0; // The distance from the top of the table to the top of the first rendered row
-  let lastRowIdx = 0; // The index of the row below the last rendered row
-  let lastRowTop = 0; // The distance from the top of the table to the bottom of the last rendered row (the top of the row below the last rendered row)
-  let colWidths = []; // The width in pixels of each column
-  let colVisible = []; // The visibility of each column. 0 = hidden, 1 = visible
+  let totalHeight = 0;
+  let firstRowIdx = 0;
+  let firstRowTop = 0;
+  let lastRowIdx = 0;
+  let lastRowTop = 0;
+  let colWidths = [];
+  let colVisible = [];
   let colCount = 0;
-  let totalWidth = 0; // The sum of widths of visible cells
-  let firstColIdx = 0; // The index of the first rendered column
-  let firstColLeft = 0; // The distance from the left of the table to the left of the first rendered column
-  let lastColIdx = 0; // The index of the column to the right of the last rendered column
-  let lastColLeft = 0; // The distance from the left of the table to the right of the last rendered column (the left of the column after the last rendered column)
+  let totalWidth = 0;
+  let firstColIdx = 0;
+  let firstColLeft = 0;
+  let lastColIdx = 0;
+  let lastColLeft = 0;
+
+  function updateBuffers() {
+    // Recalculate buffers when viewport changes
+    bufferHeight = Math.min(500, scroller.offsetHeight);
+    bufferWidth = Math.min(500, scroller.offsetWidth);
+    console.log("Buffers updated:", {bufferHeight, bufferWidth});
+  }
 
   function dataChange(newData) {
+    console.log("Data changed");
     data = newData;
     if (data == null || data.rowVisibilities.length == 0 || data.colVisibilities.length == 0) {
-      // First render, or table was cleared
       rowHeights = [];
       rowVisible = [];
       rowCount = 0;
@@ -427,7 +435,6 @@ export function initScrollTable(scroller) {
       lastColLeft = 0;
       renderData({force: true});
     } else {
-      // Data or visibility was changed
       let newRowCount = data.rowVisibilities.length;
       for (let r = rowCount; r < newRowCount; r++) {
         rowHeights[r] = initialRowHeight;
@@ -460,6 +467,7 @@ export function initScrollTable(scroller) {
       }
       renderData({force: true});
     }
+    updateBuffers(); // Ensure buffers are updated when data changes
   }
 
   let scrollTop = 0;
@@ -467,130 +475,192 @@ export function initScrollTable(scroller) {
   let offsetHeight = 0;
   let offsetWidth = 0;
   function viewportChange() {
-    if (scrollTop == scroller.scrollTop
-      && scrollLeft == scroller.scrollLeft
-      && offsetHeight == scroller.offsetHeight
-      && offsetWidth == scroller.offsetWidth
-    ) {
-      return;
+    // Enhanced viewport change detection
+    let newScrollTop = scroller.scrollTop;
+    let newScrollLeft = scroller.scrollLeft;
+    let newOffsetHeight = scroller.offsetHeight;
+    let newOffsetWidth = scroller.offsetWidth;
+
+    if (scrollTop !== newScrollTop || scrollLeft !== newScrollLeft
+        || offsetHeight !== newOffsetHeight || offsetWidth !== newOffsetWidth) {
+      console.log("Viewport changed:", {
+        scrollTop: newScrollTop,
+        scrollLeft: newScrollLeft,
+        offsetHeight: newOffsetHeight,
+        offsetWidth: newOffsetWidth
+      });
+      scrollTop = newScrollTop;
+      scrollLeft = newScrollLeft;
+      offsetHeight = newOffsetHeight;
+      offsetWidth = newOffsetWidth;
+      updateBuffers();
+      renderData({force: false});
     }
-    renderData({force: false});
   }
 
   function renderData({force}) {
-    scrollTop = scroller.scrollTop;
-    scrollLeft = scroller.scrollLeft;
-    offsetHeight = scroller.offsetHeight;
-    offsetWidth = scroller.offsetWidth;
+    try {
+      console.log("Rendering data. Force:", force);
+      scrollTop = scroller.scrollTop;
+      scrollLeft = scroller.scrollLeft;
+      offsetHeight = scroller.offsetHeight;
+      offsetWidth = scroller.offsetWidth;
 
-    if (rowCount == 0 || colCount == 0) {
-      scrolled.textContent = ""; // Delete previously rendered content
-      scrolled.style.height = "0px";
-      scrolled.style.width = "0px";
-      return;
-    }
-
-    if (!force && firstRowTop <= scrollTop && (lastRowTop >= scrollTop + offsetHeight || lastRowIdx == rowCount) && firstColLeft <= scrollLeft && (lastColLeft >= scrollLeft + offsetWidth || lastColIdx == colCount)) {
-      return;
-    }
-    console.log("render");
-
-    while (firstRowTop < scrollTop - bufferHeight && firstRowIdx < rowCount - 1) {
-      firstRowTop += rowVisible[firstRowIdx] * rowHeights[firstRowIdx];
-      firstRowIdx++;
-    }
-    while (firstRowTop > scrollTop - bufferHeight && firstRowIdx > 0) {
-      firstRowIdx--;
-      firstRowTop -= rowVisible[firstRowIdx] * rowHeights[firstRowIdx];
-    }
-    while (firstColLeft < scrollLeft - bufferWidth && firstColIdx < colCount - 1) {
-      firstColLeft += colVisible[firstColIdx] * colWidths[firstColIdx];
-      firstColIdx++;
-    }
-    while (firstColLeft > scrollLeft - bufferWidth && firstColIdx > 0) {
-      firstColIdx--;
-      firstColLeft -= colVisible[firstColIdx] * colWidths[firstColIdx];
-    }
-
-    lastRowIdx = firstRowIdx;
-    lastRowTop = firstRowTop;
-    while (lastRowTop < scrollTop + offsetHeight + bufferHeight && lastRowIdx < rowCount) {
-      lastRowTop += rowVisible[lastRowIdx] * rowHeights[lastRowIdx];
-      lastRowIdx++;
-    }
-    lastColIdx = firstColIdx;
-    lastColLeft = firstColLeft;
-    while (lastColLeft < scrollLeft + offsetWidth + bufferWidth && lastColIdx < colCount) {
-      lastColLeft += colVisible[lastColIdx] * colWidths[lastColIdx];
-      lastColIdx++;
-    }
-
-    scrolled.textContent = ""; // Delete previously rendered content
-    scrolled.style.height = totalHeight + "px";
-    scrolled.style.width = totalWidth + "px";
-
-    let table = document.createElement("table");
-    let cellsVisible = false;
-    for (let r = firstRowIdx; r < lastRowIdx; r++) {
-      if (rowVisible[r] == 0) {
-        continue;
+      if (rowCount == 0 || colCount == 0) {
+        scrolled.textContent = "";
+        scrolled.style.height = "0px";
+        scrolled.style.width = "0px";
+        return;
       }
-      let row = data.table[r];
-      let tr = document.createElement("tr");
-      for (let c = firstColIdx; c < lastColIdx; c++) {
-        if (colVisible[c] == 0) {
-          continue;
-        }
-        let cell = row[c];
-        let td = document.createElement("td");
-        td.className = "scrolltable-cell";
-        if (r < headerRows || c < headerCols) {
-          td.className += " header";
-        }
-        td.style.minWidth = colWidths[c] + "px";
-        td.style.height = rowHeights[r] + "px"; // min-height does not work on table cells, but height acts as min-height
-        renderCell(data, cell, td);
-        tr.appendChild(td);
-        cellsVisible = true;
+
+      if (!force && firstRowTop <= scrollTop && (lastRowTop >= scrollTop + offsetHeight || lastRowIdx == rowCount) && firstColLeft <= scrollLeft && (lastColLeft >= scrollLeft + offsetWidth || lastColIdx == colCount)) {
+        return;
       }
-      table.appendChild(tr);
-    }
-    table.style.top = firstRowTop + "px";
-    table.style.left = firstColLeft + "px";
-    scrolled.appendChild(table);
-    // Before this point we invalidate style and layout. After this point we recalculate style and layout, and we do not invalidate them again.
-    if (cellsVisible) {
-      let tr = table.firstElementChild;
-      for (let r = firstRowIdx; r < lastRowIdx; r++) {
+      console.log("Rendering table");
+
+      while (firstRowTop < scrollTop - bufferHeight && firstRowIdx < rowCount - 1) {
+        firstRowTop += rowVisible[firstRowIdx] * rowHeights[firstRowIdx];
+        firstRowIdx++;
+      }
+      while (firstRowTop > scrollTop - bufferHeight && firstRowIdx > 0) {
+        firstRowIdx--;
+        firstRowTop -= rowVisible[firstRowIdx] * rowHeights[firstRowIdx];
+      }
+      while (firstColLeft < scrollLeft - bufferWidth && firstColIdx < colCount - 1) {
+        firstColLeft += colVisible[firstColIdx] * colWidths[firstColIdx];
+        firstColIdx++;
+      }
+      while (firstColLeft > scrollLeft - bufferWidth && firstColIdx > 0) {
+        firstColIdx--;
+        firstColLeft -= colVisible[firstColIdx] * colWidths[firstColIdx];
+      }
+
+      lastRowIdx = firstRowIdx;
+      lastRowTop = firstRowTop;
+      while (lastRowTop < scrollTop + offsetHeight + bufferHeight && lastRowIdx < rowCount) {
+        lastRowTop += rowVisible[lastRowIdx] * rowHeights[lastRowIdx];
+        lastRowIdx++;
+      }
+      lastColIdx = firstColIdx;
+      lastColLeft = firstColLeft;
+      while (lastColLeft < scrollLeft + offsetWidth + bufferWidth && lastColIdx < colCount) {
+        lastColLeft += colVisible[lastColIdx] * colWidths[lastColIdx];
+        lastColIdx++;
+      }
+
+      scrolled.textContent = "";
+      scrolled.style.height = totalHeight + "px";
+      scrolled.style.width = totalWidth + "px";
+
+      let table = document.createElement("table");
+      let cellsVisible = false;
+
+      // Ensure firstRowIdx never goes below headerRows
+      firstRowIdx = Math.max(headerRows, firstRowIdx);
+
+      // Render header rows separately to ensure they're always visible
+      for (let r = 0; r < headerRows; r++) {
+        if (rowVisible[r] == 0) continue;
+        let row = data.table[r];
+        let tr = document.createElement("tr");
+        for (let c = firstColIdx; c < lastColIdx; c++) {
+          if (colVisible[c] == 0) continue;
+          let cell = row[c];
+          let td = document.createElement("td");
+          td.className = "scrolltable-cell header";
+          td.style.minWidth = colWidths[c] + "px";
+          td.style.height = rowHeights[r] + "px";
+          renderCell(data, cell, td);
+          tr.appendChild(td);
+        }
+        table.appendChild(tr);
+      }
+
+      // Render data rows
+      for (let r = Math.max(headerRows, firstRowIdx); r < lastRowIdx; r++) {
         if (rowVisible[r] == 0) {
           continue;
         }
-        let rowRect = tr.firstElementChild.getBoundingClientRect();
-        let oldHeight = rowHeights[r];
-        let newHeight = Math.max(oldHeight, rowRect.height);
-        rowHeights[r] = newHeight;
-        totalHeight += newHeight - oldHeight;
-        lastRowTop += newHeight - oldHeight;
-        tr = tr.nextElementSibling;
-      }
-      let td = table.firstElementChild.firstElementChild;
-      for (let c = firstColIdx; c < lastColIdx; c++) {
-        if (colVisible[c] == 0) {
-          continue;
+        let row = data.table[r];
+        let tr = document.createElement("tr");
+        for (let c = firstColIdx; c < lastColIdx; c++) {
+          if (colVisible[c] == 0) {
+            continue;
+          }
+          let cell = row[c];
+          let td = document.createElement("td");
+          td.className = "scrolltable-cell";
+          if (c < headerCols) {
+            td.className += " header";
+          }
+          td.style.minWidth = colWidths[c] + "px";
+          td.style.height = rowHeights[r] + "px";
+          renderCell(data, cell, td);
+          tr.appendChild(td);
+          cellsVisible = true;
         }
-        let colRect = td.getBoundingClientRect();
-        let oldWidth = colWidths[c];
-        let newWidth = Math.max(oldWidth, colRect.width);
-        colWidths[c] = newWidth;
-        totalWidth += newWidth - oldWidth;
-        lastColLeft += newWidth - oldWidth;
-        td = td.nextElementSibling;
+        table.appendChild(tr);
       }
+
+      // Adjust table position to prevent header overlap at the top
+      let tableTop = Math.max(0, firstRowTop);
+      table.style.top = tableTop + "px";
+      table.style.left = firstColLeft + "px";
+      scrolled.appendChild(table);
+
+      if (cellsVisible) {
+        // Start adjusting heights from the first data row, not header
+        let tr = table.children[headerRows];
+        for (let r = Math.max(headerRows, firstRowIdx); r < lastRowIdx; r++) {
+          if (rowVisible[r] == 0) {
+            continue;
+          }
+          let rowRect = tr.firstElementChild.getBoundingClientRect();
+          let oldHeight = rowHeights[r];
+          let newHeight = Math.max(oldHeight, rowRect.height);
+          rowHeights[r] = newHeight;
+          totalHeight += newHeight - oldHeight;
+          lastRowTop += newHeight - oldHeight;
+          tr = tr.nextElementSibling;
+        }
+        let td = table.firstElementChild.firstElementChild;
+        for (let c = firstColIdx; c < lastColIdx; c++) {
+          if (colVisible[c] == 0) {
+            continue;
+          }
+          let colRect = td.getBoundingClientRect();
+          let oldWidth = colWidths[c];
+          let newWidth = Math.max(oldWidth, colRect.width);
+          colWidths[c] = newWidth;
+          totalWidth += newWidth - oldWidth;
+          lastColLeft += newWidth - oldWidth;
+          td = td.nextElementSibling;
+        }
+      }
+      console.log("Render complete");
+    } catch (error) {
+      console.error("Error in renderData:", error);
+      // Enhanced error logging
+      console.log("Current state:", {
+        rowCount,
+        colCount,
+        firstRowIdx,
+        lastRowIdx,
+        firstColIdx,
+        lastColIdx,
+        scrollTop,
+        scrollLeft,
+        offsetHeight,
+        offsetWidth
+      });
     }
   }
 
   dataChange(null);
   scroller.addEventListener("scroll", viewportChange);
+  // Added resize event listener to handle viewport changes
+  window.addEventListener("resize", viewportChange);
+
   return {
     viewportChange,
     dataChange

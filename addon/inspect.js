@@ -40,7 +40,8 @@ class Model {
     this.objectSetupLinksRequested = false;
     this.popupTmpReactElement = undefined;
     this.popupReactElement = undefined;
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
+    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
       document.body.classList.add("prod");
     }
@@ -1080,7 +1081,6 @@ class App extends React.Component {
     model.didUpdate();
     // Save to local storage
   }
-
   handleClick(e){
     const {model} = this.props;
     if (model.popupReactElement){ // There is a popup
@@ -1102,7 +1102,6 @@ class App extends React.Component {
     const {model} = this.props;
     model.popupTmpReactElement = elem;
   }
-
   render() {
     let {model} = this.props;
     document.title = model.title();

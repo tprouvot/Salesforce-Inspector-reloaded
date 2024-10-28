@@ -68,6 +68,9 @@ body,
 a:visited {
     color: var(--inspector-visited-link);
 }
+a > span {
+    color: #0176d3;
+}
 
 .main {
     flex: 1;
@@ -259,7 +262,9 @@ input.api-input {
 .center {
     text-align: center;
 }
-
+.justify-center{
+    justify-content: center;
+}
 ul.small-tabs {
     margin: 0;
     padding: 0;
@@ -339,8 +344,8 @@ a.icon {
 }
 
  a.icon-url {
-    -webkit-mask-image: url('/images/link.svg');
-    mask-image: url('/images/link.svg');
+    -webkit-mask-image: url(images/link.svg);
+    mask-image: url(images/link.svg);
 }
 .pointer {
     cursor: pointer;

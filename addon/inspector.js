@@ -1,5 +1,11 @@
-export let apiVersion = localStorage.getItem("apiVersion") == null ? "60.0" : localStorage.getItem("apiVersion");
+export let defaultApiVersion = "62.0";
+export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 export let sessionError;
+export function nullToEmptyString(value) {
+  // For react input fields, the value may not be null or undefined, so this will clean the value
+  return (value == null) ? "" : value;
+}
+
 export let sfConn = {
 
   async getSession(sfHost) {
@@ -27,17 +33,17 @@ export let sfConn = {
         this.sessionId = message.key;
       }
     }
-    const IS_SANDBOX = "isSandbox";
-    if (localStorage.getItem(sfHost + "_" + IS_SANDBOX) == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+FROM+Organization").then(res => {
-        localStorage.setItem(sfHost + "_" + IS_SANDBOX, res.records[0].IsSandbox);
+    if (localStorage.getItem(sfHost + "_trialExpirationDate") == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+,TrialExpirationDate+FROM+Organization").then(res => {
+        localStorage.setItem(sfHost + "_isSandbox", res.records[0].IsSandbox);
         localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
+        localStorage.setItem(sfHost + "_trialExpirationDate", res.records[0].TrialExpirationDate);
       });
     }
-    setFavicon(sfHost);
+    return this.sessionId;
   },
 
-  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}) {
+  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {
     if (!this.instanceHostname) {
       throw new Error("Instance Hostname not found");
     }
@@ -58,9 +64,9 @@ export let sfConn = {
     }
 
     if (body !== undefined) {
+      xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
       if (bodyType == "json") {
         body = JSON.stringify(body);
-        xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
       } else if (bodyType == "raw") {
         // Do nothing
       } else {
@@ -90,7 +96,9 @@ export let sfConn = {
       };
       xhr.send(body);
     });
-    if (xhr.status >= 200 && xhr.status < 300) {
+    if (rawResponse){
+      return xhr;
+    } else if (xhr.status >= 200 && xhr.status < 300) {
       return xhr.response;
     } else if (xhr.status == 0) {
       if (!logErrors) { console.error("Received no response from Salesforce REST API", xhr); }

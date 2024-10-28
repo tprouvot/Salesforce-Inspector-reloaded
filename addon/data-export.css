@@ -61,7 +61,7 @@ body {
   overflow: hidden;
   margin: 0;
   background-color: var(--inspector-sand-background);
-  background-image: url('/images/lightning_blue_background.png');
+  background-image: url(images/lightning_blue_background.png);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: 0px 48px;
@@ -189,6 +189,10 @@ h1 {
   color: var(--inspector-text);
   font-weight: 700;
   line-height: 1.25;
+  margin: revert;
+}
+.user-info h1 {
+  padding: 0 6px 0 10px;
 }
 
 .query-controls {
@@ -244,7 +248,16 @@ input[type=default] {
 }
 
 input[type=search] {
-  background-image: url('/images/search.svg');
+  background-image: url(images/search.svg);
+  background-repeat: no-repeat;
+  background-size: 1rem;
+  background-position: 10px 7px;
+  padding-left: 35px;
+  margin-right: 10px;
+}
+
+input[type=save] {
+  background-image: url(images/save.svg);
   background-repeat: no-repeat;
   background-size: 1rem;
   background-position: 10px 7px;
@@ -295,6 +308,10 @@ button:disabled:hover,
 input:disabled:hover {
   background-color: var(--inspector-neutral);
   color: var(--inspector-inverted-text);
+}
+
+button:disabled > svg.button-icon{
+  fill: #dddbda;
 }
 
 .highlighted {
@@ -354,8 +371,8 @@ textarea[readonly] {
   mask-repeat: no-repeat;
   -webkit-mask-size: 1.4rem;
   mask-size: 1.4rem;
-  -webkit-mask-image: url('/images/help.svg');
-  mask-image: url('/images/help.svg');
+  -webkit-mask-image: url(images/help.svg);
+  mask-image: url(images/help.svg);
   -webkit-mask-position: center;
   mask-position: center;
   background-color: var(--inspector-neutral);
@@ -445,9 +462,6 @@ button[hidden],
   margin-right: 0
 }
 
-/* div.button-group:not(:only-of-type) {
-  margin-left: 10px;
-} */
 .button-group> :first-child,
 .button-group>[hidden]+* {
   border-top-left-radius: 0.25rem;
@@ -512,18 +526,33 @@ button.toggle:hover .button-toggle-icon {
 }
 
 button.expand .button-toggle-icon {
-  -webkit-mask-image: url('/images/down.svg');
-  mask-image: url('/images/down.svg');
+  -webkit-mask-image: url(images/down.svg);
+  mask-image: url(images/down.svg);
 }
 
 button.contract .button-toggle-icon {
-  -webkit-mask-image: url('/images/up.svg');
-  mask-image: url('/images/up.svg');
+  -webkit-mask-image: url(images/up.svg);
+  mask-image: url(images/up.svg);
 }
 
 button.toggle .button-icon {
-  -webkit-mask-image: url('/images/light_bulb.svg');
-  mask-image: url('/images/light_bulb.svg');
+  -webkit-mask-image: url(images/light_bulb.svg);
+  mask-image: url(images/light_bulb.svg);
+}
+
+ul > li > a > span {
+  color: #0176d3;
+}
+
+svg.button-icon {
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  fill: #0070d2;
+  vertical-align: sub;
+>>>>>>> upstream/releaseCandidate
 }
 
 .autocomplete-header {
@@ -584,138 +613,138 @@ button.toggle .button-icon {
 }
 
 .relationshipName .autocomplete-icon {
-  -webkit-mask-image: url('/images/relate.svg');
-  mask-image: url('/images/relate.svg');
+  -webkit-mask-image: url(images/relate.svg);
+  mask-image: url(images/relate.svg);
   background-color: var(--inspector-accent);
 }
 
 .object .autocomplete-icon {
-  -webkit-mask-image: url('/images/sobject.svg');
-  mask-image: url('/images/sobject.svg');
+  -webkit-mask-image: url(images/sobject.svg);
+  mask-image: url(images/sobject.svg);
   background-color: var(--inspector-success-background);
 }
 
 .variable .autocomplete-icon {
-  -webkit-mask-image: url('/images/variable.svg');
-  mask-image: url('/images/variable.svg');
+  -webkit-mask-image: url(images/variable.svg);
+  mask-image: url(images/variable.svg);
 }
 
 .autocomplete-icon {
-  -webkit-mask-image: url('/images/quotation_marks.svg');
-  mask-image: url('/images/quotation_marks.svg');
+  -webkit-mask-image: url(images/quotation_marks.svg);
+  mask-image: url(images/quotation_marks.svg);
 }
 
 .null .autocomplete-icon {
-  -webkit-mask-image: url('/images/steps.svg');
-  mask-image: url('/images/steps.svg');
+  -webkit-mask-image: url(images/steps.svg);
+  mask-image: url(images/steps.svg);
 }
 
 .fieldName .autocomplete-icon {
   /* default icon */
-  -webkit-mask-image: url('/images/question_mark.svg');
-  mask-image: url('/images/question_mark.svg');
+  -webkit-mask-image: url(images/question_mark.svg);
+  mask-image: url(images/question_mark.svg);
 }
 
 .fieldName.reference .autocomplete-icon {
-  -webkit-mask-image: url('/images/record_lookup.svg');
-  mask-image: url('/images/record_lookup.svg');
+  -webkit-mask-image: url(images/record_lookup.svg);
+  mask-image: url(images/record_lookup.svg);
 }
 
 .fieldName.string .autocomplete-icon {
-  -webkit-mask-image: url('/images/string.svg');
-  mask-image: url('/images/string.svg');
+  -webkit-mask-image: url(images/string.svg);
+  mask-image: url(images/string.svg);
 }
 
 .fieldName.id .autocomplete-icon {
-  -webkit-mask-image: url('/images/anchor.svg');
-  mask-image: url('/images/anchor.svg');
+  -webkit-mask-image: url(images/anchor.svg);
+  mask-image: url(images/anchor.svg);
 }
 
 .fieldName.picklist .autocomplete-icon {
-  -webkit-mask-image: url('/images/picklist.svg');
-  mask-image: url('/images/picklist.svg');
+  -webkit-mask-image: url(images/picklist.svg);
+  mask-image: url(images/picklist.svg);
 }
 
 .fieldName.multipicklist .autocomplete-icon {
-  -webkit-mask-image: url('/images/multi-picklist.svg');
-  mask-image: url('/images/multi-picklist.svg');
+  -webkit-mask-image: url(images/multi-picklist.svg);
+  mask-image: url(images/multi-picklist.svg);
 }
 
 .fieldName.boolean .autocomplete-icon {
-  -webkit-mask-image: url('/images/boolean.svg');
-  mask-image: url('/images/boolean.svg');
+  -webkit-mask-image: url(images/boolean.svg);
+  mask-image: url(images/boolean.svg);
 }
 
 .fieldName.phone .autocomplete-icon {
-  -webkit-mask-image: url('/images/call.svg');
-  mask-image: url('/images/call.svg');
+  -webkit-mask-image: url(images/call.svg);
+  mask-image: url(images/call.svg);
 }
 
 .fieldName.textarea .autocomplete-icon {
-  -webkit-mask-image: url('/images/textarea.svg');
-  mask-image: url('/images/textarea.svg');
+  -webkit-mask-image: url(images/textarea.svg);
+  mask-image: url(images/textarea.svg);
 }
 
 .fieldName.url .autocomplete-icon {
-  -webkit-mask-image: url('/images/link.svg');
-  mask-image: url('/images/link.svg');
+  -webkit-mask-image: url(images/link.svg);
+  mask-image: url(images/link.svg);
 }
 
 .fieldName.int .autocomplete-icon,
 .fieldName.double .autocomplete-icon,
 .fieldName.long .autocomplete-icon {
-  -webkit-mask-image: url('/images/number.svg');
-  mask-image: url('/images/number.svg');
+  -webkit-mask-image: url(images/number.svg);
+  mask-image: url(images/number.svg);
 }
 
 .fieldName.address .autocomplete-icon {
-  -webkit-mask-image: url('/images/home.svg');
-  mask-image: url('/images/home.svg');
+  -webkit-mask-image: url(images/home.svg);
+  mask-image: url(images/home.svg);
 }
 
 .fieldName.datetime .autocomplete-icon {
-  -webkit-mask-image: url('/images/date-time.svg');
-  mask-image: url('/images/date-time.svg');
+  -webkit-mask-image: url(images/date-time.svg);
+  mask-image: url(images/date-time.svg);
 }
 
 .fieldName.date .autocomplete-icon {
-  -webkit-mask-image: url('/images/date.svg');
-  mask-image: url('/images/date.svg');
+  -webkit-mask-image: url(images/date.svg);
+  mask-image: url(images/date.svg);
 }
 
 .fieldName.currency .autocomplete-icon {
-  -webkit-mask-image: url('/images/currency.svg');
-  mask-image: url('/images/currency.svg');
+  -webkit-mask-image: url(images/currency.svg);
+  mask-image: url(images/currency.svg);
 }
 
 .fieldName.email .autocomplete-icon {
-  -webkit-mask-image: url('/images/email.svg');
-  mask-image: url('/images/email.svg');
+  -webkit-mask-image: url(images/email.svg);
+  mask-image: url(images/email.svg);
 }
 
 .fieldName.location .autocomplete-icon {
-  -webkit-mask-image: url('/images/checkin.svg');
-  mask-image: url('/images/checkin.svg');
+  -webkit-mask-image: url(images/checkin.svg);
+  mask-image: url(images/checkin.svg);
 }
 
 .fieldName.percent .autocomplete-icon {
-  -webkit-mask-image: url('/images/percent.svg');
-  mask-image: url('/images/percent.svg');
+  -webkit-mask-image: url(images/percent.svg);
+  mask-image: url(images/percent.svg);
 }
 
 .fieldName.encryptedstring .autocomplete-icon {
-  -webkit-mask-image: url('/images/lock.svg');
-  mask-image: url('/images/lock.svg');
+  -webkit-mask-image: url(images/lock.svg);
+  mask-image: url(images/lock.svg);
 }
 
 .fieldName.time .autocomplete-icon {
-  -webkit-mask-image: url('/images/clock.svg');
-  mask-image: url('/images/clock.svg');
+  -webkit-mask-image: url(images/clock.svg);
+  mask-image: url(images/clock.svg);
 }
 
 .fieldName.complexvalue .autocomplete-icon {
-  -webkit-mask-image: url('/images/advanced_function.svg');
-  mask-image: url('/images/advanced_function.svg');
+  -webkit-mask-image: url(images/advanced_function.svg);
+  mask-image: url(images/advanced_function.svg);
 }
 
 .header {

@@ -46,14 +46,14 @@ body {
   height: 100%;
   display: flex;
   background-color: var(--inspector-sand-background);
-  background-image: url('/images/lightning_blue_background.png');
+  background-image: url(images/lightning_blue_background.png);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: 0px 48px;
 }
 .prod {
   background-color: var(--inspector-prod-background);
-  background-image: url('/images/lightning_red_background.png');
+  background-image: url(images/lightning_red_background.png);
 }
 #root {
   display: flex;
@@ -124,8 +124,8 @@ body {
   mask-repeat: no-repeat;
   -webkit-mask-size: 1.4rem;;
   mask-size: 1.4rem;;
-  -webkit-mask-image: url('/images/help.svg');
-  mask-image: url('/images/help.svg');
+  -webkit-mask-image: url(images/help.svg);
+  mask-image: url(images/help.svg);
   -webkit-mask-position: center;
   mask-position: center;
   background-color: var(--inspector-neutral);
@@ -335,6 +335,9 @@ div.batch-size {
   color: var(--inspector-text);
   background-color: var(--inspector-background);
 }
+input[type=number]{
+  width: 99px;
+}
 input.object-list {
   width: 296px;
 }
@@ -357,9 +360,9 @@ select:focus {
   outline: none;
   z-index: 1;
 }
-.button-group button:active:not(:first-child), 
+.button-group button:active:not(:first-child),
 .button-group button:focus:not(:first-child),
-.button-group input:active:not(:first-child), 
+.button-group input:active:not(:first-child),
 .button-group input:focus:not(:first-child),
 .button-group select:focus:not(:first-child),
 .button-group select:focus:not(:first-child) {
@@ -488,12 +491,16 @@ button:not(:disabled, .highlighted):hover {
   margin-right: 0;
 }
 button.expand .button-toggle-icon {
-  -webkit-mask-image: url('/images/down.svg');
-  mask-image: url('/images/down.svg');
+  -webkit-mask-image: url(images/down.svg);
+  mask-image: url(images/down.svg);
 }
 button.contract .button-toggle-icon {
-  -webkit-mask-image: url('/images/up.svg');
-  mask-image: url('/images/up.svg');
+  -webkit-mask-image: url(images/up.svg);
+  mask-image: url(images/up.svg);
+}
+.button.field-info .button-icon {
+  -webkit-mask-image: url(images/salesforce-inspector-logo.svg);
+  mask-image: url(images/salesforce-inspector-logo.svg);
 }
 .cancel-btn {
   color: var(--inspector-error);

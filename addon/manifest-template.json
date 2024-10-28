@@ -1,19 +1,21 @@
 {
-  "name": "Salesforce Inspector reloaded",
+  "name": "Salesforce Inspector Reloaded",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.22",
+  "version": "1.26",
+  "version_name": "1.26",
   "icons": {
     "128": "icon128.png"
   },
-  "applications": {
-    "gecko": {
-      "id": "jid1-DBcuAQpfLMcvOQ@jetpack",
-      "strict_min_version": "60.0"
-    }
+  "action": {
+    "default_title": "Open popup"
   },
-  "minimum_chrome_version": "61",
+  "minimum_chrome_version": "88",
   "permissions": [
+    "cookies"
+  ],
+  "host_permissions": [
     "https://*.salesforce.com/*",
+    "https://*.salesforce-setup.com/*",
     "https://*.force.com/*",
     "https://*.cloudforce.com/*",
     "https://*.visualforce.com/*",
@@ -24,12 +26,14 @@
     "https://*.cloudforce.mil/*",
     "https://*.visualforce.mil/*",
     "https://*.crmforce.mil/*",
-    "https://*.force.com.mcas.ms/*"
+    "https://*.force.com.mcas.ms/*",
+    "https://*.builder.salesforce-experience.com/*"
   ],
   "content_scripts": [
     {
       "matches": [
         "https://*.salesforce.com/*",
+        "https://*.salesforce-setup.com/*",
         "https://*.visual.force.com/*",
         "https://*.vf.force.com/*",
         "https://*.lightning.force.com/*",
@@ -44,11 +48,19 @@
         "https://*.cloudforce.mil/*",
         "https://*.visualforce.mil/*",
         "https://*.crmforce.mil/*",
-        "https://*.lightning.force.com.mcas.ms/*"
+        "https://*.lightning.force.com.mcas.ms/*",
+        "https://*.builder.salesforce-experience.com/*"
       ],
       "all_frames": true,
-      "css": ["inspector.css", "button.css", "inspect-inline.css"],
-      "js": ["button.js", "inspect-inline.js"]
+      "css": [
+        "inspector.css",
+        "button.css",
+        "inspect-inline.css"
+      ],
+      "js": [
+        "button.js",
+        "inspect-inline.js"
+      ]
     }
   ],
   "background": {
@@ -63,13 +75,49 @@
         "inspect.html",
         "metadata-retrieve.html",
         "explore-api.html",
+        "rest-explore.html",
         "limits.html",
+        "field-creator.html",
         "options.html"
       ],
-      "matches": ["https://*/*"],
+      "matches": [
+        "https://*/*"
+      ],
       "extension_ids": []
     }
   ],
-  "incognito": "replaced-at-build",
-  "manifest_version": 2
+  "incognito": "split",
+  "manifest_version": 3,
+  "commands": {
+    "open-popup": {
+      "description": "Open popup"
+    },
+    "data-export": {
+      "description": "Data Export"
+    },
+    "data-import": {
+      "description": "Data Import"
+    },
+    "options": {
+      "description": "Options"
+    },
+    "metadata-retrieve": {
+      "description": "Retrieve Metadata"
+    },
+    "limits": {
+      "description": "Org Limits"
+    },
+    "field-creator": {
+      "description": "Field Creator"
+    },
+    "explore-api": {
+      "description": "Explore API"
+    },
+    "rest-explore": {
+      "description": "REST Explore"
+    },
+    "event-monitor": {
+      "description": "Event Monitor"
+    }
+  }
 }

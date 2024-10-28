@@ -105,35 +105,49 @@
   mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
   mask-size: 1rem;
+  -webkit-mask-image: url(images/salesforce1.svg);
+  mask-image: url(images/salesforce1.svg);
   -webkit-mask-position: center;
   mask-position: center;
 }
 
-.pop-menu a.view-salesforce .icon {
-  -webkit-mask-image: url('/images/salesforce1.svg');
-  mask-image: url('/images/salesforce1.svg');
-}
+/*.pop-menu a.view-salesforce .icon {
+  -webkit-mask-image: url(images/salesforce1.svg);
+  mask-image: url(images/salesforce1.svg);
+}*/
 
 .pop-menu a.view-inspector .icon {
-  -webkit-mask-image: url('/images/salesforce-inspector-logo.svg');
-  mask-image: url('/images/salesforce-inspector-logo.svg');
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  -webkit-mask-image: url(images/salesforce-inspector-logo.svg);
+  mask-image: url(images/salesforce-inspector-logo.svg);
+  -webkit-mask-position: center;
 }
 
 .pop-menu a.query-record .icon {
-  -webkit-mask-image: url('/images/record_lookup.svg');
-  mask-image: url('/images/record_lookup.svg');
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  -webkit-mask-image: url(images/record_lookup.svg);
+  mask-image: url(images/record_lookup.svg);
+  -webkit-mask-position: center;
   background-color: var(--inspector-neutral);
 }
 
 .pop-menu a.copy-id .icon {
-  -webkit-mask-image: url('/images/copy.svg');
-  mask-image: url('/images/copy.svg');
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  -webkit-mask-image: url(images/copy.svg);
+  mask-image: url(images/copy.svg);
+  -webkit-mask-position: center;
   background-color: var(--inspector-neutral);
 }
 
 .pop-menu a.download-salesforce .icon {
-  -webkit-mask-image: url('/images/down.svg');
-  mask-image: url('/images/down.svg');
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1rem;
+  -webkit-mask-image: url(images/down.svg);
+  mask-image: url(images/down.svg);
+  -webkit-mask-position: center;
 }
 
 .pop-menu a.download-salesforce .icon {

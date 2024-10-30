@@ -1,5 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
+import {copyToClipboard} from "./data-load.js";
 /* global initButton */
 
 class Model {
@@ -7,8 +8,17 @@ class Model {
     this.reactCallback = null;
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
+    this.title = "Org Limits";
+    this.userInfo = "...";
     this.allLimitData = [];
     this.errorMessages = [];
+    this.sortOptions = [{label: "Consumption", value: "consumption"}, {label: "A-Z %", value: "asc"}];
+    this.sortBy = this.sortOptions[1];
+
+    let userInfoPromise = sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {});
+    this.spinFor("userInfo", userInfoPromise, (res) => {
+      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
+    });
   }
 
   didUpdate(cb) {
@@ -34,10 +44,6 @@ class Model {
       .catch(err => console.log("error handling failed", err));
   }
 
-  title() {
-    return "Org Limits";
-  }
-
   setLimitsData(res) {
     let self = this;
     this.allLimitData = [];
@@ -48,7 +54,8 @@ class Model {
         "label": self.humanizeName(key),
         "description": "...",
         "max": res[key].Max,
-        "remaining": res[key].Remaining
+        "remaining": res[key].Remaining,
+        "consumption": (res[key].Max - res[key].Remaining) / res[key].Max
       });
     });
   }
@@ -63,6 +70,10 @@ class Model {
     this.spinFor("describing global", limitsPromise, (res) => {
       this.setLimitsData(res);
     });
+  }
+
+  copyAsJson() {
+    copyToClipboard(JSON.stringify(this.allLimitData ? this.allLimitData : this.allLimitData, null, "    "), null, "  ");
   }
 }
 
@@ -116,39 +127,79 @@ class LimitData extends React.Component {
 }
 
 class App extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.model = this.props.vm;
+    this.onCopyAsJson = this.onCopyAsJson.bind(this);
+    this.onSortBy = this.onSortBy.bind(this);
+  }
+
+  sortLimits(data, sortBy) {
+    const sortFunctions = {
+      consumption: (a, b) => b.consumption - a.consumption,
+      asc: (a, b) => a.label.localeCompare(b.label)
+    };
+    return data.sort(sortFunctions[sortBy] || (() => 0));
+  }
+
+  onCopyAsJson() {
+    this.model.copyAsJson();
+    this.model.didUpdate();
+  }
+  onSortBy(e){
+    this.model.sortBy = e.target.value;
+    this.model.allLimitData = this.sortLimits(this.model.allLimitData, this.model.sortBy);
+    this.model.didUpdate();
+  }
+
   render() {
-    let vm = this.props.vm;
-    document.title = vm.title();
-    return (
-      h("div", {},
-        h("div", {
-          className: "object-bar"
-        },
-        h("img", {
-          id: "spinner",
-          src: "data:image/gif;base64,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",
-          hidden: vm.spinnerCount == 0
-        }),
-        h("a", {
-          href: vm.sfLink,
-          className: "sf-link"
-        },
-        h("svg", {
-          viewBox: "0 0 24 24"
-        },
-        h("path", {
-          d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"
-        })
+    let model = this.props.vm;
+    document.title = model.title;
+    return h("div", {},
+      h("div", {id: "user-info"},
+        h("a", {href: `https://${sfConn.instanceHostname}`, className: "sf-link"},
+          h("svg", {viewBox: "0 0 24 24"},
+            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
+          ),
+          " Salesforce Home"
         ),
-        " Salesforce Home"
-        )
+        h("h1", {}, model.title),
+        h("span", {}, " / " + model.userInfo),
+        h("div", {className: "flex-right"},
+          h("a", {href: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_limits.htm", target: "_blank", id: "help-btn", title: "Org Limits Help", onClick: null},
+            h("div", {className: "icon"})
+          ),
+          h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
+            h("span", {className: "slds-assistive-text"}),
+            h("div", {className: "slds-spinner__dot-a"}),
+            h("div", {className: "slds-spinner__dot-b"}),
+          ),
         ),
-        h("div", {
-          className: "body"
-        },
-        vm.allLimitData.map(limitData =>
-          h(LimitData, limitData)
-        )
+      ),
+      h("div", {className: "area", id: "result-area"},
+        h("div", {className: "result-bar"},
+          h("h1", {}, "Limits"),
+          h("div", {className: "button-group"},
+            h("button", {disabled: model.allLimitData.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
+          ),
+          h("div", {className: "flex-right"},
+            h("select", {value: model.sortBy, onChange: this.onSortBy, className: ""},
+              h("option", {value: "none", disabled: true, defaultValue: true, hidden: true}, "Sort By"),
+              model.sortOptions.map(opt => h("option", {key: opt.value, value: opt.value}, opt.label))
+            ),
+          ),
+        ),
+        h("div", {id: "result-table", ref: "scroller"},
+          h("div", {},
+            h("div", {
+              className: "body"
+            },
+            model.allLimitData.map(limitData =>
+              h(LimitData, limitData)
+            )
+            )
+          )
         )
       )
     );

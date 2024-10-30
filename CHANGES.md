@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Restyle Org Limits
 - Add new options to hide buttons in popup
 
 ## Version 1.25

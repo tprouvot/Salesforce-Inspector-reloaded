@@ -1,11 +1,13 @@
 
 let sfHost;
+let pathname;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Perform cookie operations in the background page, because not all foreground pages have access to the cookie API.
   // Firefox does not support incognito split mode, so we use sender.tab.cookieStoreId to select the right cookie store.
   // Chrome does not support sender.tab.cookieStoreId, which means it is undefined, and we end up using the default cookie store according to incognito split mode.
   if (request.message == "getSfHost") {
+    pathname = new URL(request.url).pathname;
     const currentDomain = new URL(request.url).hostname;
     // When on a *.visual.force.com page, the session in the cookie does not have API access,
     // so we read the corresponding session from *.salesforce.com page.
@@ -61,8 +63,9 @@ chrome.action.onClicked.addListener(() => {
 });
 chrome.commands?.onCommand.addListener((command) => {
   if (command !== "open-popup"){
+    let append = command === "inspect" ? `&path=${pathname}` : "";
     chrome.tabs.create({
-      url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
+      url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}${append}`
     });
   } else {
     chrome.runtime.sendMessage({

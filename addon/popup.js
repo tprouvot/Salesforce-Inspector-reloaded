@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, sessionError} from "./inspector.js";
+import {sfConn, apiVersion, sessionError, getRecordId, getSobject} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 
@@ -2199,66 +2199,6 @@ class Autocomplete extends React.PureComponent {
       )
     );
   }
-}
-
-function getRecordId(href) {
-  let url = new URL(href);
-  // Find record ID from URL
-  // Salesforce and Console (+ Hyperforce China Lightning & Classic)
-  if (url.hostname.endsWith(".salesforce.com") || url.hostname.endsWith(".salesforce.mil") || url.hostname.endsWith(".sfcrmapps.cn") || url.hostname.endsWith(".sfcrmproducts.cn")) {
-    let match = url.pathname.match(/\/([a-zA-Z0-9]{3}|[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})(?:\/|$)/);
-    if (match) {
-      let res = match[1];
-      if (res.includes("0000") || res.length == 3) {
-        return match[1];
-      }
-    }
-  }
-
-  // Lightning Experience
-  const lightningHostnames = [
-    ".lightning.force.com",
-    ".lightning.force.mil",
-    ".lightning.crmforce.mil",
-    ".lightning.force.com.mcas.ms"
-  ];
-  if (lightningHostnames.some(hostname => url.hostname.endsWith(hostname))) {
-    let match;
-    if (url.pathname == "/one/one.app") {
-      match = url.hash.match(/\/sObject\/([a-zA-Z0-9]+)(?:\/|$)/);
-    } else {
-      match = url.pathname.match(/\/lightning\/[r|o]\/[a-zA-Z0-9_]+\/([a-zA-Z0-9]+)/);
-    }
-    if (match) {
-      return match[1];
-    }
-  }
-  // Visualforce
-  let searchParams = new URLSearchParams(url.search.substring(1));
-  {
-    let idParam = searchParams.get("id");
-    if (idParam) {
-      return idParam;
-    }
-  }
-  // Visualforce page that does not follow standard Visualforce naming
-  for (let [, p] of searchParams) {
-    if (p.match(/^([a-zA-Z0-9]{3}|[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})$/) && p.includes("0000")) {
-      return p;
-    }
-  }
-  return null;
-}
-
-function getSobject(href) {
-  let url = new URL(href);
-  if (url.pathname) {
-    let match = url.pathname.match(/\/lightning\/[r|o]\/([a-zA-Z0-9_]+)\/[a-zA-Z0-9]+/);
-    if (match) {
-      return match[1];
-    }
-  }
-  return null;
 }
 
 function getSfPathFromUrl(href) {

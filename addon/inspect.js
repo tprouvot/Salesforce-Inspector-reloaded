@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, getRecordId, getSobject} from "./inspector.js";
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 
@@ -1705,9 +1705,15 @@ class DetailsBox extends React.Component {
 
     let root = document.getElementById("root");
     let model = new Model(sfHost);
-    model.sobjectName = args.get("objectType");
     model.useToolingApi = args.has("useToolingApi");
-    model.recordId = args.get("recordId");
+    if (args.has("recordId")){
+      model.sobjectName = args.get("objectType");
+      model.recordId = args.get("recordId");
+    } else {
+      let url = model.sfLink + args.get("path");
+      model.recordId = getRecordId(url);
+      model.sobjectName = getSobject(url);
+    }
     model.startLoading();
     model.reactCallback = cb => {
       ReactDOM.render(h(App, {model}), root, cb);

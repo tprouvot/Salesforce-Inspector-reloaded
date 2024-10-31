@@ -118,6 +118,9 @@
     },
     "event-monitor": {
       "description": "Event Monitor"
+    },
+    "inspect": {
+      "description": "Show all data"
     }
   }
 }

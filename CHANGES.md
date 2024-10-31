@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Add `Show all data` to chrome shortcuts [issue 633](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/633) request by [Gary Woodhouse](https://github.com/Garywoo)
 - Restyle Org Limits
 - Add new options to hide buttons in popup
 

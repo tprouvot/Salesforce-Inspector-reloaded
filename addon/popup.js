@@ -1130,6 +1130,7 @@ class AllDataBoxShortcut extends React.PureComponent {
               rec.name = rec.Id + url;
               rec.detail = rec.attributes.type + " (" + rec.Status + ") • Builder";
             }
+            rec.title = rec.name;
             result.push(rec);
           });
         });
@@ -1162,13 +1163,13 @@ class AllDataBoxShortcut extends React.PureComponent {
       key: value.Id,
       value,
       element: [
-        h("div", {className: "autocomplete-item-main", key: "main"},
+        h("div", {className: "autocomplete-item-main", title: value.title, key: "main" + value.Id},
           h(MarkSubstring, {
             text: value.label,
             start: value.label.toLowerCase().indexOf(shortcutQuery.toLowerCase()),
             length: shortcutQuery.length
           })),
-        h("div", {className: "autocomplete-item-sub small", key: "sub"},
+        h("div", {className: "autocomplete-item-sub small", title: value.title, key: "sub" + value.Id},
           h("div", {}, value.detail),
           h(MarkSubstring, {
             text: value.name,

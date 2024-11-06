@@ -2,6 +2,26 @@
 
 ![image](https://github.com/user-attachments/assets/5dfe73a1-b218-471a-93b5-0f281a90ba44)
 
+## Supported Field Types
+
+The Field Creator feature supports the following field types:
+
+- **Checkbox**
+- **Currency**
+- **Number**
+- **Percent**
+- **Date**
+- **DateTime**
+- **Email**
+- **Phone**
+- **Url**
+- **Location**
+- **Picklist**
+- **Multiselect Picklist**
+- **Text**
+- **TextArea**
+- **LongTextArea**
+- **Html**
 
 ## Getting Started
 

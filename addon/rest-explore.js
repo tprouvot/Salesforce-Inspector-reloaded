@@ -464,6 +464,10 @@ class App extends React.Component {
     model.didUpdate();
     this.toggleSuggestedQuery();
   }
+  handleQuerySelectionBlur(){
+    console.log("onBlur");
+    this.toggleSuggestedQuery();
+  }
   onDeleteQuery(request){
     //TODO check if remove function can be used
     let {model} = this.props;
@@ -568,6 +572,7 @@ class App extends React.Component {
                           h("div", {
                             role: "combobox",
                             tabIndex: "0",
+                            onBlur: () => this.toggleQueryMenu(),
                             className: "slds-input_faux slds-combobox__input slds-combobox__input-value",
                             "aria-labelledby": "combobox-label-id-34",
                             id: "combobox-id-1-selected-value",
@@ -650,7 +655,8 @@ class App extends React.Component {
                       role: "combobox",
                       placeholder: "Search query...",
                       onClick: () => this.toggleSuggestedQuery(),
-                      onKeyUp: () => this.searchQuery()
+                      onKeyUp: () => this.searchQuery(),
+                      onBlur: () => this.handleQuerySelectionBlur()
                     }),
                     h("span", {className: "slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right", title: "Search icon"},
                       h("svg", {className: "slds-icon slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},

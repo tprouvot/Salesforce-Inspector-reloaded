@@ -453,6 +453,7 @@ class App extends React.Component {
     let {model} = this.props;
     model.lookupOption = target;
     model.suggestedQueries = model.getSearchedList();
+    this.toggleQueryMenu();
     model.didUpdate();
   }
   handleQuerySelection(target){
@@ -610,7 +611,7 @@ class App extends React.Component {
                                   role: "presentation",
                                   key: option.key,
                                   "data-id": option.key,
-                                  onClick: () => this.handleLookupSelection(option)
+                                  onMouseDown: () => this.handleLookupSelection(option)
                                 }, [
                                   h("div", {
                                     id: `option${option.key}`,
@@ -677,7 +678,7 @@ class App extends React.Component {
                         role: "presentation",
                         className: "slds-listbox__item",
                         key: index,
-                        onClick: () => this.handleQuerySelection(query)
+                        onMouseDown: () => this.handleQuerySelection(query)
                       },
                       h("div", {
                         id: `option${index}`,

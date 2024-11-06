@@ -2,6 +2,9 @@
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {copyToClipboard, initScrollTable} from "./data-load.js";
+const restSavedQueryHistoryKey = "restSavedQueryHistory";
+const requestTemplateKey = "requestTemplates";
+const restQueryHistoryKey = "restQueryHistory";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -56,7 +59,7 @@ class QueryHistory {
   }
 
   sort(storageKey, history) {
-    if (storageKey === "restSavedQueryHistory") {
+    if (storageKey === restSavedQueryHistoryKey) {
       history.sort((a, b) => (a.key > b.key) ? 1 : ((b.key > a.key) ? -1 : 0));
     }
     this.list = history;
@@ -78,9 +81,9 @@ class Model {
     this.exportStatus = "";
     this.exportError = null;
     this.exportedData = null;
-    this.queryHistory = new QueryHistory("restQueryHistory", 100);
+    this.queryHistory = new QueryHistory(restQueryHistoryKey, 100);
     this.selectedHistoryEntry = null;
-    this.savedHistory = new QueryHistory("restSavedQueryHistory", 50);
+    this.savedHistory = new QueryHistory(restSavedQueryHistoryKey, 50);
     this.selectedSavedEntry = null;
     this.startTime = null;
     this.totalTime = 0;
@@ -94,7 +97,7 @@ class Model {
     this.request = {endpoint: "", method: "get", body: ""};
     this.apiList;
     this.filteredApiList;
-    this.requestTemplates = localStorage.getItem("requestTemplates") ? this.requestTemplates = localStorage.getItem("requestTemplates").split("//") : [
+    this.requestTemplates = localStorage.getItem(requestTemplateKey) ? this.requestTemplates = JSON.parse(localStorage.getItem(requestTemplateKey)) : [
       {key: "getLimit", endpoint: `/services/data/v${apiVersion}/limits`, method: "GET", body: ""},
       {key: "getAccount", endpoint: `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name+FROM+Account+LIMIT+1`, method: "GET", body: ""},
       {key: "createAccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/`, method: "POST", body: '{  \n"Name" : "SFIR",\n"Industry" : "Chrome Extension"\n}'},
@@ -452,7 +455,7 @@ class App extends React.Component {
     model.suggestedQueries = model.getSearchedList();
     model.didUpdate();
   }
-  handleQuerySelection(event, target){
+  handleQuerySelection(target){
     let {model} = this.props;
     model.request = target;
     this.refs.endpoint.value = model.request.endpoint;
@@ -461,31 +464,56 @@ class App extends React.Component {
     model.didUpdate();
     this.toggleSuggestedQuery();
   }
-  onDeleteQuery(query){
-    //TODO
+  onDeleteQuery(request){
+    //TODO check if remove function can be used
     let {model} = this.props;
-    console.log(query);
-    this.toggleSuggestedQuery();
+    // Determine the correct list and storage key based on model.request.list.key
+    let keyList = this.getStorageKeyList(request, model);
+
+    // Find the index of the existing request with the same key
+    let suggestedQueriesIndex = model.suggestedQueries.findIndex(q => q.key === request.key);
+    if (suggestedQueriesIndex > -1) {
+      model.suggestedQueries.splice(suggestedQueriesIndex, 1);
+    }
+
+    let existingRequestIndex = keyList.list.findIndex(q => q.key === request.key);
+    if (existingRequestIndex > -1) {
+      keyList.list.splice(existingRequestIndex, 1);
+    }
+    localStorage[keyList.key] = JSON.stringify(keyList.list);
+    model.didUpdate();
   }
   onSaveQuery() {
-    //TODO
+    //TODO check if add function can be used
     let {model} = this.props;
     model.request.label = this.refs.queryName.value;
 
-    // Determine the correct list based on lookupOption key
-    let targetList = model.lookupOption.key === "template" ? model.requestTemplates : model.savedHistory.list;
-    const localStorageKey = model.lookupOption.key === "template" ? "requestTemplates" : "savedHistory";
+    // Determine the correct list and storage key based on model.request.list.key
+    let keyList = this.getStorageKeyList(model.request, model);
 
     // Find the index of the existing request with the same key
-    let existingRequestIndex = targetList.findIndex(q => q.key === model.request.key);
+    let existingRequestIndex = keyList.list.findIndex(q => q.key === model.request.key);
 
     // Replace the existing request if found, otherwise add a new one
     if (existingRequestIndex !== -1) {
-      targetList[existingRequestIndex] = {...model.request};
+      keyList.list[existingRequestIndex] = {...model.request};
     } else {
-      targetList.push({...model.request});
+      keyList.list.push({...model.request});
     }
+    localStorage[keyList.key] = JSON.stringify(keyList.list);
     model.didUpdate();
+  }
+  getStorageKeyList(request, model){
+    switch (request.list.key) {
+      case "history":
+        return {key: restQueryHistoryKey, list: model.queryHistory.list};
+      case "saved":
+        return {key: restSavedQueryHistoryKey, list: model.savedHistory.list};
+      case "template":
+        return {key: requestTemplateKey, list: model.requestTemplates};
+      default:
+        return "";
+    }
   }
   toggleQueryMenu(){
     this.refs.queryMenu.classList.toggle("slds-is-open");

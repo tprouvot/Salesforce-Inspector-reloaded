@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setupColorListeners} from "./inspector.js";
 /* global initButton */
 import {copyToClipboard, initScrollTable} from "./data-load.js";
 
@@ -287,6 +287,7 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
+    setupColorListeners();
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
     this.onSelectRequestTemplate = this.onSelectRequestTemplate.bind(this);
     this.onSelectQueryMethod = this.onSelectQueryMethod.bind(this);

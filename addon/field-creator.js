@@ -1,5 +1,5 @@
 /* global React ReactDOM field-creator.js */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setupColorListeners} from "./inspector.js";
 
 let h = React.createElement;
 
@@ -223,7 +223,7 @@ class ProfilesModal extends React.Component {
       },
       h("div", {className: "modal-content relativePosition height100 flexColumn"},
         h("div", {className: "modal-header flexSpaceBetween alignItemsCenter marginBottom15"},
-          h("h1", {className: "modal-title"}, "Set Field Permissions"),
+          h("h1", {className: "modal-title textAlignCenter width100 margin0"}, "Set Field Permissions"),
           h("button", {
             type: "button",
             "aria-label": "Close permission modal button",
@@ -909,6 +909,7 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
+    setupColorListeners();
     this.state = {
       objects: [],
       profiles: [],

@@ -303,7 +303,7 @@ label.statusGroupEmpty {
   right: 0;
   bottom: 0;
   left: 0;
-  background: var(--inspector-shade);
+  background: rgba(var(--inspector-shade-rgb), 0.8);
   z-index: 99999;
 }
 #confirm-dialog {

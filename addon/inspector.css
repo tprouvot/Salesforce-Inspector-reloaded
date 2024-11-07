@@ -3,7 +3,9 @@ html {
     --inspector-black: #000000;
     --inspector-white: #FFFFFF;
 
+
     --inspector-concrete: #F3F3F3;
+    --inspector-concrete-rgb: 243, 243, 243;
     --inspector-silver-chalice: #AFAFAF;
     --inspector-silver-sand: #C9C9C9;
     --inspector-cape-cod: #444444;
@@ -19,6 +21,7 @@ html {
 
     --inspector-midnight-blue: #00396B;
     --inspector-shark-dark: #252525;
+    --inspector-shark-dark-rgb: 37, 37, 37;
     --inspector-chateau-green: #018E42;
     --inspector-blush: #BD4F6C;
     --inspector-east-bay: #49416D;
@@ -33,6 +36,7 @@ html {
     --inspector-mercury: #E8E9EB;
 
     --inspector-alto: #DCDCDC;
+    --inspector-alto-rgb: 220, 220, 220;
     --inspector-star-dust: #989898;
 
     --inspector-mariner: #0176d3;
@@ -45,6 +49,7 @@ html {
 
     --inspector-biscay: #163460;
     --inspector-shark: #1C1C24;
+    --inspector-shark-rgb: 28, 28, 36;
     --inspector-salem: #17894D;
     --inspector-cranberry: #D34A77;
     --inspector-bossanova: #5F3C78;
@@ -64,17 +69,18 @@ html {
     --inspector-hover: var(--inspector-mercury);
 
     --inspector-primary: var(--inspector-dodger-blue);
-    --inspector-middle: var(--inspector-biscay);
+    --inspector-middle: var(--inspector-mariner);
     --inspector-accent: var(--inspector-midnight-blue);
     --inspector-neutral: var(--inspector-boulder);
     --inspector-shade: var(--inspector-concrete);
+    --inspector-shade-rgb: var(--inspector-concrete-rgb);
     --inspector-dark-neutral: var(--inspector-cape-cod);
     --inspector-subtle-neutral: var(--inspector-silver-sand);
 
     --inspector-link: var(--inspector-primary);
     --inspector-visited-link: var(--inspector-link);
 
-    --inspector-button: var(--inspector-accent);
+    --inspector-button: var(--inspector-middle);
     --inspector-button-text: var(--inspector-link);
     --inspector-button-border: var(--inspector-silver-sand);
     --inspector-button-active-border: var(--inspector-primary);
@@ -108,6 +114,7 @@ html {
     --inspector-accent: var(--inspector-dodger-blue);
     --inspector-neutral: var(--inspector-boulder);
     --inspector-shade: var(--inspector-shark-dark);
+    --inspector-shade-rgb: var(--inspector-shark-dark-rgb);
     --inspector-dark-neutral: var(--inspector-silver);
     --inspector-subtle-neutral: var(--inspector-silver-sand);
 
@@ -144,17 +151,18 @@ html {
     --inspector-hover: var(--inspector-white);
 
     --inspector-primary: var(--inspector-mariner);
-    --inspector-middle: var(--inspector-midnight-blue);
+    --inspector-middle: var(--inspector-dodger-blue);
     --inspector-accent: var(--inspector-biscay);
     --inspector-neutral: var(--inspector-storm-dust);
     --inspector-shade: var(--inspector-alto);
+    --inspector-shade-rgb: var(--inspector-alto-rgb);
     --inspector-dark-neutral: var(--inspector-cape-cod);
     --inspector-subtle-neutral: var(--inspector-silver-sand);
 
     --inspector-link: var(--inspector-primary);
     --inspector-visited-link: var(--inspector-link);
 
-    --inspector-button: var(--inspector-accent);
+    --inspector-button: var(--inspector-middle);
     --inspector-button-text: var(--inspector-link);
     --inspector-button-border: var(--inspector-neutral);
     --inspector-button-active-border: var(--inspector-primary);
@@ -188,6 +196,7 @@ html {
     --inspector-accent: var(--inspector-mariner);
     --inspector-neutral: var(--inspector-storm-dust);
     --inspector-shade: var(--inspector-shark);
+    --inspector-shade-rgb: var(--inspector-shark-rgb);
     --inspector-dark-neutral: var(--inspector-silver);
     --inspector-subtle-neutral: var(--inspector-silver-sand);
 

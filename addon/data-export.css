@@ -257,7 +257,7 @@ input[type=search] {
 }
 
 input[type=save] {
-  background-image: url(images/save.svg);
+  /*background-image: url(images/save.svg); this is already an svg near this input*/
   background-repeat: no-repeat;
   background-size: 1rem;
   background-position: 10px 7px;

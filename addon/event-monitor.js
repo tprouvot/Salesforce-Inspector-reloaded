@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setupColorListeners} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
 import {copyToClipboard} from "./data-load.js";
@@ -117,6 +117,7 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
+    setupColorListeners();
     this.getEventChannels = this.getEventChannels.bind(this);
     this.onChannelTypeChange = this.onChannelTypeChange.bind(this);
     this.onChannelSelection = this.onChannelSelection.bind(this);

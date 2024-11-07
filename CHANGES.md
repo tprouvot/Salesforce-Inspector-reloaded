@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Add compatibility for force.com domain for Sf internal orgs
 - Restyle Org Limits
 - Add new options to hide buttons in popup
 

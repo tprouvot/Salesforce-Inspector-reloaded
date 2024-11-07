@@ -21,7 +21,8 @@ a:active {
     color: var(--inspector-button-text);
 
     &:hover {
-        color: var(--inspector-link);
+        color: var(--inspector-text);
+        background-color: var(--inspector-accent);
     }
 }
 
@@ -132,4 +133,19 @@ a:active {
 
 .slds-page-header {
     background: var(--inspector-shade);
+}
+
+.slds-dropdown {
+    border: 1px solid var(--inspector-shade);
+    background: var(--inspector-background);
+    color: var(--inspector-text);
+
+    & a {
+        color: var(--inspector-text);
+    }
+}
+
+.slds-dropdown__item > a:hover, .slds-dropdown__item > a:focus {
+    background-color: var(--inspector-neutral);
+    color: var(--inspector-inverted-text);
 }

@@ -12,6 +12,7 @@ html {
     --inspector-silver: #BBBBBB;
 
     --inspector-dodger-blue: #1789EE;
+    --inspector-dodger-blue-rgb: 23, 137, 238;
     --inspector-boulder: #787878;
     --inspector-conifer: #9BC53D;
     --inspector-careys-pink: #E0A4B5;
@@ -20,6 +21,7 @@ html {
     --inspector-gorse: #FDE74C;
 
     --inspector-midnight-blue: #00396B;
+    --inspector-midnight-blue-rgb: 0, 57, 107;
     --inspector-shark-dark: #252525;
     --inspector-shark-dark-rgb: 37, 37, 37;
     --inspector-chateau-green: #018E42;
@@ -40,6 +42,7 @@ html {
     --inspector-star-dust: #989898;
 
     --inspector-mariner: #0176d3;
+    --inspector-mariner-rgb: 1, 118, 211;
     --inspector-storm-dust: #616161;
     --inspector-mantis: #85C852;
     --inspector-clam-shell: #CAA9AA;
@@ -48,6 +51,7 @@ html {
     --inspector-starship: #E7EC41;
 
     --inspector-biscay: #163460;
+    --inspector-biscay-rgb: 22, 52, 96;
     --inspector-shark: #1C1C24;
     --inspector-shark-rgb: 28, 28, 36;
     --inspector-salem: #17894D;
@@ -69,6 +73,7 @@ html {
     --inspector-hover: var(--inspector-mercury);
 
     --inspector-primary: var(--inspector-dodger-blue);
+    --inspector-primary-rgb: var(--inspector-dodger-blue-rgb);
     --inspector-middle: var(--inspector-mariner);
     --inspector-accent: var(--inspector-midnight-blue);
     --inspector-neutral: var(--inspector-boulder);
@@ -110,6 +115,7 @@ html {
     --inspector-hover: var(--inspector-baltic-sea);
     
     --inspector-primary: var(--inspector-midnight-blue);
+    --inspector-primary-rgb: var(--inspector-midnight-blue-rgb);
     --inspector-middle: var(--inspector-mariner);
     --inspector-accent: var(--inspector-dodger-blue);
     --inspector-neutral: var(--inspector-boulder);
@@ -151,6 +157,7 @@ html {
     --inspector-hover: var(--inspector-white);
 
     --inspector-primary: var(--inspector-mariner);
+    --inspector-primary-rgb: var(--inspector-mariner-rgb);
     --inspector-middle: var(--inspector-dodger-blue);
     --inspector-accent: var(--inspector-biscay);
     --inspector-neutral: var(--inspector-storm-dust);
@@ -192,6 +199,7 @@ html {
     --inspector-hover: var(--inspector-black);
     
     --inspector-primary: var(--inspector-biscay);
+    --inspector-primary-rgb: var(--inspector-biscay-rgb);
     --inspector-middle: var(--inspector-dodger-blue);
     --inspector-accent: var(--inspector-mariner);
     --inspector-neutral: var(--inspector-storm-dust);

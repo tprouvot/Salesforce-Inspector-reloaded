@@ -53,9 +53,9 @@ class Model {
       let channel = args.get("channel");
       this.selectedChannel = channel;
       this.selectedChannelType = channel.endsWith("__e") ? "platformEvent" : "standardPlatformEvent";
-    } else if(args.get("channelType")){
-      this.selectedChannelType = args.get("channelType")
-    } else{
+    } else if (args.get("channelType")){
+      this.selectedChannelType = args.get("channelType");
+    } else {
       this.selectedChannelType = channelTypes[0].value;
     }
   }
@@ -140,7 +140,7 @@ class App extends React.Component {
     let channels = sessionChannel ? sessionChannel : [];
     let query;
 
-    if(channels.length == 0){
+    if (channels.length == 0){
       if (channelType == "standardPlatformEvent"){
         query = "SELECT Label, QualifiedApiName, DeveloperName FROM EntityDefinition"
                     + " WHERE IsCustomizable = FALSE AND IsEverCreatable = TRUE"
@@ -152,18 +152,18 @@ class App extends React.Component {
                     + " AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
       }
       await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
-      .then(result => {
-        result.records.forEach((channel) => {
-          channels.push({
-            name: channel.QualifiedApiName,
-            label: channel.Label + " (" + channel.QualifiedApiName + ")"
+        .then(result => {
+          result.records.forEach((channel) => {
+            channels.push({
+              name: channel.QualifiedApiName,
+              label: channel.Label + " (" + channel.QualifiedApiName + ")"
+            });
           });
+        })
+        .catch(err => {
+          console.error("An error occured fetching Event Channels of type " + channelType + ": ", err.message);
         });
-      })
-      .catch(err => {
-        console.error("An error occured fetching Event Channels of type " + channelType + ": ", err.message);
-      });
-      sessionStorage.setItem(sfHost + "_" + channelType,  JSON.stringify(channels));
+      sessionStorage.setItem(sfHost + "_" + channelType, JSON.stringify(channels));
     }
     return channels;
   }
@@ -202,24 +202,23 @@ class App extends React.Component {
     model.selectedChannelType = e.target.value;
 
     const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set('channelType', model.selectedChannelType);
-    window.history.replaceState(null, '', '?' + urlParams.toString());
+    urlParams.set("channelType", model.selectedChannelType);
+    window.history.replaceState(null, "", "?" + urlParams.toString());
 
     this.getEventChannels();
     model.didUpdate();
   }
 
   onChannelSelection(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.selectedChannel = e.target.value;
 
     const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set('channel', model.selectedChannel);
-    window.history.replaceState(null, '', '?' + urlParams.toString());
+    urlParams.set("channel", model.selectedChannel);
+    window.history.replaceState(null, "", "?" + urlParams.toString());
 
     model.didUpdate();
   }
-
 
   onReplayIdChange(e) {
     let {model} = this.props;
@@ -254,7 +253,7 @@ class App extends React.Component {
 
     //Load Salesforce Replay Extension
     let replayExtension = new cometdReplayExtension();
-    replayExtension.setChannel(channelSuffix +model.selectedChannel);
+    replayExtension.setChannel(channelSuffix + model.selectedChannel);
     replayExtension.setReplay(model.replayId);
     replayExtension.setExtensionEnabled = true;
     cometd.registerExtension("SalesforceReplayExtension", replayExtension);

@@ -49,6 +49,7 @@
         "https://*.visualforce.mil/*",
         "https://*.crmforce.mil/*",
         "https://*.lightning.force.com.mcas.ms/*",
+        "https://*.force.com/*",
         "https://*.builder.salesforce-experience.com/*"
       ],
       "all_frames": true,

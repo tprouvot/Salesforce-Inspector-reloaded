@@ -30,9 +30,9 @@ figcaption > div {
   display:block;
   content:"";
 }
-.gauge:before, .meter { 
-  width:10rem; 
-  height:5rem; 
+.gauge:before, .meter {
+  width:10rem;
+  height:5rem;
 }
 .gauge:before { 
   border-radius:5rem 5rem 0 0; 
@@ -183,6 +183,13 @@ html {
   transition-duration: 500ms;
   transition-timing-function: ease-in-out;
   scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
+}
+
+#user-info {
+  font-size: .8125rem;
+}
+#user-info span {
+  font-size: 1em;
 }
 
 /* transitions */

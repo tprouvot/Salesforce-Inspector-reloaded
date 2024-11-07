@@ -546,13 +546,14 @@ ul > li > a > span {
 
 svg.button-icon {
   -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
+  mask-size: 1rem;
   display: inline-block;
   width: 16px;
   height: 16px;
   fill: #0070d2;
   vertical-align: sub;
->>>>>>> upstream/releaseCandidate
 }
 
 .autocomplete-header {

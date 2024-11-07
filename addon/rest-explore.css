@@ -545,6 +545,10 @@ button.toggle .button-icon {
   margin-top: 7px;
   display: flex;
   flex-wrap: nowrap;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  width: -webkit-fill-available;
+  white-space: nowrap;
 }
 
 .expanded .autocomplete-results {

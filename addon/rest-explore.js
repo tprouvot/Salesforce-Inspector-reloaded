@@ -462,11 +462,10 @@ class App extends React.Component {
     this.refs.endpoint.value = model.request.endpoint;
     this.refs.queryName.value = model.request.label ? model.request.label : "";
     this.resetRequest(model);
-    model.didUpdate();
     this.toggleSuggestedQuery();
+    model.didUpdate();
   }
   handleQuerySelectionBlur(){
-    console.log("onBlur");
     this.toggleSuggestedQuery();
   }
   onDeleteQuery(request){
@@ -581,7 +580,7 @@ class App extends React.Component {
                             "aria-expanded": "false",
                             "aria-haspopup": "listbox"
                           },
-                          h("span", {className: "slds-truncate", id: "combobox-value-id-25"}, model.lookupOption.label)
+                          h("span", {className: "", id: "combobox-value-id-25"}, model.lookupOption.label)
                           ),
                           h("span", {className: "slds-icon_container slds-icon-utility-down slds-input__icon slds-input__icon_right"},
                             h("svg", {className: "slds-icon slds-icon slds-icon_xx-small slds-icon-text-default", "aria-hidden": "true"},
@@ -749,7 +748,7 @@ class App extends React.Component {
             ) : null
           ),
         ),
-        h("div", {className: "autocomplete-box slds-m-top_medium"},
+        h("div", {},
           h("h1", {className: ""}, "Request Body"),
           h("div", {className: "slds-m-top_small"},
             h("textarea", {className: "request-body", value: model.request.body, onChange: this.onUpdateBody})

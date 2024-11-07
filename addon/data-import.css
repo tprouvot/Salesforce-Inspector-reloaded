@@ -376,7 +376,8 @@ button:focus {
 }
 button:disabled,
 input:disabled {
-  color: var(--inspector-neutral);
+  color: var(--inspector-inverted-text) !important;
+  background-color: var(--inspector-neutral) !important;
   cursor: default;
 }
 .highlighted {
@@ -387,6 +388,7 @@ input:disabled {
 .highlighted:hover,
 .highlighted:active {
   background-color: var(--inspector-accent);
+  color: var(--inspector-background);
 }
 .highlighted:disabled {
   background-color: var(--inspector-neutral);

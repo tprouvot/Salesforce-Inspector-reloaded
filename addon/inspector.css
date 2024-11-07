@@ -1,7 +1,9 @@
 html {
     /* default */
     --inspector-black: #000000;
+    --inspector-black-rgb: 0, 0, 0;
     --inspector-white: #FFFFFF;
+    --inspector-white-rgb: 255, 255, 255;
 
 
     --inspector-concrete: #F3F3F3;
@@ -35,7 +37,9 @@ html {
 
     /* accent */ 
     --inspector-baltic-sea: #201C24;
+    --inspector-baltic-sea-rgb: 32, 28, 36;
     --inspector-mercury: #E8E9EB;
+    --inspector-mercury-rgb: 232, 233, 235;
 
     --inspector-alto: #DCDCDC;
     --inspector-alto-rgb: 220, 220, 220;
@@ -67,6 +71,7 @@ html {
 
 :is(html, #insext)[data-theme="light"] {
     --inspector-background: var(--inspector-white);
+    --inspector-background-rgb: var(--inspector-white-rgb);
     --inspector-text: var(--inspector-black);
     --inspector-inverted-text: var(--inspector-background);
     --inspector-text-neutral: var(--inspector-neutral);
@@ -109,6 +114,7 @@ html {
 
 :is(html, #insext)[data-theme="dark"] {
     --inspector-background: var(--inspector-black);
+    --inspector-background-rgb: var(--inspector-black-rgb);
     --inspector-text: var(--inspector-white);
     --inspector-inverted-text: var(--inspector-background);
     --inspector-text-neutral: var(--inspector-silver-chalice);
@@ -151,6 +157,7 @@ html {
 
 :is(html, #insext)[data-theme="light"][data-accent="accent"] {
     --inspector-background: var(--inspector-mercury);
+    --inspector-background-rgb: var(--inspector-mercury-rgb);
     --inspector-text: var(--inspector-baltic-sea);
     --inspector-inverted-text: var(--inspector-background);
     --inspector-text-neutral: var(--inspector-neutral);
@@ -193,6 +200,7 @@ html {
 
 :is(html, #insext)[data-theme="dark"][data-accent="accent"] {
     --inspector-background: var(--inspector-baltic-sea);
+    --inspector-background-rgb: var(--inspector-baltic-sea-rgb);
     --inspector-text: var(--inspector-mercury);
     --inspector-inverted-text: var(--inspector-background);
     --inspector-text-neutral: var(--inspector-star-dust);

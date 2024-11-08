@@ -12,6 +12,7 @@ export default [
       globals: {
         chrome: "readonly",
         browser: "readonly",
+        React: "readonly",
         ...globals.browser
       }
     },

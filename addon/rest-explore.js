@@ -2,6 +2,8 @@
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {copyToClipboard, initScrollTable} from "./data-load.js";
+import Toast from './components.js';
+
 const restSavedQueryHistoryKey = "restSavedQueryHistory";
 const requestTemplateKey = "requestTemplates";
 const restQueryHistoryKey = "restQueryHistory";
@@ -318,6 +320,14 @@ class App extends React.Component {
     this.handleLookupSelection = this.handleLookupSelection.bind(this);
     this.handleQuerySelection = this.handleQuerySelection.bind(this);
     this.onSaveQuery = this.onSaveQuery.bind(this);
+    this.hideToast = this.hideToast.bind(this);
+    this.state = {};
+  }
+
+  hideToast () {
+    let {model} = this.props;
+    this.state = { showToast: false, toastMessage: "" };
+    model.didUpdate();
   }
   resetRequest(model){
     model.apiResponse = "";
@@ -471,7 +481,7 @@ class App extends React.Component {
     //TODO check if remove function can be used
     let {model} = this.props;
     // Determine the correct list and storage key based on model.request.list.key
-    let keyList = this.getStorageKeyList(request, model);
+    let keyList = this.getStorageKeyList(model.request.list.key, model);
 
     // Find the index of the existing request with the same key
     let suggestedQueriesIndex = model.suggestedQueries.findIndex(q => q.key === request.key);
@@ -491,8 +501,12 @@ class App extends React.Component {
     let {model} = this.props;
     model.request.label = this.refs.queryName.value;
 
-    // Determine the correct list and storage key based on model.request.list.key
-    let keyList = this.getStorageKeyList(model.request, model);
+    let key = model.request.list.key;
+    if(key === "history"){
+      //if the request comes from the history, set the key to saved to save it as new Saved query
+      key = "saved";
+    }
+    let keyList = this.getStorageKeyList(key, model);
 
     // Find the index of the existing request with the same key
     let existingRequestIndex = keyList.list.findIndex(q => q.key === model.request.key);
@@ -504,10 +518,18 @@ class App extends React.Component {
       keyList.list.push({...model.request});
     }
     localStorage[keyList.key] = JSON.stringify(keyList.list);
+    // Update state to display the toast notification
+    this.setState({
+      showToast: true,
+      toastMessage: `Query '${model.request.label}' saved successfully!`,
+      toastVariant: "success",
+      toastTitle: "Success"
+    });
+    setTimeout(this.hideToast, 3000);
     model.didUpdate();
   }
-  getStorageKeyList(request, model){
-    switch (request.list.key) {
+  getStorageKeyList(key, model){
+    switch (key) {
       case "history":
         return {key: restQueryHistoryKey, list: model.queryHistory.list};
       case "saved":
@@ -536,6 +558,7 @@ class App extends React.Component {
     model.didUpdate();
   }
   render() {
+    const { showToast, toastMessage, toastVariant, toastTitle } = this.state;
     let {model} = this.props;
     return h("div", {},
       h("div", {id: "user-info"},
@@ -556,8 +579,14 @@ class App extends React.Component {
         ),
       ),
       h("div", {className: "area"},
-        h("div", {className: "area-header"},
-        ),
+        h("div", {className: "area-header"}),
+        this.state.showToast &&
+        h(Toast, {
+          variant: this.state.toastVariant,
+          title: this.state.toastTitle,
+          message: this.state.toastMessage,
+          onClose: this.hideToast
+        }),
         h("div", {className: "slds-form-element float-left"},
           h("div", {className: "slds-form-element__control"},
             h("div", {className: "slds-combobox-group"},

@@ -462,7 +462,6 @@ class App extends React.Component {
     this.refs.endpoint.value = model.request.endpoint;
     this.refs.queryName.value = model.request.label ? model.request.label : "";
     this.resetRequest(model);
-    this.toggleSuggestedQuery();
     model.didUpdate();
   }
   handleQuerySelectionBlur(){
@@ -523,7 +522,7 @@ class App extends React.Component {
     this.refs.queryMenu.classList.toggle("slds-is-open");
   }
   toggleSuggestedQuery(){
-    this.refs.querySuggestions.classList.toggle("slds-is-open");
+      this.refs.querySuggestions.classList.toggle("slds-is-open");
   }
   searchQuery(){
     let {model} = this.props;

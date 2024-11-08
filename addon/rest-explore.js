@@ -449,7 +449,7 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     //this.scrollTable.viewportChange();
   }
-  handleLookupSelection(target){
+  handleLookupSelection(target, event){
     let {model} = this.props;
     model.lookupOption = target;
     model.suggestedQueries = model.getSearchedList();
@@ -580,7 +580,7 @@ class App extends React.Component {
                             "aria-expanded": "false",
                             "aria-haspopup": "listbox"
                           },
-                          h("span", {className: "", id: "combobox-value-id-25"}, model.lookupOption.label)
+                          h("span", {className: "option-selected", id: "combobox-value-id-25"}, model.lookupOption.label)
                           ),
                           h("span", {className: "slds-icon_container slds-icon-utility-down slds-input__icon slds-input__icon_right"},
                             h("svg", {className: "slds-icon slds-icon slds-icon_xx-small slds-icon-text-default", "aria-hidden": "true"},
@@ -610,7 +610,7 @@ class App extends React.Component {
                                   role: "presentation",
                                   key: option.key,
                                   "data-id": option.key,
-                                  onMouseDown: () => this.handleLookupSelection(option)
+                                  onMouseDown: (event) => this.handleLookupSelection(option, event)
                                 }, [
                                   h("div", {
                                     id: `option${option.key}`,

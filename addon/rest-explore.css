@@ -737,3 +737,6 @@ button.toggle .button-icon {
 #queryLabel{
   width:auto;
 }
+.option-selected{
+  color:black;
+}

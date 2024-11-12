@@ -7,6 +7,7 @@ import Toast from './components.js';
 const restSavedQueryHistoryKey = "restSavedQueryHistory";
 const requestTemplateKey = "requestTemplates";
 const restQueryHistoryKey = "restQueryHistory";
+const restExploreDefaultTypeKey = "restExploreDefaultType";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -107,8 +108,15 @@ class Model {
       {key: "deleteccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "DELETE", body: ""}
     ];
     this.selectedTemplate = "";
-    this.lookupOptions = [{key: "all", label: "All Types", icon: "filter"}, {key: "history", label: "History", icon: "recent"}, {key: "saved", label: "Saved", icon: "individual"}, {key: "template", label: "Template", icon: "query_editor"}];
-    this.lookupOption = this.lookupOptions[0];//TODO add option to persist preference in localStorage
+    this.lookupOptions = [{key: "all", label: "All Types", class: "icon-hover", icon: "filter"}, {key: "history", label: "History", icon: "recent", class: "icon-hover"}, {key: "saved", label: "Saved", icon: "individual", class: "icon-hover"}, {key: "template", label: "Template", icon: "query_editor", class: "icon-hover"}];
+    let restExploreDefaultType = localStorage.getItem(restExploreDefaultTypeKey);
+    if(restExploreDefaultType){
+      this.lookupOption = JSON.parse(restExploreDefaultType);
+      const indexToReplace = this.lookupOptions.findIndex(option => option.key === this.lookupOption.key);
+      this.lookupOptions[indexToReplace] = this.lookupOption;
+    } else {
+      this.lookupOption = this.lookupOptions[0];
+    }
     this.suggestedQueries = this.getSearchedList();
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
@@ -477,6 +485,15 @@ class App extends React.Component {
   handleQuerySelectionBlur(){
     this.toggleSuggestedQuery();
   }
+  onSetAsDefault(option){
+    let {model} = this.props;
+    const selectedFavClass = "icon-favorite blue";
+    let oldFavorite = model.lookupOptions.find(option => option.class === selectedFavClass);
+    oldFavorite.class = option.class.replace(selectedFavClass, "");
+    option.class = selectedFavClass;
+    localStorage.setItem(restExploreDefaultTypeKey, JSON.stringify(option));
+    model.didUpdate();
+  }
   onDeleteQuery(request){
     //TODO check if remove function can be used
     let {model} = this.props;
@@ -617,7 +634,6 @@ class App extends React.Component {
                           )
                         ),
                         h("div", {
-                          id: "objectswitcher-listbox-id-1",
                           className: "slds-dropdown slds-dropdown_length-5 slds-dropdown_x-small slds-dropdown_left",
                           role: "listbox",
                           "aria-label": "{{Placeholder for Dropdown Items}}",
@@ -642,19 +658,29 @@ class App extends React.Component {
                                 }, [
                                   h("div", {
                                     id: `option${option.key}`,
-                                    className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small slds-is-selected",
+                                    className: "icon-hover-container slds-media slds-listbox__option slds-listbox__option_plain slds-media_small slds-is-selected",
                                     role: "option"
                                   }, [
                                     h("span", {className: "slds-media__figure slds-listbox__option-icon"}, [
                                       h("span", {className: "slds-icon_container slds-icon-utility-check slds-current-color"}, [
-                                        h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"}, [
+                                        h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"}, [
                                           h("use", {xlinkHref: `symbols.svg#${option.icon}`})
                                         ])
                                       ])
                                     ]),
                                     h("span", {className: "slds-media__body"}, [
                                       h("span", {className: "slds-truncate", title: option.label}, option.label)
-                                    ])
+                                    ]),
+                                    h("button", {className: `slds-icon_container slds-button slds-button_icon slds-input__icon slds-input__icon_right ${option.class}`,
+                                      title: "Set as default",
+                                      onClick: (event) => {
+                                        event.stopPropagation(); //prevent triggering handleQuerySelection
+                                        this.onSetAsDefault(option);
+                                      }},
+                                      h("svg", {className: "slds-button__icon slds-icon_x-small", "aria-hidden": "true"},
+                                        h("use", {xlinkHref: "symbols.svg#heart"})
+                                      )
+                                    )
                                   ])
                                 ])
                               )

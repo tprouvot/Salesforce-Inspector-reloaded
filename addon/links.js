@@ -366,6 +366,17 @@ export let setupLinks = [
   {label: "Trusted URLs", link: "/lightning/setup/SecurityCspTrustedSite/home", section: "Settings > Security", prod: false},
   {label: "Trusted URLs for Redirects", link: "/lightning/setup/SecurityRedirectWhitelistUrl/home", section: "Settings > Security", prod: false},
   {label: "View Setup Audit Trail", link: "/lightning/setup/SecurityEvents/home", section: "Settings > Security", prod: false},
+  //Personal Information
+  {label: "Approver Settings", link: "/lightning/settings/personal/ApproverSettings/home", section: "My Personal Information", prod: false},
+  {label: "Authentication Settings for External Systems", link: "/lightning/settings/personal/ExternalObjectUserSettings/home", section: "My Personal Information", prod: false},
+  {label: "Change My Password", link: "/lightning/settings/personal/ChangePassword/home", section: "My Personal Information", prod: false},
+  {label: "Connections", link: "/lightning/settings/personal/Connections/home", section: "My Personal Information", prod: false},
+  {label: "External Credentials", link: "/lightning/settings/personal/ExternalCredentials/home", section: "My Personal Information", prod: false},
+  {label: "Grant Account Login Access", link: "/lightning/settings/personal/GrantLoginAccess/home", section: "My Personal Information", prod: false},
+  {label: "Language & Time Zone", link: "/lightning/settings/personal/LanguageAndTimeZone/home", section: "My Personal Information", prod: false},
+  {label: "Login History", link: "/lightning/settings/personal/LoginHistory/home", section: "My Personal Information", prod: false},
+  {label: "Personal Information", link: "/lightning/settings/personal/PersonalInformation/home", section: "My Personal Information", prod: false},
+  {label: "Reset My Security Token", link: "/lightning/settings/personal/ResetApiToken/home", section: "My Personal Information", prod: false},
 
   //Custom Link:
   {label: "Create New Flow", link: "/builder_platform_interaction/flowBuilder.app", section: "Platform Tools > Objects and Fields > New", prod: false},

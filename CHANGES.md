@@ -5,7 +5,7 @@
 - Add `My Personal Information` shortcuts [feature 627](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/627) request by [Alfredo Chissotti](https://github.com/Astisme)
 - Add compatibility for force.com domain for Sf internal orgs
 - Restyle Org Limits [feature 626](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/626) request by [Vincent FINET](https://github.com/VinceFINET)
-- Add new options to hide buttons in popup
+- Add new options to hide buttons in popup [feature 618](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/618)
 
 ## Version 1.25
 

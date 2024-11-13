@@ -1055,38 +1055,36 @@ class AllDataBoxShortcut extends React.PureComponent {
         element.Id = element.name;
       });
 
-      let metadataShortcutSearch = localStorage.getItem("metadataShortcutSearch");
-      if (metadataShortcutSearch == null) {
-        //enable metadata search by default
-        localStorage.setItem("metadataShortcutSearch", true);
+      let metadataShortcutSearchOptions = localStorage.getItem("metadataShortcutSearchOptions");
+      let metadataShortcutSearch = false;
+      if (metadataShortcutSearchOptions) {
+        metadataShortcutSearchOptions = JSON.parse(metadataShortcutSearchOptions);
+        metadataShortcutSearch = metadataShortcutSearchOptions.find(elm => elm.checked == true).checked;
+      } else {
+        metadataShortcutSearch = true;
+        //TODO handle when setting is not available yet
       }
 
       //search for metadata if user did not disabled it
-      if (metadataShortcutSearch == "true"){
-        const flowSelect = "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const networkSelect = "SELECT Id, Name, Status, UrlPathPrefix FROM Network WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50";
+      if (metadataShortcutSearch){
+        const queries = {
+          flows: "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          profiles: "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          permissionSets: "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          networks: "SELECT Id, Name, Status, UrlPathPrefix FROM Network WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50",
+          classes: "SELECT Id, Name, NamespacePrefix, ApiVersion, Status, LengthWithoutComments FROM ApexClass WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50"
+        };
+
+        const compositeRequest = metadataShortcutSearchOptions
+          .filter(setting => setting.checked)
+          .map(setting => ({
+            method: "GET",
+            url: "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queries[setting.name]),
+            referenceId: setting.name + "Select"
+          }));
+
         const compositeQuery = {
-          "compositeRequest": [
-            {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(flowSelect),
-              "referenceId": "flowSelect"
-            }, {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(profileSelect),
-              "referenceId": "profileSelect"
-            }, {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(permSetSelect),
-              "referenceId": "permSetSelect"
-            }, {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(networkSelect),
-              "referenceId": "networkSelect"
-            }
-          ]
+          compositeRequest
         };
 
         const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
@@ -1123,13 +1121,19 @@ class AllDataBoxShortcut extends React.PureComponent {
               }
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
-            } else if (rec.attributes.type === "Network"){
+            } else if (rec.attributes.type === "ApexClass"){
+              rec.link = "/lightning/setup/ApexClasses/page?address=%2F" + rec.Id;
+              rec.label = rec.Name;
+              rec.name = rec.NamespacePrefix ? rec.NamespacePrefix + "__" + rec.Name : rec.Name;
+              rec.detail = rec.attributes.type + " • " + rec.ApiVersion + ".0 • " + rec.Status + (rec.NamespacePrefix ? "" : " • Length: " + rec.LengthWithoutComments);
+            }
+            /*else if (rec.attributes.type === "Network"){
               rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=" + rec.Id;
               rec.label = rec.Name;
               let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
               rec.name = rec.Id + url;
               rec.detail = rec.attributes.type + " (" + rec.Status + ") • Builder";
-            }
+            }*/
             rec.title = rec.name;
             result.push(rec);
           });

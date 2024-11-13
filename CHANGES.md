@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Add Apex Classes metadata search in Shortcut tab and new option configuration for the search [feature 591](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/591) request by [mpekacki](https://github.com/mpekacki)
 - Add `My Personal Information` shortcuts [feature 627](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/627) request by [Alfredo Chissotti](https://github.com/Astisme)
 - Add compatibility for force.com domain for Sf internal orgs
 - Restyle Org Limits [feature 626](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/626) request by [Vincent FINET](https://github.com/VinceFINET)

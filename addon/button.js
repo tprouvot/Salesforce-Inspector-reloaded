@@ -135,9 +135,9 @@ function initButton(sfHost, inInspector) {
       let link = current ? current : document.createElement("link");
       link.setAttribute("rel", "icon");
       link.orgType = "image/x-icon";
-      if (iFrameLocalStorage.colorizeSandboxBanner && fav.indexOf("http") == -1){
+      if (fav.indexOf("http") == -1){
         let extensionPage = window.location.href.indexOf(chrome.i18n.getMessage("@@extension_id")) != -1;
-        if (!extensionPage && (isSandbox === "true" || (trialExpDate && trialExpDate !== "null"))){
+        if (iFrameLocalStorage.colorizeSandboxBanner === "true" && !extensionPage && (isSandbox === "true" || (trialExpDate && trialExpDate !== "null"))){
           colorizeBanner(fav, isSandbox);
         }
         if (colorizeProd === "true" && isSandbox === "false" && trialExpDate === "null"){

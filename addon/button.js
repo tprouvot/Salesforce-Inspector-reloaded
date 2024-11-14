@@ -156,6 +156,8 @@ function initButton(sfHost, inInspector) {
 
     observeElement(bannerSelector, (banner) => {
       banner.style.backgroundColor = faviconColor;
+      //update sandbox name and Logout action color for new UI
+      [...banner.children].forEach(child => child.style.color = "white");
     });
   }
 

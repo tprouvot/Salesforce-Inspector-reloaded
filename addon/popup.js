@@ -212,8 +212,8 @@ class App extends React.PureComponent {
     return {title, url, text};
   }
   displayButton(name){
-    const button = this.state.hideButtonsOption.find((element) => element.name == name);
-    if(button){
+    const button = this.state.hideButtonsOption?.find((element) => element.name == name);
+    if (button){
       return button.checked;
     }
     //if no option was found, display the button
@@ -1055,41 +1055,34 @@ class AllDataBoxShortcut extends React.PureComponent {
         element.Id = element.name;
       });
 
-      let metadataShortcutSearch = localStorage.getItem("metadataShortcutSearch");
-      if (metadataShortcutSearch == null) {
-        //enable metadata search by default
-        localStorage.setItem("metadataShortcutSearch", true);
+      let metadataShortcutSearchOptions = localStorage.getItem("metadataShortcutSearchOptions");
+      //handle previous option which was not detailled by metadata type
+      let metadataShortcutSearch = localStorage.getItem("metadataShortcutSearch") != "false";
+      if (metadataShortcutSearchOptions) {
+        metadataShortcutSearchOptions = JSON.parse(metadataShortcutSearchOptions);
+        metadataShortcutSearch = metadataShortcutSearchOptions.find(elm => elm.checked == true) != undefined;
       }
 
       //search for metadata if user did not disabled it
-      if (metadataShortcutSearch == "true"){
-        const flowSelect = "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const networkSelect = "SELECT Id, Name, Status, UrlPathPrefix FROM Network WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50";
-        const compositeQuery = {
-          "compositeRequest": [
-            {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(flowSelect),
-              "referenceId": "flowSelect"
-            }, {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(profileSelect),
-              "referenceId": "profileSelect"
-            }, {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(permSetSelect),
-              "referenceId": "permSetSelect"
-            }, {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(networkSelect),
-              "referenceId": "networkSelect"
-            }
-          ]
+      if (metadataShortcutSearch){
+        const queries = {
+          flows: "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          profiles: "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          permissionSets: "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          networks: "SELECT NetworkId, Network.Name, Network.Status, Network.UrlPathPrefix, SiteId FROM WebStoreNetwork WHERE Network.Name LIKE '%" + shortcutSearch + "%' LIMIT 50",
+          classes: "SELECT Id, Name, NamespacePrefix, ApiVersion, Status, LengthWithoutComments FROM ApexClass WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50"
         };
+        // If metadataShortcutSearchOptions is null, assume all options are checked
+        const defaultOptions = ["flows", "profiles", "permissionSets", "networks", "classes"].map(name => ({name, checked: true}));
+        const effectiveOptions = metadataShortcutSearchOptions || defaultOptions;
 
-        const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
+        const compositeRequest = effectiveOptions.filter(setting => setting.checked).map(setting => ({
+          method: "GET",
+          url: "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queries[setting.name]),
+          referenceId: setting.name + "Select"
+        }));
+
+        const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: {compositeRequest}});
         let results = searchResult.compositeResponse.filter((elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0);
 
         let enablePermSetSummary = localStorage.getItem("enablePermSetSummary") === "true";
@@ -1112,29 +1105,29 @@ class AllDataBoxShortcut extends React.PureComponent {
               rec.detail = rec.attributes.type + " • " + rec.Type;
               rec.detail += rec.License?.Name != null ? " • " + rec.License?.Name : "";
 
-              let psetOrGroupId;
-              let type;
-              if (rec.Type === "Group"){
-                psetOrGroupId = rec.PermissionSetGroupId;
-                type = "PermSetGroups";
-              } else {
-                psetOrGroupId = rec.Id;
-                type = "PermSets";
-              }
+              const isGroup = rec.Type === "Group";
+              let psetOrGroupId = isGroup ? rec.PermissionSetGroupId : rec.Id;
+              let type = isGroup ? "PermSetGroups" : "PermSets";
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
-            } else if (rec.attributes.type === "Network"){
-              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=" + rec.Id;
+            } else if (rec.attributes.type === "ApexClass"){
+              rec.link = "/lightning/setup/ApexClasses/page?address=%2F" + rec.Id;
               rec.label = rec.Name;
-              let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
-              rec.name = rec.Id + url;
-              rec.detail = rec.attributes.type + " (" + rec.Status + ") • Builder";
+              rec.name = rec.NamespacePrefix ? rec.NamespacePrefix + "__" + rec.Name : rec.Name;
+              rec.detail = rec.attributes.type + " • " + rec.ApiVersion + ".0 • " + rec.Status + (rec.NamespacePrefix ? "" : " • Length: " + rec.LengthWithoutComments);
+            } else if (rec.attributes.type === "WebStoreNetwork"){
+              rec.link = `/sfsites/picasso/core/config/commeditor.jsp?servlet%2Fnetworks%2Fswitch%3FnetworkId%3D${rec.NetworkId}%26startURL%3D%252FcommunitySetup%252FcwApp.app%2523%252Fc%252Fhome&siteId=${rec.SiteId}&`;
+              rec.label = rec.Network.Name;
+              let url = rec.Network.UrlPathPrefix ? " • /" + rec.Network.UrlPathPrefix : "";
+              rec.name = rec.NetworkId + url;
+              rec.detail = "Network (" + rec.Network.Status + ") • Builder";
             }
+            rec.title = rec.name;
             result.push(rec);
           });
         });
       }
-      //if no result found, add the globzl search link
+      //if no result found, add the global search link
       result.length > 0 ? result : result.push({link: "/one/one.app#" + this.getEncodedGlobalSearch(shortcutSearch), label: '"' + shortcutSearch + '"', detail: "No results found", name: "Use Global Search"});
       return result;
     } catch (err) {
@@ -1162,13 +1155,13 @@ class AllDataBoxShortcut extends React.PureComponent {
       key: value.Id,
       value,
       element: [
-        h("div", {className: "autocomplete-item-main", key: "main"},
+        h("div", {className: "autocomplete-item-main", title: value.title, key: "main" + value.Id},
           h(MarkSubstring, {
             text: value.label,
             start: value.label.toLowerCase().indexOf(shortcutQuery.toLowerCase()),
             length: shortcutQuery.length
           })),
-        h("div", {className: "autocomplete-item-sub small", key: "sub"},
+        h("div", {className: "autocomplete-item-sub small", title: value.title, key: "sub" + value.Id},
           h("div", {}, value.detail),
           h(MarkSubstring, {
             text: value.name,
@@ -1730,7 +1723,7 @@ class AllDataSelection extends React.PureComponent {
     return "https://" + sfHost + newUrl;
   }
   getSubscribeUrl(name){
-    return this.props.eventMonitorHref + '&channel=' + name;
+    return this.props.eventMonitorHref + "&channel=" + name;
   }
   setFlowDefinitionId(recordId){
     if (recordId && !this.state.flowDefinitionId){
@@ -1829,7 +1822,7 @@ class AllDataSelection extends React.PureComponent {
         ))),
         isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
         selectedValue.sobject.isEverCreatable && !selectedValue.sobject.name.endsWith("__e") ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
-        selectedValue.sobject.name.endsWith("__e") ? h("a", { href: this.getSubscribeUrl(selectedValue.sobject.name), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}), "Subscribe to Event")) : null,
+        selectedValue.sobject.name.endsWith("__e") ? h("a", {href: this.getSubscribeUrl(selectedValue.sobject.name), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}), "Subscribe to Event")) : null,
       )
     );
   }

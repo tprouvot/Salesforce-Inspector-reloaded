@@ -2,7 +2,7 @@
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {copyToClipboard, initScrollTable} from "./data-load.js";
-import Toast from './components.js';
+import Toast from "./components/Toast.js";
 
 const restSavedQueryHistoryKey = "restSavedQueryHistory";
 const requestTemplateKey = "requestTemplates";
@@ -110,7 +110,7 @@ class Model {
     this.selectedTemplate = "";
     this.lookupOptions = [{key: "all", label: "All Types", class: "icon-hover", icon: "filter"}, {key: "history", label: "History", icon: "recent", class: "icon-hover"}, {key: "saved", label: "Saved", icon: "individual", class: "icon-hover"}, {key: "template", label: "Template", icon: "query_editor", class: "icon-hover"}];
     let restExploreDefaultType = localStorage.getItem(restExploreDefaultTypeKey);
-    if(restExploreDefaultType){
+    if (restExploreDefaultType){
       this.lookupOption = JSON.parse(restExploreDefaultType);
       const indexToReplace = this.lookupOptions.findIndex(option => option.key === this.lookupOption.key);
       this.lookupOptions[indexToReplace] = this.lookupOption;
@@ -332,9 +332,9 @@ class App extends React.Component {
     this.state = {};
   }
 
-  hideToast () {
+  hideToast() {
     let {model} = this.props;
-    this.state = { showToast: false, toastMessage: "" };
+    this.state = {showToast: false, toastMessage: ""};
     model.didUpdate();
   }
   resetRequest(model){
@@ -521,7 +521,7 @@ class App extends React.Component {
     model.request.label = this.refs.queryName.value;
 
     let key = model.request.list.key;
-    if(key === "history"){
+    if (key === "history"){
       //if the request comes from the history, set the key to saved to save it as new Saved query
       key = "saved";
     }
@@ -563,7 +563,7 @@ class App extends React.Component {
     this.refs.queryMenu.classList.toggle("slds-is-open");
   }
   toggleSuggestedQuery(){
-      this.refs.querySuggestions.classList.toggle("slds-is-open");
+    this.refs.querySuggestions.classList.toggle("slds-is-open");
   }
   searchQuery(){
     let {model} = this.props;
@@ -577,7 +577,7 @@ class App extends React.Component {
     model.didUpdate();
   }
   render() {
-    const { showToast, toastMessage, toastVariant, toastTitle } = this.state;
+    const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
     return h("div", {},
       h("div", {id: "user-info"},
@@ -599,8 +599,8 @@ class App extends React.Component {
       ),
       h("div", {className: "area"},
         h("div", {className: "area-header"}),
-        this.state.showToast &&
-        h(Toast, {
+        this.state.showToast
+        && h(Toast, {
           variant: this.state.toastVariant,
           title: this.state.toastTitle,
           message: this.state.toastMessage,
@@ -679,9 +679,9 @@ class App extends React.Component {
                                         event.stopPropagation(); //prevent triggering handleQuerySelection
                                         this.onSetAsDefault(option);
                                       }},
-                                      h("svg", {className: "slds-button__icon slds-icon_x-small", "aria-hidden": "true"},
-                                        h("use", {xlinkHref: "symbols.svg#heart"})
-                                      )
+                                    h("svg", {className: "slds-button__icon slds-icon_x-small", "aria-hidden": "true"},
+                                      h("use", {xlinkHref: "symbols.svg#heart"})
+                                    )
                                     )
                                   ])
                                 ])

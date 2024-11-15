@@ -5,6 +5,7 @@ export function nullToEmptyString(value) {
   // For react input fields, the value may not be null or undefined, so this will clean the value
   return (value == null) ? "" : value;
 }
+const clientId = "Salesforce Inspector Reloaded";
 
 export let sfConn = {
 
@@ -54,6 +55,7 @@ export let sfConn = {
     xhr.open(method, sfHost + url, true);
 
     xhr.setRequestHeader("Accept", "application/json; charset=UTF-8");
+    xhr.setRequestHeader("Sforce-Call-Options", `client:${clientId}`);
 
     if (api == "bulk") {
       xhr.setRequestHeader("X-SFDC-Session", this.sessionId);
@@ -177,6 +179,7 @@ export let sfConn = {
     xhr.open("POST", "https://" + this.instanceHostname + wsdl.servicePortAddress + "?cache=" + Math.random(), true);
     xhr.setRequestHeader("Content-Type", "text/xml");
     xhr.setRequestHeader("SOAPAction", '""');
+    xhr.setRequestHeader("CallOptions", `client:${clientId}`);
 
     let sessionHeaderKey = wsdl.apiName == "Metadata" ? "met:SessionHeader" : "SessionHeader";
     let sessionIdKey = wsdl.apiName == "Metadata" ? "met:sessionId" : "sessionId";

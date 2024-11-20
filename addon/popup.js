@@ -25,7 +25,11 @@ if (typeof browser === "undefined") {
   });
   chrome.runtime.onMessage.addListener((request) => {
     if (request.msg === "shortcut_pressed") {
-      parent.postMessage({insextOpenPopup: true}, "*");
+      if (request.command === "open-popup"){
+        parent.postMessage({insextOpenPopup: true}, "*");
+      } else {
+        parent.postMessage({command: request.command}, "*");
+      }
     }
   }
   );

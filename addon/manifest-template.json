@@ -92,6 +92,12 @@
     "open-popup": {
       "description": "Open popup"
     },
+    "open-export-autocomplete": {
+      "description": "Fields suggestion in Data Export"
+    },
+    "open-export-execute": {
+      "description": "Run Query in Data Export"
+    },
     "data-export": {
       "description": "Data Export"
     },

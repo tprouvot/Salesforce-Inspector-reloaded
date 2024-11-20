@@ -275,10 +275,16 @@ From the option page, enable "Use favicon color on sandbox banner"
 ## Select all fields in a query
 
 This functionality already exists in the legacy version but since many users don't know about it, I would like to document it.
-When on the export page, put the cursor between `SaELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
+When on the export page, put the cursor between `SELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
 If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM`.
 
 ![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)
+
+## Customize Select all fields in a query shortcut
+
+If the default `Ctrl + space` shortcut is already used by another extension or app, you can customize it in `chrome://extensions/shortcuts` and choose the one you prefer.
+
+<img width="1133" alt="Customize Select all fields in a query shortcut" src="https://github.com/user-attachments/assets/f0bca12a-7c92-4fbe-9ca4-a8db51b050e9">
 
 ## Exclude formula fields from data export autocomplete
 

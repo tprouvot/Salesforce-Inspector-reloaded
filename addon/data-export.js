@@ -1313,6 +1313,15 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
+    addEventListener("message", e => {
+      if (e.data.command === "open-export-autocomplete") {
+        model.queryAutocompleteHandler({ctrlSpace: true});
+        model.didUpdate();
+      } else if (e.data.command === "open-export-execute"){
+        model.doExport();
+        model.didUpdate();
+      }
+    });
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
@@ -1453,6 +1462,7 @@ class App extends React.Component {
             " query in the box above and press Export."),
           h("p", {}, "Press Ctrl+Space to insert all field name autosuggestions or to load suggestions for field values."),
           h("p", {}, "Press Ctrl+Enter or F5 to execute the export."),
+          h("p", {}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
           h("p", {}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
         )
       ),

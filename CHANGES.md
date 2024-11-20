@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Customize Data Export shortcuts (execute query and insert all fields name in query) [feature 653](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/653) in `chrome://extensions/shortcuts`
 - Add [clientId](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/headers_calloptions.htm) header param to identify the extension in EventLogFile [feature 504](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/504)
 - Add Apex Classes metadata search in Shortcut tab and new option configuration for the search [feature 591](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/591) request by [mpekacki](https://github.com/mpekacki)
 - Add `My Personal Information` shortcuts [feature 627](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/627) request by [Alfredo Chissotti](https://github.com/Astisme)

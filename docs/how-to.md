@@ -322,6 +322,23 @@ Under `User Experience` tab, enable the option `Highlight PROD with a top border
 
 ## Import / Export configuration (saved query etc.)
 
+### With 1.25 and above
 To export and import your current configuration, go to the options page and click the corresponding icon in the header:
 
 <img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753">
+
+### Export Configuration with 1.24 and below
+From any page of the extension (Options, Data Export etc.), right click on the page and select `Inspect`.
+Then, from the browser console, paste the following code and press enter.
+``` js
+const localStorageData = { ...localStorage };
+const jsonData = JSON.stringify(localStorageData, null, 2);
+const blob = new Blob([jsonData], { type: "application/json" });
+const link = document.createElement("a");
+const url = URL.createObjectURL(blob);
+link.href = url;
+link.download = "reloadedConfiguration.json";
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+```

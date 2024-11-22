@@ -9,6 +9,7 @@
 - Add compatibility for force.com domain for Sf internal orgs
 - Restyle Org Limits [feature 626](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/626) request by [Vincent FINET](https://github.com/VinceFINET)
 - Add new options to hide buttons in popup [feature 618](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/618)
+- Added ability to set default height for the data export query editor [feature 656](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/656)
 
 ## Version 1.25
 

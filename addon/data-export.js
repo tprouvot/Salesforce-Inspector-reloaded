@@ -1352,6 +1352,10 @@ class App extends React.Component {
     }
     addEventListener("resize", resize);
     resize();
+
+    // Set initial query editor height from localStorage
+    const defaultHeight = localStorage.getItem("defaultQueryEditorHeight") || "100";
+    document.getElementById("query").style.height = `${defaultHeight}px`;
   }
   componentDidUpdate() {
     this.recalculateSize();

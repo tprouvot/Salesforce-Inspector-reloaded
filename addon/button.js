@@ -25,7 +25,6 @@ function initButton(sfHost, inInspector) {
   btn.tabIndex = 0;
   btn.accessKey = "i";
   btn.title = "Show Salesforce details (Alt+I / Shift+Alt+I)";
-  rootEl.style.height = iFrameLocalStorage.popupHeight ? iFrameLocalStorage.popupHeight + "px" : "450px";
   rootEl.appendChild(btn);
   loadPopup();
   document.body.appendChild(rootEl);

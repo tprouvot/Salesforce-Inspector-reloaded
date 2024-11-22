@@ -9,6 +9,7 @@
 - Add compatibility for force.com domain for Sf internal orgs
 - Restyle Org Limits [feature 626](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/626) request by [Vincent FINET](https://github.com/VinceFINET)
 - Add new options to hide buttons in popup [feature 618](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/618)
+- Added option for Field Creator to allow user to choose between PascalCase and Underscores for new field API names. [feature 655](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/655)
 
 ## Version 1.25
 

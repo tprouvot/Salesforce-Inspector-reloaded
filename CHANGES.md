@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Add option for `Field Creator` to allow users to choose between PascalCase and Underscores for new field API names. [feature 655](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/655) (contribution by [Steve Quirion](https://github.com/sqone2))
 - Customize Data Export shortcuts (execute query and insert all fields name in query) [feature 653](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/653) in `chrome://extensions/shortcuts`
 - Add [clientId](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/headers_calloptions.htm) header param to identify the extension in EventLogFile [feature 504](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/504)
 - Add Apex Classes metadata search in Shortcut tab and new option configuration for the search [feature 591](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/591) request by [mpekacki](https://github.com/mpekacki)
@@ -9,7 +10,6 @@
 - Add compatibility for force.com domain for Sf internal orgs
 - Restyle Org Limits [feature 626](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/626) request by [Vincent FINET](https://github.com/VinceFINET)
 - Add new options to hide buttons in popup [feature 618](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/618)
-- Added option for Field Creator to allow user to choose between PascalCase and Underscores for new field API names. [feature 655](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/655)
 
 ## Version 1.25
 

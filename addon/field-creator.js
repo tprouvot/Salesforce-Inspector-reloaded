@@ -1314,29 +1314,21 @@ class App extends React.Component {
   };
 
   formatApiName(label) {
-
-    // Get the field naming convention from local storage
     const namingConvention = localStorage.getItem("fieldNamingConvention") || "pascal";
 
     // First, replace any special characters with underscores and convert to proper case
-    let apiName = label.trim().replace(/[^a-zA-Z0-9\s]/g, '_');
-
+    let apiName = label.trim().replace(/[^a-zA-Z0-9\s]/g, "_");
     if (namingConvention === "underscore") {
       // Convert spaces to underscores: "My Field Name" -> "My_Field_Name"
-      apiName = apiName.replace(/\s+/g, '_');
-    }
-    else {
+      apiName = apiName.replace(/\s+/g, "_");
+    } else {
       // Remove underscores and convert to PascalCase: "My_Field_Name" -> "MyFieldName"
       apiName = apiName.replace(/[\s_]+(\w)/g, (_, letter) => letter.toUpperCase());
     }
-
     // Remove leading/trailing underscores
-    apiName = apiName.replace(/^_+|_+$/g, '');
-
+    apiName = apiName.replace(/^_+|_+$/g, "");
     // Replace multiple underscores with single underscore
-    apiName = apiName.replace(/_+/g, '_');
-
-    return apiName;
+    return apiName.replace(/_+/g, "_");
   }
 
   onLabelChange = (index, label) => {

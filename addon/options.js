@@ -153,17 +153,18 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Tab5",
         title: "Field Creator",
         content: [
-          {option: Option, props: {
-            type: "select",
-            title: "Field Naming Convention",
-            key: "fieldNamingConvention",
-            default: "pascal",
-            tooltip: "Controls how API names are auto-generated from field labels. PascalCase: 'My Field' -> 'MyField'. Underscores: 'My Field' -> 'My_Field'",
-            options: [
-              {label: "PascalCase", value: "pascal"},
-              {label: "Underscores", value: "underscore"}
-            ]
-          }}
+          {option: Option,
+            props: {
+              type: "select",
+              title: "Field Naming Convention",
+              key: "fieldNamingConvention",
+              default: "pascal",
+              tooltip: "Controls how API names are auto-generated from field labels. PascalCase: 'My Field' -> 'MyField'. Underscores: 'My Field' -> 'My_Field'",
+              options: [
+                {label: "PascalCase", value: "pascal"},
+                {label: "Underscores", value: "underscore"}
+              ]
+            }}
         ]
       },
       {

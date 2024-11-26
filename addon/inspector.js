@@ -51,8 +51,8 @@ export let sfConn = {
     let xhr = new XMLHttpRequest();
     url += (url.includes("?") ? "&" : "?") + "cache=" + Math.random();
     const sfHost = "https://" + this.instanceHostname;
-    xhr.open(method, sfHost + url, true);
-
+    const fullUrl = new URL(url, sfHost);
+    xhr.open(method, fullUrl.toString(), true);
     xhr.setRequestHeader("Accept", "application/json; charset=UTF-8");
 
     if (api == "bulk") {

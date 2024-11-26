@@ -10,7 +10,9 @@
     "default_title": "Open popup"
   },
   "minimum_chrome_version": "88",
-  "permissions": ["cookies"],
+  "permissions": [
+    "cookies"
+  ],
   "host_permissions": [
     "https://*.salesforce.com/*",
     "https://*.salesforce-setup.com/*",
@@ -50,8 +52,14 @@
         "https://*.builder.salesforce-experience.com/*"
       ],
       "all_frames": true,
-      "css": ["button.css", "inspect-inline.css"],
-      "js": ["button.js", "inspect-inline.js"]
+      "css": [
+        "button.css",
+        "inspect-inline.css"
+      ],
+      "js": [
+        "button.js",
+        "inspect-inline.js"
+      ]
     }
   ],
   "background": {
@@ -73,7 +81,27 @@
         "options.html",
         "event-monitor.html"
       ],
-      "matches": ["https://*/*"],
+      "matches": [
+        "https://*.salesforce.com/*",
+        "https://*.salesforce-setup.com/*",
+        "https://*.visual.force.com/*",
+        "https://*.vf.force.com/*",
+        "https://*.lightning.force.com/*",
+        "https://*.cloudforce.com/*",
+        "https://*.visualforce.com/*",
+        "https://*.sfcrmapps.cn/*",
+        "https://*.sfcrmproducts.cn/*",
+        "https://*.salesforce.mil/*",
+        "https://*.visual.force.mil/*",
+        "https://*.vf.force.mil/*",
+        "https://*.lightning.force.mil/*",
+        "https://*.cloudforce.mil/*",
+        "https://*.visualforce.mil/*",
+        "https://*.crmforce.mil/*",
+        "https://*.lightning.force.com.mcas.ms/*",
+        "https://*.force.com/*",
+        "https://*.builder.salesforce-experience.com/*"
+      ],
       "extension_ids": []
     }
   ],

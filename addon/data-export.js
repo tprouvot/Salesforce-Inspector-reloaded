@@ -683,7 +683,8 @@ class Model {
         }
         let contextValueField = contextValueFields[0];
         let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
-        let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%'";
+        //let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%'";
+        let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/([\\'])/g, "\\$1") + "%'";
         if (contextValueField.sobjectDescribe.name.toLowerCase() === "recordtype"){
           let sobject = contextPath.split(".")[0];
           sobject = sobject.toLowerCase() === "recordtype" ? vm.autocompleteResults.sobjectName : sobject;

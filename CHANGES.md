@@ -1,7 +1,9 @@
 # Release Notes
 
+
 ## Version 1.25
 
+- Security improvements thanks to [Rikaard Hosein](https://github.com/rikaardhosein) [fix 661](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/661)
 - Fix `Use Favicon Color` option which was not working key [issue 634](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/634) raised by [Gary Woodhouse](https://github.com/Garywoo)
 - Add `Clear` button in Event Monitor and REST Explorer
 - Fix `Field Creator` shortcut key [issue 608](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/608)

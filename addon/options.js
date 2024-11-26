@@ -406,7 +406,6 @@ class Option extends React.Component {
     super(props);
     this.onChange = this.onChange.bind(this);
     this.onChangeToggle = this.onChangeToggle.bind(this);
-    this.onChangeSelect = this.onChangeSelect.bind(this);
     this.key = props.storageKey;
     this.type = props.type;
     this.label = props.label;
@@ -435,38 +434,10 @@ class Option extends React.Component {
     localStorage.setItem(this.key, inputValue);
   }
 
-  onChangeSelect(e) {
-    let value = e.target.value;
-    this.setState({[this.key]: value});
-    localStorage.setItem(this.key, value);
-  }
-
   render() {
     const id = this.key;
     const isTextOrNumber = this.type == "text" || this.type == "number";
     const isSelect = this.type == "select";
-
-    if (isSelect) {
-      return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-        h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-          h("span", {}, this.title,
-            h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
-          )
-        ),
-        h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-          h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-            h("select", {
-              className: "slds-input slds-m-right_small",
-              value: this.state[this.key],
-              onChange: this.onChangeSelect
-            },
-            this.props.options.map(opt =>
-              h("option", {key: opt.value, value: opt.value}, opt.label)
-            ))
-          )
-        )
-      );
-    }
 
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
@@ -477,6 +448,18 @@ class Option extends React.Component {
       isTextOrNumber ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
           h("input", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
+        )
+      ))
+      : isSelect ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          h("select", {
+            className: "slds-input slds-m-right_small",
+            value: this.state[this.key],
+            onChange: this.onChange
+          },
+          this.props.options.map(opt =>
+            h("option", {key: opt.value, value: opt.value}, opt.label)
+          ))
         )
       ))
       : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),

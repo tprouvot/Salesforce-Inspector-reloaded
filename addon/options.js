@@ -634,10 +634,10 @@ class MultiCheckboxButtonGroup extends React.Component {
     this.handleCheckboxChange = this.handleCheckboxChange.bind(this);
 
     this.title = props.title;
-    this.storageKey = props.storageKey;
+    this.key = props.storageKey;
 
     // Load checkboxes from localStorage or default to props.checkboxes
-    const storedCheckboxes = localStorage.getItem(this.storageKey) ? JSON.parse(localStorage.getItem(this.storageKey)) : [];
+    const storedCheckboxes = localStorage.getItem(this.key) ? JSON.parse(localStorage.getItem(this.key)) : [];
 
     // Merge checkboxes only if the size is different
     const mergedCheckboxes = storedCheckboxes.length === props.checkboxes.length
@@ -646,7 +646,7 @@ class MultiCheckboxButtonGroup extends React.Component {
 
     this.state = {checkboxes: mergedCheckboxes};
     if (storedCheckboxes.length !== props.checkboxes.length) {
-      localStorage.setItem(this.storageKey, JSON.stringify(mergedCheckboxes)); // Save the merged state to localStorage
+      localStorage.setItem(this.key, JSON.stringify(mergedCheckboxes)); // Save the merged state to localStorage
     }
   }
 
@@ -660,7 +660,7 @@ class MultiCheckboxButtonGroup extends React.Component {
     const updatedCheckboxes = this.state.checkboxes.map((checkbox) =>
       checkbox.name === name ? {...checkbox, checked} : checkbox
     );
-    localStorage.setItem(this.storageKey, JSON.stringify(updatedCheckboxes));
+    localStorage.setItem(this.key, JSON.stringify(updatedCheckboxes));
     this.setState({checkboxes: updatedCheckboxes});
   };
 
@@ -674,9 +674,9 @@ class MultiCheckboxButtonGroup extends React.Component {
         h("div", {className: "slds-form-element__control"},
           h("div", {className: "slds-checkbox_button-group"},
             this.state.checkboxes.map((checkbox, index) =>
-              h("span", {className: "slds-button slds-checkbox_button", key: index},
-                h("input", {type: "checkbox", id: `unique-id-${checkbox.value}-${index}`, name: checkbox.name, checked: checkbox.checked, onChange: this.handleCheckboxChange, title: checkbox.title}),
-                h("label", {className: "slds-checkbox_button__label", htmlFor: `unique-id-${checkbox.value}-${index}`},
+              h("span", {className: "slds-button slds-checkbox_button", key: this.key + index},
+                h("input", {type: "checkbox", id: `${this.key}-${checkbox.value}-${index}`, name: checkbox.name, checked: checkbox.checked, onChange: this.handleCheckboxChange, title: checkbox.title}),
+                h("label", {className: "slds-checkbox_button__label", htmlFor: `${this.key}-${checkbox.value}-${index}`},
                   h("span", {className: "slds-checkbox_faux"}, checkbox.label)
                 )
               )

@@ -1433,6 +1433,7 @@ class App extends React.Component {
             ),
           ),
         ),
+        h("div", {id:"ace-editor", style: {height: "300px"}},),
         h("textarea", {id: "query", ref: "query", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
@@ -1503,6 +1504,71 @@ class App extends React.Component {
   }
 }
 
+function initAceEditor() {
+  // trigger extension
+  ace.require("ace/ext/language_tools");
+  const editor = ace.edit("ace-editor");
+  editor.session.setMode("ace/mode/sql");
+  editor.setTheme("ace/theme/cobalt");
+  // enable autocompletion and snippets
+  editor.setOptions({
+      enableBasicAutocompletion: true,
+      enableSnippets: true,
+      enableLiveAutocompletion: true,
+      fontFamily: "Consolas",
+      fontSize: "20px"
+  });
+
+  const soqlKeywords = [
+    "SELECT",
+    "FROM",
+    "WHERE",
+    "AND",
+    "OR",
+    "NOT",
+    "IN",
+    "NOT IN",
+    "LIKE",
+    "LIMIT",
+    "OFFSET",
+    "ORDER BY",
+    "ASC",
+    "DESC",
+    "GROUP BY",
+    "HAVING",
+    "COUNT()",
+    "SUM()",
+    "AVG()",
+    "MIN()",
+    "MAX()",
+    "WITH",
+    "TYPEOF",
+    "TO LABEL",
+    "ALL ROWS",
+    "FOR UPDATE",
+    "DISTANCE",
+    "GEOLOCATION"
+  ];
+
+
+  const staticWordCompleter = {
+      getCompletions: function(editor, session, pos, prefix, callback) {
+          var wordList = soqlKeywords
+          callback(null, wordList.map(function(word) {
+              return {
+                  caption: word,
+                  value: word,
+                  meta: "keyword"
+              };
+          }));
+
+      }
+  }
+
+  editor.completers = [staticWordCompleter]
+  editor.setValue('SELECT Id\nFROM Account\nLIMIT 200');
+}
+
 {
 
   let args = new URLSearchParams(location.search);
@@ -1518,6 +1584,7 @@ class App extends React.Component {
     let model = new Model({sfHost, args});
     model.reactCallback = cb => {
       ReactDOM.render(h(App, {model}), root, cb);
+      initAceEditor();
     };
     ReactDOM.render(h(App, {model}), root);
 

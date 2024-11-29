@@ -292,6 +292,12 @@ You can exclude formula fields to be included in the autocomplete by disable the
 
 <img width="898" alt="Exclude formula fields from autocomplete" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/aa9db6c4-099d-49ea-a343-7c64e472450d">
 
+## Convert times from data export to local time
+
+You can configure Data Export to convert times to local time. Navigate to Options -> Data Export and enable "Show local time".
+
+<img width="898" alt="Show local time in data export checkbox option" src="../assets/images/how-to/show-local-time.png?raw=true">
+
 ## Customize extension's shortcuts
 
 Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.

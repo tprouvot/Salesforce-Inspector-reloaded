@@ -68,6 +68,7 @@ class Model {
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
     this.queryInput = null;
+    this.queryEditor = null; // Ace editor
     this.initialQuery = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
       this.queryAutocompleteHandler({newDescribe: true});
@@ -127,7 +128,7 @@ class Model {
       this.initialQuery = this.queryHistory.list[0].query;
       this.queryTooling = this.queryHistory.list[0].useToolingApi;
     } else {
-      this.initialQuery = "SELECT Id FROM Account LIMIT 200";
+      this.initialQuery = "SELECT Id\nFROM Account\nLIMIT 100";
       this.queryTooling = false;
     }
 
@@ -162,9 +163,9 @@ class Model {
       method = "tooling/query";
     } else if (this.queryAll){
       method = "queryAll";
-    } else if (this.queryInput.value.toLowerCase().startsWith("find")){
+    } else if (this.queryEditor.getValue().toLowerCase().startsWith("find")){
       method = "search";
-    } else if (this.queryInput.value.trim().startsWith("{")){
+    } else if (this.queryEditor.getValue().trim().startsWith("{")){
       method = "graphql";
     } else {
       method = "query";
@@ -174,9 +175,8 @@ class Model {
   setQueryName(value) {
     this.queryName = value;
   }
-  setQueryInput(queryInput) {
-    this.queryInput = queryInput;
-    queryInput.value = this.initialQuery;
+  setQueryInput() {
+    this.queryEditor.insert(this.initialQuery);
     this.initialQuery = null;
   }
   toggleHelp() {
@@ -370,9 +370,19 @@ class Model {
   queryAutocompleteHandler(e = {}) {
     let vm = this; // eslint-disable-line consistent-this
     let useToolingApi = vm.queryTooling;
-    let query = vm.queryInput.value;
-    let selStart = vm.queryInput.selectionStart;
-    let selEnd = vm.queryInput.selectionEnd;
+    let query = vm.queryEditor.getValue();
+    const selection = vm.queryEditor.getSelection();
+    const cursorPos = vm.queryEditor.getCursorPosition();
+    const selectedText = vm.queryEditor.getSelectedText();
+
+    const cursorRowText = vm.queryEditor.session.getLine(cursorPos.row);
+
+    const selectionRange = vm.queryEditor.getSelectionRange();
+
+    let selStart = vm.queryEditor.session.doc.positionToIndex(selectionRange.start);
+    const selEnd = vm.queryEditor.session.doc.positionToIndex(selectionRange.end);
+
+
     let ctrlSpace = e.ctrlSpace;
 
     // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
@@ -860,7 +870,7 @@ class Model {
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
-    let query = vm.queryInput.value;
+    let query = vm.queryEditor.getValue();
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
@@ -999,7 +1009,106 @@ class Model {
       ]
     };
   }
+
+  initAceEditor(editor){
+    editor.session.setMode("ace/mode/sql");
+    editor.setTheme("ace/theme/twilight");
+    // enable autocompletion and snippets
+    editor.setOptions({
+        enableAutoIndent: true,
+        animatedScroll: true,
+        highlightSelectedWord: true,
+        displayIndentGuides: true,
+        highlightIndentGuides: true,
+        enableBasicAutocompletion: true,
+        enableLiveAutocompletion: true,
+        enableSnippets: true,
+        enableLiveAutocompletion: true,
+        fontFamily: "Consolas",
+        fontSize: "14px",
+        showPrintMargin: false,
+        animatedScroll: true,
+        autoScrollEditorIntoView: true,
+        maxLines: 20,
+        minLines: 5
+
+    });
+
+    editor.renderer.setScrollMargin(10, 10, 10, 10);
+
+    this.updateAceEditorKeywords(editor);
+
+  }
+
+  updateAceEditorKeywords(editor){
+
+    const vm = this;
+
+    const soqlKeywords = [
+      "SELECT",
+      "FROM",
+      "WHERE",
+      "AND",
+      "OR",
+      "NOT",
+      "IN",
+      "NOT IN",
+      "LIKE",
+      "LIMIT",
+      "OFFSET",
+      "ORDER BY",
+      "ASC",
+      "DESC",
+      "GROUP BY",
+      "HAVING",
+      "COUNT()",
+      "SUM()",
+      "AVG()",
+      "MIN()",
+      "MAX()",
+      "WITH",
+      "TYPEOF",
+      "TO LABEL",
+      "ALL ROWS",
+      "FOR UPDATE",
+      "DISTANCE",
+      "GEOLOCATION"
+    ];
+
+
+    const standardKeywordsCompleter = {
+        getCompletions: function(editor, session, pos, prefix, callback) {
+            var wordList = soqlKeywords
+            callback(null, wordList.map(function(word) {
+                return {
+                    caption: word,
+                    value: word,
+                    meta: "SOQL Keyword"
+                };
+            }));
+
+        }
+    }
+
+    const autoCompleteResults = {
+        getCompletions: function(editor, session, pos, prefix, callback) {
+            callback(null, vm.autocompleteResults.results.map(function(word) {
+              console.log('word', word);
+                return {
+                    caption: word.value,
+                    value: word.value,
+                    meta: word.autocompleteType
+                };
+            }));
+
+        }
+    }
+
+    editor.completers = [standardKeywordsCompleter, autoCompleteResults];
+  }
 }
+
+
 
 function RecordTable(vm) {
   /*
@@ -1289,21 +1398,27 @@ class App extends React.Component {
     let {model} = this.props;
     let queryInput = this.refs.query;
 
-    model.setQueryInput(queryInput);
+    ace.require("ace/ext/language_tools");
+    model.queryEditor = ace.edit("ace-editor");
+    model.initAceEditor(model.queryEditor);
+
+    model.setQueryInput();
+
+
     //Set the cursor focus on query text area
     if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
-      queryInput.focus();
+      // TODO
     }
 
     function queryAutocompleteEvent() {
       model.queryAutocompleteHandler();
       model.didUpdate();
     }
-    queryInput.addEventListener("input", queryAutocompleteEvent);
-    queryInput.addEventListener("select", queryAutocompleteEvent);
+    model.queryEditor.addEventListener("input", queryAutocompleteEvent);
+    model.queryEditor.addEventListener("select", queryAutocompleteEvent);
     // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
-    queryInput.addEventListener("keyup", queryAutocompleteEvent);
-    queryInput.addEventListener("mouseup", queryAutocompleteEvent);
+    model.queryEditor.addEventListener("keyup", queryAutocompleteEvent);
+    model.queryEditor.addEventListener("mouseup", queryAutocompleteEvent);
 
     // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
     // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50
@@ -1433,8 +1548,8 @@ class App extends React.Component {
             ),
           ),
         ),
-        h("div", {id:"ace-editor", style: {height: "300px"}},),
-        h("textarea", {id: "query", ref: "query", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
+        h("div", {id:"ace-editor", style: {height: "100px"}},),
+        h("textarea", { hidden: true, id: "query", ref: "query", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
@@ -1504,70 +1619,7 @@ class App extends React.Component {
   }
 }
 
-function initAceEditor() {
-  // trigger extension
-  ace.require("ace/ext/language_tools");
-  const editor = ace.edit("ace-editor");
-  editor.session.setMode("ace/mode/sql");
-  editor.setTheme("ace/theme/cobalt");
-  // enable autocompletion and snippets
-  editor.setOptions({
-      enableBasicAutocompletion: true,
-      enableSnippets: true,
-      enableLiveAutocompletion: true,
-      fontFamily: "Consolas",
-      fontSize: "20px"
-  });
 
-  const soqlKeywords = [
-    "SELECT",
-    "FROM",
-    "WHERE",
-    "AND",
-    "OR",
-    "NOT",
-    "IN",
-    "NOT IN",
-    "LIKE",
-    "LIMIT",
-    "OFFSET",
-    "ORDER BY",
-    "ASC",
-    "DESC",
-    "GROUP BY",
-    "HAVING",
-    "COUNT()",
-    "SUM()",
-    "AVG()",
-    "MIN()",
-    "MAX()",
-    "WITH",
-    "TYPEOF",
-    "TO LABEL",
-    "ALL ROWS",
-    "FOR UPDATE",
-    "DISTANCE",
-    "GEOLOCATION"
-  ];
-
-
-  const staticWordCompleter = {
-      getCompletions: function(editor, session, pos, prefix, callback) {
-          var wordList = soqlKeywords
-          callback(null, wordList.map(function(word) {
-              return {
-                  caption: word,
-                  value: word,
-                  meta: "keyword"
-              };
-          }));
-
-      }
-  }
-
-  editor.completers = [staticWordCompleter]
-  editor.setValue('SELECT Id\nFROM Account\nLIMIT 200');
-}
 
 {
 
@@ -1584,7 +1636,6 @@ function initAceEditor() {
     let model = new Model({sfHost, args});
     model.reactCallback = cb => {
       ReactDOM.render(h(App, {model}), root, cb);
-      initAceEditor();
     };
     ReactDOM.render(h(App, {model}), root);
 

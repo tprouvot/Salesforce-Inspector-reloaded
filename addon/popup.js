@@ -1436,7 +1436,7 @@ class UserDetails extends React.PureComponent {
 
   getUserDetailLink(userId) {
     let {sfHost} = this.props;
-    return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1";
+    return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1%26isUserEntityOverride%3D1";
   }
 
   getUserPsetLink(userId) {

@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Update user detail post save redirect [feature 671](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/671)
 - Add new domain for Visualforce pages cf [Ensure Access to Your Visualforce Pages in Summer ’24 and Winter ’25](https://help.salesforce.com/s/articleView?id=001406148&type=1)
 - Security improvements thanks to [Rikaard Hosein](https://github.com/rikaardhosein) [fix 661](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/661)
 - Add option for `Field Creator` to allow users to choose between PascalCase and Underscores for new field API names. [feature 655](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/655) (contribution by [Steve Quirion](https://github.com/sqone2))

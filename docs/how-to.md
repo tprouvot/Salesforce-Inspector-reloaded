@@ -95,9 +95,9 @@ Add a new property `csvSeparator` containing the needed separator for CSV files
 
 ## Disable query input autofocus
 
-Add a new property `disableQueryInputAutoFocus` with `true`
+Option available in Data Export tab
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/89563a58-d8fa-4b14-a150-99c389e8df75)
+<img width="809" alt="Disable query input" src="https://github.com/user-attachments/assets/6f928f58-e437-47aa-b2d2-378f534e7a08">
 
 ## Add custom query templates
 

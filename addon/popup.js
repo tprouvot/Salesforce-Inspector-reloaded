@@ -11,7 +11,7 @@ if (typeof browser === "undefined") {
 {
   parent.postMessage({
     insextInitRequest: true,
-    iFrameLocalStorage: JSON.parse(JSON.stringify(localStorage))
+    iFrameLocalStorage: getFilteredLocalStorage()
   }, "*");
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent) {
@@ -35,6 +35,27 @@ if (typeof browser === "undefined") {
   );
 }
 
+function getFilteredLocalStorage(){
+  let filteredStorage = JSON.parse(sessionStorage.getItem("filteredStorage"));
+  if (filteredStorage == null){
+    //for Salesforce pages
+    let host = parent[0].document.referrer;
+    if (host.length == 0){
+      //for extension pages
+      host = new URLSearchParams(parent.location.search).get("host");
+    } else {
+      host = host.split("https://")[1];
+    }
+    let domainStart = host.split(".")[0];
+    const storedData = {...localStorage};
+    const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition"];
+    filteredStorage = Object.fromEntries(
+      Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith("access_token"))
+    );
+    sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
+  }
+  return filteredStorage;
+}
 function closePopup() {
   parent.postMessage({insextClosePopup: true}, "*");
 }

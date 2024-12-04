@@ -338,3 +338,9 @@ Since the extension offers more features, the number of button is increasing.
 Some of the users may don't need some of those, to make the popup lighter some of the buttons can be hidden:
 
 <img width="1024" alt="Hide Buttons" src="https://github.com/user-attachments/assets/50b4cb3c-7886-4b38-96a9-b5a6d93b69e6">
+
+## Switch user language from the popup
+
+From the User tab in the popup, click on the user language flag to display the available languages.
+
+![2024-12-04_16-07-35 (1)](https://github.com/user-attachments/assets/d07da946-dba0-4bb4-8f3b-313392bbf557)

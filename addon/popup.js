@@ -1316,6 +1316,9 @@ class UserDetails extends React.PureComponent {
     super(props);
     this.sfHost = props.sfHost;
     this.enableDebugLog = this.enableDebugLog.bind(this);
+    this.displayLanguages = this.displayLanguages.bind(this);
+    this.onSelectLanguage = this.onSelectLanguage.bind(this);
+    this.state = {};
   }
 
   openUrlInIncognito(targetUrl) {
@@ -1363,6 +1366,22 @@ class UserDetails extends React.PureComponent {
     const element = document.querySelector("#enableDebugLog");
     element.setAttribute("disabled", true);
     element.text = "Logs Enabled";
+  }
+
+  displayLanguages(){
+    sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/describe`, {method: "GET"}).then(res => {
+      let userLanguages = res.fields.find(field => field.name === "LanguageLocaleKey");
+      this.setState({userLanguages: userLanguages.picklistValues.filter(item => item.active)});
+    });
+  }
+
+  onSelectLanguage(e, userId){
+    sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/${userId}`, {method: "PATCH",
+      body: {
+        "LanguageLocaleKey": e.target.value
+      }}).then(
+      browser.runtime.sendMessage({message: "reloadPage"})
+    ).catch(err => console.log("Error during user language update", err));
   }
 
   getTraceFlags(userId, DTnow, debugLogDebugLevel, debugTimeInMs){
@@ -1538,7 +1557,10 @@ class UserDetails extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Language:"),
                 h("td", {},
-                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Language: " + user.LanguageLocaleKey}),
+                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Language: " + user.LanguageLocaleKey, style: {display: (this.state?.userLanguages ? "none" : "")}, onClick: () => { this.displayLanguages(); }}),
+                  h("select", {defaultValue: user.LanguageLocaleKey, style: {display: (this.state?.userLanguages ? "" : "none")}, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
+                    this.state.userLanguages?.map(q => h("option", {key: q.value, value: q.value}, q.label))
+                  ),
                   " | ",
                   h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Locale: " + user.LocaleSidKey})
                 )

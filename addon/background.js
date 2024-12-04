@@ -44,12 +44,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse(session);
     });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
-  }
-  if (request.message == "createWindow") {
+  } else if (request.message == "createWindow") {
     const brow = typeof browser === "undefined" ? chrome : browser;
     brow.windows.create({
       url: request.url,
       incognito: request.incognito ?? false
+    });
+  } else if (request.message == "reloadPage") {
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+      chrome.tabs.reload(tabs[0].id);
     });
   }
   return false;

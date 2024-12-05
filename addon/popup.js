@@ -1316,7 +1316,7 @@ class UserDetails extends React.PureComponent {
     super(props);
     this.sfHost = props.sfHost;
     this.enableDebugLog = this.enableDebugLog.bind(this);
-    this.displayLanguages = this.displayLanguages.bind(this);
+    this.toggleDisplay = this.toggleDisplay.bind(this);
     this.onSelectLanguage = this.onSelectLanguage.bind(this);
     this.state = {};
   }
@@ -1368,17 +1368,28 @@ class UserDetails extends React.PureComponent {
     element.text = "Logs Enabled";
   }
 
-  displayLanguages(){
-    sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/describe`, {method: "GET"}).then(res => {
-      let userLanguages = res.fields.find(field => field.name === "LanguageLocaleKey");
-      this.setState({userLanguages: userLanguages.picklistValues.filter(item => item.active)});
-    });
+  toggleDisplay(event, refKey) {
+    event.target.style.display = "none";
+    this.fectchLocalesAndLanguages(refKey);
+  }
+
+  fectchLocalesAndLanguages(refKey){
+    if (!this.state.userLocales){
+      sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/describe`, {method: "GET"}).then(res => {
+        let userLanguages = res.fields.find(field => field.name === "LanguageLocaleKey");
+        let userLocales = res.fields.find(field => field.name === "LocaleSidKey");
+        this.setState({userLocales: userLocales.picklistValues, userLanguages: userLanguages.picklistValues.filter(item => item.active)});
+        this.refs[refKey].classList.toggle("hide");
+      });
+    } else {
+      this.refs[refKey].classList.toggle("hide");
+    }
   }
 
   onSelectLanguage(e, userId){
     sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/${userId}`, {method: "PATCH",
       body: {
-        "LanguageLocaleKey": e.target.value
+        [e.target.name]: e.target.value
       }}).then(
       browser.runtime.sendMessage({message: "reloadPage"})
     ).catch(err => console.log("Error during user language update", err));
@@ -1557,12 +1568,15 @@ class UserDetails extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Language:"),
                 h("td", {},
-                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Language: " + user.LanguageLocaleKey, style: {display: (this.state?.userLanguages ? "none" : "")}, onClick: () => { this.displayLanguages(); }}),
-                  h("select", {defaultValue: user.LanguageLocaleKey, style: {display: (this.state?.userLanguages ? "" : "none")}, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
+                  h("div", {className: "pointer flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Update Language " + user.LanguageLocaleKey, onClick: (e) => { this.toggleDisplay(e, "LanguageLocaleKey"); }}),
+                  h("select", {ref: "LanguageLocaleKey", name: "LanguageLocaleKey", className: "hide", defaultValue: user.LanguageLocaleKey, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
                     this.state.userLanguages?.map(q => h("option", {key: q.value, value: q.value}, q.label))
                   ),
                   " | ",
-                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Locale: " + user.LocaleSidKey})
+                  h("div", {className: "pointer flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Update Locale: " + user.LocaleSidKey, onClick: (e) => { this.toggleDisplay(e, "LocaleSidKey"); }}),
+                  h("select", {ref: "LocaleSidKey", name: "LocaleSidKey", className: "hide", defaultValue: user.LanguageLocaleKey, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
+                    this.state.userLanguages?.map(q => h("option", {key: q.value, value: q.value}, q.label))
+                  ),
                 )
               )
             )

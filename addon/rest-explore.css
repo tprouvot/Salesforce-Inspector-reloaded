@@ -341,7 +341,7 @@ input:disabled {
 button:disabled:hover,
 input:disabled:hover {
   background-color: var(--inspector-background);
-  color: var(--inspector-primary);
+  color: var(--inspector-subtle-neutral);
 }
 
 .highlighted {

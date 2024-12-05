@@ -151,7 +151,7 @@ body {
   margin-bottom: 5px;
 }
 .area {
-  background-color: var(--inspector-background);
+  background-color: var(--inspector-shade);
   padding: 8px 12px;
   border-radius: 5px;
   border: 1px solid var(--inspector-subtle-neutral);
@@ -351,8 +351,8 @@ button:focus {
 }
 button:disabled,
 input:disabled {
-  color: var(--inspector-inverted-text) !important;
-  background-color: var(--inspector-neutral) !important;
+  color: var(--inspector-subtle-neutral) !important;
+  background-color: var(--inspector-shade) !important;
   cursor: default;
 }
 button:disabled:hover {
@@ -362,12 +362,12 @@ button:disabled:hover {
 .highlighted {
   background-color: var(--inspector-primary);
   border-color: var(--inspector-primary);
-  color: var(--inspector-text);
+  color: var(--inspector-white);
 }
 .highlighted:hover,
 .highlighted:active {
   background-color: var(--inspector-accent);
-  color: var(--inspector-background);
+  color: var(--inspector-white);
 }
 .highlighted:disabled {
   background-color: var(--inspector-neutral);
@@ -387,9 +387,9 @@ button, .button {
   height: 32px;
   display: inline-block;
   text-decoration: none;
-  background-color: var(--inspector-button);
+  background-color: var(--inspector-background);
   padding: 0 16px;
-  color: var(--inspector-text);
+  color: var(--inspector-middle);
   cursor: pointer;
   outline: none;
   position: relative;
@@ -399,7 +399,7 @@ button, .button {
   white-space: nowrap;
 }
 button:hover, .button:hover {
-  background-color: var(--inspector-accent);
+  background-color: var(--inspector-shade);
   color: var(--inspector-text);
 }
 button.toggle {

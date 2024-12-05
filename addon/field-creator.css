@@ -205,7 +205,7 @@ textarea[hidden] {
 }
 .area {
   overflow-x: auto;
-  background-color: var(--inspector-background);
+  background-color: var(--inspector-shade);
   padding: 8px 12px;
   border-radius: 5px;
   border: 1px solid var(--inspector-subtle-neutral);

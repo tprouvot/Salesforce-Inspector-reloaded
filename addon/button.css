@@ -50,7 +50,7 @@
 }
 #insext .insext-btn {
     box-sizing: border-box;
-    background-color: var(--inspector-primary, #226B86);
+    background-color: var(--inspector-insext-background, #226B86);
     border-width: 4px;
     border-style: solid;
     border-color: var(--inspector-shade, #FFFFFF);

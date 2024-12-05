@@ -32,8 +32,6 @@ html {
     --inspector-tamarillo: #A31914;
     --inspector-citron: #999900;
 
-    --inspector-sand-background: #B0C4DF;
-    --inspector-prod-background: #E0A4B5;
 
     /* accent */ 
     --inspector-baltic-sea: #201C24;
@@ -64,6 +62,11 @@ html {
     --inspector-monza: #B9141F;
     --inspector-lucky: #AF940B;
 
+    /* utilities */
+    --inspector-blue-saffire: #226B86;
+    --inspector-insext-background: var(--inspector-blue-saffire);
+    --inspector-sand-background: #B0C4DF;
+    --inspector-prod-background: #E0A4B5;
     --inspector-transition-time-fast: 1ms;
     --inspector-transition-time-slow: 500ms;
     --inspector-transition-function: ease-in-out;

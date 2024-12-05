@@ -425,7 +425,7 @@ class App extends React.PureComponent {
               value: apiVersionInput.split(".0")[0]
             })
           ),
-          h("div", {className: "slds-col slds-size_3-of-12 slds-text-align_left slds-grid slds-grid_vertical slds-grid_vertical-align-center"},
+          h("div", {className: "slds-col slds-size_5-of-12 slds-text-align_left slds-grid slds-grid_vertical slds-grid_vertical-align-center"},
             h("span", {className: "footer-small-text"}, `${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"} to open`)
           ),
           h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},

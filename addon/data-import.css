@@ -155,10 +155,10 @@ body {
   margin-bottom: 8px;
 }
 .area {
-  background-color: var(--inspector-background);
+  background-color: var(--inspector-shade);
   padding: 8px 12px;
   border-radius: 5px;
-  border: 1px solid var(--inspector-neutral);
+  border: 1px solid var(--inspector-subtle-neutral);
   margin: 12px 12px 0 12px;
   flex-grow: 1;
 }
@@ -283,7 +283,7 @@ h1 {
   white-space: nowrap;
 }
 label.statusGroupEmpty {
-  color: var(--inspector-neutral);
+  color: var(--inspector-subtle-neutral);
   font-weight: normal;
 }
 .char-btn {
@@ -303,7 +303,7 @@ label.statusGroupEmpty {
   right: 0;
   bottom: 0;
   left: 0;
-  background: rgba(var(--inspector-shade-rgb), 0.8);
+  background: rgba(var(--inspector-black-rgb), 0.8);
   z-index: 99999;
 }
 #confirm-dialog {
@@ -328,7 +328,7 @@ div.batch-size {
   width: 335px;
   font-family: inherit;
   padding: 5px 13px;
-  border: 1px solid var(--inspector-neutral);
+  border: 1px solid var(--inspector-subtle-neutral);
   border-radius: 0.25rem;
   height: 32px;
   /*position: relative;*/
@@ -376,23 +376,23 @@ button:focus {
 }
 button:disabled,
 input:disabled {
-  color: var(--inspector-inverted-text) !important;
-  background-color: var(--inspector-neutral) !important;
+  color: var(--inspector-subtle-neutral);
+  background-color: var(--inspector-shade);
   cursor: default;
 }
 .highlighted {
   background-color: var(--inspector-primary);
   border-color: var(--inspector-primary);
-  color: var(--inspector-text);
+  color: var(--inspector-white);
 }
 .highlighted:hover,
 .highlighted:active {
   background-color: var(--inspector-accent);
-  color: var(--inspector-background);
+  color: var(--inspector-white);
 }
 .highlighted:disabled {
-  background-color: var(--inspector-neutral);
-  border-color: var(--inspector-neutral);
+  background-color: var(--inspector-subtle-neutral);
+  border-color: var(--inspector-subtle-neutral);
   color: var(--inspector-inverted-text);
 }
 option[value="null"][disabled] {
@@ -401,7 +401,7 @@ option[value="null"][disabled] {
 textarea {
   outline: none;
   border-radius: 0.25rem;
-  border: 1px solid var(--inspector-neutral);
+  border: 1px solid var(--inspector-subtle-neutral);
 }
 #data {
   resize: none;
@@ -444,13 +444,13 @@ textarea {
   margin-right: 10px;
 }
 button, .button {
-  border: 1px solid var(--inspector-neutral);
+  border: 1px solid var(--inspector-button-border);
   height: 32px;
   display: inline-block;
   text-decoration: none;
   background-color: var(--inspector-background);
   padding: 0 16px;
-  color: var(--inspector-link);
+  color: var(--inspector-middle);
   cursor: pointer;
   outline: none;
   position: relative;
@@ -473,10 +473,10 @@ button.toggle {
   mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
   mask-size: 1rem;
-  /*background-color: var(--inspector-neutral);*/
+  background-color: var(--inspector-neutral);
   display: inline-block;
   width: 16px;
-  /*height: 16px;*/
+  height: 16px;
 }
 button.toggle:hover .button-icon,
 button.toggle:hover .button-toggle-icon  {

@@ -21,7 +21,7 @@
 }
 
 .scrolltable-cell {
-  border: 1px solid var(--inspector-neutral);
+  border: 1px solid var(--inspector-subtle-neutral);
   overflow: hidden;
   padding: 0 4px;
   background-color: var(--inspector-background);

@@ -13,8 +13,7 @@
     background-color: var(--inspector-background, #FFFFFF);
     border-radius: 4px;
     z-index: 1;
-    /*border: 1px solid #d8dde6;*/
-    border: none;
+    border: 1px solid var(--inspector-button-border);
     display: none;
 }
 

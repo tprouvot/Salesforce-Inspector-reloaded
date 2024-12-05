@@ -49,6 +49,7 @@
         "https://*.visualforce.mil/*",
         "https://*.crmforce.mil/*",
         "https://*.lightning.force.com.mcas.ms/*",
+        "https://*.force.com/*",
         "https://*.builder.salesforce-experience.com/*"
       ],
       "all_frames": true,
@@ -78,10 +79,29 @@
         "rest-explore.html",
         "limits.html",
         "field-creator.html",
-        "options.html"
+        "options.html",
+        "event-monitor.html"
       ],
       "matches": [
-        "https://*/*"
+        "https://*.salesforce.com/*",
+        "https://*.salesforce-setup.com/*",
+        "https://*.visual.force.com/*",
+        "https://*.vf.force.com/*",
+        "https://*.lightning.force.com/*",
+        "https://*.cloudforce.com/*",
+        "https://*.visualforce.com/*",
+        "https://*.sfcrmapps.cn/*",
+        "https://*.sfcrmproducts.cn/*",
+        "https://*.salesforce.mil/*",
+        "https://*.visual.force.mil/*",
+        "https://*.vf.force.mil/*",
+        "https://*.lightning.force.mil/*",
+        "https://*.cloudforce.mil/*",
+        "https://*.visualforce.mil/*",
+        "https://*.crmforce.mil/*",
+        "https://*.lightning.force.com.mcas.ms/*",
+        "https://*.force.com/*",
+        "https://*.builder.salesforce-experience.com/*"
       ],
       "extension_ids": []
     }
@@ -91,6 +111,12 @@
   "commands": {
     "open-popup": {
       "description": "Open popup"
+    },
+    "open-export-autocomplete": {
+      "description": "Fields suggestion in Data Export"
+    },
+    "open-export-execute": {
+      "description": "Run Query in Data Export"
     },
     "data-export": {
       "description": "Data Export"

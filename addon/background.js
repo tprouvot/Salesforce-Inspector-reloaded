@@ -44,12 +44,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse(session);
     });
     return true; // Tell Chrome that we want to call sendResponse asynchronously.
-  }
-  if (request.message == "createWindow") {
+  } else if (request.message == "createWindow") {
     const brow = typeof browser === "undefined" ? chrome : browser;
     brow.windows.create({
       url: request.url,
       incognito: request.incognito ?? false
+    });
+  } else if (request.message == "reloadPage") {
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+      chrome.tabs.reload(tabs[0].id);
     });
   }
   return false;
@@ -60,13 +63,13 @@ chrome.action.onClicked.addListener(() => {
   });
 });
 chrome.commands?.onCommand.addListener((command) => {
-  if (command !== "open-popup"){
+  if (!command.startsWith("open-")){
     chrome.tabs.create({
       url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
     });
   } else {
     chrome.runtime.sendMessage({
-      msg: "shortcut_pressed", sfHost
+      msg: "shortcut_pressed", command, sfHost
     });
   }
 });

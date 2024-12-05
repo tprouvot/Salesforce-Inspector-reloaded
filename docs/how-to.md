@@ -332,35 +332,3 @@ Since the extension offers more features, the number of button is increasing.
 Some of the users may don't need some of those, to make the popup lighter some of the buttons can be hidden:
 
 <img width="1024" alt="Hide Buttons" src="https://github.com/user-attachments/assets/50b4cb3c-7886-4b38-96a9-b5a6d93b69e6">
-
-<img width="901" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
-
-## Change Color Scheme
-From the options page, navigate to the options page.
-#### Automatically follow your system color scheme
-Activate the toggle corresponding to "Match Theme to {system} Appearance"
-
-![Follow System - Light](./screenshots/color-scheme/theme-white-mode.png)
-
-![Follow System - Dark](./screenshots/color-scheme/theme-dark-mode.png)
-
-If you no longer want to follow your system's appearance, click on the toggle again.
-#### Manually set to dark mode
-Activate the toggle corresponding to "Enable Dark Mode".
-
-![Change to dark mode](./screenshots/color-scheme/theme-dark-mode.png)
-#### Manually set to light mode
-Deactivate the toggle corresponding to "Enable Dark Mode".
-
-![Change to light mode](./screenshots/color-scheme/theme-white-mode.png)
-## Change Accent of Theme
-You may change the accent of your preferred theme as well.
-The default accent is true-color and has great contrast, the other one is easier on the eyes.
-
-![Dark mode with accent](./screenshots/color-scheme/theme-dark-accent.png)
-
-![Light mode with accent](./screenshots/color-scheme/theme-light-accent.png)
-#### Activate the accent color
-Activate the toggle corresponding to "Enable accent colors".
-#### Deactivate the accent color
-Deactivate the toggle corresponding to "Enable accent colors".

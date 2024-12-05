@@ -7,7 +7,8 @@
 // auraLoadingBox: Lightning / Salesforce1
 // studioBody: Exoperience Builder
 // flowContainer: Flow Debugger
-if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #studioBody, #flowContainer") || location.host.endsWith("visualforce.com")) {
+const visualForceDomains = ["visualforce.com", "vf.force.com"];
+if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #studioBody, #flowContainer") || visualForceDomains.filter(host => location.host.endsWith(host)).length > 0) {
   // We are in a Salesforce org
   chrome.runtime.sendMessage({message: "getSfHost", url: location.href}, sfHost => {
     if (sfHost) {
@@ -135,9 +136,9 @@ function initButton(sfHost, inInspector) {
       let link = current ? current : document.createElement("link");
       link.setAttribute("rel", "icon");
       link.orgType = "image/x-icon";
-      if (iFrameLocalStorage.colorizeSandboxBanner && fav.indexOf("http") == -1){
+      if (fav.indexOf("http") == -1){
         let extensionPage = window.location.href.indexOf(chrome.i18n.getMessage("@@extension_id")) != -1;
-        if (!extensionPage && (isSandbox === "true" || (trialExpDate && trialExpDate !== "null"))){
+        if (iFrameLocalStorage.colorizeSandboxBanner === "true" && !extensionPage && (isSandbox === "true" || (trialExpDate && trialExpDate !== "null"))){
           colorizeBanner(fav, isSandbox);
         }
         if (colorizeProd === "true" && isSandbox === "false" && trialExpDate === "null"){
@@ -156,6 +157,8 @@ function initButton(sfHost, inInspector) {
 
     observeElement(bannerSelector, (banner) => {
       banner.style.backgroundColor = faviconColor;
+      //update sandbox name and Logout action color for new UI
+      [...banner.children].forEach(child => child.style.color = "white");
     });
   }
 

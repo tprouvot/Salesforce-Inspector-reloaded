@@ -11,13 +11,7 @@ if (typeof browser === "undefined") {
 {
   parent.postMessage({
     insextInitRequest: true,
-    iFrameLocalStorage: {
-      popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
-      popupArrowPosition: JSON.parse(localStorage.getItem("popupArrowPosition")),
-      scrollOnFlowBuilder: JSON.parse(localStorage.getItem("scrollOnFlowBuilder")),
-      enableDarkMode: JSON.parse(localStorage.getItem("enableDarkMode")),
-      enableAccentColors: JSON.parse(localStorage.getItem("enableAccentColors"))
-    }
+    iFrameLocalStorage: getFilteredLocalStorage()
   }, "*");
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent) {
@@ -31,12 +25,37 @@ if (typeof browser === "undefined") {
   });
   chrome.runtime.onMessage.addListener((request) => {
     if (request.msg === "shortcut_pressed") {
-      parent.postMessage({insextOpenPopup: true}, "*");
+      if (request.command === "open-popup"){
+        parent.postMessage({insextOpenPopup: true}, "*");
+      } else {
+        parent.postMessage({command: request.command}, "*");
+      }
     }
   }
   );
 }
 
+function getFilteredLocalStorage(){
+  let filteredStorage = JSON.parse(sessionStorage.getItem("filteredStorage"));
+  if (filteredStorage == null){
+    //for Salesforce pages
+    let host = parent[0].document.referrer;
+    if (host.length == 0){
+      //for extension pages
+      host = new URLSearchParams(parent.location.search).get("host");
+    } else {
+      host = host.split("https://")[1];
+    }
+    let domainStart = host.split(".")[0];
+    const storedData = {...localStorage};
+    const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition"];
+    filteredStorage = Object.fromEntries(
+      Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith("access_token"))
+    );
+    sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
+  }
+  return filteredStorage;
+}
 function closePopup() {
   parent.postMessage({insextClosePopup: true}, "*");
 }
@@ -102,8 +121,6 @@ class App extends React.PureComponent {
     this.onChangeApi = this.onChangeApi.bind(this);
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
     this.updateReleaseNotesViewed = this.updateReleaseNotesViewed.bind(this);
-    //this.clickDecrease = this.clickDecrease.bind(this);
-    //this.clickIncrease = this.clickIncrease.bind(this);
   }
   onContextRecordChange(e) {
     let {sfHost} = this.props;
@@ -223,25 +240,6 @@ class App extends React.PureComponent {
     url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
     return {title, url, text};
   }
-
-  /*changeValue(e, shouldIncrease = false) {
-    const inputTarget = document.getElementById(e.target.dataset.targetid);
-    const oldValue = +inputTarget.value;
-    if((""+oldValue) == "NaN")
-      return;
-    inputTarget.value = shouldIncrease ? oldValue + 1 : oldValue - 1;
-    // trigger the onChange listener
-    const event = new Event('input', { bubbles: true });
-    inputTarget.dispatchEvent(event);
-  }
-
-  clickDecrease(e) {
-    this.changeValue(e, false);
-  }
-  clickIncrease(e) {
-    this.changeValue(e, true);
-  }*/
-
   displayButton(name){
     const button = this.state.hideButtonsOption?.find((element) => element.name == name);
     if (button){
@@ -267,9 +265,10 @@ class App extends React.PureComponent {
     const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
     const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
     const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
+    const popupTheme = localStorage.getItem("popupDarkTheme") == "true" ? " header-dark" : " header-light";
     return (
       h("div", {},
-        h("div", {className: "slds-page-header slds-theme_shade popup-header"},
+        h("div", {className: "slds-page-header slds-theme_shade popup-header" + popupTheme},
           h("div", {className: "slds-page-header__row"},
             h("div", {className: "slds-page-header__col-title"},
               h("div", {className: "slds-media"},
@@ -406,18 +405,7 @@ class App extends React.PureComponent {
           h("div", {className: "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
-            /*h("button", {className: "change-value decreaser", title: "Decrease the value by 1", onClick: this.clickDecrease, "data-targetid": "apiVersion"}, "-"),
             h("input", {
-              id: "apiVersion",
-              className: "api-input",
-              type: "text",
-              title: "Update api version",
-              onChange: this.onChangeApi,
-              value: apiVersionInput.split(".0")[0]
-            }),
-            h("button", {className: "change-value increaser", title: "Increase the value by 1", onClick: this.clickIncrease, "data-targetid": "apiVersion"}, "+"),*/
-            h("input", {
-              id: "apiVersion",
               className: "api-input",
               type: "number",
               title: "Update api version",
@@ -1096,41 +1084,34 @@ class AllDataBoxShortcut extends React.PureComponent {
         element.Id = element.name;
       });
 
-      let metadataShortcutSearch = localStorage.getItem("metadataShortcutSearch");
-      if (metadataShortcutSearch == null) {
-        //enable metadata search by default
-        localStorage.setItem("metadataShortcutSearch", true);
+      let metadataShortcutSearchOptions = localStorage.getItem("metadataShortcutSearchOptions");
+      //handle previous option which was not detailled by metadata type
+      let metadataShortcutSearch = localStorage.getItem("metadataShortcutSearch") != "false";
+      if (metadataShortcutSearchOptions) {
+        metadataShortcutSearchOptions = JSON.parse(metadataShortcutSearchOptions);
+        metadataShortcutSearch = metadataShortcutSearchOptions.find(elm => elm.checked == true) != undefined;
       }
 
       //search for metadata if user did not disabled it
-      if (metadataShortcutSearch == "true"){
-        const flowSelect = "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const networkSelect = "SELECT Id, Name, Status, UrlPathPrefix FROM Network WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50";
-        const compositeQuery = {
-          "compositeRequest": [
-            {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(flowSelect),
-              "referenceId": "flowSelect"
-            }, {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(profileSelect),
-              "referenceId": "profileSelect"
-            }, {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(permSetSelect),
-              "referenceId": "permSetSelect"
-            }, {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(networkSelect),
-              "referenceId": "networkSelect"
-            }
-          ]
+      if (metadataShortcutSearch){
+        const queries = {
+          flows: "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          profiles: "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          permissionSets: "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          networks: "SELECT NetworkId, Network.Name, Network.Status, Network.UrlPathPrefix, SiteId FROM WebStoreNetwork WHERE Network.Name LIKE '%" + shortcutSearch + "%' LIMIT 50",
+          classes: "SELECT Id, Name, NamespacePrefix, ApiVersion, Status, LengthWithoutComments FROM ApexClass WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50"
         };
+        // If metadataShortcutSearchOptions is null, assume all options are checked
+        const defaultOptions = ["flows", "profiles", "permissionSets", "networks", "classes"].map(name => ({name, checked: true}));
+        const effectiveOptions = metadataShortcutSearchOptions || defaultOptions;
 
-        const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
+        const compositeRequest = effectiveOptions.filter(setting => setting.checked).map(setting => ({
+          method: "GET",
+          url: "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queries[setting.name]),
+          referenceId: setting.name + "Select"
+        }));
+
+        const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: {compositeRequest}});
         let results = searchResult.compositeResponse.filter((elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0);
 
         let enablePermSetSummary = localStorage.getItem("enablePermSetSummary") === "true";
@@ -1153,30 +1134,29 @@ class AllDataBoxShortcut extends React.PureComponent {
               rec.detail = rec.attributes.type + " • " + rec.Type;
               rec.detail += rec.License?.Name != null ? " • " + rec.License?.Name : "";
 
-              let psetOrGroupId;
-              let type;
-              if (rec.Type === "Group"){
-                psetOrGroupId = rec.PermissionSetGroupId;
-                type = "PermSetGroups";
-              } else {
-                psetOrGroupId = rec.Id;
-                type = "PermSets";
-              }
+              const isGroup = rec.Type === "Group";
+              let psetOrGroupId = isGroup ? rec.PermissionSetGroupId : rec.Id;
+              let type = isGroup ? "PermSetGroups" : "PermSets";
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
-            } else if (rec.attributes.type === "Network"){
-              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=" + rec.Id;
+            } else if (rec.attributes.type === "ApexClass"){
+              rec.link = "/lightning/setup/ApexClasses/page?address=%2F" + rec.Id;
               rec.label = rec.Name;
-              let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
-              rec.name = rec.Id + url;
-              rec.detail = rec.attributes.type + " (" + rec.Status + ") • Builder";
+              rec.name = rec.NamespacePrefix ? rec.NamespacePrefix + "__" + rec.Name : rec.Name;
+              rec.detail = rec.attributes.type + " • " + rec.ApiVersion + ".0 • " + rec.Status + (rec.NamespacePrefix ? "" : " • Length: " + rec.LengthWithoutComments);
+            } else if (rec.attributes.type === "WebStoreNetwork"){
+              rec.link = `/sfsites/picasso/core/config/commeditor.jsp?servlet%2Fnetworks%2Fswitch%3FnetworkId%3D${rec.NetworkId}%26startURL%3D%252FcommunitySetup%252FcwApp.app%2523%252Fc%252Fhome&siteId=${rec.SiteId}&`;
+              rec.label = rec.Network.Name;
+              let url = rec.Network.UrlPathPrefix ? " • /" + rec.Network.UrlPathPrefix : "";
+              rec.name = rec.NetworkId + url;
+              rec.detail = "Network (" + rec.Network.Status + ") • Builder";
             }
             rec.title = rec.name;
             result.push(rec);
           });
         });
       }
-      //if no result found, add the globzl search link
+      //if no result found, add the global search link
       result.length > 0 ? result : result.push({link: "/one/one.app#" + this.getEncodedGlobalSearch(shortcutSearch), label: '"' + shortcutSearch + '"', detail: "No results found", name: "Use Global Search"});
       return result;
     } catch (err) {
@@ -1340,6 +1320,9 @@ class UserDetails extends React.PureComponent {
     super(props);
     this.sfHost = props.sfHost;
     this.enableDebugLog = this.enableDebugLog.bind(this);
+    this.toggleDisplay = this.toggleDisplay.bind(this);
+    this.onSelectLanguage = this.onSelectLanguage.bind(this);
+    this.state = {};
   }
 
   openUrlInIncognito(targetUrl) {
@@ -1387,6 +1370,33 @@ class UserDetails extends React.PureComponent {
     const element = document.querySelector("#enableDebugLog");
     element.setAttribute("disabled", true);
     element.text = "Logs Enabled";
+  }
+
+  toggleDisplay(event, refKey) {
+    event.target.style.display = "none";
+    this.fectchLocalesAndLanguages(refKey);
+  }
+
+  fectchLocalesAndLanguages(refKey){
+    if (!this.state.userLocales){
+      sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/describe`, {method: "GET"}).then(res => {
+        let userLanguages = res.fields.find(field => field.name === "LanguageLocaleKey");
+        let userLocales = res.fields.find(field => field.name === "LocaleSidKey");
+        this.setState({userLocales: userLocales.picklistValues, userLanguages: userLanguages.picklistValues.filter(item => item.active)});
+        this.refs[refKey].classList.toggle("hide");
+      });
+    } else {
+      this.refs[refKey].classList.toggle("hide");
+    }
+  }
+
+  onSelectLanguage(e, userId){
+    sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/${userId}`, {method: "PATCH",
+      body: {
+        [e.target.name]: e.target.value
+      }}).then(
+      browser.runtime.sendMessage({message: "reloadPage"})
+    ).catch(err => console.log("Error during user language update", err));
   }
 
   getTraceFlags(userId, DTnow, debugLogDebugLevel, debugTimeInMs){
@@ -1481,7 +1491,7 @@ class UserDetails extends React.PureComponent {
 
   getUserDetailLink(userId) {
     let {sfHost} = this.props;
-    return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1";
+    return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1%26isUserEntityOverride%3D1";
   }
 
   getUserPsetLink(userId) {
@@ -1562,9 +1572,15 @@ class UserDetails extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Language:"),
                 h("td", {},
-                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Language: " + user.LanguageLocaleKey}),
+                  h("div", {className: "pointer flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Update Language " + user.LanguageLocaleKey, onClick: (e) => { this.toggleDisplay(e, "LanguageLocaleKey"); }}),
+                  h("select", {ref: "LanguageLocaleKey", name: "LanguageLocaleKey", className: "hide", defaultValue: user.LanguageLocaleKey, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
+                    this.state.userLanguages?.map(q => h("option", {key: q.value, value: q.value}, q.label))
+                  ),
                   " | ",
-                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Locale: " + user.LocaleSidKey})
+                  h("div", {className: "pointer flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Update Locale: " + user.LocaleSidKey, onClick: (e) => { this.toggleDisplay(e, "LocaleSidKey"); }}),
+                  h("select", {ref: "LocaleSidKey", name: "LocaleSidKey", className: "hide", defaultValue: user.LanguageLocaleKey, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
+                    this.state.userLanguages?.map(q => h("option", {key: q.value, value: q.value}, q.label))
+                  ),
                 )
               )
             )

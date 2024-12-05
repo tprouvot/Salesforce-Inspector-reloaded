@@ -5,7 +5,6 @@
 - Add compatibility for force.com domain for Sf internal orgs
 - Restyle Org Limits
 - Add new options to hide buttons in popup
-- Implemented dark mode [issue 64](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/64)
 
 ## Version 1.25
 

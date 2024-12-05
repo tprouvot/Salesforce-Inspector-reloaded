@@ -107,7 +107,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(var(--inspector-shade-rgb), 0.8);
+  background-color: rgba(var(--inspector-black-rgb), 0.5);
   z-index: 1050;
   overflow-y: auto;
 }
@@ -282,7 +282,7 @@ input[type=save] {
 input[type="checkbox"] {
   width: 1rem;
   height: 1rem;
-  accent-color: var(--inspector-subtle-neutral);
+  accent-color: var(--inspector-primary);
 }
 textarea:not([readonly]):focus,
 button:active,
@@ -322,7 +322,7 @@ input:disabled:hover {
 .highlighted {
   background-color: var(--inspector-primary);
   border-color: var(--inspector-primary);
-  color: var(--inspector-text);
+  color: var(--inspector-white);
 }
 button:active {
   background-color: var(--inspector-background) !important;
@@ -330,7 +330,7 @@ button:active {
 }
 .highlighted:hover {
   background-color: var(--inspector-accent);
-  color: var(--inspector-background);
+  color: var(--inspector-white);
 }
 .ulItem{
   position: fixed;
@@ -348,9 +348,9 @@ button:active {
   box-shadow: 0 4px 8px var(--inspector-text);
 }
 .highlighted:disabled {
-  background-color: var(--inspector-neutral) !important;
-  border-color: var(--inspector-neutral) !important;
-  color: var(--inspector-background)!important;
+  background-color: var(--inspector-subtle-neutral) !important;
+  border-color: var(--inspector-subtle-neutral);
+  color: var(--inspector-inverted-text) !important;
 }
 option[value="null"][disabled] {
   display: none;
@@ -444,9 +444,9 @@ button,
   height: 32px;
   display: inline-block;
   text-decoration: none;
-  background-color: var(--inspector-button);
+  background-color: var(--inspector-background);
   padding: 0 16px;
-  color: var(--inspector-text);
+  color: var(--inspector-middle);
   cursor: pointer;
   outline: none;
   position: relative;
@@ -457,7 +457,7 @@ button,
 }
 button:hover,
 .button:hover {
-  background-color: var(--inspector-accent);
+  background-color: var(--inspector-shade);
   color: var(--inspector-text);
 }
 .flex-right button:last-child {
@@ -775,7 +775,7 @@ button.toggle .button-icon {
   width: 20px;
 }
 .fillBlue {
-  fill: var(--inspector-accent);
+  fill: var(--inspector-middle);
 }
 .fillGreen {
   fill: var(--inspector-success);

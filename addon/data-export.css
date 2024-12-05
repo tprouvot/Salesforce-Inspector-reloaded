@@ -578,7 +578,7 @@ svg.button-icon {
 }
 
 .autocomplete-results a {
-  border: 1px solid var(--inspector-neutral);
+  border: 1px solid var(--inspector-subtle-neutral);
   border-radius: 0.25rem;
   padding: 0px 4px;
   text-decoration: none;

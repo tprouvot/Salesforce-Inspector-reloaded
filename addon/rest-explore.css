@@ -115,7 +115,7 @@ textarea {
   font-size: 0.9rem;
   padding: 8px 10px;
   border-radius: 0.25rem;
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-subtle-neutral);
   color: var(--inspector-text);
   background-color: var(--inspector-background);
 }
@@ -126,7 +126,7 @@ textarea[hidden] {
 
 .help-text {
   background: var(--inspector-background);
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-subtle-neutral);
   padding: 0 15px;
   border-radius: 0.25rem;
   margin-top: 10px;
@@ -168,14 +168,14 @@ textarea[hidden] {
   overflow: auto;
   flex: 1 1 0;
   background-color: var(--inspector-background);
-  border-top: 1px solid var(--inspector-primary);
+  border-top: 1px solid var(--inspector-subtle-neutral);
 }
 
 .area {
-  background-color: var(--inspector-background);
+  background-color: var(--inspector-shade);
   padding: 8px 12px;
   border-radius: 5px;
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-subtle-neutral);
   margin: 12px 12px 0 12px;
 }
 #result-area.area{
@@ -235,7 +235,7 @@ input[type=default] {
   width: 8.5rem;
   font-family: inherit;
   padding: 5px 13px;
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-subtle-neutral);
   height: 32px;
   position: relative;
   border-radius: 0.25rem;
@@ -245,7 +245,7 @@ input[type=default] {
 }
 
 #save-wrapper {
-  border: 1px solid var(--inspector-neutral);
+  border: 1px solid var(--inspector-subtle-neutral);
   background-color: var(--inspector-background);
   padding: 5px 13px;
   width: 8.5rem;
@@ -310,7 +310,7 @@ input:active,
 input:focus,
 select:active,
 select:focus {
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-accent);
   box-shadow: var(--inspector-accent) 0px 0px 3px 0px;
   outline: none;
   z-index: 1;
@@ -328,14 +328,13 @@ select:focus {
 
 button:active,
 button:focus {
-  background-color: var(--inspector-background) !important;
-  color: var(--inspector-middle) !important;
+  background-color: var(--inspector-background);
+  color: var(--inspector-middle);
 }
 
 button:disabled,
 input:disabled {
-  color: var(--inspector-inverted-text) !important;
-  background-color: var(--inspector-neutral) !important;
+  color: var(--inspector-subtle-neutral);
   cursor: default;
 }
 
@@ -348,13 +347,13 @@ input:disabled:hover {
 .highlighted {
   background-color: var(--inspector-primary);
   border-color: var(--inspector-primary);
-  color: var(--inspector-text);
+  color: var(--inspector-white);
 }
 
 .highlighted:hover,
 .highlighted:active {
   background-color: var(--inspector-accent);
-  color: var(--inspector-background);
+  color: var(--inspector-white);
 }
 
 .highlighted:disabled {
@@ -371,7 +370,7 @@ textarea[readonly] {
   outline: none;
   border-radius: 0;
   border: none;
-  border-top: 1px solid var(--inspector-primary);
+  border-top: 1px solid var(--inspector-subtle-neutral);
   resize: vertical;
   word-wrap: normal;
   font-size: 11px;
@@ -459,9 +458,9 @@ button,
   height: 32px;
   display: inline-block;
   text-decoration: none;
-  background-color: var(--inspector-button);
+  background-color: var(--inspector-background);
   padding: 0 16px;
-  color: var(--inspector-text);
+  color: var(--inspector-middle);
   cursor: pointer;
   outline: none;
   position: relative;
@@ -473,7 +472,7 @@ button,
 
 button:hover,
 .button:hover {
-  background-color: var(--inspector-accent);
+  background-color: var(--inspector-shade);
   color: var(--inspector-text);
 }
 
@@ -503,7 +502,7 @@ button:hover,
 }
 
 .autocomplete-results a {
-  border: 1px solid var(--inspector-neutral);
+  border: 1px solid var(--inspector-subtle-neutral);
   border-radius: 0.25rem;
   padding: 0px 4px;
   text-decoration: none;

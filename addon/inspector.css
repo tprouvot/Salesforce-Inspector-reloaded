@@ -12,6 +12,7 @@ html {
     --inspector-silver-sand: #C9C9C9;
     --inspector-cape-cod: #444444;
     --inspector-silver: #BBBBBB;
+    --inspector-jackpot: #777777;
 
     --inspector-dodger-blue: #1789EE;
     --inspector-dodger-blue-rgb: 23, 137, 238;
@@ -131,7 +132,7 @@ html {
     --inspector-shade: var(--inspector-shark-dark);
     --inspector-shade-rgb: var(--inspector-shark-dark-rgb);
     --inspector-dark-neutral: var(--inspector-silver);
-    --inspector-subtle-neutral: var(--inspector-silver-sand);
+    --inspector-subtle-neutral: var(--inspector-jackpot);
 
     --inspector-link: var(--inspector-accent);
     --inspector-visited-link: var(--inspector-link);
@@ -174,7 +175,7 @@ html {
     --inspector-shade: var(--inspector-alto);
     --inspector-shade-rgb: var(--inspector-alto-rgb);
     --inspector-dark-neutral: var(--inspector-cape-cod);
-    --inspector-subtle-neutral: var(--inspector-silver-sand);
+    --inspector-subtle-neutral: var(--inspector-silver);
 
     --inspector-link: var(--inspector-primary);
     --inspector-visited-link: var(--inspector-link);
@@ -217,7 +218,7 @@ html {
     --inspector-shade: var(--inspector-shark);
     --inspector-shade-rgb: var(--inspector-shark-rgb);
     --inspector-dark-neutral: var(--inspector-silver);
-    --inspector-subtle-neutral: var(--inspector-silver-sand);
+    --inspector-subtle-neutral: var(--inspector-jackpot);
 
     --inspector-link: var(--inspector-accent);
     --inspector-visited-link: var(--inspector-link);

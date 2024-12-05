@@ -73,7 +73,7 @@ body {
   width: 335px;
   font-family: inherit;
   padding: 5px 13px;
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-subtle-neutral);
   border-radius: 0.25rem;
   height: 32px;
   position: relative;
@@ -146,7 +146,7 @@ textarea {
   font-size: 0.9rem;
   padding: 8px 10px;
   border-radius: 0.25rem;
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-subtle-neutral);
   color: var(--inspector-text);
   background-color: var(--inspector-background);
 }
@@ -158,7 +158,7 @@ textarea[hidden] {
 }
 .help-text {
   background: var(--inspector-background);
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-subtle-neutral);
   padding: 0 15px;
   border-radius: 0.25rem;
   margin-top: 10px;
@@ -195,7 +195,7 @@ textarea[hidden] {
   overflow: auto;
   flex: 1 1 0;
   background-color: var(--inspector-background);
-  border-top: 1px solid var(--inspector-primary);
+  border-top: 1px solid var(--inspector-subtle-neutral);
 }
 .table-responsive {
   overflow-x: auto;
@@ -208,7 +208,7 @@ textarea[hidden] {
   background-color: var(--inspector-background);
   padding: 8px 12px;
   border-radius: 5px;
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-subtle-neutral);
   margin: 12px 12px 0 12px;
 }
 h1 {
@@ -258,7 +258,7 @@ input[type=default] {
   width: 8.5rem;
   font-family: inherit;
   padding: 5px 13px;
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-subtle-neutral);
   height: 32px;
   position: relative;
   border-radius: 0.25rem;
@@ -282,7 +282,7 @@ input[type=save] {
 input[type="checkbox"] {
   width: 1rem;
   height: 1rem;
-  accent-color: var(--inspector-primary);
+  accent-color: var(--inspector-subtle-neutral);
 }
 textarea:not([readonly]):focus,
 button:active,
@@ -359,7 +359,7 @@ textarea[readonly] {
   outline: none;
   border-radius: 0;
   border: none;
-  border-top: 1px solid var(--inspector-primary);
+  border-top: 1px solid var(--inspector-subtle-neutral);
 }
 #help-btn {
   margin-left: auto;

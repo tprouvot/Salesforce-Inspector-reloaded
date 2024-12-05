@@ -25,6 +25,15 @@ a:active {
         background-color: var(--inspector-accent);
     }
 }
+.slds-button_icon-border-filled{
+    color: var(--inspector-neutral);
+    background-color: var(--inspector-background);
+    
+    &:hover {
+        color: var(--inspector-accent);
+        background-color: var(--inspector-shade);
+    }
+}
 
 .slds-button_neutral:hover {
     background-color: var(--inspector-shade);

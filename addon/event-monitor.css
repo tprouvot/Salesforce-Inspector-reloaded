@@ -144,7 +144,7 @@ body {
 }
 .help-text {
   background: var(--inspector-background);
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-subtle-neutral);
   padding: 0 15px;
   border-radius: 0.25rem;
   margin-top: 10px;
@@ -154,7 +154,7 @@ body {
   background-color: var(--inspector-background);
   padding: 8px 12px;
   border-radius: 5px;
-  border: 1px solid var(--inspector-primary);
+  border: 1px solid var(--inspector-subtle-neutral);
   margin: 12px 12px 0 12px;
 }
 .area-header {
@@ -380,7 +380,7 @@ option[value="null"][disabled] {
 textarea {
   outline: none;
   border-radius: 0.25rem;
-  border: 1px solid var(--inspector-neutral);
+  border: 1px solid var(--inspector-subtle-neutral);
 }
 button, .button {
   border: 1px solid var(--inspector-button-border);
@@ -459,7 +459,7 @@ button.contract .button-toggle-icon {
   overflow: auto;
   flex: 1 1 0;
   background-color: var(--inspector-background);
-  border-top: 1px solid var(--inspector-primary);
+  border-top: 1px solid var(--inspector-subtle-neutral);
 }
 .event-box {
   margin: 4px;
@@ -469,7 +469,7 @@ button.contract .button-toggle-icon {
   white-space: pre-wrap;
 }
 .event-not-selected {
-  border-top: 1px solid var(--inspector-primary);
+  border-top: 1px solid var(--inspector-subtle-neutral);
 }
 .event-selected {
   border: 2px solid var(--inspector-success);

@@ -21,7 +21,7 @@
 #insext .insext-popup-vertical {
     right: 0%;
     border-top-right-radius: 0;
-    box-shadow: 0 -2px 2px 0 var(--inspector-shade);
+    box-shadow: 0 -2px 2px 0 rgba(0,0,0,.16);
 }
 
 #insext .insext-popup-vertical-up {
@@ -30,7 +30,7 @@
 
 #insext .insext-popup-horizontal {
     bottom: 20px;
-    box-shadow: 2px 0 2px 0 var(--inspector-shade);
+    box-shadow: 2px 0 2px 0 rgba(0,0,0,.16);
 }
 
 #insext .insext-popup-horizontal-left {

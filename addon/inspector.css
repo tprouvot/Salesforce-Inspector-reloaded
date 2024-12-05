@@ -95,7 +95,7 @@ html {
 
     --inspector-button: var(--inspector-middle);
     --inspector-button-text: var(--inspector-link);
-    --inspector-button-border: var(--inspector-silver-sand);
+    --inspector-button-border: var(--inspector-alto);
     --inspector-button-active-border: var(--inspector-primary);
 
     --inspector-success: var(--inspector-conifer);

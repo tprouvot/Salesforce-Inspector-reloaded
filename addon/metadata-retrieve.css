@@ -59,15 +59,15 @@ body {
   cursor: default;
 }
 .progress-ready {
-  background-color: var(--inspector-shade);
+  background-color: var(--inspector-neutral);
 }
 @keyframes working {
   50% {
-    background-color: var(--inspector-working)/*#ccf;*/
+    background-color: var(--inspector-accent)/*#ccf;*/
   }
 }
 .progress-working {
-  background-color: var(--inspector-working);/*#88f;*/
+  background-color: var(--inspector-primary);/*#88f;*/
   animation: working 1s cubic-bezier(.5, .4, .5, .6) infinite;
   color: var(--inspector-text)
 }
@@ -77,17 +77,17 @@ body {
 .button {
   margin: 0 .3rem;
   display: inline-block;
-  border: 1px solid var(--inspector-neutral);
+  border: 1px solid var(--inspector-button-border);
   padding: 8px 12px;
   border-radius: 3px;
   font: unset;
-  color: var(--inspector-text);
-  background-color: var(--inspector-primary);
+  color: var(--inspector-middle);
+  background-color: var(--inspector-background);
   cursor: pointer;
 }
 .button:hover {
-  background-color: var(--inspector-accent);
-  color: var(--inspector-text-neutral);
+  background-color: var(--inspector-shade);
+  color: var(--inspector-text);
 }
 .body {
   padding: 4.3em 8px 8px;
@@ -99,6 +99,26 @@ label {
   display: inline-block;
   margin: 2px 5px;
 }
+
+.highlighted {
+  background-color: var(--inspector-primary);
+  border-color: var(--inspector-primary);
+  color: var(--inspector-white);
+}
+.highlighted:hover {
+  background-color: var(--inspector-accent);
+  color: var(--inspector-white);
+}
+.highlighted:disabled {
+  background-color: var(--inspector-subtle-neutral) !important;
+  border-color: var(--inspector-subtle-neutral);
+  color: var(--inspector-inverted-text) !important;
+}
+input[type="checkbox"] {
+  accent-color: var(--inspector-primary);
+}
+
+/* transitions */
 div.body > div > p {
   transition-property: color;
   transition-duration: 500ms;
@@ -112,8 +132,6 @@ html {
   background-color: var(--inspector-background);
 }
 
-
-/* transitions */
 div:is(.log-info, .log-working) {
     transition-property: color;
     transition-duration: var(--inspector-transition-time-slow);

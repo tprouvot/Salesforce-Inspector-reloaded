@@ -2,6 +2,7 @@
 import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString} from "./inspector.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
+import Toast from "./components/Toast.js";
 
 class Model {
 
@@ -804,6 +805,7 @@ class App extends React.Component {
 
     this.exportOptions = this.exportOptions.bind(this);
     this.importOptions = this.importOptions.bind(this);
+    this.hideToast = this.hideToast.bind(this);
     this.state = {importTitle: "Export Options"};
   }
 
@@ -837,16 +839,34 @@ class App extends React.Component {
         for (const [key, value] of Object.entries(importedData)) {
           localStorage.setItem(key, value);
         }
-        this.setState({importStyle: "green", importTitle: "Import Successful"});
+        this.setState({
+          showToast: true,
+          toastMessage: "Options Imported Successfully!",
+          toastVariant: "success",
+          toastTitle: "Success"
+        });
+        setTimeout(this.hideToast, 3000);
       } catch (error) {
-        this.setState({importStyle: "red", importTitle: "Import Failed"});
+        this.setState({
+          showToast: true,
+          toastMessage: "Import Failed",
+          toastVariant: "error",
+          toastTitle: "Error"
+        });
         console.error("Error parsing JSON file:", error);
       }
     };
     reader.readAsText(file);
   }
 
+  hideToast() {
+    let {model} = this.props;
+    this.state = {showToast: false, toastMessage: ""};
+    model.didUpdate();
+  }
+
   render() {
+    const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
     return h("div", {},
       h("div", {id: "user-info", className: "slds-border_bottom"},
@@ -865,7 +885,7 @@ class App extends React.Component {
             )
           ),
           h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: this.state.importTitle},
-            h("svg", {className: "slds-button__icon", style: {color: this.state.importStyle}},
+            h("svg", {className: "slds-button__icon"},
               h("use", {xlinkHref: "symbols.svg#upload"})
             )
           ),
@@ -879,6 +899,13 @@ class App extends React.Component {
           })
         )
       ),
+      this.state.showToast
+        && h(Toast, {
+          variant: this.state.toastVariant,
+          title: this.state.toastTitle,
+          message: this.state.toastMessage,
+          onClose: this.hideToast
+        }),
       h("div", {className: "main-container slds-card slds-m-around_small", id: "main-container_header"},
         h(OptionsTabSelector, {model})
       )

@@ -15,6 +15,7 @@
 - Restyle Org Limits [feature 626](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/626) request by [Vincent FINET](https://github.com/VinceFINET)
 - Add new options to hide buttons in popup [feature 618](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/618)
 - Added an option for Data Exporter to use local browser time [feature 527](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/527) (contribution by [David Moruzzi](https://github.com/dmoruzzi))
+- Added an option for Data Exporter to use localized date-time formatting [feature 674](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/674) (contribution by [David Moruzzi](https://github.com/dmoruzzi))
 
 ## Version 1.25
 

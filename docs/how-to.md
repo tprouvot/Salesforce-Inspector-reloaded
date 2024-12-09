@@ -298,6 +298,43 @@ You can configure Data Export to convert times to local time. Navigate to Option
 
 <img width="898" alt="Show local time in data export checkbox option" src="../assets/images/how-to/show-local-time.png?raw=true">
 
+## Localizing Date-Time Formats in Data Export
+
+You can configure the **Data Export** functionality to localize date-time formats according to your preferences. To enable this feature, follow these steps:
+
+1. Navigate to **Options** -> **Data Export**.
+2. Enter a value in the "Localize DateTime format" field.
+
+![Show localize DateTime format in data export option](../assets/images/how-to/show-localize-datetime.png?raw=true)
+
+### Localize DateTime Format Options:
+
+- **Empty Value**: When left empty, the export will use the default date-time format provided by Salesforce.
+- **"local" Value**: When set to `"local"`, the date-time format will automatically adjust to your browser's locale settings.
+- **Custom Locale**: You can also enter a specific locale (e.g., en-US, de-DE) to force the export to use a particular locale's date-time format.
+
+### Supported Locales and Date-Time Formats:
+
+The locale support is determined by the `Intl.DateTimeFormat` API in your web browser. Below is a table of common locales and their corresponding date-time formats.
+
+| **Locale** | **Date Format** | **Time Format**                           | **Example**                     |
+|------------|-----------------|-------------------------------------------|---------------------------------|
+| **en-US**  | MM/DD/YYYY      | hh:mm:ss a (12-hour clock with AM/PM)     | 12/25/2024, 01:13:45 PM GMT     |
+| **en-HK**  | DD/MM/YYYY      | hh:mm:ss a (12-hour clock with am/pm)     | 25/12/2024, 01:13:45 pm GMT     |
+| **en-GB**  | DD/MM/YYYY      | HH:mm:ss (24-hour clock)                  | 25/12/2024, 13:13:45 GMT        |
+| **de-DE**  | DD.MM.YYYY      | HH:mm:ss (24-hour clock)                  | 25.12.2024, 13:13:45 GMT        |
+| **ja-JP**  | YYYY/MM/DD      | HH:mm:ss (24-hour clock)                  | 2024/12/25, 13:13:45 GMT        |
+| **zh-CN**  | YYYY/MM/DD      | HH:mm:ss (24-hour clock)                  | 2024/12/25, 13:13:45 GMT        |
+| **nl-NL**  | DD-MM-YYYY      | HH:mm:ss (24-hour clock)                  | 25-12-2024, 13:13:45 GMT        |
+| **sv-SE**  | YYYY-MM-DD      | HH:mm:ss (24-hour clock)                  | 2024-12-25, 13:13:45 GMT        |
+
+### Important Notes:
+
+- The exact format for each locale is determined by your browser's implementation of the `Intl.DateTimeFormat` API. As such, the date-time format may differ slightly depending on the browser version and locale.
+- The browser's locale settings control how the date and time are formatted. This feature is dependent on your browser's support for these settings.
+  
+For more details on how date-time formatting works in JavaScript, refer to the [MDN documentation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat).
+
 ## Customize extension's shortcuts
 
 Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.

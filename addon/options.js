@@ -131,6 +131,7 @@ class OptionsTabSelector extends React.Component {
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
+          {option: Option, props: {type: "text", title: "Localize DateTime format", key: "dateTimeLocale", placeholder: "Default (Salesforce)", tooltip: "Use 'local' for the browser's locale, or enter a 'language-region' format (e.g., 'en-US'). Leave empty for the default format"}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
           {option: Option, props: {type: "toggle", title: "Show 'Delete Records' button ", key: "showDeleteRecordsButton", default: true}},
           {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},

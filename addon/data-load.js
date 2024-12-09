@@ -273,6 +273,53 @@ function renderCell(rt, cell, td) {
     a.textContent = label;
     td.appendChild(a);
   }
+  function localizeDateTime(dateTime) {
+    // Convert a dateTime string (iso-8601) to a localized string
+    let date = new Date(dateTime);
+    if (isNaN(date)) {
+      console.error(`Provided ${dateTime} is not a valid dateTime`);
+      return dateTime;
+    }
+
+    let dateTimeLocale = localStorage.getItem("dateTimeLocale");
+
+    if (!dateTimeLocale) {
+      return dateTime;
+    } else if (dateTimeLocale === "local") {
+      dateTimeLocale = navigator.language;
+    }
+
+    // Common options for date formatting
+    let dateTimeFmtOptions = {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short",
+    };
+
+    // Determine the time zone
+    let inputTimeZone = "UTC";
+    if (dateTime.includes("Z")) {
+      inputTimeZone = "UTC";
+    } else if (dateTime.length > 19) {
+      inputTimeZone = dateTime.substring(dateTime.length - 5);
+    }
+
+    // Format the date
+    try {
+      let formatter = new Intl.DateTimeFormat(dateTimeLocale, {
+        ...dateTimeFmtOptions,
+        timeZone: inputTimeZone,
+      });
+      return formatter.format(date);
+    } catch (e) {
+      console.error("Error formatting time:", e);
+      return dateTime;
+    }
+  }
   function isRecordId(recordId) {
     // We assume a string is a Salesforce ID if it is 18 characters,
     // contains only alphanumeric characters,
@@ -345,7 +392,9 @@ function renderCell(rt, cell, td) {
       + String(offsetHours).padStart(2, "0") // Format hours with leading zero
       + String(offsetMinutesRemainder).padStart(2, "0"); // Format minutes with leading zero
 
-    td.textContent = localTime;
+    td.textContent = localizeDateTime(localTime);
+  } else if (typeof cell == "string" && isDateTimeFormat(cell)) {
+    td.textContent = localizeDateTime(cell);
   } else {
     td.textContent = cell;
   }

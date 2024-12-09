@@ -8,7 +8,7 @@
 }
 
 #result-table table tr:hover>td {
-  background-color: #F3F2F2;
+  background-color: var(--inspector-background);
 }
 
 .scrolltable-scrolled {
@@ -21,17 +21,17 @@
 }
 
 .scrolltable-cell {
-  border: 1px solid #DDDBDA;
+  border: 1px solid var(--inspector-subtle-neutral);
   overflow: hidden;
   padding: 0 4px;
-  background-color: white;
+  background-color: var(--inspector-background);
   white-space: pre;
   box-sizing: border-box;
 }
 
 .scrolltable-cell.header {
   font-weight: 700;
-  background-color: #FAFAF9;
+  background-color: var(--inspector-shade);
   border-top: none;
   padding-top: 7px;
   padding-bottom: 7px;
@@ -41,7 +41,7 @@
 }
 
 .scrolltable-cell a {
-  color: #006dcc;
+  color: var(--inspector-link);
   text-decoration: underline;
   text-decoration-style: dotted;
 }
@@ -56,7 +56,7 @@
 }
 
 #result-table table tr:hover>td {
-  background-color: #F3F2F2;
+  background-color: var(--inspector-background);
 }
 
 .scrolltable-scrolled {
@@ -68,38 +68,12 @@
   position: absolute;
 }
 
-.scrolltable-cell {
-  border: 1px solid #DDDBDA;
-  overflow: hidden;
-  padding: 0 4px;
-  background-color: white;
-  white-space: pre;
-  box-sizing: border-box;
-}
-
-.scrolltable-cell.header {
-  font-weight: 700;
-  background-color: #FAFAF9;
-  border-top: none;
-  padding-top: 7px;
-  padding-bottom: 7px;
-  /* position: sticky; */
-  /* top: 0; */
-  /* z-index: 1; */
-}
-
-.scrolltable-cell a {
-  color: #006dcc;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-}
-
 .pop-menu {
   position: absolute;
   padding: 7px 0;
-  background: rgb(255, 255, 255);
-  box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
-  border: 1px solid rgb(221, 219, 218);
+  background: var(--inspector-background);
+  box-shadow: 0 2px 3px 0 var(--inspector-text);
+  border: 1px solid var(--inspector-neutral)32;
   border-radius: 0.25rem;
 }
 
@@ -112,31 +86,41 @@
 .pop-menu a {
   display: block;
   text-decoration: none;
-  color: rgb(0, 112, 210);
+  color: var(--inspector-link);
   padding: 5px 15px;
   display: flex;
   align-items: center;
 }
 
 .pop-menu a .icon {
-  /* background-color: #706E6B; */
+  /* background-color: var(--inspector-neutral); */
   display: inline-block;
   width: 1rem;
   height: 1rem;
   margin-right: 8px;
 }
 
-.pop-menu a.view-salesforce .icon {
+.pop-menu a:is(.view-salesforce, .view-inspector, .query-record, copy-id, download-salesforce) .icon {
   -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
+  mask-size: 1rem;
   -webkit-mask-image: url(images/salesforce1.svg);
+  mask-image: url(images/salesforce1.svg);
   -webkit-mask-position: center;
+  mask-position: center;
 }
+
+/*.pop-menu a.view-salesforce .icon {
+  -webkit-mask-image: url(images/salesforce1.svg);
+  mask-image: url(images/salesforce1.svg);
+}*/
 
 .pop-menu a.view-inspector .icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
   -webkit-mask-image: url(images/salesforce-inspector-logo.svg);
+  mask-image: url(images/salesforce-inspector-logo.svg);
   -webkit-mask-position: center;
 }
 
@@ -144,27 +128,30 @@
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
   -webkit-mask-image: url(images/record_lookup.svg);
+  mask-image: url(images/record_lookup.svg);
   -webkit-mask-position: center;
-  background-color: #706E6B;
+  background-color: var(--inspector-neutral);
 }
 
 .pop-menu a.copy-id .icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
   -webkit-mask-image: url(images/copy.svg);
+  mask-image: url(images/copy.svg);
   -webkit-mask-position: center;
-  background-color: #706E6B;
+  background-color: var(--inspector-neutral);
 }
 
 .pop-menu a.download-salesforce .icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
   -webkit-mask-image: url(images/down.svg);
+  mask-image: url(images/down.svg);
   -webkit-mask-position: center;
 }
 
 .pop-menu a.download-salesforce .icon {
-  background-color: #61fab8;
+  background-color: var(--inspector-success);
 }
 
 .pop-menu a.download-salesforce {
@@ -176,17 +163,24 @@
 }
 
 .pop-menu a.view-salesforce .icon {
-  background-color: #009DDC;
+  background-color: var(--inspector-accent);
 }
 
 .pop-menu a.view-inspector .icon {
-  background-color: #D8BE5F;
+  background-color: var(--inspector-warning);
 }
 
 .pop-menu a:hover {
-  background-color: #F3F2F2;
+  background-color: var(--inspector-background);
 }
 
 .pop-menu a:active {
-  background-color: #ECEBEA;
+  background-color: var(--inspector-background);
+}
+
+/* transitions */
+td.scrolltable-cell {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }

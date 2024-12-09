@@ -1,0 +1,305 @@
+html {
+    /* default */
+    --inspector-black: #000000;
+    --inspector-black-rgb: 0, 0, 0;
+    --inspector-white: #FFFFFF;
+    --inspector-white-rgb: 255, 255, 255;
+
+
+    --inspector-concrete: #F3F3F3;
+    --inspector-concrete-rgb: 243, 243, 243;
+    --inspector-silver-chalice: #AFAFAF;
+    --inspector-silver-sand: #C9C9C9;
+    --inspector-cape-cod: #444444;
+    --inspector-silver: #BBBBBB;
+    --inspector-jackpot: #777777;
+
+    --inspector-dodger-blue: #1789EE;
+    --inspector-dodger-blue-rgb: 23, 137, 238;
+    --inspector-boulder: #787878;
+    --inspector-conifer: #9BC53D;
+    --inspector-careys-pink: #E0A4B5;
+    --inspector-violet-eggplant: #990099;
+    --inspector-well-read: #C3423F;
+    --inspector-gorse: #FDE74C;
+
+    --inspector-midnight-blue: #00396B;
+    --inspector-midnight-blue-rgb: 0, 57, 107;
+    --inspector-shark-dark: #252525;
+    --inspector-shark-dark-rgb: 37, 37, 37;
+    --inspector-chateau-green: #018E42;
+    --inspector-blush: #BD4F6C;
+    --inspector-east-bay: #49416D;
+    --inspector-tamarillo: #A31914;
+    --inspector-citron: #999900;
+
+
+    /* accent */ 
+    --inspector-baltic-sea: #201C24;
+    --inspector-baltic-sea-rgb: 32, 28, 36;
+    --inspector-mercury: #E8E9EB;
+    --inspector-mercury-rgb: 232, 233, 235;
+
+    --inspector-alto: #DCDCDC;
+    --inspector-alto-rgb: 220, 220, 220;
+    --inspector-star-dust: #989898;
+
+    --inspector-mariner: #0176d3;
+    --inspector-mariner-rgb: 1, 118, 211;
+    --inspector-storm-dust: #616161;
+    --inspector-mantis: #85C852;
+    --inspector-clam-shell: #CAA9AA;
+    --inspector-purple: #63058E;
+    --inspector-medium-carmine: #AD4734;
+    --inspector-starship: #E7EC41;
+
+    --inspector-biscay: #163460;
+    --inspector-biscay-rgb: 22, 52, 96;
+    --inspector-shark: #1C1C24;
+    --inspector-shark-rgb: 28, 28, 36;
+    --inspector-salem: #17894D;
+    --inspector-cranberry: #D34A77;
+    --inspector-bossanova: #5F3C78;
+    --inspector-monza: #B9141F;
+    --inspector-lucky: #AF940B;
+
+    /* utilities */
+    --inspector-blue-saffire: #226B86;
+    --inspector-insext-background: var(--inspector-blue-saffire);
+    --inspector-sand-background: #B0C4DF;
+    --inspector-prod-background: #E0A4B5;
+    --inspector-transition-time-fast: 1ms;
+    --inspector-transition-time-slow: 500ms;
+    --inspector-transition-function: ease-in-out;
+}
+
+:is(html, #insext)[data-theme="light"] {
+    --inspector-background: var(--inspector-white);
+    --inspector-background-rgb: var(--inspector-white-rgb);
+    --inspector-text: var(--inspector-black);
+    --inspector-inverted-text: var(--inspector-background);
+    --inspector-text-neutral: var(--inspector-neutral);
+    --inspector-hover: var(--inspector-mercury);
+
+    --inspector-primary: var(--inspector-dodger-blue);
+    --inspector-primary-rgb: var(--inspector-dodger-blue-rgb);
+    --inspector-middle: var(--inspector-mariner);
+    --inspector-accent: var(--inspector-midnight-blue);
+    --inspector-neutral: var(--inspector-boulder);
+    --inspector-shade: var(--inspector-concrete);
+    --inspector-shade-rgb: var(--inspector-concrete-rgb);
+    --inspector-dark-neutral: var(--inspector-cape-cod);
+    --inspector-subtle-neutral: var(--inspector-silver-sand);
+
+    --inspector-link: var(--inspector-primary);
+    --inspector-visited-link: var(--inspector-link);
+
+    --inspector-button: var(--inspector-middle);
+    --inspector-button-text: var(--inspector-link);
+    --inspector-button-border: var(--inspector-alto);
+    --inspector-button-active-border: var(--inspector-primary);
+
+    --inspector-success: var(--inspector-conifer);
+    --inspector-warning: var(--inspector-gorse);
+    --inspector-error: var(--inspector-well-read);
+    --inspector-strong-error: var(--inspector-tamarillo);
+
+    --inspector-object: var(--inspector-citron);
+    --inspector-number: var(--inspector-blush);
+    --inspector-false-boolean: var(--inspector-error);
+    --inspector-true-boolean: var(--inspector-accent);
+
+    --inspector-svg-text: var(--inspector-shade);
+    --inspector-svg-picture: var(--inspector-careys-pink);
+    --inspector-svg-background: var(--inspector-accent);
+
+    --inspector-working: var(--inspector-number);
+}
+
+:is(html, #insext)[data-theme="dark"] {
+    --inspector-background: var(--inspector-black);
+    --inspector-background-rgb: var(--inspector-black-rgb);
+    --inspector-text: var(--inspector-white);
+    --inspector-inverted-text: var(--inspector-background);
+    --inspector-text-neutral: var(--inspector-silver-chalice);
+    --inspector-hover: var(--inspector-baltic-sea);
+    
+    --inspector-primary: var(--inspector-midnight-blue);
+    --inspector-primary-rgb: var(--inspector-midnight-blue-rgb);
+    --inspector-middle: var(--inspector-mariner);
+    --inspector-accent: var(--inspector-dodger-blue);
+    --inspector-neutral: var(--inspector-boulder);
+    --inspector-shade: var(--inspector-shark-dark);
+    --inspector-shade-rgb: var(--inspector-shark-dark-rgb);
+    --inspector-dark-neutral: var(--inspector-silver);
+    --inspector-subtle-neutral: var(--inspector-jackpot);
+
+    --inspector-link: var(--inspector-accent);
+    --inspector-visited-link: var(--inspector-link);
+
+    --inspector-button: var(--inspector-primary);
+    --inspector-button-text: var(--inspector-link);
+    --inspector-button-border: var(--inspector-neutral);
+    --inspector-button-active-border: var(--inspector-accent);
+
+    --inspector-success: var(--inspector-chateau-green);
+    --inspector-warning: var(--inspector-citron);
+    --inspector-error: var(--inspector-well-read);
+    --inspector-strong-error: var(--inspector-tamarillo);
+
+    --inspector-object: var(--inspector-gorse);
+    --inspector-number: var(--inspector-visited-link);
+    --inspector-false-boolean: var(--inspector-error);
+    --inspector-true-boolean: var(--inspector-accent);
+
+    --inspector-svg-text: var(--inspector-text);
+    --inspector-svg-picture: var(--inspector-blush);
+    --inspector-svg-background: var(--inspector-primary);
+
+    --inspector-working: var(--inspector-violet-eggplant);
+}
+
+:is(html, #insext)[data-theme="light"][data-accent="accent"] {
+    --inspector-background: var(--inspector-mercury);
+    --inspector-background-rgb: var(--inspector-mercury-rgb);
+    --inspector-text: var(--inspector-baltic-sea);
+    --inspector-inverted-text: var(--inspector-background);
+    --inspector-text-neutral: var(--inspector-neutral);
+    --inspector-hover: var(--inspector-white);
+
+    --inspector-primary: var(--inspector-mariner);
+    --inspector-primary-rgb: var(--inspector-mariner-rgb);
+    --inspector-middle: var(--inspector-dodger-blue);
+    --inspector-accent: var(--inspector-biscay);
+    --inspector-neutral: var(--inspector-storm-dust);
+    --inspector-shade: var(--inspector-alto);
+    --inspector-shade-rgb: var(--inspector-alto-rgb);
+    --inspector-dark-neutral: var(--inspector-cape-cod);
+    --inspector-subtle-neutral: var(--inspector-silver);
+
+    --inspector-link: var(--inspector-primary);
+    --inspector-visited-link: var(--inspector-link);
+
+    --inspector-button: var(--inspector-middle);
+    --inspector-button-text: var(--inspector-link);
+    --inspector-button-border: var(--inspector-neutral);
+    --inspector-button-active-border: var(--inspector-primary);
+
+    --inspector-success: var(--inspector-mantis);
+    --inspector-warning: var(--inspector-starship);
+    --inspector-error: var(--inspector-medium-carmine);
+    --inspector-strong-error: var(--inspector-monza);
+
+    --inspector-object: var(--inspector-lucky);
+    --inspector-number: var(--inspector-cranberry);
+    --inspector-false-boolean: var(--inspector-error);
+    --inspector-true-boolean: var(--inspector-biscay);
+
+    --inspector-svg-text: var(--inspector-concrete);
+    --inspector-svg-picture: var(--inspector-clam-shell);
+    --inspector-svg-background: var(--inspector-accent);
+
+    --inspector-working: var(--inspector-number);
+}
+
+:is(html, #insext)[data-theme="dark"][data-accent="accent"] {
+    --inspector-background: var(--inspector-baltic-sea);
+    --inspector-background-rgb: var(--inspector-baltic-sea-rgb);
+    --inspector-text: var(--inspector-mercury);
+    --inspector-inverted-text: var(--inspector-background);
+    --inspector-text-neutral: var(--inspector-star-dust);
+    --inspector-hover: var(--inspector-black);
+    
+    --inspector-primary: var(--inspector-biscay);
+    --inspector-primary-rgb: var(--inspector-biscay-rgb);
+    --inspector-middle: var(--inspector-dodger-blue);
+    --inspector-accent: var(--inspector-mariner);
+    --inspector-neutral: var(--inspector-storm-dust);
+    --inspector-shade: var(--inspector-shark);
+    --inspector-shade-rgb: var(--inspector-shark-rgb);
+    --inspector-dark-neutral: var(--inspector-silver);
+    --inspector-subtle-neutral: var(--inspector-jackpot);
+
+    --inspector-link: var(--inspector-accent);
+    --inspector-visited-link: var(--inspector-link);
+
+    --inspector-button: var(--inspector-primary);
+    --inspector-button-text: var(--inspector-link);
+    --inspector-button-border: var(--inspector-neutral);
+    --inspector-button-active-border: var(--inspector-accent);
+
+    --inspector-success: var(--inspector-salem);
+    --inspector-warning: var(--inspector-lucky);
+    --inspector-error: var(--inspector-medium-carmine);
+    --inspector-strong-error: var(--inspector-monza);
+
+    --inspector-object: var(--inspector-starship);
+    --inspector-number: var(--inspector-visited-link);
+    --inspector-false-boolean: var(--inspector-error);
+    --inspector-true-boolean: var(--inspector-accent);
+
+    --inspector-svg-text: var(--inspector-text);
+    --inspector-svg-picture: var(--inspector-cranberry);
+    --inspector-svg-background: var(--inspector-primary);
+
+    --inspector-working: var(--inspector-purple);
+}
+
+:is(div, input, ul, a):not(:has([style*=transparent])) /* all */ {
+    transition-property: background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+:is(span, button, a).button /* all */,
+textarea /* data-export, data-import, explore-api, inspect */,
+input::placeholder /* will work in future browser developments */ {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+a.sf-link /* data-export, data-import, explore-api, inspect, limits, metadata, options */ {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+
+    & svg {
+        transition-property: fill, background-color;
+        transition-duration: inherit;
+        transition-timing-function: inherit;
+    }
+}
+
+:is(span, label, li):not(:has(> span, > label)) /* all */, 
+h1:not(:has(> span)) /* all */ {
+    transition-property: color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+#result-table /* data-export, data-import, data-load, explore-api */ {
+    transition-property: background-color, scrollbar-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+
+    & > :not(div) {
+        transition-property: color;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
+    }
+}
+
+div#user-info /* data-export, data-import, explore-api, options */ {
+    transition-property: background-color, border-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+body {
+    color: var(--inspector-text);
+    scrollbar-color: var(--inspector-neutral) var(--inspector-shade);
+    transition-property: background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}

@@ -45,7 +45,7 @@ html,
 body {
     white-space: normal;
     font-family: "Salesforce Sans", Arial, Helvetica, sans-serif;
-    background-color: white;
+    background-color: var(--inspector-background);
     margin: 0;
 }
 
@@ -66,7 +66,7 @@ body,
 }
 
 a:visited {
-    color: #0176d3;
+    color: var(--inspector-visited-link);
 }
 a > span {
     color: #0176d3;
@@ -77,20 +77,14 @@ a > span {
     overflow-y: scroll;
 }
 
-.header-light{
-    background: #f3f3f3;
-    color: #061c3f;
-}
-.header-light svg {
-    fill : #061c3f;
-}
-
-.header-dark{
-    background: #061c3f;
-    color: #f3f3f3;
-}
-.header-dark svg {
-    fill :#f3f3f3;
+.header-logo {
+    background: var(--inspector-svg-background);
+    padding: 2px 1em 2px 2px;
+    color: var(--inspector-svg-text);
+    display: flex;
+    align-items: center;
+    margin: 0 auto;
+    border-radius: 3px;
 }
 
 button,
@@ -103,6 +97,7 @@ input.api-input {
     font-size: inherit;
     border: none;
     background: transparent;
+    color: var(--inspector-text-neutral);
 }
 
 .page-button {
@@ -113,11 +108,10 @@ input.api-input {
     font-size: .9em;
     font-family: inherit;
     width: 100%;
-    background-color: white;
-    color: #16325c;
-    border: 1px solid #d8dde6;
+    background-color: var(--inspector-background);
+    color: var(--inspector-text);
+    border: 1px solid var(--inspector-button-border);
     border-radius: 0 .25rem .25rem .25rem;
-    transition: border .1s linear, background-color .1s linear;
     display: inline-block;
     padding: 0 2rem 0 .25rem;
     line-height: 1.875rem;
@@ -128,9 +122,9 @@ input.api-input {
 .all-data-input:active,
 .all-data-input:focus {
     outline: 0;
-    border-color: #1589ee;
-    background-color: #fff;
-    box-shadow: 0 0 3px #0070D2;
+    border-color: var(--inspector-button-active-border);
+    background-color: var(--inspector-background);
+    box-shadow: 0 0 3px var(--inspector-button-active-border);
 }
 
 .all-data-box-inner {
@@ -139,7 +133,7 @@ input.api-input {
     flex-direction: column;
     min-height: 12em;
     /* should be heigh enough so the buttons below don't jump around when the contents of this box loads */
-    color: #54698d;
+    color: var(--inspector-text-neutral);
     line-height: 1.5;
 }
 
@@ -165,7 +159,7 @@ input.api-input {
     right: 1rem;
     top: 50%;
     margin-top: -.375rem;
-    fill: #54698d;
+    fill: var(--inspector-neutral);
 }
 
 .autocomplete-container {
@@ -173,10 +167,10 @@ input.api-input {
 }
 
 .autocomplete {
-    border: 1px solid #d8dde6;
+    border: 1px solid var(--inspector-neutral);
     border-radius: .25rem;
     padding: .25rem 0;
-    background-color: white;
+    background-color: var(--inspector-background);
     max-height: 260px;
     position: absolute;
     width: 100%;
@@ -188,7 +182,7 @@ input.api-input {
 .autocomplete-item {
     display: block;
     padding: .25rem .5rem;
-    color: #16325c;
+    color: var(--inspector-text);
     line-height: 1.5;
     cursor: pointer;
 }
@@ -203,23 +197,24 @@ input.api-input {
 
 .autocomplete-item-sub {
     font-size: .75rem;
-    color: #54698d;
+    color: var(--inspector-text-neutral);
     margin-top: -.25rem;
 }
 
 .autocomplete-item mark {
     font-weight: 700;
     background-color: transparent;
+    color: var(--inspector-text);
 }
 
 .autocomplete-item.selected {
-    background-color: #f4f6f9;
+    background-color: var(--inspector-shade);
 }
 
 @keyframes bg-load {
     50% {
-        background-color: #EEF6F1;
-        color: #006B2D;
+        background-color: var(--inspector-background);
+        color: var(--inspector-success-background);
     }
 }
 
@@ -278,8 +273,8 @@ ul.small-tabs {
 
 ul.small-tabs li {
     display: inline;
-    border: solid 1px #d8dde6;
-    color: #0070d2;
+    border: solid 1px var(--inspector-button-border);
+    color: var(--inspector-link);
     padding: 2px 6px;
     font-style: italic;
     cursor: pointer;
@@ -291,20 +286,20 @@ ul.small-tabs li:first-child {
 }
 
 ul.small-tabs li.active {
-    /*background-color: #d8dde6;*/
+    /*background-color: var(--inspector-background);*/
     font-style: normal;
     font-weight: bold;
-    color: rgb(112, 110, 107);
+    color: var(--inspector-text-neutral);
     padding-top: 6px;
     border-radius: 3px;
 }
 
 ul.small-tabs li:hover {
-    background-color: #f4f6f9;
+    background-color: var(--inspector-background);
 }
 
 .inactive {
-    color: #c0c0c0
+    color: var(--inspector-text-neutral);
 }
 
 .small-font {
@@ -330,7 +325,7 @@ ul.small-tabs li:hover {
 }
 
 .hide {
-    display: none;
+    display: none !important;
 }
 
 .mask {
@@ -340,14 +335,17 @@ ul.small-tabs li:hover {
 a.icon {
     display: inline-block;
     -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
     -webkit-mask-size: 0.95rem;
-    background-color: #706E6B;
+    mask-size: 0.95rem;
+    background-color: var(--inspector-neutral);
     width: 16px;
     height: 16px;
 }
 
  a.icon-url {
     -webkit-mask-image: url(images/link.svg);
+    mask-image: url(images/link.svg);
 }
 .pointer {
     cursor: pointer;
@@ -365,6 +363,8 @@ a.icon {
     min-width:0;
     font-size: .95rem;
     padding-top: .4rem;
+    color: var(--inspector-text, #061c3f);
+    margin-top:0.25rem;
 }
 .popup-header__title {
     font-weight: 600;
@@ -379,13 +379,15 @@ a.icon {
     border: 0 !important;
     border-radius: 0 !important;
 }
-.popup-header__name-title,
-.popup-header__name-title{
-    margin-top:0.25rem;
-}
+
 .popup-header__icon{
     width:1.75rem;
     height:1.75rem;
+    border-radius: 4px;
+    color: var(--inspector-text);
+    line-height: 1;
+    fill: var(--inspector-text);
+    vertical-align: middle;
 }
 
 .popup-icon_container,
@@ -393,4 +395,104 @@ a.icon {
   display:inline-block;
   line-height:1;
   background-color:var(--slds-c-icon-color-background, var(--sds-c-icon-color-background, transparent));
+}
+
+.popup-footer-icon {
+  background-color: unset;
+  border: none;
+
+  & > use {
+    fill: var(--inspector-text-neutral);
+  }
+}
+
+.slds-col.slds-size_5-of-12.footer-small-text.slds-m-top_xx-small:has(button.change-value) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  & > button.change-value {
+      width: 1rem;
+      height: 70%;
+      padding: 0;
+      border-width: 1px;
+      border-radius: 3px;
+
+      color: var(--inspector-text);
+      background-color: var(--inspector-background);
+      border-color: var(--inspector-neutral);
+  }
+}
+
+
+/* transitions */
+a.slds-button {
+    &:has(> span) {
+      transition-property: background-color, border-color;
+    }
+
+    &:not(:has(> span)) {
+      transition-property: color, background-color;
+    }
+
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+a.autocomplete-item {
+    transition-property: color;
+    transition-duration: var(--inspector-transition-time-fast);
+    transition-timing-function: var(--inspector-transition-function);
+
+    & span > mark {
+        transition-property: color;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
+    }
+}
+
+input.all-data-input {
+    transition-property: color, background-color, border-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+} 
+
+#mainTabs {
+    transition-property: scrollbar-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+
+    & > div,
+    & ul.small-tabs > li {
+        transition-property: background-color, border-color;
+        transition-duration: var(--inspector-transition-time-slow);
+        transition-timing-function: var(--inspector-transition-function);
+    }
+}
+
+div.all-data-box-data > table :is(th, td > *),
+div:is(.center, .all-data-box-inner.empty),
+#root > div > div:last-child > div.slds-size_5-of-12 > :is(a, span, input) {
+    transition-property: color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+.popup-header__icon {
+    transition-property: fill, background-color;
+    transition-duration: inherit;
+    transition-timing-function: inherit;
+}
+
+div.all-data-box-data > table {
+    transition-property: color, background-color;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
+}
+
+#root > div > div:last-child > div:is(.slds-size_2-of-12, .slds-size_1-of-12) > a > svg > use,
+svg.slds-icon {
+    transition-property: color, fill;
+    transition-duration: var(--inspector-transition-time-slow);
+    transition-timing-function: var(--inspector-transition-function);
 }

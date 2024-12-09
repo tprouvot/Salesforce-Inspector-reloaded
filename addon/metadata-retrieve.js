@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setupColorListeners} from "./inspector.js";
 /* global initButton */
 
 class Model {
@@ -243,6 +243,7 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
+    setupColorListeners();
     this.onStartClick = this.onStartClick.bind(this);
     this.onSelectAllChange = this.onSelectAllChange.bind(this);
   }
@@ -258,6 +259,7 @@ class App extends React.Component {
     let {model} = this.props;
     model.startDownloading();
   }
+
   render() {
     let {model} = this.props;
     document.title = model.title();
@@ -291,7 +293,7 @@ class App extends React.Component {
               h("br", {}),
               model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model})),
               h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
-              h("button", {onClick: this.onStartClick}, "Download metadata")
+              h("span", {onClick: this.onStartClick, className: "button highlighted"}, "Download metadata")
             )
             : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
         )

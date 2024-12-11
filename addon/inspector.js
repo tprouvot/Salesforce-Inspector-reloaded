@@ -112,13 +112,17 @@ export let sfConn = {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
       //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
       if (localStorage.getItem(this.instanceHostname + "_access_token")){
-        sessionError = error;
-        showInvalidTokenBanner();
+        sessionError = {text: "Access Token Expired", title: "Generate New Token", type: "warning", icon: "warning"};
+        showToastBanner();
       }
       let err = new Error();
       err.name = "Unauthorized";
       err.message = error;
       throw err;
+    } else if (xhr.status == 403) {
+      let error = xhr.response.length > 0 ? xhr.response[0].message : "Error";
+      sessionError = {text: error, type: "error", icon: "error"};
+      showToastBanner();
     } else {
       if (!logErrors) { console.error("Received error response from Salesforce REST API", xhr); }
       let err = new Error();
@@ -328,8 +332,8 @@ function getMyDomain(host) {
   return host;
 }
 
-function showInvalidTokenBanner(){
-  const containerToShow = document.getElementById("invalidTokenBanner");
+function showToastBanner(){
+  const containerToShow = document.getElementById("toastBanner");
   if (containerToShow) { containerToShow.classList.remove("hide"); }
   const containerToMask = document.getElementById("mainTabs");
   if (containerToMask) { containerToMask.classList.add("mask"); }

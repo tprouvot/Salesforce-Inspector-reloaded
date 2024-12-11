@@ -44,7 +44,7 @@ function getFilteredLocalStorage(){
   } else {
     host = host.split("https://")[1];
   }
-  let domainStart = host.split(".")[0];
+  let domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
   const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition"];
   const filteredStorage = Object.fromEntries(
@@ -222,16 +222,9 @@ class App extends React.PureComponent {
   isMac() {
     return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
   }
-  getBannerUrlAction(sessionError, sfHost, clientId, browser) {
-    let url;
-    let title;
-    let text;
-    if (sessionError){
-      text = "Access Token Expired";
-      title = "Generate New Token";
-    }
-    url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
-    return {title, url, text};
+  getBannerUrlAction(sessionError = {}, sfHost, clientId, browser) {
+    const url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${browser}-extension://${chrome.i18n.getMessage("@@extension_id")}/data-export.html`;
+    return {...sessionError, url};
   }
   displayButton(name){
     const button = this.state.hideButtonsOption?.find((element) => element.name == name);
@@ -307,11 +300,10 @@ class App extends React.PureComponent {
             }
           }
         }),
-        h("div", {id: "invalidTokenBanner", className: "hide"},
-          h(AlertBanner, {type: "warning",
+        h("div", {id: "toastBanner", className: "hide"},
+          h(AlertBanner, {type: bannerUrlAction.type,
             bannerText: bannerUrlAction.text,
-            iconName: "warning",
-            iconTitle: "Warning",
+            iconName: bannerUrlAction.icon,
             assistiveTest: bannerUrlAction.text,
             onClose: null,
             link: {
@@ -1929,26 +1921,22 @@ class AllDataRecordDetails extends React.PureComponent {
 }
 
 
-// props: {style: "base"|"warning"|"error"|"offline", icon: utility SVG name (without utility prefix),
-// bannerText: header, link: {text, props}, assistiveText: icon description, onClose: function}
 class AlertBanner extends React.PureComponent {
   // From SLDS Alert Banner spec https://www.lightningdesignsystem.com/components/alert/
 
   render() {
     let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
-    const theme = ["warning", "error", "offline"].includes(type) ? type : "info";
-    const themeClass = `slds-theme_${theme}`;
     return (
-      h("div", {className: `slds-notify slds-notify_alert ${themeClass}`, role: "alert"},
+      h("div", {className: `slds-notify slds-notify_alert slds-theme_${type}`, role: "alert"},
         h("span", {className: "slds-assistive-text"}, assistiveText | "Notification"),
-        h("span", {className: "slds-icon_container slds-m-right_small", title: iconTitle},
-          h("svg", {className: "slds-icon slds-icon_neither-small-nor-x-small slds-icon-text-default", viewBox: "0 0 52 52"},
+        h("span", {className: `slds-icon_container slds-icon-utility-${iconName} slds-m-right_small slds-no-flex slds-align-top`, title: iconTitle},
+          h("svg", {className: "slds-icon slds-icon_small", viewBox: "0 0 52 52"},
             h("use", {xlinkHref: `symbols.svg#${iconName}`})
           ),
         ),
         h("h2", {}, bannerText,
           h("p", {}, ""),
-          link && h("a", link.props, link.text)
+          link.text && h("a", link.props, link.text)
         ),
         onClose && h("div", {className: "slds-notify__close"},
           h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},

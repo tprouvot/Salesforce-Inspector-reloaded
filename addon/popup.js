@@ -11,7 +11,7 @@ if (typeof browser === "undefined") {
 {
   parent.postMessage({
     insextInitRequest: true,
-    iFrameLocalStorage: JSON.parse(JSON.stringify(localStorage))
+    iFrameLocalStorage: getFilteredLocalStorage()
   }, "*");
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent) {
@@ -25,12 +25,34 @@ if (typeof browser === "undefined") {
   });
   chrome.runtime.onMessage.addListener((request) => {
     if (request.msg === "shortcut_pressed") {
-      parent.postMessage({insextOpenPopup: true}, "*");
+      if (request.command === "open-popup"){
+        parent.postMessage({insextOpenPopup: true}, "*");
+      } else {
+        parent.postMessage({command: request.command}, "*");
+      }
     }
   }
   );
 }
 
+function getFilteredLocalStorage(){
+  //for Salesforce pages
+  let host = parent[0].document.referrer;
+  if (host.length == 0){
+    //for extension pages
+    host = new URLSearchParams(parent.location.search).get("host");
+  } else {
+    host = host.split("https://")[1];
+  }
+  let domainStart = host?.split(".")[0];
+  const storedData = {...localStorage};
+  const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition"];
+  const filteredStorage = Object.fromEntries(
+    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith("access_token"))
+  );
+  sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
+  return filteredStorage;
+}
 function closePopup() {
   parent.postMessage({insextClosePopup: true}, "*");
 }
@@ -200,16 +222,9 @@ class App extends React.PureComponent {
   isMac() {
     return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
   }
-  getBannerUrlAction(sessionError, sfHost, clientId, browser) {
-    let url;
-    let title;
-    let text;
-    if (sessionError){
-      text = "Access Token Expired";
-      title = "Generate New Token";
-    }
-    url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
-    return {title, url, text};
+  getBannerUrlAction(sessionError = {}, sfHost, clientId, browser) {
+    const url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${browser}-extension://${chrome.i18n.getMessage("@@extension_id")}/data-export.html`;
+    return {...sessionError, url};
   }
   displayButton(name){
     const button = this.state.hideButtonsOption?.find((element) => element.name == name);
@@ -285,11 +300,10 @@ class App extends React.PureComponent {
             }
           }
         }),
-        h("div", {id: "invalidTokenBanner", className: "hide"},
-          h(AlertBanner, {type: "warning",
+        h("div", {id: "toastBanner", className: "hide"},
+          h(AlertBanner, {type: bannerUrlAction.type,
             bannerText: bannerUrlAction.text,
-            iconName: "warning",
-            iconTitle: "Warning",
+            iconName: bannerUrlAction.icon,
             assistiveTest: bannerUrlAction.text,
             onClose: null,
             link: {
@@ -1291,6 +1305,9 @@ class UserDetails extends React.PureComponent {
     super(props);
     this.sfHost = props.sfHost;
     this.enableDebugLog = this.enableDebugLog.bind(this);
+    this.toggleDisplay = this.toggleDisplay.bind(this);
+    this.onSelectLanguage = this.onSelectLanguage.bind(this);
+    this.state = {};
   }
 
   openUrlInIncognito(targetUrl) {
@@ -1338,6 +1355,33 @@ class UserDetails extends React.PureComponent {
     const element = document.querySelector("#enableDebugLog");
     element.setAttribute("disabled", true);
     element.text = "Logs Enabled";
+  }
+
+  toggleDisplay(event, refKey) {
+    event.target.style.display = "none";
+    this.fectchLocalesAndLanguages(refKey);
+  }
+
+  fectchLocalesAndLanguages(refKey){
+    if (!this.state.userLocales){
+      sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/describe`, {method: "GET"}).then(res => {
+        let userLanguages = res.fields.find(field => field.name === "LanguageLocaleKey");
+        let userLocales = res.fields.find(field => field.name === "LocaleSidKey");
+        this.setState({userLocales: userLocales.picklistValues, userLanguages: userLanguages.picklistValues.filter(item => item.active)});
+        this.refs[refKey].classList.toggle("hide");
+      });
+    } else {
+      this.refs[refKey].classList.toggle("hide");
+    }
+  }
+
+  onSelectLanguage(e, userId){
+    sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/${userId}`, {method: "PATCH",
+      body: {
+        [e.target.name]: e.target.value
+      }}).then(
+      browser.runtime.sendMessage({message: "reloadPage"})
+    ).catch(err => console.log("Error during user language update", err));
   }
 
   getTraceFlags(userId, DTnow, debugLogDebugLevel, debugTimeInMs){
@@ -1432,7 +1476,7 @@ class UserDetails extends React.PureComponent {
 
   getUserDetailLink(userId) {
     let {sfHost} = this.props;
-    return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1";
+    return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1%26isUserEntityOverride%3D1";
   }
 
   getUserPsetLink(userId) {
@@ -1513,9 +1557,15 @@ class UserDetails extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Language:"),
                 h("td", {},
-                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Language: " + user.LanguageLocaleKey}),
+                  h("div", {className: "pointer flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Update Language " + user.LanguageLocaleKey, onClick: (e) => { this.toggleDisplay(e, "LanguageLocaleKey"); }}),
+                  h("select", {ref: "LanguageLocaleKey", name: "LanguageLocaleKey", className: "hide", defaultValue: user.LanguageLocaleKey, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
+                    this.state.userLanguages?.map(q => h("option", {key: q.value, value: q.value}, q.label))
+                  ),
                   " | ",
-                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Locale: " + user.LocaleSidKey})
+                  h("div", {className: "pointer flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Update Locale: " + user.LocaleSidKey, onClick: (e) => { this.toggleDisplay(e, "LocaleSidKey"); }}),
+                  h("select", {ref: "LocaleSidKey", name: "LocaleSidKey", className: "hide", defaultValue: user.LanguageLocaleKey, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
+                    this.state.userLanguages?.map(q => h("option", {key: q.value, value: q.value}, q.label))
+                  ),
                 )
               )
             )
@@ -1871,26 +1921,22 @@ class AllDataRecordDetails extends React.PureComponent {
 }
 
 
-// props: {style: "base"|"warning"|"error"|"offline", icon: utility SVG name (without utility prefix),
-// bannerText: header, link: {text, props}, assistiveText: icon description, onClose: function}
 class AlertBanner extends React.PureComponent {
   // From SLDS Alert Banner spec https://www.lightningdesignsystem.com/components/alert/
 
   render() {
     let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
-    const theme = ["warning", "error", "offline"].includes(type) ? type : "info";
-    const themeClass = `slds-theme_${theme}`;
     return (
-      h("div", {className: `slds-notify slds-notify_alert ${themeClass}`, role: "alert"},
+      h("div", {className: `slds-notify slds-notify_alert slds-theme_${type}`, role: "alert"},
         h("span", {className: "slds-assistive-text"}, assistiveText | "Notification"),
-        h("span", {className: "slds-icon_container slds-m-right_small", title: iconTitle},
-          h("svg", {className: "slds-icon slds-icon_neither-small-nor-x-small slds-icon-text-default", viewBox: "0 0 52 52"},
+        h("span", {className: `slds-icon_container slds-icon-utility-${iconName} slds-m-right_small slds-no-flex slds-align-top`, title: iconTitle},
+          h("svg", {className: "slds-icon slds-icon_small", viewBox: "0 0 52 52"},
             h("use", {xlinkHref: `symbols.svg#${iconName}`})
           ),
         ),
         h("h2", {}, bannerText,
           h("p", {}, ""),
-          link && h("a", link.props, link.text)
+          link.text && h("a", link.props, link.text)
         ),
         onClose && h("div", {className: "slds-notify__close"},
           h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},

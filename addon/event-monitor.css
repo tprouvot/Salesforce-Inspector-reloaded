@@ -80,8 +80,8 @@ body {
 #user-info h1 {
   padding: 0 6px 0 10px;
 }
-#user-info span{
-  font-size: 1.2em;
+#user-info span {
+  font-size: 1em;
 }
 .sf-link {
   background-color: rgb(6, 28, 63);
@@ -143,58 +143,31 @@ body {
   margin-top: 10px;
   margin-bottom: 5px;
 }
-#result-table {
-  margin-top: 3px;
-  overflow: auto;
-  flex-basis: 0;
-  flex-grow: 1;
-  margin-bottom: 8px;
-}
 .area {
   background-color: #F8F8F8;
   padding: 8px 12px;
   border-radius: 5px;
   border: 1px solid #DDDBDA;
   margin: 12px 12px 0 12px;
-  flex-grow: 1;
-}
-.area.configure-import {
-  overflow-y: auto;
-}
-div[data-reactroot] > .area:last-child {
-  margin-bottom: 12px;
 }
 .area-header {
   margin-bottom: 12px;
 }
 h1 {
-  font-size: 1.125rem;
-  margin: 0px;
+  font-size: 1rem;
   display: inline;
   color: #080707;
   font-weight: 700;
   line-height: 1.25;
+  margin: revert;
 }
-.conf-section {
-  display: flex;
-  flex-direction: row;
-  max-height: calc(50% - 79px);
+#result-area h1 {
+  margin-right: 1em;
 }
 @media (max-width: 670px) {
   .conf-section {
     display: block;
   }
-}
-.conf-subsection {
-  flex-grow: 1;
-  flex-basis: 0;
-  display: flex;
-}
-.conf-subsection:last-child .area {
-  margin-left: 0;
-}
-.area.import-actions {
-  flex-grow: 0;
 }
 .conf-label, .columns-label, label {
   font-weight: normal;
@@ -205,22 +178,23 @@ h1 {
 .conf-label {
   display: inline-block;
   text-align: left;
-  width: 9em;
-  padding-right: 1em;
+  width: auto;
+  padding-right: 0.5em;
+}
+.conf-value {
+  display: inline-block;
+  margin-right: 1em;
+  width: auto;
+}
+.conf-replay-value {
+  width:100px;
 }
 .radio-buttons label {
   margin-right: 10px;
   align-items: end;
 }
-.conf-value {
-  display: inline-block;
-}
 .conf-line {
   margin-top: 5px;
-}
-.configure-import .conf-line {
-  display: flex;
-  align-items: flex-start;
 }
 .conf-error {
   color: #a00;
@@ -296,7 +270,7 @@ label.statusGroupEmpty {
   line-height: 14px;
   text-align: center;
 }
-#confirm-background {
+#confirm-replayId {
   position: fixed;
   top: 0;
   right: 0;
@@ -323,16 +297,12 @@ select,
 input[type=search],
 input[type=number],
 input[type=text] {
-  width: 335px;
   font-family: inherit;
   padding: 5px 13px;
   border: 1px solid #DDDBDA;
   border-radius: 0.25rem;
   height: 32px;
   position: relative;
-}
-input[type=number]{
-  width: 99px;
 }
 input.object-list {
   width: 296px;
@@ -406,45 +376,6 @@ textarea {
   border-radius: 0.25rem;
   border: 1px solid #DDDBDA;
 }
-#data {
-  resize: none;
-  white-space: pre;
-  word-wrap: normal;
-  height: auto;
-  width: 335px;
-  overflow: hidden;
-  text-align: center;
-  color: #777;
-  padding: 1.5em;
-  font: inherit;
-}
-.import-actions .conf-line {
-  display: flex;
-  align-items: center;
-  margin: 0;
-}
-.button-group{
-  white-space: nowrap;
-}
-.button-group button,
-.button-group .button,
-.button-group select,
-.button-group input {
-  border-left-width: 0;
-  border-radius: 0;
-  margin-right: 0
-}
-.button-group > :first-child,
-.button-group > [hidden] + * {
-  border-top-left-radius: 0.25rem;
-  border-bottom-left-radius: 0.25rem;
-  border-left-width: 1px;
-}
-.button-group > :last-child {
-  border-top-right-radius: 0.25rem;
-  border-bottom-right-radius: 0.25rem;
-  margin-right: 10px;
-}
 button, .button {
   border: 1px solid #DDDBDA;
   height: 32px;
@@ -498,21 +429,54 @@ button.contract .button-toggle-icon {
 .button.field-info .button-icon {
   -webkit-mask-image: url(images/salesforce-inspector-logo.svg);
 }
-.cancel-btn {
-  color: #c23934;
-}
-.cancel-btn:not(:disabled):hover,
-.cancel-btn:not(:disabled):active,
-.cancel-btn:not(:disabled):focus {
-  color: #a12b2b;
-}
 .area.result-area {
   padding: 0;
-  height: 40%;
+}
+#result-area {
+  flex: 1 1 0;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+.result-bar {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
 }
 #result-table {
   overflow: auto;
+  flex: 1 1 0;
   background-color: #fff;
-  margin: 0;
-  height: 100%;
+  border-top: 1px solid #DDDBDA;
+}
+.event-box {
+  margin: 4px;
+  padding: 8px;
+  clear:both;
+  float:left;
+  white-space: pre-wrap;
+}
+.event-not-selected {
+  border-bottom: 1px solid #DDDBDA;
+}
+.event-selected {
+  border: 2px solid rgb(3, 153, 63);
+}
+.channel-listening {
+  margin-left: 2%;
+  color: green
+}
+
+.channel-error {
+  margin-left: 2%;
+  color: red;
+}
+.reset-margin{
+  margin: 0;;
+}
+code {
+  width: -moz-available;
+  width: -webkit-fill-available;
+  width: fill-available;
 }

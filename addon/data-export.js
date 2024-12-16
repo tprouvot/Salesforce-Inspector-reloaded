@@ -87,9 +87,11 @@ class Model {
     this.exportStatus = "Ready";
     this.exportError = null;
     this.exportedData = null;
-    this.queryHistory = new QueryHistory("insextQueryHistory", 100);
+    let historyNb = localStorage.getItem("numberOfQueriesInHistory");
+    this.queryHistory = new QueryHistory("insextQueryHistory", historyNb ? historyNb : 100);
     this.selectedHistoryEntry = null;
-    this.savedHistory = new QueryHistory("insextSavedQueryHistory", 50);
+    let savedNb = localStorage.getItem("numberOfQueriesSaved");
+    this.savedHistory = new QueryHistory("insextSavedQueryHistory", savedNb ? savedNb : 50);
     this.selectedSavedEntry = null;
     this.expandAutocomplete = false;
     this.expandSavedOptions = false;
@@ -681,7 +683,8 @@ class Model {
         }
         let contextValueField = contextValueFields[0];
         let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
-        let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%'";
+        //let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%'";
+        let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/([\\'])/g, "\\$1") + "%'";
         if (contextValueField.sobjectDescribe.name.toLowerCase() === "recordtype"){
           let sobject = contextPath.split(".")[0];
           sobject = sobject.toLowerCase() === "recordtype" ? vm.autocompleteResults.sobjectName : sobject;
@@ -1470,7 +1473,7 @@ class App extends React.Component {
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
-          h("label", {title: "With this option, additionnal columns corresponding to Object names are removed from the query results and the exported data. These columns are useful during data import to automatically map objects."},
+          h("label", {title: "With this option, additional columns corresponding to Object names are removed from the query results and the exported data. These columns are useful during data import to automatically map objects."},
             h("input", {type: "checkbox", checked: model.prefHideRelations, onChange: this.onPrefHideRelationsChange}),
             " ",
             h("span", {}, "Hide Object Columns")

@@ -1,4 +1,4 @@
-<img src="[https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/master/addon/icon128.png?raw=true](https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/main/addon/icon128.png)" align="right">
+<img src="https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/main/addon/icon128.png" align="right">
 
 # Salesforce Inspector Reloaded
 
@@ -43,8 +43,12 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://tprouvot.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
 
-- Salesforce Developers Blog [Improve Your Productivity with Salesforce Inspector Reloaded](https://developer.salesforce.com/blogs/2024/07/improve-your-productivity-with-salesforce-inspector-reloaded)
-- SalesforceBen [article](https://www.salesforceben.com/salesforce-inspector-reloaded/), [video](https://youtu.be/dvYp5mKxxzM?si=hBCIaGOyqAJlerea)
+  - Salesforce Developers Blog [Improve Your Productivity with Salesforce Inspector Reloaded](https://developer.salesforce.com/blogs/2024/07/improve-your-productivity-with-salesforce-inspector-reloaded)
+- SalesforceBen :
+  - [Salesforce Inspector Reloaded](https://www.salesforceben.com/salesforce-inspector-reloaded/)
+  - [Video](https://youtu.be/dvYp5mKxxzM?si=hBCIaGOyqAJlerea)
+  - [Explore REST API With Salesforce Inspector Reloaded](https://www.salesforceben.com/explore-rest-api-with-salesforce-inspector-reloaded/)
+  - [Inspector Reloaded Update: Salesforce Event Monitor, Field Creator, and Export Config](https://www.salesforceben.com/inspector-reloaded-update-salesforce-event-monitor-field-creator-and-export-config/)
 - ApexHours [article](https://www.apexhours.com/salesforce-inspector-reloaded/)
 - SalesforceWay [podcast](https://salesforceway.com/podcast/salesforce-inspector-reloaded/)
 
@@ -85,7 +89,6 @@ Follow steps described in [how-to documentation](https://tprouvot.github.io/Sale
 - [Firefox Browser Add-ons](https://addons.mozilla.org/en-US/firefox/addon/salesforce-inspector-reloaded/)
 - [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/salesforce-inspector-relo/noclfopoifgfgnflgkakofglfeeambpd)
 
-
 ### Beta Version
 
 Welcome to the beta testing phase! Your input is crucial for refining our extension. Here's why we need you:
@@ -97,7 +100,7 @@ Why Beta Testing?
 
 Report Bugs: If you discover a bug, please fill in an issue [here](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=bug,beta&projects=&template=bug_report.md&title=[BETA]). Detailed bug reports help us address issues quickly.
 
-To become a beta tester, [install the release candidate version](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf).
+To become a beta tester, [install the beta version](https://chromewebstore.google.com/detail/salesforce-inspector-relo/lopjgjcglnncikiocpacfdbkmpbfmkcf).
 Thank you for shaping our extension's future! Your feedback makes it better.
 
 ### Local Installation

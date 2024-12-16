@@ -1,5 +1,29 @@
 # Release Notes
 
+
+## Version 1.25
+
+- Security improvements thanks to [Rikaard Hosein](https://github.com/rikaardhosein) [fix 661](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/661)
+- Fix `Use Favicon Color` option which was not working key [issue 634](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/634) raised by [Gary Woodhouse](https://github.com/Garywoo)
+- Add `Clear` button in Event Monitor and REST Explorer
+- Fix `Field Creator` shortcut key [issue 608](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/608)
+- Add `Flow Trigger Explorer` in shortcut links [feature 610](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/610) request by [JeffKrakowski](https://github.com/JeffKrakowski)
+- Add `Import` / `Export` configuration from Option page [feature 570](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/570)
+- Add `Field Creator` page to bulk create fields from the extension (contribution by [Santiago Parris](https://github.com/SantiParris8))
+- Add `Event Monitor` page to subscribe to Platform Events (contribution by [Antoine Leleu](https://github.com/AntoineLeleu-Salesforce))
+- Hide "What's new banner" in incognito mode [feature 517](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/517)
+- Persist selected tab when reloading Options page.
+- Add button in Options page to reset API Version to extension's default [feature 541](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/541)
+- Enable Salesforce Inspector Reloaded on Debug flow page [feature 552](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/552) request by [Andrew Russo](https://github.com/mavtron-andrewrusso)
+- Add option to highlight PROD with a 2px top border
+- Add response time in REST Explore [issue 539](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/539)
+- Add autocomplete feature for REST Explore page
+- Add option to increase the number of saved & history query in data export
+- Enable Salesforce Inspector Reloaded on Experience Builder and add compatibility for custom favicon
+- Add option to colorize sandbox banner in the same color as the favicon [doc](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=favico#customize-sandbox-banner-color)
+- Add "Object Access" link in Object popup tab to display Object permission details (Winter 25 feature)
+- Fix Platform Event links on popup [issue 500](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/500)
+
 ## Version 1.24
 
 - Fix issues [543](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/543), [538](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/538), [545](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/545) & [546](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/545)

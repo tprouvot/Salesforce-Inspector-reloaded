@@ -1,4 +1,5 @@
-export let apiVersion = localStorage.getItem("apiVersion") == null ? "61.0" : localStorage.getItem("apiVersion");
+export let defaultApiVersion = "62.0";
+export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 export let sessionError;
 export function nullToEmptyString(value) {
   // For react input fields, the value may not be null or undefined, so this will clean the value
@@ -32,13 +33,14 @@ export let sfConn = {
         this.sessionId = message.key;
       }
     }
-    const IS_SANDBOX = "isSandbox";
-    if (localStorage.getItem(sfHost + "_" + IS_SANDBOX) == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+FROM+Organization").then(res => {
-        localStorage.setItem(sfHost + "_" + IS_SANDBOX, res.records[0].IsSandbox);
+    if (localStorage.getItem(sfHost + "_trialExpirationDate") == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+,TrialExpirationDate+FROM+Organization").then(res => {
+        localStorage.setItem(sfHost + "_isSandbox", res.records[0].IsSandbox);
         localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
+        localStorage.setItem(sfHost + "_trialExpirationDate", res.records[0].TrialExpirationDate);
       });
     }
+    return this.sessionId;
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {
@@ -49,8 +51,8 @@ export let sfConn = {
     let xhr = new XMLHttpRequest();
     url += (url.includes("?") ? "&" : "?") + "cache=" + Math.random();
     const sfHost = "https://" + this.instanceHostname;
-    xhr.open(method, sfHost + url, true);
-
+    const fullUrl = new URL(url, sfHost);
+    xhr.open(method, fullUrl.toString(), true);
     xhr.setRequestHeader("Accept", "application/json; charset=UTF-8");
 
     if (api == "bulk") {

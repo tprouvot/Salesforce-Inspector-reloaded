@@ -57,7 +57,8 @@ class Model {
     if (args.has("sobject")) {
       this.importType = args.get("sobject");
     }
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
+    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
       document.body.classList.add("prod");
     }
@@ -943,7 +944,7 @@ class App extends React.Component {
     model.apiType = e.target.value;
     model.updateAvailableActions();
     model.importAction = model.availableActions[0].value;
-    model.importActionName = model.allActions.find(action => action.value == model.importAction).label;
+    model.importActionName = allActions.find(action => action.value == model.importAction).label;
     model.updateImportTableResult();
     model.didUpdate();
   }

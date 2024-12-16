@@ -46,7 +46,12 @@ body {
   background-image: url(images/lightning_blue_background.png);
   background-repeat: no-repeat;
   background-size: contain;
-  background-position: 0px 48px;}
+  background-position: 0px 48px;
+}
+.prod {
+  background-color: #e0a4b5;
+  background-image: url(images/lightning_red_background.png);
+}
 #user-info {
   background: #f7f9fb;
   height: 48px;

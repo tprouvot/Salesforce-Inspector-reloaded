@@ -53,9 +53,9 @@ class Model {
       let channel = args.get("channel");
       this.selectedChannel = channel;
       this.selectedChannelType = channel.endsWith("__e") ? "platformEvent" : "standardPlatformEvent";
-    } else if(args.get("channelType")){
-      this.selectedChannelType = args.get("channelType")
-    } else{
+    } else if (args.get("channelType")){
+      this.selectedChannelType = args.get("channelType");
+    } else {
       this.selectedChannelType = channelTypes[0].value;
     }
   }
@@ -82,6 +82,11 @@ class Model {
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.selectedEvent ? this.selectedEvent : this.events, null, "    "), null, "  ");
   }
+
+  clearEvents(){
+    this.events = [];
+  }
+
 
   /**
    * Show the spinner while waiting for a promise.
@@ -121,6 +126,7 @@ class App extends React.Component {
     this.onSelectEvent = this.onSelectEvent.bind(this);
     this.onReplayIdChange = this.onReplayIdChange.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
+    this.onClearEvents = this.onClearEvents.bind(this);
     this.confirmPopupYes = this.confirmPopupYes.bind(this);
     this.confirmPopupNo = this.confirmPopupNo.bind(this);
     this.retrievePlatformEvent = this.retrievePlatformEvent.bind(this);
@@ -133,7 +139,7 @@ class App extends React.Component {
     let channels = sessionChannel ? sessionChannel : [];
     let query;
 
-    if(channels.length == 0){
+    if (channels.length == 0){
       if (channelType == "standardPlatformEvent"){
         query = "SELECT Label, QualifiedApiName, DeveloperName FROM EntityDefinition"
                     + " WHERE IsCustomizable = FALSE AND IsEverCreatable = TRUE"
@@ -145,18 +151,18 @@ class App extends React.Component {
                     + " AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
       }
       await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
-      .then(result => {
-        result.records.forEach((channel) => {
-          channels.push({
-            name: channel.QualifiedApiName,
-            label: channel.Label + " (" + channel.QualifiedApiName + ")"
+        .then(result => {
+          result.records.forEach((channel) => {
+            channels.push({
+              name: channel.QualifiedApiName,
+              label: channel.Label + " (" + channel.QualifiedApiName + ")"
+            });
           });
+        })
+        .catch(err => {
+          console.error("An error occured fetching Event Channels of type " + channelType + ": ", err.message);
         });
-      })
-      .catch(err => {
-        console.error("An error occured fetching Event Channels of type " + channelType + ": ", err.message);
-      });
-      sessionStorage.setItem(sfHost + "_" + channelType,  JSON.stringify(channels));
+      sessionStorage.setItem(sfHost + "_" + channelType, JSON.stringify(channels));
     }
     return channels;
   }
@@ -195,24 +201,23 @@ class App extends React.Component {
     model.selectedChannelType = e.target.value;
 
     const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set('channelType', model.selectedChannelType);
-    window.history.replaceState(null, '', '?' + urlParams.toString());
+    urlParams.set("channelType", model.selectedChannelType);
+    window.history.replaceState(null, "", "?" + urlParams.toString());
 
     this.getEventChannels();
     model.didUpdate();
   }
 
   onChannelSelection(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.selectedChannel = e.target.value;
 
     const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set('channel', model.selectedChannel);
-    window.history.replaceState(null, '', '?' + urlParams.toString());
+    urlParams.set("channel", model.selectedChannel);
+    window.history.replaceState(null, "", "?" + urlParams.toString());
 
     model.didUpdate();
   }
-
 
   onReplayIdChange(e) {
     let {model} = this.props;
@@ -247,7 +252,7 @@ class App extends React.Component {
 
     //Load Salesforce Replay Extension
     let replayExtension = new cometdReplayExtension();
-    replayExtension.setChannel(channelSuffix +model.selectedChannel);
+    replayExtension.setChannel(channelSuffix + model.selectedChannel);
     replayExtension.setReplay(model.replayId);
     replayExtension.setExtensionEnabled = true;
     cometd.registerExtension("SalesforceReplayExtension", replayExtension);
@@ -302,6 +307,12 @@ class App extends React.Component {
   onCopyAsJson() {
     let {model} = this.props;
     model.copyAsJson();
+    model.didUpdate();
+  }
+
+  onClearEvents(){
+    let {model} = this.props;
+    model.clearEvents();
     model.didUpdate();
   }
 
@@ -399,7 +410,12 @@ class App extends React.Component {
             h("button", {disabled: model.events.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
           ),
           h("span", {className: "channel-listening"}, model.channelListening),
-          h("span", {className: "channel-error"}, model.channelError)
+          h("span", {className: "channel-error"}, model.channelError),
+          h("span", {className: "result-status flex-right"},
+            h("div", {className: "button-group"},
+              h("button", {disabled: model.events.length == 0, onClick: this.onClearEvents, title: "Clear Events"}, "Clear")
+            )
+          ),
         ),
         h("div", {id: "result-table"},
           h("div", {},

@@ -2,6 +2,7 @@
 import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString} from "./inspector.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
+import Toast from "./components/Toast.js";
 
 class Model {
 
@@ -84,9 +85,28 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
           {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab"}},
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
-          {option: Option, props: {type: "toggle", title: "Search metadata from Shortcut tab", key: "metadataShortcutSearch"}},
-          {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Searchable metadata from Shortcut tab",
+              key: "metadataShortcutSearchOptions",
+              checkboxes: [
+                {label: "Flows", name: "flows", checked: true},
+                {label: "Profiles", name: "profiles", checked: true},
+                {label: "PermissionSets", name: "permissionSets", checked: true},
+                {label: "Communities", name: "networks", checked: true},
+                {label: "Apex Classes", name: "classes", checked: false}
+              ]}
+          },
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Show buttons",
+              key: "hideButtonsOption",
+              checkboxes: [
+                {label: "Explore API", name: "explore-api", checked: true},
+                {label: "Org Limits", name: "org-limits", checked: true},
+                {label: "Options", name: "options", checked: true},
+                {label: "Generate Access Token", name: "generate-token", checked: true}
+              ]}
+          },
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
           {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
@@ -110,10 +130,12 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
+          {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
           {option: Option, props: {type: "toggle", title: "Show 'Delete Records' button ", key: "showDeleteRecordsButton", default: true}},
           {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
           {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
+          {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100}},
           {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50}},
           {option: Option, props: {type: "text", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}}
@@ -131,6 +153,25 @@ class OptionsTabSelector extends React.Component {
       {
         id: 5,
         tabTitle: "Tab5",
+        title: "Field Creator",
+        content: [
+          {option: Option,
+            props: {
+              type: "select",
+              title: "Field Naming Convention",
+              key: "fieldNamingConvention",
+              default: "pascal",
+              tooltip: "Controls how API names are auto-generated from field labels. PascalCase: 'My Field' -> 'MyField'. Underscores: 'My Field' -> 'My_Field'",
+              options: [
+                {label: "PascalCase", value: "pascal"},
+                {label: "Underscores", value: "underscore"}
+              ]
+            }}
+        ]
+      },
+      {
+        id: 6,
+        tabTitle: "Tab6",
         title: "Enable Logs",
         content: [
           {option: enableLogsOption, props: {key: 1}}
@@ -377,7 +418,9 @@ class Option extends React.Component {
       value = JSON.stringify(props.default);
       localStorage.setItem(this.key, value);
     }
-    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value) : value};
+    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value)
+      : this.type == "select" ? (value || props.default || props.options?.[0]?.value)
+      : value};
     this.title = props.title;
   }
 
@@ -396,6 +439,8 @@ class Option extends React.Component {
   render() {
     const id = this.key;
     const isTextOrNumber = this.type == "text" || this.type == "number";
+    const isSelect = this.type == "select";
+
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, this.title,
@@ -405,6 +450,18 @@ class Option extends React.Component {
       isTextOrNumber ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
           h("input", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
+        )
+      ))
+      : isSelect ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          h("select", {
+            className: "slds-input slds-m-right_small",
+            value: this.state[this.key],
+            onChange: this.onChange
+          },
+          this.props.options.map(opt =>
+            h("option", {key: opt.value, value: opt.value}, opt.label)
+          ))
         )
       ))
       : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
@@ -572,6 +629,67 @@ class FaviconOption extends React.Component {
   }
 }
 
+class MultiCheckboxButtonGroup extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.handleCheckboxChange = this.handleCheckboxChange.bind(this);
+
+    this.title = props.title;
+    this.key = props.storageKey;
+
+    // Load checkboxes from localStorage or default to props.checkboxes
+    const storedCheckboxes = localStorage.getItem(this.key) ? JSON.parse(localStorage.getItem(this.key)) : [];
+
+    // Merge checkboxes only if the size is different
+    const mergedCheckboxes = storedCheckboxes.length === props.checkboxes.length
+      ? storedCheckboxes
+      : this.mergeCheckboxes(storedCheckboxes, props.checkboxes);
+
+    this.state = {checkboxes: mergedCheckboxes};
+    if (storedCheckboxes.length !== props.checkboxes.length) {
+      localStorage.setItem(this.key, JSON.stringify(mergedCheckboxes)); // Save the merged state to localStorage
+    }
+  }
+
+  mergeCheckboxes = (storedCheckboxes, propCheckboxes) => propCheckboxes.map((checkbox) => {
+    const storedCheckbox = storedCheckboxes.find((item) => item.name === checkbox.name);
+    return storedCheckbox || checkbox;
+  });
+
+  handleCheckboxChange = (event) => {
+    const {name, checked} = event.target;
+    const updatedCheckboxes = this.state.checkboxes.map((checkbox) =>
+      checkbox.name === name ? {...checkbox, checked} : checkbox
+    );
+    localStorage.setItem(this.key, JSON.stringify(updatedCheckboxes));
+    this.setState({checkboxes: updatedCheckboxes});
+  };
+
+  render() {
+    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, this.title)
+      ),
+      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control"},
+          h("div", {className: "slds-checkbox_button-group"},
+            this.state.checkboxes.map((checkbox, index) =>
+              h("span", {className: "slds-button slds-checkbox_button", key: this.key + index},
+                h("input", {type: "checkbox", id: `${this.key}-${checkbox.value}-${index}`, name: checkbox.name, checked: checkbox.checked, onChange: this.handleCheckboxChange, title: checkbox.title}),
+                h("label", {className: "slds-checkbox_button__label", htmlFor: `${this.key}-${checkbox.value}-${index}`},
+                  h("span", {className: "slds-checkbox_faux"}, checkbox.label)
+                )
+              )
+            )
+          )
+        )
+      )
+    );
+  }
+}
+
 class APIKeyOption extends React.Component {
 
   constructor(props) {
@@ -620,8 +738,8 @@ class CSVSeparatorOption extends React.Component {
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "CSV Separator")
       ),
-      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align_center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align_center slds-gutters_small"},
         h("input", {type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: nullToEmptyString(this.state.csvSeparator), onChange: this.onChangeCSVSeparator})
       )
     );
@@ -687,13 +805,14 @@ class App extends React.Component {
 
     this.exportOptions = this.exportOptions.bind(this);
     this.importOptions = this.importOptions.bind(this);
+    this.hideToast = this.hideToast.bind(this);
     this.state = {importTitle: "Export Options"};
   }
 
   exportOptions() {
-    const localStorageData = { ...localStorage };
+    const localStorageData = {...localStorage};
     const jsonData = JSON.stringify(localStorageData, null, 2);
-    const blob = new Blob([jsonData], { type: "application/json" });
+    const blob = new Blob([jsonData], {type: "application/json"});
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.href = url;
@@ -707,7 +826,7 @@ class App extends React.Component {
     const fileInput = this.refs.fileInput;
 
     if (!fileInput.files.length) {
-      console.error('No file selected.');
+      console.error("No file selected.");
       return;
     }
 
@@ -720,50 +839,75 @@ class App extends React.Component {
         for (const [key, value] of Object.entries(importedData)) {
           localStorage.setItem(key, value);
         }
-        this.setState({ importStyle: "green", importTitle: "Import Successful" });
+        this.setState({
+          showToast: true,
+          toastMessage: "Options Imported Successfully!",
+          toastVariant: "success",
+          toastTitle: "Success"
+        });
+        setTimeout(this.hideToast, 3000);
       } catch (error) {
-        this.setState({ importStyle: "red", importTitle: "Import Failed" });
-        console.error('Error parsing JSON file:', error);
+        this.setState({
+          showToast: true,
+          toastMessage: "Import Failed",
+          toastVariant: "error",
+          toastTitle: "Error"
+        });
+        console.error("Error parsing JSON file:", error);
       }
     };
     reader.readAsText(file);
   }
 
+  hideToast() {
+    let {model} = this.props;
+    this.state = {showToast: false, toastMessage: ""};
+    model.didUpdate();
+  }
+
   render() {
-    let { model } = this.props;
+    const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
+    let {model} = this.props;
     return h("div", {},
-      h("div", { id: "user-info", className: "slds-border_bottom" },
-        h("a", { href: model.sfLink, className: "sf-link" },
-          h("svg", { viewBox: "0 0 24 24" },
-            h("path", { d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z" })
+      h("div", {id: "user-info", className: "slds-border_bottom"},
+        h("a", {href: model.sfLink, className: "sf-link"},
+          h("svg", {viewBox: "0 0 24 24"},
+            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
           ),
           " Salesforce Home"
         ),
-        h("h1", { className: "slds-text-title_bold" }, "Options"),
+        h("h1", {className: "slds-text-title_bold"}, "Options"),
         h("span", {}, " / " + model.userInfo),
-        h("div", { className: "flex-right" },
-          h("button", { className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: this.exportOptions, title: "Export Options" },
-            h("svg", { className: "slds-button__icon"},
-              h("use", { xlinkHref: "symbols.svg#download" })
+        h("div", {className: "flex-right"},
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: this.exportOptions, title: "Export Options"},
+            h("svg", {className: "slds-button__icon"},
+              h("use", {xlinkHref: "symbols.svg#download"})
             )
           ),
-          h("button", { className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: this.state.importTitle },
-            h("svg", { className: "slds-button__icon", style: { color: this.state.importStyle } },
-              h("use", { xlinkHref: "symbols.svg#upload" })
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: this.state.importTitle},
+            h("svg", {className: "slds-button__icon"},
+              h("use", {xlinkHref: "symbols.svg#upload"})
             )
           ),
           // Hidden file input for importing options
           h("input", {
             type: "file",
-            style: { display: 'none' },
+            style: {display: "none"},
             ref: "fileInput",
             onChange: this.importOptions,
             accept: "application/json"
           })
         )
       ),
-      h("div", { className: "main-container slds-card slds-m-around_small", id: "main-container_header" },
-        h(OptionsTabSelector, { model })
+      this.state.showToast
+        && h(Toast, {
+          variant: this.state.toastVariant,
+          title: this.state.toastTitle,
+          message: this.state.toastMessage,
+          onClose: this.hideToast
+        }),
+      h("div", {className: "main-container slds-card slds-m-around_small", id: "main-container_header"},
+        h(OptionsTabSelector, {model})
       )
     );
   }

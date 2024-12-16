@@ -10,7 +10,9 @@
     "default_title": "Open popup"
   },
   "minimum_chrome_version": "88",
-  "permissions": ["cookies"],
+  "permissions": [
+    "cookies"
+  ],
   "host_permissions": [
     "https://*.salesforce.com/*",
     "https://*.salesforce-setup.com/*",
@@ -50,8 +52,14 @@
         "https://*.builder.salesforce-experience.com/*"
       ],
       "all_frames": true,
-      "css": ["button.css", "inspect-inline.css"],
-      "js": ["button.js", "inspect-inline.js"]
+      "css": [
+        "button.css",
+        "inspect-inline.css"
+      ],
+      "js": [
+        "button.js",
+        "inspect-inline.js"
+      ]
     }
   ],
   "background": {
@@ -72,7 +80,9 @@
         "field-creator.html",
         "options.html"
       ],
-      "matches": ["https://*/*"],
+      "matches": [
+        "https://*/*"
+      ],
       "extension_ids": []
     }
   ],

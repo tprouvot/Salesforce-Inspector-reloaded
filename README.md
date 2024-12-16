@@ -1,6 +1,6 @@
-<img src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/master/addon/icon128.png?raw=true" align="right">
+<img src="https://raw.githubusercontent.com/tprouvot/Salesforce-Inspector-reloaded/main/addon/icon128.png" align="right">
 
-# Salesforce inspector reloaded
+# Salesforce Inspector Reloaded
 
 ![GitHub release](https://img.shields.io/github/v/release/tprouvot/Salesforce-Inspector-reloaded?sort=semver)
 [![Chrome Web Store Installs](https://img.shields.io/chrome-web-store/users/hpijlohoihegkfehhibggnkbjhoemldh)](https://chrome.google.com/webstore/detail/salesforce-inspector-relo/hpijlohoihegkfehhibggnkbjhoemldh)
@@ -43,7 +43,8 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://tprouvot.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
 
-- SalesforceBen
+  - Salesforce Developers Blog [Improve Your Productivity with Salesforce Inspector Reloaded](https://developer.salesforce.com/blogs/2024/07/improve-your-productivity-with-salesforce-inspector-reloaded)
+- SalesforceBen :
   - [Salesforce Inspector Reloaded](https://www.salesforceben.com/salesforce-inspector-reloaded/)
   - [Video](https://youtu.be/dvYp5mKxxzM?si=hBCIaGOyqAJlerea)
   - [Explore REST API With Salesforce Inspector Reloaded](https://www.salesforceben.com/explore-rest-api-with-salesforce-inspector-reloaded/)
@@ -53,6 +54,8 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 ## New features compared to original SF Inspector
 
+- REST Explore: use Salesforce APIs without external tool
+- Favicon customization for each org
 - Allow users to update API Version [feature 58](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58)
 - Add new "Shortcuts" tab to accelerate setup navigation [feature 42](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42)
 - Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup [feature 34](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34)
@@ -62,10 +65,15 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 ## Security and Privacy
 
-The Salesforce Inspector browser extension/plugin communicates directly between the user's web browser and the Salesforce servers. No data is sent to other parties and no data is persisted outside of Salesforce servers after the user leaves the Salesforce Inspector pages.
-The Inspector communicates via the official Salesforce webservice APIs on behalf of the currently logged in user. This means the Inspector will be capable of accessing nothing but the data and features the user has been granted access to in Salesforce.
+The Salesforce Inspector Reloaded browser extension/plugin communicates directly between the user's web browser and the Salesforce servers. No data is sent to other parties.
 
-All Salesforce API calls from the Inspector re-uses the access token/session used by the browser to access Salesforce. To acquire this access token the Salesforce Inspector requires permission to read browser cookie information for Salesforce domains.
+We are saving some info in the browser localStorage to avoid redundant queries and save user extension's preferences. None of the saved elements are related to Salesforce SObject data (Account, Contact etc.)
+
+You can find the list of all the localStorage saved [here](https://github.com/search?q=repo:tprouvot/Salesforce-Inspector-reloaded+"localStorage"+path:addon&type=code) and inspect what is stored by following [this tutorial](https://developer.chrome.com/docs/devtools/storage/localstorage)
+
+The extension communicates via the official Salesforce webservice APIs on behalf of the currently logged in user. This means the extension will be capable of accessing nothing but the data and features the user has been granted access to in Salesforce.
+
+All Salesforce API calls from the Inspector re-uses the access token/session used by the browser to access Salesforce (or the generated on if API Access Control is enabled). To acquire this access token the Salesforce Inspector requires permission to read browser cookie information for Salesforce domains.
 
 To validate the accuracy of this description, inspect the source code, monitor the network traffic in your browser or take my word.
 
@@ -113,6 +121,7 @@ Thank you for shaping our extension's future! Your feedback makes it better.
 
 Contributions are welcome!
 
+Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
 You can check for the [open issues](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues) and [check if any help is wanted](https://github.com/tprouvot/Salesforce-Inspector-reloaded/labels/help%20wanted)
 
 Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.

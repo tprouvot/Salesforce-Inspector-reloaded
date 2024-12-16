@@ -45,7 +45,7 @@ function showApiName(e) {
 }
 
 function init({sfHost, inDevConsole, inLightning, inInspector}) {
-  let addonVersion = chrome.runtime.getManifest().version_name.substring(0, 4);
+  let addonVersion = chrome.runtime.getManifest().version_name;
 
   sfConn.getSession(sfHost).then(() => {
     ReactDOM.render(h(App, {
@@ -1716,7 +1716,7 @@ class AllDataSelection extends React.PureComponent {
     return "https://" + sfHost + newUrl;
   }
   getSubscribeUrl(name){
-    return this.props.eventMonitorHref + '&channel=' + name;
+    return this.props.eventMonitorHref + "&channel=" + name;
   }
   setFlowDefinitionId(recordId){
     if (recordId && !this.state.flowDefinitionId){
@@ -1815,7 +1815,7 @@ class AllDataSelection extends React.PureComponent {
         ))),
         isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
         selectedValue.sobject.isEverCreatable && !selectedValue.sobject.name.endsWith("__e") ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
-        selectedValue.sobject.name.endsWith("__e") ? h("a", { href: this.getSubscribeUrl(selectedValue.sobject.name), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}), "Subscribe to Event")) : null,
+        selectedValue.sobject.name.endsWith("__e") ? h("a", {href: this.getSubscribeUrl(selectedValue.sobject.name), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}), "Subscribe to Event")) : null,
       )
     );
   }

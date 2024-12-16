@@ -3488,7 +3488,24 @@ a.slds-button--inverse:focus{
   line-height:1;
   background-color:var(--slds-c-icon-color-background, var(--sds-c-icon-color-background, transparent));
 }
-
+.slds-progress-ring .slds-icon_container{
+  line-height:0;
+}
+.slds-icon_container,
+.slds-icon__container{
+  display:inline-block;
+  border-radius:var(--slds-c-icon-radius-border, var(--sds-c-icon-radius-border, 0.25rem));
+  line-height:1;
+  background-color:var(--slds-c-icon-color-background, var(--sds-c-icon-color-background, transparent));
+}
+.slds-icon_container_circle,
+.slds-icon__container_circle,
+.slds-icon_container--circle,
+.slds-icon__container--circle{
+  /*! @css-var-fallback border-radius */
+  --slds-c-icon-radius-border:50%;
+  padding:0.5rem;
+}
 /* Input */
 
 .slds-input-has-icon .slds-input__icon{
@@ -6468,4 +6485,313 @@ a.slds-button--inverse:focus{
   border-bottom-right-radius:0;
   border-top-left-radius:4px;
   border-bottom-left-radius:4px;
+}
+.slds-listbox__icon-selected{
+  opacity:0;
+  fill:#0176d3;
+}
+.slds-listbox__option.slds-is-selected .slds-listbox__icon-selected{
+  opacity:1;
+}
+.slds-listbox__option.slds-is-selected .slds-listbox__option-icon{
+  color:#0176d3;
+}
+.slds-listbox__option-icon{
+  width:1.5rem;
+  display:-webkit-inline-box;
+  display:-ms-inline-flexbox;
+  display:inline-flex;
+  -ms-flex-line-pack:center;
+      align-content:center;
+  -webkit-box-align:center;
+      -ms-flex-align:center;
+          align-items:center;
+  -webkit-box-pack:center;
+      -ms-flex-pack:center;
+          justify-content:center;
+  color:var(--slds-g-color-neutral-base-50, #747474);
+}
+
+.slds-listbox__option[aria-disabled=true] .slds-listbox__option-icon{
+  color:currentColor;
+}
+.slds-listbox__option-text_entity,
+.slds-listbox__option-text--entity{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  display:block;
+  margin-bottom:0.125rem;
+}
+.slds-listbox__option-meta{
+  display:block;
+  margin-top:-0.25rem;
+  color:var(--slds-g-color-neutral-base-30, #444444);
+}
+
+.slds-listbox__option[aria-disabled=true] .slds-listbox__option-meta{
+  color:currentColor;
+}
+
+.slds-listbox_object-switcher,
+.slds-listbox--object-switcher{
+  -ms-flex-negative:0;
+      flex-shrink:0;
+  padding:0.125rem;
+}
+.slds-listbox_selection-group{
+  position:relative;
+  padding:0;
+  padding-right:3.75rem;
+  height:1.875rem;
+  overflow:hidden;
+}
+.slds-listbox_selection-group.slds-is-expanded{
+  height:auto;
+  padding:0;
+}
+.slds-listbox_selection-group .slds-listbox{
+  padding:0 0 0.125rem;
+}
+.slds-listbox_selection-group .slds-listbox-item{
+  padding:0.125rem 0.125rem 0;
+}
+.slds-listbox_selection-group .slds-listbox-toggle{
+  position:absolute;
+  top:50%;
+  -webkit-transform:translateY(-50%);
+          transform:translateY(-50%);
+  right:0.5rem;
+}
+.slds-listbox_selection-group .slds-listbox-toggle .slds-button{
+  line-height:1;
+}
+.slds-combobox-addon_start .slds-combobox__input{
+  border-top-right-radius:0;
+  border-bottom-right-radius:0;
+  border-top-left-radius:4px;
+  border-bottom-left-radius:4px;
+}
+.slds-combobox-addon_end .slds-combobox__input{
+  border-top-right-radius:4px;
+  border-bottom-right-radius:4px;
+  border-top-left-radius:0;
+  border-bottom-left-radius:0;
+}
+.slds-has-inline-listbox,
+.slds-has-object-switcher{
+  -webkit-box-orient:horizontal;
+  -webkit-box-direction:normal;
+      -ms-flex-direction:row;
+          flex-direction:row;
+  background:var(--slds-g-color-neutral-base-100, white);
+  border:1px solid var(--slds-g-color-border-base-4, #e5e5e5);
+  border-radius:0.25rem;
+}
+.slds-has-inline-listbox .slds-combobox,
+.slds-has-object-switcher .slds-combobox{
+  -ms-flex-preferred-size:50%;
+      flex-basis:50%;
+  -ms-flex-negative:0;
+      flex-shrink:0;
+}
+.slds-has-inline-listbox .slds-combobox__input,
+.slds-has-object-switcher .slds-combobox__input{
+  min-height:100%;
+  line-height:calc(1.875rem - 2px);
+  border:0;
+  padding-top:0.125rem;
+  padding-bottom:0.125rem;
+}
+.slds-has-inline-listbox .slds-combobox__input:focus, .slds-has-inline-listbox .slds-combobox__input:active,
+.slds-has-object-switcher .slds-combobox__input:focus,
+.slds-has-object-switcher .slds-combobox__input:active{
+  outline:0;
+  -webkit-box-shadow:none;
+          box-shadow:none;
+}
+.slds-has-inline-listbox .slds-combobox__input:focus,
+.slds-has-object-switcher .slds-combobox__input:focus{
+  outline:2px solid var(--slds-g-color-brand-base-40);
+  outline-offset:-0.25rem;
+}
+.slds-has-inline-listbox .slds-listbox_object-switcher ~ .slds-listbox_inline,
+.slds-has-inline-listbox .slds-listbox--object-switcher ~ .slds-listbox--inline,
+.slds-has-inline-listbox .slds-combobox_container__icon ~ .slds-listbox_inline,
+.slds-has-inline-listbox .slds-combobox_container__icon ~ .slds-listbox--inline,
+.slds-has-object-switcher .slds-listbox_object-switcher ~ .slds-listbox_inline,
+.slds-has-object-switcher .slds-listbox--object-switcher ~ .slds-listbox--inline,
+.slds-has-object-switcher .slds-combobox_container__icon ~ .slds-listbox_inline,
+.slds-has-object-switcher .slds-combobox_container__icon ~ .slds-listbox--inline{
+  margin-left:0.5rem;
+}
+.slds-has-inline-listbox.slds-has-icon_left,
+.slds-has-object-switcher.slds-has-icon_left{
+  padding-left:2.25rem;
+}
+.slds-has-inline-listbox.slds-has-icon_left .slds-combobox_container__icon,
+.slds-has-object-switcher.slds-has-icon_left .slds-combobox_container__icon{
+  width:1rem;
+  height:1rem;
+  position:absolute;
+  left:1.125rem;
+  top:50%;
+  margin-top:-0.5rem;
+}
+
+.slds-has-inline-listbox [role=listbox]{
+  display:-webkit-inline-box;
+  display:-ms-inline-flexbox;
+  display:inline-flex;
+  padding:0 0.125rem;
+}
+.slds-has-inline-listbox .slds-combobox__input-value{
+  -webkit-box-shadow:0 0 0 2px var(--slds-g-color-neutral-base-100, white) inset, 0 0 0 3px var(--slds-g-color-border-base-1, #e5e5e5) inset;
+          box-shadow:0 0 0 2px var(--slds-g-color-neutral-base-100, white) inset, 0 0 0 3px var(--slds-g-color-border-base-1, #e5e5e5) inset;
+}
+.slds-listbox_vertical .slds-listbox__option_entity,
+.slds-listbox_vertical .slds-listbox__option--entity,
+.slds-listbox--vertical .slds-listbox__option_entity,
+.slds-listbox--vertical .slds-listbox__option--entity{
+  padding:0.25rem 0.75rem;
+}
+.slds-listbox_vertical .slds-listbox__option_entity .slds-media__figure,
+.slds-listbox_vertical .slds-listbox__option--entity .slds-media__figure,
+.slds-listbox--vertical .slds-listbox__option_entity .slds-media__figure,
+.slds-listbox--vertical .slds-listbox__option--entity .slds-media__figure{
+  margin-right:0.5rem;
+}
+.slds-listbox_vertical .slds-listbox__option_has-meta .slds-media__figure,
+.slds-listbox_vertical .slds-listbox__option--has-meta .slds-media__figure,
+.slds-listbox--vertical .slds-listbox__option_has-meta .slds-media__figure,
+.slds-listbox--vertical .slds-listbox__option--has-meta .slds-media__figure{
+  margin-top:0.25rem;
+}
+[dir=rtl] .slds-setup-assistant__step-summary .slds-media__figure{
+  margin-left:0.75rem;
+}
+[dir=rtl] .slds-setup-assistant__step-detail .slds-media__figure{
+  margin-left:0.75rem;
+}
+.slds-media_reverse > .slds-media__figure,
+.slds-media--reverse > .slds-media__figure{
+  -webkit-box-ordinal-group:2;
+      -ms-flex-order:1;
+          order:1;
+}
+.slds-media_reverse.slds-media_small .slds-media__figure, .slds-media_reverse.slds-media--small .slds-media__figure,
+.slds-media--reverse.slds-media_small .slds-media__figure,
+.slds-media--reverse.slds-media--small .slds-media__figure{
+  margin-left:0.25rem;
+}
+
+.slds-media_double > .slds-media__figure,
+.slds-media--double > .slds-media__figure{
+  -webkit-box-ordinal-group:2;
+      -ms-flex-order:1;
+          order:1;
+}
+.slds-media_double .slds-media__figure_reverse,
+.slds-media_double .slds-media__figure--reverse,
+.slds-media--double .slds-media__figure_reverse,
+.slds-media--double .slds-media__figure--reverse{
+  -webkit-box-ordinal-group:4;
+      -ms-flex-order:3;
+          order:3;
+  margin:0 0 0 1rem;
+}
+.slds-media__figure{
+  -ms-flex-negative:0;
+      flex-shrink:0;
+  margin-right:0.75rem;
+}
+
+.slds-media__figure_fixed-width{
+  min-width:3rem;
+}
+.slds-media_small .slds-media__figure,
+.slds-media--small .slds-media__figure{
+  margin-right:0.25rem;
+}
+
+.slds-media_small .slds-media__figure_reverse,
+.slds-media--small .slds-media__figure--reverse{
+  margin-left:0.25rem;
+}
+.slds-media_large .slds-media__figure,
+.slds-media--large .slds-media__figure{
+  margin-right:1.5rem;
+}
+
+.slds-media_large .slds-media__figure_reverse,
+.slds-media--large .slds-media__figure--reverse{
+  margin-left:1.5rem;
+}
+.slds-media__figure_reverse,
+.slds-media__figure--reverse{
+  margin:0 0 0 0.75rem;
+}
+@media (max-width: 48em){
+  .slds-media_responsive,
+.slds-media--responsive{
+    display:block;
+  }
+  .slds-media_responsive .slds-media__figure,
+.slds-media--responsive .slds-media__figure{
+    margin:0 0 0.75rem;
+  }
+}
+.slds-timeline__item_expandable .slds-media__figure{
+  margin-right:0.25rem;
+  z-index:1;
+}
+.slds-timeline__item_expandable .slds-media__figure .slds-button_icon{
+  margin-right:0.5rem;
+}
+.slds-drop-zone__label .slds-media__body{
+  -ms-flex-preferred-size:auto;
+      flex-basis:auto;
+}
+.slds-builder-header__item-action .slds-media__body,
+.slds-builder-header__item-label .slds-media__body{
+  -ms-flex-preferred-size:auto;
+      flex-basis:auto;
+}
+.slds-notification .slds-media__body{
+  opacity:1;
+  -webkit-transition-property:opacity;
+  transition-property:opacity;
+  -webkit-transition-duration:0.4s;
+          transition-duration:0.4s;
+  -webkit-transition-timing-function:ease-in-out;
+          transition-timing-function:ease-in-out;
+}
+.slds-image__title_overlay .slds-media__body,
+.slds-image__title--overlay .slds-media__body,
+.slds-file__title_overlay .slds-media__body,
+.slds-file__title--overlay .slds-media__body{
+  z-index:1;
+}
+.slds-media_double .slds-media__body,
+.slds-media--double .slds-media__body{
+  -webkit-box-ordinal-group:3;
+      -ms-flex-order:2;
+          order:2;
+}
+.slds-media__body{
+  -webkit-box-flex:1;
+      -ms-flex:1;
+          flex:1;
+  min-width:0;
+}
+
+.slds-media__body,
+.slds-media__body > :last-child{
+  margin-bottom:0;
+}
+.slds-media_inline .slds-media__body{
+  -webkit-box-flex:0;
+      -ms-flex:0 1 auto;
+          flex:0 1 auto;
 }

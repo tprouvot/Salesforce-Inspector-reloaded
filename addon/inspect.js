@@ -668,7 +668,7 @@ class FieldRow extends TableRow {
         + (!fieldDescribe.nillable ? ", required" : "")
         + (fieldDescribe.restrictedPicklist ? ", restricted" : "")
         + (fieldDescribe.unique ? ", unique" : "")
-        + (fieldDescribe.calculated ? "*" : "");
+        + (fieldDescribe.calculated ? ", calculated" : "");
     }
     let particle = this.entityParticle;
     if (particle) {
@@ -685,7 +685,7 @@ class FieldRow extends TableRow {
         + (particle.IsHtmlFormatted ? ", html" : "")
         + (!particle.IsNillable ? ", required" : "")
         + (particle.IsUnique ? ", unique" : "")
-        + (particle.IsCalculated ? "*" : "");
+        + (particle.IsCalculated ? ", calculated" : "");
     }
     return undefined;
   }

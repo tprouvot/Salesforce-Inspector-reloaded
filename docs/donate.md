@@ -13,7 +13,7 @@ Please note that:
 
 Once again, **thank you very much** for your support and for using the extension!
 
-[![DONATE](https://img.shields.io/badge/donate-blue?style=for-the-badge)](https://github.com/tprouvot "Contribute financially to the extension")
+[![DONATE](https://img.shields.io/badge/donate-blue?style=for-the-badge)](https://github.com/sponsors/tprouvot "Contribute financially to the extension")
 
 
 With appreciation,

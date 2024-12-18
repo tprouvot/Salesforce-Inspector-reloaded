@@ -398,17 +398,19 @@ class App extends React.PureComponent {
               value: apiVersionInput.split(".0")[0]
             })
           ),
-          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Donate"},
+          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container", title: `Shortcut :${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"}`},
+            h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
+              h("use", {xlinkHref: "symbols.svg#type", style: {fill: "#9c9c9c"}})
+            )
+          ),
+          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container", title: "Donate"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/donate/", target: linkTarget},
               h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
                 h("use", {xlinkHref: "symbols.svg#heart", style: {fill: "#9c9c9c"}})
               )
             )
           ),
-          h("div", {className: "slds-col slds-size_5-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text", title: "Shortcut to open the popup"}, `${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"}`)
-          ),
-          h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
+          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
               h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
                 h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})

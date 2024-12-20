@@ -55,7 +55,7 @@ export let sfConn = {
     const fullUrl = new URL(url, sfHost);
     xhr.open(method, fullUrl.toString(), true);
     xhr.setRequestHeader("Accept", "application/json; charset=UTF-8");
-    xhr.setRequestHeader("Sforce-Call-Options", `client:${clientId}`);
+    xhr.setRequestHeader("Sforce-Call-Options", `client=${clientId}`);
 
     if (api == "bulk") {
       xhr.setRequestHeader("X-SFDC-Session", this.sessionId);

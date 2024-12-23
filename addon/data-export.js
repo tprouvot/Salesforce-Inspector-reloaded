@@ -1424,7 +1424,7 @@ class App extends React.Component {
             h("label", {},
               h("input", {type: "checkbox", checked: model.queryAll, onChange: this.onQueryAllChange, disabled: model.queryTooling}),
               " ",
-              h("span", {}, "Add deleted records?")
+              h("span", {}, "Deleted/Archived Records?")
             ),
             h("label", {title: "With the tooling API you can query more metadata, but you cannot query regular data"},
               h("input", {type: "checkbox", checked: model.queryTooling, onChange: this.onQueryToolingChange, disabled: model.queryAll}),

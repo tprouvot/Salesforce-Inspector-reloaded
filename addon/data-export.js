@@ -1150,9 +1150,8 @@ class App extends React.Component {
   }
   onPrefHideRelationsChange(e) {
     let {model} = this.props;
-    model.prefHideRelations = e.target.checked;
-    model.refreshColumnsVisibility();
-    model.didUpdate();
+    model.prefHideRelations = !model.prefHideRelations;
+    this.onExport();
   }
   onSelectHistoryEntry(e) {
     let {model} = this.props;
@@ -1479,19 +1478,19 @@ class App extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#download"})
               )
             ),
+            h("button", {disabled: !model.canCopy(), onClick: this.onPrefHideRelationsChange, title: `${model.prefHideRelations ? "Show" : "Hide"} Object Columns`},
+              h("svg", {className: `button-icon ${model.prefHideRelations ? "" : "disabled"}`},
+                h("use", {xlinkHref: "symbols.svg#hide"})
+              )
+            ),
             localStorage.getItem("showDeleteRecordsButton") !== "false"
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
-          h("label", {title: "With this option, additional columns corresponding to Object names are removed from the query results and the exported data. These columns are useful during data import to automatically map objects."},
-            h("input", {type: "checkbox", checked: model.prefHideRelations, onChange: this.onPrefHideRelationsChange}),
-            " ",
-            h("span", {}, "Hide Object Columns")
-          ),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
-            h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
+            h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop")
           ),
         ),
         h("textarea", {id: "result-text", readOnly: true, value: nullToEmptyString(model.exportError), hidden: model.exportError == null}),

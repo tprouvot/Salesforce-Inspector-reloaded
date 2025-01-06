@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, getLinkTarget} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
 import {copyToClipboard} from "./data-load.js";
@@ -19,6 +19,7 @@ class Model {
     this.sfLink = "https://" + this.sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
+    this.showMetrics = false;
     this.userInfo = "...";
     this.events = [];
     this.selectedChannelType = "";
@@ -123,6 +124,8 @@ class App extends React.Component {
     this.onSuscribeToChannel = this.onSuscribeToChannel.bind(this);
     this.onUnsuscribeToChannel = this.onUnsuscribeToChannel.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
+    this.onToggleMetrics = this.onToggleMetrics.bind(this);
+    this.onMetricsClick = this.onMetricsClick.bind(this);
     this.onSelectEvent = this.onSelectEvent.bind(this);
     this.onReplayIdChange = this.onReplayIdChange.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
@@ -132,6 +135,7 @@ class App extends React.Component {
     this.retrievePlatformEvent = this.retrievePlatformEvent.bind(this);
     this.disableSubscribe = this.disableSubscribe.bind(this);
     this.getEventChannels();
+    this.state = {peLimits: []};
   }
 
   async retrievePlatformEvent(channelType, sfHost){
@@ -316,10 +320,74 @@ class App extends React.Component {
     model.didUpdate();
   }
 
-  onToggleHelp(e) {
+  onToggleHelp() {
     let {model} = this.props;
     model.toggleHelp();
     model.didUpdate();
+  }
+
+  onToggleMetrics(){
+    let {model} = this.props;
+    if (this.state.peLimits.length == 0){
+      sfConn.rest("/services/data/v" + apiVersion + "/" + "limits").then(res => {
+        let peLimits = [];
+        Object.keys(res).forEach((key) => {
+          if (key.endsWith("PlatformEvents")){
+            peLimits.push({
+              key,
+              "label": key.replace(/([A-Z])/g, " $1"),
+              "max": res[key].Max,
+              "remaining": res[key].Remaining,
+              "consumption": (res[key].Max - res[key].Remaining) / res[key].Max
+            });
+          }
+        });
+        //sort the list by descending consumption
+        peLimits.sort((a, b) => b.consumption - a.consumption);
+        this.setState({peLimits});
+        model.showMetrics = !model.showMetrics;
+        model.didUpdate();
+      });
+    } else {
+      model.showMetrics = !model.showMetrics;
+      model.didUpdate();
+    }
+  }
+
+  onMetricsClick(e){
+    let {model} = this.props;
+    console.log(e.target.innerText);
+    let today = new Date();
+    let startDate, endDate;
+    switch (e.target.innerText){
+      case "Daily":
+        //2025-01-06T11:23:01.251+01:00
+        endDate = this.getDatetime(today);
+        startDate = this.getDate(today);
+        break;
+      case "Hourly":
+        today = new Date();
+        break;
+      case "FifteenMinutes":
+        today = new Date();
+        break;
+    }
+    let query = `SELECT EventName, EventType, UsageType, Value, StartDate, EndDate FROM PlatformEventUsageMetric WHERE TimeSegment='${e.target.innerText}' AND StartDate > ${startDate} AND EndDate < ${endDate}`;
+    let args = new URLSearchParams();
+    args.set("host", model.sfHost);
+    args.set("query", query);
+    window.open("data-export.html?" + args, getLinkTarget(e));
+  }
+
+  getDatetime(d){
+    return this.pad(d.getFullYear(), 4) + "-" + this.pad(d.getMonth() + 1, 2) + "-" + this.pad(d.getDate(), 2) + "T"
+      + this.pad(d.getHours(), 2) + ":" + this.pad(d.getMinutes(), 2) + ":" + this.pad(d.getSeconds(), 2) + "." + this.pad(d.getMilliseconds(), 3)
+      + (d.getTimezoneOffset() <= 0 ? "+" : "-") + this.pad(Math.floor(Math.abs(d.getTimezoneOffset()) / 60), 2)
+      + ":" + this.pad(Math.abs(d.getTimezoneOffset()) % 60, 2);
+  }
+
+  pad(n, d){
+    return ("000" + n).slice(-d);
   }
 
   confirmPopupYes() {
@@ -343,6 +411,7 @@ class App extends React.Component {
 
   render() {
     let {model} = this.props;
+    let {peLimits} = this.state;
 
     return h("div", {},
       h("div", {id: "user-info"},
@@ -361,9 +430,16 @@ class App extends React.Component {
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
           ),
-          h("a", {href: "#", id: "help-btn", title: "Import Help", onClick: this.onToggleHelp},
-            h("div", {className: "icon"})
+          h("a", {href: "#", id: "metrics-btn", title: "Show Metrics", onClick: this.onToggleMetrics},
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#metrics"})
+            )
           ),
+          h("a", {href: "#", id: "help-btn", title: "Import Help", onClick: this.onToggleHelp},
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#question"})
+            )
+          )
         ),
       ),
       h("div", {className: "area"},
@@ -401,7 +477,32 @@ class App extends React.Component {
           h("p", {}, "Use for monitor Platform Event queue."),
           h("p", {}, "Subscribe to a channel to see events in the result area. Use 'Replay From' to define the scope."),
           h("p", {}, "Supports Standard and Custom Platform Events")
-        )
+        ),
+        h("div", {hidden: !model.showMetrics, className: "help-text"},
+          h("h3", {}, "Platform Events Limits"),
+          h("div", {},
+            peLimits.map(limit =>
+              h("p", {key: limit.key}, `${limit.label}: Remaining ${limit.remaining} out of ${limit.max} (${(limit.consumption * 100).toFixed(2)}% consumed)`)
+            )
+          ),
+          h("div", {style: {display: "flex", alignItems: "center", gap: "8px"}}, [
+            h("svg", {className: "icon", viewBox: "0 0 52 52"},
+              h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})
+            ),
+            h("p", {}, [
+              "If you are facing the error 'No such column 'EventName' on entity 'PlatformEventUsageMetric', please check related ",
+              h("a", {
+                href: "https://developer.salesforce.com/docs/atlas.en-us.244.0.api_meta.meta/api_meta/meta_platformeventsettings.htm",
+                target: "_blank"
+              }, "documentation"), " to enable it."
+            ])
+          ]),
+          h("p", {}, ["Query PlatformEventUsageMetric ",
+            h("a", {href: "#", className: "button-space", onClick: (e) => { this.onMetricsClick(e); }}, "Daily"), //TODO finish link
+            h("a", {href: "#", className: "button-space", onClick: (e) => { this.onMetricsClick(e); }}, "Hourly"),
+            h("a", {href: "#", onClick: (e) => { this.onMetricsClick(e); }}, "FifteenMinutes"), "."
+          ])
+        ),
       ),
       h("div", {className: "area", id: "result-area"},
         h("div", {className: "result-bar"},

@@ -525,7 +525,7 @@ class App extends React.Component {
         h("div", {id: "result-table"},
           h("div", {},
             h("pre", {className: "language-json reset-margin"}, // Set the language class to JSON for Prism to highlight
-              model.events.map((event, index) => h("code", {onClick: this.onSelectEvent, id: index, key: event, value: event, className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
+              model.events.map((event, index) => h("code", {onClick: this.onSelectEvent, id: index, key: event.id, value: event, className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
                 JSON.stringify(event, null, 4))
               )
             )

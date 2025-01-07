@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, nullToEmptyString} from "./inspector.js";
+import {sfConn, apiVersion, nullToEmptyString, getLinkTarget} from "./inspector.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
@@ -319,7 +319,7 @@ class Model {
     args.set("data", encodedData);
     if (this.queryTooling) args.set("apitype", "Tooling");
 
-    window.open("data-import.html?" + args, getLinkTarget(e));
+    window.open("data-import.html?" + args, getLinkTarget(e, false));
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -1526,14 +1526,6 @@ class App extends React.Component {
 
   });
 
-}
-
-function getLinkTarget(e) {
-  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
-    return "_blank";
-  } else {
-    return "_top";
-  }
 }
 
 function getSeparator() {

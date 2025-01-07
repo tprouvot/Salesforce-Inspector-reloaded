@@ -481,6 +481,6 @@ code {
   width: -webkit-fill-available;
   width: fill-available;
 }
-a:visited {
+.help-text a:visited {
   color: #0176d3;
 }

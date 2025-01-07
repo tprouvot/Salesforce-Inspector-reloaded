@@ -354,41 +354,48 @@ class App extends React.Component {
     }
   }
 
-  onMetricsClick(e){
-    let {model} = this.props;
-    console.log(e.target.innerText);
-    let today = new Date();
-    let startDate, endDate;
-    switch (e.target.innerText){
+  onMetricsClick(e) {
+    const {model} = this.props;
+    const timeSegment = e.target.innerText;
+    const now = new Date();
+    let startDate,
+      endDate = this.getDatetime(now);
+
+    switch (timeSegment) {
       case "Daily":
-        //2025-01-06T11:23:01.251+01:00
-        endDate = this.getDatetime(today);
-        startDate = this.getDate(today);
+        startDate = this.getDatetime(new Date(now.setDate(now.getDate() - 29)));
         break;
       case "Hourly":
-        today = new Date();
+        startDate = this.getDatetime(new Date(now.setHours(now.getHours() - 24)));
         break;
       case "FifteenMinutes":
-        today = new Date();
+        startDate = this.getDatetime(new Date(now.setHours(now.getHours() - 1)));
         break;
+      default:
+        console.error("Invalid TimeSegment value.");
+        return;
     }
-    let query = `SELECT EventName, EventType, UsageType, Value, StartDate, EndDate FROM PlatformEventUsageMetric WHERE TimeSegment='${e.target.innerText}' AND StartDate > ${startDate} AND EndDate < ${endDate}`;
-    let args = new URLSearchParams();
-    args.set("host", model.sfHost);
-    args.set("query", query);
-    window.open("data-export.html?" + args, getLinkTarget(e));
+
+    const query = `SELECT EventName, EventType, UsageType, Value, StartDate, EndDate FROM PlatformEventUsageMetric
+                   WHERE TimeSegment='${timeSegment}' AND StartDate > ${startDate} AND EndDate < ${endDate}`;
+
+    const args = new URLSearchParams({host: model.sfHost, query});
+    window.open(`data-export.html?${args}`, getLinkTarget(e));
+    e.preventDefault();
   }
 
-  getDatetime(d){
-    return this.pad(d.getFullYear(), 4) + "-" + this.pad(d.getMonth() + 1, 2) + "-" + this.pad(d.getDate(), 2) + "T"
-      + this.pad(d.getHours(), 2) + ":" + this.pad(d.getMinutes(), 2) + ":" + this.pad(d.getSeconds(), 2) + "." + this.pad(d.getMilliseconds(), 3)
-      + (d.getTimezoneOffset() <= 0 ? "+" : "-") + this.pad(Math.floor(Math.abs(d.getTimezoneOffset()) / 60), 2)
-      + ":" + this.pad(Math.abs(d.getTimezoneOffset()) % 60, 2);
+  getDatetime(d) {
+    return (
+      `${this.pad(d.getFullYear(), 4)}-${this.pad(d.getMonth() + 1, 2)}-${this.pad(d.getDate(), 2)}T`
+      + `${this.pad(d.getHours(), 2)}:${this.pad(d.getMinutes(), 2)}:${this.pad(d.getSeconds(), 2)}.`
+      + `${this.pad(d.getMilliseconds(), 3)}${d.getTimezoneOffset() <= 0 ? "+" : "-"}${this.pad(Math.abs(d.getTimezoneOffset()) / 60, 2)}:${this.pad(Math.abs(d.getTimezoneOffset()) % 60, 2)}`
+    );
   }
 
-  pad(n, d){
-    return ("000" + n).slice(-d);
+  pad(n, d) {
+    return `000${n}`.slice(-d);
   }
+
 
   confirmPopupYes() {
     let {model} = this.props;
@@ -485,23 +492,22 @@ class App extends React.Component {
               h("p", {key: limit.key}, `${limit.label}: Remaining ${limit.remaining} out of ${limit.max} (${(limit.consumption * 100).toFixed(2)}% consumed)`)
             )
           ),
+          h("p", {}, "Query PlatformEventUsageMetric:"),
+          h("a", {href: "#", className: "button-space", onClick: (e) => { this.onMetricsClick(e); }}, "Daily"), //TODO finish link
+          h("a", {href: "#", className: "button-space", onClick: (e) => { this.onMetricsClick(e); }}, "Hourly"),
+          h("a", {href: "#", onClick: (e) => { this.onMetricsClick(e); }}, "FifteenMinutes"),
           h("div", {style: {display: "flex", alignItems: "center", gap: "8px"}}, [
             h("svg", {className: "icon", viewBox: "0 0 52 52"},
               h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})
             ),
             h("p", {}, [
-              "If you are facing the error 'No such column 'EventName' on entity 'PlatformEventUsageMetric', please check related ",
+              "If you are facing the error: No such column 'EventName' on entity 'PlatformEventUsageMetric', please check related ", //TODO enable PlatformEventSettings.enableEnhancedUsageMetrics from extension
               h("a", {
                 href: "https://developer.salesforce.com/docs/atlas.en-us.244.0.api_meta.meta/api_meta/meta_platformeventsettings.htm",
                 target: "_blank"
               }, "documentation"), " to enable it."
             ])
           ]),
-          h("p", {}, ["Query PlatformEventUsageMetric ",
-            h("a", {href: "#", className: "button-space", onClick: (e) => { this.onMetricsClick(e); }}, "Daily"), //TODO finish link
-            h("a", {href: "#", className: "button-space", onClick: (e) => { this.onMetricsClick(e); }}, "Hourly"),
-            h("a", {href: "#", onClick: (e) => { this.onMetricsClick(e); }}, "FifteenMinutes"), "."
-          ])
         ),
       ),
       h("div", {className: "area", id: "result-area"},

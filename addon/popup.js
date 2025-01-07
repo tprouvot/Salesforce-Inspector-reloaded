@@ -189,7 +189,7 @@ class App extends React.PureComponent {
     if (action === "all") {
       refs.showAllDataBox.refs?.showAllDataBoxSObject?.[target]();
     } else if (action === "click" && refs[target]) {
-      refs[target].target = getLinkTarget(e, true);
+      refs[target].target = getLinkTarget(e);
       refs[target].click();
     } else if (action === "tab") {
       refs.showAllDataBox.refs[target].click();

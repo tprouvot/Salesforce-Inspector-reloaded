@@ -372,9 +372,6 @@ class App extends React.Component {
       case "FifteenMinutes":
         startDate = this.getDatetime(new Date(now.setHours(now.getHours() - 1)));
         break;
-      default:
-        console.error("Invalid TimeSegment value.");
-        return;
     }
 
     const query = `SELECT EventName, EventType, UsageType, Value, StartDate, EndDate FROM PlatformEventUsageMetric
@@ -396,7 +393,6 @@ class App extends React.Component {
   pad(n, d) {
     return `000${n}`.slice(-d);
   }
-
 
   confirmPopupYes() {
     let {model} = this.props;
@@ -506,7 +502,7 @@ class App extends React.Component {
               h("a", {
                 key: "info-link",
                 href: "https://developer.salesforce.com/docs/atlas.en-us.244.0.api_meta.meta/api_meta/meta_platformeventsettings.htm",
-                target: "_blank",
+                target: getLinkTarget(),
               }, "documentation"), " to enable it."
             ])
           ])

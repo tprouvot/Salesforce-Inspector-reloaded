@@ -26,7 +26,7 @@ class Model {
     this.channels = [];
     this.stdPlatformEvent = [];
     this.customPlatformEvent = [];
-    this.selectedChannel = null;
+    this.selectedChannel = "";
     this.channelListening = "";
     this.channelError = "";
     this.isListenning = false;
@@ -329,7 +329,7 @@ class App extends React.Component {
   onToggleMetrics(){
     let {model} = this.props;
     if (this.state.peLimits.length == 0){
-      sfConn.rest("/services/data/v" + apiVersion + "/" + "limits").then(res => {
+      model.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/" + "limits").then(res => {
         let peLimits = [];
         Object.keys(res).forEach((key) => {
           if (key.endsWith("PlatformEvents")){
@@ -347,7 +347,8 @@ class App extends React.Component {
         this.setState({peLimits});
         model.showMetrics = !model.showMetrics;
         model.didUpdate();
-      });
+      }));
+
     } else {
       model.showMetrics = !model.showMetrics;
       model.didUpdate();
@@ -461,14 +462,14 @@ class App extends React.Component {
                 onChange: this.onChannelTypeChange,
                 disabled: model.isListenning
               },
-              ...channelTypes.map((type, index) => h("option", {key: index, value: type.value}, type.label)
+              ...channelTypes.map((type) => h("option", {key: type.value, value: type.value}, type.label)
               )
               )
             ),
             h("span", {className: "conf-label"}, "Channel :"),
             h("span", {className: "conf-value"},
               h("select", {value: model.selectedChannel, onChange: this.onChannelSelection, disabled: model.isListenning},
-                ...model.channels.map((entity, index) => h("option", {key: index, value: entity.name}, entity.label))
+                ...model.channels.map((entity) => h("option", {key: entity.name, value: entity.name}, entity.label))
               )
             ),
             h("span", {className: "conf-label"}, "Replay From :"),
@@ -493,22 +494,23 @@ class App extends React.Component {
             )
           ),
           h("p", {}, "Query PlatformEventUsageMetric:"),
-          h("a", {href: "#", className: "button-space", onClick: (e) => { this.onMetricsClick(e); }}, "Daily"), //TODO finish link
+          h("a", {href: "#", className: "button-space", onClick: (e) => { this.onMetricsClick(e); }}, "Daily"),
           h("a", {href: "#", className: "button-space", onClick: (e) => { this.onMetricsClick(e); }}, "Hourly"),
           h("a", {href: "#", onClick: (e) => { this.onMetricsClick(e); }}, "FifteenMinutes"),
           h("div", {style: {display: "flex", alignItems: "center", gap: "8px"}}, [
-            h("svg", {className: "icon", viewBox: "0 0 52 52"},
+            h("svg", {key: "info-icon", className: "icon", viewBox: "0 0 52 52"},
               h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})
             ),
-            h("p", {}, [
+            h("p", {key: "info-p"}, [
               "If you are facing the error: No such column 'EventName' on entity 'PlatformEventUsageMetric', please check related ", //TODO enable PlatformEventSettings.enableEnhancedUsageMetrics from extension
               h("a", {
+                key: "info-link",
                 href: "https://developer.salesforce.com/docs/atlas.en-us.244.0.api_meta.meta/api_meta/meta_platformeventsettings.htm",
-                target: "_blank"
+                target: "_blank",
               }, "documentation"), " to enable it."
             ])
-          ]),
-        ),
+          ])
+        )
       ),
       h("div", {className: "area", id: "result-area"},
         h("div", {className: "result-bar"},
@@ -527,7 +529,7 @@ class App extends React.Component {
         h("div", {id: "result-table"},
           h("div", {},
             h("pre", {className: "language-json reset-margin"}, // Set the language class to JSON for Prism to highlight
-              model.events.map((event, index) => h("code", {onClick: this.onSelectEvent, id: index, key: index, value: event, className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
+              model.events.map((event, index) => h("code", {onClick: this.onSelectEvent, id: index, key: event, value: event, className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
                 JSON.stringify(event, null, 4))
               )
             )

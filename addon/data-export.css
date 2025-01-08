@@ -314,6 +314,10 @@ button:disabled > svg.button-icon{
   fill: #dddbda;
 }
 
+button > svg.disabled{
+  fill: #dddbda;
+}
+
 .highlighted {
   background-color: var(--inspector-primary);
   border-color: var(--inspector-primary);

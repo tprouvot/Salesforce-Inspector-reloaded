@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, nullToEmptyString, setupColorListeners} from "./inspector.js";
+import {sfConn, apiVersion, nullToEmptyString, getLinkTarget, setupColorListener} from "./inspector.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
@@ -319,7 +319,7 @@ class Model {
     args.set("data", encodedData);
     if (this.queryTooling) args.set("apitype", "Tooling");
 
-    window.open("data-import.html?" + args, getLinkTarget(e));
+    window.open("data-import.html?" + args, getLinkTarget(e, false));
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -1151,9 +1151,8 @@ class App extends React.Component {
   }
   onPrefHideRelationsChange(e) {
     let {model} = this.props;
-    model.prefHideRelations = e.target.checked;
-    model.refreshColumnsVisibility();
-    model.didUpdate();
+    model.prefHideRelations = !model.prefHideRelations;
+    this.onExport();
   }
   onSelectHistoryEntry(e) {
     let {model} = this.props;
@@ -1429,7 +1428,7 @@ class App extends React.Component {
             h("label", {},
               h("input", {type: "checkbox", checked: model.queryAll, onChange: this.onQueryAllChange, disabled: model.queryTooling}),
               " ",
-              h("span", {}, "Add deleted records?")
+              h("span", {}, "Deleted/Archived Records?")
             ),
             h("label", {title: "With the tooling API you can query more metadata, but you cannot query regular data"},
               h("input", {type: "checkbox", checked: model.queryTooling, onChange: this.onQueryToolingChange, disabled: model.queryAll}),
@@ -1484,19 +1483,19 @@ class App extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#download"})
               )
             ),
+            h("button", {disabled: !model.canCopy(), onClick: this.onPrefHideRelationsChange, title: `${model.prefHideRelations ? "Show" : "Hide"} Object Columns`},
+              h("svg", {className: `button-icon ${model.prefHideRelations ? "" : "disabled"}`},
+                h("use", {xlinkHref: "symbols.svg#hide"})
+              )
+            ),
             localStorage.getItem("showDeleteRecordsButton") !== "false"
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
-          h("label", {title: "With this option, additional columns corresponding to Object names are removed from the query results and the exported data. These columns are useful during data import to automatically map objects."},
-            h("input", {type: "checkbox", checked: model.prefHideRelations, onChange: this.onPrefHideRelationsChange}),
-            " ",
-            h("span", {}, "Hide Object Columns")
-          ),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
-            h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
+            h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop")
           ),
         ),
         h("textarea", {id: "result-text", readOnly: true, value: nullToEmptyString(model.exportError), hidden: model.exportError == null}),
@@ -1532,14 +1531,6 @@ class App extends React.Component {
 
   });
 
-}
-
-function getLinkTarget(e) {
-  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
-    return "_blank";
-  } else {
-    return "_top";
-  }
 }
 
 function getSeparator() {

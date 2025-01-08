@@ -1039,6 +1039,7 @@ class App extends React.Component {
 
   createField(field, objectName) {
     const accessToken = sfConn.sessionId;
+    //TODO use sfConn.rest to deploy the fields
     const instanceUrl = `https://${sfConn.instanceHostname}`;
     const metadataUrl = `${instanceUrl}/services/data/v${apiVersion}/tooling/sobjects/CustomField`;
 

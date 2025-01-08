@@ -24,7 +24,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
       orderedDomains.forEach(currentDomain => {
         chrome.cookies.getAll({name: "sid", domain: currentDomain, secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
-          let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
+
+          let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!") && c.domain != "help.salesforce.com");
           if (sessionCookie) {
             sendResponse(sessionCookie.domain);
           }

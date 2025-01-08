@@ -427,7 +427,7 @@ function handleSystemColorSchemeChange(e){
   // check if theme has to be changed
   const systemThemeValue = e.matches ? "dark" : "light";
   const htmlThemeValue = document.documentElement.dataset.theme;
-  if (htmlThemeValue === systemThemeValue || sessionStorage.getItem("updatingFromOtherBtn") == true){
+  if (htmlThemeValue === systemThemeValue || sessionStorage.getItem("updatingFromOtherBtn") === "true"){
     return;
   }
 

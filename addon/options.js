@@ -179,8 +179,8 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
-        id: 6,
-        tabTitle: "Tab6",
+        id: 7,
+        tabTitle: "Tab7",
         title: "User Interface",
         content: [
           window.matchMedia != null ? {option: Option, props: {type: "toggle", title: `Match Theme to ${navigatorData.indexOf("mac") > -1 ? "MacOS" : (navigatorData.indexOf("windows") > -1 ? "Windows" : (navigatorData.indexOf("linux") > -1 ? "Linux" : "System"))} Appearance`, storageKey: "enableDynamicAppearance", default: false}} : {option: "span"},

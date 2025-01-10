@@ -46,7 +46,7 @@ function getFilteredLocalStorage(){
   }
   let domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
-  const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition"];
+  const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition", "prodBannerText"];
   const filteredStorage = Object.fromEntries(
     Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith("access_token"))
   );

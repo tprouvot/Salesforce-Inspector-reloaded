@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, sessionError} from "./inspector.js";
+import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 
@@ -46,7 +46,7 @@ function getFilteredLocalStorage(){
   }
   let domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
-  const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition"];
+  const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition", "prodBannerText"];
   const filteredStorage = Object.fromEntries(
     Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith("access_token"))
   );
@@ -2205,7 +2205,7 @@ class Autocomplete extends React.PureComponent {
   onResultClick(e, value) {
     let {sfHost} = this.props;
     if (value.isRecent){
-      window.open("https://" + sfHost + "/" + value.recordId, getLinkTarget(e));
+      window.open("https://" + sfHost + "/" + value.recordId, getLinkTarget(e, true));
     } else {
       this.props.updateInput(value);
       this.setState({showResults: false, selectedIndex: 0});
@@ -2355,14 +2355,6 @@ function sfLocaleKeyToCountryCode(localeKey) {
   if (!localeKey) { return ""; }
   const splitted = localeKey.split("_");
   return splitted[(splitted.length > 1 && !localeKey.includes("_LATN_")) ? 1 : 0].toLowerCase();
-}
-
-function getLinkTarget(e) {
-  if (JSON.parse(localStorage.getItem("openLinksInNewTab")) || (e.ctrlKey || e.metaKey)) {
-    return "_blank";
-  } else {
-    return "_top";
-  }
 }
 
 window.getRecordId = getRecordId; // for unit tests

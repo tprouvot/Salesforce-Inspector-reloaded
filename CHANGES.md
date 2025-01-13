@@ -3,6 +3,9 @@
 ## Version 1.26
 
 - Add button on User tab to enable LWC debug mode from the popup [feature 696](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/696) request by [b-r-j](https://github.com/b-r-j)
+- Add production org header and customizable text in options [feature 679](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/679) request and help by [Tim Paulaskas](https://github.com/TimPaulaskasDS)
+- Add Scale Center links to Shortcut tab search.
+- Add info about PlatformEvent limits and consumptions on `Event Monitor` page [feature 697](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/697)
 - Rename `Add deleted records?` to `Deleted/Archived Records?` in data export [feature 662](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/662) request by [McKay Howell](https://github.com/mckayhowell)
 - Fix `EntityParticle is not supported` error in show-all-data page + add new fields [issue 687](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/687)
 - Add `Donate` button in the popup [discussion 336](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/336)

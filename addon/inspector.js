@@ -1,5 +1,13 @@
 export let defaultApiVersion = "62.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
+
+export function getLinkTarget(e) {
+  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
+    return "_blank";
+  } else {
+    return "_top";
+  }
+}
 export let sessionError;
 export function nullToEmptyString(value) {
   // For react input fields, the value may not be null or undefined, so this will clean the value

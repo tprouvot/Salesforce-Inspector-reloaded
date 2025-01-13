@@ -745,10 +745,10 @@ class AllDataBoxUsers extends React.PureComponent {
       return;
     }
     //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
-    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled";
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref";
     //TODO implement a try catch to remove non existing fields ProfileId or IsPortalEnabled (experience is not enabled)
-    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId";
-    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId";
+    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref";
     const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
     const compositeQuery = {
       "compositeRequest": [
@@ -773,6 +773,7 @@ class AllDataBoxUsers extends React.PureComponent {
       //const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + selectedUserId); //Does not return profile details. Query call is therefore prefered
       const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
       let userDetail = userResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records[0];
+      userDetail.debugModeActionLabel = userDetail.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
       //query NetworkMember only if it is a portal user (display "Login to Experience" button)
       if (userDetail.IsPortalEnabled){
         await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+NetworkId+FROM+NetworkMember+WHERE+MemberId='" + userDetail.Id + "'").then(res => {
@@ -1517,8 +1518,20 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/lightning/setup/ManageUsers/" + userId + "/summary";
   }
 
-  openMenu(){
+  enableDebugMode(user){
+    sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + user.Id, {method: "PATCH",
+      body: {UserPreferencesUserDebugModePref: !user.UserPreferencesUserDebugModePref
+      }}).then(
+      browser.runtime.sendMessage({message: "reloadPage"})
+    ).catch(err => console.log("Error during user debug mode activation", err));
+  }
+
+  toggleMenu(){
     this.refs.buttonMenu.classList.toggle("slds-is-open");
+  }
+
+  toggleLogMenu(){
+    this.refs.logButtonMenu.classList.toggle("slds-is-open");
   }
 
   render() {
@@ -1583,20 +1596,21 @@ class UserDetails extends React.PureComponent {
           h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Details"),
           h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
           h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
+          //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
           h("div", {className: "user-buttons justify-center slds-button-group top-space", role: "group"},
             h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs"),
-            h("div", {ref: "buttonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
-              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.openMenu(), title: "Show options"},
+            h("div", {ref: "logButtonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleLogMenu(), title: "Show options"},
                 h("svg", {className: "slds-button__icon"},
                   h("use", {xlinkHref: "symbols.svg#down"})
                 ),
                 h("span", {className: "slds-assistive-text"}, "Show options")
               ),
-              h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.openMenu()},
+              h("div", {className: "slds-dropdown slds-dropdown_right", onMouseLeave: () => this.toggleLogMenu()},
                 h("ul", {className: "slds-dropdown__list", role: "menu"},
                   h("li", {className: "slds-dropdown__item", role: "presentation"},
-                    h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, tabIndex: "1"},
-                      h("span", {className: "slds-truncate", title: "Debug Mode"}, "Debug Mode")
+                    h("a", {id: "enableDebugMode", onClick: () => this.enableDebugMode(user), tabIndex: "1"},
+                      h("span", {className: "slds-truncate", title: user.debugModeActionLabel + " Debug Mode for Lightning Components"}, user.debugModeActionLabel + " Debug Mode")
                     )
                   )
                 )
@@ -1607,13 +1621,13 @@ class UserDetails extends React.PureComponent {
         this.doSupportLoginAs(user) ? h("div", {className: "user-buttons justify-center small-font slds-button-group top-space", role: "group"},
           h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs"),
           h("div", {ref: "buttonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
-            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.openMenu(), title: "Show other LoginAs options"},
+            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleMenu(), title: "Show other LoginAs options"},
               h("svg", {className: "slds-button__icon"},
                 h("use", {xlinkHref: "symbols.svg#down"})
               ),
               h("span", {className: "slds-assistive-text"}, "Show other LoginAs options")
             ),
-            h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.openMenu()},
+            h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.toggleMenu()},
               h("ul", {className: "slds-dropdown__list", role: "menu"},
                 h("li", {className: "slds-dropdown__item", role: "presentation"},
                   h("a", {onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, tabIndex: "0"},

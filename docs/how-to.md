@@ -207,7 +207,7 @@ When quering EventLogFile, add the "LogFile" field in the query and click on the
 
 ![2023-11-15_14-32-44 (1)](https://github.com/Annubis45/Salesforce-Inspector-reloaded/assets/35368290/ba1fcbed-8428-495e-b03b-7816320d95df)
 
-## Enable debug logs
+## Enable debug logs (for Lightning Components)
 
 Sometimes you may want to enable logs for a particular user.
 From User tab, click the "Enable Log" button.
@@ -222,6 +222,13 @@ You can update the debug level (configuration is per organization) and duration 
 
 > **Warning**
 > Increasing the default duration may lead to a high volume of logs generated.
+
+## Enable Debug Mode (for Lightning Components)
+
+Enable debug mode to make it easier to debug JavaScript code from Lightning components.
+Warning: Salesforce is slower for users who have debug mode enabled.
+
+<img width="278" alt="Enable Debug Mode" src="https://github.com/user-attachments/assets/f4dabb96-6b1d-48a1-828d-cc7d5da92e57" />
 
 ## Display query performance in Data Export
 
@@ -316,9 +323,19 @@ You can configure the [SOAP headers](https://developer.salesforce.com/docs/atlas
 Because custom headers can be hard to configure, you could iterate through suggestions by pressing down key.
 If you want to include new suggestions, feel free to open a new [feature request](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=enhancement&projects=&template=feature_request.md).
 
-ie for KeepAccountTeam:
+If true, the account team is kept with the account when the account owner is changed. If false, the account team is deleted:
 ``` json
 {"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}
+```
+
+For a duplicate rule, when the Alert option is enabled, bypass alerts and save duplicate records by setting this property to true:
+``` json
+  '{"DuplicateRuleHeader": {"allowSave": true}}'
+```
+
+If true for a Case or Lead, uses the default (active) assignment rule for a Case or Lead. If specified, don’t specify an assignmentRuleId. If true for an Account, all territory assignment rules are applied. If false for an Account, no territory assignment rules are applied.
+``` json
+  '{"AssignmentRuleHeader": {"useDefaultRule": true}}',
 ```
 
 <img width="503" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/e2d21970-ddc5-4c42-a54e-ffb7ffdcb278">

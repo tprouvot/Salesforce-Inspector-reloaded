@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Add production org header and customizable text in options [feature 679](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/679) request and help by [Tim Paulaskas](https://github.com/TimPaulaskasDS)
 - Add Scale Center links to Shortcut tab search.
 - Add info about PlatformEvent limits and consumptions on `Event Monitor` page [feature 697](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/697)
 - Rename `Add deleted records?` to `Deleted/Archived Records?` in data export [feature 662](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/662) request by [McKay Howell](https://github.com/mckayhowell)

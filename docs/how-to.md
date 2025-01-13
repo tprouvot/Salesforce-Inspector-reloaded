@@ -207,7 +207,7 @@ When quering EventLogFile, add the "LogFile" field in the query and click on the
 
 ![2023-11-15_14-32-44 (1)](https://github.com/Annubis45/Salesforce-Inspector-reloaded/assets/35368290/ba1fcbed-8428-495e-b03b-7816320d95df)
 
-## Enable debug logs (for Lightning Components)
+## Enable debug logs
 
 Sometimes you may want to enable logs for a particular user.
 From User tab, click the "Enable Log" button.
@@ -323,19 +323,9 @@ You can configure the [SOAP headers](https://developer.salesforce.com/docs/atlas
 Because custom headers can be hard to configure, you could iterate through suggestions by pressing down key.
 If you want to include new suggestions, feel free to open a new [feature request](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=enhancement&projects=&template=feature_request.md).
 
-If true, the account team is kept with the account when the account owner is changed. If false, the account team is deleted:
+ie for KeepAccountTeam:
 ``` json
 {"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}
-```
-
-For a duplicate rule, when the Alert option is enabled, bypass alerts and save duplicate records by setting this property to true:
-``` json
-  '{"DuplicateRuleHeader": {"allowSave": true}}'
-```
-
-If true for a Case or Lead, uses the default (active) assignment rule for a Case or Lead. If specified, don’t specify an assignmentRuleId. If true for an Account, all territory assignment rules are applied. If false for an Account, no territory assignment rules are applied.
-``` json
-  '{"AssignmentRuleHeader": {"useDefaultRule": true}}',
 ```
 
 <img width="503" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/e2d21970-ddc5-4c42-a54e-ffb7ffdcb278">

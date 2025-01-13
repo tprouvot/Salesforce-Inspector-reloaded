@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Add button on User tab to enable LWC debug mode from the popup [feature 696](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/696) request by [b-r-j](https://github.com/b-r-j)
 - Add production org header and customizable text in options [feature 679](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/679) request and help by [Tim Paulaskas](https://github.com/TimPaulaskasDS)
 - Add Scale Center links to Shortcut tab search.
 - Add info about PlatformEvent limits and consumptions on `Event Monitor` page [feature 697](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/697)

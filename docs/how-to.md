@@ -223,6 +223,13 @@ You can update the debug level (configuration is per organization) and duration 
 > **Warning**
 > Increasing the default duration may lead to a high volume of logs generated.
 
+## Enable Debug Mode (for Lightning Components)
+
+Enable debug mode to make it easier to debug JavaScript code from Lightning components.
+Warning: Salesforce is slower for users who have debug mode enabled.
+
+<img width="278" alt="Enable Debug Mode" src="https://github.com/user-attachments/assets/f4dabb96-6b1d-48a1-828d-cc7d5da92e57" />
+
 ## Display query performance in Data Export
 
 To enable performance metrics for queries on the data export page, open the Options screen and select the Data Export tab,

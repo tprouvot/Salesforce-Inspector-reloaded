@@ -346,3 +346,125 @@ function showToastBanner(){
   const containerToMask = document.getElementById("mainTabs");
   if (containerToMask) { containerToMask.classList.add("mask"); }
 }
+
+function setFavicon(sfHost){
+  let fav = localStorage.getItem(sfHost + "_customFavicon");
+  if (fav){
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    //check if custom favicon from the extension or web
+    if (fav.indexOf("http") == -1){
+      fav = "./images/favicons/" + fav + ".png";
+    }
+    link.href = fav;
+  }
+
+}
+
+function setSessionStorageForUpdatingButtonsAndClickThem(btn){
+  sessionStorage.setItem("updatingFromOtherBtn", true);
+  btn.click();
+  setTimeout(() => {
+    sessionStorage.setItem("updatingFromOtherBtn", false);
+  }, 100);
+}
+
+export function alignDynamicAppearanceButton(isThemeKey){
+  if (isThemeKey && window.matchMedia != null && sessionStorage.getItem("updatingFromOtherBtn") === "false"){
+    // change toggle for enableDynamicAppearance if needed
+    const systemThemeValue = localStorage.getItem("enableDynamicAppearance");
+    if (systemThemeValue === "false"){
+      return; // already updated
+    }
+
+    const dynamicThemeBtn = document.querySelector("#enableDynamicAppearance > span.slds-checkbox_faux") || parent.document.querySelector("#enableDynamicAppearance > span.slds-checkbox_faux");
+    if (dynamicThemeBtn != null){
+      setSessionStorageForUpdatingButtonsAndClickThem(dynamicThemeBtn);
+      return;
+    }
+
+    // not in options page, fake the behaviour
+    localStorage.setItem("enableDynamicAppearance", JSON.stringify(false)); // always false because the user is overriding with the theme toggle
+    systemColorSchemeListener(false); // remove the listener
+  }
+}
+
+export function setupColorListeners(sendMessage = false){
+  const html = document.documentElement;
+
+  // listen to changes from the options page
+  window.addEventListener("storage", e => {
+    if (!e.isTrusted || (e.key !== "enableDarkMode" && e.key !== "enableAccentColors")){
+      return;
+    }
+
+    const isThemeKey = e.key === "enableDarkMode";
+    const newValueBool = e.newValue === "true";
+
+    const value = isThemeKey ? (newValueBool ? "dark" : "light") : (newValueBool ? "accent" : "default");
+    const category = isThemeKey ? "theme" : "accent";
+    const htmlValue = html.dataset[category];
+    if (value == htmlValue) {
+      return; // avoid recursion
+    }
+
+    html.dataset[category] = value;
+    if (sendMessage) {
+      parent.postMessage({category, value}, "*"); //update #insext (button.js)
+    }
+
+    alignDynamicAppearanceButton(isThemeKey);
+  });
+}
+
+let systemColorListener = null;
+
+function handleSystemColorSchemeChange(e){
+  // check if theme has to be changed
+  const systemThemeValue = e.matches ? "dark" : "light";
+  const htmlThemeValue = document.documentElement.dataset.theme;
+  if (htmlThemeValue === systemThemeValue || sessionStorage.getItem("updatingFromOtherBtn") === "true"){
+    return;
+  }
+
+  // find the theme button and click it (to trigger theme change)
+  const optionsThemeBtn = document.querySelector("#enableDarkMode > span.slds-checkbox_faux") || parent.document.querySelector("#enableDarkMode > span.slds-checkbox_faux");
+  if (optionsThemeBtn != null){
+    setSessionStorageForUpdatingButtonsAndClickThem(optionsThemeBtn);
+    return;
+  }
+
+  // not in options page, fake the behaviour
+  localStorage.setItem("enableDarkMode", JSON.stringify(e.matches));
+  document.documentElement.dataset.theme = systemThemeValue;
+  const insext = document.getElementById("insext");
+  if (insext != null){
+    insext.dataset.theme = systemThemeValue;
+  }
+}
+
+export function systemColorSchemeListener(enable = true){
+  if (window.matchMedia == null || enable == null || (enable && systemColorListener != null) || (!enable && systemColorListener == null)){
+    console.warn({enable, systemColorListener});
+    return;
+  }
+
+  if (enable) {
+    // If enabling, add the systemColorListener
+    systemColorListener = window.matchMedia("(prefers-color-scheme: dark)");
+    systemColorListener.addEventListener("change", handleSystemColorSchemeChange);
+    // Initial check for the current color scheme
+    handleSystemColorSchemeChange(systemColorListener);
+  } else {
+    // If disabling, remove the systemColorListener if it exists
+    systemColorListener.removeEventListener("change", handleSystemColorSchemeChange);
+    systemColorListener = null;
+  }
+  localStorage.setItem("enableDynamicAppearance", JSON.stringify(enable));
+}
+
+sessionStorage.setItem("updatingFromOtherBtn", false);

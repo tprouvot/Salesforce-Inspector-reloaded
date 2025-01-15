@@ -1,5 +1,6 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString} from "./inspector.js";
+import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString, alignDynamicAppearanceButton, systemColorSchemeListener} from "./inspector.js";
+systemColorSchemeListener(window.localStorage.getItem("enableDynamicAppearance") === "true");
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
@@ -73,7 +74,7 @@ class OptionsTabSelector extends React.Component {
     this.state = {
       selectedTabId: initialTabId
     };
-
+    const navigatorData = (navigator.userAgentData?.platform || navigator.userAgent).toLowerCase();
     this.tabs = [
       {
         id: 1,
@@ -176,6 +177,16 @@ class OptionsTabSelector extends React.Component {
         title: "Enable Logs",
         content: [
           {option: enableLogsOption, props: {key: 1}}
+        ]
+      },
+      {
+        id: 7,
+        tabTitle: "Tab7",
+        title: "User Interface",
+        content: [
+          window.matchMedia != null ? {option: Option, props: {type: "toggle", title: `Match Theme to ${navigatorData.indexOf("mac") > -1 ? "MacOS" : (navigatorData.indexOf("windows") > -1 ? "Windows" : (navigatorData.indexOf("linux") > -1 ? "Linux" : "System"))} Appearance`, storageKey: "enableDynamicAppearance", default: false}} : {option: "span"},
+          {option: Option, props: {type: "toggle", title: "Enable Dark Mode", storageKey: "enableDarkMode", default: false}},
+          {option: Option, props: {type: "toggle", title: "Enable Accent colors", storageKey: "enableAccentColors", default: false}},
         ]
       }
     ];
@@ -298,6 +309,8 @@ class APIVersionOption extends React.Component {
     super(props);
     this.onChangeApiVersion = this.onChangeApiVersion.bind(this);
     this.onRestoreDefaultApiVersion = this.onRestoreDefaultApiVersion.bind(this);
+    //this.clickDecrease = this.clickDecrease.bind(this);
+    //this.clickIncrease = this.clickIncrease.bind(this);
     this.state = {apiVersion: localStorage.getItem("apiVersion") ? localStorage.getItem("apiVersion") : apiVersion};
   }
 
@@ -306,24 +319,44 @@ class APIVersionOption extends React.Component {
     this.setState({apiVersion});
     localStorage.setItem("apiVersion", apiVersion + ".0");
   }
-
+  
   onRestoreDefaultApiVersion(){
     localStorage.removeItem("apiVersion");
     this.setState({apiVersion: defaultApiVersion});
   }
 
+  /*changeValue(e, shouldIncrease = false) {
+    const inputTarget = document.getElementById(e.target.dataset.targetid);
+    const oldValue = +inputTarget.value;
+    if((""+oldValue) == "NaN")
+      return;
+    inputTarget.value = shouldIncrease ? oldValue + 1 : oldValue - 1;
+    // trigger the onChange listener
+    const event = new Event('input', { bubbles: true });
+    inputTarget.dispatchEvent(event);
+  }
+
+  clickDecrease(e) {
+    this.changeValue(e, false);
+  }
+  clickIncrease(e) {
+    this.changeValue(e, true);
+  }*/
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "API Version")
       ),
-      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-form-element__control"},
           h("button", {className: "button button-brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
         ) : null,
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
+          /*h("button", {className: "change-value decreaser", title: "Decrease the value by 1", onClick: this.clickDecrease, "data-targetid": "apiVersionInput"}, "-"),
+          h("input", {type: "text", required: true, id: "apiVersionInput", className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
+          h("button", {className: "change-value increaser", title: "Increase the value by 1", onClick: this.clickIncrease, "data-targetid": "apiVersionInput"}, "+"),*/
+          h("input", {type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
         )
       )
     );
@@ -423,12 +456,37 @@ class Option extends React.Component {
       : this.type == "select" ? (value || props.default || props.options?.[0]?.value)
       : value};
     this.title = props.title;
+    this.systemThemeListener = null;
+  }
+
+  // change Theme or Accent
+  updateUI(key, enabled){
+    const updateUIkeys = ["enableDarkMode", "enableAccentColors", "enableDynamicAppearance"];
+    if (!updateUIkeys.includes(key)) {
+      return;
+    }
+
+    if (key === "enableDynamicAppearance"){
+      // add or remove listener to the system's color-scheme
+      systemColorSchemeListener(enabled);
+      return;
+    }
+
+    const isThemeKey = key === "enableDarkMode";
+
+    const category = isThemeKey ? "theme" : "accent";
+    const value = isThemeKey ? (enabled ? "dark" : "light") : (enabled ? "accent" : "default");
+    const html = document.documentElement;
+    html.dataset[category] = value;
+
+    alignDynamicAppearanceButton(isThemeKey);
   }
 
   onChangeToggle(e) {
     const enabled = e.target.checked;
     this.setState({[this.key]: enabled});
     localStorage.setItem(this.key, JSON.stringify(enabled));
+    this.updateUI(this.key, enabled);
   }
 
   onChange(e) {

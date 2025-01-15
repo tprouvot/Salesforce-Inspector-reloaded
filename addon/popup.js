@@ -1,7 +1,7 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
+import {sfConn, apiVersion, sessionError, getLinkTarget, setupColorListeners, systemColorSchemeListener} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
-import {setupLinks} from "./links.js";
+import {setupLinks} from "./links.mjs";
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -109,6 +109,10 @@ class App extends React.PureComponent {
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext,
       hideButtonsOption: JSON.parse(localStorage.getItem("hideButtonsOption"))
     };
+    setupColorListeners(true);
+    const isSystemThemeEnabled = window.localStorage.getItem("enableDynamicAppearance") === "true";
+    systemColorSchemeListener(isSystemThemeEnabled);
+
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
@@ -412,15 +416,15 @@ class App extends React.PureComponent {
           ),
           h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
-              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
-                h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})
+              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small popup-footer-icon", viewBox: "0 0 52 52"},
+                h("use", {xlinkHref: "symbols.svg#info_alt"}),
               )
             )
           ),
           h("div", {id: "optionsBtn", className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Options"},
             h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget},
-              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
-                h("use", {xlinkHref: "symbols.svg#settings", style: {fill: "#9c9c9c"}})
+              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small popup-footer-icon", viewBox: "0 0 52 52"},
+                h("use", {xlinkHref: "symbols.svg#settings"})
               )
             )
           )
@@ -652,7 +656,7 @@ class AllDataBox extends React.PureComponent {
           h("li", {ref: "objectTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : ""}, h("span", {}, h("u", {}, "O"), "bjects")),
           h("li", {ref: "userTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : ""}, h("span", {}, h("u", {}, "U"), "sers")),
           h("li", {ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : ""}, h("span", {}, h("u", {}, "S"), "hortcuts")),
-          h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g"))
+          h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g")),
         ),
         (activeSearchAspect == this.SearchAspectTypes.sobject)
           ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, onContextRecordChange, isFieldsPresent, eventMonitorHref})

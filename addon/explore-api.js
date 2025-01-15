@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setupColorListeners} from "./inspector.js";
 /* global initButton */
 
 class Model {
@@ -252,6 +252,10 @@ function csvSerialize(table, separator) {
 let h = React.createElement;
 
 class App extends React.Component {
+  constructor(props) {
+    super(props);
+    setupColorListeners();
+  }
 
   render() {
     let {model} = this.props;
@@ -325,11 +329,12 @@ class App extends React.Component {
             )
           ),
           h("a", {href: "https://www.salesforce.com/us/developer/docs/api_rest/", target: "_blank"}, "REST API documentation"),
-          " Open your browser's ",
-          h("b", {}, "F12 Developer Tools"),
-          " and select the ",
-          h("b", {}, "Console"),
-          " tab to make your own API calls."
+          h("span", {},
+            " Open your browser's ",
+            h("b", {}, "F12 Developer Tools"),
+            " and select the ",
+            h("b", {}, "Console"),
+            " tab to make your own API calls.")
         ),
       )
     );

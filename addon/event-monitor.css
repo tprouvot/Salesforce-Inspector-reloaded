@@ -45,14 +45,14 @@ body {
   margin: 0;
   height: 100%;
   display: flex;
-  background-color: #B0C4DF;
+  background-color: var(--inspector-sand-background);
   background-image: url(images/lightning_blue_background.png);
   background-repeat: no-repeat;
   background-size: contain;
   background-position: 0px 48px;
 }
 .prod {
-  background-color: #e0a4b5;
+  background-color: var(--inspector-prod-background);
   background-image: url(images/lightning_red_background.png);
 }
 #root {
@@ -70,7 +70,7 @@ body {
   display: none !important;
 }
 #user-info {
-  background: #f7f9fb;
+  background: var(--inspector-background);
   min-height: 48px;
   display: flex;
   align-items: center;
@@ -84,15 +84,16 @@ body {
   font-size: 1em;
 }
 .sf-link {
-  background-color: rgb(6, 28, 63);
+  background-color: var(--inspector-svg-background);
   border-radius: 3px;
   line-height: 1.8em;
   text-decoration: none;
   display: inline-block;
   padding: 2px;
-  color: white;
+  color: var(--inspector-svg-text);
   padding-right: 1em;
 }
+
 .sf-link svg {
   width: 1.8em;;
   height: 1.8em;;
@@ -100,19 +101,25 @@ body {
   margin-left: 1px;
   margin-right: 1em;
   float: left;
-  background-color: #ef7ead;
+  background-color: var(--inspector-svg-picture);
   border-radius: 2px;
-  fill: white;
+  fill: var(--inspector-svg-text);
 }
 #help-btn {
   margin-left: auto;
   text-decoration: none;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #919191;
+  color: var(--inspector-neutral);
   display: flex;
   align-items: center;
 }
+
+#help-btn:hover .icon {
+  background-color: var(--inspector-neutral);
+}
+
+#help-btn .icon {
 svg.icon{
   fill: #919191;
 }
@@ -122,8 +129,16 @@ svg.icon:hover{
 .icon {
   display: inline-block;
   width: 1.4rem;
-  height: 1.4rem;;
+  height: 1.4rem;
   -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 1.4rem;
+  mask-size: 1.4rem;
+  -webkit-mask-image: url(images/help.svg);
+  mask-image: url(images/help.svg);
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: var(--inspector-neutral);
   -webkit-mask-size: 1.4rem;;
   -webkit-mask-position: center;
 }
@@ -137,18 +152,18 @@ svg.icon:hover{
   align-items: center;
 }
 .help-text {
-  background: #fff;
-  border: 1px solid #DDDBDA;
+  background: var(--inspector-background);
+  border: 1px solid var(--inspector-subtle-neutral);
   padding: 0 15px;
   border-radius: 0.25rem;
   margin-top: 10px;
   margin-bottom: 5px;
 }
 .area {
-  background-color: #F8F8F8;
+  background-color: var(--inspector-shade);
   padding: 8px 12px;
   border-radius: 5px;
-  border: 1px solid #DDDBDA;
+  border: 1px solid var(--inspector-subtle-neutral);
   margin: 12px 12px 0 12px;
 }
 .area-header {
@@ -157,7 +172,7 @@ svg.icon:hover{
 h1 {
   font-size: 1rem;
   display: inline;
-  color: #080707;
+  color: var(--inspector-text);
   font-weight: 700;
   line-height: 1.25;
   margin: revert;
@@ -172,15 +187,15 @@ h1 {
 }
 .conf-label, .columns-label, label {
   font-weight: normal;
-  color: #4a4a56;
+  color: var(--inspector-text-neutral);
   display: flex;
   align-items: center;
 }
 .conf-label {
   display: inline-block;
   text-align: left;
-  width: auto;
-  padding-right: 0.5em;
+  width: 9em;
+  padding-right: 1em;
 }
 .conf-value {
   display: inline-block;
@@ -198,7 +213,7 @@ h1 {
   margin-top: 5px;
 }
 .conf-error {
-  color: #a00;
+  color: var(--inspector-error);
   margin-left: 12px;
   display: flex;
   align-items: center;
@@ -207,7 +222,7 @@ h1 {
   margin: 0 0 0 6px;
 }
 .confError {
-  box-shadow: 0 0 3px 1px #a00;
+  box-shadow: 0 0 3px 1px var(--inspector-error);
 }
 .confError + .confError {
   margin-top: 5px;
@@ -249,21 +264,21 @@ h1 {
 }
 .status-group label {
   font-weight: bold;
-  color: #4a4a56;
+  color: var(--inspector-text-neutral);
   padding-right: 15px;
   white-space: nowrap;
 }
 label.statusGroupEmpty {
-  color: lightgray;
+  color: var(--inspector-neutral);
   font-weight: normal;
 }
 .batch-size {
   width: 3.4em;
 }
 .char-btn {
-  color: white;
+  color: var(--inspector-text);
   text-decoration: none;
-  background-color: gray;
+  background-color: var(--inspector-neutral);
   display: inline-block;
   width: 14px;
   height: 14px;
@@ -277,7 +292,7 @@ label.statusGroupEmpty {
   right: 0;
   bottom: 0;
   left: 0;
-  background: rgba(0,0,0,0.8);
+  background: rgba(var(--inspector-background-rgb), 0.8);
   z-index: 99999;
 }
 #confirm-dialog {
@@ -285,7 +300,7 @@ label.statusGroupEmpty {
   position: relative;
   margin: 10% auto;
   border-radius: 10px;
-  background: #fff;
+  background: var(--inspector-background);
   padding: 20px;
 }
 .dialog-buttons {
@@ -300,10 +315,12 @@ input[type=number],
 input[type=text] {
   font-family: inherit;
   padding: 5px 13px;
-  border: 1px solid #DDDBDA;
+  border: 1px solid var(--inspector-neutral);
   border-radius: 0.25rem;
   height: 32px;
   position: relative;
+  color: var(--inspector-text);
+  background-color: var(--inspector-background);
 }
 input.object-list {
   width: 296px;
@@ -322,8 +339,8 @@ input:active,
 input:focus,
 select:active,
 select:focus {
-  border: 1px solid rgb(21, 137, 238);
-  box-shadow: rgb(6, 28, 63) 0px 0px 3px 0px;
+  border: 1px solid var(--inspector-primary);
+  box-shadow: var(--inspector-accent) 0px 0px 3px 0px;
   outline: none;
   z-index: 1;
 }
@@ -334,40 +351,37 @@ select:focus {
 .button-group select:focus:not(:first-child),
 .button-group select:focus:not(:first-child) {
   margin-left: -1px;
-  border: 1px solid rgb(21, 137, 238);
+  border: 1px solid var(--inspector-primary);
 }
 button:active,
 button:focus {
-  background-color: rgb(238, 241, 246);
-  color: #005fb2;
+  background-color: var(--inspector-background);
+  color: var(--inspector-middle);
 }
 button:disabled,
 input:disabled {
-  color: #dddbda;
+  color: var(--inspector-subtle-neutral) !important;
+  background-color: var(--inspector-shade) !important;
   cursor: default;
 }
 button:disabled:hover {
-  background-color: #fff;
-  color: #dddbda;
+  background-color: var(--inspector-background);
+  color: var(--inspector-primary);
 }
 .highlighted {
-  background-color: rgb(0, 112, 210);
-  border-color: rgb(0, 112, 210);
-  color: #fff;
+  background-color: var(--inspector-primary);
+  border-color: var(--inspector-primary);
+  color: var(--inspector-white);
 }
 .highlighted:hover,
 .highlighted:active {
-  background-color: rgb(0, 95, 178);
-  color: #fff;
+  background-color: var(--inspector-accent);
+  color: var(--inspector-white);
 }
 .highlighted:disabled {
-  background-color: #c9c7c5;
-  border-color: #c9c7c5;
-  color: #fff;
-}
-.highlighted:disabled:hover {
-  background-color: #c9c7c5;
-  color: #fff;
+  background-color: var(--inspector-neutral);
+  border-color: var(--inspector-neutral);
+  color: var(--inspector-inverted-text);
 }
 option[value="null"][disabled] {
   display: none;
@@ -375,16 +389,16 @@ option[value="null"][disabled] {
 textarea {
   outline: none;
   border-radius: 0.25rem;
-  border: 1px solid #DDDBDA;
+  border: 1px solid var(--inspector-subtle-neutral);
 }
 button, .button {
-  border: 1px solid #DDDBDA;
+  border: 1px solid var(--inspector-button-border);
   height: 32px;
   display: inline-block;
   text-decoration: none;
-  background-color: white;
+  background-color: var(--inspector-background);
   padding: 0 16px;
-  color: #0070d2;
+  color: var(--inspector-middle);
   cursor: pointer;
   outline: none;
   position: relative;
@@ -394,8 +408,8 @@ button, .button {
   white-space: nowrap;
 }
 button:hover, .button:hover {
-  background-color: #F4F6F9;
-  color: #005fb2;
+  background-color: var(--inspector-shade);
+  color: var(--inspector-text);
 }
 button.toggle {
   padding: 0 11px;
@@ -408,27 +422,32 @@ button.toggle {
 .button-toggle-icon,
 .button-icon {
   -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
-  background-color: #706E6B;
+  mask-size: 1rem;
+  /*background-color: #706E6B;*/
   display: inline-block;
   width: 16px;
   height: 16px;
 }
 button.toggle:hover .button-icon,
 button.toggle:hover .button-toggle-icon  {
-  background-color: #004487;
+  background-color: var(--inspector-hover);
 }
 .flex-right button:last-child {
   margin-right: 0;
 }
 button.expand .button-toggle-icon {
   -webkit-mask-image: url(images/down.svg);
+  mask-image: url(images/down.svg);
 }
 button.contract .button-toggle-icon {
   -webkit-mask-image: url(images/up.svg);
+  mask-image: url(images/up.svg);
 }
 .button.field-info .button-icon {
   -webkit-mask-image: url(images/salesforce-inspector-logo.svg);
+  mask-image: url(images/salesforce-inspector-logo.svg);
 }
 .area.result-area {
   padding: 0;
@@ -448,8 +467,8 @@ button.contract .button-toggle-icon {
 #result-table {
   overflow: auto;
   flex: 1 1 0;
-  background-color: #fff;
-  border-top: 1px solid #DDDBDA;
+  background-color: var(--inspector-background);
+  border-top: 1px solid var(--inspector-subtle-neutral);
 }
 .event-box {
   margin: 4px;
@@ -459,10 +478,10 @@ button.contract .button-toggle-icon {
   white-space: pre-wrap;
 }
 .event-not-selected {
-  border-bottom: 1px solid #DDDBDA;
+  border-top: 1px solid var(--inspector-subtle-neutral);
 }
 .event-selected {
-  border: 2px solid rgb(3, 153, 63);
+  border: 2px solid var(--inspector-success);
 }
 .channel-listening {
   margin-left: 2%;

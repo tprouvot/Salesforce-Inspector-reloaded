@@ -1,5 +1,5 @@
 /* global React ReactDOM field-creator.js */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setupColorListeners} from "./inspector.js";
 
 let h = React.createElement;
 
@@ -223,7 +223,7 @@ class ProfilesModal extends React.Component {
       },
       h("div", {className: "modal-content relativePosition height100 flexColumn"},
         h("div", {className: "modal-header flexSpaceBetween alignItemsCenter marginBottom15"},
-          h("h1", {className: "modal-title"}, "Set Field Permissions"),
+          h("h1", {className: "modal-title textAlignCenter width100 margin0"}, "Set Field Permissions"),
           h("button", {
             type: "button",
             "aria-label": "Close permission modal button",
@@ -909,6 +909,7 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
+    setupColorListeners();
     this.state = {
       objects: [],
       profiles: [],
@@ -1314,30 +1315,12 @@ class App extends React.Component {
     });
   };
 
-  formatApiName(label) {
-    const namingConvention = localStorage.getItem("fieldNamingConvention") || "pascal";
-
-    // First, replace any special characters with underscores and convert to proper case
-    let apiName = label.trim().replace(/[^a-zA-Z0-9\s]/g, "_");
-    if (namingConvention === "underscore") {
-      // Convert spaces to underscores: "My Field Name" -> "My_Field_Name"
-      apiName = apiName.replace(/\s+/g, "_");
-    } else {
-      // Remove underscores and convert to PascalCase: "My_Field_Name" -> "MyFieldName"
-      apiName = apiName.replace(/[\s_]+(\w)/g, (_, letter) => letter.toUpperCase());
-    }
-    // Remove leading/trailing underscores
-    apiName = apiName.replace(/^_+|_+$/g, "");
-    // Replace multiple underscores with single underscore
-    return apiName.replace(/_+/g, "_");
-  }
-
   onLabelChange = (index, label) => {
     this.setState((prevState) => ({
       fields: prevState.fields.map((field, i) => {
         if (i === index) {
           field.label = label;
-          field.name = this.formatApiName(label);
+          field.name = label.replace(/\s+(\w)/g, (_, letter) => letter.toUpperCase());
           delete field.deploymentStatus;
           delete field.deploymentError;
         }

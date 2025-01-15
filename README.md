@@ -55,6 +55,8 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 - Control access to Salesforce Inspector reloaded with profiles / permissions (Implement OAuth2 flow to generate access token for connected App) [how to](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
 - Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3 (extensions using manifest v2 will be removed from the store)
 - New UI for Export / Import
+- Pick preferred color scheme (light || dark mode)
+- Pick preferred color theme (true-color || easy-eyes)
 
 ## Security and Privacy
 

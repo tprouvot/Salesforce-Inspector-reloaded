@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setupColorListeners} from "./inspector.js";
 /* global initButton */
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
@@ -918,6 +918,7 @@ let h = React.createElement;
 class App extends React.Component {
   constructor(props) {
     super(props);
+    setupColorListeners();
     this.onApiTypeChange = this.onApiTypeChange.bind(this);
     this.onImportActionChange = this.onImportActionChange.bind(this);
     this.onImportTypeChange = this.onImportTypeChange.bind(this);
@@ -938,6 +939,8 @@ class App extends React.Component {
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
+    //this.clickDecrease = this.clickDecrease.bind(this);
+    //this.clickIncrease = this.clickIncrease.bind(this);
     this.unloadListener = null;
     this.state = {templateValueIndex: -1};
   }
@@ -1117,6 +1120,25 @@ class App extends React.Component {
       removeEventListener("beforeunload", this.unloadListener);
     }
   }
+
+  /*changeValue(e, shouldIncrease = false) {
+    const inputTarget = document.getElementById(e.target.dataset.targetid);
+    const oldValue = +inputTarget.value;
+    if((""+oldValue) == "NaN")
+      return;
+    inputTarget.value = shouldIncrease ? oldValue + 1 : oldValue - 1;
+    // trigger the onChange listener
+    const event = new Event('input', { bubbles: true });
+    inputTarget.dispatchEvent(event);
+  }
+
+  clickDecrease(e) {
+    this.changeValue(e, false);
+  }
+  clickIncrease(e) {
+    this.changeValue(e, true);
+  }*/
+
   render() {
     let {model} = this.props;
     return h("div", {},
@@ -1175,7 +1197,7 @@ class App extends React.Component {
                 )
               ),
               h("a", {className: "button field-info", href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the selected object"},
-                h("div", {className: "button-icon"}),
+                h("div", {className: "button-icon"})
               )
             ),
             h("div", {className: "conf-line radio-buttons"},
@@ -1207,15 +1229,21 @@ class App extends React.Component {
             h("div", {className: "conf-line"},
               h("label", {className: "conf-input", title: "The number of records per batch. A higher value is faster but increases the risk of errors due to governor limits."},
                 h("span", {className: "conf-label"}, "Batch size"),
-                h("span", {className: "conf-value button-space"},
-                  h("input", {type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, className: (model.batchSizeError() ? "confError" : "") + " batch-size"}),
+                h("div", {className: "conf-value button-space"},
+                  /*h("button", {className: "change-value decreaser", title: "Decrease the value by 1", onClick: this.clickDecrease, "data-targetid": "batchSize"}, "-"),
+                  h("input", {id: "batchSize", type: "text", value: model.batchSize, onChange: this.onBatchSizeChange, className: (model.batchSizeError() ? "confError " : "") + "batch-size"}),
+                  h("button", {className: "change-value increaser", title: "Increase the value by 1", onClick: this.clickIncrease, "data-targetid": "batchSize"}, "+"),*/
+                  h("input", {id: "batchSize", type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, className: (model.batchSizeError() ? "confError " : "") + "batch-size"}),
                   h("div", {className: "conf-error", hidden: !model.batchSizeError()}, model.batchSizeError())
                 )
               ),
               h("label", {className: "conf-input", title: "The number of batches to execute concurrently. A higher number is faster but increases the risk of errors due to lock congestion."},
                 h("span", {className: "conf-label"}, "Threads"),
                 h("span", {className: "conf-value"},
-                  h("input", {type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, className: (model.batchConcurrencyError() ? "confError" : "") + " batch-size"}),
+                  /*h("button", {className: "change-value decreaser", title: "Decrease the value by 1", onClick: this.clickDecrease, "data-targetid": "batchConcurrency"}, "-"),
+                  h("input", {id: "batchConcurrency", type: "text", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, className: (model.batchConcurrencyError() ? "confError" : "") + " batch-size"}),
+                  h("button", {className: "change-value increaser", title: "Increase the value by 1", onClick: this.clickIncrease, "data-targetid": "batchConcurrency"}, "+"),*/
+                  h("input", {id: "batchConcurrency", type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, className: (model.batchConcurrencyError() ? "confError" : "") + " batch-size"}),
                   h("span", {hidden: !model.isWorking()}, model.activeBatches),
                   h("div", {className: "conf-error", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
                 )
@@ -1361,6 +1389,7 @@ class StatusBox extends React.Component {
 }
 
 {
+
   let args = new URLSearchParams(location.search.slice(1));
   let sfHost = args.get("host");
   initButton(sfHost, true);
@@ -1378,7 +1407,9 @@ class StatusBox extends React.Component {
     }
 
   });
+
 }
+
 
 function stringIsEmpty(str) {
   return str == null || str == undefined || str.trim() == "";

@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn, apiVersion, setupColorListeners} from "./inspector.js";
 import {copyToClipboard} from "./data-load.js";
 /* global initButton */
 
@@ -130,6 +130,7 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
+    setupColorListeners();
     this.model = this.props.vm;
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onSortBy = this.onSortBy.bind(this);

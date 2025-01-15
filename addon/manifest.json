@@ -118,6 +118,15 @@
     "open-export-execute": {
       "description": "Run Query in Data Export"
     },
+    "link-setup": {
+      "description": "Open Setup"
+    },
+    "link-home": {
+      "description": "Open Home Page"
+    },
+    "link-dev": {
+      "description": "Open Developer Console"
+    },
     "data-export": {
       "description": "Data Export"
     },

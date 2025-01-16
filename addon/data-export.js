@@ -1136,6 +1136,7 @@ class App extends React.Component {
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
+    this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption"))};
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1363,6 +1364,14 @@ class App extends React.Component {
   toggleQueryMoreMenu(){
     this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
   }
+  displayButton(name){
+    const button = this.state.hideButtonsOption?.find((element) => element.name == name);
+    if (button){
+      return button.checked;
+    }
+    //if no option was found, display the button
+    return true;
+  }
 
   render() {
     let {model} = this.props;
@@ -1438,7 +1447,7 @@ class App extends React.Component {
             h("span", {}, model.autocompleteResults.title),
             h("div", {className: "flex-right"},
               h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Export"),
-              h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query"),
+              this.displayButton("export-query") ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query") : null,
               h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
               h("a", {tabIndex: 4, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
               h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
@@ -1483,7 +1492,7 @@ class App extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#hide"})
               )
             ),
-            localStorage.getItem("showDeleteRecordsButton") !== "false"
+            this.displayButton("delete")
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),

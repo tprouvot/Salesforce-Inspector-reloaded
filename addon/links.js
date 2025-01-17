@@ -256,6 +256,12 @@ export let setupLinks = [
   {label: "Dev Hub", link: "/lightning/setup/DevHub/home", section: "Platform Tools > Dev Hub", prod: true},
   {label: "DevOps Center", link: "/lightning/setup/DevOpsCenterSetup/home", section: "Platform Tools > Dev Hub", prod: true},
   {label: "Org Shape", link: "/lightning/setup/ShapeGrantAccess/home", section: "Platform Tools > Dev Hub", prod: true},
+  //Scale
+  {label: "Org Performance", link: "/lightning/setup/Metrics/home", section: "Scale > Scale Center", prod: true},
+  {label: "Performance Analysis", link: "/lightning/setup/PerformanceAnalysis/home", section: "Scale > Scale Center", prod: true},
+  {label: "ApexGuru Insights", link: "/lightning/setup/ApexGuruInsights/home", section: "Scale > Scale Insights", prod: true},
+  {label: "Report Insights", link: "/lightning/setup/ReportInsights/home", section: "Scale > Scale Insights", prod: true},
+  {label: "Performance Assistant", link: "/lightning/setup/PerformanceAssistant/home", section: "Scale > Scale Test", prod: true},
   //Performance
   {label: "Performance Assistant", link: "/lightning/setup/PerformanceAssistant/home", section: "Platform Tools > Performance > Performance Testing", prod: false},
   //Platform Tools > Environments

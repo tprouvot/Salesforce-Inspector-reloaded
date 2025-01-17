@@ -24,7 +24,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
       orderedDomains.forEach(currentDomain => {
         chrome.cookies.getAll({name: "sid", domain: currentDomain, secure: true, storeId: sender.tab.cookieStoreId}, cookies => {
-          let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!"));
+
+          let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!") && c.domain != "help.salesforce.com");
           if (sessionCookie) {
             sendResponse(sessionCookie.domain);
           }
@@ -59,17 +60,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 chrome.action.onClicked.addListener(() => {
   chrome.runtime.sendMessage({
-    msg: "shortcut_pressed", sfHost
+    msg: "shortcut_pressed", sfHost, command: "open-popup"
   });
 });
 chrome.commands?.onCommand.addListener((command) => {
-  if (!command.startsWith("open-")){
+  if (command.startsWith("link-")){
+    let link;
+    switch (command){
+      case "link-setup":
+        link = "/lightning/setup/SetupOneHome/home";
+        break;
+      case "link-home":
+        link = "/";
+        break;
+      case "link-dev":
+        link = "/_ui/common/apex/debug/ApexCSIPage";
+        break;
+    }
     chrome.tabs.create({
-      url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
+      url: `https:///${sfHost}${link}`
     });
-  } else {
+
+  } else if (command.startsWith("open-")){
     chrome.runtime.sendMessage({
       msg: "shortcut_pressed", command, sfHost
+    });
+  } else {
+    chrome.tabs.create({
+      url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
     });
   }
 });

@@ -3,6 +3,15 @@
 ## Version 1.26
 
 - Rework of the REST Explore header to improve the user experience.
+- Guess file format on paste in data import [feature 501](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/501) request by [Adam Štěpánek](https://github.com/Damecek)
+- Add chrome extension shortcuts for Setup, Home Page and Dev Console [feature 707](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/707) request by [Danny Gelfenbaum](https://github.com/DannyGelf)
+- Add button on User tab to enable LWC debug mode from the popup [feature 696](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/696) request by [b-r-j](https://github.com/b-r-j)
+- Add production org header and customizable text in options [feature 679](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/679) request and help by [Tim Paulaskas](https://github.com/TimPaulaskasDS)
+- Add Scale Center links to Shortcut tab search.
+- Add info about PlatformEvent limits and consumptions on `Event Monitor` page [feature 697](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/697)
+- Rename `Add deleted records?` to `Deleted/Archived Records?` in data export [feature 662](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/662) request by [McKay Howell](https://github.com/mckayhowell)
+- Fix `EntityParticle is not supported` error in show-all-data page + add new fields [issue 687](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/687)
+- Add `Donate` button in the popup [discussion 336](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/336)
 - Change user language and locale from the popup [feature 463](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/463)
 - Update user detail post save redirect [feature 671](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/671)
 - Add new domain for Visualforce pages cf [Ensure Access to Your Visualforce Pages in Summer ’24 and Winter ’25](https://help.salesforce.com/s/articleView?id=001406148&type=1)
@@ -14,8 +23,9 @@
 - Add `My Personal Information` shortcuts [feature 627](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/627) request by [Alfredo Chissotti](https://github.com/Astisme)
 - Add compatibility for force.com domain for Sf internal orgs
 - Restyle Org Limits [feature 626](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/626) request by [Vincent FINET](https://github.com/VinceFINET)
-- Add new options to hide buttons in popup [feature 618](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/618)
+- Add new options to hide buttons in popup and data export [feature 618](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/618)
 - Added an option for Data Exporter to use local browser time [feature 527](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/527) (contribution by [David Moruzzi](https://github.com/dmoruzzi))
+- Add `calculated` to type column [feature 680](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/680) (contribution by [Lars Lipman](https://github.com/lrlip))
 
 ## Version 1.25
 

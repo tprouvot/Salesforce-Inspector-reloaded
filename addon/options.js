@@ -111,7 +111,8 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
           {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
-          {option: Option, props: {type: "toggle", title: "Highlight PROD with a top border (color from favicon)", key: "colorizeProdBanner"}}
+          {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
+          {option: Option, props: {type: "text", title: "PROD Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the PROD banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}}
         ]
       },
       {
@@ -133,7 +134,14 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
-          {option: Option, props: {type: "toggle", title: "Show 'Delete Records' button ", key: "showDeleteRecordsButton", default: true}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Show buttons",
+              key: "hideExportButtonsOption",
+              checkboxes: [
+                {label: "Delete Records", name: "delete", checked: true},
+                {label: "Export Query", name: "export-query", checked: false}
+              ]}
+          },
           {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
           {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},

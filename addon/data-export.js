@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, nullToEmptyString} from "./inspector.js";
+import {sfConn, apiVersion, nullToEmptyString, getLinkTarget} from "./inspector.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
@@ -319,7 +319,7 @@ class Model {
     args.set("data", encodedData);
     if (this.queryTooling) args.set("apitype", "Tooling");
 
-    window.open("data-import.html?" + args, getLinkTarget(e));
+    window.open("data-import.html?" + args, getLinkTarget(e, false));
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -1136,6 +1136,7 @@ class App extends React.Component {
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
+    this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption"))};
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1150,9 +1151,8 @@ class App extends React.Component {
   }
   onPrefHideRelationsChange(e) {
     let {model} = this.props;
-    model.prefHideRelations = e.target.checked;
-    model.refreshColumnsVisibility();
-    model.didUpdate();
+    model.prefHideRelations = !model.prefHideRelations;
+    this.onExport();
   }
   onSelectHistoryEntry(e) {
     let {model} = this.props;
@@ -1364,6 +1364,14 @@ class App extends React.Component {
   toggleQueryMoreMenu(){
     this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
   }
+  displayButton(name){
+    const button = this.state.hideButtonsOption?.find((element) => element.name == name);
+    if (button){
+      return button.checked;
+    }
+    //if no option was found, display the button
+    return true;
+  }
 
   render() {
     let {model} = this.props;
@@ -1424,7 +1432,7 @@ class App extends React.Component {
             h("label", {},
               h("input", {type: "checkbox", checked: model.queryAll, onChange: this.onQueryAllChange, disabled: model.queryTooling}),
               " ",
-              h("span", {}, "Add deleted records?")
+              h("span", {}, "Deleted/Archived Records?")
             ),
             h("label", {title: "With the tooling API you can query more metadata, but you cannot query regular data"},
               h("input", {type: "checkbox", checked: model.queryTooling, onChange: this.onQueryToolingChange, disabled: model.queryAll}),
@@ -1439,7 +1447,7 @@ class App extends React.Component {
             h("span", {}, model.autocompleteResults.title),
             h("div", {className: "flex-right"},
               h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Export"),
-              h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query"),
+              this.displayButton("export-query") ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query") : null,
               h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
               h("a", {tabIndex: 4, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
               h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
@@ -1479,19 +1487,19 @@ class App extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#download"})
               )
             ),
-            localStorage.getItem("showDeleteRecordsButton") !== "false"
+            h("button", {disabled: !model.canCopy(), onClick: this.onPrefHideRelationsChange, title: `${model.prefHideRelations ? "Show" : "Hide"} Object Columns`},
+              h("svg", {className: `button-icon ${model.prefHideRelations ? "" : "disabled"}`},
+                h("use", {xlinkHref: "symbols.svg#hide"})
+              )
+            ),
+            this.displayButton("delete")
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
-          h("label", {title: "With this option, additional columns corresponding to Object names are removed from the query results and the exported data. These columns are useful during data import to automatically map objects."},
-            h("input", {type: "checkbox", checked: model.prefHideRelations, onChange: this.onPrefHideRelationsChange}),
-            " ",
-            h("span", {}, "Hide Object Columns")
-          ),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
-            h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop"),
+            h("button", {className: "cancel-btn", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop")
           ),
         ),
         h("textarea", {id: "result-text", readOnly: true, value: nullToEmptyString(model.exportError), hidden: model.exportError == null}),
@@ -1527,14 +1535,6 @@ class App extends React.Component {
 
   });
 
-}
-
-function getLinkTarget(e) {
-  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
-    return "_blank";
-  } else {
-    return "_top";
-  }
 }
 
 function getSeparator() {

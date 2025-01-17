@@ -308,6 +308,10 @@ button:disabled > svg.button-icon{
   fill: #dddbda;
 }
 
+button > svg.disabled{
+  fill: #dddbda;
+}
+
 .highlighted {
   background-color: rgb(0, 112, 210);
   border-color: rgb(0, 112, 210);

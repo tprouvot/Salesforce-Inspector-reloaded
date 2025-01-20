@@ -113,18 +113,19 @@ body {
   display: flex;
   align-items: center;
 }
-#help-btn:hover .icon{
-  background-color: #818181;
+svg.icon{
+  fill: #919191;
 }
-#help-btn .icon {
+svg.icon:hover{
+  fill: #818181;
+}
+.icon {
   display: inline-block;
   width: 1.4rem;
   height: 1.4rem;;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1.4rem;;
-  -webkit-mask-image: url(images/help.svg);
   -webkit-mask-position: center;
-  background-color: #919191;
 }
 #spinner {
   left: -15px;
@@ -479,4 +480,7 @@ code {
   width: -moz-available;
   width: -webkit-fill-available;
   width: fill-available;
+}
+.help-text a:visited {
+  color: #0176d3;
 }

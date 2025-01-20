@@ -1,8 +1,8 @@
 {
-  "name": "Salesforce Inspector Reloaded",
+  "name": "Salesforce Inspector Reloaded BETA",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.250",
-  "version_name": "1.25",
+  "version": "1.260",
+  "version_name": "1.26",
   "icons": {
     "128": "icon128.png"
   },
@@ -49,6 +49,7 @@
         "https://*.visualforce.mil/*",
         "https://*.crmforce.mil/*",
         "https://*.lightning.force.com.mcas.ms/*",
+        "https://*.force.com/*",
         "https://*.builder.salesforce-experience.com/*"
       ],
       "all_frames": true,
@@ -110,6 +111,21 @@
   "commands": {
     "open-popup": {
       "description": "Open popup"
+    },
+    "open-export-autocomplete": {
+      "description": "Fields suggestion in Data Export"
+    },
+    "open-export-execute": {
+      "description": "Run Query in Data Export"
+    },
+    "link-setup": {
+      "description": "Open Setup"
+    },
+    "link-home": {
+      "description": "Open Home Page"
+    },
+    "link-dev": {
+      "description": "Open Developer Console"
     },
     "data-export": {
       "description": "Data Export"

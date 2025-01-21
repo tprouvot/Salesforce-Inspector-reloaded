@@ -1521,8 +1521,7 @@ class UserDetails extends React.PureComponent {
   enableDebugMode(user){
     sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + user.Id, {method: "PATCH",
       body: {UserPreferencesUserDebugModePref: !user.UserPreferencesUserDebugModePref
-      }}).then(
-      browser.runtime.sendMessage({message: "reloadPage"})
+      }}).then(() => browser.runtime.sendMessage({message: "reloadPage"})
     ).catch(err => console.log("Error during user debug mode activation", err));
   }
 

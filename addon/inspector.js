@@ -1,7 +1,7 @@
 export let defaultApiVersion = "62.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 
-export function getLinkTarget(e) {
+export function getLinkTarget(e = {}) {
   if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
     return "_blank";
   } else {

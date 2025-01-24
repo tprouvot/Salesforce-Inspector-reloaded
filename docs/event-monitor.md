@@ -20,6 +20,12 @@ You can also directly access to the Event Monitor page and pre-select the Event 
 ## Replay From Parameter Warning
 The `Replay From` parameter is a powerful feature that allows users to replay past events by specifying an event replay ID. However, it must be used with **great caution** in production environments.
 
+## Display Platform Event Allocations and pre-build queries on PlatformEventUsageMetric
+
+<img width="1442" alt="Platform Event Allocations" src="https://github.com/user-attachments/assets/df2c5aa4-a432-4646-a450-d7a64efaae0e" />
+
+If you are facing the error: No such column 'EventName' on entity 'PlatformEventUsageMetric', please check related [documentation](https://developer.salesforce.com/docs/atlas.en-us.244.0.api_meta.meta/api_meta/meta_platformeventsettings.htm) to enable it.
+
 ### **Warning**
 - Setting the `Replay From` parameter to `-2` (to replay all events) can quickly consume your daily limit of platform events.
 - **Exceeding this limit can disrupt existing integrations and cause significant issues in a production environment.**

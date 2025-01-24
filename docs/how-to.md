@@ -95,9 +95,9 @@ Add a new property `csvSeparator` containing the needed separator for CSV files
 
 ## Disable query input autofocus
 
-Add a new property `disableQueryInputAutoFocus` with `true`
+Option available in Data Export tab
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/89563a58-d8fa-4b14-a150-99c389e8df75)
+<img width="809" alt="Disable query input" src="https://github.com/user-attachments/assets/6f928f58-e437-47aa-b2d2-378f534e7a08">
 
 ## Add custom query templates
 
@@ -223,6 +223,13 @@ You can update the debug level (configuration is per organization) and duration 
 > **Warning**
 > Increasing the default duration may lead to a high volume of logs generated.
 
+## Enable Debug Mode (for Lightning Components)
+
+Enable debug mode to make it easier to debug JavaScript code from Lightning components.
+Warning: Salesforce is slower for users who have debug mode enabled.
+
+<img width="278" alt="Enable Debug Mode" src="https://github.com/user-attachments/assets/f4dabb96-6b1d-48a1-828d-cc7d5da92e57" />
+
 ## Display query performance in Data Export
 
 To enable performance metrics for queries on the data export page, open the Options screen and select the Data Export tab,
@@ -275,16 +282,28 @@ From the option page, enable "Use favicon color on sandbox banner"
 ## Select all fields in a query
 
 This functionality already exists in the legacy version but since many users don't know about it, I would like to document it.
-When on the export page, put the cursor between `SaELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
+When on the export page, put the cursor between `SELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
 If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM`.
 
 ![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)
+
+## Customize Select all fields in a query shortcut
+
+If the default `Ctrl + space` shortcut is already used by another extension or app, you can customize it in `chrome://extensions/shortcuts` and choose the one you prefer.
+
+<img width="1133" alt="Customize Select all fields in a query shortcut" src="https://github.com/user-attachments/assets/f0bca12a-7c92-4fbe-9ca4-a8db51b050e9">
 
 ## Exclude formula fields from data export autocomplete
 
 You can exclude formula fields to be included in the autocomplete by disable the toogle
 
 <img width="898" alt="Exclude formula fields from autocomplete" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/aa9db6c4-099d-49ea-a343-7c64e472450d">
+
+## Convert times from data export to local time
+
+You can configure Data Export to convert times to local time. Navigate to Options -> Data Export and enable "Show local time".
+
+<img width="898" alt="Show local time in data export checkbox option" src="../assets/images/how-to/show-local-time.png?raw=true">
 
 ## Customize extension's shortcuts
 
@@ -304,12 +323,23 @@ You can configure the [SOAP headers](https://developer.salesforce.com/docs/atlas
 Because custom headers can be hard to configure, you could iterate through suggestions by pressing down key.
 If you want to include new suggestions, feel free to open a new [feature request](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=enhancement&projects=&template=feature_request.md).
 
-ie for KeepAccountTeam:
+If true, the account team is kept with the account when the account owner is changed. If false, the account team is deleted:
 ``` json
 {"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}
 ```
 
+For a duplicate rule, when the Alert option is enabled, bypass alerts and save duplicate records by setting this property to true:
+``` json
+  '{"DuplicateRuleHeader": {"allowSave": true}}'
+```
+
+If true for a Case or Lead, uses the default (active) assignment rule for a Case or Lead. If specified, don’t specify an assignmentRuleId. If true for an Account, all territory assignment rules are applied. If false for an Account, no territory assignment rules are applied.
+``` json
+  '{"AssignmentRuleHeader": {"useDefaultRule": true}}',
+```
+
 <img width="503" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/e2d21970-ddc5-4c42-a54e-ffb7ffdcb278">
+
 
 ## Highlight PROD with a top border
 
@@ -325,3 +355,16 @@ Under `User Experience` tab, enable the option `Highlight PROD with a top border
 To export and import your current configuration, go to the options page and click the corresponding icon in the header:
 
 <img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753">
+
+## Hide some buttons in the popup
+
+Since the extension offers more features, the number of button is increasing.
+Some of the users may don't need some of those, to make the popup lighter some of the buttons can be hidden:
+
+<img width="1024" alt="Hide Buttons" src="https://github.com/user-attachments/assets/50b4cb3c-7886-4b38-96a9-b5a6d93b69e6">
+
+## Switch user language from the popup
+
+From the User tab in the popup, click on the user language flag to display the available languages.
+
+![2024-12-04_16-07-35 (1)](https://github.com/user-attachments/assets/d07da946-dba0-4bb4-8f3b-313392bbf557)

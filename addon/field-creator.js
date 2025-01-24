@@ -19,7 +19,7 @@ class ProfilesModal extends React.Component {
   }
 
   handleSearchChange = (event) => {
-    this.setState({searchTerm: event.target.value});
+    this.setState({searchTerm: event.target.value}, this.updateAllCheckboxes);
   };
 
   componentDidUpdate(prevProps) {
@@ -66,17 +66,16 @@ class ProfilesModal extends React.Component {
     const stateKey = `all${type.charAt(0).toUpperCase() + type.slice(1)}${tableType}`;
     const allSelected = !this.state[stateKey];
 
+    const filteredItems = this.getFilteredItems(tableType);
+
     this.setState(prevState => {
       const updatedPermissions = {...prevState.permissions};
-      Object.keys(this.props.permissionSets).forEach(name => {
-        if ((tableType === "Profiles" && this.props.permissionSets[name] !== null)
-          || (tableType === "PermissionSets" && this.props.permissionSets[name] === null)) {
-          updatedPermissions[name] = {
-            ...updatedPermissions[name],
-            [type]: allSelected,
-            ...(type === "edit" ? {read: true} : {})
-          };
-        }
+      filteredItems.forEach(([name]) => {
+        updatedPermissions[name] = {
+          ...updatedPermissions[name],
+          [type]: allSelected,
+          ...(type === "edit" ? {read: true} : {})
+        };
       });
 
       return {
@@ -88,15 +87,14 @@ class ProfilesModal extends React.Component {
 
   updateAllCheckboxes = () => {
     const {permissions} = this.state;
-    const {permissionSets} = this.props;
 
-    const profilesEntries = Object.entries(permissions).filter(([name]) => permissionSets[name] !== null);
-    const permissionSetsEntries = Object.entries(permissions).filter(([name]) => permissionSets[name] === null);
+    const filteredProfiles = this.getFilteredItems("Profiles");
+    const filteredPermissionSets = this.getFilteredItems("PermissionSets");
 
-    const allEditProfiles = profilesEntries.every(([_, p]) => p.edit);
-    const allReadProfiles = profilesEntries.every(([_, p]) => p.read);
-    const allEditPermissionSets = permissionSetsEntries.every(([_, p]) => p.edit);
-    const allReadPermissionSets = permissionSetsEntries.every(([_, p]) => p.read);
+    const allEditProfiles = filteredProfiles.every(([name]) => permissions[name].edit);
+    const allReadProfiles = filteredProfiles.every(([name]) => permissions[name].read);
+    const allEditPermissionSets = filteredPermissionSets.every(([name]) => permissions[name].edit);
+    const allReadPermissionSets = filteredPermissionSets.every(([name]) => permissions[name].read);
 
     this.setState({
       allEditProfiles,
@@ -104,6 +102,25 @@ class ProfilesModal extends React.Component {
       allEditPermissionSets,
       allReadPermissionSets
     });
+  };
+
+  getFilteredItems = (tableType) => {
+    const {permissionSets} = this.props;
+    const {searchTerm} = this.state;
+
+    const items = Object.entries(permissionSets)
+      .filter(([_, profile]) =>
+        tableType === "Profiles" ? profile !== null : profile === null
+      )
+      .sort((a, b) =>
+        tableType === "Profiles"
+          ? a[1].localeCompare(b[1])
+          : a[0].localeCompare(b[0])
+      );
+
+    return items.filter(([name, profile]) =>
+      (profile || name).toLowerCase().includes(searchTerm.toLowerCase())
+    );
   };
 
   applyToAllFields = () => {
@@ -910,6 +927,11 @@ class App extends React.Component {
       userInfo: "...",
       filteredObjects: []
     };
+    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
+      //change background color for production
+      document.body.classList.add("prod");
+    }
   }
 
   componentDidMount() {
@@ -1016,6 +1038,7 @@ class App extends React.Component {
 
   createField(field, objectName) {
     const accessToken = sfConn.sessionId;
+    //TODO use sfConn.rest to deploy the fields
     const instanceUrl = `https://${sfConn.instanceHostname}`;
     const metadataUrl = `${instanceUrl}/services/data/v${apiVersion}/tooling/sobjects/CustomField`;
 
@@ -1210,7 +1233,7 @@ class App extends React.Component {
                   newUrl: record.NewUrl,
                   isEverCreatable: record.IsEverCreatable,
                   // Don't set layoutable here, as it should come from describe calls
-                }, 'EntityDef');
+                }, "EntityDef");
               }
             }).catch(err => {
               console.error("list entity definitions: ", err);
@@ -1231,10 +1254,10 @@ class App extends React.Component {
 
       const sObjectsList = Array.from(entityMap.values());
       const layoutableObjects = sObjectsList.filter(obj => obj.layoutable === true);
-      this.setState({ objects: layoutableObjects });
+      this.setState({objects: layoutableObjects});
     } catch (error) {
       console.error("Error fetching objects:", error);
-      this.setState({ fieldErrorMessage: 'Error fetching object data.' });
+      this.setState({fieldErrorMessage: "Error fetching object data."});
     }
   };
 
@@ -1270,6 +1293,7 @@ class App extends React.Component {
     this.setState((prevState) => ({
       fields: [...prevState.fields, {label: "", name: "", type: "Text"}],
     }));
+    this.checkAllFieldsHavePermissions();
   };
 
   removeRow = (index) => {
@@ -1290,12 +1314,30 @@ class App extends React.Component {
     });
   };
 
+  formatApiName(label) {
+    const namingConvention = localStorage.getItem("fieldNamingConvention") || "pascal";
+
+    // First, replace any special characters with underscores and convert to proper case
+    let apiName = label.trim().replace(/[^a-zA-Z0-9\s]/g, "_");
+    if (namingConvention === "underscore") {
+      // Convert spaces to underscores: "My Field Name" -> "My_Field_Name"
+      apiName = apiName.replace(/\s+/g, "_");
+    } else {
+      // Remove underscores and convert to PascalCase: "My_Field_Name" -> "MyFieldName"
+      apiName = apiName.replace(/[\s_]+(\w)/g, (_, letter) => letter.toUpperCase());
+    }
+    // Remove leading/trailing underscores
+    apiName = apiName.replace(/^_+|_+$/g, "");
+    // Replace multiple underscores with single underscore
+    return apiName.replace(/_+/g, "_");
+  }
+
   onLabelChange = (index, label) => {
     this.setState((prevState) => ({
       fields: prevState.fields.map((field, i) => {
         if (i === index) {
           field.label = label;
-          field.name = label.replace(/\s+(\w)/g, (_, letter) => letter.toUpperCase());
+          field.name = this.formatApiName(label);
           delete field.deploymentStatus;
           delete field.deploymentError;
         }
@@ -1465,9 +1507,11 @@ class App extends React.Component {
     this.setState({
       fields: updatedFields,
       showProfilesModal: false,
-      currentFieldIndex: null});
-
-    this.checkAllFieldsHavePermissions();
+      currentFieldIndex: null
+    }, () => {
+      // This callback will be executed after the state has been updated
+      this.checkAllFieldsHavePermissions();
+    });
   };
 
   onSaveFieldOptions = (updatedField) => {
@@ -1532,162 +1576,162 @@ class App extends React.Component {
     const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject} = this.state;
 
     return (
-      h("div", {onClick: (e) =>this.setState({
+      h("div", {onClick: (e) => this.setState({
         filteredObjects: []
       })},
-        h("div", {id: "user-info"},
-          h("a", {href: `https://${sfConn.instanceHostname}`, className: "sf-link"},
-            h("svg", {viewBox: "0 0 24 24"},
-              h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-            ),
-            " Salesforce Home"
+      h("div", {id: "user-info"},
+        h("a", {href: `https://${sfConn.instanceHostname}`, className: "sf-link"},
+          h("svg", {viewBox: "0 0 24 24"},
+            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
           ),
-          h("h1", {}, "Field Creator (beta)"),
-          h("span", {}, " / " + userInfo),
-          h("div", {className: "flex-right"},
-            h("span", {className: "slds-assistive-text"}),
-            h("div", {className: "slds-spinner__dot-a"}),
-            h("div", {className: "slds-spinner__dot-b"}),
-          ),
-          h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/field-creator/", target: "_blank", id: "help-btn", title: "Field Creator Help", onClick: null},
-            h("div", {className: "icon"})
-          ),
+          " Salesforce Home"
         ),
-        h("div", {className: "relativePosition"},
-          h("div", {className: "area firstHeader relativePosition zIndex1"},
-            h("div", {className: "form-group"},
-              h("label", {htmlFor: "object_select"}, "Select Object"),
-              selectedObject && h("a", {
-                href: selectedObject.name.endsWith("__mdt")
-                  ? `https://${sfConn.instanceHostname}/lightning/setup/CustomMetadata/page?address=%2F${selectedObject.durableId}%3Fsetupid%3DCustomMetadata`
-                  : `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject.name}/FieldsAndRelationships/view`,
-                target: "_blank",
-                className: "fieldsLink marginLeft10",
-                rel: "noopener noreferrer"
-              }, "(Fields)"), h("br", null),
-              h("div", {className: "relativePosition width400"},
-                h("input", {
-                  type: "text",
-                  id: "object_select",
-                  className: "form-control input-textBox width100",
-                  placeholder: "Search and select object...",
-                  value: this.state.objectSearch,
-                  onChange: this.handleObjectSearch
-                }),
-                this.state.filteredObjects.length > 0 && h("ul", {
-                  onClick: (e) => e.stopPropagation(),
-                  className: "ulItem"
+        h("h1", {}, "Field Creator (beta)"),
+        h("span", {}, " / " + userInfo),
+        h("div", {className: "flex-right"},
+          h("span", {className: "slds-assistive-text"}),
+          h("div", {className: "slds-spinner__dot-a"}),
+          h("div", {className: "slds-spinner__dot-b"}),
+        ),
+        h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/field-creator/", target: "_blank", id: "help-btn", title: "Field Creator Help", onClick: null},
+          h("div", {className: "icon"})
+        ),
+      ),
+      h("div", {className: "relativePosition"},
+        h("div", {className: "area firstHeader relativePosition zIndex1"},
+          h("div", {className: "form-group"},
+            h("label", {htmlFor: "object_select"}, "Select Object"),
+            selectedObject && h("a", {
+              href: selectedObject.name.endsWith("__mdt")
+                ? `https://${sfConn.instanceHostname}/lightning/setup/CustomMetadata/page?address=%2F${selectedObject.durableId}%3Fsetupid%3DCustomMetadata`
+                : `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject.name}/FieldsAndRelationships/view`,
+              target: "_blank",
+              className: "fieldsLink marginLeft10",
+              rel: "noopener noreferrer"
+            }, "(Fields)"), h("br", null),
+            h("div", {className: "relativePosition width400"},
+              h("input", {
+                type: "text",
+                id: "object_select",
+                className: "form-control input-textBox width100",
+                placeholder: "Search and select object...",
+                value: this.state.objectSearch,
+                onChange: this.handleObjectSearch
+              }),
+              this.state.filteredObjects.length > 0 && h("ul", {
+                onClick: (e) => e.stopPropagation(),
+                className: "ulItem"
+              },
+              this.state.filteredObjects.map(obj =>
+                h("li", {
+                  key: obj.name,
+                  onClick: () => this.handleObjectSelect(obj),
+                  className: "objectListItem"
                 },
-                this.state.filteredObjects.map(obj =>
-                  h("li", {
-                    key: obj.name,
-                    onClick: () => this.handleObjectSelect(obj),
-                    className: "objectListItem"
-                  },
-                  `${obj.name} (${obj.label})`
-                  )
-                )
+                `${obj.name} (${obj.label})`
                 )
               )
-            ),
-            h("br", null),
-            h("div", {className: "col-xs-12 text-center", id: "deploy"},
-              h("button", {"aria-label": "Clear Button", className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
-              h("button", {"aria-label": "Open Import CSV modal button", className: "btn btn-large", onClick: this.openImportModal}, "Import CSV"),
-              h("button", {"disabled": !this.state.selectedObject, "aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
-              !this.state.allFieldsHavePermissions && h("p", {className: "errorText"}, "Some fields are missing permissions."),
+              )
             )
+          ),
+          h("br", null),
+          h("div", {className: "col-xs-12 text-center", id: "deploy"},
+            h("button", {"aria-label": "Clear Button", className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
+            h("button", {"aria-label": "Open Import modal button", className: "btn btn-large", onClick: this.openImportModal}, "Import"),
+            h("button", {"disabled": !this.state.selectedObject, "aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
+            !this.state.allFieldsHavePermissions && h("p", {className: "errorText"}, "Some fields are missing permissions."),
           )
-        ),
-        h("div", {className: "area"},
-          h(FieldsTable, {
-            fields,
-            onDelete: this.removeRow,
-            onClone: this.cloneRow,
-            onLabelChange: this.onLabelChange,
-            onNameChange: this.onNameChange,
-            onTypeChange: this.onTypeChange,
-            onEditOptions: this.onEditOptions,
-            onEditProfiles: this.onEditProfiles,
-            onShowDeploymentStatus: this.onShowDeploymentStatus
+        )
+      ),
+      h("div", {className: "area"},
+        h(FieldsTable, {
+          fields,
+          onDelete: this.removeRow,
+          onClone: this.cloneRow,
+          onLabelChange: this.onLabelChange,
+          onNameChange: this.onNameChange,
+          onTypeChange: this.onTypeChange,
+          onEditOptions: this.onEditOptions,
+          onEditProfiles: this.onEditProfiles,
+          onShowDeploymentStatus: this.onShowDeploymentStatus
+        }),
+        h("button", {"aria-label": "Add Row/New field to table", className: "btn btn-sm highlighted maxWidth18", id: "add_row", onClick: this.addRow}, "Add Row")
+      ),
+      showProfilesModal && h(ProfilesModal, {
+        field: fields[currentFieldIndex],
+        permissionSets: this.state.permissionSets,
+        onSave: this.onSaveFieldProfiles,
+        onClose: this.onCloseProfilesModal,
+        onApplyToAllFields: this.applyToAllFields
+      }),
+      showModal && h(FieldOptionModal, {
+        field: fields[currentFieldIndex],
+        onSave: this.onSaveFieldOptions,
+        onClose: this.onCloseModal
+      }),
+      this.state.showImportModal && h("div", {onClick: this.closeImportModal, className: "modalOverlay"},
+        h("div", {onClick: (e) => e.stopPropagation(), className: "modalContent"},
+          h("div", {className: "modalHeader"},
+            h("h2", null, "CSV Import (beta)"),
+            h("button", {
+              onClick: this.closeImportModal,
+              "aria-label": "Close Import Modal",
+              className: "closeButton"
+            }, "×")
+          ),
+          h("p", null, "Enter " + (localStorage.getItem("csvSeparator") || ",") + "  separated values of Label, ApiName, Type."),
+          h("textarea", {
+            value: this.state.importCsvContent,
+            onChange: this.handleImportCsvChange,
+            className: "importTextarea"
           }),
-          h("button", {"aria-label": "Add Row/New field to table", className: "btn btn-sm highlighted maxWidth18", id: "add_row", onClick: this.addRow}, "Add Row")
-        ),
-        showProfilesModal && h(ProfilesModal, {
-          field: fields[currentFieldIndex],
-          permissionSets: this.state.permissionSets,
-          onSave: this.onSaveFieldProfiles,
-          onClose: this.onCloseProfilesModal,
-          onApplyToAllFields: this.applyToAllFields
-        }),
-        showModal && h(FieldOptionModal, {
-          field: fields[currentFieldIndex],
-          onSave: this.onSaveFieldOptions,
-          onClose: this.onCloseModal
-        }),
-        this.state.showImportModal && h("div", {onClick: this.closeImportModal, className: "modalOverlay"},
-          h("div", {onClick: (e) => e.stopPropagation(), className: "modalContent"},
-            h("div", {className: "modalHeader"},
-              h("h2", null, "CSV Import (beta)"),
-              h("button", {
-                onClick: this.closeImportModal,
-                "aria-label": "Close Import Modal",
-                className: "closeButton"
-              }, "×")
-            ),
-            h("p", null, "Enter " + (localStorage.getItem("csvSeparator") || ",") + "  separated values of Label, ApiName, Type."),
-            h("textarea", {
-              value: this.state.importCsvContent,
-              onChange: this.handleImportCsvChange,
-              className: "importTextarea"
-            }),
-            this.state.importError && h("p", {className: "errorText"}, this.state.importError),
-            h("div", {className: "modalFooter"},
-              h("button", {
-                "aria-label": "Cancel button",
-                onClick: this.closeImportModal,
-                className: "marginRight10"
-              }, "Cancel"),
-              h("button", {
-                "aria-label": "Import button",
-                onClick: this.importCsv,
-                className: "btn btn-primary highlighted"
-              }, "Import")
-            )
+          this.state.importError && h("p", {className: "errorText"}, this.state.importError),
+          h("div", {className: "modalFooter"},
+            h("button", {
+              "aria-label": "Cancel button",
+              onClick: this.closeImportModal,
+              className: "marginRight10"
+            }, "Cancel"),
+            h("button", {
+              "aria-label": "Import button",
+              onClick: this.importCsv,
+              className: "btn btn-primary highlighted"
+            }, "Import")
           )
-        ),
+        )
+      ),
 
-        this.state.fieldErrorMessage && h("div", {className: "notification_container"},
-          h("div", {className: "slds-notify slds-notify_toast slds-theme_error notificationContent"},
-            h("span", {className: "errorIcon"},
-              h("svg", {className: "slds-icon width24px height24px", "aria-hidden": "true"},
-                h("use", {xlinkHref: "symbols.svg#error", className: "iconFill"})
-              )
-            ),
-            h("span", {className: "slds-text-heading_small"},
-              this.state.fieldErrorMessage,
-              this.state.errorMessageClickable && h("a", {
-                href: "#",
-                onClick: (e) => {
-                  e.preventDefault();
-                  localStorage.setItem("enableEntityDefinitionCaching", true);
-                  this.setState({fieldErrorMessage: null, errorMessageClickable: false});
-                  this.fetchObjects();
-                },
-                style: {color: "inherit", textDecoration: "underline"}
-              }, "Click here to enable")
-            ),
-            h("a", {
-              title: "Close",
-              onClick: () => this.setState({fieldErrorMessage: null, errorMessageClickable: false}),
-              className: "closeIcon"
-            },
+      this.state.fieldErrorMessage && h("div", {className: "notification_container"},
+        h("div", {className: "slds-notify slds-notify_toast slds-theme_error notificationContent"},
+          h("span", {className: "errorIcon"},
             h("svg", {className: "slds-icon width24px height24px", "aria-hidden": "true"},
-              h("use", {xlinkHref: "symbols.svg#close", className: "iconFill"})
+              h("use", {xlinkHref: "symbols.svg#error", className: "iconFill"})
             )
-            )
+          ),
+          h("span", {className: "slds-text-heading_small"},
+            this.state.fieldErrorMessage,
+            this.state.errorMessageClickable && h("a", {
+              href: "#",
+              onClick: (e) => {
+                e.preventDefault();
+                localStorage.setItem("enableEntityDefinitionCaching", true);
+                this.setState({fieldErrorMessage: null, errorMessageClickable: false});
+                this.fetchObjects();
+              },
+              style: {color: "inherit", textDecoration: "underline"}
+            }, "Click here to enable")
+          ),
+          h("a", {
+            title: "Close",
+            onClick: () => this.setState({fieldErrorMessage: null, errorMessageClickable: false}),
+            className: "closeIcon"
+          },
+          h("svg", {className: "slds-icon width24px height24px", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#close", className: "iconFill"})
           )
-        ))
+          )
+        )
+      ))
     );
   }
 }

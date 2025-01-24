@@ -162,6 +162,9 @@ class Model {
   copyAsJson() {
     copyToClipboard(this.apiResponse.value, null, "  ");
   }
+  clear(){
+    this.apiResponse.value = "";
+  }
   selectSavedEntry() {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
@@ -295,6 +298,7 @@ class App extends React.Component {
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onSend = this.onSend.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
+    this.onClearResponse = this.onClearResponse.bind(this);
     this.onUpdateBody = this.onUpdateBody.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetEndpoint = this.onSetEndpoint.bind(this);
@@ -381,6 +385,11 @@ class App extends React.Component {
     model.copyAsJson();
     model.didUpdate();
   }
+  onClearResponse(){
+    let {model} = this.props;
+    model.clear();
+    model.didUpdate();
+  }
   onUpdateBody(e){
     let {model} = this.props;
     model.request.body = e.target.value;
@@ -395,10 +404,11 @@ class App extends React.Component {
   onSetEndpoint(e){
     let {model} = this.props;
     model.request.endpoint = e.target.value;
-    model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(e.target.value.toLowerCase()));
+    //replace current endpoint with latest on the have the autocomplete works for all api versions
+    let updatedApiEndpoint = e.target.value.replace(/\/data\/v\d+\.0\//, `/data/v${apiVersion}/`);
+    model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(updatedApiEndpoint.toLowerCase()));
     model.didUpdate();
   }
-
   componentDidMount() {
     let {model} = this.props;
     let endpointInput = this.refs.endpoint;
@@ -569,11 +579,15 @@ class App extends React.Component {
           h("div", {className: "button-group"},
             h("button", {disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy")
           ),
-          model.apiResponse && h("span", {className: "result-status flex-right"},
-
-            h("span", {}, model.totalTime.toFixed(1) + "ms"),
-            h("span", {className: "slds-m-left_medium status-code"}, "Status: " + model.apiResponse.code)
-          ),
+          h("span", {className: "result-status flex-right"},
+            model.apiResponse && h("div",
+              h("span", {}, model.totalTime.toFixed(1) + "ms"),
+              h("span", {className: "slds-m-left_medium status-code"}, "Status: " + model.apiResponse.code)
+            ),
+            h("div", {className: "slds-m-left_medium button-group"},
+              h("button", {disabled: !model.apiResponse, onClick: this.onClearResponse, title: "Clear Response"}, "Clear")
+            )
+          )
         ),
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null},

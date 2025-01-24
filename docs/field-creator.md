@@ -2,6 +2,26 @@
 
 ![image](https://github.com/user-attachments/assets/5dfe73a1-b218-471a-93b5-0f281a90ba44)
 
+## Supported Field Types
+
+The Field Creator feature supports the following field types:
+
+- **Checkbox**
+- **Currency**
+- **Number**
+- **Percent**
+- **Date**
+- **DateTime**
+- **Email**
+- **Phone**
+- **Url**
+- **Location**
+- **Picklist**
+- **Multiselect Picklist**
+- **Text**
+- **TextArea**
+- **LongTextArea**
+- **Html**
 
 ## Getting Started
 
@@ -51,3 +71,9 @@
 - Click "Clear All" to reset the entire field list.
 
 <img width="450" src="https://github.com/user-attachments/assets/e820d160-1183-48d2-82fd-e1fd376a0109">
+
+
+## Available Options
+- You can choose the default naming convention ('PascalCase' or 'Underscore') for the API Name of the fields.
+
+<img width="1258" alt="Field Naming Convention" src="https://github.com/user-attachments/assets/06df73b8-e936-4133-847c-6ddca48ddc42">

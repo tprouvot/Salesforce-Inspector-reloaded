@@ -814,7 +814,7 @@ class App extends React.Component {
     this.exportOptions = this.exportOptions.bind(this);
     this.importOptions = this.importOptions.bind(this);
     this.hideToast = this.hideToast.bind(this);
-    this.state = {importTitle: "Export Options"};
+    this.state = {};
   }
 
   exportOptions() {
@@ -892,7 +892,7 @@ class App extends React.Component {
               h("use", {xlinkHref: "symbols.svg#download"})
             )
           ),
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: this.state.importTitle},
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Import Options"},
             h("svg", {className: "slds-button__icon"},
               h("use", {xlinkHref: "symbols.svg#upload"})
             )

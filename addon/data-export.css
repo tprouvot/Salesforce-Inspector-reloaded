@@ -719,3 +719,6 @@ svg.button-icon {
   overflow: auto;
   height: 200px;
 }
+.help-text a, a:visited {
+  color: #0176d3;
+}

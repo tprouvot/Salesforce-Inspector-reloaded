@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Fix Upsert Custom Metadata Bug with Metadata Relationship [issue 509](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/509) (contribution by [Joshua Yarmak](https://github.com/toly11))
 - Guess file format on paste in data import [feature 501](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/501) request by [Adam Štěpánek](https://github.com/Damecek)
 - Add chrome extension shortcuts for Setup, Home Page and Dev Console [feature 707](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/707) request by [Danny Gelfenbaum](https://github.com/DannyGelf)
 - Add button on User tab to enable LWC debug mode from the popup [feature 696](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/696) request by [b-r-j](https://github.com/b-r-j)

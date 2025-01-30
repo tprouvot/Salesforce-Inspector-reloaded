@@ -772,7 +772,7 @@ class Model {
         let selectedObjectFields = this.describeInfo.describeSobject(false, sobjectType).sobjectDescribe?.fields || [];
         selectedObjectFields.forEach(field => {
           let soapType = field.soapType;
-          // The tns:ID represents a Metadata Relationship. Although not documented, in practice it works only when settign it to xsd:string
+          // The tns:ID represents a Metadata Relationship. Although not documented, in practice it works only when setting it to xsd:string
           if (soapType == "tns:ID") {
             soapType = "xsd:string";
           }

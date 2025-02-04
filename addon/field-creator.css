@@ -54,7 +54,7 @@ body {
 }
 #user-info {
   background: #f7f9fb;
-  height: 48px;
+  height: auto;
   display: flex;
   align-items: center;
   padding: 0 12px;

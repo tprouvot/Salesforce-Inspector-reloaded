@@ -28,6 +28,7 @@
 - Add `calculated` to type column [feature 680](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/680) (contribution by [Lars Lipman](https://github.com/lrlip))
 - Fix LWC Debug mode force page refresh before User update [issue 718](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/718) (contribution by [Paul Kalinin](https://github.com/Paul-Kalynyn))
 - Fix `event-monitor` Error on Edge [issue 716](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/716) (contribution by [Paul Kalinin](https://github.com/Paul-Kalynyn))
+- Fix the height of the div where user information is stored [issue 677](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/677) (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
 
 ## Version 1.25
 

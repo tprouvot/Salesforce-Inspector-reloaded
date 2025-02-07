@@ -95,9 +95,9 @@ Add a new property `csvSeparator` containing the needed separator for CSV files
 
 ## Disable query input autofocus
 
-Add a new property `disableQueryInputAutoFocus` with `true`
+Option available in Data Export tab
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/89563a58-d8fa-4b14-a150-99c389e8df75)
+<img width="809" alt="Disable query input" src="https://github.com/user-attachments/assets/6f928f58-e437-47aa-b2d2-378f534e7a08">
 
 ## Add custom query templates
 
@@ -117,13 +117,20 @@ If you want to _always_ open extension's links in a new tab, you can enable> **W
 > **Warning**
    > Enabling this option will prevent you to use `Lightning navigation` which allows faster navigation.
 
+- Data <ins>E</ins>xport : e
+- Data <ins>I</ins>mport : i
+- Org <ins>L</ins>imits : l
+- <ins>D</ins>ownload Metadata : d
+- E<ins>x</ins>plore API : x
+- Event <ins>M</ins>onitor : m
+- <ins>F</ins>ield Creator : f
 
 ## Disable metadata search from Shortcut tab
 
 By default when you enter keyword in the Shortcut tab, the search is performed on the Setup link shortcuts _AND_ metadata (Flows, PermissionSets and Profiles).
-If you want to disable the search on the metadata, set `metadataShortcutSearch` to `false`
+If you want to disable the search on the metadata, update related option:
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/a31566d8-0ad4-47e5-a1ab-3eada43b3430)
+<img width="892" alt="image" src="https://github.com/user-attachments/assets/2541fc22-9f1b-4cd1-90cd-d4615b313d96">
 
 ## Enable / Disable Flow scrollability
 
@@ -168,9 +175,9 @@ Since Winter 24, there is a beta functionality to view a summary of the Permissi
 
 <img width="718" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/36448cd1-260e-49bd-9dfd-c61910f813f4">
 
-You can enable this view for the Shortcut search by creating a new localVariable as shown below.
+You can enable this view for the Shortcut search by enabling the option as shown below.
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/f3093e4b-438c-4795-b64a-8d37651906a5)
+<img width="883" alt="Enable Summary" src="https://github.com/user-attachments/assets/4487d0a4-8ed0-4467-993a-17900bc79ce6">
 
 Then when you click on a PermissionSet / PermissionSetGroups search result, you'll be redirected to the summary.
 
@@ -189,7 +196,7 @@ If you want to prevent auto assignment rules, set the `createUpdateRestCalloutHe
 Since the plugin's api version is only updated when all productions have been updated to the new release, you may want to use the latest version during preview windows.
 
 > [!IMPORTANT]
-> When you manually update the API version, it won't be overriden by extension future updates.
+> When you manually update the API version, it won't be overridden by extension future updates.
 
 ![2023-11-10_09-50-55 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6ae51a29-9887-41a6-8148-d9e12c2dc10d)
 
@@ -216,6 +223,13 @@ You can update the debug level (configuration is per organization) and duration 
 > **Warning**
 > Increasing the default duration may lead to a high volume of logs generated.
 
+## Enable Debug Mode (for Lightning Components)
+
+Enable debug mode to make it easier to debug JavaScript code from Lightning components.
+Warning: Salesforce is slower for users who have debug mode enabled.
+
+<img width="278" alt="Enable Debug Mode" src="https://github.com/user-attachments/assets/f4dabb96-6b1d-48a1-828d-cc7d5da92e57" />
+
 ## Display query performance in Data Export
 
 To enable performance metrics for queries on the data export page, open the Options screen and select the Data Export tab,
@@ -223,6 +237,10 @@ then set "Display Query Execution Time" to enabled. Total time for the query to 
 are displayed.
 
 ## Test GraphQL query
+
+> [!WARNING]
+> DEPRECATED : Since you can use Data Export to test GraphQL and also REST Explore to run the request, this should not be useful anymore.
+
 
 - Open popup and click on "Explore API" button.
 - Right click on the page and select "Inspect"
@@ -242,37 +260,50 @@ From the option page, you can customize the default favicon by:
 
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
 
-<img width="901" alt="Customize favicon" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1bbd9cc8-2425-4e79-8a92-a4e954f3d369">
+<img width="878" alt="image" src="https://github.com/user-attachments/assets/fdf24a37-2cab-402e-a101-4a20bc4e1ae4">
 
-Now if you want to set a random favicon for all of your visited orgs, open dev console from one of the extension page and paste following code in dev console:
+Now if you want to populate all the orgs you visited with a custom favicon, you have two options:
+- Smart mode enabled: this will analyze your environment name and populate a favicon based on this (blue for dev, green for int, purple for uat and orange for full)
+- Random: this will choose a random color among all the predefined colors
 
-``` js
-let colors = ['olive', 'darkorange', 'pink', 'purple', 'firebrick', 'hotpink', 'skyblue', '#1E90FF'];
+Then you click on Populate All and that's it!
+Note: orgs with an existing customized favicon won't be affected.
 
-let orgs = Object.keys(localStorage).filter((localKey) =>
-    localKey.endsWith("_isSandbox")
-);
-orgs.forEach((org) => {
-    let sfHost = org.substring(0, org.indexOf(("_isSandbox")));
-    let randomFavicon = colors[(Math.floor(Math.random() * colors.length))]
-    console.info(sfHost + "_customFavicon", randomFavicon);
-    localStorage.setItem(sfHost + "_customFavicon", randomFavicon);
-});
-```
+## Customize sandbox banner color
+
+From the option page, enable "Use favicon color on sandbox banner"
+<img width="772" alt="image" src="https://github.com/user-attachments/assets/28cb7f5f-01fd-48b9-a5da-f50f6cbb2f81">
+
+
+<img width="1087" alt="image" src="https://github.com/user-attachments/assets/f90999c2-f93e-423a-bcb7-18a8aa717a17">
+
+
 
 ## Select all fields in a query
 
 This functionality already exists in the legacy version but since many users don't know about it, I would like to document it.
-When on the export page, put the cursor between `SaELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
+When on the export page, put the cursor between `SELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
 If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM`.
 
 ![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)
+
+## Customize Select all fields in a query shortcut
+
+If the default `Ctrl + space` shortcut is already used by another extension or app, you can customize it in `chrome://extensions/shortcuts` and choose the one you prefer.
+
+<img width="1133" alt="Customize Select all fields in a query shortcut" src="https://github.com/user-attachments/assets/f0bca12a-7c92-4fbe-9ca4-a8db51b050e9">
 
 ## Exclude formula fields from data export autocomplete
 
 You can exclude formula fields to be included in the autocomplete by disable the toogle
 
 <img width="898" alt="Exclude formula fields from autocomplete" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/aa9db6c4-099d-49ea-a343-7c64e472450d">
+
+## Convert times from data export to local time
+
+You can configure Data Export to convert times to local time. Navigate to Options -> Data Export and enable "Show local time".
+
+<img width="898" alt="Show local time in data export checkbox option" src="../assets/images/how-to/show-local-time.png?raw=true">
 
 ## Customize extension's shortcuts
 
@@ -296,3 +327,55 @@ Example:
 After running a query in the "Data Export" page, you can hide additional columns in the query results. These columns represent the name of the objects included in your query. They are useful to automatically map the fields to the correct object in the "Data Import" page. The columns are hidden in the exported files (CSV or Excel) as well. You can set a default value, using the 'Hide additionnal Object Name Columns by default on Data Export' option ("Options" -> "Data Export" tab).
 
 ![2024-05-16_17-54-24 (1)](https://github.com/guillaumeSF/Salesforce-Inspector-reloaded/assets/166603639/45fda19b-b426-4b11-91cb-4f0fbc5c47d7)
+
+## Configure Import options in Data Import
+
+You can configure the [SOAP headers](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/soap_headers.htm) when importing records to specify Assignment Rule, Duplicate Rule or OwnerChangeOptions.
+Because custom headers can be hard to configure, you could iterate through suggestions by pressing down key.
+If you want to include new suggestions, feel free to open a new [feature request](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=enhancement&projects=&template=feature_request.md).
+
+If true, the account team is kept with the account when the account owner is changed. If false, the account team is deleted:
+``` json
+{"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}
+```
+
+For a duplicate rule, when the Alert option is enabled, bypass alerts and save duplicate records by setting this property to true:
+``` json
+  '{"DuplicateRuleHeader": {"allowSave": true}}'
+```
+
+If true for a Case or Lead, uses the default (active) assignment rule for a Case or Lead. If specified, don’t specify an assignmentRuleId. If true for an Account, all territory assignment rules are applied. If false for an Account, no territory assignment rules are applied.
+``` json
+  '{"AssignmentRuleHeader": {"useDefaultRule": true}}',
+```
+
+<img width="503" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/e2d21970-ddc5-4c42-a54e-ffb7ffdcb278">
+
+
+## Highlight PROD with a top border
+
+Production environment are critical, to avoid confusion with other orgs, you can enable an option which will add a 2px border on the top of the Salesforce UI and also in the extension's pages.
+
+Under `User Experience` tab, enable the option `Highlight PROD with a top border (color from favicon)`.
+
+<img width="955" alt="highlight prod with a top border" src="https://github.com/user-attachments/assets/4ff26e23-08b2-447a-be8d-004488f2a3a1">
+
+
+## Import / Export configuration (saved query etc.)
+
+To export and import your current configuration, go to the options page and click the corresponding icon in the header:
+
+<img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753">
+
+## Hide some buttons in the popup
+
+Since the extension offers more features, the number of button is increasing.
+Some of the users may don't need some of those, to make the popup lighter some of the buttons can be hidden:
+
+<img width="1024" alt="Hide Buttons" src="https://github.com/user-attachments/assets/50b4cb3c-7886-4b38-96a9-b5a6d93b69e6">
+
+## Switch user language from the popup
+
+From the User tab in the popup, click on the user language flag to display the available languages.
+
+![2024-12-04_16-07-35 (1)](https://github.com/user-attachments/assets/d07da946-dba0-4bb4-8f3b-313392bbf557)

@@ -1,7 +1,8 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, nullToEmptyString} from "./inspector.js";
+import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString} from "./inspector.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
+import Toast from "./components/Toast.js";
 
 class Model {
 
@@ -9,7 +10,8 @@ class Model {
     this.sfHost = sfHost;
     this.sfLink = "https://" + this.sfHost;
     this.userInfo = "...";
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true") {
+    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
       document.body.classList.add("prod");
     }
@@ -63,9 +65,15 @@ class OptionsTabSelector extends React.Component {
     super(props);
     this.model = props.model;
     this.sfHost = this.model.sfHost;
+
+    // Get the tab from the URL or default to 1
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTabId = parseInt(urlParams.get("selectedTab")) || 1;
+
     this.state = {
-      selectedTabId: 1
+      selectedTabId: initialTabId
     };
+
     this.tabs = [
       {
         id: 1,
@@ -77,11 +85,33 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
           {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab", tooltip: "Enabling this option will prevent Lightning Navigation (faster loading) to be used"}},
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
-          {option: Option, props: {type: "toggle", title: "Search metadata from Shortcut tab", key: "metadataShortcutSearch"}},
-          {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Searchable metadata from Shortcut tab",
+              key: "metadataShortcutSearchOptions",
+              checkboxes: [
+                {label: "Flows", name: "flows", checked: true},
+                {label: "Profiles", name: "profiles", checked: true},
+                {label: "PermissionSets", name: "permissionSets", checked: true},
+                {label: "Communities", name: "networks", checked: true},
+                {label: "Apex Classes", name: "classes", checked: false}
+              ]}
+          },
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Show buttons",
+              key: "hideButtonsOption",
+              checkboxes: [
+                {label: "Explore API", name: "explore-api", checked: true},
+                {label: "Org Limits", name: "org-limits", checked: true},
+                {label: "Options", name: "options", checked: true},
+                {label: "Generate Access Token", name: "generate-token", checked: true}
+              ]}
+          },
           {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
-          {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}}
+          {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
+          {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
+          {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
+          {option: Option, props: {type: "text", title: "PROD Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the PROD banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}}
         ]
       },
       {
@@ -91,7 +121,7 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: APIVersionOption, props: {key: 1}},
           {option: APIKeyOption, props: {key: 2}},
-          {option: RestHeaderOption, props: {key: 3}}
+          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders"}}
         ]
       },
       {
@@ -101,10 +131,21 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
+          {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
-          {option: Option, props: {type: "toggle", title: "Show 'Delete Records' button ", key: "showDeleteRecordsButton", default: true}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Show buttons",
+              key: "hideExportButtonsOption",
+              checkboxes: [
+                {label: "Delete Records", name: "delete", checked: true},
+                {label: "Export Query", name: "export-query", checked: false}
+              ]}
+          },
           {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
           {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
+          {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
+          {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100}},
+          {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50}},
           {option: Option, props: {type: "text", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}}
         ]
       },
@@ -120,6 +161,25 @@ class OptionsTabSelector extends React.Component {
       {
         id: 5,
         tabTitle: "Tab5",
+        title: "Field Creator",
+        content: [
+          {option: Option,
+            props: {
+              type: "select",
+              title: "Field Naming Convention",
+              key: "fieldNamingConvention",
+              default: "pascal",
+              tooltip: "Controls how API names are auto-generated from field labels. PascalCase: 'My Field' -> 'MyField'. Underscores: 'My Field' -> 'My_Field'",
+              options: [
+                {label: "PascalCase", value: "pascal"},
+                {label: "Underscores", value: "underscore"}
+              ]
+            }}
+        ]
+      },
+      {
+        id: 6,
+        tabTitle: "Tab6",
         title: "Enable Logs",
         content: [
           {option: enableLogsOption, props: {key: 1}}
@@ -131,7 +191,14 @@ class OptionsTabSelector extends React.Component {
 
   onTabSelect(e) {
     e.preventDefault();
-    this.setState({selectedTabId: e.target.tabIndex});
+    const selectedTabId = e.target.tabIndex;
+
+    // Update the URL with the selected tab
+    const url = new URL(window.location);
+    url.searchParams.set("selectedTab", selectedTabId);
+    window.history.pushState({}, "", url);
+
+    this.setState({selectedTabId});
   }
 
   render() {
@@ -237,6 +304,7 @@ class APIVersionOption extends React.Component {
   constructor(props) {
     super(props);
     this.onChangeApiVersion = this.onChangeApiVersion.bind(this);
+    this.onRestoreDefaultApiVersion = this.onRestoreDefaultApiVersion.bind(this);
     this.state = {apiVersion: localStorage.getItem("apiVersion") ? localStorage.getItem("apiVersion") : apiVersion};
   }
 
@@ -246,43 +314,23 @@ class APIVersionOption extends React.Component {
     localStorage.setItem("apiVersion", apiVersion + ".0");
   }
 
+  onRestoreDefaultApiVersion(){
+    localStorage.removeItem("apiVersion");
+    this.setState({apiVersion: defaultApiVersion});
+  }
+
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "API Version")
       ),
-      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-form-element__control"},
+          h("button", {className: "button button-brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
+        ) : null,
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          h("input", {type: "number", required: true, id: "apiVersionInput", className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
-        )
-      )
-    );
-  }
-}
-
-class RestHeaderOption extends React.Component {
-
-  constructor(props) {
-    super(props);
-    this.onChangeRestHeader = this.onChangeRestHeader.bind(this);
-    this.state = {restHeader: localStorage.getItem("createUpdateRestCalloutHeaders") ? localStorage.getItem("createUpdateRestCalloutHeaders") : ""};
-  }
-
-  onChangeRestHeader(e) {
-    let restHeader = e.target.value;
-    this.setState({restHeader});
-    localStorage.setItem("createUpdateRestCalloutHeaders", restHeader);
-  }
-
-  render() {
-    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-        h("span", {}, "Rest Header")
-      ),
-      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-          h("input", {type: "text", id: "restHeaderInput", className: "slds-input", placeholder: "Rest Header", value: nullToEmptyString(this.state.restHeader), onChange: this.onChangeRestHeader}),
+          h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
         )
       )
     );
@@ -378,7 +426,9 @@ class Option extends React.Component {
       value = JSON.stringify(props.default);
       localStorage.setItem(this.key, value);
     }
-    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value) : value};
+    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value)
+      : this.type == "select" ? (value || props.default || props.options?.[0]?.value)
+      : value};
     this.title = props.title;
   }
 
@@ -396,16 +446,30 @@ class Option extends React.Component {
 
   render() {
     const id = this.key;
-    const isText = this.type == "text";
+    const isTextOrNumber = this.type == "text" || this.type == "number";
+    const isSelect = this.type == "select";
+
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, this.title,
           h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
         )
       ),
-      isText ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      isTextOrNumber ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-          h("input", {type: "text", id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
+          h("input", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
+        )
+      ))
+      : isSelect ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          h("select", {
+            className: "slds-input slds-m-right_small",
+            value: this.state[this.key],
+            onChange: this.onChange
+          },
+          this.props.options.map(opt =>
+            h("option", {key: opt.value, value: opt.value}, opt.label)
+          ))
         )
       ))
       : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
@@ -429,10 +493,41 @@ class FaviconOption extends React.Component {
     super(props);
     this.sfHost = props.model.sfHost;
     this.onChangeFavicon = this.onChangeFavicon.bind(this);
+    this.populateFaviconColors = this.populateFaviconColors.bind(this);
+    this.onToogleSmartMode = this.onToogleSmartMode.bind(this);
+
     let favicon = localStorage.getItem(this.sfHost + "_customFavicon") ? localStorage.getItem(this.sfHost + "_customFavicon") : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
+    let smartMode = true;
     this.tooltip = props.tooltip;
-    this.state = {favicon, isInternal};
+    this.state = {favicon, isInternal, smartMode};
+    this.colorShades = {
+      dev: [
+        "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue", "CornflowerBlue",
+        "SlateBlue", "SteelBlue", "SkyBlue", "PowderBlue", "MediumSlateBlue",
+        "Indigo", "BlueViolet", "MediumPurple", "CadetBlue", "Aqua",
+        "Turquoise", "DarkTurquoise", "Teal", "LightSlateGray", "MidnightBlue"
+      ],
+      uat: [
+        "MediumOrchid", "Orchid", "DarkOrchid", "DarkViolet", "DarkMagenta",
+        "Purple", "BlueViolet", "Indigo", "DarkSlateBlue", "RebeccaPurple",
+        "MediumPurple", "MediumSlateBlue", "SlateBlue", "Plum", "Violet",
+        "Thistle", "Magenta", "DarkOrchid", "Fuchsia", "DarkPurple"
+      ],
+      int: [
+        "LimeGreen", "SeaGreen", "MediumSeaGreen", "ForestGreen", "Green",
+        "DarkGreen", "YellowGreen", "OliveDrab", "DarkOliveGreen",
+        "SpringGreen", "LawnGreen", "DarkKhaki",
+        "GreenYellow", "DarkSeaGreen", "MediumAquamarine", "DarkCyan",
+        "Teal", "Jade", "MediumForestGreen", "HunterGreen"
+      ],
+      full: [
+        "Orange", "DarkOrange", "Coral", "Tomato", "OrangeRed",
+        "Salmon", "IndianRed", "Sienna", "Chocolate", "SaddleBrown",
+        "Peru", "DarkSalmon", "RosyBrown", "Brown", "Maroon",
+        "Tangerine", "Peach", "BurntOrange", "Pumpkin", "Amber"
+      ]
+    };
   }
 
   onChangeFavicon(e) {
@@ -440,6 +535,71 @@ class FaviconOption extends React.Component {
     this.setState({favicon});
     localStorage.setItem(this.sfHost + "_customFavicon", favicon);
   }
+
+  onToogleSmartMode(e) {
+    let smartMode = e.target.checked;
+    this.setState({smartMode});
+  }
+
+  populateFaviconColors(){
+    let orgs = Object.keys(localStorage).filter((localKey) =>
+      localKey.endsWith("_isSandbox")
+    );
+
+    orgs.forEach((org) => {
+      let sfHost = org.substring(0, org.indexOf("_isSandbox"));
+      let existingColor = localStorage.getItem(sfHost + "_customFavicon");
+
+      if (!existingColor) { // Only assign a color if none is set
+        const chosenColor = this.getColorForHost(sfHost, this.state.smartMode);
+        if (chosenColor) {
+          console.info(sfHost + "_customFavicon", chosenColor);
+          localStorage.setItem(sfHost + "_customFavicon", chosenColor);
+          if (sfHost === this.sfHost) {
+            this.setState({favicon: chosenColor});
+          }
+        }
+      } else {
+        console.info(sfHost + " already has a customFavicon: " + existingColor);
+      }
+    });
+  }
+
+  getEnvironmentType(sfHost) {
+    // Function to get environment type based on sfHost
+    if (sfHost.includes("dev")) return "dev";
+    if (sfHost.includes("uat")) return "uat";
+    if (sfHost.includes("int") || sfHost.includes("sit")) return "int";
+    if (sfHost.includes("full")) return "full";
+    return null;
+  }
+
+  getColorForHost(sfHost, smartMode) {
+    // Attempt to get the environment type
+    const envType = this.getEnvironmentType(sfHost);
+
+    // Check if smartMode is true and environment type is valid
+    if (smartMode && envType && this.colorShades[envType].length > 0) {
+      // Select a random color from the corresponding environment shades
+      const randomIndex = Math.floor(Math.random() * this.colorShades[envType].length);
+      const chosenColor = this.colorShades[envType][randomIndex];
+      this.colorShades[envType].splice(randomIndex, 1); // Remove the used color from the list
+      return chosenColor;
+    } else {
+      // If no environment type matches or smartMode is false, use a random color from all available shades
+      const allColors = Object.values(this.colorShades).flat();
+      if (allColors.length > 0) {
+        const randomIndex = Math.floor(Math.random() * allColors.length);
+        const chosenColor = allColors[randomIndex];
+        allColors.splice(randomIndex, 1); // Remove the used color from the list
+        return chosenColor;
+      } else {
+        console.warn("No more colors available.");
+        return null;
+      }
+    }
+  }
+
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
@@ -449,13 +609,89 @@ class FaviconOption extends React.Component {
         )
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
+        h("div", {className: "slds-form-element__control"},
           h("input", {type: "text", className: "slds-input", placeholder: "All HTML Color Names, Hex code or external URL", value: nullToEmptyString(this.state.favicon), onChange: this.onChangeFavicon}),
         ),
-        h("div", {className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-left_small"},
+        h("div", {className: "slds-form-element__control slds-col"},
           this.state.isInternal ? h("svg", {className: "icon"},
             h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
           ) : null
+        )
+      ),
+      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {dir: "rtl", className: "slds-form-element__control slds-col "},
+          h("label", {className: "slds-checkbox_toggle slds-grid"},
+            h("input", {type: "checkbox", required: true, className: "slds-input", checked: this.state.smartMode, onChange: this.onToogleSmartMode}),
+            h("span", {className: "slds-checkbox_faux_container center-label"},
+              h("span", {className: "slds-checkbox_faux"}),
+              h("span", {className: "slds-checkbox_on", title: "Use favicon based on org name (DEV : blue, UAT :green ..)"}, "Smart"),
+              h("span", {className: "slds-checkbox_off", title: "Use random favicon"}, "Random"),
+            )
+          )
+        ),
+        h("div", {className: "slds-form-element__control"},
+          h("button", {className: "button button-brand", onClick: this.populateFaviconColors, title: "Use favicon for all orgs I've visited"}, "Populate All")
+        )
+      )
+    );
+  }
+}
+
+class MultiCheckboxButtonGroup extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.handleCheckboxChange = this.handleCheckboxChange.bind(this);
+
+    this.title = props.title;
+    this.key = props.storageKey;
+
+    // Load checkboxes from localStorage or default to props.checkboxes
+    const storedCheckboxes = localStorage.getItem(this.key) ? JSON.parse(localStorage.getItem(this.key)) : [];
+
+    // Merge checkboxes only if the size is different
+    const mergedCheckboxes = storedCheckboxes.length === props.checkboxes.length
+      ? storedCheckboxes
+      : this.mergeCheckboxes(storedCheckboxes, props.checkboxes);
+
+    this.state = {checkboxes: mergedCheckboxes};
+    if (storedCheckboxes.length !== props.checkboxes.length) {
+      localStorage.setItem(this.key, JSON.stringify(mergedCheckboxes)); // Save the merged state to localStorage
+    }
+  }
+
+  mergeCheckboxes = (storedCheckboxes, propCheckboxes) => propCheckboxes.map((checkbox) => {
+    const storedCheckbox = storedCheckboxes.find((item) => item.name === checkbox.name);
+    return storedCheckbox || checkbox;
+  });
+
+  handleCheckboxChange = (event) => {
+    const {name, checked} = event.target;
+    const updatedCheckboxes = this.state.checkboxes.map((checkbox) =>
+      checkbox.name === name ? {...checkbox, checked} : checkbox
+    );
+    localStorage.setItem(this.key, JSON.stringify(updatedCheckboxes));
+    this.setState({checkboxes: updatedCheckboxes});
+  };
+
+  render() {
+    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, this.title)
+      ),
+      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control"},
+          h("div", {className: "slds-checkbox_button-group"},
+            this.state.checkboxes.map((checkbox, index) =>
+              h("span", {className: "slds-button slds-checkbox_button", key: this.key + index},
+                h("input", {type: "checkbox", id: `${this.key}-${checkbox.value}-${index}`, name: checkbox.name, checked: checkbox.checked, onChange: this.handleCheckboxChange, title: checkbox.title}),
+                h("label", {className: "slds-checkbox_button__label", htmlFor: `${this.key}-${checkbox.value}-${index}`},
+                  h("span", {className: "slds-checkbox_faux"}, checkbox.label)
+                )
+              )
+            )
+          )
         )
       )
     );
@@ -510,8 +746,8 @@ class CSVSeparatorOption extends React.Component {
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "CSV Separator")
       ),
-      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align_center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align_center slds-gutters_small"},
         h("input", {type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: nullToEmptyString(this.state.csvSeparator), onChange: this.onChangeCSVSeparator})
       )
     );
@@ -574,9 +810,71 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.foo = undefined;
+
+    this.exportOptions = this.exportOptions.bind(this);
+    this.importOptions = this.importOptions.bind(this);
+    this.hideToast = this.hideToast.bind(this);
+    this.state = {};
+  }
+
+  exportOptions() {
+    const localStorageData = {...localStorage};
+    const jsonData = JSON.stringify(localStorageData, null, 2);
+    const blob = new Blob([jsonData], {type: "application/json"});
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = "reloadedConfiguration.json";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  importOptions() {
+    const fileInput = this.refs.fileInput;
+
+    if (!fileInput.files.length) {
+      console.error("No file selected.");
+      return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target.result);
+        for (const [key, value] of Object.entries(importedData)) {
+          localStorage.setItem(key, value);
+        }
+        this.setState({
+          showToast: true,
+          toastMessage: "Options Imported Successfully!",
+          toastVariant: "success",
+          toastTitle: "Success"
+        });
+        setTimeout(this.hideToast, 3000);
+      } catch (error) {
+        this.setState({
+          showToast: true,
+          toastMessage: "Import Failed",
+          toastVariant: "error",
+          toastTitle: "Error"
+        });
+        console.error("Error parsing JSON file:", error);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  hideToast() {
+    let {model} = this.props;
+    this.state = {showToast: false, toastMessage: ""};
+    model.didUpdate();
   }
 
   render() {
+    const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
     return h("div", {},
       h("div", {id: "user-info", className: "slds-border_bottom"},
@@ -588,9 +886,37 @@ class App extends React.Component {
         ),
         h("h1", {className: "slds-text-title_bold"}, "Options"),
         h("span", {}, " / " + model.userInfo),
-        h("div", {className: "flex-right"})),
+        h("div", {className: "flex-right"},
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: this.exportOptions, title: "Export Options"},
+            h("svg", {className: "slds-button__icon"},
+              h("use", {xlinkHref: "symbols.svg#download"})
+            )
+          ),
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Import Options"},
+            h("svg", {className: "slds-button__icon"},
+              h("use", {xlinkHref: "symbols.svg#upload"})
+            )
+          ),
+          // Hidden file input for importing options
+          h("input", {
+            type: "file",
+            style: {display: "none"},
+            ref: "fileInput",
+            onChange: this.importOptions,
+            accept: "application/json"
+          })
+        )
+      ),
+      this.state.showToast
+        && h(Toast, {
+          variant: this.state.toastVariant,
+          title: this.state.toastTitle,
+          message: this.state.toastMessage,
+          onClose: this.hideToast
+        }),
       h("div", {className: "main-container slds-card slds-m-around_small", id: "main-container_header"},
-        h(OptionsTabSelector, {model}))
+        h(OptionsTabSelector, {model})
+      )
     );
   }
 }

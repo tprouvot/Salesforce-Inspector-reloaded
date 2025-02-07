@@ -1,9 +1,19 @@
-export let apiVersion = localStorage.getItem("apiVersion") == null ? "61.0" : localStorage.getItem("apiVersion");
+export let defaultApiVersion = "62.0";
+export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
+
+export function getLinkTarget(e = {}) {
+  if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
+    return "_blank";
+  } else {
+    return "_top";
+  }
+}
 export let sessionError;
 export function nullToEmptyString(value) {
   // For react input fields, the value may not be null or undefined, so this will clean the value
   return (value == null) ? "" : value;
 }
+const clientId = "Salesforce Inspector Reloaded";
 
 export let sfConn = {
 
@@ -32,16 +42,17 @@ export let sfConn = {
         this.sessionId = message.key;
       }
     }
-    const IS_SANDBOX = "isSandbox";
-    if (localStorage.getItem(sfHost + "_" + IS_SANDBOX) == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+FROM+Organization").then(res => {
-        localStorage.setItem(sfHost + "_" + IS_SANDBOX, res.records[0].IsSandbox);
+    if (localStorage.getItem(sfHost + "_trialExpirationDate") == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+,TrialExpirationDate+FROM+Organization").then(res => {
+        localStorage.setItem(sfHost + "_isSandbox", res.records[0].IsSandbox);
         localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
+        localStorage.setItem(sfHost + "_trialExpirationDate", res.records[0].TrialExpirationDate);
       });
     }
+    return this.sessionId;
   },
 
-  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}) {
+  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {
     if (!this.instanceHostname) {
       throw new Error("Instance Hostname not found");
     }
@@ -49,9 +60,10 @@ export let sfConn = {
     let xhr = new XMLHttpRequest();
     url += (url.includes("?") ? "&" : "?") + "cache=" + Math.random();
     const sfHost = "https://" + this.instanceHostname;
-    xhr.open(method, sfHost + url, true);
-
+    const fullUrl = new URL(url, sfHost);
+    xhr.open(method, fullUrl.toString(), true);
     xhr.setRequestHeader("Accept", "application/json; charset=UTF-8");
+    xhr.setRequestHeader("Sforce-Call-Options", `client=${clientId}`);
 
     if (api == "bulk") {
       xhr.setRequestHeader("X-SFDC-Session", this.sessionId);
@@ -62,9 +74,9 @@ export let sfConn = {
     }
 
     if (body !== undefined) {
+      xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
       if (bodyType == "json") {
         body = JSON.stringify(body);
-        xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
       } else if (bodyType == "raw") {
         // Do nothing
       } else {
@@ -94,7 +106,9 @@ export let sfConn = {
       };
       xhr.send(body);
     });
-    if (xhr.status >= 200 && xhr.status < 300) {
+    if (rawResponse){
+      return xhr;
+    } else if (xhr.status >= 200 && xhr.status < 300) {
       return xhr.response;
     } else if (xhr.status == 0) {
       if (!logErrors) { console.error("Received no response from Salesforce REST API", xhr); }
@@ -106,13 +120,17 @@ export let sfConn = {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
       //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
       if (localStorage.getItem(this.instanceHostname + "_access_token")){
-        sessionError = error;
-        showInvalidTokenBanner();
+        sessionError = {text: "Access Token Expired", title: "Generate New Token", type: "warning", icon: "warning"};
+        showToastBanner();
       }
       let err = new Error();
       err.name = "Unauthorized";
       err.message = error;
       throw err;
+    } else if (xhr.status == 403) {
+      let error = xhr.response.length > 0 ? xhr.response[0].message : "Error";
+      sessionError = {text: error, type: "error", icon: "error"};
+      showToastBanner();
     } else {
       if (!logErrors) { console.error("Received error response from Salesforce REST API", xhr); }
       let err = new Error();
@@ -173,6 +191,7 @@ export let sfConn = {
     xhr.open("POST", "https://" + this.instanceHostname + wsdl.servicePortAddress + "?cache=" + Math.random(), true);
     xhr.setRequestHeader("Content-Type", "text/xml");
     xhr.setRequestHeader("SOAPAction", '""');
+    xhr.setRequestHeader("CallOptions", `client:${clientId}`);
 
     let sessionHeaderKey = wsdl.apiName == "Metadata" ? "met:SessionHeader" : "SessionHeader";
     let sessionIdKey = wsdl.apiName == "Metadata" ? "met:sessionId" : "sessionId";
@@ -321,8 +340,8 @@ function getMyDomain(host) {
   return host;
 }
 
-function showInvalidTokenBanner(){
-  const containerToShow = document.getElementById("invalidTokenBanner");
+function showToastBanner(){
+  const containerToShow = document.getElementById("toastBanner");
   if (containerToShow) { containerToShow.classList.remove("hide"); }
   const containerToMask = document.getElementById("mainTabs");
   if (containerToMask) { containerToMask.classList.add("mask"); }

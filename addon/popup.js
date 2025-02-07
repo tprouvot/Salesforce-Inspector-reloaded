@@ -3,7 +3,7 @@ import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 
-var p = parent;
+let p = parent;
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -1890,17 +1890,17 @@ class AllDataSelection extends React.PureComponent {
                     h("span", {}, " / "),
                     h("a", {
                     // TODO add check for record type support (such as custom metadata types and custom settings)
-                    href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId),
-                    target: linkTarget,
-                    onClick: handleLightningLinkClick
-                  }, "Record Types"),
+                      href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId),
+                      target: linkTarget,
+                      onClick: handleLightningLinkClick
+                    }, "Record Types"),
                   ) : null,
                   selectedValue.sobject.name.endsWith("__e") ? null : h("span", {}, h("span", {}, " / "),
                     h("a", {
-                    href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting),
-                    target: linkTarget,
-                    onClick: handleLightningLinkClick
-                  }, "List")
+                      href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting),
+                      target: linkTarget,
+                      onClick: handleLightningLinkClick
+                    }, "List")
                   ),
                   selectedValue.sobject.name.endsWith("__e") || selectedValue.sobject.name.endsWith("__mdt") ? null : h("span", {}, h("span", {}, " / "),
                     h("a", {href: this.getObjectListAccess(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Access")
@@ -2279,7 +2279,7 @@ class Autocomplete extends React.PureComponent {
       } else {
         lightningNavigate({navigationType: "recordId", recordId: value.recordId}, recordURL);
       }
-    } else if(value.isSetupLink) {
+    } else if (value.isSetupLink) {
       const url = "https://" + sfHost + value.link;
       const linkTarget = getLinkTarget(e);
       closePopup();
@@ -2437,16 +2437,6 @@ function sfLocaleKeyToCountryCode(localeKey) {
   if (!localeKey) { return ""; }
   const splitted = localeKey.split("_");
   return splitted[(splitted.length > 1 && !localeKey.includes("_LATN_")) ? 1 : 0].toLowerCase();
-}
-
-function getLinkTarget(e) {
-  const openLinksInNewTabPref = JSON.parse(localStorage.getItem("openLinksInNewTab") || "false");
-  // TODO add check for inDevConsole
-  if (openLinksInNewTabPref || (e.ctrlKey || e.metaKey)) {
-    return "_blank";
-  } else {
-    return "_top";
-  }
 }
 
 window.getRecordId = getRecordId; // for unit tests

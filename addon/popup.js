@@ -2498,6 +2498,10 @@ class URLBuilder {
     return `https://${sfHost}${newUrl}`;
   }
 
+  static getSubscribeUrl(name){
+    return this.props.eventMonitorHref + "&channel=" + name;
+  }
+
   static getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectName}/RecordTypes/${recordtypeId}/view`;
   }

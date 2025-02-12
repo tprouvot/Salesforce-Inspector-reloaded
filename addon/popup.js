@@ -1287,12 +1287,7 @@ class AllDataBoxOrg extends React.PureComponent {
             h("table", {},
               h("tbody", {},
                 h("tr", {},
-                  h("th", {}, h("a", {
-                    href: URLBuilder.getCompanyInfoUrl(sfHost),
-                    title: "Company Information",
-                    target: linkTarget,
-                    onClick: handleLightningLinkClick
-                  }, "Org Id:")),
+                  h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget, onClick: handleLightningLinkClick}, "Org Id:")),
                   h("td", {}, orgInfo.Id.substring(0, 15))
                 ),
                 h("tr", {},
@@ -1786,15 +1781,15 @@ class AllDataSelection extends React.PureComponent {
    */
   getObjectSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
-      return URLBuilder.getMetadataSetupUrl(this.props.sfHost, durableId, "CustomMetadata");
+      return this.getMetadataLink(durableId, "CustomMetadata");
     } else if (sobjectName.endsWith("__e")) {
       return this.getMetadataLink(durableId, "EventObjects");
     } else if (isCustomSetting) {
-      return URLBuilder.getCustomSettingSetupUrl(this.props.sfHost, durableId);
-    } else if (sobjectName.endsWith("__c") || sobjectName.endsWith("__kav")) {
-      return URLBuilder.getObjectSetupUrl(this.props.sfHost, durableId);
+      return this.getMetadataLink(durableId, "CustomSettings");
+    } else if (sobjectName.endsWith("__c")) {
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/Details/view";
     } else {
-      return URLBuilder.getObjectSetupUrl(this.props.sfHost, sobjectName);
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/Details/view";
     }
   }
   getMetadataLink(durableId, type){
@@ -1802,22 +1797,23 @@ class AllDataSelection extends React.PureComponent {
   }
   getObjectFieldsSetupLink(sobjectName, durableId, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
-      return URLBuilder.getCustomMetadataSetupUrl(this.props.sfHost, durableId);
+      return this.getMetadataLink(durableId, "CustomMetadata");
     } else if (isCustomSetting) {
-      return URLBuilder.getCustomSettingSetupUrl(this.props.sfHost, durableId);
+      return this.getMetadataLink(durableId, "CustomSettings");
     } else if (sobjectName.endsWith("__c") || sobjectName.endsWith("__kav")) {
-      return URLBuilder.getObjectFieldsSetupUrl(this.props.sfHost, durableId);
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + durableId + "/FieldsAndRelationships/view";
     } else {
-      return URLBuilder.getObjectFieldsSetupUrl(this.props.sfHost, sobjectName);
+      return "https://" + this.props.sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/FieldsAndRelationships/view";
     }
   }
   getObjectListLink(sobjectName, keyPrefix, isCustomSetting) {
     if (sobjectName.endsWith("__mdt")) {
-      return URLBuilder.getCustomeMetadataListUrl(this.props.sfHost, keyPrefix);
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomMetadata/page?address=%2F" + keyPrefix;
     } else if (isCustomSetting) {
-      return URLBuilder.getCustomSettingListUrl(this.props.sfHost, keyPrefix);
+      return "https://" + this.props.sfHost + "/lightning/setup/CustomSettings/page?address=%2Fsetup%2Fui%2FlistCustomSettingsData.apexp?id=" + keyPrefix;
+
     } else {
-      return URLBuilder.getObjectListUrl(this.props.sfHost, sobjectName);
+      return "https://" + this.props.sfHost + "/lightning/o/" + sobjectName + "/list";
     }
   }
   getObjectListAccess(sobjectName) {
@@ -1825,9 +1821,9 @@ class AllDataSelection extends React.PureComponent {
   }
   getRecordTypesLink(sfHost, sobjectName, durableId) {
     if (sobjectName.endsWith("__c") || sobjectName.endsWith("__kav")) {
-      return URLBuilder.getObjectRecordTypesUrl(sfHost, durableId);
+      return "https://" + sfHost + "/lightning/setup/ObjectManager/" + durableId + "/RecordTypes/view";
     } else {
-      return URLBuilder.getObjectRecordTypesUrl(sfHost, sobjectName);
+      return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/view";
     }
   }
   getObjectDocLink(sobject, api){
@@ -1837,7 +1833,10 @@ class AllDataSelection extends React.PureComponent {
     return "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_" + sobject.name.toLowerCase() + ".htm";
   }
   getNewObjectUrl(sfHost, newUrl){
-    return URLBuilder.getNewObjectUrl(sfHost, newUrl);
+    return "https://" + sfHost + newUrl;
+  }
+  getSubscribeUrl(name){
+    return this.props.eventMonitorHref + "&channel=" + name;
   }
   setFlowDefinitionId(recordId){
     if (recordId && !this.state.flowDefinitionId){
@@ -1968,7 +1967,7 @@ class AllDataSelection extends React.PureComponent {
 class AllDataRecordDetails extends React.PureComponent {
 
   getRecordLink(sfHost, recordId) {
-    return URLBuilder.getRecordUrl(sfHost, recordId);
+    return "https://" + sfHost + "/" + recordId;
   }
   openRecordLink(e) {
     e.preventDefault();
@@ -1983,7 +1982,7 @@ class AllDataRecordDetails extends React.PureComponent {
     }
   }
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
-    return URLBuilder.getRecordTypeLink(sfHost, sobjectName, recordtypeId);
+    return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
   }
 
   render() {
@@ -2269,28 +2268,31 @@ class Autocomplete extends React.PureComponent {
     this.setState({resultsMouseIsDown: false});
   }
   onResultClick(e, value) {
-    let {sfHost} = this.props;
-    if (value.isRecent){
-      const linkTarget = getLinkTarget(e);
-      const recordURL = URLBuilder.getRecordUrl(sfHost, value.recordId);
-      closePopup();
-      if (linkTarget == "_blank") {
-        window.open(recordURL, linkTarget);
-      } else {
-        lightningNavigate({navigationType: "recordId", recordId: value.recordId}, recordURL);
-      }
+    const {sfHost} = this.props;
+
+    if (value.isRecent) {
+      this.handleNavigation(e, `https://${sfHost}/${value.recordId}`, {
+        navigationType: "recordId",
+        recordId: value.recordId
+      });
     } else if (value.isSetupLink) {
-      const url = "https://" + sfHost + value.link;
-      const linkTarget = getLinkTarget(e);
-      closePopup();
-      if (linkTarget == "_blank") {
-        window.open(url, linkTarget);
-      } else {
-        lightningNavigate({navigationType: "url", url}, url);
-      }
+      this.handleNavigation(e, `https://${sfHost}${value.link}`, {
+        navigationType: "url",
+        url: `https://${sfHost}${value.link}`
+      });
     } else {
       this.props.updateInput(value);
       this.setState({showResults: false, selectedIndex: 0});
+    }
+  }
+  handleNavigation(e, url, navigationParams) {
+    const linkTarget = getLinkTarget(e);
+    closePopup();
+
+    if (linkTarget === "_blank" || localStorage.getItem("lightningNavigation") == "false") {
+      window.open(url, linkTarget);
+    } else {
+      lightningNavigate(navigationParams, url);
     }
   }
   onResultMouseEnter(index) {
@@ -2454,59 +2456,5 @@ function handleLightningLinkClick(e) {
     window.open(url, target);
   } else {
     lightningNavigate({navigationType: "url", url}, url);
-  }
-}
-
-class URLBuilder {
-  static getRecordUrl(sfHost, recordId) {
-    return `https://${sfHost}/${recordId}`;
-  }
-
-  static getCustomMetadataSetupUrl(sfHost, durableId) {
-    return `https://${sfHost}/lightning/setup/CustomMetadata/page?address=%2F${durableId}%3Fsetupid%3DCustomMetadata`;
-  }
-
-  static getCustomSettingSetupUrl(sfHost, durableId) {
-    return `https://${sfHost}/lightning/setup/CustomSettings/page?address=%2F${durableId}?setupid=CustomSettings`;
-  }
-
-  static getObjectSetupUrl(sfHost, sobjectNameOrDurId) {
-    return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectNameOrDurId}/Details/view`;
-  }
-
-  static getObjectFieldsSetupUrl(sfHost, sobjectNameOrDurId) {
-    return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectNameOrDurId}/FieldsAndRelationships/view`;
-  }
-
-  static getObjectRecordTypesUrl(sfHost, sobjectNameOrDurId) {
-    return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectNameOrDurId}/RecordTypes/view`;
-  }
-
-  static getCustomeMetadataListUrl(sfHost, keyPrefix) {
-    return `https://${sfHost}/lightning/setup/CustomMetadata/page?address=%2F${keyPrefix}`;
-  }
-
-  static getCustomSettingListUrl(sfHost, keyPrefix) {
-    return `https://${sfHost}/lightning/setup/CustomSettings/page?address=%2Fsetup%2Fui%2FlistCustomSettingsData.apexp?id=${keyPrefix}`;
-  }
-
-  static getObjectListUrl(sfHost, sobjectName) {
-    return `https://${sfHost}/lightning/o/${sobjectName}/list`;
-  }
-
-  static getNewObjectUrl(sfHost, newUrl){
-    return `https://${sfHost}${newUrl}`;
-  }
-
-  static getSubscribeUrl(name){
-    return this.props.eventMonitorHref + "&channel=" + name;
-  }
-
-  static getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
-    return `https://${sfHost}/lightning/setup/ObjectManager/${sobjectName}/RecordTypes/${recordtypeId}/view`;
-  }
-
-  static getCompanyInfoUrl(sfHost) {
-    return `https://${sfHost}/lightning/setup/CompanyProfileInfo/home`;
   }
 }

@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Fix sandbox color banner missing in Flow debug [issue 738](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/738) by [Camille Guillory](https://github.com/CamilleGuillory)
 - Fix Upsert Custom Metadata Bug with Metadata Relationship [issue 509](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/509) (contribution by [Joshua Yarmak](https://github.com/toly11))
 - Guess file format on paste in data import [feature 501](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/501) request by [Adam Štěpánek](https://github.com/Damecek)
 - Add chrome extension shortcuts for Setup, Home Page and Dev Console [feature 707](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/707) request by [Danny Gelfenbaum](https://github.com/DannyGelf)

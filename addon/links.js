@@ -338,6 +338,7 @@ export let setupLinks = [
   {label: "Single Sign-On Settings", link: "/lightning/setup/SingleSignOn/home", section: "Settings > Identity", prod: false},
   //Settings > Security
   {label: "Account Owner Report", link: "/lightning/setup/SecurityAccountOwner/home", section: "Settings > Security", prod: false},
+  {label: "API Access Control", link: "/lightning/setup/ApiAccessControl/home", section: "Settings > Security", prod: false},
   {label: "Activations", link: "/lightning/setup/ActivatedIpAddressAndClientBrowsersPage/home", section: "Settings > Security", prod: false},
   {label: "CORS", link: "/lightning/setup/CorsWhitelistEntries/home", section: "Settings > Security", prod: false},
   {label: "CSP Trusted Sites", link: "/lightning/setup/SecurityCspTrustedSite/home", section: "Settings > Security", prod: false},

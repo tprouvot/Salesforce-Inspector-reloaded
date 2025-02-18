@@ -504,28 +504,28 @@ class FaviconOption extends React.Component {
     this.colorShades = {
       dev: [
         "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue", "CornflowerBlue",
-        "SlateBlue", "SteelBlue", "SkyBlue", "PowderBlue", "MediumSlateBlue",
-        "Indigo", "BlueViolet", "MediumPurple", "CadetBlue", "Aqua",
-        "Turquoise", "DarkTurquoise", "Teal", "LightSlateGray", "MidnightBlue"
+        "#CCCCFF", "SteelBlue", "SkyBlue", "#0F52BA", "Navy",
+        "Indigo", "PowderBlue", "LightBlue", "CadetBlue", "Aqua",
+        "Turquoise", "DarkTurquoise", "#6082B6", "LightSlateGray", "MidnightBlue"
       ],
       uat: [
         "MediumOrchid", "Orchid", "DarkOrchid", "DarkViolet", "DarkMagenta",
         "Purple", "BlueViolet", "Indigo", "DarkSlateBlue", "RebeccaPurple",
         "MediumPurple", "MediumSlateBlue", "SlateBlue", "Plum", "Violet",
-        "Thistle", "Magenta", "DarkOrchid", "Fuchsia", "DarkPurple"
+        "Thistle", "Magenta", "DarkOrchid", "Fuchsia", "#301934"
       ],
       int: [
         "LimeGreen", "SeaGreen", "MediumSeaGreen", "ForestGreen", "Green",
         "DarkGreen", "YellowGreen", "OliveDrab", "DarkOliveGreen",
         "SpringGreen", "LawnGreen", "DarkKhaki",
         "GreenYellow", "DarkSeaGreen", "MediumAquamarine", "DarkCyan",
-        "Teal", "Jade", "MediumForestGreen", "HunterGreen"
+        "Teal", "#00A36C", "#347235", "#355E3B"
       ],
       full: [
         "Orange", "DarkOrange", "Coral", "Tomato", "OrangeRed",
         "Salmon", "IndianRed", "Sienna", "Chocolate", "SaddleBrown",
         "Peru", "DarkSalmon", "RosyBrown", "Brown", "Maroon",
-        "Tangerine", "Peach", "BurntOrange", "Pumpkin", "Amber"
+        "#b9770e", "#FFE5B4", "#CC5500", "#FF7518", "#FFBF00"
       ]
     };
   }

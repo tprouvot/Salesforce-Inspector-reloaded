@@ -1,6 +1,3 @@
-/* exported initButton */
-/* global showStdPageDetails */
-
 
 // sfdcBody: normal Salesforce page
 // ApexCSIPage: Developer Console
@@ -256,9 +253,6 @@ function initButton(sfHost, inInspector) {
       }
 
       togglePopup(e.data.insextOpenPopup, e.data.insextClosePopup);
-      if (e.data.insextShowStdPageDetails) {
-        showStdPageDetails(e.data.insextData, e.data.insextAllFieldSetupLinks);
-      }
       if (e.data.insextShowApiName) {
         let apiNamesClass = "field-api-name";
         if (e.data.btnLabel.startsWith("Show")){

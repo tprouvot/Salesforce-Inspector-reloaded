@@ -72,7 +72,6 @@ class Model {
     this.spinnerCount = 0;
     this.userInfo = "...";
     this.winInnerHeight = 0;
-    this.queryAll = false;
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
@@ -85,7 +84,6 @@ class Model {
     this.selectedSavedEntry = null;
     this.expandSavedOptions = false;
     this.startTime = null;
-    this.lastStartTime = null;
     this.totalTime = 0;
     this.autocompleteState = "";
     this.autocompleteProgress = {};
@@ -164,6 +162,9 @@ class Model {
   copyAsJson() {
     copyToClipboard(this.apiResponse.value, null, "  ");
   }
+  clear(){
+    this.apiResponse.value = "";
+  }
   selectSavedEntry() {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
@@ -227,10 +228,12 @@ class Model {
   }
 
   doSend() {
+    this.startTime = performance.now();
     this.canSendRequest = false;
     this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress}, true)
       .catch(err => {
         this.canSendRequest = true;
+        this.totalTime = performance.now() - this.startTime;
         if (err.name != "AbortError") {
           this.autocompleteResults = {
             title: "Error: " + err.message,
@@ -241,6 +244,7 @@ class Model {
       })
       .then((result) => {
         //generate key with timestamp
+        this.totalTime = performance.now() - this.startTime;
         this.request.key = Date.now();
         this.queryHistory.add(this.request);
         if (!result) {
@@ -262,7 +266,7 @@ class Model {
     };
     if (this.resultClass === "success"){
       let newApis = Object.keys(result.response)
-        .filter(key => result.response[key].startsWith("/services/data/"))
+        .filter(key => typeof result.response[key] == "string" && result.response[key].startsWith("/services/data/"))
         .map(key => ({
           key,
           "endpoint": result.response[key]
@@ -294,6 +298,7 @@ class App extends React.Component {
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onSend = this.onSend.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
+    this.onClearResponse = this.onClearResponse.bind(this);
     this.onUpdateBody = this.onUpdateBody.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetEndpoint = this.onSetEndpoint.bind(this);
@@ -380,6 +385,11 @@ class App extends React.Component {
     model.copyAsJson();
     model.didUpdate();
   }
+  onClearResponse(){
+    let {model} = this.props;
+    model.clear();
+    model.didUpdate();
+  }
   onUpdateBody(e){
     let {model} = this.props;
     model.request.body = e.target.value;
@@ -394,10 +404,11 @@ class App extends React.Component {
   onSetEndpoint(e){
     let {model} = this.props;
     model.request.endpoint = e.target.value;
-    model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(e.target.value.toLowerCase()));
+    //replace current endpoint with latest on the have the autocomplete works for all api versions
+    let updatedApiEndpoint = e.target.value.replace(/\/data\/v\d+\.0\//, `/data/v${apiVersion}/`);
+    model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(updatedApiEndpoint.toLowerCase()));
     model.didUpdate();
   }
-
   componentDidMount() {
     let {model} = this.props;
     let endpointInput = this.refs.endpoint;
@@ -436,6 +447,9 @@ class App extends React.Component {
   }
   componentDidUpdate() {
     this.recalculateSize();
+    if (window.Prism) {
+      window.Prism.highlightAll();
+    }
   }
   canSendRequest(){
     let {model} = this.props;
@@ -468,7 +482,7 @@ class App extends React.Component {
           ),
           " Salesforce Home"
         ),
-        h("h1", {}, "REST Explore (beta)"),
+        h("h1", {}, "REST Explore"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
           h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
@@ -565,15 +579,21 @@ class App extends React.Component {
           h("div", {className: "button-group"},
             h("button", {disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy")
           ),
-          model.apiResponse && h("span", {className: "result-status flex-right"},
-            h("span", {className: "status-code"}, "Status: " + model.apiResponse.code)
-          ),
+          h("span", {className: "result-status flex-right"},
+            model.apiResponse && h("div",
+              h("span", {}, model.totalTime.toFixed(1) + "ms"),
+              h("span", {className: "slds-m-left_medium status-code"}, "Status: " + model.apiResponse.code)
+            ),
+            h("div", {className: "slds-m-left_medium button-group"},
+              h("button", {disabled: !model.apiResponse, onClick: this.onClearResponse, title: "Clear Response"}, "Clear")
+            )
+          )
         ),
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null},
           model.apiResponse && h("div", {},
-            h("div", {},
-              h("textarea", {readOnly: true, value: model.apiResponse.value})
+            h("pre", {className: "language-json reset-margin"}, // Set the language class to JSON for Prism to highlight
+              h("code", {className: "language-json"}, model.apiResponse.value)
             )
           )
         )

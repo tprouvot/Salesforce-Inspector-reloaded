@@ -67,8 +67,7 @@ function showApiName(e) {
 }
 
 function init({sfHost, inDevConsole, inLightning, inInspector}) {
-  console.log(chrome.runtime.getManifest());
-  let addonVersion = chrome.runtime.getManifest().version_name_name;
+  let addonVersion = chrome.runtime.getManifest().version_name;
 
   sfConn.getSession(sfHost).then(() => {
     ReactDOM.render(h(App, {

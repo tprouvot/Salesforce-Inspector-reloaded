@@ -92,6 +92,74 @@ class Model {
     })();
   }
 
+  async retrieveMetadata(retrieveRequest) {
+    try {
+      let logWait = this.logWait.bind(this);
+      let logMsg = msg => {
+        this.logMessages.push({level: "info", text: msg});
+        this.didUpdate();
+      };
+
+      this.progress = "working";
+      this.didUpdate();
+
+      let metadataApi = sfConn.wsdl(apiVersion, "Metadata");
+
+      // Start Retrieve operation
+      let result = await logWait(
+        "Retrieve",
+        sfConn.soap(metadataApi, "retrieve", {retrieveRequest})
+      );
+
+      logMsg("(Id: " + result.id + ")");
+
+      // Poll for Retrieve completion
+      let res;
+      for (let interval = 2000; ;) {
+        await logWait("(Waiting)", timeout(interval));
+
+        res = await logWait(
+          "CheckRetrieveStatus",
+          sfConn.soap(metadataApi, "checkRetrieveStatus", {id: result.id})
+        );
+
+        if (res.done !== "false") {
+          break;
+        }
+      }
+
+      if (res.success !== "true") {
+        let err = new Error("Retrieve failed");
+        err.result = res;
+        throw err;
+      }
+
+      let statusJson = JSON.stringify(
+        {
+          fileProperties: sfConn
+            .asArray(res.fileProperties)
+            .filter(fp => fp.id !== "000000000000000AAA" || fp.fullName !== "")
+            .sort((fp1, fp2) => (fp1.fileName < fp2.fileName ? -1 : 1)),
+          messages: res.messages
+        },
+        null,
+        "    "
+      );
+
+      logMsg("(Finished)");
+
+      // Process the ZIP response
+      let zipBin = Uint8Array.from(atob(res.zipFile), c => c.charCodeAt(0));
+      this.downloadLink = URL.createObjectURL(new Blob([zipBin], {type: "application/zip"}));
+      this.statusLink = URL.createObjectURL(new Blob([statusJson], {type: "application/json"}));
+
+      this.progress = "done";
+      this.didUpdate();
+    } catch (e) {
+      this.logError(e);
+    }
+  }
+
   startDownloading() {
     let logMsg = msg => {
       this.logMessages.push({level: "info", text: msg});
@@ -183,44 +251,7 @@ class Model {
           return 0;
         });
         types = types.map(x => ({name: x.type, members: decodeURIComponent(x.fullName)}));
-        //console.log(types);
-        let result = await logWait(
-          "Retrieve",
-          sfConn.soap(metadataApi, "retrieve", {retrieveRequest: {apiVersion, unpackaged: {types, version: apiVersion}}})
-        );
-        logMsg("(Id: " + result.id + ")");
-        for (let interval = 2000; ;) {
-          await logWait(
-            "(Waiting)",
-            timeout(interval)
-          );
-          res = await logWait(
-            "CheckRetrieveStatus",
-            sfConn.soap(metadataApi, "checkRetrieveStatus", {id: result.id})
-          );
-          if (res.done !== "false") {
-            break;
-          }
-        }
-        if (res.success != "true") {
-          let err = new Error("Retrieve failed");
-          err.result = res;
-          throw err;
-        }
-        let statusJson = JSON.stringify({
-          fileProperties: sfConn.asArray(res.fileProperties)
-            .filter(fp => fp.id != "000000000000000AAA" || fp.fullName != "")
-            .sort((fp1, fp2) => fp1.fileName < fp2.fileName ? -1 : fp1.fileName > fp2.fileName ? 1 : 0),
-          messages: res.messages
-        }, null, "    ");
-        //console.log("(Reading response and writing files)");
-        // End of forcecmd code
-        logMsg("(Finished)");
-        let zipBin = Uint8Array.from(atob(res.zipFile), c => c.charCodeAt(0));
-        this.downloadLink = URL.createObjectURL(new Blob([zipBin], {type: "application/zip"}));
-        this.statusLink = URL.createObjectURL(new Blob([statusJson], {type: "application/json"}));
-        this.progress = "done";
-        this.didUpdate();
+        await this.retrieveMetadata({apiVersion, unpackaged: {types, version: apiVersion}});
       } catch (e) {
         this.logError(e);
       }
@@ -266,6 +297,7 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.onStartClick = this.onStartClick.bind(this);
+    this.onImportPackage = this.onImportPackage.bind(this);
     this.onSelectAllChange = this.onSelectAllChange.bind(this);
     this.onUpdateManagedPackageSelection = this.onUpdateManagedPackageSelection.bind(this);
     this.onMetadataFilterInput = this.onMetadataFilterInput.bind(this);
@@ -285,6 +317,41 @@ class App extends React.Component {
     let {model} = this.props;
     model.startDownloading();
   }
+  onImportPackage(){
+    let {model} = this.props;
+    console.log("import xml");
+    const fileInput = this.refs.fileInput;
+
+    if (!fileInput.files.length) {
+      console.error("No file selected.");
+      return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      try {
+        const importedPackage = event.target.result;
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(importedPackage, "text/xml");
+
+        const retrieveRequest = {apiVersion, unpackaged: {types: []}};
+
+        const types = xmlDoc.getElementsByTagName("types");
+        for (let typeNode of types) {
+          const name = typeNode.getElementsByTagName("name")[0].textContent;
+          const members = [...typeNode.getElementsByTagName("members")].map(m => m.textContent).sort(); // Sort members
+          retrieveRequest.unpackaged.types.push({name, members});
+        }
+        retrieveRequest.unpackaged.types.sort((a, b) => a.name.localeCompare(b.name));
+        model.retrieveMetadata(retrieveRequest);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    reader.readAsText(file);
+  }
   onUpdateManagedPackageSelection(e){
     let {model} = this.props;
     model.includeManagedPackage = e.target.checked;
@@ -292,6 +359,7 @@ class App extends React.Component {
     model.didUpdate();
   }
   onMetadataFilterInput(e){
+    //TODO fix search
     let {model} = this.props;
     model.metadataFilter = e.target.value;
     //model.metadataObjects = model.metadataObjects.map(metadataObject => ({...metadataObject, display: metadataObject.xmlName.toLowerCase().includes(model.metadataFilter.toLowerCase())}));
@@ -300,6 +368,7 @@ class App extends React.Component {
     model.didUpdate();
   }
   getXml(){
+    /*
     //let package = JSON.parse(localStorage.getItem("package.xml"));
     let packageXml = "";
     let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
@@ -319,6 +388,7 @@ class App extends React.Component {
     }
     xml += "    <version>" + apiVersion + "</version>\n" + "</Package>";
     return xml;
+    */
   }
 
   render() {
@@ -364,6 +434,18 @@ class App extends React.Component {
               )
             ),
             h("button", {onClick: this.onStartClick}, "Download metadata"),
+            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Import package.xml"},
+              h("svg", {className: "slds-button__icon"},
+                h("use", {xlinkHref: "symbols.svg#upload"})
+              )
+            ),
+            h("input", {
+              type: "file",
+              style: {display: "none"},
+              ref: "fileInput",
+              onChange: this.onImportPackage,
+              accept: "text/xml"
+            }),
             model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
             model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null
           ),
@@ -378,9 +460,9 @@ class App extends React.Component {
                   h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
                   h("button", {onClick: this.onStartClick}, "Download metadata")
                 ),
-                h("div", {className: "slds-col"},
+                /*h("div", {className: "slds-col"},
                   h("textarea", {readOnly: false, value: model.packageXml})
-                )
+                )*/
               )
               : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
           )
@@ -409,6 +491,7 @@ class ObjectSelector extends React.Component {
     const element = e.target;
     //model.spinFor( //TODO fix spinner
     //"Getting child meta for " + e.target.title,
+    /*
     sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: this.props.metadataObject.xmlName, folder: this.props.metadataObject.directoryName}}).then(res => {
       res.sort((a, b) => a.manageableState > b.manageableState ? -1 : a.manageableState > b.manageableState ? 1
         : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
@@ -432,7 +515,7 @@ class ObjectSelector extends React.Component {
         div.appendChild(ul);
         element.closest("section").appendChild(div);
       }
-    });
+    });*/
     //);
     //}
   }
@@ -443,7 +526,7 @@ class ObjectSelector extends React.Component {
         h("div", {className: "slds-accordion__summary"},
           h("h2", {className: "slds-accordion__summary-heading"},
             h("span", {className: "slds-accordion__summary-content"},
-              h("label", {title: metadataObject.xmlName, onClick: this.onSelectMeta},
+              h("label", {title: metadataObject.xmlName},
                 h("input", {type: "checkbox", className: "metadata", checked: metadataObject.selected, onChange: this.onChange}),
                 metadataObject.xmlName
               )

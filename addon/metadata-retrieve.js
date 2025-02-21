@@ -17,7 +17,6 @@ class Model {
     // Processed data and UI state
     this.sfHost = sfHost;
     this.sfLink = "https://" + sfHost;
-    this.spinnerCount = 0;
     this.userInfo = "...";
     this.logMessages = [];
     this.progress = "ready";
@@ -25,12 +24,15 @@ class Model {
     this.statusLink = null;
     this.metadataObjects = [];
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
-    this.packageXml = "Package.xml goes here";
+    this.packageXml;
     this.metadataFilter = "";
 
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-    }));
+    this.spinFor(
+      "getting user info",
+      sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
+        this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
+      })
+    );
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -44,13 +46,17 @@ class Model {
     if (this.reactCallback) {
       this.reactCallback(cb);
     }
+    if (window.Prism) {
+      window.Prism.highlightAll();
+    }
   }
 
-  spinFor(promise) {
+  spinFor(actionName, promise) {
     this.spinnerCount++;
     promise
       .catch(err => {
-        console.error("spinFor", err);
+        console.error(err);
+        this.errorMessages.push("Error " + actionName + ": " + err.message);
       })
       .then(() => {
         this.spinnerCount--;
@@ -73,7 +79,6 @@ class Model {
         this.progress = "working";
         this.didUpdate();
 
-        // Code below is originally from forcecmd
         let metadataApi = sfConn.wsdl(apiVersion, "Metadata");
         let res = await logWait(
           "DescribeMetadata",
@@ -81,7 +86,7 @@ class Model {
         );
         let availableMetadataObjects = res.metadataObjects
           .filter(metadataObject => metadataObject.xmlName != "InstalledPackage");
-        // End of forcecmd code
+
         this.metadataObjects = availableMetadataObjects;
         this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
         this.progress = "ready";
@@ -234,9 +239,9 @@ class Model {
         if (types.filter(x => x.type == "StandardValueSet").map(x => x.fullName).join(",") == "*") {
           // We are using an API version that supports the StandardValueSet type, but it didn't list its contents.
           // https://success.salesforce.com/ideaView?id=0873A000000cMdrQAE
-          // Here we hardcode the supported values as of Winter 17 / API version 38.
+          // Here we hardcode the supported values as of Spring 25 / API version 63.
           types = types.concat([
-            "AccountContactMultiRoles", "AccountContactRole", "AccountOwnership", "AccountRating", "AccountType", "AddressCountryCode", "AddressStateCode", "AssetStatus", "CampaignMemberStatus", "CampaignStatus", "CampaignType", "CaseContactRole", "CaseOrigin", "CasePriority", "CaseReason", "CaseStatus", "CaseType", "ContactRole", "ContractContactRole", "ContractStatus", "EntitlementType", "EventSubject", "EventType", "FiscalYearPeriodName", "FiscalYearPeriodPrefix", "FiscalYearQuarterName", "FiscalYearQuarterPrefix", "IdeaCategory1", "IdeaMultiCategory", "IdeaStatus", "IdeaThemeStatus", "Industry", "InvoiceStatus", "LeadSource", "LeadStatus", "OpportunityCompetitor", "OpportunityStage", "OpportunityType", "OrderStatus1", "OrderType", "PartnerRole", "Product2Family", "QuestionOrigin1", "QuickTextCategory", "QuickTextChannel", "QuoteStatus", "SalesTeamRole", "Salutation", "ServiceContractApprovalStatus", "SocialPostClassification", "SocialPostEngagementLevel", "SocialPostReviewedStatus", "SolutionStatus", "TaskPriority", "TaskStatus", "TaskSubject", "TaskType", "WorkOrderLineItemStatus", "WorkOrderPriority", "WorkOrderStatus"
+            "AccountContactMultiRoles", "AccountContactRole", "AccountOwnership", "AccountRating", "AccountType", "AQuestionQuestionCategory", "AReasonAppointmentReason1", "AssessmentRating", "AssessmentStatus", "AssetActionCategory", "AssetRelationshipType", "AssetStatus", "AssociatedLocationType", "CampaignMemberStatus", "CampaignStatus", "CampaignType", "CardType", "CaseContactRole", "CaseOrigin", "CasePriority", "CaseReason", "CaseStatus", "CaseType", "ChangeRequestRelatedItemImpactLevel", "ChangeRequestBusinessReason", "ChangeRequestCategory", "ChangeRequestImpact", "ChangeRequestPriority", "ChangeRequestRiskLevel", "ChangeRequestStatus", "ConsequenceOfFailure", "ContactPointAddressType", "ContactPointUsageType", "ContactRequestReason", "ContactRequestStatus", "ContactRole", "ContractContactRole", "ContractStatus", "DigitalAssetStatus", "EntitlementType", "EventSubject", "EventType", "FinanceEventAction", "FinanceEventType", "FiscalYearPeriodName", "FiscalYearPeriodPrefix", "FiscalYearQuarterName", "FiscalYearQuarterPrefix", "FulfillmentStatus", "FulfillmentType", "IncidentCategory", "IncidentImpact", "IncidentPriority", "IncidentRelatedItemImpactLevel", "IncidentRelatedItemImpactType", "IncidentReportedMethod", "IncidentStatus", "IncidentSubCategory", "IncidentType", "IncidentUrgency", "Industry", "LeadSource", "LeadStatus", "LocationType", "MilitaryService", "OpportunityCompetitor", "OpportunityStage", "OpportunityType", "OrderItemSummaryChgRsn", "OrderStatus", "OrderSummaryRoutingSchdRsn", "OrderSummaryStatus", "OrderType", "PartnerRole", "PartyProfileCountryofBirth", "PartyProfileEmploymentType", "PartyProfileFundSource", "PartyProfileGender", "PartyProfileResidentType", "PartyProfileReviewDecision", "PartyProfileRiskType", "PartyProfileStage", "PartyScreeningStepType", "PartyScreeningSummaryStatus", "PIdentityVerificationResult", "PIdentityVerificationStatus", "PIVerificationStepStatus", "PIVerificationStepType", "PIVerificationVerifiedBy", "PIVOverriddenResult", "PIVResultOverrideReason", "PIVSVerificationDecision", "ProblemCategory", "ProblemImpact", "ProblemPriority", "ProblemRelatedItemImpactLevel", "ProblemRelatedItemImpactType", "ProblemStatus", "ProblemSubCategory", "ProblemUrgency", "ProcessExceptionCategory", "ProcessExceptionPriority", "ProcessExceptionSeverity", "ProcessExceptionStatus", "Product2Family", "ProductRequestStatus", "QuantityUnitOfMeasure", "QuickTextCategory", "QuickTextChannel", "QuoteStatus", "RegulatoryBodyType1", "RequestedCareCodeType1", "RequestedDrugCodeType1", "RequestedLevelOfCare1", "RequesterType1", "RequestingPractitionerLicense1", "RequestingPractitionerSpecialty1", "ResidenceStatusType1", "RoleInTerritory2"
           ].map(x => ({type: "StandardValueSet", fullName: x})));
         }
         types.sort((a, b) => {
@@ -287,6 +292,35 @@ class Model {
     this.didUpdate();
   }
 
+  generatePackageXml(components) {
+    const groupedComponents = {};
+
+    components.forEach(({xmlName, fullName}) => {
+      fullName = fullName ? fullName : "*";
+      if (xmlName && fullName) {
+        if (!groupedComponents[xmlName]) {
+          groupedComponents[xmlName] = new Set();
+        }
+        groupedComponents[xmlName].add(fullName);
+      }
+    });
+
+    let packageXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    packageXml += "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
+
+    Object.entries(groupedComponents).forEach(([type, members]) => {
+      packageXml += "    <types>\n";
+      [...members].sort().forEach(member => {
+        packageXml += `        <members>${member}</members>\n`;
+      });
+      packageXml += `        <name>${type}</name>\n`;
+      packageXml += "    </types>\n";
+    });
+    packageXml += `    <version>${apiVersion}</version>\n`;
+    packageXml += "</Package>";
+    return packageXml;
+  }
+
 }
 
 let timeout = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -311,6 +345,7 @@ class App extends React.Component {
     for (let metadataObject of model.metadataObjects) {
       metadataObject.selected = checked;
     }
+    model.packageXml = model.generatePackageXml(model.metadataObjects);
     model.didUpdate();
   }
   onStartClick() {
@@ -319,7 +354,6 @@ class App extends React.Component {
   }
   onImportPackage(){
     let {model} = this.props;
-    console.log("import xml");
     const fileInput = this.refs.fileInput;
 
     if (!fileInput.files.length) {
@@ -358,39 +392,17 @@ class App extends React.Component {
     localStorage.setItem("includeManagedMetadata", model.includeManagedPackage);
     model.didUpdate();
   }
-  onMetadataFilterInput(e){
-    //TODO fix search
+  onMetadataFilterInput(e) {
     let {model} = this.props;
-    model.metadataFilter = e.target.value;
-    //model.metadataObjects = model.metadataObjects.map(metadataObject => ({...metadataObject, display: metadataObject.xmlName.toLowerCase().includes(model.metadataFilter.toLowerCase())}));
-    model.metadataObjects = model.metadataObjects.filter(metadataObject => metadataObject.xmlName.toLowerCase().includes(model.metadataFilter.toLowerCase()));
-    model.packageXml = this.getXml();
-    model.didUpdate();
-  }
-  getXml(){
-    /*
-    //let package = JSON.parse(localStorage.getItem("package.xml"));
-    let packageXml = "";
-    let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
-              + '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
-    if (packageXml != null){
-      for (let metadataType in model.packageXml) {
-        let itemList = packageXml[metadataType];
-        if (itemList.length > 0) {
-          xml += "    <types>\n";
-          for (let i = 0; i < itemList.length; i++){
-            xml += "        <members>" + itemList[i] + "</members>\n";
-          }
-          xml += "        <name>" + metadataType + "</name>\n"
-                       + "    </types>\n";
-        }
-      }
+    if (model.metadataObjects){
+      model.metadataFilter = e.target.value.toLowerCase();
+      model.metadataObjects = model.metadataObjects.map(metadataObject => ({
+        ...metadataObject,
+        hidden: !metadataObject.xmlName.toLowerCase().includes(model.metadataFilter)
+      }));
+      model.didUpdate();
     }
-    xml += "    <version>" + apiVersion + "</version>\n" + "</Package>";
-    return xml;
-    */
   }
-
   render() {
     let {model} = this.props;
     document.title = model.title();
@@ -412,11 +424,17 @@ class App extends React.Component {
               h("div", {className: "slds-spinner__dot-b"}),
             )
           ),
+          h("span", {className: "progress progress-" + model.progress},
+            model.progress == "ready" ? "Ready"
+            : model.progress == "working" ? "Downloading metadata..."
+            : model.progress == "done" ? "Finished"
+            : "Error!"
+          ),
         ),
         h("div", {className: "area", id: "result-area"},
           h("div", {className: "result-bar"},
             h("h1", {className: "slds-text-title_bold"}, "Metadata"),
-            h("input", {className: "filter-input", placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
+            h("input", {className: "filter-input", disabled: !model.metadataObjects, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
             h("label", {className: "slds-checkbox_toggle max-width-small"},
               h("input", {type: "checkbox", checked: model.metadataObjects.every(metadataObject => metadataObject.selected), onChange: this.onSelectAllChange}),
               h("span", {className: "slds-checkbox_faux_container center-label"},
@@ -453,16 +471,17 @@ class App extends React.Component {
             model.metadataObjects
               ? h("div", {className: "result slds-grid"},
                 h("div", {className: "slds-col"},
-
                   h("br", {}),
                   h("ul", {className: "slds-accordion"},
                     model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model}))),
                   h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
                   h("button", {onClick: this.onStartClick}, "Download metadata")
                 ),
-                /*h("div", {className: "slds-col"},
-                  h("textarea", {readOnly: false, value: model.packageXml})
-                )*/
+                h("div", {className: "slds-col"},
+                  h("pre", {className: "reset-margin"},
+                    h("code", {className: "language-markup"}, model.packageXml)
+                  )
+                )
               )
               : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
           )
@@ -477,56 +496,58 @@ class ObjectSelector extends React.Component {
     super(props);
     this.onChange = this.onChange.bind(this);
     this.onSelectMeta = this.onSelectMeta.bind(this);
+    props.metadataObject.childXmlNames = [];
   }
   onChange(e) {
     let {metadataObject, model} = this.props;
     metadataObject.selected = e.target.checked;
+    model.packageXml = model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
     model.didUpdate();
   }
   onSelectMeta(e){
-    let {model} = this.props;
-    //TODO check input target instead of label
-    //if (e.target.checked){
+    let {model, metadataObject} = this.props;
+
     console.log(e.target.title);
     const element = e.target;
-    //model.spinFor( //TODO fix spinner
-    //"Getting child meta for " + e.target.title,
-    /*
-    sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: this.props.metadataObject.xmlName, folder: this.props.metadataObject.directoryName}}).then(res => {
-      res.sort((a, b) => a.manageableState > b.manageableState ? -1 : a.manageableState > b.manageableState ? 1
-        : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
-      if (res){
-        let div = document.createElement("div");
-        div.className = "slds-accordion__content";
-        let ul = document.createElement("ul");
-        ul.className = "slds-accordion";
-        res.forEach(elt => {
-          if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
-            let clone = element.closest("li").cloneNode(true);
-            let label = clone.getElementsByTagName("label")[0];
-            let input = label.getElementsByTagName("input")[0];
-            label.title = elt.fullName;
-            label.textContent = "";
-            label.appendChild(input);
-            label.innerHTML += elt.fullName;
-            ul.appendChild(clone);
-          }
-        });
-        div.appendChild(ul);
-        element.closest("section").appendChild(div);
-      }
-    });*/
-    //);
-    //}
+
+    //TODO fix spinner
+    model.spinFor(
+      "getting child metadata " + e.target.title,
+      sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metadataObject.xmlName, folder: metadataObject.directoryName}}).then(res => {
+        res.sort((a, b) => a.manageableState > b.manageableState ? -1 : a.manageableState > b.manageableState ? 1
+          : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
+        if (res){
+          let div = document.createElement("div");
+          div.className = "slds-accordion__content";
+          let ul = document.createElement("ul");
+          ul.className = "slds-accordion";
+          res.forEach(elt => {
+            if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
+              let clone = element.closest("li").cloneNode(true);
+              let label = clone.getElementsByTagName("label")[0];
+              let input = label.getElementsByTagName("input")[0];
+              label.title = elt.fullName;
+              label.textContent = "";
+              label.appendChild(input);
+              label.innerHTML += elt.fullName;
+              ul.appendChild(clone);
+              metadataObject.childXmlNames.push(elt.fullName);
+            }
+          });
+          div.appendChild(ul);
+          element.closest("section").appendChild(div);
+        }
+      })
+    );
   }
   render() {
     let {metadataObject} = this.props;
-    return h("li", {className: "slds-accordion__list-item"},
+    return h("li", {className: "slds-accordion__list-item", hidden: metadataObject.hidden},
       h("section", {className: "slds-accordion__section slds-is-open"},
         h("div", {className: "slds-accordion__summary"},
           h("h2", {className: "slds-accordion__summary-heading"},
             h("span", {className: "slds-accordion__summary-content"},
-              h("label", {title: metadataObject.xmlName},
+              h("label", {title: metadataObject.xmlName, onClick: this.onSelectMeta},
                 h("input", {type: "checkbox", className: "metadata", checked: metadataObject.selected, onChange: this.onChange}),
                 metadataObject.xmlName
               )

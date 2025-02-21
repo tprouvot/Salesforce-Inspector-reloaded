@@ -5,8 +5,8 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
   margin: 0;
-  background-color: #B0C4DF !important;
-  background-image: url('chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png') !important;
+  background-color: #b0c4df !important;
+  background-image: url("chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png") !important;
   background-repeat: no-repeat !important;
   background-size: contain !important;
   background-position: 0px 48px !important;
@@ -53,14 +53,10 @@ body {
   align-items: center;
 }
 .progress {
-  margin: 0 .3rem;
+  margin: 0 0.3rem;
   display: inline-block;
-  background-color: #f88;
   padding: 8px 12px;
   border-radius: 3px;
-}
-.progress-ready {
-  background-color: #bbb;
 }
 @keyframes working {
   50% {
@@ -68,14 +64,14 @@ body {
   }
 }
 .progress-working {
-  background-color: #88f;
-  animation: working 1s cubic-bezier(.5, .4, .5, .6) infinite;
+  color: #88f;
+  animation: working 1s cubic-bezier(0.5, 0.4, 0.5, 0.6) infinite;
 }
 .progress-done {
-  background-color: #8f8;
+  color: #8f8;
 }
 .button {
-  margin: 0 .3rem;
+  margin: 0 0.3rem;
   display: inline-block;
   border: 1px solid #ddd;
   padding: 6px 10px;
@@ -84,11 +80,11 @@ body {
 }
 .body {
   padding: 4.3em 8px 8px;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 11px;
-    box-sizing: border-box;
-    background-color: #ffffff;
-    margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  margin: 0;
 }
 .flex {
   flex: 1;
@@ -98,14 +94,15 @@ label {
   margin: 2px 20px;
   display: block;
 }
-.result, .log-info{
+.result,
+.log-info {
   margin-left: 20px;
   margin-bottom: 20px;
 }
 .result-bar a:visited {
   color: #0176d3;
 }
-h2{
+h2 {
   font-size: 14px;
 }
 ul {
@@ -119,18 +116,18 @@ ul {
   height: 1rem;
   position: absolute;
   top: 50%;
-  margin-top: -.5rem;
+  margin-top: -0.5rem;
   fill: #9faab5;
 }
 textarea {
-  display:block;
+  display: block;
   width: 100%;
   height: 50em;
   resize: vertical;
   word-wrap: normal;
   font-size: 11px;
 }
-.max-width-small{
+.max-width-small {
   max-width: 20%;
 }
 .filter-input {
@@ -140,10 +137,13 @@ textarea {
   background-color: #fff;
   color: #16325c;
   border: 1px solid #d8dde6;
-  border-radius: .25rem;
-  transition: border .1s linear, background-color .1s linear;
+  border-radius: 0.25rem;
+  transition: border 0.1s linear, background-color 0.1s linear;
   display: inline-block;
   line-height: 1.875rem;
   min-height: calc(1.875rem + (1px * 2));
-  margin-top:0.5rem;
+  margin-top: 0.5rem;
+}
+.reset-margin {
+  margin: 0;
 }

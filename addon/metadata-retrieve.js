@@ -292,16 +292,25 @@ class Model {
     this.didUpdate();
   }
 
+  resetPackage(){
+    this.generatePackageXml([]);
+    this.didUpdate();
+  }
+
   generatePackageXml(components) {
     const groupedComponents = {};
 
-    components.forEach(({xmlName, fullName}) => {
-      fullName = fullName ? fullName : "*";
-      if (xmlName && fullName) {
+    components.forEach(({xmlName, childXmlNames}) => {
+      childXmlNames = childXmlNames.length > 0 && childXmlNames.filter(child => child.selected).length > 0 ? childXmlNames : [{fullName: "*", selected: true}];
+      if (xmlName) {
         if (!groupedComponents[xmlName]) {
           groupedComponents[xmlName] = new Set();
         }
-        groupedComponents[xmlName].add(fullName);
+        childXmlNames.forEach(({fullName, selected}) => {
+          if (selected || fullName === "*") {
+            groupedComponents[xmlName].add(fullName);
+          }
+        });
       }
     });
 
@@ -320,7 +329,6 @@ class Model {
     packageXml += "</Package>";
     return packageXml;
   }
-
 }
 
 let timeout = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -332,6 +340,7 @@ class App extends React.Component {
     super(props);
     this.onStartClick = this.onStartClick.bind(this);
     this.onImportPackage = this.onImportPackage.bind(this);
+    this.downloadXml = this.downloadXml.bind(this);
     this.onSelectAllChange = this.onSelectAllChange.bind(this);
     this.onUpdateManagedPackageSelection = this.onUpdateManagedPackageSelection.bind(this);
     this.onMetadataFilterInput = this.onMetadataFilterInput.bind(this);
@@ -345,12 +354,26 @@ class App extends React.Component {
     for (let metadataObject of model.metadataObjects) {
       metadataObject.selected = checked;
     }
-    model.packageXml = model.generatePackageXml(model.metadataObjects);
+    if (checked){
+      model.packageXml = model.generatePackageXml(model.metadataObjects);
+    } else {
+      model.packageXml = model.resetPackage();
+    }
     model.didUpdate();
   }
   onStartClick() {
     let {model} = this.props;
     model.startDownloading();
+  }
+  downloadXml(){
+    let {model} = this.props;
+    const blob = new Blob([model.packageXml], {type: "text/xml"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "package.xml";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
   onImportPackage(){
     let {model} = this.props;
@@ -447,25 +470,32 @@ class App extends React.Component {
               h("input", {type: "checkbox", required: true, "aria-describedby": "toggle-namespace", className: "slds-input", checked: model.includeManagedPackage, onChange: this.onUpdateManagedPackageSelection}),
               h("span", {className: "slds-checkbox_faux_container center-label"},
                 h("span", {className: "slds-checkbox_faux"}),
-                h("span", {className: "slds-checkbox_on"}, "Exclude managed packages metadata"),
-                h("span", {className: "slds-checkbox_off"}, "Include managed package metadata"),
+                h("span", {className: "slds-checkbox_on"}, "Managed packages included"),
+                h("span", {className: "slds-checkbox_off"}, "Managed packages excluded"),
               )
             ),
-            h("button", {onClick: this.onStartClick}, "Download metadata"),
-            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Import package.xml"},
-              h("svg", {className: "slds-button__icon"},
-                h("use", {xlinkHref: "symbols.svg#upload"})
-              )
+            h("div", {className: "flex-right"},
+              h("button", {onClick: this.onStartClick}, "Download metadata"),
+              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.downloadXml(), title: "Download package.xml"},
+                h("svg", {className: "slds-button__icon"},
+                  h("use", {xlinkHref: "symbols.svg#download"})
+                )
+              ),
+              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Import package.xml"},
+                h("svg", {className: "slds-button__icon"},
+                  h("use", {xlinkHref: "symbols.svg#upload"})
+                )
+              ),
+              h("input", {
+                type: "file",
+                style: {display: "none"},
+                ref: "fileInput",
+                onChange: this.onImportPackage,
+                accept: "text/xml"
+              }),
+              model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
+              model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null
             ),
-            h("input", {
-              type: "file",
-              style: {display: "none"},
-              ref: "fileInput",
-              onChange: this.onImportPackage,
-              accept: "text/xml"
-            }),
-            model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
-            model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null
           ),
           h("div", {id: "result-table", ref: "scroller"},
             model.metadataObjects
@@ -473,7 +503,7 @@ class App extends React.Component {
                 h("div", {className: "slds-col"},
                   h("br", {}),
                   h("ul", {className: "slds-accordion"},
-                    model.metadataObjects.map(metadataObject => h(ObjectSelector, {key: metadataObject.xmlName, metadataObject, model}))),
+                    model.metadataObjects.map(metadataObject => h(ObjectSelector, {metadataObject, model}))),
                   h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
                   h("button", {onClick: this.onStartClick}, "Download metadata")
                 ),
@@ -496,12 +526,21 @@ class ObjectSelector extends React.Component {
     super(props);
     this.onChange = this.onChange.bind(this);
     this.onSelectMeta = this.onSelectMeta.bind(this);
+    this.onSelectChild = this.onSelectChild.bind(this);
     props.metadataObject.childXmlNames = [];
   }
   onChange(e) {
     let {metadataObject, model} = this.props;
     metadataObject.selected = e.target.checked;
     model.packageXml = model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
+    model.didUpdate();
+  }
+  onSelectChild(child){
+    let {model} = this.props;
+
+    child.selected = !child.selected;
+    model.packageXml = model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
+
     model.didUpdate();
   }
   onSelectMeta(e){
@@ -514,32 +553,19 @@ class ObjectSelector extends React.Component {
     model.spinFor(
       "getting child metadata " + e.target.title,
       sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metadataObject.xmlName, folder: metadataObject.directoryName}}).then(res => {
-        res.sort((a, b) => a.manageableState > b.manageableState ? -1 : a.manageableState > b.manageableState ? 1
-          : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
+        res.sort((a, b) => a.fullName > b.fullName ? 1 : a.fullName < b.fullName ? -1
+          : 0);
         if (res){
-          let div = document.createElement("div");
-          div.className = "slds-accordion__content";
-          let ul = document.createElement("ul");
-          ul.className = "slds-accordion";
           res.forEach(elt => {
             if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
-              let clone = element.closest("li").cloneNode(true);
-              let label = clone.getElementsByTagName("label")[0];
-              let input = label.getElementsByTagName("input")[0];
-              label.title = elt.fullName;
-              label.textContent = "";
-              label.appendChild(input);
-              label.innerHTML += elt.fullName;
-              ul.appendChild(clone);
-              metadataObject.childXmlNames.push(elt.fullName);
+              metadataObject.childXmlNames.push({fullName: elt.fullName});
             }
           });
-          div.appendChild(ul);
-          element.closest("section").appendChild(div);
         }
       })
     );
   }
+
   render() {
     let {metadataObject} = this.props;
     return h("li", {className: "slds-accordion__list-item", hidden: metadataObject.hidden},
@@ -547,9 +573,33 @@ class ObjectSelector extends React.Component {
         h("div", {className: "slds-accordion__summary"},
           h("h2", {className: "slds-accordion__summary-heading"},
             h("span", {className: "slds-accordion__summary-content"},
-              h("label", {title: metadataObject.xmlName, onClick: this.onSelectMeta},
-                h("input", {type: "checkbox", className: "metadata", checked: metadataObject.selected, onChange: this.onChange}),
-                metadataObject.xmlName
+              h("label", {title: metadataObject.xmlName,
+                onClick: (event) => {
+                  if (event.target.tagName !== "INPUT") {
+                    this.onSelectMeta(event);
+                  }
+                }},
+              h("input", {
+                type: "checkbox",
+                className: "metadata",
+                checked: metadataObject.selected,
+                onChange: this.onChange,
+                key: metadataObject.xmlName
+              }),
+              metadataObject.xmlName
+              )
+            )
+          )
+        ),
+        metadataObject.childXmlNames?.length > 0
+        && h("div", {className: "slds-accordion__content"},
+          h("ul", {className: "slds-accordion", key: metadataObject.fullName},
+            metadataObject.childXmlNames.map(child =>
+              h("li", {key: metadataObject.xmlName + "_li_" + child.fullName, className: "slds-accordion__list-item"},
+                h("label", {title: child.fullName, onClick: () => this.onSelectChild(child)},
+                  h("input", {type: "checkbox", className: "metadata", checked: child.selected}),
+                  child.fullName
+                )
               )
             )
           )
@@ -560,7 +610,6 @@ class ObjectSelector extends React.Component {
 }
 
 {
-
   let args = new URLSearchParams(location.search.slice(1));
   let sfHost = args.get("host");
   initButton(sfHost, true);
@@ -575,5 +624,4 @@ class ObjectSelector extends React.Component {
     ReactDOM.render(h(App, {model}), root);
 
   });
-
 }

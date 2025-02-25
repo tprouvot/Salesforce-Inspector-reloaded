@@ -128,7 +128,7 @@ textarea {
   font-size: 11px;
 }
 .max-width-small {
-  max-width: 20%;
+  max-width: 10%;
 }
 .filter-input {
   font: inherit;
@@ -146,4 +146,9 @@ textarea {
 }
 .reset-margin {
   margin: 0;
+}
+.flex-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
 }

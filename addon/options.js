@@ -185,7 +185,7 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
-        id: 6,
+        id: 7,
         tabTitle: "Tab6",
         title: "Metadata",
         content: [

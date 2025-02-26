@@ -46,9 +46,6 @@ class Model {
     if (this.reactCallback) {
       this.reactCallback(cb);
     }
-    if (window.Prism) {
-      window.Prism.highlightAll();
-    }
   }
 
   spinFor(actionName, promise) {
@@ -90,6 +87,7 @@ class Model {
         this.metadataObjects = availableMetadataObjects;
         this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
         this.progress = "ready";
+        this.generatePackageXml([]);
         this.didUpdate();
       } catch (e) {
         this.logError(e);
@@ -314,20 +312,19 @@ class Model {
       }
     });
 
-    let packageXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-    packageXml += "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
+    this.packageXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    this.packageXml += "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
 
     Object.entries(groupedComponents).forEach(([type, members]) => {
-      packageXml += "    <types>\n";
+      this.packageXml += "    <types>\n";
       [...members].sort().forEach(member => {
-        packageXml += `        <members>${member}</members>\n`;
+        this.packageXml += `        <members>${member}</members>\n`;
       });
-      packageXml += `        <name>${type}</name>\n`;
-      packageXml += "    </types>\n";
+      this.packageXml += `        <name>${type}</name>\n`;
+      this.packageXml += "    </types>\n";
     });
-    packageXml += `    <version>${apiVersion}</version>\n`;
-    packageXml += "</Package>";
-    return packageXml;
+    this.packageXml += `    <version>${apiVersion}</version>\n`;
+    this.packageXml += "</Package>";
   }
 }
 
@@ -348,6 +345,11 @@ class App extends React.Component {
   componentDidMount() {
     this.refs.metadataFilter.focus();
   }
+  componentDidUpdate(){
+    if (window.Prism) {
+      window.Prism.highlightAll();
+    }
+  }
   onSelectAllChange(e) {
     let {model} = this.props;
     let checked = e.target.checked;
@@ -355,9 +357,9 @@ class App extends React.Component {
       metadataObject.selected = checked;
     }
     if (checked){
-      model.packageXml = model.generatePackageXml(model.metadataObjects);
+      model.generatePackageXml(model.metadataObjects);
     } else {
-      model.packageXml = model.resetPackage();
+      model.resetPackage();
     }
     model.didUpdate();
   }
@@ -509,7 +511,7 @@ class App extends React.Component {
                 ),
                 h("div", {className: "slds-col"},
                   h("pre", {className: "reset-margin"},
-                    h("code", {className: "language-markup"}, model.packageXml)
+                    h("code", {id: "packageXml", className: "language-markup"}, model.packageXml)
                   )
                 )
               )
@@ -532,15 +534,14 @@ class ObjectSelector extends React.Component {
   onChange(e) {
     let {metadataObject, model} = this.props;
     metadataObject.selected = e.target.checked;
-    model.packageXml = model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
+    model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
     model.didUpdate();
   }
   onSelectChild(child){
     let {model} = this.props;
 
     child.selected = !child.selected;
-    model.packageXml = model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
-
+    model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
     model.didUpdate();
   }
   onSelectMeta(e){
@@ -558,7 +559,7 @@ class ObjectSelector extends React.Component {
         if (res){
           res.forEach(elt => {
             if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
-              metadataObject.childXmlNames.push({fullName: elt.fullName});
+              metadataObject.childXmlNames.push(elt);
             }
           });
         }
@@ -596,7 +597,7 @@ class ObjectSelector extends React.Component {
           h("ul", {className: "slds-accordion", key: metadataObject.fullName},
             metadataObject.childXmlNames.map(child =>
               h("li", {key: metadataObject.xmlName + "_li_" + child.fullName, className: "slds-accordion__list-item"},
-                h("label", {title: child.fullName, onClick: () => this.onSelectChild(child)},
+                h("label", {title: child.namespacePrefix ? `${child.namespacePrefix}.${child.fullName}` : child.fullName, onClick: () => this.onSelectChild(child)},
                   h("input", {type: "checkbox", className: "metadata", checked: child.selected}),
                   child.fullName
                 )

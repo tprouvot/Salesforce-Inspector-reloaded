@@ -70,14 +70,6 @@ body {
 .progress-done {
   color: #8f8;
 }
-.button {
-  margin: 0 0.3rem;
-  display: inline-block;
-  border: 1px solid #ddd;
-  padding: 6px 10px;
-  border-radius: 3px;
-  font: unset;
-}
 .body {
   padding: 4.3em 8px 8px;
   font-family: Arial, Helvetica, sans-serif;

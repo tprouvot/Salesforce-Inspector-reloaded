@@ -2,14 +2,15 @@
   box-sizing: border-box;
 }
 body {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
+  font-family: "Salesforce Sans", Arial, sans-serif;
+  font-size: 0.8125rem;
+  overflow: hidden;
   margin: 0;
-  background-color: #b0c4df !important;
-  background-image: url("chrome-extension://__MSG_@@extension_id__/images/lightning_blue_background.png") !important;
-  background-repeat: no-repeat !important;
-  background-size: contain !important;
-  background-position: 0px 48px !important;
+  background-color: #b0c4df;
+  background-image: url(images/lightning_blue_background.png);
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: 0px 48px;
 }
 .sf-link {
   margin-right: 1em;
@@ -64,11 +65,7 @@ body {
   }
 }
 .progress-working {
-  color: #88f;
   animation: working 1s cubic-bezier(0.5, 0.4, 0.5, 0.6) infinite;
-}
-.progress-done {
-  color: #8f8;
 }
 .body {
   padding: 4.3em 8px 8px;
@@ -122,6 +119,12 @@ textarea {
 .max-width-small {
   max-width: 10%;
 }
+.filter-box {
+  white-space: nowrap;
+  margin: 0 0.5rem;
+  position: relative;
+}
+
 .filter-input {
   font: inherit;
   width: 20em;
@@ -134,7 +137,45 @@ textarea {
   display: inline-block;
   line-height: 1.875rem;
   min-height: calc(1.875rem + (1px * 2));
-  margin-top: 0.5rem;
+}
+.filter-input:active,
+.filter-input:focus {
+  outline: 0;
+  border-color: #1589ee;
+  background-color: #fff;
+  box-shadow: 0 0 3px #0070d2;
+}
+.filter-icon {
+  left: 0.75rem;
+  width: 1rem;
+  height: 1rem;
+  position: absolute;
+  top: 50%;
+  margin-top: -0.5rem;
+  fill: #9faab5;
+}
+.filter-clear {
+  right: 0.75rem;
+  width: 1rem;
+  height: 1rem;
+  position: absolute;
+  top: 50%;
+  margin-top: -0.5rem;
+  fill: #9faab5;
+  line-height: 1;
+  vertical-align: middle;
+  color: #54698d;
+  display: inline-block;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  text-decoration: none;
+  transition: color 50ms linear, background-color 50ms linear;
+}
+.filter-clear-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  fill: currentColor;
 }
 .reset-margin {
   margin: 0;
@@ -143,4 +184,8 @@ textarea {
   margin-left: auto;
   display: flex;
   align-items: center;
+}
+.area input[type="radio"],
+.area input[type="checkbox"] {
+  margin: 0 7px 0 0;
 }

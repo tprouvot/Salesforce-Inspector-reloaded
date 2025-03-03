@@ -341,6 +341,7 @@ class App extends React.Component {
     this.onSelectAllChange = this.onSelectAllChange.bind(this);
     this.onUpdateManagedPackageSelection = this.onUpdateManagedPackageSelection.bind(this);
     this.onMetadataFilterInput = this.onMetadataFilterInput.bind(this);
+    this.onClearAndFocusFilter = this.onClearAndFocusFilter.bind(this);
   }
   componentDidMount() {
     this.refs.metadataFilter.focus();
@@ -428,6 +429,17 @@ class App extends React.Component {
       model.didUpdate();
     }
   }
+  onClearAndFocusFilter(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.metadataFilter = "";
+    model.metadataObjects = model.metadataObjects.map(metadataObject => ({
+      ...metadataObject,
+      hidden: false
+    }));
+    this.refs.metadataFilter.focus();
+    model.didUpdate();
+  }
   render() {
     let {model} = this.props;
     document.title = model.title();
@@ -443,7 +455,7 @@ class App extends React.Component {
           h("h1", {className: "slds-text-title_bold"}, model.title()),
           h("span", {}, " / " + model.userInfo),
           h("div", {className: "flex-right"},
-            h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_large", hidden: model.spinnerCount == 0},
+            h("div", {role: "status", className: "slds-spinner slds-spinner_large", hidden: model.spinnerCount == 0},
               h("span", {className: "slds-assistive-text"}),
               h("div", {className: "slds-spinner__dot-a"}),
               h("div", {className: "slds-spinner__dot-b"}),
@@ -459,7 +471,17 @@ class App extends React.Component {
         h("div", {className: "area", id: "result-area"},
           h("div", {className: "result-bar"},
             h("h1", {className: "slds-text-title_bold"}, "Metadata"),
-            h("input", {className: "filter-input", disabled: !model.metadataObjects, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
+            h("div", {className: "filter-box"},
+              h("svg", {className: "filter-icon"},
+                h("use", {xlinkHref: "symbols.svg#search"})
+              ),
+              h("input", {className: "filter-input", disabled: !model.metadataObjects, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
+              h("a", {href: "about:blank", className: "filter-clear", onClick: this.onClearAndFocusFilter},
+                h("svg", {className: "filter-clear-icon"},
+                  h("use", {xlinkHref: "symbols.svg#clear"})
+                )
+              )
+            ),
             h("label", {className: "slds-checkbox_toggle max-width-small"},
               h("input", {type: "checkbox", checked: model.metadataObjects.every(metadataObject => metadataObject.selected), onChange: this.onSelectAllChange}),
               h("span", {className: "slds-checkbox_faux_container center-label"},
@@ -537,20 +559,19 @@ class ObjectSelector extends React.Component {
     model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
     model.didUpdate();
   }
-  onSelectChild(child){
+  onSelectChild(child, e){
     let {model} = this.props;
 
     child.selected = !child.selected;
     model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
     model.didUpdate();
+    if (e.target.nodeName != "INPUT"){
+      e.preventDefault();
+    }
   }
   onSelectMeta(e){
     let {model, metadataObject} = this.props;
 
-    console.log(e.target.title);
-    const element = e.target;
-
-    //TODO fix spinner
     model.spinFor(
       "getting child metadata " + e.target.title,
       sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metadataObject.xmlName, folder: metadataObject.directoryName}}).then(res => {
@@ -597,7 +618,7 @@ class ObjectSelector extends React.Component {
           h("ul", {className: "slds-accordion", key: metadataObject.fullName},
             metadataObject.childXmlNames.map(child =>
               h("li", {key: metadataObject.xmlName + "_li_" + child.fullName, className: "slds-accordion__list-item"},
-                h("label", {title: child.namespacePrefix ? `${child.namespacePrefix}.${child.fullName}` : child.fullName, onClick: () => this.onSelectChild(child)},
+                h("label", {title: child.namespacePrefix ? `${child.namespacePrefix}.${child.fullName}` : child.fullName, onClick: (e) => this.onSelectChild(child, e)},
                   h("input", {type: "checkbox", className: "metadata", checked: child.selected}),
                   child.fullName
                 )

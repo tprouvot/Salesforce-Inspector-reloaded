@@ -24,7 +24,7 @@ class Model {
     this.statusLink = null;
     this.metadataObjects = [];
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
-    this.packageXml;
+    this.packageXml; //TODO save it and load it with localStorage
     this.metadataFilter = "";
     this.deployRequestId;
     this.allSelected = false;//TODO set it with localStorage
@@ -126,6 +126,22 @@ class Model {
     } catch (error) {
       console.error("Error checking metadata wildcard support:", error);
     }
+  }
+
+  retrieveMetaFromPackageXml(packageXml){
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(packageXml, "text/xml");
+
+    const retrieveRequest = {apiVersion, unpackaged: {types: []}};
+
+    const types = xmlDoc.getElementsByTagName("types");
+    for (let typeNode of types) {
+      const name = typeNode.getElementsByTagName("name")[0].textContent;
+      const members = [...typeNode.getElementsByTagName("members")].map(m => m.textContent).sort(); // Sort members
+      retrieveRequest.unpackaged.types.push({name, members});
+    }
+    retrieveRequest.unpackaged.types.sort((a, b) => a.name.localeCompare(b.name));
+    this.retrieveMetadata(retrieveRequest);
   }
 
   async retrieveMetadata(retrieveRequest) {
@@ -249,7 +265,6 @@ class Model {
               });
             });
           res = await Promise.all(groupByThree(flattenArray(x)).map(async xmlNames => {
-            //TODO instead of listMetadata call, we should first call the describeMetadata if the package contains some * to check if the meta is compatible with supportsWildcardAndName
             let someItems = sfConn.asArray(await logWait(
               "ListMetadata " + xmlNames.join(", "),
               sfConn.soap(metadataApi, "listMetadata", {queries: xmlNames.map(xmlName => ({type: xmlName}))})
@@ -405,6 +420,12 @@ class App extends React.Component {
   onStartClick() {
     let {model} = this.props;
     model.startDownloading();
+    //TODO fix spin
+    model.spinFor(
+      "Start retrieving metadata",
+      model.startDownloading()
+    );
+
   }
   downloadXml(){
     let {model} = this.props;
@@ -432,7 +453,7 @@ class App extends React.Component {
       try {
         const importedPackage = event.target.result;
         model.packageXml = importedPackage;
-        this.retrieveMetaFromPackageXml(importedPackage);
+        model.retrieveMetaFromPackageXml(importedPackage);
         model.didUpdate();
       } catch (error) {
         console.error(error);
@@ -440,39 +461,46 @@ class App extends React.Component {
     };
     reader.readAsText(file);
   }
-  retrieveMetaFromPackageXml(packageXml){
-    let {model} = this.props;
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(packageXml, "text/xml");
-
-    const retrieveRequest = {apiVersion, unpackaged: {types: []}};
-
-    const types = xmlDoc.getElementsByTagName("types");
-    for (let typeNode of types) {
-      const name = typeNode.getElementsByTagName("name")[0].textContent;
-      const members = [...typeNode.getElementsByTagName("members")].map(m => m.textContent).sort(); // Sort members
-      retrieveRequest.unpackaged.types.push({name, members});
-    }
-    retrieveRequest.unpackaged.types.sort((a, b) => a.name.localeCompare(b.name));
-    model.retrieveMetadata(retrieveRequest);
-  }
   onUpdateManagedPackageSelection(e){
     let {model} = this.props;
     model.includeManagedPackage = e.target.checked;
     localStorage.setItem("includeManagedMetadata", model.includeManagedPackage);
     model.didUpdate();
   }
+
   onMetadataFilterInput(e) {
     let {model} = this.props;
-    if (model.metadataObjects){
+    if (model.metadataObjects) {
       model.metadataFilter = e.target.value.toLowerCase();
-      model.metadataObjects = model.metadataObjects.map(metadataObject => ({
-        ...metadataObject,
-        hidden: !metadataObject.xmlName.toLowerCase().includes(model.metadataFilter)
-      }));
+      model.metadataObjects = model.metadataObjects.map(metadataObject => {
+        let hidden = !metadataObject.xmlName.toLowerCase().includes(model.metadataFilter);
+
+        if (metadataObject.childXmlNames) {
+          // Check if any child matches the filter
+          const anyChildMatches = metadataObject.childXmlNames.some(child =>
+            child.fullName.toLowerCase().includes(model.metadataFilter)
+          );
+
+          // If any child matches, the parent should be visible
+          if (anyChildMatches) {
+            hidden = false;
+          }
+
+          // Update child visibility
+          metadataObject.childXmlNames = metadataObject.childXmlNames.map(child => ({
+            ...child,
+            hidden: !child.fullName.toLowerCase().includes(model.metadataFilter)
+          }));
+        }
+        return {
+          ...metadataObject,
+          hidden
+        };
+      });
       model.didUpdate();
     }
   }
+
   onClearAndFocusFilter(e) {
     e.preventDefault();
     let {model} = this.props;
@@ -543,7 +571,7 @@ class App extends React.Component {
               )
             ),
             h("div", {className: "flex-right"},
-              h("button", {onClick: this.onStartClick}, "Download metadata"),
+              h("button", {onClick: this.onStartClick}, "Retrieve metadata"),
               h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.downloadXml(), title: "Download package.xml"},
                 h("svg", {className: "slds-button__icon"},
                   h("use", {xlinkHref: "symbols.svg#download"})
@@ -659,14 +687,14 @@ class ObjectSelector extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
               ),
               h("input", {type: "checkbox", className: "metadata", checked: !!metadataObject.selected, onChange: this.onChange, key: metadataObject.xmlName}),
-              h("span", {className: "slds-accordion__summary-content", title: metadataObject.xmlName}, metadataObject.xmlName + (metadataObject.expanded ? "(" + metadataObject.childXmlNames.length + ")" : ""))
+              h("span", {className: "slds-accordion__summary-content", title: metadataObject.xmlName}, metadataObject.xmlName + (metadataObject.expanded ? " (" + metadataObject.childXmlNames.length + ")" : ""))
             )
           )
         ),
         metadataObject.expanded && h("div", {className: "slds-accordion__content"},
           h("ul", {className: "slds-accordion", key: metadataObject.fullName},
             metadataObject.childXmlNames.map(child =>
-              h("li", {key: metadataObject.xmlName + "_li_" + child.fullName, className: "slds-accordion__list-item"},
+              h("li", {key: metadataObject.xmlName + "_li_" + child.fullName, className: "slds-accordion__list-item", hidden: child.hidden},
                 h("label", {title: child.namespacePrefix ? `${child.namespacePrefix}.${child.fullName}` : child.fullName, onClick: (e) => this.onSelectChild(child, e)},
                   h("input", {type: "checkbox", className: "metadata", checked: !!child.selected}),
                   child.fullName

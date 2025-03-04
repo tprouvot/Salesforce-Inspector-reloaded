@@ -1680,17 +1680,16 @@ class AllDataSelection extends React.PureComponent {
       return undefined;
     }
   }
-  getDeployStatusUrl() {
-    let {sfHost, selectedValue} = this.props;
-    let args = new URLSearchParams();
-    args.set("host", sfHost);
-    args.set("checkDeployStatus", selectedValue.recordId);
-    return "explore-api.html?" + args;
+  getUrl(basePath, params) {
+    const {sfHost, selectedValue} = this.props;
+    const args = new URLSearchParams({host: sfHost, ...params});
+    return `${basePath}?${args}`;
   }
-  generatePackage(){
-    sfConn.rest(`/services/data/v${apiVersion}/metadata/deployRequest/${this.props.selectedValue.recordId}?includeDetails=true`, {method: "GET"}).then(res => {
-      this.downloadPackageXml(res.deployResult.details.allComponentMessages, this.props.selectedValue.recordId);
-    });
+  getDeployStatusUrl() {
+    return this.getUrl("explore-api.html", {checkDeployStatus: this.props.selectedValue.recordId});
+  }
+  getGeneratePackageUrl() {
+    return this.getUrl("metadata-retrieve.html", {deployRequestId: this.props.selectedValue.recordId});
   }
   redirectToFlowVersions(){
     return "https://" + this.props.sfHost + "/lightning/setup/Flows/page?address=%2F" + this.state.flowDefinitionId;
@@ -1770,44 +1769,6 @@ class AllDataSelection extends React.PureComponent {
       }
     }
   }
-  generatePackageXml(components) {
-    const groupedComponents = {};
-
-    components.forEach(({componentType, fullName, fileName}) => {
-      if (componentType && fullName) {
-        componentType = fileName.startsWith("settings") ? "Settings" : componentType;
-        if (!groupedComponents[componentType]) {
-          groupedComponents[componentType] = new Set();
-        }
-        groupedComponents[componentType].add(fullName);
-      }
-    });
-
-    let packageXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-    packageXml += "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
-
-    Object.entries(groupedComponents).forEach(([type, members]) => {
-      packageXml += "    <types>\n";
-      [...members].sort().forEach(member => {
-        packageXml += `        <members>${member}</members>\n`;
-      });
-      packageXml += `        <name>${type}</name>\n`;
-      packageXml += "    </types>\n";
-    });
-    packageXml += `    <version>${apiVersion}</version>\n`;
-    packageXml += "</Package>";
-    return packageXml;
-  }
-  downloadPackageXml(jsonData, deployRequestId) {
-    const packageXml = this.generatePackageXml(jsonData);
-    const blob = new Blob([packageXml], {type: "text/xml"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `package_${deployRequestId}.xml`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent, eventMonitorHref} = this.props;
     let {flowDefinitionId} = this.state;
@@ -1874,7 +1835,7 @@ class AllDataSelection extends React.PureComponent {
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
           ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", {onClick: () => this.generatePackage(), className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Generate package.xml") : null,
+          ? h("a", {href: this.getGeneratePackageUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Generate package.xml") : null,
         flowDefinitionId
           ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
         buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",

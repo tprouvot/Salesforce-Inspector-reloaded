@@ -26,6 +26,8 @@ class Model {
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
     this.packageXml;
     this.metadataFilter = "";
+    this.deployRequestId;
+    this.allSelected = false;//TODO set it with localStorage
 
     this.spinFor(
       "getting user info",
@@ -86,6 +88,11 @@ class Model {
 
         this.metadataObjects = availableMetadataObjects;
         this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
+        /*
+        this.metadataObjects.forEach(meta => {
+          this.checkMetadataWildcardSupport(meta);
+        });
+        */
         this.progress = "ready";
         this.generatePackageXml([]);
         this.didUpdate();
@@ -93,6 +100,32 @@ class Model {
         this.logError(e);
       }
     })();
+  }
+
+  //TODO fix this to parse doc page (the one returned today is not the correct one)
+  async checkMetadataWildcardSupport(metadataObject) {
+    const url = `https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_${metadataObject.xmlName.toLowerCase()}.htm`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch URL: ${url}`);
+      }
+      const html = await response.text();
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const container = doc.querySelector(".container");
+
+      for (const element of container) {
+        if (element.textContent.includes("This metadata type supports the wildcard character")) {
+          metadataObject.supportsWildcardAndName = true;
+        }
+      }
+      metadataObject.supportsWildcardAndName = false;
+    } catch (error) {
+      console.error("Error checking metadata wildcard support:", error);
+    }
   }
 
   async retrieveMetadata(retrieveRequest) {
@@ -164,101 +197,105 @@ class Model {
   }
 
   startDownloading() {
-    let logMsg = msg => {
-      this.logMessages.push({level: "info", text: msg});
-      this.didUpdate();
-    };
-    let logWait = this.logWait.bind(this);
-    (async () => {
-      function flattenArray(x) {
-        return [].concat(...x);
-      }
-
-      function groupByThree(list) {
-        let groups = [];
-        for (let element of list) {
-          if (groups.length == 0 || groups[groups.length - 1].length == 3) {
-            groups.push([]);
-          }
-          groups[groups.length - 1].push(element);
-        }
-        return groups;
-      }
-
-      try {
-        let metadataObjects = this.metadataObjects;
-        this.metadataObjects = null;
-        this.progress = "working";
+    if (!this.deployRequestId || !this.packageXml.includes("*")){
+      //TODO handle mix of wilchar and named metadata
+      this.retrieveMetaFromPackageXml(this.packageXml);
+    } else {
+      let logMsg = msg => {
+        this.logMessages.push({level: "info", text: msg});
         this.didUpdate();
-
-        let metadataApi = sfConn.wsdl(apiVersion, "Metadata");
-        let res;
-        let selectedMetadataObjects = metadataObjects
-          .filter(metadataObject => metadataObject.selected);
-        // Code below is originally from forcecmd
-        let folderMap = {};
-        let x = selectedMetadataObjects
-          .map(metadataObject => {
-            let xmlNames = sfConn.asArray(metadataObject.childXmlNames).concat(metadataObject.xmlName);
-            return xmlNames.map(xmlName => {
-              if (metadataObject.inFolder == "true") {
-                if (xmlName == "EmailTemplate") {
-                  folderMap["EmailFolder"] = "EmailTemplate";
-                  xmlName = "EmailFolder";
-                } else {
-                  folderMap[xmlName + "Folder"] = xmlName;
-                  xmlName = xmlName + "Folder";
-                }
-              }
-              return xmlName;
-            });
-          });
-        res = await Promise.all(groupByThree(flattenArray(x)).map(async xmlNames => {
-          let someItems = sfConn.asArray(await logWait(
-            "ListMetadata " + xmlNames.join(", "),
-            sfConn.soap(metadataApi, "listMetadata", {queries: xmlNames.map(xmlName => ({type: xmlName}))})
-          ));
-          let folders = someItems.filter(folder => folderMap[folder.type]);
-          let nonFolders = someItems.filter(folder => !folderMap[folder.type]);
-          let p = await Promise
-            .all(groupByThree(folders).map(async folderGroup =>
-              sfConn.asArray(await logWait(
-                "ListMetadata " + folderGroup.map(folder => folderMap[folder.type] + "/" + folder.fullName).join(", "),
-                sfConn.soap(metadataApi, "listMetadata", {queries: folderGroup.map(folder => ({type: folderMap[folder.type], folder: folder.fullName}))})
-              ))
-            ));
-          return flattenArray(p).concat(
-            folders.map(folder => ({type: folderMap[folder.type], fullName: folder.fullName})),
-            nonFolders,
-            xmlNames.map(xmlName => ({type: xmlName, fullName: "*"}))
-          );
-        }));
-        let types = flattenArray(res);
-        if (types.filter(x => x.type == "StandardValueSet").map(x => x.fullName).join(",") == "*") {
-          // We are using an API version that supports the StandardValueSet type, but it didn't list its contents.
-          // https://success.salesforce.com/ideaView?id=0873A000000cMdrQAE
-          // Here we hardcode the supported values as of Spring 25 / API version 63.
-          types = types.concat([
-            "AccountContactMultiRoles", "AccountContactRole", "AccountOwnership", "AccountRating", "AccountType", "AQuestionQuestionCategory", "AReasonAppointmentReason1", "AssessmentRating", "AssessmentStatus", "AssetActionCategory", "AssetRelationshipType", "AssetStatus", "AssociatedLocationType", "CampaignMemberStatus", "CampaignStatus", "CampaignType", "CardType", "CaseContactRole", "CaseOrigin", "CasePriority", "CaseReason", "CaseStatus", "CaseType", "ChangeRequestRelatedItemImpactLevel", "ChangeRequestBusinessReason", "ChangeRequestCategory", "ChangeRequestImpact", "ChangeRequestPriority", "ChangeRequestRiskLevel", "ChangeRequestStatus", "ConsequenceOfFailure", "ContactPointAddressType", "ContactPointUsageType", "ContactRequestReason", "ContactRequestStatus", "ContactRole", "ContractContactRole", "ContractStatus", "DigitalAssetStatus", "EntitlementType", "EventSubject", "EventType", "FinanceEventAction", "FinanceEventType", "FiscalYearPeriodName", "FiscalYearPeriodPrefix", "FiscalYearQuarterName", "FiscalYearQuarterPrefix", "FulfillmentStatus", "FulfillmentType", "IncidentCategory", "IncidentImpact", "IncidentPriority", "IncidentRelatedItemImpactLevel", "IncidentRelatedItemImpactType", "IncidentReportedMethod", "IncidentStatus", "IncidentSubCategory", "IncidentType", "IncidentUrgency", "Industry", "LeadSource", "LeadStatus", "LocationType", "MilitaryService", "OpportunityCompetitor", "OpportunityStage", "OpportunityType", "OrderItemSummaryChgRsn", "OrderStatus", "OrderSummaryRoutingSchdRsn", "OrderSummaryStatus", "OrderType", "PartnerRole", "PartyProfileCountryofBirth", "PartyProfileEmploymentType", "PartyProfileFundSource", "PartyProfileGender", "PartyProfileResidentType", "PartyProfileReviewDecision", "PartyProfileRiskType", "PartyProfileStage", "PartyScreeningStepType", "PartyScreeningSummaryStatus", "PIdentityVerificationResult", "PIdentityVerificationStatus", "PIVerificationStepStatus", "PIVerificationStepType", "PIVerificationVerifiedBy", "PIVOverriddenResult", "PIVResultOverrideReason", "PIVSVerificationDecision", "ProblemCategory", "ProblemImpact", "ProblemPriority", "ProblemRelatedItemImpactLevel", "ProblemRelatedItemImpactType", "ProblemStatus", "ProblemSubCategory", "ProblemUrgency", "ProcessExceptionCategory", "ProcessExceptionPriority", "ProcessExceptionSeverity", "ProcessExceptionStatus", "Product2Family", "ProductRequestStatus", "QuantityUnitOfMeasure", "QuickTextCategory", "QuickTextChannel", "QuoteStatus", "RegulatoryBodyType1", "RequestedCareCodeType1", "RequestedDrugCodeType1", "RequestedLevelOfCare1", "RequesterType1", "RequestingPractitionerLicense1", "RequestingPractitionerSpecialty1", "ResidenceStatusType1", "RoleInTerritory2"
-          ].map(x => ({type: "StandardValueSet", fullName: x})));
+      };
+      let logWait = this.logWait.bind(this);
+      (async () => {
+        function flattenArray(x) {
+          return [].concat(...x);
         }
-        types.sort((a, b) => {
-          let ka = a.type + "~" + a.fullName;
-          let kb = b.type + "~" + b.fullName;
-          if (ka < kb) {
-            return -1;
+
+        function groupByThree(list) {
+          let groups = [];
+          for (let element of list) {
+            if (groups.length == 0 || groups[groups.length - 1].length == 3) {
+              groups.push([]);
+            }
+            groups[groups.length - 1].push(element);
           }
-          if (ka > kb) {
-            return 1;
+          return groups;
+        }
+
+        try {
+          this.progress = "working";
+          this.didUpdate();
+
+          let metadataApi = sfConn.wsdl(apiVersion, "Metadata");
+          let res;
+          let selectedMetadataObjects = this.metadataObjects
+            .filter(metadataObject => metadataObject.selected);
+          // Code below is originally from forcecmd
+          let folderMap = {};
+          let x = selectedMetadataObjects
+            .map(metadataObject => {
+              let xmlNames = sfConn.asArray(metadataObject.childXmlNames).concat(metadataObject.xmlName);
+              return xmlNames.map(xmlName => {
+                if (metadataObject.inFolder == "true") {
+                  if (xmlName == "EmailTemplate") {
+                    folderMap["EmailFolder"] = "EmailTemplate";
+                    xmlName = "EmailFolder";
+                  } else {
+                    folderMap[xmlName + "Folder"] = xmlName;
+                    xmlName = xmlName + "Folder";
+                  }
+                }
+                return xmlName;
+              });
+            });
+          res = await Promise.all(groupByThree(flattenArray(x)).map(async xmlNames => {
+            //TODO instead of listMetadata call, we should first call the describeMetadata if the package contains some * to check if the meta is compatible with supportsWildcardAndName
+            let someItems = sfConn.asArray(await logWait(
+              "ListMetadata " + xmlNames.join(", "),
+              sfConn.soap(metadataApi, "listMetadata", {queries: xmlNames.map(xmlName => ({type: xmlName}))})
+            ));
+            let folders = someItems.filter(folder => folderMap[folder.type]);
+            let nonFolders = someItems.filter(folder => !folderMap[folder.type]);
+            let p = await Promise
+              .all(groupByThree(folders).map(async folderGroup =>
+                sfConn.asArray(await logWait(
+                  "ListMetadata " + folderGroup.map(folder => folderMap[folder.type] + "/" + folder.fullName).join(", "),
+                  sfConn.soap(metadataApi, "listMetadata", {queries: folderGroup.map(folder => ({type: folderMap[folder.type], folder: folder.fullName}))})
+                ))
+              ));
+            return flattenArray(p).concat(
+              folders.map(folder => ({type: folderMap[folder.type], fullName: folder.fullName})),
+              nonFolders,
+              xmlNames.map(xmlName => ({type: xmlName, fullName: "*"}))
+            );
+          }));
+          let types = flattenArray(res);
+          if (types.filter(x => x.type == "StandardValueSet").map(x => x.fullName).join(",") == "*") {
+            // We are using an API version that supports the StandardValueSet type, but it didn't list its contents.
+            // https://success.salesforce.com/ideaView?id=0873A000000cMdrQAE
+            // Here we hardcode the supported values as of Spring 25 / API version 63.
+            types = types.concat([
+              "AccountContactMultiRoles", "AccountContactRole", "AccountOwnership", "AccountRating", "AccountType", "AQuestionQuestionCategory", "AReasonAppointmentReason1", "AssessmentRating", "AssessmentStatus", "AssetActionCategory", "AssetRelationshipType", "AssetStatus", "AssociatedLocationType", "CampaignMemberStatus", "CampaignStatus", "CampaignType", "CardType", "CaseContactRole", "CaseOrigin", "CasePriority", "CaseReason", "CaseStatus", "CaseType", "ChangeRequestRelatedItemImpactLevel", "ChangeRequestBusinessReason", "ChangeRequestCategory", "ChangeRequestImpact", "ChangeRequestPriority", "ChangeRequestRiskLevel", "ChangeRequestStatus", "ConsequenceOfFailure", "ContactPointAddressType", "ContactPointUsageType", "ContactRequestReason", "ContactRequestStatus", "ContactRole", "ContractContactRole", "ContractStatus", "DigitalAssetStatus", "EntitlementType", "EventSubject", "EventType", "FinanceEventAction", "FinanceEventType", "FiscalYearPeriodName", "FiscalYearPeriodPrefix", "FiscalYearQuarterName", "FiscalYearQuarterPrefix", "FulfillmentStatus", "FulfillmentType", "IncidentCategory", "IncidentImpact", "IncidentPriority", "IncidentRelatedItemImpactLevel", "IncidentRelatedItemImpactType", "IncidentReportedMethod", "IncidentStatus", "IncidentSubCategory", "IncidentType", "IncidentUrgency", "Industry", "LeadSource", "LeadStatus", "LocationType", "MilitaryService", "OpportunityCompetitor", "OpportunityStage", "OpportunityType", "OrderItemSummaryChgRsn", "OrderStatus", "OrderSummaryRoutingSchdRsn", "OrderSummaryStatus", "OrderType", "PartnerRole", "PartyProfileCountryofBirth", "PartyProfileEmploymentType", "PartyProfileFundSource", "PartyProfileGender", "PartyProfileResidentType", "PartyProfileReviewDecision", "PartyProfileRiskType", "PartyProfileStage", "PartyScreeningStepType", "PartyScreeningSummaryStatus", "PIdentityVerificationResult", "PIdentityVerificationStatus", "PIVerificationStepStatus", "PIVerificationStepType", "PIVerificationVerifiedBy", "PIVOverriddenResult", "PIVResultOverrideReason", "PIVSVerificationDecision", "ProblemCategory", "ProblemImpact", "ProblemPriority", "ProblemRelatedItemImpactLevel", "ProblemRelatedItemImpactType", "ProblemStatus", "ProblemSubCategory", "ProblemUrgency", "ProcessExceptionCategory", "ProcessExceptionPriority", "ProcessExceptionSeverity", "ProcessExceptionStatus", "Product2Family", "ProductRequestStatus", "QuantityUnitOfMeasure", "QuickTextCategory", "QuickTextChannel", "QuoteStatus", "RegulatoryBodyType1", "RequestedCareCodeType1", "RequestedDrugCodeType1", "RequestedLevelOfCare1", "RequesterType1", "RequestingPractitionerLicense1", "RequestingPractitionerSpecialty1", "ResidenceStatusType1", "RoleInTerritory2"
+            ].map(x => ({type: "StandardValueSet", fullName: x})));
           }
-          return 0;
-        });
-        types = types.map(x => ({name: x.type, members: decodeURIComponent(x.fullName)}));
-        await this.retrieveMetadata({apiVersion, unpackaged: {types, version: apiVersion}});
-      } catch (e) {
-        this.logError(e);
-      }
-    })();
+          types.sort((a, b) => {
+            let ka = a.type + "~" + a.fullName;
+            let kb = b.type + "~" + b.fullName;
+            if (ka < kb) {
+              return -1;
+            }
+            if (ka > kb) {
+              return 1;
+            }
+            return 0;
+          });
+          types = types.map(x => ({name: x.type, members: decodeURIComponent(x.fullName)}));
+          await this.retrieveMetadata({apiVersion, unpackaged: {types, version: apiVersion}});
+        } catch (e) {
+          this.logError(e);
+        }
+      })();
+    }
   }
 
   logWait(msg, promise) {
@@ -354,6 +391,7 @@ class App extends React.Component {
   onSelectAllChange(e) {
     let {model} = this.props;
     let checked = e.target.checked;
+    model.allSelected = checked;
     for (let metadataObject of model.metadataObjects) {
       metadataObject.selected = checked;
     }
@@ -393,24 +431,30 @@ class App extends React.Component {
     reader.onload = (event) => {
       try {
         const importedPackage = event.target.result;
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(importedPackage, "text/xml");
-
-        const retrieveRequest = {apiVersion, unpackaged: {types: []}};
-
-        const types = xmlDoc.getElementsByTagName("types");
-        for (let typeNode of types) {
-          const name = typeNode.getElementsByTagName("name")[0].textContent;
-          const members = [...typeNode.getElementsByTagName("members")].map(m => m.textContent).sort(); // Sort members
-          retrieveRequest.unpackaged.types.push({name, members});
-        }
-        retrieveRequest.unpackaged.types.sort((a, b) => a.name.localeCompare(b.name));
-        model.retrieveMetadata(retrieveRequest);
+        model.packageXml = importedPackage;
+        this.retrieveMetaFromPackageXml(importedPackage);
+        model.didUpdate();
       } catch (error) {
         console.error(error);
       }
     };
     reader.readAsText(file);
+  }
+  retrieveMetaFromPackageXml(packageXml){
+    let {model} = this.props;
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(packageXml, "text/xml");
+
+    const retrieveRequest = {apiVersion, unpackaged: {types: []}};
+
+    const types = xmlDoc.getElementsByTagName("types");
+    for (let typeNode of types) {
+      const name = typeNode.getElementsByTagName("name")[0].textContent;
+      const members = [...typeNode.getElementsByTagName("members")].map(m => m.textContent).sort(); // Sort members
+      retrieveRequest.unpackaged.types.push({name, members});
+    }
+    retrieveRequest.unpackaged.types.sort((a, b) => a.name.localeCompare(b.name));
+    model.retrieveMetadata(retrieveRequest);
   }
   onUpdateManagedPackageSelection(e){
     let {model} = this.props;
@@ -475,7 +519,7 @@ class App extends React.Component {
               h("svg", {className: "filter-icon"},
                 h("use", {xlinkHref: "symbols.svg#search"})
               ),
-              h("input", {className: "filter-input", disabled: !model.metadataObjects, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
+              h("input", {className: "filter-input", disabled: model.metadataObjects?.length == 0, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
               h("a", {href: "about:blank", className: "filter-clear", onClick: this.onClearAndFocusFilter},
                 h("svg", {className: "filter-clear-icon"},
                   h("use", {xlinkHref: "symbols.svg#clear"})
@@ -483,7 +527,7 @@ class App extends React.Component {
               )
             ),
             h("label", {className: "slds-checkbox_toggle max-width-small"},
-              h("input", {type: "checkbox", checked: model.metadataObjects.every(metadataObject => metadataObject.selected), onChange: this.onSelectAllChange}),
+              h("input", {type: "checkbox", checked: model.allSelected, onChange: this.onSelectAllChange}),
               h("span", {className: "slds-checkbox_faux_container center-label"},
                 h("span", {className: "slds-checkbox_faux"}),
                 h("span", {className: "slds-checkbox_on"}, "Unselect all"),
@@ -528,8 +572,7 @@ class App extends React.Component {
                   h("br", {}),
                   h("ul", {className: "slds-accordion"},
                     model.metadataObjects.map(metadataObject => h(ObjectSelector, {metadataObject, model}))),
-                  h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes."),
-                  h("button", {onClick: this.onStartClick}, "Download metadata")
+                  !model.deployRequestId ? h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes.") : null
                 ),
                 h("div", {className: "slds-col"},
                   h("pre", {className: "reset-margin"},
@@ -556,6 +599,10 @@ class ObjectSelector extends React.Component {
   onChange(e) {
     let {metadataObject, model} = this.props;
     metadataObject.selected = e.target.checked;
+    metadataObject.wildcard = !metadataObject.expanded;
+    if (metadataObject.expanded){
+      metadataObject.childXmlNames.forEach(child => child.selected = metadataObject.selected);
+    }
     model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
     model.didUpdate();
   }
@@ -563,6 +610,7 @@ class ObjectSelector extends React.Component {
     let {model} = this.props;
 
     child.selected = !child.selected;
+    child.parent.selected = true;
     model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
     model.didUpdate();
     if (e.target.nodeName != "INPUT"){
@@ -570,56 +618,57 @@ class ObjectSelector extends React.Component {
     }
   }
   onSelectMeta(e){
-    let {model, metadataObject} = this.props;
+    if (e.target.nodeName !== "INPUT"){
+      let {model, metadataObject} = this.props;
+      metadataObject.expanded = !metadataObject.expanded;
+      metadataObject.icon = metadataObject.expanded ? "switch" : "chevronright";
+      if (metadataObject.childXmlNames.length == 0){
+        model.spinFor(
+          "getting child metadata " + e.target.title,
+          sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metadataObject.xmlName, folder: metadataObject.directoryName}}).then(res => {
 
-    model.spinFor(
-      "getting child metadata " + e.target.title,
-      sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metadataObject.xmlName, folder: metadataObject.directoryName}}).then(res => {
-        res.sort((a, b) => a.fullName > b.fullName ? 1 : a.fullName < b.fullName ? -1
-          : 0);
-        if (res){
-          res.forEach(elt => {
-            if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
-              metadataObject.childXmlNames.push(elt);
+            if (res){
+              if (Array.isArray(res)){
+                res.sort((a, b) => a.fullName > b.fullName ? 1 : a.fullName < b.fullName ? -1 : 0);
+                res.forEach(elt => {
+                  if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
+                    elt.parent = metadataObject;
+                    metadataObject.childXmlNames.push(elt);
+                  }
+                });
+              } else {
+                res.parent = metadataObject;
+                metadataObject.childXmlNames.push(res);
+              }
             }
-          });
-        }
-      })
-    );
+          })
+        );
+      }
+      model.didUpdate();
+    }
   }
 
   render() {
     let {metadataObject} = this.props;
     return h("li", {className: "slds-accordion__list-item", hidden: metadataObject.hidden},
       h("section", {className: "slds-accordion__section slds-is-open"},
-        h("div", {className: "slds-accordion__summary"},
+        h("div", {className: "slds-accordion__summary", title: metadataObject.xmlName, onClick: (event) => { this.onSelectMeta(event); }},
           h("h2", {className: "slds-accordion__summary-heading"},
-            h("span", {className: "slds-accordion__summary-content"},
-              h("label", {title: metadataObject.xmlName,
-                onClick: (event) => {
-                  if (event.target.tagName !== "INPUT") {
-                    this.onSelectMeta(event);
-                  }
-                }},
-              h("input", {
-                type: "checkbox",
-                className: "metadata",
-                checked: metadataObject.selected,
-                onChange: this.onChange,
-                key: metadataObject.xmlName
-              }),
-              metadataObject.xmlName
-              )
+            h("button", {"aria-expanded": metadataObject.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
+              h("svg", {className: "slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+                h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
+              ),
+              h("input", {type: "checkbox", className: "metadata", checked: !!metadataObject.selected, onChange: this.onChange, key: metadataObject.xmlName}),
+              h("span", {className: "slds-accordion__summary-content", title: metadataObject.xmlName}, metadataObject.xmlName + (metadataObject.expanded ? "(" + metadataObject.childXmlNames.length + ")" : ""))
             )
           )
         ),
-        metadataObject.childXmlNames?.length > 0
-        && h("div", {className: "slds-accordion__content"},
+        metadataObject.expanded && h("div", {className: "slds-accordion__content"},
           h("ul", {className: "slds-accordion", key: metadataObject.fullName},
             metadataObject.childXmlNames.map(child =>
               h("li", {key: metadataObject.xmlName + "_li_" + child.fullName, className: "slds-accordion__list-item"},
                 h("label", {title: child.namespacePrefix ? `${child.namespacePrefix}.${child.fullName}` : child.fullName, onClick: (e) => this.onSelectChild(child, e)},
-                  h("input", {type: "checkbox", className: "metadata", checked: child.selected}),
+                  h("input", {type: "checkbox", className: "metadata", checked: !!child.selected}),
                   child.fullName
                 )
               )
@@ -634,12 +683,43 @@ class ObjectSelector extends React.Component {
 {
   let args = new URLSearchParams(location.search.slice(1));
   let sfHost = args.get("host");
+  let deployRequestId = args.get("deployRequestId");
   initButton(sfHost, true);
   sfConn.getSession(sfHost).then(() => {
 
     let root = document.getElementById("root");
     let model = new Model(sfHost);
-    model.startLoading();
+    if (deployRequestId?.startsWith("0Af")) {
+      model.deployRequestId = deployRequestId;
+      sfConn.rest(`/services/data/v${apiVersion}/metadata/deployRequest/${deployRequestId}?includeDetails=true`, {method: "GET"}).then(res => {
+        const groupedComponents = {};
+        res.deployResult.details.allComponentMessages.sort((a, b) => a.componentType < b.componentType ? -1 : a.componentType > b.componentType ? 1 : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
+
+        res.deployResult.details.allComponentMessages.forEach(({componentType, fullName, fileName}) => {
+          if (componentType && fullName) {
+            componentType = fileName.startsWith("settings") ? "Settings" : componentType;
+            if (!groupedComponents[componentType]) {
+              groupedComponents[componentType] = new Set();
+            }
+            groupedComponents[componentType].add(fullName);
+
+            model.metadataObjects.push({
+              xmlName: componentType,
+              selected: true,
+              childXmlNames: Array.from(groupedComponents[componentType]).map(name => ({
+                fullName: name,
+                selected: true
+              }))
+            });
+          }
+        });
+        model.generatePackageXml(model.metadataObjects);
+        model.didUpdate();
+      });
+    } else {
+      model.startLoading();
+    }
+
     model.reactCallback = cb => {
       ReactDOM.render(h(App, {model}), root, cb);
     };

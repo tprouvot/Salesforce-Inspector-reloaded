@@ -2,6 +2,7 @@
 export let setupLinks = [
   //Setup
   {label: "Setup Home", link: "/lightning/setup/SetupOneHome/home", section: "Setup", prod: false},
+  {label: "Salesforce Foundations", link: "/lightning/setup/C360ProvisioningSetup/home", section: "Setup", prod: false},
   {label: "Service Setup Assistant", link: "/lightning/setup/ServiceHome/home", section: "Setup", prod: false},
   {label: "Service Setup", link: "/lightning/setup/SetupOneHome/home", section: "Setup", prod: false},
   {label: "Multi-Factor Authentication Assistant", link: "/lightning/setup/MfaAssistant/home", section: "Setup", prod: false},

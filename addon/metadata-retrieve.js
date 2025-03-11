@@ -1,6 +1,6 @@
-/* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-/* global initButton */
+import Toast from "./components/Toast.js";
+import {copyToClipboard} from "./data-load.js";
 
 class Model {
   constructor(sfHost) {
@@ -100,6 +100,47 @@ class Model {
         this.logError(e);
       }
     })();
+  }
+
+  getDeploymentComponentsAndPackageXml(deployRequestId) {
+    sfConn.rest(`/services/data/v${apiVersion}/metadata/deployRequest/${deployRequestId}?includeDetails=true`, {method: "GET"}).then(res => {
+      const groupedComponents = {};
+      const metadataObjectsMap = {};
+
+      res.deployResult.details.allComponentMessages.sort((a, b) => a.componentType < b.componentType ? -1 : a.componentType > b.componentType ? 1 : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
+      res.deployResult.details.allComponentMessages.forEach(({componentType, fullName, fileName}) => {
+        if (componentType && fullName) {
+          componentType = fileName.startsWith("settings") ? "Settings" : componentType;
+
+          if (!groupedComponents[componentType]) {
+            groupedComponents[componentType] = new Set();
+          }
+          groupedComponents[componentType].add(fullName);
+
+          if (!metadataObjectsMap[componentType]) {
+            metadataObjectsMap[componentType] = {
+              xmlName: componentType,
+              selected: true,
+              expanded: true,
+              childXmlNames: []
+            };
+          }
+          metadataObjectsMap[componentType].childXmlNames.push({
+            parent: metadataObjectsMap[componentType],
+            fullName,
+            selected: true
+          });
+        }
+      });
+      this.metadataObjects = Object.values(metadataObjectsMap).map(metadataObject => {
+        metadataObject.childXmlNames.sort((a, b) => a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
+        return {
+          ...metadataObject
+        };
+      });
+      this.generatePackageXml(this.metadataObjects);
+      this.didUpdate();
+    });
   }
 
   //TODO fix this to parse doc page (the one returned today is not the correct one)
@@ -364,7 +405,7 @@ class Model {
       }
     });
 
-    this.packageXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    this.packageXml = "<!-- Import package.xml or paste content here -->\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
     this.packageXml += "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
 
     Object.entries(groupedComponents).forEach(([type, members]) => {
@@ -389,14 +430,27 @@ class App extends React.Component {
     super(props);
     this.onStartClick = this.onStartClick.bind(this);
     this.onImportPackage = this.onImportPackage.bind(this);
+    this.onPastePackage = this.onPastePackage.bind(this);
     this.downloadXml = this.downloadXml.bind(this);
     this.onSelectAllChange = this.onSelectAllChange.bind(this);
     this.onUpdateManagedPackageSelection = this.onUpdateManagedPackageSelection.bind(this);
     this.onMetadataFilterInput = this.onMetadataFilterInput.bind(this);
     this.onClearAndFocusFilter = this.onClearAndFocusFilter.bind(this);
+    this.hideToast = this.hideToast.bind(this);
+    this.state = {};
   }
   componentDidMount() {
     this.refs.metadataFilter.focus();
+    const packageXml = document.getElementById("packageXml");
+    if (packageXml) {
+      packageXml.addEventListener("paste", this.onPastePackage);
+    }
+  }
+  componentWillUnmount() {
+    const packageXml = document.getElementById("packageXml");
+    if (packageXml) {
+      packageXml.removeEventListener("paste", this.onPastePackage);
+    }
   }
   componentDidUpdate(){
     if (window.Prism) {
@@ -407,9 +461,12 @@ class App extends React.Component {
     let {model} = this.props;
     let checked = e.target.checked;
     model.allSelected = checked;
-    for (let metadataObject of model.metadataObjects) {
+    model.metadataObjects.forEach(metadataObject => {
       metadataObject.selected = checked;
-    }
+      metadataObject.childXmlNames.forEach(child => {
+        child.selected = checked;
+      });
+    });
     if (checked){
       model.generatePackageXml(model.metadataObjects);
     } else {
@@ -420,7 +477,6 @@ class App extends React.Component {
   onStartClick() {
     let {model} = this.props;
     model.startDownloading();
-    //TODO fix spin
     model.spinFor(
       "Start retrieving metadata",
       model.startDownloading()
@@ -437,11 +493,21 @@ class App extends React.Component {
     a.click();
     document.body.removeChild(a);
   }
+  copyXml(){
+    let {model} = this.props;
+    copyToClipboard(model.packageXml);
+  }
   onImportPackage(){
     let {model} = this.props;
     const fileInput = this.refs.fileInput;
 
     if (!fileInput.files.length) {
+      this.setState({
+        showToast: true,
+        toastMessage: "Import Failed",
+        toastVariant: "error",
+        toastTitle: "Error"
+      });
       console.error("No file selected.");
       return;
     }
@@ -454,6 +520,13 @@ class App extends React.Component {
         const importedPackage = event.target.result;
         model.packageXml = importedPackage;
         model.retrieveMetaFromPackageXml(importedPackage);
+        this.setState({
+          showToast: true,
+          toastMessage: "package.xml imported successfully!",
+          toastVariant: "success",
+          toastTitle: "Success"
+        });
+        setTimeout(this.hideToast, 3000);
         model.didUpdate();
       } catch (error) {
         console.error(error);
@@ -461,13 +534,19 @@ class App extends React.Component {
     };
     reader.readAsText(file);
   }
+  onPastePackage(e){
+    let {model} = this.props;
+    let clipText = e.clipboardData.getData("text/plain");
+    model.packageXml = clipText;
+    model.retrieveMetaFromPackageXml(clipText);
+    model.didUpdate();
+  }
   onUpdateManagedPackageSelection(e){
     let {model} = this.props;
     model.includeManagedPackage = e.target.checked;
     localStorage.setItem("includeManagedMetadata", model.includeManagedPackage);
     model.didUpdate();
   }
-
   onMetadataFilterInput(e) {
     let {model} = this.props;
     if (model.metadataObjects) {
@@ -480,12 +559,10 @@ class App extends React.Component {
           const anyChildMatches = metadataObject.childXmlNames.some(child =>
             child.fullName.toLowerCase().includes(model.metadataFilter)
           );
-
           // If any child matches, the parent should be visible
           if (anyChildMatches) {
             hidden = false;
           }
-
           // Update child visibility
           metadataObject.childXmlNames = metadataObject.childXmlNames.map(child => ({
             ...child,
@@ -512,11 +589,24 @@ class App extends React.Component {
     this.refs.metadataFilter.focus();
     model.didUpdate();
   }
+  hideToast() {
+    let {model} = this.props;
+    this.state = {showToast: false, toastMessage: ""};
+    model.didUpdate();
+  }
   render() {
+    const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
     document.title = model.title();
     return (
       h("div", {},
+        this.state.showToast
+        && h(Toast, {
+          variant: this.state.toastVariant,
+          title: this.state.toastTitle,
+          message: this.state.toastMessage,
+          onClose: this.hideToast
+        }),
         h("div", {id: "user-info", className: "slds-border_bottom"},
           h("a", {href: model.sfLink, className: "sf-link"},
             h("svg", {viewBox: "0 0 24 24"},
@@ -582,6 +672,11 @@ class App extends React.Component {
                   h("use", {xlinkHref: "symbols.svg#upload"})
                 )
               ),
+              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.copyXml(), title: "Copy package.xml"},
+                h("svg", {className: "slds-button__icon"},
+                  h("use", {xlinkHref: "symbols.svg#copy"})
+                )
+              ),
               h("input", {
                 type: "file",
                 style: {display: "none"},
@@ -599,7 +694,7 @@ class App extends React.Component {
                 h("div", {className: "slds-col"},
                   h("br", {}),
                   h("ul", {className: "slds-accordion"},
-                    model.metadataObjects.map(metadataObject => h(ObjectSelector, {metadataObject, model}))),
+                    model.metadataObjects.map(metadataObject => h(ObjectSelector, {metadataObject, model, key: metadataObject.xmlName}))),
                   !model.deployRequestId ? h("p", {}, "Select what to download above, and then click the button below. If downloading fails, try unchecking some of the boxes.") : null
                 ),
                 h("div", {className: "slds-col"},
@@ -636,7 +731,6 @@ class ObjectSelector extends React.Component {
   }
   onSelectChild(child, e){
     let {model} = this.props;
-
     child.selected = !child.selected;
     child.parent.selected = true;
     model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
@@ -650,23 +744,28 @@ class ObjectSelector extends React.Component {
       let {model, metadataObject} = this.props;
       metadataObject.expanded = !metadataObject.expanded;
       metadataObject.icon = metadataObject.expanded ? "switch" : "chevronright";
-      if (metadataObject.childXmlNames.length == 0){
+      if (metadataObject.childXmlNames.length == 0 || model.deployRequestId){
         model.spinFor(
           "getting child metadata " + e.target.title,
           sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metadataObject.xmlName, folder: metadataObject.directoryName}}).then(res => {
 
             if (res){
               if (Array.isArray(res)){
-                res.sort((a, b) => a.fullName > b.fullName ? 1 : a.fullName < b.fullName ? -1 : 0);
                 res.forEach(elt => {
                   if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
                     elt.parent = metadataObject;
-                    metadataObject.childXmlNames.push(elt);
+                    if (!metadataObject.childXmlNames.some(existingElt => existingElt.fullName === elt.fullName)) {
+                      metadataObject.childXmlNames.push(elt);
+                    }
                   }
                 });
+                //sort the child once added to metadataObject.childXmlNames so that if there is already some child from deployRequest, those are also sorted
+                metadataObject.childXmlNames.sort((a, b) => a.fullName > b.fullName ? 1 : a.fullName < b.fullName ? -1 : 0);
               } else {
                 res.parent = metadataObject;
-                metadataObject.childXmlNames.push(res);
+                if (!metadataObject.childXmlNames.some(existingElt => existingElt.fullName === res.fullName)) {
+                  metadataObject.childXmlNames.push(res);
+                }
               }
             }
           })
@@ -678,7 +777,7 @@ class ObjectSelector extends React.Component {
 
   render() {
     let {metadataObject} = this.props;
-    return h("li", {className: "slds-accordion__list-item", hidden: metadataObject.hidden},
+    return h("li", {className: "slds-accordion__list-item", hidden: metadataObject.hidden, key: metadataObject.xmlName},
       h("section", {className: "slds-accordion__section slds-is-open"},
         h("div", {className: "slds-accordion__summary", title: metadataObject.xmlName, onClick: (event) => { this.onSelectMeta(event); }},
           h("h2", {className: "slds-accordion__summary-heading"},
@@ -717,41 +816,14 @@ class ObjectSelector extends React.Component {
 
     let root = document.getElementById("root");
     let model = new Model(sfHost);
+    model.startLoading();
     if (deployRequestId?.startsWith("0Af")) {
       model.deployRequestId = deployRequestId;
-      sfConn.rest(`/services/data/v${apiVersion}/metadata/deployRequest/${deployRequestId}?includeDetails=true`, {method: "GET"}).then(res => {
-        const groupedComponents = {};
-        res.deployResult.details.allComponentMessages.sort((a, b) => a.componentType < b.componentType ? -1 : a.componentType > b.componentType ? 1 : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
-
-        res.deployResult.details.allComponentMessages.forEach(({componentType, fullName, fileName}) => {
-          if (componentType && fullName) {
-            componentType = fileName.startsWith("settings") ? "Settings" : componentType;
-            if (!groupedComponents[componentType]) {
-              groupedComponents[componentType] = new Set();
-            }
-            groupedComponents[componentType].add(fullName);
-
-            model.metadataObjects.push({
-              xmlName: componentType,
-              selected: true,
-              childXmlNames: Array.from(groupedComponents[componentType]).map(name => ({
-                fullName: name,
-                selected: true
-              }))
-            });
-          }
-        });
-        model.generatePackageXml(model.metadataObjects);
-        model.didUpdate();
-      });
-    } else {
-      model.startLoading();
+      model.getDeploymentComponentsAndPackageXml(deployRequestId);
     }
-
     model.reactCallback = cb => {
       ReactDOM.render(h(App, {model}), root, cb);
     };
     ReactDOM.render(h(App, {model}), root);
-
   });
 }

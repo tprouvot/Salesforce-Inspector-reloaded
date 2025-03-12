@@ -190,6 +190,15 @@ class OptionsTabSelector extends React.Component {
         title: "Metadata",
         content: [
           {option: Option, props: {type: "toggle", title: "Include managed packages metadata", key: "includeManagedMetadata"}},
+          {option: Option,
+            props: {type: "select",
+              title: "Sort metadata components",
+              key: "sortMetadataBy",
+              default: "fullName",
+              options: [
+                {label: "A-Z", value: "fullName"},
+                {label: "Last Modified Date DESC", value: "lastModifiedDate"}
+              ]}},
         ]
       }
     ];

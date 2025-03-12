@@ -189,3 +189,6 @@ textarea {
 .area input[type="checkbox"] {
   margin: 0 7px 0 0;
 }
+.sub-child-icon {
+  transform: none;
+}

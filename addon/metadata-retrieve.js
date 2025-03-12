@@ -240,6 +240,7 @@ class Model {
       );
 
       logMsg("(Finished)");
+      this.spinnerCount--;
 
       // Process the ZIP response
       let zipBin = Uint8Array.from(atob(res.zipFile), c => c.charCodeAt(0));
@@ -254,7 +255,7 @@ class Model {
   }
 
   startDownloading() {
-    if (!this.deployRequestId || !this.packageXml.includes("*")){
+    if (!this.packageXml.includes("*")){
       //TODO handle mix of wilchar and named metadata
       this.retrieveMetaFromPackageXml(this.packageXml);
     } else {
@@ -476,12 +477,8 @@ class App extends React.Component {
   }
   onStartClick() {
     let {model} = this.props;
+    model.spinnerCount++;
     model.startDownloading();
-    model.spinFor(
-      "Start retrieving metadata",
-      model.startDownloading()
-    );
-
   }
   downloadXml(){
     let {model} = this.props;
@@ -595,7 +592,6 @@ class App extends React.Component {
     model.didUpdate();
   }
   render() {
-    const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
     document.title = model.title();
     return (
@@ -731,48 +727,73 @@ class ObjectSelector extends React.Component {
   }
   onSelectChild(child, e){
     let {model} = this.props;
-    child.selected = !child.selected;
-    child.parent.selected = true;
-    model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
-    model.didUpdate();
+    if (child.isFolder){
+      this.onSelectMeta(null, child);
+    } else {
+      child.selected = !child.selected;
+      child.parent.selected = true;
+      model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
+      model.didUpdate();
+    }
+
     if (e.target.nodeName != "INPUT"){
       e.preventDefault();
     }
   }
-  onSelectMeta(e){
-    if (e.target.nodeName !== "INPUT"){
+  getMetaFolderProof(metadataObject){
+    if (metadataObject.xmlName == "Report" && !metadataObject.isFolder){
+      return {xmlName: "ReportFolder", directoryName: "*"};
+    } else {
+      return metadataObject;
+    }
+  }
+  onSelectMeta(e, child){
+    if (!e || e.target.nodeName !== "INPUT"){
       let {model, metadataObject} = this.props;
-      metadataObject.expanded = !metadataObject.expanded;
-      metadataObject.icon = metadataObject.expanded ? "switch" : "chevronright";
-      if (metadataObject.childXmlNames.length == 0 || model.deployRequestId){
-        model.spinFor(
-          "getting child metadata " + e.target.title,
-          sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metadataObject.xmlName, folder: metadataObject.directoryName}}).then(res => {
+      this.selectMeta(model, child ? child : metadataObject);
+    }
+  }
 
-            if (res){
-              if (Array.isArray(res)){
-                res.forEach(elt => {
-                  if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
-                    elt.parent = metadataObject;
-                    if (!metadataObject.childXmlNames.some(existingElt => existingElt.fullName === elt.fullName)) {
-                      metadataObject.childXmlNames.push(elt);
-                    }
-                  }
-                });
-                //sort the child once added to metadataObject.childXmlNames so that if there is already some child from deployRequest, those are also sorted
-                metadataObject.childXmlNames.sort((a, b) => a.fullName > b.fullName ? 1 : a.fullName < b.fullName ? -1 : 0);
-              } else {
-                res.parent = metadataObject;
-                if (!metadataObject.childXmlNames.some(existingElt => existingElt.fullName === res.fullName)) {
-                  metadataObject.childXmlNames.push(res);
+  selectMeta(model, meta){
+    meta.expanded = !meta.expanded;
+    meta.icon = meta.expanded ? "switch" : "chevronright";
+    //TODO fix Report and Dashboard meta describe
+    if (meta.childXmlNames.length == 0 || model.deployRequestId){
+      let metaFolderProof = this.getMetaFolderProof(meta);
+      model.spinFor(
+        "getting child metadata " + meta.xmlName,
+        sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metaFolderProof.xmlName, folder: metaFolderProof.directoryName}}).then(res => {
+
+          if (res){
+            if (Array.isArray(res)){
+              res.forEach(elt => {
+                elt.isFolder = elt.type.endsWith("Folder");
+                if (elt.isFolder){
+                  elt.xmlName = meta.xmlName;
+                  elt.directoryName = elt.fullName;
+                  elt.childXmlNames = [];
                 }
+                if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
+                  elt.parent = meta;
+                  if (!meta.childXmlNames.some(existingElt => existingElt.fullName === elt.fullName)) {
+                    meta.childXmlNames.push(elt);
+                  }
+                }
+              });
+              //sort the child once added to meta.childXmlNames so that if there is already some child from deployRequest, those are also sorted
+              //TODO sort childs by lastmodified date based on a new sort option
+              meta.childXmlNames.sort((a, b) => a.fullName > b.fullName ? 1 : a.fullName < b.fullName ? -1 : 0);
+            } else {
+              res.parent = meta;
+              if (!meta.childXmlNames.some(existingElt => existingElt.fullName === res.fullName)) {
+                meta.childXmlNames.push(res);
               }
             }
-          })
-        );
-      }
-      model.didUpdate();
+          }
+        })
+      );
     }
+    model.didUpdate();
   }
 
   render() {
@@ -795,6 +816,9 @@ class ObjectSelector extends React.Component {
             metadataObject.childXmlNames.map(child =>
               h("li", {key: metadataObject.xmlName + "_li_" + child.fullName, className: "slds-accordion__list-item", hidden: child.hidden},
                 h("label", {title: child.namespacePrefix ? `${child.namespacePrefix}.${child.fullName}` : child.fullName, onClick: (e) => this.onSelectChild(child, e)},
+                  child.isFolder ? h("svg", {className: "sub-child-icon slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+                    h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
+                  ) : null,
                   h("input", {type: "checkbox", className: "metadata", checked: !!child.selected}),
                   child.fullName
                 )

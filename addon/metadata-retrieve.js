@@ -24,6 +24,7 @@ class Model {
     this.statusLink = null;
     this.metadataObjects = [];
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
+    this.sortMetadataBy = localStorage.getItem("sortMetadataBy");
     this.packageXml; //TODO save it and load it with localStorage
     this.metadataFilter = "";
     this.deployRequestId;
@@ -392,22 +393,28 @@ class Model {
   generatePackageXml(components) {
     const groupedComponents = {};
 
-    components.forEach(({xmlName, childXmlNames}) => {
-      childXmlNames = childXmlNames.length > 0 && childXmlNames.filter(child => child.selected).length > 0 ? childXmlNames : [{fullName: "*", selected: true}];
-      if (xmlName) {
-        if (!groupedComponents[xmlName]) {
-          groupedComponents[xmlName] = new Set();
+    components.forEach((parent) => {
+      parent.childXmlNames = parent.childXmlNames.length > 0 && parent.childXmlNames.filter(child => child.selected).length > 0 ? parent.childXmlNames : [{fullName: "*", selected: true}];
+      if (parent.xmlName) {
+        if (!groupedComponents[parent.xmlName]) {
+          groupedComponents[parent.xmlName] = new Set();
         }
-        childXmlNames.forEach(({fullName, selected}) => {
-          if (selected || fullName === "*") {
-            groupedComponents[xmlName].add(fullName);
+        parent.childXmlNames.forEach((child) => {
+          if (child.childXmlNames && child.childXmlNames.length > 0){
+            child.childXmlNames?.forEach((grandchild) => {
+              if (grandchild.selected) {
+                groupedComponents[parent.xmlName].add(grandchild.fullName);
+              }
+            });
+          } else if (child.selected || child.fullName === "*") {
+            groupedComponents[parent.xmlName].add(child.fullName);
           }
         });
       }
     });
 
-    this.packageXml = "<!-- Import package.xml or paste content here -->\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-    this.packageXml += "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
+    //this.packageXml = "<!-- Import package.xml or paste content here -->\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    this.packageXml = "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
 
     Object.entries(groupedComponents).forEach(([type, members]) => {
       this.packageXml += "    <types>\n";
@@ -621,7 +628,7 @@ class App extends React.Component {
           ),
           h("span", {className: "progress progress-" + model.progress},
             model.progress == "ready" ? "Ready"
-            : model.progress == "working" ? "Downloading metadata..."
+            : model.progress == "working" ? "Retrieving metadata..."
             : model.progress == "done" ? "Finished"
             : "Error!"
           ),
@@ -732,6 +739,9 @@ class ObjectSelector extends React.Component {
     } else {
       child.selected = !child.selected;
       child.parent.selected = true;
+      if (child.parent.isFolder){
+        child.parent.parent.selected = true;
+      }
       model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
       model.didUpdate();
     }
@@ -743,6 +753,10 @@ class ObjectSelector extends React.Component {
   getMetaFolderProof(metadataObject){
     if (metadataObject.xmlName == "Report" && !metadataObject.isFolder){
       return {xmlName: "ReportFolder", directoryName: "*"};
+    } else if ((metadataObject.xmlName == "Dashboard" || metadataObject.xmlName == "Document") && !metadataObject.isFolder){
+      return {xmlName: metadataObject.xmlName + "Folder"};
+    } else if (metadataObject.xmlName == "EmailTemplate" && !metadataObject.isFolder){
+      return {xmlName: "EmailFolder"};
     } else {
       return metadataObject;
     }
@@ -765,30 +779,24 @@ class ObjectSelector extends React.Component {
         sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metaFolderProof.xmlName, folder: metaFolderProof.directoryName}}).then(res => {
 
           if (res){
-            if (Array.isArray(res)){
-              res.forEach(elt => {
-                elt.isFolder = elt.type.endsWith("Folder");
-                if (elt.isFolder){
-                  elt.xmlName = meta.xmlName;
-                  elt.directoryName = elt.fullName;
-                  elt.childXmlNames = [];
-                }
-                if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
-                  elt.parent = meta;
-                  if (!meta.childXmlNames.some(existingElt => existingElt.fullName === elt.fullName)) {
-                    meta.childXmlNames.push(elt);
-                  }
-                }
-              });
-              //sort the child once added to meta.childXmlNames so that if there is already some child from deployRequest, those are also sorted
-              //TODO sort childs by lastmodified date based on a new sort option
-              meta.childXmlNames.sort((a, b) => a.fullName > b.fullName ? 1 : a.fullName < b.fullName ? -1 : 0);
-            } else {
-              res.parent = meta;
-              if (!meta.childXmlNames.some(existingElt => existingElt.fullName === res.fullName)) {
-                meta.childXmlNames.push(res);
+            let resArray = Array.isArray(res) ? res : res ? [res] : []; // only one element can be returned
+            resArray.forEach(elt => {
+              elt.isFolder = elt.type.endsWith("Folder");
+              if (elt.isFolder){
+                elt.xmlName = meta.xmlName;
+                elt.directoryName = elt.fullName;
+                elt.childXmlNames = [];
               }
-            }
+              if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
+                elt.parent = meta;
+                if (!meta.childXmlNames.some(existingElt => existingElt.fullName === elt.fullName)) {
+                  meta.childXmlNames.push(elt);
+                }
+              }
+            });
+            //sort the child once added to meta.childXmlNames so that if there is already some child from deployRequest, those are also sorted
+            let sortField = model.sortMetadataBy.length > 0 ? model.sortMetadataBy : "fullName";
+            meta.childXmlNames.sort((a, b) => a[sortField] > b[sortField] ? 1 : a[sortField] < b[sortField] ? -1 : 0);
           }
         })
       );
@@ -798,12 +806,42 @@ class ObjectSelector extends React.Component {
 
   render() {
     let {metadataObject} = this.props;
+
+    const renderChildren = (children, parentXmlName) => {
+      if (!children || children.length === 0) {
+        return null;
+      }
+
+      return h("ul", {className: "slds-accordion", key: parentXmlName + "_children"},
+        children.map(child =>
+          h("li", {key: parentXmlName + "_li_" + child.fullName, className: "slds-accordion__list-item", hidden: child.hidden},
+            h("section", {className: child.expanded ? "slds-accordion__section slds-is-open" : "slds-accordion__section"},
+              h("div", {className: "slds-accordion__summary", title: child.fullName, onClick: (e) => this.onSelectChild(child, e)},
+                h("h4", {className: "slds-accordion__summary-heading"},
+                  h("button", {"aria-controls": "accordion-details-" + child.fullName, "aria-expanded": child.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
+                    child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+                      h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
+                    ) : null,
+                    h("input", {type: "checkbox", className: child.parent.isFolder ? "margin-grandchild " : "" + "metadata", checked: !!child.selected, onChange: (e) => this.onSelectChild(child, e, "checkbox")}),
+                    h("span", {className: "slds-text-body_small slds-accordion__summary-content", title: child.fullName}, child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""))
+                  )
+                )
+              ),
+              child.expanded && h("div", {className: "slds-accordion__content", id: "accordion-details-" + child.fullName},
+                renderChildren(child.childXmlNames, child.fullName)
+              )
+            )
+          )
+        )
+      );
+    };
+
     return h("li", {className: "slds-accordion__list-item", hidden: metadataObject.hidden, key: metadataObject.xmlName},
-      h("section", {className: "slds-accordion__section slds-is-open"},
+      h("section", {className: metadataObject.expanded ? "slds-accordion__section slds-is-open" : "slds-accordion__section"},
         h("div", {className: "slds-accordion__summary", title: metadataObject.xmlName, onClick: (event) => { this.onSelectMeta(event); }},
-          h("h2", {className: "slds-accordion__summary-heading"},
-            h("button", {"aria-expanded": metadataObject.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
-              h("svg", {className: "slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+          h("h3", {className: "slds-accordion__summary-heading"},
+            h("button", {"aria-controls": "accordion-details-" + metadataObject.xmlName, "aria-expanded": metadataObject.expanded, className: "slds-button slds-button_reset slds-accordion__summary-action"},
+              h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
                 h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
               ),
               h("input", {type: "checkbox", className: "metadata", checked: !!metadataObject.selected, onChange: this.onChange, key: metadataObject.xmlName}),
@@ -811,20 +849,8 @@ class ObjectSelector extends React.Component {
             )
           )
         ),
-        metadataObject.expanded && h("div", {className: "slds-accordion__content"},
-          h("ul", {className: "slds-accordion", key: metadataObject.fullName},
-            metadataObject.childXmlNames.map(child =>
-              h("li", {key: metadataObject.xmlName + "_li_" + child.fullName, className: "slds-accordion__list-item", hidden: child.hidden},
-                h("label", {title: child.namespacePrefix ? `${child.namespacePrefix}.${child.fullName}` : child.fullName, onClick: (e) => this.onSelectChild(child, e)},
-                  child.isFolder ? h("svg", {className: "sub-child-icon slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-                    h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
-                  ) : null,
-                  h("input", {type: "checkbox", className: "metadata", checked: !!child.selected}),
-                  child.fullName
-                )
-              )
-            )
-          )
+        metadataObject.expanded && h("div", {className: "slds-accordion__content", id: "accordion-details-" + metadataObject.xmlName},
+          renderChildren(metadataObject.childXmlNames, metadataObject.xmlName)
         )
       )
     );

@@ -61,7 +61,7 @@ body {
 }
 @keyframes working {
   50% {
-    background-color: #ccf;
+    background-color: #b1adab;
   }
 }
 .progress-working {
@@ -187,8 +187,11 @@ textarea {
 }
 .area input[type="radio"],
 .area input[type="checkbox"] {
-  margin: 0 7px 0 0;
+  margin-right: 7px;
 }
-.sub-child-icon {
+.reset-transform {
   transform: none;
+}
+.margin-grandchild {
+  margin-left: 20px !important;
 }

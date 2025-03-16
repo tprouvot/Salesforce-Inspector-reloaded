@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.27
+- Add 'Hard Refresh' shortcut to hard refresh Lightning Pages [feature 764](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/764) request by [Stephen Reitz](https://github.com/ssk42) (contribution by [Stephen Reitz](https://github.com/ssk42)) 
+
+
 ## Version 1.26
 
 - Add `Generate package.xml` button from a DeployRequest record (idea by Nicolas ROCHE)

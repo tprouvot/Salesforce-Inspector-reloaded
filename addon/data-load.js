@@ -590,7 +590,8 @@ export function initScrollTable(scroller) {
           if (colVisible[c] == 0) continue;
           let cell = row[c];
           let td = document.createElement("td");
-          td.className = `scrolltable-cell header ${cell.startsWith("_") ? "skipped" : ""}`;
+          const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true";
+          td.className = `scrolltable-cell header ${(cell.startsWith("_") && greyOutSkippedColumns) ? "skipped" : ""}`;
           td.style.minWidth = colWidths[c] + "px";
           td.style.height = rowHeights[r] + "px";
           renderCell(data, cell, td);
@@ -612,9 +613,10 @@ export function initScrollTable(scroller) {
           }
           let cell = row[c];
           let td = document.createElement("td");
-          let headerRow = data.table[0];
-          let isColumnHeaderSkipped = headerRow[c].startsWith("_");
-          td.className = `scrolltable-cell ${isColumnHeaderSkipped ? "skipped" : ""} ${c < headerCols ? "header" : ""}`;
+          td.className = "scrolltable-cell";
+          if (c < headerCols) {
+            td.className += " header";
+          }
           td.style.minWidth = colWidths[c] + "px";
           td.style.height = rowHeights[r] + "px";
           renderCell(data, cell, td);

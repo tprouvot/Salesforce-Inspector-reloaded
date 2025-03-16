@@ -155,6 +155,13 @@
     },
     "event-monitor": {
       "description": "Event Monitor"
+    },
+    "delete-actions-db": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+D",
+        "mac": "Command+Shift+D"
+      },
+      "description": "Hard refresh Lightning Pages"
     }
   }
 }

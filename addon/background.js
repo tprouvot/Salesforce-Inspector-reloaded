@@ -1,4 +1,3 @@
-
 let sfHost;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -55,14 +54,36 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
       chrome.tabs.reload(tabs[0].id);
     });
+  } else if (request.message == "deleteActionsDB") {
+    // Get the active tab and execute script to hard refresh
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+      if (tabs[0]) {
+        chrome.scripting.executeScript({
+          target: { tabId: tabs[0].id },
+          function: () => {
+            try {
+              const request = indexedDB.deleteDatabase("actions");
+              request.onsuccess = () => console.log("Database 'actions' deleted successfully");
+              request.onerror = (event) => console.error("Error deleting database:", event);
+              return true;
+            } catch (error) {
+              console.error("Error:", error);
+              return false;
+            }
+          }
+        });
+      }
+    });
   }
   return false;
 });
+
 chrome.action.onClicked.addListener(() => {
   chrome.runtime.sendMessage({
     msg: "shortcut_pressed", sfHost, command: "open-popup"
   });
 });
+
 chrome.commands?.onCommand.addListener((command) => {
   if (command.startsWith("link-")){
     let link;
@@ -80,7 +101,10 @@ chrome.commands?.onCommand.addListener((command) => {
     chrome.tabs.create({
       url: `https:///${sfHost}${link}`
     });
-
+  } else if (command === "delete-actions-db") {
+    chrome.runtime.sendMessage({
+      message: "deleteActionsDB"
+    });
   } else if (command.startsWith("open-")){
     chrome.runtime.sendMessage({
       msg: "shortcut_pressed", command, sfHost

@@ -30,6 +30,7 @@
 - Add `calculated` to type column [feature 680](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/680) (contribution by [Lars Lipman](https://github.com/lrlip))
 - Fix LWC Debug mode force page refresh before User update [issue 718](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/718) (contribution by [Paul Kalinin](https://github.com/Paul-Kalynyn))
 - Fix `event-monitor` Error on Edge [issue 716](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/716) (contribution by [Paul Kalinin](https://github.com/Paul-Kalynyn))
+- Enable query template multi-line in Data Export [feature 759](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/759) (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
 
 ## Version 1.25
 

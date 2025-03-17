@@ -984,12 +984,6 @@ class AllDataBoxSObject extends React.PureComponent {
     });
   }
 
-  clickShowDetailsBtn() {
-    if (this.refs.allDataSelection) {
-      this.refs.allDataSelection.clickShowDetailsBtn();
-    }
-  }
-
   clickAllDataBtn() {
     if (this.refs.allDataSelection) {
       this.refs.allDataSelection.clickAllDataBtn();
@@ -1670,71 +1664,12 @@ class UserDetails extends React.PureComponent {
 }
 
 
-class ShowDetailsButton extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      detailsLoading: false,
-      detailsShown: false,
-    };
-    this.onDetailsClick = this.onDetailsClick.bind(this);
-  }
-  canShowDetails() {
-    let {showDetailsSupported, selectedValue, contextRecordId} = this.props;
-    return showDetailsSupported && contextRecordId && selectedValue.sobject.keyPrefix == contextRecordId.substring(0, 3) && selectedValue.sobject.availableApis.length > 0;
-  }
-  onDetailsClick() {
-    let {sfHost, selectedValue} = this.props;
-    let {detailsShown} = this.state;
-    if (detailsShown || !this.canShowDetails()) {
-      return;
-    }
-    let tooling = !selectedValue.sobject.availableApis.includes("regularApi");
-    let url = "/services/data/v" + apiVersion + "/" + (tooling ? "tooling/" : "") + "sobjects/" + selectedValue.sobject.name + "/describe/";
-    this.setState({detailsShown: true, detailsLoading: true});
-    Promise.all([
-      sfConn.rest(url),
-      getAllFieldSetupLinks(sfHost, selectedValue.sobject.name)
-    ]).then(([res, insextAllFieldSetupLinks]) => {
-      this.setState({detailsShown: true, detailsLoading: false});
-      parent.postMessage({insextShowStdPageDetails: true, insextData: res, insextAllFieldSetupLinks}, "*");
-      closePopup();
-    }).catch(error => {
-      this.setState({detailsShown: false, detailsLoading: false});
-      console.error(error);
-      alert(error);
-    });
-  }
-  render() {
-    let {detailsLoading, detailsShown} = this.state;
-    return (
-      h("div", {},
-        h("a",
-          {
-            id: "showStdPageDetailsBtn",
-            className: "button" + (detailsLoading ? " loading" : "" + " page-button slds-button slds-button_neutral slds-m-bottom_xx-small"),
-            disabled: detailsShown,
-            onClick: this.onDetailsClick,
-            style: {display: !this.canShowDetails() ? "none" : ""}
-          },
-          h("span", {}, "Show field ", h("u", {}, "m"), "etadata")
-        )
-      )
-    );
-  }
-}
-
-
 class AllDataSelection extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
       flowDefinitionId: null
     };
-  }
-
-  clickShowDetailsBtn() {
-    this.refs.showDetailsBtn.onDetailsClick();
   }
   clickAllDataBtn() {
     this.refs.showAllDataBtn.click();
@@ -1772,6 +1707,11 @@ class AllDataSelection extends React.PureComponent {
     args.set("host", sfHost);
     args.set("checkDeployStatus", selectedValue.recordId);
     return "explore-api.html?" + args;
+  }
+  generatePackage(){
+    sfConn.rest(`/services/data/v${apiVersion}/metadata/deployRequest/${this.props.selectedValue.recordId}?includeDetails=true`, {method: "GET"}).then(res => {
+      this.downloadPackageXml(res.deployResult.details.allComponentMessages, this.props.selectedValue.recordId);
+    });
   }
   redirectToFlowVersions(){
     return "https://" + this.props.sfHost + "/lightning/setup/Flows/page?address=%2F" + this.state.flowDefinitionId;
@@ -1850,6 +1790,44 @@ class AllDataSelection extends React.PureComponent {
         this.setState({flowDefinitionId: recordId});
       }
     }
+  }
+  generatePackageXml(components) {
+    const groupedComponents = {};
+
+    components.forEach(({componentType, fullName, fileName}) => {
+      if (componentType && fullName) {
+        componentType = fileName.startsWith("settings") ? "Settings" : componentType;
+        if (!groupedComponents[componentType]) {
+          groupedComponents[componentType] = new Set();
+        }
+        groupedComponents[componentType].add(fullName);
+      }
+    });
+
+    let packageXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    packageXml += "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
+
+    Object.entries(groupedComponents).forEach(([type, members]) => {
+      packageXml += "    <types>\n";
+      [...members].sort().forEach(member => {
+        packageXml += `        <members>${member}</members>\n`;
+      });
+      packageXml += `        <name>${type}</name>\n`;
+      packageXml += "    </types>\n";
+    });
+    packageXml += `    <version>${apiVersion}</version>\n`;
+    packageXml += "</Package>";
+    return packageXml;
+  }
+  downloadPackageXml(jsonData, deployRequestId) {
+    const packageXml = this.generatePackageXml(jsonData);
+    const blob = new Blob([packageXml], {type: "text/xml"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `package_${deployRequestId}.xml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent, eventMonitorHref} = this.props;
@@ -1931,9 +1909,10 @@ class AllDataSelection extends React.PureComponent {
 
           h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
-        h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
           ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+        selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
+          ? h("a", {onClick: () => this.generatePackage(), className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Generate package.xml") : null,
         flowDefinitionId
           ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
         buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",

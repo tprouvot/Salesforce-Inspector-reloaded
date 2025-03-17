@@ -107,7 +107,6 @@ class OptionsTabSelector extends React.Component {
                 {label: "Generate Access Token", name: "generate-token", checked: true}
               ]}
           },
-          {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
           {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
           {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
@@ -147,7 +146,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100}},
           {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50}},
-          {option: Option, props: {type: "text", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}}
+          {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}}
         ]
       },
       {
@@ -448,6 +447,7 @@ class Option extends React.Component {
   render() {
     const id = this.key;
     const isTextOrNumber = this.type == "text" || this.type == "number";
+    const isTextArea = this.type == "textarea";
     const isSelect = this.type == "select";
 
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
@@ -459,6 +459,11 @@ class Option extends React.Component {
       isTextOrNumber ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
           h("input", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
+        )
+      ))
+      : isTextArea ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          h("textarea", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
         )
       ))
       : isSelect ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
@@ -505,28 +510,28 @@ class FaviconOption extends React.Component {
     this.colorShades = {
       dev: [
         "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue", "CornflowerBlue",
-        "SlateBlue", "SteelBlue", "SkyBlue", "PowderBlue", "MediumSlateBlue",
-        "Indigo", "BlueViolet", "MediumPurple", "CadetBlue", "Aqua",
-        "Turquoise", "DarkTurquoise", "Teal", "LightSlateGray", "MidnightBlue"
+        "#CCCCFF", "SteelBlue", "SkyBlue", "#0F52BA", "Navy",
+        "Indigo", "PowderBlue", "LightBlue", "CadetBlue", "Aqua",
+        "Turquoise", "DarkTurquoise", "#6082B6", "LightSlateGray", "MidnightBlue"
       ],
       uat: [
         "MediumOrchid", "Orchid", "DarkOrchid", "DarkViolet", "DarkMagenta",
         "Purple", "BlueViolet", "Indigo", "DarkSlateBlue", "RebeccaPurple",
         "MediumPurple", "MediumSlateBlue", "SlateBlue", "Plum", "Violet",
-        "Thistle", "Magenta", "DarkOrchid", "Fuchsia", "DarkPurple"
+        "Thistle", "Magenta", "DarkOrchid", "Fuchsia", "#301934"
       ],
       int: [
         "LimeGreen", "SeaGreen", "MediumSeaGreen", "ForestGreen", "Green",
         "DarkGreen", "YellowGreen", "OliveDrab", "DarkOliveGreen",
         "SpringGreen", "LawnGreen", "DarkKhaki",
         "GreenYellow", "DarkSeaGreen", "MediumAquamarine", "DarkCyan",
-        "Teal", "Jade", "MediumForestGreen", "HunterGreen"
+        "Teal", "#00A36C", "#347235", "#355E3B"
       ],
       full: [
         "Orange", "DarkOrange", "Coral", "Tomato", "OrangeRed",
         "Salmon", "IndianRed", "Sienna", "Chocolate", "SaddleBrown",
         "Peru", "DarkSalmon", "RosyBrown", "Brown", "Maroon",
-        "Tangerine", "Peach", "BurntOrange", "Pumpkin", "Amber"
+        "#b9770e", "#FFE5B4", "#CC5500", "#FF7518", "#FFBF00"
       ]
     };
   }

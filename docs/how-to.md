@@ -379,3 +379,11 @@ Some of the users may don't need some of those, to make the popup lighter some o
 From the User tab in the popup, click on the user language flag to display the available languages.
 
 ![2024-12-04_16-07-35 (1)](https://github.com/user-attachments/assets/d07da946-dba0-4bb4-8f3b-313392bbf557)
+
+## Generate a package.xml from a deployment
+
+From a	DeployRequest record, click on the `Generate package.xml` button to download the package.xml for this deployment.
+> [!NOTE]
+> If you retrieve the related metadata it may have been modified since the deployment, so you are not sure to retrieve what was deployed.
+
+<img width="1143" alt="Generate package.xml from a deployment" src="https://github.com/user-attachments/assets/4acb7422-0547-409d-9e23-d8c3176f8055" />

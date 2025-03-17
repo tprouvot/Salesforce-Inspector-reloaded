@@ -55,25 +55,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.tabs.reload(tabs[0].id);
     });
   } else if (request.message == "deleteActionsDB") {
-    // Get the active tab and execute script to hard refresh
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      if (tabs[0]) {
-        chrome.scripting.executeScript({
-          target: { tabId: tabs[0].id },
-          function: () => {
-            try {
-              const request = indexedDB.deleteDatabase("actions");
-              request.onsuccess = () => console.log("Database 'actions' deleted successfully");
-              request.onerror = (event) => console.error("Error deleting database:", event);
-              return true;
-            } catch (error) {
-              console.error("Error:", error);
-              return false;
+        if (tabs[0]) {
+          chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            function: () => {
+              try {
+                const request = indexedDB.deleteDatabase("actions");
+                request.onsuccess = () => {
+                  console.log("Database 'actions' deleted successfully");
+                  window.location.reload(true);
+                };
+                request.onerror = (event) => console.error("Error deleting database:", event);
+                return true;
+              } catch (error) {
+                console.error("Error:", error);
+                return false;
+              }
             }
-          }
-        });
-      }
-    });
+          });
+        }
+      });
   }
   return false;
 });
@@ -102,8 +104,27 @@ chrome.commands?.onCommand.addListener((command) => {
       url: `https:///${sfHost}${link}`
     });
   } else if (command === "delete-actions-db") {
-    chrome.runtime.sendMessage({
-      message: "deleteActionsDB"
+    // Execute directly without sending a message
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+      if (tabs[0]) {
+        chrome.scripting.executeScript({
+          target: { tabId: tabs[0].id },
+          function: () => {
+            try {
+              const request = indexedDB.deleteDatabase("actions");
+              request.onsuccess = () => {
+                console.log("Database 'actions' deleted successfully");
+                window.location.reload(true);
+              };
+              request.onerror = (event) => console.error("Error deleting database:", event);
+              return true;
+            } catch (error) {
+              console.error("Error:", error);
+              return false;
+            }
+          }
+        });
+      }
     });
   } else if (command.startsWith("open-")){
     chrome.runtime.sendMessage({

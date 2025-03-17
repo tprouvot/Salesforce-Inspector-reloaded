@@ -3,6 +3,7 @@ import {popupTest} from "./popup-test.js";
 import {csvParseTest} from "./csv-parse-test.js";
 import {dataImportTest} from "./data-import-test.js";
 import {dataExportTest} from "./data-export-test.js";
+import {backgroundTest} from "./background-test.js"; // Add this line to import the new test
 
 let seenError = false;
 class Test {
@@ -125,7 +126,10 @@ addEventListener("load", () => {
       await dataImportTest(test);
       updateProgress("dataExportTest", "dataImportTest");
       await dataExportTest(test);
-      updateProgress(null, "dataExportTest");
+      // Add the new test here
+      updateProgress("backgroundTest", "dataExportTest");
+      await backgroundTest(test);
+      updateProgress(null, "backgroundTest");
       window.anonApex.hidden = true;
       test.assert(!seenError, "Expected no error");
       console.log("Salesforce Inspector unit tests finished successfully");

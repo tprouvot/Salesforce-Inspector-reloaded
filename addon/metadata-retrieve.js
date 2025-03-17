@@ -25,11 +25,10 @@ class Model {
     this.metadataObjects = [];
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
     this.sortMetadataBy = localStorage.getItem("sortMetadataBy");
-    this.packageXml; //TODO save it and load it with localStorage
+    this.packageXml;
     this.metadataFilter = "";
     this.deployRequestId;
-    this.allSelected = false;//TODO set it with localStorage
-
+    this.allSelected = false;
     this.spinFor(
       "getting user info",
       sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
@@ -89,11 +88,7 @@ class Model {
 
         this.metadataObjects = availableMetadataObjects;
         this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
-        /*
-        this.metadataObjects.forEach(meta => {
-          this.checkMetadataWildcardSupport(meta);
-        });
-        */
+
         this.progress = "ready";
         this.generatePackageXml([]);
         this.didUpdate();
@@ -144,32 +139,6 @@ class Model {
     });
   }
 
-  //TODO fix this to parse doc page (the one returned today is not the correct one)
-  async checkMetadataWildcardSupport(metadataObject) {
-    const url = `https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_${metadataObject.xmlName.toLowerCase()}.htm`;
-
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch URL: ${url}`);
-      }
-      const html = await response.text();
-
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
-      const container = doc.querySelector(".container");
-
-      for (const element of container) {
-        if (element.textContent.includes("This metadata type supports the wildcard character")) {
-          metadataObject.supportsWildcardAndName = true;
-        }
-      }
-      metadataObject.supportsWildcardAndName = false;
-    } catch (error) {
-      console.error("Error checking metadata wildcard support:", error);
-    }
-  }
-
   retrieveMetaFromPackageXml(packageXml){
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(packageXml, "text/xml");
@@ -179,7 +148,7 @@ class Model {
     const types = xmlDoc.getElementsByTagName("types");
     for (let typeNode of types) {
       const name = typeNode.getElementsByTagName("name")[0].textContent;
-      const members = [...typeNode.getElementsByTagName("members")].map(m => m.textContent).sort(); // Sort members
+      const members = [...typeNode.getElementsByTagName("members")].map(m => m.textContent).sort();
       retrieveRequest.unpackaged.types.push({name, members});
     }
     retrieveRequest.unpackaged.types.sort((a, b) => a.name.localeCompare(b.name));
@@ -412,8 +381,6 @@ class Model {
         });
       }
     });
-
-    //this.packageXml = "<!-- Import package.xml or paste content here -->\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
     this.packageXml = "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
 
     Object.entries(groupedComponents).forEach(([type, members]) => {
@@ -771,7 +738,6 @@ class ObjectSelector extends React.Component {
   selectMeta(model, meta){
     meta.expanded = !meta.expanded;
     meta.icon = meta.expanded ? "switch" : "chevronright";
-    //TODO fix Report and Dashboard meta describe
     if (meta.childXmlNames.length == 0 || model.deployRequestId){
       let metaFolderProof = this.getMetaFolderProof(meta);
       model.spinFor(
@@ -822,6 +788,7 @@ class ObjectSelector extends React.Component {
                     child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
                       h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
                     ) : null,
+                    //TODO fix margin for child that are not folder
                     h("input", {type: "checkbox", className: child.parent.isFolder ? "margin-grandchild " : "" + "metadata", checked: !!child.selected, onChange: (e) => this.onSelectChild(child, e, "checkbox")}),
                     h("span", {className: "slds-text-body_small slds-accordion__summary-content", title: child.fullName}, child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""))
                   )

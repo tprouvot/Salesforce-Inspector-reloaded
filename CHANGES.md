@@ -14,7 +14,6 @@
 - Add Scale Center links to Shortcut tab search.
 - Add info about PlatformEvent limits and consumptions on `Event Monitor` page [feature 697](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/697)
 - Rename `Add deleted records?` to `Deleted/Archived Records?` in data export [feature 662](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/662) request by [McKay Howell](https://github.com/mckayhowell)
-- Fix `EntityParticle is not supported` error in show-all-data page + add new fields [issue 687](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/687)
 - Add `Donate` button in the popup [discussion 336](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/336)
 - Change user language and locale from the popup [feature 463](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/463)
 - Update user detail post save redirect [feature 671](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/671)

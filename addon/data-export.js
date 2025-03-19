@@ -156,8 +156,12 @@ class Model {
     this.exportedData.updateColumnsVisibility();
     this.updatedExportedData();
   }
-  setQueryMethod(data){
+  setQueryMethod(data, query, vm){
     let method;
+    let queryParams = "/?q=" + encodeURIComponent(query);
+    const baseParams = {progressHandler: vm.exportProgress};
+    let params = baseParams;
+
     if (data.isTooling){
       method = "tooling/query";
     } else if (this.queryAll){
@@ -166,9 +170,13 @@ class Model {
       method = "search";
     } else if (this.queryInput.value.trim().startsWith("{")){
       method = "graphql";
+      queryParams = "";
+      params = {...baseParams, method: "POST", body: {"query": "query objects " + query}};
     } else {
       method = "query";
     }
+    data.endpoint = "/services/data/v" + apiVersion + "/" + method + queryParams;
+    data.params = params;
     data.queryMethod = method;
   }
   setQueryName(value) {
@@ -949,8 +957,8 @@ class Model {
         return null;
       });
     }
-    this.setQueryMethod(exportedData);
-    vm.spinFor(batchHandler(this.getQueryApiFunction(exportedData.queryMethod, query), {progressHandler: vm.exportProgress})
+    this.setQueryMethod(exportedData, query, vm);
+    vm.spinFor(batchHandler(sfConn.rest(exportedData.endpoint, exportedData.params))
       .catch(error => {
         console.error(error);
         vm.isWorking = false;
@@ -966,13 +974,6 @@ class Model {
     vm.exportError = null;
     vm.exportedData = exportedData;
     vm.updatedExportedData();
-  }
-  getQueryApiFunction(queryMethod, query){
-    if (queryMethod === "graphql"){
-      return sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod, {method: "POST", body: {"query": "query objects " + query}});
-    } else {
-      return sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query));
-    }
   }
   stopExport() {
     this.exportProgress.abort();

@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Fix Bulk job results via REST explorer [issue 756](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/756) by [NatanOnteam](https://github.com/NatanOnteam)
 - Fix `Stop` button on `Data Export` page [issue 773](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/773) by Ashoka Poojari
 - Use Lightning Navigation when opening internal Salesforce links from the popup page (contribution by [Joshua Yarmak](https://github.com/toly11))
 - Enable query template multi-line in Data Export [feature 759](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/759) (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))

@@ -2,6 +2,7 @@
 import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
+import AlertBanner from "./components/AlertBanner.js";
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -107,8 +108,17 @@ class App extends React.PureComponent {
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext,
-      hideButtonsOption: JSON.parse(localStorage.getItem("hideButtonsOption"))
+      hideButtonsOption: JSON.parse(localStorage.getItem("hideButtonsOption")),
+      dynamicBanner: {
+        className: "hide",
+        type: "",
+        text: "",
+        icon: "",
+        title: "",
+        url: ""
+      }
     };
+    this.handleBannerMessage = this.handleBannerMessage.bind(this);
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
@@ -203,12 +213,30 @@ class App extends React.PureComponent {
     let {sfHost} = this.props;
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
+    addEventListener("message", this.handleBannerMessage);
     parent.postMessage({insextLoaded: true}, "*");
     this.setOrgInfo(sfHost);
   }
   componentWillUnmount() {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
+    removeEventListener("message", this.handleBannerMessage);
+  }
+  handleBannerMessage(event) {
+    if (event.data && event.data.type === "showBanner") {
+      this.setState({
+        dynamicBanner: {
+          className: event.data.className || "",
+          type: event.data.bannerType || "",
+          text: event.data.text || "",
+          icon: event.data.icon || "",
+          title: event.data.title || "",
+          url: event.data.url || ""
+        }
+      });
+    } else if (event.data && event.data.type === "hideBanner") {
+      this.setState({dynamicBanner: {className: "hide"}});
+    }
   }
   setOrgInfo(sfHost) {
     let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
@@ -242,7 +270,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, fieldCreatorHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, fieldCreatorHref, limitsHref, isFieldsPresent, latestNotesViewed, dynamicBanner} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -310,6 +338,22 @@ class App extends React.PureComponent {
               text: bannerUrlAction.title,
               props: {
                 href: bannerUrlAction.url,
+                target: linkTarget
+              }
+            }
+          })
+        ),
+        //Dynamic messages from popup actions
+        h("div", {id: "dynamicBanner", className: dynamicBanner.className},
+          h(AlertBanner, {type: dynamicBanner.type,
+            bannerText: dynamicBanner.text,
+            iconName: dynamicBanner.icon,
+            assistiveTest: dynamicBanner.text,
+            onClose: null,
+            link: {
+              text: dynamicBanner.title,
+              props: {
+                href: dynamicBanner.url,
                 target: linkTarget
               }
             }
@@ -434,7 +478,7 @@ class AllDataBox extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"}); //Enum. Supported aspects
+    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"});
 
     this.state = {
       activeSearchAspect: this.SearchAspectTypes.sobject,
@@ -1213,6 +1257,7 @@ class AllDataBoxOrg extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {};
+    this.deleteApexLogs = this.deleteApexLogs.bind(this);
   }
 
   componentDidMount() {
@@ -1241,6 +1286,71 @@ class AllDataBoxOrg extends React.PureComponent {
     return null;
   }
 
+  async deleteApexLogs(e) {
+    debugger;
+    console.log("delete logs");
+    //e.target.disabled = true;
+    let apexLogIds = [];
+    const queryResult = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=SELECT+Id+FROM+ApexLog+ORDER+BY+LogLength+DESC`);
+
+    if (queryResult.records && queryResult.records.length > 0) {
+      apexLogIds = queryResult.records.map(log => log.Id);
+    }
+
+    if (apexLogIds.length === 0) {
+      this.showAlert("Success", "No Apex logs found to delete.", "success");
+      //e.target.disabled = false;
+      return;
+    }
+
+    // 200 ids is the API limitation
+    const chunkedIds = [];
+    for (let i = 0; i < apexLogIds.length; i += 200) {
+      chunkedIds.push(apexLogIds.slice(i, i + 200));
+    }
+
+    let allSuccess = true;
+    for (const idGroup of chunkedIds) {
+      const idsString = idGroup.join(",");
+      const deleteResult = await sfConn.rest(`/services/data/v${apiVersion}/composite/sobjects?ids=${idsString}&allOrNone=false`, {
+        method: "DELETE"
+      });
+      console.log(deleteResult);
+
+      if (Array.isArray(deleteResult)) {
+        const hasError = deleteResult.find(response => response.success === false);
+        if (hasError) {
+          allSuccess = false;
+        }
+      } else {
+        allSuccess = false;
+      }
+    }
+    //e.target.disabled = false;
+    if (allSuccess) {
+      this.showAlert("Success", "Successfully deleted all Apex logs.", "success");
+    } else {
+      this.showAlert("Error", "Some Apex logs could not be deleted. Check the console for details.", "error");
+    }
+  }
+
+  showAlert(title, message, variant) {
+    console.log("showAlert");
+    /*
+    parent.postMessage({
+      type: "showBanner",
+      bannerType: variant === "success" ? "check" : "error",
+      text: message,
+      icon: variant === "success" ? "check" : "error",
+      title,
+      url: "",
+      onClose: () => {
+        parent.postMessage({type: "hideBanner"}, "*");
+      },
+    }, "*");
+    */
+  }
+
   setInstanceStatus(instanceName, sfHost){
     let instanceStatusLocal = JSON.parse(sessionStorage.getItem(sfHost + "_instanceStatus"));
     if (instanceStatusLocal == null){
@@ -1265,7 +1375,7 @@ class AllDataBoxOrg extends React.PureComponent {
     return (
       h("div", {ref: "orgBox", className: "users-box"},
         h("div", {className: "all-data-box-inner"},
-          h("div", {className: "all-data-box-data"},
+          h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},
             h("table", {},
               h("tbody", {},
                 h("tr", {},
@@ -1300,7 +1410,14 @@ class AllDataBoxOrg extends React.PureComponent {
                   h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
                   h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
                 ),
-              )))))
+              )
+            )
+          ),
+          h("div", {ref: "orgButtons", className: "user-buttons center small-font"},
+            h("a", {href: "#", id: "deleteLogs", disabled: false, onClick: (e) => { this.deleteApexLogs(e); }, className: "slds-button slds-button_neutral", title: "Delete all ApexLog"}, "Delete Logs")
+          )
+        )
+      )
     );
   }
 }
@@ -1899,37 +2016,6 @@ class AllDataRecordDetails extends React.PureComponent {
     } else {
       return null;
     }
-  }
-}
-
-
-class AlertBanner extends React.PureComponent {
-  // From SLDS Alert Banner spec https://www.lightningdesignsystem.com/components/alert/
-
-  render() {
-    let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
-    return (
-      h("div", {className: `slds-notify slds-notify_alert slds-theme_${type}`, role: "alert"},
-        h("span", {className: "slds-assistive-text"}, assistiveText | "Notification"),
-        h("span", {className: `slds-icon_container slds-icon-utility-${iconName} slds-m-right_small slds-no-flex slds-align-top`, title: iconTitle},
-          h("svg", {className: "slds-icon slds-icon_small", viewBox: "0 0 52 52"},
-            h("use", {xlinkHref: `symbols.svg#${iconName}`})
-          ),
-        ),
-        h("h2", {}, bannerText,
-          h("p", {}, ""),
-          link.text && h("a", link.props, link.text)
-        ),
-        onClose && h("div", {className: "slds-notify__close"},
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},
-            h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"},
-              h("use", {xlinkHref: "symbols.svg#close"})
-            ),
-            h("span", {className: "slds-assistive-text"}, "Close"),
-          )
-        )
-      )
-    );
   }
 }
 class AllDataSearch extends React.PureComponent {

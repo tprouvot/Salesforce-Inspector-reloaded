@@ -395,3 +395,17 @@ From a	DeployRequest record, click on the `Generate package.xml` button to downl
 > If you retrieve the related metadata it may have been modified since the deployment, so you are not sure to retrieve what was deployed.
 
 <img width="1143" alt="Generate package.xml from a deployment" src="https://github.com/user-attachments/assets/4acb7422-0547-409d-9e23-d8c3176f8055" />
+
+## Hard refresh Lightning pages
+
+Sometimes Lightning UI pages may act strangely due to cached data in the browser. You can hard refresh the current page by:
+
+1. Using the keyboard shortcut Alt+Shift+R (or Option+Shift+R on Mac)
+2. This will clear the "actions" IndexedDB database which stores Lightning UI component data
+3. The page will automatically reload with a fresh state
+
+This is particularly useful when:
+- Components aren't displaying correctly
+- You're experiencing UI inconsistencies
+- Changes to Lightning components aren't showing up
+- You need to clear the Lightning cache without clearing your entire browser cache

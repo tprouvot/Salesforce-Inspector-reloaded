@@ -154,6 +154,9 @@
     },
     "event-monitor": {
       "description": "Event Monitor"
+    },
+    "delete-actions-db": {
+      "description": "Hard refresh Lightning Pages"
     }
   }
 }

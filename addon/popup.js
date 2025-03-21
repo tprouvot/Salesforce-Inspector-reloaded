@@ -302,7 +302,7 @@ class App extends React.PureComponent {
             }
           }
         }),
-        h("div", {id: "toastBanner", className: "hide"},
+        h("div", {id: "toastBanner", className: bannerUrlAction.className ? bannerUrlAction.className : "hide"},
           h(AlertBanner, {type: bannerUrlAction.type,
             bannerText: bannerUrlAction.text,
             iconName: bannerUrlAction.icon,
@@ -436,7 +436,7 @@ class AllDataBox extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"}); //Enum. Supported aspects
+    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"});
 
     this.state = {
       activeSearchAspect: this.SearchAspectTypes.sobject,
@@ -1225,6 +1225,7 @@ class AllDataBoxOrg extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {};
+    this.deleteApexLogs = this.deleteApexLogs.bind(this);
   }
 
   componentDidMount() {
@@ -1253,6 +1254,67 @@ class AllDataBoxOrg extends React.PureComponent {
     return null;
   }
 
+  async deleteApexLogs(e) {
+    e.target.disabled = true;
+    let apexLogIds = [];
+    const queryResult = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=SELECT+Id+FROM+ApexLog+ORDER+BY+LogLength+DESC`);
+
+    if (queryResult.records && queryResult.records.length > 0) {
+      apexLogIds = queryResult.records.map(log => log.Id);
+    }
+
+    if (apexLogIds.length === 0) {
+      this.showAlert("Success", "No Apex logs found to delete.", "success");
+      e.target.disabled = false;
+      return;
+    }
+
+    // 200 ids is the API limitation
+    const chunkedIds = [];
+    for (let i = 0; i < apexLogIds.length; i += 200) {
+      chunkedIds.push(apexLogIds.slice(i, i + 200));
+    }
+
+    let allSuccess = true;
+    for (const idGroup of chunkedIds) {
+      const idsString = idGroup.join(",");
+      const deleteResult = await sfConn.rest(`/services/data/v${apiVersion}/composite/sobjects?ids=${idsString}&allOrNone=false`, {
+        method: "DELETE"
+      });
+      console.log(deleteResult);
+
+      if (Array.isArray(deleteResult)) {
+        const hasError = deleteResult.find(response => response.success === false);
+        if (hasError) {
+          allSuccess = false;
+        }
+      } else {
+        allSuccess = false;
+      }
+    }
+    e.target.disabled = false;
+    if (allSuccess) {
+      this.showAlert("Success", "Successfully deleted all Apex logs.", "success");
+    } else {
+      this.showAlert("Error", "Some Apex logs could not be deleted. Check the console for details.", "error");
+    }
+  }
+  showAlert(title, message, variant) {
+    //fix banner display
+    this.setState({
+      alertBannerProps: {
+        type: variant,
+        bannerText: message,
+        iconName: variant === "success" ? "check" : "error", // Use check for success, error for error
+        assistiveTest: title,
+        onClose: () => {
+          this.setState({alertBannerProps: null}); // Clear the alert
+        },
+        link: null // No link for this alert
+      }
+    });
+  }
+
   setInstanceStatus(instanceName, sfHost){
     let instanceStatusLocal = JSON.parse(sessionStorage.getItem(sfHost + "_instanceStatus"));
     if (instanceStatusLocal == null){
@@ -1277,7 +1339,7 @@ class AllDataBoxOrg extends React.PureComponent {
     return (
       h("div", {ref: "orgBox", className: "users-box"},
         h("div", {className: "all-data-box-inner"},
-          h("div", {className: "all-data-box-data"},
+          h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},
             h("table", {},
               h("tbody", {},
                 h("tr", {},
@@ -1312,7 +1374,14 @@ class AllDataBoxOrg extends React.PureComponent {
                   h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
                   h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
                 ),
-              )))))
+              )
+            )
+          ),
+          h("div", {ref: "orgButtons", className: "user-buttons center small-font"},
+            h("a", {href: "#", id: "deleteLogs", disabled: false, onClick: (e) => { this.deleteApexLogs(e); }, className: "slds-button slds-button_neutral", title: "Delete all ApexLog"}, "Delete Logs")
+          )
+        )
+      )
     );
   }
 }

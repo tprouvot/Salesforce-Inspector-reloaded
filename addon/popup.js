@@ -2,6 +2,7 @@
 import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
+import AlertBanner from "./components/AlertBanner.js";
 
 let p = parent;
 
@@ -302,7 +303,7 @@ class App extends React.PureComponent {
             }
           }
         }),
-        h("div", {id: "toastBanner", className: bannerUrlAction.className ? bannerUrlAction.className : "hide"},
+        h("div", {id: "toastBanner", className: "hide"},
           h(AlertBanner, {type: bannerUrlAction.type,
             bannerText: bannerUrlAction.text,
             iconName: bannerUrlAction.icon,
@@ -1254,8 +1255,10 @@ class AllDataBoxOrg extends React.PureComponent {
     return null;
   }
 
-  async deleteApexLogs(e) {
-    e.target.disabled = true;
+  async deleteApexLogs() {
+
+    const elt = document.querySelector("#deleteLogs");
+    elt.classList.toggle("progress-working");
     let apexLogIds = [];
     const queryResult = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=SELECT+Id+FROM+ApexLog+ORDER+BY+LogLength+DESC`);
 
@@ -1264,8 +1267,7 @@ class AllDataBoxOrg extends React.PureComponent {
     }
 
     if (apexLogIds.length === 0) {
-      this.showAlert("Success", "No Apex logs found to delete.", "success");
-      e.target.disabled = false;
+      this.updateDeleteButton(true, elt, "No Apex logs found to delete.");
       return;
     }
 
@@ -1278,9 +1280,7 @@ class AllDataBoxOrg extends React.PureComponent {
     let allSuccess = true;
     for (const idGroup of chunkedIds) {
       const idsString = idGroup.join(",");
-      const deleteResult = await sfConn.rest(`/services/data/v${apiVersion}/composite/sobjects?ids=${idsString}&allOrNone=false`, {
-        method: "DELETE"
-      });
+      const deleteResult = await sfConn.rest(`/services/data/v${apiVersion}/composite/sobjects?ids=${idsString}&allOrNone=false`, {method: "DELETE"});
       console.log(deleteResult);
 
       if (Array.isArray(deleteResult)) {
@@ -1292,27 +1292,20 @@ class AllDataBoxOrg extends React.PureComponent {
         allSuccess = false;
       }
     }
-    e.target.disabled = false;
     if (allSuccess) {
-      this.showAlert("Success", "Successfully deleted all Apex logs.", "success");
+      this.updateDeleteButton(true, elt, "Successfully deleted all Apex logs.", "success");
     } else {
-      this.showAlert("Error", "Some Apex logs could not be deleted. Check the console for details.", "error");
+      this.updateDeleteButton(false, elt, "Some Apex logs could not be deleted. Check the console for details.");
     }
   }
-  showAlert(title, message, variant) {
-    //fix banner display
-    this.setState({
-      alertBannerProps: {
-        type: variant,
-        bannerText: message,
-        iconName: variant === "success" ? "check" : "error", // Use check for success, error for error
-        assistiveTest: title,
-        onClose: () => {
-          this.setState({alertBannerProps: null}); // Clear the alert
-        },
-        link: null // No link for this alert
-      }
-    });
+
+  updateDeleteButton(success, elt, message) {
+    elt.title = message;
+    //elt.classList.toggle("progress-working");
+    elt.classList.toggle(success ? "progress-success" : "progress-error");
+
+    console.log(success);
+    console.log(message);
   }
 
   setInstanceStatus(instanceName, sfHost){
@@ -1343,7 +1336,7 @@ class AllDataBoxOrg extends React.PureComponent {
             h("table", {},
               h("tbody", {},
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget, onClick: handleLightningLinkClick}, "Org Id:")),
+                  h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget}, "Org Id:")),
                   h("td", {}, orgInfo.Id.substring(0, 15))
                 ),
                 h("tr", {},
@@ -1378,7 +1371,7 @@ class AllDataBoxOrg extends React.PureComponent {
             )
           ),
           h("div", {ref: "orgButtons", className: "user-buttons center small-font"},
-            h("a", {href: "#", id: "deleteLogs", disabled: false, onClick: (e) => { this.deleteApexLogs(e); }, className: "slds-button slds-button_neutral", title: "Delete all ApexLog"}, "Delete Logs")
+            h("a", {href: "#", id: "deleteLogs", disabled: false, onClick: (e) => { this.deleteApexLogs(e); }, className: "slds-button slds-button_neutral", title: "Delete all ApexLog"}, "Delete All ApexLogs")
           )
         )
       )
@@ -1620,7 +1613,6 @@ class UserDetails extends React.PureComponent {
                 h("th", {}, "Name:"),
                 h("td", {className: "oneliner"},
                   (user.IsActive) ? "" : h("span", {title: "User is inactive"}, "⚠ "),
-                  //user.Name + " (" + user.Alias + ")"
                   h("a", {
                     href: this.getUserSummaryLink(user.Id),
                     target: linkTarget,
@@ -2072,37 +2064,6 @@ class AllDataRecordDetails extends React.PureComponent {
     } else {
       return null;
     }
-  }
-}
-
-
-class AlertBanner extends React.PureComponent {
-  // From SLDS Alert Banner spec https://www.lightningdesignsystem.com/components/alert/
-
-  render() {
-    let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
-    return (
-      h("div", {className: `slds-notify slds-notify_alert slds-theme_${type}`, role: "alert"},
-        h("span", {className: "slds-assistive-text"}, assistiveText | "Notification"),
-        h("span", {className: `slds-icon_container slds-icon-utility-${iconName} slds-m-right_small slds-no-flex slds-align-top`, title: iconTitle},
-          h("svg", {className: "slds-icon slds-icon_small", viewBox: "0 0 52 52"},
-            h("use", {xlinkHref: `symbols.svg#${iconName}`})
-          ),
-        ),
-        h("h2", {}, bannerText,
-          h("p", {}, ""),
-          link.text && h("a", link.props, link.text)
-        ),
-        onClose && h("div", {className: "slds-notify__close"},
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},
-            h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"},
-              h("use", {xlinkHref: "symbols.svg#close"})
-            ),
-            h("span", {className: "slds-assistive-text"}, "Close"),
-          )
-        )
-      )
-    );
   }
 }
 class AllDataSearch extends React.PureComponent {

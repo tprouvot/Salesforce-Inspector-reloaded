@@ -1301,11 +1301,7 @@ class AllDataBoxOrg extends React.PureComponent {
 
   updateDeleteButton(success, elt, message) {
     elt.title = message;
-    //elt.classList.toggle("progress-working");
     elt.classList.toggle(success ? "progress-success" : "progress-error");
-
-    console.log(success);
-    console.log(message);
   }
 
   setInstanceStatus(instanceName, sfHost){

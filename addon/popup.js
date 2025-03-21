@@ -2,6 +2,7 @@
 import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
+import AlertBanner from "./components/AlertBanner.js";
 
 let p = parent;
 
@@ -436,7 +437,7 @@ class AllDataBox extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"}); //Enum. Supported aspects
+    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"});
 
     this.state = {
       activeSearchAspect: this.SearchAspectTypes.sobject,
@@ -1225,6 +1226,7 @@ class AllDataBoxOrg extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {};
+    this.deleteApexLogs = this.deleteApexLogs.bind(this);
   }
 
   componentDidMount() {
@@ -1253,6 +1255,55 @@ class AllDataBoxOrg extends React.PureComponent {
     return null;
   }
 
+  async deleteApexLogs() {
+
+    const elt = document.querySelector("#deleteLogs");
+    elt.classList.toggle("progress-working");
+    let apexLogIds = [];
+    const queryResult = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=SELECT+Id+FROM+ApexLog+ORDER+BY+LogLength+DESC`);
+
+    if (queryResult.records && queryResult.records.length > 0) {
+      apexLogIds = queryResult.records.map(log => log.Id);
+    }
+
+    if (apexLogIds.length === 0) {
+      this.updateDeleteButton(true, elt, "No Apex logs found to delete.");
+      return;
+    }
+
+    // 200 ids is the API limitation
+    const chunkedIds = [];
+    for (let i = 0; i < apexLogIds.length; i += 200) {
+      chunkedIds.push(apexLogIds.slice(i, i + 200));
+    }
+
+    let allSuccess = true;
+    for (const idGroup of chunkedIds) {
+      const idsString = idGroup.join(",");
+      const deleteResult = await sfConn.rest(`/services/data/v${apiVersion}/composite/sobjects?ids=${idsString}&allOrNone=false`, {method: "DELETE"});
+      console.log(deleteResult);
+
+      if (Array.isArray(deleteResult)) {
+        const hasError = deleteResult.find(response => response.success === false);
+        if (hasError) {
+          allSuccess = false;
+        }
+      } else {
+        allSuccess = false;
+      }
+    }
+    if (allSuccess) {
+      this.updateDeleteButton(true, elt, "Successfully deleted all Apex logs.", "success");
+    } else {
+      this.updateDeleteButton(false, elt, "Some Apex logs could not be deleted. Check the console for details.");
+    }
+  }
+
+  updateDeleteButton(success, elt, message) {
+    elt.title = message;
+    elt.classList.toggle(success ? "progress-success" : "progress-error");
+  }
+
   setInstanceStatus(instanceName, sfHost){
     let instanceStatusLocal = JSON.parse(sessionStorage.getItem(sfHost + "_instanceStatus"));
     if (instanceStatusLocal == null){
@@ -1277,7 +1328,7 @@ class AllDataBoxOrg extends React.PureComponent {
     return (
       h("div", {ref: "orgBox", className: "users-box"},
         h("div", {className: "all-data-box-inner"},
-          h("div", {className: "all-data-box-data"},
+          h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},
             h("table", {},
               h("tbody", {},
                 h("tr", {},
@@ -1312,7 +1363,14 @@ class AllDataBoxOrg extends React.PureComponent {
                   h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
                   h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
                 ),
-              )))))
+              )
+            )
+          ),
+          h("div", {ref: "orgButtons", className: "user-buttons center small-font"},
+            h("a", {href: "#", id: "deleteLogs", disabled: false, onClick: (e) => { this.deleteApexLogs(e); }, className: "slds-button slds-button_neutral", title: "Delete all ApexLog"}, "Delete All ApexLogs")
+          )
+        )
+      )
     );
   }
 }
@@ -1551,7 +1609,6 @@ class UserDetails extends React.PureComponent {
                 h("th", {}, "Name:"),
                 h("td", {className: "oneliner"},
                   (user.IsActive) ? "" : h("span", {title: "User is inactive"}, "⚠ "),
-                  //user.Name + " (" + user.Alias + ")"
                   h("a", {
                     href: this.getUserSummaryLink(user.Id),
                     target: linkTarget,
@@ -2003,37 +2060,6 @@ class AllDataRecordDetails extends React.PureComponent {
     } else {
       return null;
     }
-  }
-}
-
-
-class AlertBanner extends React.PureComponent {
-  // From SLDS Alert Banner spec https://www.lightningdesignsystem.com/components/alert/
-
-  render() {
-    let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
-    return (
-      h("div", {className: `slds-notify slds-notify_alert slds-theme_${type}`, role: "alert"},
-        h("span", {className: "slds-assistive-text"}, assistiveText | "Notification"),
-        h("span", {className: `slds-icon_container slds-icon-utility-${iconName} slds-m-right_small slds-no-flex slds-align-top`, title: iconTitle},
-          h("svg", {className: "slds-icon slds-icon_small", viewBox: "0 0 52 52"},
-            h("use", {xlinkHref: `symbols.svg#${iconName}`})
-          ),
-        ),
-        h("h2", {}, bannerText,
-          h("p", {}, ""),
-          link.text && h("a", link.props, link.text)
-        ),
-        onClose && h("div", {className: "slds-notify__close"},
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},
-            h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"},
-              h("use", {xlinkHref: "symbols.svg#close"})
-            ),
-            h("span", {className: "slds-assistive-text"}, "Close"),
-          )
-        )
-      )
-    );
   }
 }
 class AllDataSearch extends React.PureComponent {

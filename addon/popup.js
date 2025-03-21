@@ -4,6 +4,8 @@ import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
+let p = parent;
+
 let h = React.createElement;
 if (typeof browser === "undefined") {
   var browser = chrome;
@@ -108,17 +110,8 @@ class App extends React.PureComponent {
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext,
-      hideButtonsOption: JSON.parse(localStorage.getItem("hideButtonsOption")),
-      dynamicBanner: {
-        className: "hide",
-        type: "",
-        text: "",
-        icon: "",
-        title: "",
-        url: ""
-      }
+      hideButtonsOption: JSON.parse(localStorage.getItem("hideButtonsOption"))
     };
-    this.handleBannerMessage = this.handleBannerMessage.bind(this);
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
@@ -213,30 +206,12 @@ class App extends React.PureComponent {
     let {sfHost} = this.props;
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
-    addEventListener("message", this.handleBannerMessage);
     parent.postMessage({insextLoaded: true}, "*");
     this.setOrgInfo(sfHost);
   }
   componentWillUnmount() {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
-    removeEventListener("message", this.handleBannerMessage);
-  }
-  handleBannerMessage(event) {
-    if (event.data && event.data.type === "showBanner") {
-      this.setState({
-        dynamicBanner: {
-          className: event.data.className || "",
-          type: event.data.bannerType || "",
-          text: event.data.text || "",
-          icon: event.data.icon || "",
-          title: event.data.title || "",
-          url: event.data.url || ""
-        }
-      });
-    } else if (event.data && event.data.type === "hideBanner") {
-      this.setState({dynamicBanner: {className: "hide"}});
-    }
   }
   setOrgInfo(sfHost) {
     let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
@@ -270,7 +245,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, fieldCreatorHref, limitsHref, isFieldsPresent, latestNotesViewed, dynamicBanner} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, fieldCreatorHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -338,22 +313,6 @@ class App extends React.PureComponent {
               text: bannerUrlAction.title,
               props: {
                 href: bannerUrlAction.url,
-                target: linkTarget
-              }
-            }
-          })
-        ),
-        //Dynamic messages from popup actions
-        h("div", {id: "dynamicBanner", className: dynamicBanner.className},
-          h(AlertBanner, {type: dynamicBanner.type,
-            bannerText: dynamicBanner.text,
-            iconName: dynamicBanner.icon,
-            assistiveTest: dynamicBanner.text,
-            onClose: null,
-            link: {
-              text: dynamicBanner.title,
-              props: {
-                href: dynamicBanner.url,
                 target: linkTarget
               }
             }
@@ -624,7 +583,8 @@ class AllDataBox extends React.PureComponent {
     function getObjects(url, api) {
       return sfConn.rest(url).then(describe => {
         for (let sobject of describe.sobjects) {
-          addEntity(sobject, api);
+          // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
+          addEntity({...sobject, isCustomSetting: sobject.customSetting}, api);
         }
       }).catch(err => {
         console.error("list " + api + " sobjects", err);
@@ -1116,6 +1076,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         element.detail = element.section;
         element.name = element.link;
         element.Id = element.name;
+        element.isSetupLink = true;
       });
 
       let metadataShortcutSearchOptions = localStorage.getItem("metadataShortcutSearchOptions");
@@ -1241,7 +1202,15 @@ class AllDataBoxShortcut extends React.PureComponent {
 
     return (
       h("div", {ref: "shortcutsBox", className: "users-box"},
-        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 200, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender}),
+        h(AllDataSearch, {
+          ref: "allDataSearch",
+          getMatches: this.getMatches,
+          onDataSelect: this.onDataSelect,
+          inputSearchDelay: 200,
+          placeholderText: "Quick find links, shortcuts",
+          resultRender: this.resultRender,
+          sfHost
+        }),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
             ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
@@ -1286,10 +1255,10 @@ class AllDataBoxOrg extends React.PureComponent {
     return null;
   }
 
-  async deleteApexLogs(e) {
-    debugger;
-    console.log("delete logs");
-    //e.target.disabled = true;
+  async deleteApexLogs() {
+
+    const elt = document.querySelector("#deleteLogs");
+    elt.classList.toggle("progress-working");
     let apexLogIds = [];
     const queryResult = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=SELECT+Id+FROM+ApexLog+ORDER+BY+LogLength+DESC`);
 
@@ -1298,8 +1267,7 @@ class AllDataBoxOrg extends React.PureComponent {
     }
 
     if (apexLogIds.length === 0) {
-      this.showAlert("Success", "No Apex logs found to delete.", "success");
-      //e.target.disabled = false;
+      this.updateDeleteButton(true, elt, "No Apex logs found to delete.");
       return;
     }
 
@@ -1312,9 +1280,7 @@ class AllDataBoxOrg extends React.PureComponent {
     let allSuccess = true;
     for (const idGroup of chunkedIds) {
       const idsString = idGroup.join(",");
-      const deleteResult = await sfConn.rest(`/services/data/v${apiVersion}/composite/sobjects?ids=${idsString}&allOrNone=false`, {
-        method: "DELETE"
-      });
+      const deleteResult = await sfConn.rest(`/services/data/v${apiVersion}/composite/sobjects?ids=${idsString}&allOrNone=false`, {method: "DELETE"});
       console.log(deleteResult);
 
       if (Array.isArray(deleteResult)) {
@@ -1326,29 +1292,20 @@ class AllDataBoxOrg extends React.PureComponent {
         allSuccess = false;
       }
     }
-    //e.target.disabled = false;
     if (allSuccess) {
-      this.showAlert("Success", "Successfully deleted all Apex logs.", "success");
+      this.updateDeleteButton(true, elt, "Successfully deleted all Apex logs.", "success");
     } else {
-      this.showAlert("Error", "Some Apex logs could not be deleted. Check the console for details.", "error");
+      this.updateDeleteButton(false, elt, "Some Apex logs could not be deleted. Check the console for details.");
     }
   }
 
-  showAlert(title, message, variant) {
-    console.log("showAlert");
-    /*
-    parent.postMessage({
-      type: "showBanner",
-      bannerType: variant === "success" ? "check" : "error",
-      text: message,
-      icon: variant === "success" ? "check" : "error",
-      title,
-      url: "",
-      onClose: () => {
-        parent.postMessage({type: "hideBanner"}, "*");
-      },
-    }, "*");
-    */
+  updateDeleteButton(success, elt, message) {
+    elt.title = message;
+    //elt.classList.toggle("progress-working");
+    elt.classList.toggle(success ? "progress-success" : "progress-error");
+
+    console.log(success);
+    console.log(message);
   }
 
   setInstanceStatus(instanceName, sfHost){
@@ -1414,7 +1371,7 @@ class AllDataBoxOrg extends React.PureComponent {
             )
           ),
           h("div", {ref: "orgButtons", className: "user-buttons center small-font"},
-            h("a", {href: "#", id: "deleteLogs", disabled: false, onClick: (e) => { this.deleteApexLogs(e); }, className: "slds-button slds-button_neutral", title: "Delete all ApexLog"}, "Delete Logs")
+            h("a", {href: "#", id: "deleteLogs", disabled: false, onClick: (e) => { this.deleteApexLogs(e); }, className: "slds-button slds-button_neutral", title: "Delete all ApexLog"}, "Delete All ApexLogs")
           )
         )
       )
@@ -1656,8 +1613,12 @@ class UserDetails extends React.PureComponent {
                 h("th", {}, "Name:"),
                 h("td", {className: "oneliner"},
                   (user.IsActive) ? "" : h("span", {title: "User is inactive"}, "⚠ "),
-                  //user.Name + " (" + user.Alias + ")"
-                  h("a", {href: this.getUserSummaryLink(user.Id), target: linkTarget, title: "View summary"}, user.Name)
+                  h("a", {
+                    href: this.getUserSummaryLink(user.Id),
+                    target: linkTarget,
+                    title: "View summary",
+                    onClick: handleLightningLinkClick
+                  }, user.Name)
                   ,
                   " (" + user.Alias + ")"
                 )
@@ -1679,7 +1640,11 @@ class UserDetails extends React.PureComponent {
                 h("th", {}, "Profile:"),
                 h("td", {className: "oneliner"},
                   (user.Profile)
-                    ? h("a", {href: this.getProfileLink(user.ProfileId), target: linkTarget}, user.Profile.Name)
+                    ? h("a", {
+                      href: this.getProfileLink(user.ProfileId),
+                      target: linkTarget,
+                      onClick: handleLightningLinkClick
+                    }, user.Profile.Name)
                     : h("em", {className: "inactive"}, "unknown")
                 )
               ),
@@ -1704,9 +1669,9 @@ class UserDetails extends React.PureComponent {
             )
           )),
         h("div", {ref: "userButtons", className: "user-buttons center small-font"},
-          h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Details"),
-          h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
-          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
+          h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral"}, "Details"),
+          h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
+          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
           //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
           h("div", {className: "user-buttons justify-center slds-button-group top-space", role: "group"},
             h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs"),
@@ -1797,16 +1762,17 @@ class AllDataSelection extends React.PureComponent {
       return undefined;
     }
   }
-  getUrl(basePath, params) {
-    const {sfHost, selectedValue} = this.props;
-    const args = new URLSearchParams({host: sfHost, ...params});
-    return `${basePath}?${args}`;
-  }
   getDeployStatusUrl() {
-    return this.getUrl("explore-api.html", {checkDeployStatus: this.props.selectedValue.recordId});
+    let {sfHost, selectedValue} = this.props;
+    let args = new URLSearchParams();
+    args.set("host", sfHost);
+    args.set("checkDeployStatus", selectedValue.recordId);
+    return "explore-api.html?" + args;
   }
-  getGeneratePackageUrl() {
-    return this.getUrl("metadata-retrieve.html", {deployRequestId: this.props.selectedValue.recordId});
+  generatePackage(){
+    sfConn.rest(`/services/data/v${apiVersion}/metadata/deployRequest/${this.props.selectedValue.recordId}?includeDetails=true`, {method: "GET"}).then(res => {
+      this.downloadPackageXml(res.deployResult.details.allComponentMessages, this.props.selectedValue.recordId);
+    });
   }
   redirectToFlowVersions(){
     return "https://" + this.props.sfHost + "/lightning/setup/Flows/page?address=%2F" + this.state.flowDefinitionId;
@@ -1886,6 +1852,44 @@ class AllDataSelection extends React.PureComponent {
       }
     }
   }
+  generatePackageXml(components) {
+    const groupedComponents = {};
+
+    components.forEach(({componentType, fullName, fileName}) => {
+      if (componentType && fullName) {
+        componentType = fileName.startsWith("settings") ? "Settings" : componentType;
+        if (!groupedComponents[componentType]) {
+          groupedComponents[componentType] = new Set();
+        }
+        groupedComponents[componentType].add(fullName);
+      }
+    });
+
+    let packageXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    packageXml += "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
+
+    Object.entries(groupedComponents).forEach(([type, members]) => {
+      packageXml += "    <types>\n";
+      [...members].sort().forEach(member => {
+        packageXml += `        <members>${member}</members>\n`;
+      });
+      packageXml += `        <name>${type}</name>\n`;
+      packageXml += "    </types>\n";
+    });
+    packageXml += `    <version>${apiVersion}</version>\n`;
+    packageXml += "</Package>";
+    return packageXml;
+  }
+  downloadPackageXml(jsonData, deployRequestId) {
+    const packageXml = this.generatePackageXml(jsonData);
+    const blob = new Blob([packageXml], {type: "text/xml"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `package_${deployRequestId}.xml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
   render() {
     let {sfHost, showDetailsSupported, contextRecordId, selectedValue, linkTarget, recordIdDetails, isFieldsPresent, eventMonitorHref} = this.props;
     let {flowDefinitionId} = this.state;
@@ -1905,19 +1909,36 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name)
+                  h("a", {
+                    href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
+                    target: linkTarget,
+                    onClick: handleLightningLinkClick
+                  }, selectedValue.sobject.name)
                 )
               ),
               h("tr", {},
                 h("th", {}, "Links:"),
                 h("td", {},
-                  h("a", {href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Fields"),
+                  h("a", {
+                    href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
+                    target: linkTarget,
+                    onClick: handleLightningLinkClick
+                  }, "Fields"),
                   selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 0 ? h("span", {},
                     h("span", {}, " / "),
-                    h("a", {href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget}, "Record Types"),
+                    h("a", {
+                    // TODO add check for record type support (such as custom metadata types and custom settings)
+                      href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId),
+                      target: linkTarget,
+                      onClick: handleLightningLinkClick
+                    }, "Record Types"),
                   ) : null,
                   selectedValue.sobject.name.endsWith("__e") ? null : h("span", {}, h("span", {}, " / "),
-                    h("a", {href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "List")
+                    h("a", {
+                      href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting),
+                      target: linkTarget,
+                      onClick: handleLightningLinkClick
+                    }, "List")
                   ),
                   selectedValue.sobject.name.endsWith("__e") || selectedValue.sobject.name.endsWith("__mdt") ? null : h("span", {}, h("span", {}, " / "),
                     h("a", {href: this.getObjectListAccess(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Access")
@@ -1952,7 +1973,7 @@ class AllDataSelection extends React.PureComponent {
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
           ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", {href: this.getGeneratePackageUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Generate package.xml") : null,
+          ? h("a", {onClick: () => this.generatePackage(), className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Generate package.xml") : null,
         flowDefinitionId
           ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
         buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
@@ -1970,7 +1991,13 @@ class AllDataSelection extends React.PureComponent {
           : " (Not readable)"
         ))),
         isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
-        selectedValue.sobject.isEverCreatable && !selectedValue.sobject.name.endsWith("__e") ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
+        selectedValue.sobject.isEverCreatable && !selectedValue.sobject.name.endsWith("__e") ? h("a", {
+          ref: "showNewBtn",
+          href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
+          target: linkTarget,
+          onClick: handleLightningLinkClick,
+          className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"
+        }, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
         selectedValue.sobject.name.endsWith("__e") ? h("a", {href: this.getSubscribeUrl(selectedValue.sobject.name), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}), "Subscribe to Event")) : null,
       )
     );
@@ -1981,6 +2008,18 @@ class AllDataRecordDetails extends React.PureComponent {
 
   getRecordLink(sfHost, recordId) {
     return "https://" + sfHost + "/" + recordId;
+  }
+  openRecordLink(e) {
+    e.preventDefault();
+    closePopup();
+    const url = e.target.href;
+    const target = getLinkTarget(e);
+    const recordId = e.target.dataset.recordId;
+    if (target === "_blank") {
+      window.open(url, target);
+    } else {
+      lightningNavigate({navigationType: "recordId", recordId}, url);
+    }
   }
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
@@ -1995,13 +2034,22 @@ class AllDataRecordDetails extends React.PureComponent {
             recordIdDetails.recordName ? h("tr", {},
               h("th", {}, "Name:"),
               h("td", {},
-                h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
+                h("a", {
+                  href: this.getRecordLink(sfHost, selectedValue.recordId),
+                  target: linkTarget,
+                  "data-record-id": selectedValue.recordId,
+                  onClick: this.openRecordLink
+                }, recordIdDetails.recordName)
               )
             ) : null,
             recordIdDetails.recordTypeName ? h("tr", {},
               h("th", {}, "RecType:"),
               h("td", {},
-                h("a", {href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: linkTarget}, recordIdDetails.recordTypeName)
+                h("a", {
+                  href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId),
+                  target: linkTarget,
+                  onClick: handleLightningLinkClick
+                }, recordIdDetails.recordTypeName)
               )
             ) : null,
             h("tr", {},
@@ -2229,12 +2277,31 @@ class Autocomplete extends React.PureComponent {
     this.setState({resultsMouseIsDown: false});
   }
   onResultClick(e, value) {
-    let {sfHost} = this.props;
-    if (value.isRecent){
-      window.open("https://" + sfHost + "/" + value.recordId, getLinkTarget(e, true));
+    const {sfHost} = this.props;
+
+    if (value.isRecent) {
+      this.handleNavigation(e, `https://${sfHost}/${value.recordId}`, {
+        navigationType: "recordId",
+        recordId: value.recordId
+      });
+    } else if (value.isSetupLink) {
+      this.handleNavigation(e, `https://${sfHost}${value.link}`, {
+        navigationType: "url",
+        url: `https://${sfHost}${value.link}`
+      });
     } else {
       this.props.updateInput(value);
       this.setState({showResults: false, selectedIndex: 0});
+    }
+  }
+  handleNavigation(e, url, navigationParams) {
+    const linkTarget = getLinkTarget(e);
+    closePopup();
+
+    if (linkTarget === "_blank" || localStorage.getItem("lightningNavigation") == "false") {
+      window.open(url, linkTarget);
+    } else {
+      lightningNavigate(navigationParams, url);
     }
   }
   onResultMouseEnter(index) {
@@ -2384,3 +2451,19 @@ function sfLocaleKeyToCountryCode(localeKey) {
 }
 
 window.getRecordId = getRecordId; // for unit tests
+
+function lightningNavigate(details, fallbackURL) {
+  p.postMessage({lightningNavigate: {...details, fallbackURL}}, "*");
+}
+
+function handleLightningLinkClick(e) {
+  e.preventDefault(); // Prevent the default link behavior (href navigation)
+  closePopup();
+  const url = e.currentTarget.href;
+  const target = getLinkTarget(e);
+  if (target === "_blank") {
+    window.open(url, target);
+  } else {
+    lightningNavigate({navigationType: "url", url}, url);
+  }
+}

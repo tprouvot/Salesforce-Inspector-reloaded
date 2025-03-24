@@ -1,11 +1,8 @@
 # Release Notes
 
-## Version 1.27
-- Add 'Hard Refresh' shortcut to hard refresh Lightning Pages [feature 764](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/764) request by [Stephen Reitz](https://github.com/ssk42) (contribution by [Stephen Reitz](https://github.com/ssk42)) 
-
-
 ## Version 1.26
 
+- Add 'Hard Refresh' shortcut to hard refresh Lightning Pages [feature 764](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/764) request by [Stephen Reitz](https://github.com/ssk42) (contribution by [Stephen Reitz](https://github.com/ssk42))
 - Add `Generate package.xml` button from a DeployRequest record (idea by Nicolas ROCHE)
 - Fix sandbox color banner missing in Flow debug [issue 738](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/738) by [Camille Guillory](https://github.com/CamilleGuillory)
 - Fix Upsert Custom Metadata Bug with Metadata Relationship [issue 509](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/509) (contribution by [Joshua Yarmak](https://github.com/toly11))

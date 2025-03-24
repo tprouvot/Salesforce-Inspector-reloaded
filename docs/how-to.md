@@ -386,6 +386,7 @@ Sometimes Lightning UI pages may act strangely due to cached data in the browser
 3. The page will automatically reload with a fresh state
 
 This is particularly useful when:
+
 - Components aren't displaying correctly
 - You're experiencing UI inconsistencies
 - Changes to Lightning components aren't showing up

@@ -207,14 +207,6 @@ When quering EventLogFile, add the "LogFile" field in the query and click on the
 
 ![2023-11-15_14-32-44 (1)](https://github.com/Annubis45/Salesforce-Inspector-reloaded/assets/35368290/ba1fcbed-8428-495e-b03b-7816320d95df)
 
-## Delete All Apex Logs
-
-Sometimes you need to purge the ApexLogs from you org, mostly when the maximum size limit is reached.
-You can now delete all apex logs with a simple click. From the popup, select 'Org' tab and click 'Delete All ApexLogs' button.
-
-<img width="278" alt="Delete All Apex Logs" src="https://github.com/user-attachments/assets/7ba32e4d-1fdd-43e7-89cd-9c480c913211" />
-
-
 ## Enable debug logs
 
 Sometimes you may want to enable logs for a particular user.

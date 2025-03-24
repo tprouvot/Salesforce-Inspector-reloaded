@@ -709,6 +709,9 @@ class Model {
       columnUnknownField() {
         return columnVm.columnError() === "Error: Unknown field";
 
+      },
+      isColumnSkipped() {
+        return columnVm.columnValue.startsWith("_");
       }
     };
     return columnVm;
@@ -1342,10 +1345,12 @@ class ColumnMapper extends React.Component {
   }
   render() {
     let {model, column} = this.props;
+    const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true";
+    let inputClassName = column.columnError() ? "confError" : ((column.isColumnSkipped() && greyOutSkippedColumns) ? "conf-skipped" : "");
     return h("div", {className: "conf-line"},
       h("label", {htmlFor: "col-" + column.columnIndex}, column.columnOriginalValue),
       h("div", {className: "flex-wrapper"},
-        h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: column.columnError() ? "confError" : "", disabled: model.isWorking(), id: "col-" + column.columnIndex}),
+        h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: inputClassName, disabled: model.isWorking(), id: "col-" + column.columnIndex}),
         h("div", {className: "conf-error", hidden: !column.columnError()}, h("span", {}, column.columnError()), " ", h("button", {onClick: this.onColumnSkipClick, hidden: model.isWorking(), title: "Don't import this column"}, "Skip"))
       )
     );

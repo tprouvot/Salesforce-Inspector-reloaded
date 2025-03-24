@@ -237,6 +237,9 @@ h1 {
 .confError + .confError {
   margin-top: 5px;
 }
+.conf-skipped {
+  background-color: lightgray;
+}
 .columns-mapping .conf-line {
   padding: 5px 0;
   margin: 0;

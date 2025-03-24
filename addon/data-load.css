@@ -94,6 +94,10 @@
   text-decoration-style: dotted;
 }
 
+.scrolltable-cell.skipped {
+  background-color: lightgrey;
+}
+
 .pop-menu {
   position: absolute;
   padding: 7px 0;

@@ -740,13 +740,15 @@ class ObjectSelector extends React.Component {
   selectMeta(model, meta){
     meta.expanded = !meta.expanded;
     meta.icon = meta.expanded ? "switch" : "chevronright";
-    if (meta.childXmlNames.length == 0 || model.deployRequestId){
+    if (meta.childXmlNames.length == 0 || model.deployRequestId || meta.childXmlNames[0].fullName == "*"){
+
       let metaFolderProof = this.getMetaFolderProof(meta);
       model.spinFor(
         "getting child metadata " + meta.xmlName,
         sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metaFolderProof.xmlName, folder: metaFolderProof.directoryName}}).then(res => {
 
           if (res){
+            meta.childXmlNames = []; //reset tab if wildcard is the only child
             let resArray = Array.isArray(res) ? res : res ? [res] : []; // only one element can be returned
             resArray.forEach(elt => {
               elt.isFolder = elt.type.endsWith("Folder");
@@ -768,6 +770,8 @@ class ObjectSelector extends React.Component {
           }
         })
       );
+    } else {
+      //call refresh filter
     }
     model.didUpdate();
   }
@@ -791,7 +795,8 @@ class ObjectSelector extends React.Component {
                       h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
                     ) : null,
                     //TODO fix margin for child that are not folder
-                    h("input", {type: "checkbox", className: child.parent.isFolder ? "margin-grandchild " : "" + "metadata", checked: !!child.selected, onChange: (e) => this.onSelectChild(child, e, "checkbox")}),
+                    //h("input", {type: "checkbox", className: child.parent?.isFolder ? "margin-grandchild " : "" + "metadata", checked: !!child.selected}),
+                    h("input", {type: "checkbox", className: !child.isFolder ? "margin-grandchild metadata" : "metadata", checked: !!child.selected}),
                     h("span", {className: "slds-text-body_small slds-accordion__summary-content", title: child.fullName}, child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""))
                   )
                 )

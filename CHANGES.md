@@ -2,7 +2,7 @@
 
 ## Version 1.26
 
-
+- Add internal tests for REST Explorer
 - Add `Delete All ApexLogs` Button in popup Org tab [feature 726](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/726) request by [Shubham Bangad](https://github.com/shubhambangad-rubrik)
 - Fix Bulk job results via REST explorer [issue 756](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/756) by [NatanOnteam](https://github.com/NatanOnteam)
 - Fix `Stop` button on `Data Export` page [issue 773](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/773) by Ashoka Poojari

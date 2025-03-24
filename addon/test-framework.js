@@ -118,6 +118,7 @@ addEventListener("load", () => {
       let sfHost = args.get("host");
       await sfConn.getSession(sfHost);
       let test = new Test(sfHost);
+
       updateProgress("popupTest");
       await popupTest(test);
       updateProgress("csvParseTest", "popupTest");
@@ -129,6 +130,7 @@ addEventListener("load", () => {
       updateProgress(null, "dataExportTest");
       await restExploreTest(test);
       updateProgress(null, "restExploreTest");
+
       window.anonApex.hidden = true;
       test.assert(!seenError, "Expected no error");
       console.log("Salesforce Inspector unit tests finished successfully");

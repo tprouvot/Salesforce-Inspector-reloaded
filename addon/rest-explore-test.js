@@ -26,36 +26,35 @@ export async function restExploreTest(test) {
   assert(Array.isArray(model.queryHistory.list));
   assert(Array.isArray(model.savedHistory.list));
 
-  // Test sending a simple GET request
-  model.request.endpoint = `/services/data/v${apiVersion}/sobjects/Account/describe`;
-  model.request.method = "get";
-  model.doSend();
-  await waitForSpinner();
-  assert(model.apiResponse.value.includes("Account"));
-
-
   // Test a POST request
-  model.request.endpoint = `/services/data/v${apiVersion}/sobjects/Account/`;
+  model.request.endpoint = `/services/data/v${apiVersion}/sobjects/Inspector_Test__c/`;
   model.request.method = "post";
   model.request.body = '{ "Name" : "SFIR" }';
   model.doSend();
   await waitForSpinner();
   assert(model.apiResponse.value.includes("id"));
-  assertEquals("post", model.request.method.toLowerCase());
+  let objId = JSON.parse(model.apiResponse.value).id;
 
   // Test a PATCH request
-  model.request.endpoint = `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`; // Replace with a valid Account ID if you have one for testing
+  model.request.endpoint = `/services/data/v${apiVersion}/sobjects/Inspector_Test__c/${objId}`;
   model.request.method = "patch";
   model.request.body = '{ "Name" : "SFIR Updated" }';
   model.doSend();
   await waitForSpinner();
-  // Add assertions to check for successful PATCH (e.g., status code 204) if needed
+  assertEquals(204, model.apiResponse.code);
+
+  // Test sending a simple GET request
+  model.request.endpoint = `/services/data/v${apiVersion}/sobjects/Inspector_Test__c/${objId}`;
+  model.request.method = "get";
+  model.doSend();
+  await waitForSpinner();
+  assertEquals("SFIR Updated", JSON.parse(model.apiResponse.value).Name);
 
   // Test a DELETE request
-  model.request.endpoint = `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`; // Replace with a valid Account ID if you have one for testing
+  model.request.endpoint = `/services/data/v${apiVersion}/sobjects/Inspector_Test__c/${objId}`;
   model.request.method = "delete";
   model.request.body = "";
   model.doSend();
   await waitForSpinner();
-  // Add assertions to check for successful DELETE (e.g., status code 204) if needed
+  assertEquals(204, model.apiResponse.code);
 }

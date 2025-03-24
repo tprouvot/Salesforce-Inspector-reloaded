@@ -103,9 +103,11 @@ class Model {
       const groupedComponents = {};
       const metadataObjectsMap = {};
 
-      res.deployResult.details.allComponentMessages.sort((a, b) => a.componentType < b.componentType ? -1 : a.componentType > b.componentType ? 1 : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
-      res.deployResult.details.allComponentMessages.forEach(({componentType, fullName, fileName}) => {
-        if (componentType && fullName) {
+      let components = ("allComponentMessages" in res.deployResult.details) ? res.deployResult.details.allComponentMessages : res.deployResult.details.componentSuccesses;
+
+      components.sort((a, b) => a.componentType < b.componentType ? -1 : a.componentType > b.componentType ? 1 : a.fullName < b.fullName ? -1 : a.fullName > b.fullName ? 1 : 0);
+      components.forEach(({componentType, fullName, fileName, problemType}) => {
+        if (componentType && fullName && problemType != "Warning") {
           componentType = fileName.startsWith("settings") ? "Settings" : componentType;
 
           if (!groupedComponents[componentType]) {

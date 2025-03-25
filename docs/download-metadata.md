@@ -2,48 +2,57 @@
 
 This page allows users to retrieve metadata from a Salesforce organization. It provides a user-friendly interface to select and download specific metadata components.
 
-## Context
+## Features
 
-//TODO Explain legacy usage vs new
+### 1. Metadata Retrieval
 
-## Functionalities
+* Retrieve metadata using the Salesforce Metadata API.
+* View available metadata components, excluding `InstalledPackage`.
+* Sort metadata components for easier selection (by Name or LastModifiedDate option).
+* Download retrieved metadata as a ZIP file.
 
-### Displaying Metadata Components
+### 2. Package.xml Generation
 
-* The page fetches and displays a list of available metadata components from the Salesforce org.
-* Metadata components are organized in a tree-like structure, allowing users to expand and collapse categories.
-* A filter is available to search for specific metadata types or components.
+* Generate a `package.xml` file from selected metadata components.
+* Import an existing `package.xml` file.
+* Paste `package.xml` content for metadata retrieval.
+* Copy or download the generated `package.xml` file.
 
-### Selecting Metadata for Retrieval
+### 3. Deployment Request Processing
 
-* Users can select individual metadata components or entire categories for retrieval using checkboxes.
-* A "Select All" / "Unselect All" checkbox is available for convenience.
-* The page allows users to include or exclude metadata from managed packages.
+* Retrieve metadata components from a specific `deployRequestId`.
+* Automatically group and sort metadata components.
+* Generate a `package.xml` file based on the deployment request.
 
-### Generating `package.xml`
+### 4. Filtering and Selection Options
 
-* The page dynamically generates a `package.xml` file based on the user's selections.
-* The `package.xml` content is displayed in a code editor within the page.
-* Users can download the generated `package.xml` file.
+* Search metadata components using a filter input.
+* Select all or deselect all metadata components.
+* Expand/collapse metadata categories.
+* Choose whether to include managed package metadata.
 
-### Retrieving Metadata
+### 5. User Experience Enhancements
 
-* Users can initiate the metadata retrieval process with a button click.
-* The page displays the status of the retrieval operation, including progress messages and error notifications.
-* Upon successful retrieval, the page provides download links for the retrieved metadata (in a ZIP file) and a status JSON file.
+* Displays user and organization information.
+* Provides real-time status updates for metadata retrieval.
+* Shows logs for debugging errors.
+* Uses checkboxes for easy selection of metadata components.
 
-### Importing `package.xml`
+## Options Available
 
-* Users can import an existing `package.xml` file to define the metadata to be retrieved.
-* The page provides a file input to select the `package.xml` file.
-* Users can also paste the content of a `package.xml` file from their clipboard.
+* **Include Managed Packages:** Choose whether to include metadata from managed packages.
+* **Metadata Filtering:** Use a search filter to find specific metadata components.
+* **Legacy Version Support:** Users can opt to use a legacy version of metadata retrieval if needed.
 
-##  UI Elements
+## Generating Package.xml from Deployment Request
 
-### Buttons
+To generate a `package.xml` from a `deployRequestId`, the system:
 
-* "Retrieve Metadata": Initiates the metadata retrieval process.
-* "Download package.xml": Downloads the generated `package.xml` file.
-* Import button: Opens file selection dialog for `package.xml` import.
-* "Save downloaded metadata": Downloads the retrieved metadata ZIP file.
-* "Save status info": Downloads the status JSON file.
+1. Fetches deployment components using the Salesforce REST API.
+2. Groups components by metadata type.
+3. Constructs a `package.xml` file.
+4. Allows users to download or use the generated file for retrieval.
+
+## Conclusion
+
+The Metadata Retrieval page provides a streamlined way to extract metadata from Salesforce, whether through manual selection or deployment requests. Users can customize their retrieval process with filtering and managed package options while ensuring they have the necessary metadata for their deployments.

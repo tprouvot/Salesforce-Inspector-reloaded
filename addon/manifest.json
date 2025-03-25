@@ -79,6 +79,7 @@
         "explore-api.html",
         "rest-explore.html",
         "limits.html",
+        "inject.js",
         "field-creator.html",
         "options.html",
         "event-monitor.html"

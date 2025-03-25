@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Fix text selection in PlatformEvent payload in `Event Monitor` and persist replayId in url
 - `Download Metadata` page rework
 - Add internal tests for REST Explorer
 - Add `Delete All ApexLogs` Button in popup Org tab [feature 726](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/726) request by [Shubham Bangad](https://github.com/shubhambangad-rubrik)

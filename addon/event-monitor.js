@@ -59,6 +59,9 @@ class Model {
     } else {
       this.selectedChannelType = channelTypes[0].value;
     }
+    if (args.has("replayId")) {
+      this.replayId = args.get("replayId");
+    }
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -215,17 +218,20 @@ class App extends React.Component {
   onChannelSelection(e) {
     let {model} = this.props;
     model.selectedChannel = e.target.value;
-
-    const urlParams = new URLSearchParams(window.location.search);
-    urlParams.set("channel", model.selectedChannel);
-    window.history.replaceState(null, "", "?" + urlParams.toString());
-
+    this.persistParamInUrl("channel", model.selectedChannel);
     model.didUpdate();
+  }
+
+  persistParamInUrl(name, value){
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set(name, value);
+    window.history.replaceState(null, "", "?" + urlParams.toString());
   }
 
   onReplayIdChange(e) {
     let {model} = this.props;
     model.replayId = e.target.value;
+    this.persistParamInUrl("replayId", model.replayId);
     model.popConfirmed = false;
     model.didUpdate();
   }
@@ -302,10 +308,12 @@ class App extends React.Component {
 
   onSelectEvent(e){
     e.preventDefault();
-    let {model} = this.props;
-    model.selectedEventIndex = e.target.id;
-    model.selectedEvent = model.events[e.target.id];
-    model.didUpdate();
+    if (!window.getSelection().toString()){
+      let {model} = this.props;
+      model.selectedEventIndex = e.target.id;
+      model.selectedEvent = model.events[e.target.id];
+      model.didUpdate();
+    }
   }
 
   onCopyAsJson() {
@@ -525,7 +533,7 @@ class App extends React.Component {
         h("div", {id: "result-table"},
           h("div", {},
             h("pre", {className: "language-json reset-margin"}, // Set the language class to JSON for Prism to highlight
-              model.events.map((event, index) => h("code", {onClick: this.onSelectEvent, id: index, key: event.id, value: event, className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
+              model.events.map((event, index) => h("code", {onClick: this.onSelectEvent, id: index, key: event.event.replayId, value: event, className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
                 JSON.stringify(event, null, 4))
               )
             )

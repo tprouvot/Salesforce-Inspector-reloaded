@@ -198,7 +198,10 @@ class OptionsTabSelector extends React.Component {
               options: [
                 {label: "A-Z", value: "fullName"},
                 {label: "Last Modified Date DESC", value: "lastModifiedDate"}
-              ]}},
+              ]
+            }
+          },
+          {option: Option, props: {type: "toggle", title: "Use legacy version", key: "useLegacyDlMetadata", default: false}},
         ]
       }
     ];

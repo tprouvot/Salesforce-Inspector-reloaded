@@ -107,8 +107,10 @@ class App extends React.PureComponent {
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext,
-      hideButtonsOption: JSON.parse(localStorage.getItem("hideButtonsOption"))
+      hideButtonsOption: JSON.parse(localStorage.getItem("hideButtonsOption")),
+      useLegacyDownloadMetadata: JSON.parse(localStorage.getItem("useLegacyDlMetadata"))
     };
+    debugger;
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
@@ -242,7 +244,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, fieldCreatorHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, fieldCreatorHref, limitsHref, isFieldsPresent, latestNotesViewed, useLegacyDownloadMetadata} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -332,9 +334,8 @@ class App extends React.PureComponent {
             ),
           ),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
-            // Advanded features should be put below this line, and the layout adjusted so they are below the fold
             h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
+              h("a", {ref: "metaRetrieveBtn", href: `metadata-retrieve${useLegacyDownloadMetadata ? "-legacy" : ""}.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
             ),
             this.displayButton("explore-api") ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))

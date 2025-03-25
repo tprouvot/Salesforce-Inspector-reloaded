@@ -6,7 +6,6 @@ class Model {
   constructor(sfHost) {
     this.reactCallback = null;
 
-    // Raw fetched data
     this.spinnerCount = 0;
     this.globalDescribe = null;
     this.sobjectDescribePromise = null;
@@ -14,7 +13,6 @@ class Model {
     this.recordData = null;
     this.layoutInfo = null;
 
-    // Processed data and UI state
     this.sfHost = sfHost;
     this.sfLink = "https://" + sfHost;
     this.userInfo = "...";
@@ -36,14 +34,7 @@ class Model {
       })
     );
   }
-  /**
-   * Notify React that we changed something, so it will rerender the view.
-   * Should only be called once at the end of an event or asynchronous operation, since each call can take some time.
-   * All event listeners (functions starting with "on") should call this function if they update the model.
-   * Asynchronous operations should use the spinFor function, which will call this function after calling its callback.
-   * Other functions should not call this function, since they are called by a function that does.
-   * @param cb A function to be called once React has processed the update.
-   */
+
   didUpdate(cb) {
     if (this.reactCallback) {
       this.reactCallback(cb);
@@ -227,104 +218,7 @@ class Model {
   }
 
   startDownloading() {
-    if (!this.packageXml.includes("*")){
-      //TODO handle mix of wilchar and named metadata
-      this.retrieveMetaFromPackageXml(this.packageXml);
-    } else {
-      let logMsg = msg => {
-        this.logMessages.push({level: "info", text: msg});
-        this.didUpdate();
-      };
-      let logWait = this.logWait.bind(this);
-      (async () => {
-        function flattenArray(x) {
-          return [].concat(...x);
-        }
-
-        function groupByThree(list) {
-          let groups = [];
-          for (let element of list) {
-            if (groups.length == 0 || groups[groups.length - 1].length == 3) {
-              groups.push([]);
-            }
-            groups[groups.length - 1].push(element);
-          }
-          return groups;
-        }
-
-        try {
-          this.progress = "working";
-          this.didUpdate();
-
-          let metadataApi = sfConn.wsdl(apiVersion, "Metadata");
-          let res;
-          let selectedMetadataObjects = this.metadataObjects
-            .filter(metadataObject => metadataObject.selected);
-          // Code below is originally from forcecmd
-          let folderMap = {};
-          let x = selectedMetadataObjects
-            .map(metadataObject => {
-              let xmlNames = sfConn.asArray(metadataObject.childXmlNames).concat(metadataObject.xmlName);
-              return xmlNames.map(xmlName => {
-                if (metadataObject.inFolder == "true") {
-                  if (xmlName == "EmailTemplate") {
-                    folderMap["EmailFolder"] = "EmailTemplate";
-                    xmlName = "EmailFolder";
-                  } else {
-                    folderMap[xmlName + "Folder"] = xmlName;
-                    xmlName = xmlName + "Folder";
-                  }
-                }
-                return xmlName;
-              });
-            });
-          res = await Promise.all(groupByThree(flattenArray(x)).map(async xmlNames => {
-            let someItems = sfConn.asArray(await logWait(
-              "ListMetadata " + xmlNames.join(", "),
-              sfConn.soap(metadataApi, "listMetadata", {queries: xmlNames.map(xmlName => ({type: xmlName}))})
-            ));
-            let folders = someItems.filter(folder => folderMap[folder.type]);
-            let nonFolders = someItems.filter(folder => !folderMap[folder.type]);
-            let p = await Promise
-              .all(groupByThree(folders).map(async folderGroup =>
-                sfConn.asArray(await logWait(
-                  "ListMetadata " + folderGroup.map(folder => folderMap[folder.type] + "/" + folder.fullName).join(", "),
-                  sfConn.soap(metadataApi, "listMetadata", {queries: folderGroup.map(folder => ({type: folderMap[folder.type], folder: folder.fullName}))})
-                ))
-              ));
-            return flattenArray(p).concat(
-              folders.map(folder => ({type: folderMap[folder.type], fullName: folder.fullName})),
-              nonFolders,
-              xmlNames.map(xmlName => ({type: xmlName, fullName: "*"}))
-            );
-          }));
-          let types = flattenArray(res);
-          if (types.filter(x => x.type == "StandardValueSet").map(x => x.fullName).join(",") == "*") {
-            // We are using an API version that supports the StandardValueSet type, but it didn't list its contents.
-            // https://success.salesforce.com/ideaView?id=0873A000000cMdrQAE
-            // Here we hardcode the supported values as of Spring 25 / API version 63.
-            types = types.concat([
-              "AccountContactMultiRoles", "AccountContactRole", "AccountOwnership", "AccountRating", "AccountType", "AQuestionQuestionCategory", "AReasonAppointmentReason1", "AssessmentRating", "AssessmentStatus", "AssetActionCategory", "AssetRelationshipType", "AssetStatus", "AssociatedLocationType", "CampaignMemberStatus", "CampaignStatus", "CampaignType", "CardType", "CaseContactRole", "CaseOrigin", "CasePriority", "CaseReason", "CaseStatus", "CaseType", "ChangeRequestRelatedItemImpactLevel", "ChangeRequestBusinessReason", "ChangeRequestCategory", "ChangeRequestImpact", "ChangeRequestPriority", "ChangeRequestRiskLevel", "ChangeRequestStatus", "ConsequenceOfFailure", "ContactPointAddressType", "ContactPointUsageType", "ContactRequestReason", "ContactRequestStatus", "ContactRole", "ContractContactRole", "ContractStatus", "DigitalAssetStatus", "EntitlementType", "EventSubject", "EventType", "FinanceEventAction", "FinanceEventType", "FiscalYearPeriodName", "FiscalYearPeriodPrefix", "FiscalYearQuarterName", "FiscalYearQuarterPrefix", "FulfillmentStatus", "FulfillmentType", "IncidentCategory", "IncidentImpact", "IncidentPriority", "IncidentRelatedItemImpactLevel", "IncidentRelatedItemImpactType", "IncidentReportedMethod", "IncidentStatus", "IncidentSubCategory", "IncidentType", "IncidentUrgency", "Industry", "LeadSource", "LeadStatus", "LocationType", "MilitaryService", "OpportunityCompetitor", "OpportunityStage", "OpportunityType", "OrderItemSummaryChgRsn", "OrderStatus", "OrderSummaryRoutingSchdRsn", "OrderSummaryStatus", "OrderType", "PartnerRole", "PartyProfileCountryofBirth", "PartyProfileEmploymentType", "PartyProfileFundSource", "PartyProfileGender", "PartyProfileResidentType", "PartyProfileReviewDecision", "PartyProfileRiskType", "PartyProfileStage", "PartyScreeningStepType", "PartyScreeningSummaryStatus", "PIdentityVerificationResult", "PIdentityVerificationStatus", "PIVerificationStepStatus", "PIVerificationStepType", "PIVerificationVerifiedBy", "PIVOverriddenResult", "PIVResultOverrideReason", "PIVSVerificationDecision", "ProblemCategory", "ProblemImpact", "ProblemPriority", "ProblemRelatedItemImpactLevel", "ProblemRelatedItemImpactType", "ProblemStatus", "ProblemSubCategory", "ProblemUrgency", "ProcessExceptionCategory", "ProcessExceptionPriority", "ProcessExceptionSeverity", "ProcessExceptionStatus", "Product2Family", "ProductRequestStatus", "QuantityUnitOfMeasure", "QuickTextCategory", "QuickTextChannel", "QuoteStatus", "RegulatoryBodyType1", "RequestedCareCodeType1", "RequestedDrugCodeType1", "RequestedLevelOfCare1", "RequesterType1", "RequestingPractitionerLicense1", "RequestingPractitionerSpecialty1", "ResidenceStatusType1", "RoleInTerritory2"
-            ].map(x => ({type: "StandardValueSet", fullName: x})));
-          }
-          types.sort((a, b) => {
-            let ka = a.type + "~" + a.fullName;
-            let kb = b.type + "~" + b.fullName;
-            if (ka < kb) {
-              return -1;
-            }
-            if (ka > kb) {
-              return 1;
-            }
-            return 0;
-          });
-          types = types.map(x => ({name: x.type, members: decodeURIComponent(x.fullName)}));
-          await this.retrieveMetadata({apiVersion, unpackaged: {types, version: apiVersion}});
-        } catch (e) {
-          this.logError(e);
-        }
-      })();
-    }
+    this.retrieveMetaFromPackageXml(this.packageXml);
   }
 
   logWait(msg, promise) {
@@ -486,16 +380,16 @@ class App extends React.Component {
     }
 
     const file = fileInput.files[0];
+    const fileName = fileInput.files[0].name;
     const reader = new FileReader();
 
     reader.onload = (event) => {
       try {
         const importedPackage = event.target.result;
         model.packageXml = importedPackage;
-        model.retrieveMetaFromPackageXml(importedPackage);
         this.setState({
           showToast: true,
-          toastMessage: "package.xml imported successfully!",
+          toastMessage: fileName + " imported successfully!",
           toastVariant: "success",
           toastTitle: "Success"
         });
@@ -633,7 +527,13 @@ class App extends React.Component {
               )
             ),
             h("div", {className: "flex-right"},
-              h("button", {onClick: this.onStartClick}, "Retrieve metadata"),
+              h("button", {onClick: this.onStartClick}, "Retrieve Metadata"),
+              model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Download Metadata") : null,
+              model.statusLink ? h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Save status info"},
+                h("svg", {className: "slds-button__icon"},
+                  h("use", {xlinkHref: "symbols.svg#info"})
+                )
+              ) : null,
               h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.downloadXml(), title: "Download package.xml"},
                 h("svg", {className: "slds-button__icon"},
                   h("use", {xlinkHref: "symbols.svg#download"})
@@ -655,9 +555,7 @@ class App extends React.Component {
                 ref: "fileInput",
                 onChange: this.onImportPackage,
                 accept: "text/xml"
-              }),
-              model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Save downloaded metadata") : null,
-              model.statusLink ? h("a", {href: model.statusLink, download: "status.json", className: "button"}, "Save status info") : null
+              })
             ),
           ),
           h("div", {id: "result-table", ref: "scroller"},
@@ -794,8 +692,6 @@ class ObjectSelector extends React.Component {
                     child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
                       h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
                     ) : null,
-                    //TODO fix margin for child that are not folder
-                    //h("input", {type: "checkbox", className: child.parent?.isFolder ? "margin-grandchild " : "" + "metadata", checked: !!child.selected}),
                     h("input", {type: "checkbox", className: !child.isFolder ? "margin-grandchild metadata" : "metadata", checked: !!child.selected}),
                     h("span", {className: "slds-text-body_small slds-accordion__summary-content", title: child.fullName}, child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""))
                   )

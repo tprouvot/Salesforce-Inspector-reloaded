@@ -308,6 +308,7 @@ class App extends React.Component {
 
   onSelectEvent(e){
     e.preventDefault();
+    //do not trigger event selection if user is selecting some text
     if (!window.getSelection().toString()){
       let {model} = this.props;
       model.selectedEventIndex = e.target.id;

@@ -113,7 +113,6 @@ class App extends React.PureComponent {
       hideButtonsOption: JSON.parse(localStorage.getItem("hideButtonsOption")),
       useLegacyDownloadMetadata: JSON.parse(localStorage.getItem("useLegacyDlMetadata"))
     };
-    debugger;
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);

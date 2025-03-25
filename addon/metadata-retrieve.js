@@ -59,7 +59,7 @@ class Model {
     if (this.progress == "working") {
       return "(Loading) Download Metadata";
     }
-    return "Download Metadata";
+    return "Download Metadata (beta)";
   }
 
   startLoading() {

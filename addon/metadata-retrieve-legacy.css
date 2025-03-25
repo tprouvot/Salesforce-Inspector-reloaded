@@ -1,0 +1,89 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  margin: 0;
+}
+.sf-link {
+  margin-right: 1em;
+  background-color: rgb(6, 28, 63);
+  border-radius: 3px;
+  line-height: 2em;
+  text-decoration: none;
+  display: inline-block;
+  padding: 2px;
+  color: white;
+  padding-right: 1em;
+}
+.sf-link svg {
+  width: 2em;
+  height: 2em;
+  display: block;
+  margin-left: 1px;
+  margin-right: 1em;
+  float: left;
+  background-color: #ef7ead;
+  border-radius: 2px;
+  fill: white;
+}
+.log-error {
+  color: red;
+  font-weight: bold;
+}
+.log-working {
+  color: purple;
+  font-weight: bold;
+}
+.object-bar {
+  position: fixed;
+  background-color: rgba(255, 255, 255, 0.9);
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  z-index: 1;
+  align-items: center;
+}
+.progress {
+  margin: 0 0.3rem;
+  display: inline-block;
+  background-color: #f88;
+  padding: 8px 12px;
+  border-radius: 3px;
+}
+.progress-ready {
+  background-color: #bbb;
+}
+@keyframes working {
+  50% {
+    background-color: #ccf;
+  }
+}
+.progress-working {
+  background-color: #88f;
+  animation: working 1s cubic-bezier(0.5, 0.4, 0.5, 0.6) infinite;
+}
+.progress-done {
+  background-color: #8f8;
+}
+.button {
+  margin: 0 0.3rem;
+  display: inline-block;
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+  border-radius: 3px;
+  font: unset;
+}
+.body {
+  padding: 4.3em 8px 8px;
+}
+.flex {
+  flex: 1;
+}
+label {
+  display: inline-block;
+  margin: 2px 5px;
+}

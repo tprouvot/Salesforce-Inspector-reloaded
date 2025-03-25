@@ -184,6 +184,26 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: enableLogsOption, props: {key: 1}}
         ]
+      },
+      {
+        id: 7,
+        tabTitle: "Tab6",
+        title: "Metadata",
+        content: [
+          {option: Option, props: {type: "toggle", title: "Include managed packages metadata", key: "includeManagedMetadata"}},
+          {option: Option,
+            props: {type: "select",
+              title: "Sort metadata components",
+              key: "sortMetadataBy",
+              default: "fullName",
+              options: [
+                {label: "A-Z", value: "fullName"},
+                {label: "Last Modified Date DESC", value: "lastModifiedDate"}
+              ]
+            }
+          },
+          {option: Option, props: {type: "toggle", title: "Use legacy version", key: "useLegacyDlMetadata", default: false}},
+        ]
       }
     ];
     this.onTabSelect = this.onTabSelect.bind(this);

@@ -75,6 +75,7 @@
         "data-import.html",
         "inspect.html",
         "metadata-retrieve.html",
+        "metadata-retrieve-legacy.html",
         "explore-api.html",
         "rest-explore.html",
         "limits.html",

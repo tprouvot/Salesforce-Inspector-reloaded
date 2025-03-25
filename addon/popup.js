@@ -2244,7 +2244,7 @@ class Autocomplete extends React.PureComponent {
         recordId: value.recordId
       });
     } else if (value.isSetupLink) {
-      this.handleNavigation(e, `https://${sfHost}${value.link}`, {
+      this.handleNavigation(e, `${value.isExternal ? "" : "https://" + sfHost}${value.link}`, {
         navigationType: "url",
         url: `https://${sfHost}${value.link}`
       });

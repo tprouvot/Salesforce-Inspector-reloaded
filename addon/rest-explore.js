@@ -232,9 +232,9 @@ class Model {
     this.startTime = performance.now();
     this.canSendRequest = false;
     let api = this.request.endpoint.startsWith("/services/async/") ? "bulk" : "normal";
-    let responseType = this.request.endpoint.startsWith("/services/async/") ? "xml" : "json";
+    let responseType = this.request.endpoint.startsWith("/services/async/") ? "xml" : this.request.endpoint.includes("/jobs/") ? "" : "json";
     this.request.method = this.request.method.toUpperCase();
-    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress}, true)
+    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress}, true, true)
       .catch(err => {
         this.canSendRequest = true;
         this.totalTime = performance.now() - this.startTime;
@@ -255,42 +255,46 @@ class Model {
           model.didUpdate();
           return;
         }
-        this.parseResponse(result, "Success");
+        this.parseResponse(result, "Success", responseType);
         this.canSendRequest = true;
       }));
   }
 
-  parseResponse(result, status) {
+  parseResponse(result, status, responseType) {
 
     this.resultClass = result.status < 300 ? "success" : result.status > 399 ? "error" : "";
-    let format = result.responseType.length > 0 ? result.responseType : "xml";
+    let format = responseType.length == 0 ? "csv" : result.responseType.length > 0 ? result.responseType : "xml";
     this.apiResponse = {
       status,
       code: result.status,
       format,
-      value: result.response ? this.formatResponse(result.response, format) : "NONE"
+      value: result.response ? this.formatResponse(result.response, format, responseType) : "NONE"
     };
     if (this.resultClass === "success"){
-      let newApis = Object.keys(result.response)
-        .filter(key => typeof result.response[key] == "string" && result.response[key].startsWith("/services/data/"))
-        .map(key => ({
-          key,
-          "endpoint": result.response[key]
-        }));
-      newApis.forEach(api => {
-        if (!this.apiList.some(existingApi => existingApi.key === api.key)) {
-          this.apiList.push(api);
-        }
-      });
+      if (result.response){
+        let newApis = Object.keys(result.response)
+          .filter(key => typeof result.response[key] == "string" && result.response[key].startsWith("/services/data/"))
+          .map(key => ({
+            key,
+            "endpoint": result.response[key]
+          }));
+        newApis.forEach(api => {
+          if (!this.apiList.some(existingApi => existingApi.key === api.key)) {
+            this.apiList.push(api);
+          }
+        });
+      }
       this.filteredApiList = this.apiList.filter(api => api.endpoint.toLowerCase().includes(this.request.endpoint.toLowerCase()));
     }
   }
 
-  formatResponse(resp, format) {
-    if (format === "xml") {
+  formatResponse(resp, format, responseType) {
+    if (format === "xml" && responseType === "xml") {
       return this.formatXml(resp);
-    } else {
+    } else if (format === "json") {
       return JSON.stringify(resp, null, "    ");
+    } else {
+      return resp;
     }
   }
 

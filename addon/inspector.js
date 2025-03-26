@@ -52,13 +52,15 @@ export let sfConn = {
     return this.sessionId;
   },
 
-  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {
+  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse, nocache) {
     if (!this.instanceHostname) {
       throw new Error("Instance Hostname not found");
     }
 
     let xhr = new XMLHttpRequest();
-    url += (url.includes("?") ? "&" : "?") + "cache=" + Math.random();
+    if (!nocache){
+      url += (url.includes("?") ? "&" : "?") + "cache=" + Math.random();
+    }
     const sfHost = "https://" + this.instanceHostname;
     const fullUrl = new URL(url, sfHost);
     xhr.open(method, fullUrl.toString(), true);

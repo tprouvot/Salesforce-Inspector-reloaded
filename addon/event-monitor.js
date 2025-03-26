@@ -273,7 +273,10 @@ class App extends React.Component {
         // Subscribe to receive messages from the server.
         model.subscription = cometd.subscribe(channelSuffix + model.selectedChannel,
           (message) => {
-            model.events.unshift(JSON.parse(JSON.stringify(message.data)));
+            const eventExists = model.events.some(event => event.event.replayId === message.data?.event?.replayId);
+            if (!eventExists) {
+              model.events.unshift(message.data);
+            }
             model.didUpdate();
           }, (subscribeReply) => {
             if (subscribeReply.successful) {
@@ -526,6 +529,7 @@ class App extends React.Component {
           h("span", {className: "channel-listening"}, model.channelListening),
           h("span", {className: "channel-error"}, model.channelError),
           h("span", {className: "result-status flex-right"},
+            h("span", {className: "conf-value"}, model.events.length + " events"),
             h("div", {className: "button-group"},
               h("button", {disabled: model.events.length == 0, onClick: this.onClearEvents, title: "Clear Events"}, "Clear")
             )

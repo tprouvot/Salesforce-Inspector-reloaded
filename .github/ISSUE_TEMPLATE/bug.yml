@@ -54,4 +54,4 @@ body:
         - Firefox
         - Chrome
         - Microsoft Edge
-        required: true
+      required: true

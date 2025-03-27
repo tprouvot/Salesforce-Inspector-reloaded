@@ -41,9 +41,9 @@ body:
       label: Version
       description: Which version are you using?
       options:
-        - 1.24
-        - 1.25
-        - beta
+        - "1.24"
+        - "1.25"
+        - "beta"
     validations:
       required: true
   - type: dropdown

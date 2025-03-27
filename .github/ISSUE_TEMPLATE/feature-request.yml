@@ -16,6 +16,7 @@ body:
       description: By submitting this request, you agree to perform the following checks.
       options:
         - label: I've searched in the [documentation](https://tprouvot.github.io/Salesforce-Inspector-reloaded/) and did not found anything related to the feature I'm about to request.
+          required: true
         - label: I've read the [release note](https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/releaseCandidate/CHANGES.md) and the one I'm about to create is not already developed.
           required: true
   - type: textarea

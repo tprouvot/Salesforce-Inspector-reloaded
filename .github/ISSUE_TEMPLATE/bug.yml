@@ -44,7 +44,6 @@ body:
         - "1.24"
         - "1.25"
         - "beta"
-    validations:
       required: true
   - type: dropdown
     id: browsers
@@ -55,5 +54,4 @@ body:
         - Firefox
         - Chrome
         - Microsoft Edge
-      validations:
         required: true

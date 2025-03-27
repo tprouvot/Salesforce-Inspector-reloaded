@@ -41,10 +41,10 @@ body:
       label: Version
       description: Which version are you using?
       options:
+        - "1.23
         - "1.24"
         - "1.25"
         - "beta"
-      required: true
   - type: dropdown
     id: browsers
     attributes:
@@ -54,4 +54,3 @@ body:
         - Firefox
         - Chrome
         - Microsoft Edge
-      required: true

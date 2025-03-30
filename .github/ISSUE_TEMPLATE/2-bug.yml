@@ -1,0 +1,58 @@
+name: Bug Report
+description: File a bug report.
+title: "[bug]: "
+labels: ["bug"]
+assignees:
+  - tprouvot
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: By submitting this issue, you agree to perform the following checks.
+      options:
+        - label: I've read the [common issues](https://tprouvot.github.io/Salesforce-Inspector-reloaded/troubleshooting/) and the one I'm about to create is not one of those documented.
+        - label: I've searched in the [existing issues](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues?q=is%3Aissue) and the one I'm about to create is not one of those created.
+        - label: I've read the [release note](https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/releaseCandidate/CHANGES.md) and the one I'm about to create is not already fixed.
+          required: true
+  - type: textarea
+    id: describe
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is (include screenshots).
+    validations:
+      required: true
+  - type: textarea
+    id: tp-reproduce
+    attributes:
+      label: To Reproduce
+      description: Steps to reproduce the behavior.
+    validations:
+      required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: Which version are you using?
+      options:
+        - 1.24
+        - 1.25
+        - beta
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: What browser are you using?
+      multiple: true
+      options:
+        - Firefox
+        - Chrome
+        - Microsoft Edge
+      validations:
+        required: true

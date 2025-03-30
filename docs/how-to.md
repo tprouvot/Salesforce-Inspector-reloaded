@@ -110,12 +110,12 @@ Example:
 
 ## Open links in a new tab
 
-If you want to _always_ open extension's links in a new tab, you can set the `openLinksInNewTab` property to `true`
+If you want to _always_ open extension's links in a new tab, you can enable> **Warning**
 
-<img width="904" alt="Open link in a new tab" src="https://github.com/user-attachments/assets/c2586ae8-49e9-4e3f-8a3f-31b2a3689ea1">
+<img width="925" alt="Open link in a new tab" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/7cd6c1fa-af55-4149-a2fb-73611c6f02f9">
 
-If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
-Example:
+> **Warning**
+   > Enabling this option will prevent you to use `Lightning navigation` which allows faster navigation.
 
 - Data <ins>E</ins>xport : e
 - Data <ins>I</ins>mport : i
@@ -206,6 +206,14 @@ To make your life easier and avoid third party tools or login to ELF website, we
 When quering EventLogFile, add the "LogFile" field in the query and click on the value to download corresponding log.
 
 ![2023-11-15_14-32-44 (1)](https://github.com/Annubis45/Salesforce-Inspector-reloaded/assets/35368290/ba1fcbed-8428-495e-b03b-7816320d95df)
+
+## Delete All Apex Logs
+
+Sometimes you need to purge the ApexLogs from you org, mostly when the maximum size limit is reached.
+You can now delete all apex logs with a simple click. From the popup, select 'Org' tab and click 'Delete All ApexLogs' button.
+
+<img width="278" alt="Delete All Apex Logs" src="https://github.com/user-attachments/assets/7ba32e4d-1fdd-43e7-89cd-9c480c913211" />
+
 
 ## Enable debug logs
 
@@ -310,6 +318,17 @@ You can configure Data Export to convert times to local time. Navigate to Option
 Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.
 
 <img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">
+
+### Default shortcuts
+
+If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
+Example:
+
+- Data <ins>E</ins>xport : e
+- Data <ins>I</ins>mport : i
+- Org <ins>L</ins>imits : l
+- <ins>D</ins>ownload Metadata : d
+- E<ins>x</ins>plore API : x
 
 ## Hide additional columns in query results
 

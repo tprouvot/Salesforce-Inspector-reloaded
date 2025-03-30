@@ -1,3 +1,8 @@
+(function() {
+  let script = document.createElement("script");
+  script.src = chrome.runtime.getURL("inject.js");
+  document.body.appendChild(script);
+})();
 
 // sfdcBody: normal Salesforce page
 // ApexCSIPage: Developer Console
@@ -271,6 +276,9 @@ function initButton(sfHost, inInspector) {
         } else {
           document.querySelectorAll("." + apiNamesClass).forEach(e => e.remove());
         }
+      }
+      if (e.data.lightningNavigate) {
+        document.dispatchEvent(new CustomEvent("lightningNavigate", {detail: e.data.lightningNavigate}));
       }
     });
     rootEl.appendChild(popupEl);

@@ -2,6 +2,14 @@
 
 ## Version 1.26
 
+- `Event Monitor` : fix text selection in PlatformEvent payload, persist replayId in url and deduplicate events received
+- `Download Metadata` page rework
+- Add internal tests for REST Explorer
+- Add `Delete All ApexLogs` Button in popup Org tab [feature 726](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/726) request by [Shubham Bangad](https://github.com/shubhambangad-rubrik)
+- Fix Bulk job results via REST explorer [issue 756](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/756) by [NatanOnteam](https://github.com/NatanOnteam)
+- Fix `Stop` button on `Data Export` page [issue 773](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/773) by Ashoka Poojari
+- Use Lightning Navigation when opening internal Salesforce links from the popup page (contribution by [Joshua Yarmak](https://github.com/toly11))
+- Enable query template multi-line in Data Export [feature 759](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/759) (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
 - Add `Generate package.xml` button from a DeployRequest record (idea by Nicolas ROCHE)
 - Fix sandbox color banner missing in Flow debug [issue 738](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/738) by [Camille Guillory](https://github.com/CamilleGuillory)
 - Fix Upsert Custom Metadata Bug with Metadata Relationship [issue 509](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/509) (contribution by [Joshua Yarmak](https://github.com/toly11))
@@ -12,7 +20,6 @@
 - Add Scale Center links to Shortcut tab search.
 - Add info about PlatformEvent limits and consumptions on `Event Monitor` page [feature 697](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/697)
 - Rename `Add deleted records?` to `Deleted/Archived Records?` in data export [feature 662](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/662) request by [McKay Howell](https://github.com/mckayhowell)
-- Fix `EntityParticle is not supported` error in show-all-data page + add new fields [issue 687](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/687)
 - Add `Donate` button in the popup [discussion 336](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/336)
 - Change user language and locale from the popup [feature 463](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/463)
 - Update user detail post save redirect [feature 671](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/671)

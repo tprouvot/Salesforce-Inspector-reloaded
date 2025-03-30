@@ -68,6 +68,7 @@ class Model {
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
     this.queryInput = null;
+    this.filterColumn = ""; // Default filter column
     this.initialQuery = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
       this.queryAutocompleteHandler({newDescribe: true});
@@ -1098,7 +1099,35 @@ function RecordTable(vm) {
       return "" + cell;
     }
   }
-  let isVisible = (row, filter) => !filter || row.some(cell => cellToString(cell).toLowerCase().includes(filter.toLowerCase()));
+
+  let isVisible = (row, filter) => {
+    // If no filter is applied, show all rows
+    if (!filter) {
+      return true;
+    }
+
+    // Get the selected column index from the header
+    const selectedColumnIndex = header.findIndex(column => column === vm.filterColumn);
+
+    // If no column selected, search all columns
+    if (selectedColumnIndex === -1 || !vm.filterColumn) {
+      return row.some(cell => {
+        if (cell == null) {
+          return false;
+        }
+        return cellToString(cell).toLowerCase().includes(filter.toLowerCase());
+      });
+    }
+
+    // Get the value from the selected column
+    const cellValue = row[selectedColumnIndex];
+
+    // Convert to string and check if it includes the filter text
+    return cellValue
+      ? cellToString(cellValue).toLowerCase().includes(filter.toLowerCase())
+      : false;
+  };
+
   let rt = {
     records: [],
     table: [],
@@ -1548,7 +1577,34 @@ class App extends React.Component {
             this.displayButton("delete")
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
-          h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
+          // Add column selector dropdown
+          h("div", {className: "filter-controls"},
+            h("select", {
+              className: "filter-column-select",
+              value: model.filterColumn,
+              onChange: e => {
+                model.filterColumn = e.target.value;
+                model.setResultsFilter(model.resultsFilter);
+                model.didUpdate();
+              },
+              disabled: !model.exportedData
+            },
+            // Add default option
+            h("option", {value: ""}, "Filter by column..."),
+            // Add options for each column in the result, excluding "_" column
+            model.exportedData?.table[0]
+              ?.filter(column => column !== "_") // Filter out the "_" column
+              .map(column =>
+                h("option", {key: column, value: column}, column)
+              ) || []
+            ),
+            h("input", {
+              placeholder: "Filter Results",
+              type: "search",
+              value: model.resultsFilter,
+              onInput: this.onResultsFilterInput
+            })
+          ),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),

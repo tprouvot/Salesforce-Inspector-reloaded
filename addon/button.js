@@ -203,7 +203,10 @@ function initButton(sfHost, inInspector) {
     [...banner.children].forEach(child => child.style.color = "white !important;");
     if (newBanner){
       let devOpsInfo = banner.querySelector("devops_center-org-info");
+      //add white color to text in the banner
       [...devOpsInfo.children].forEach(child => child.classList.add("slds-text-color--inverse"));
+      //set background color on right icon since it changes to faviconColor when hover the component
+      //banner.querySelector(".slds-button.slds-button_icon-border").style.backgroundColor = "white !important;";
     }
   }
 

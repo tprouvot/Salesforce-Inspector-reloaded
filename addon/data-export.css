@@ -250,6 +250,7 @@ input[type=search] {
   background-position: 10px 7px;
   padding-left: 35px;
   margin-right: 10px;
+  border-radius: 0px 4px 4px 0px;
 }
 
 input[type=save] {
@@ -722,4 +723,71 @@ svg.button-icon {
 .help-text a,
 .help-text a:visited {
   color: #0176d3;
+}
+/* Multi-select dropdown container */
+.custom-multi-select {
+  position: relative;
+  min-width: 14em; 
+}
+
+/* Dropdown header */
+.multi-select-header {
+  padding: 5px 12px;
+  border: 1px solid #DDDBDA;
+  border-radius: 4px 0px 0px 4px;
+  background-color: white;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Dropdown arrow */
+.dropdown-arrow {
+  font-size: 12px;
+  color: #706E6B;
+}
+
+/* Dropdown options container */
+.multi-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 250px;
+  overflow-y: auto;
+  background-color: white;
+  border: 1px solid #DDDBDA;
+  border-radius: 4px;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Dropdown option */
+.multi-select-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.multi-select-option:hover {
+  background-color: #F4F6F9;
+}
+
+.multi-select-option.selected {
+  background-color: #EEF4FF;
+}
+
+/* Checkbox styling */
+.multi-select-option input[type="checkbox"] {
+  margin: 0;
+}
+
+/* Align filter-controls content */
+.filter-controls {
+  display: flex;  
+  align-items: center; /* Align items vertically */ 
 }

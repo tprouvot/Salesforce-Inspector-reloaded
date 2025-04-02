@@ -1052,12 +1052,8 @@ function RecordTable(vm) {
     if (!filter) {
       return true;
     }
-
-    // Get the selected column index from the header
-    const selectedColumnIndex = header.findIndex(column => column === vm.filterColumn);
-
-    // If no column selected, search all columns
-    if (selectedColumnIndex === -1 || !vm.filterColumn) {
+    // If no columns are selected, search all columns
+    if (!vm.filterColumns || vm.filterColumns.length === 0) {
       return row.some(cell => {
         if (cell == null) {
           return false;
@@ -1065,14 +1061,19 @@ function RecordTable(vm) {
         return cellToString(cell).toLowerCase().includes(filter.toLowerCase());
       });
     }
-
-    // Get the value from the selected column
-    const cellValue = row[selectedColumnIndex];
-
-    // Convert to string and check if it includes the filter text
-    return cellValue
-      ? cellToString(cellValue).toLowerCase().includes(filter.toLowerCase())
-      : false;
+  
+    // Search in all selected columns
+    return vm.filterColumns.some(column => {
+      const columnIndex = header.findIndex(col => col === column);
+      if (columnIndex === -1) {
+        return false;
+      }
+  
+      const cellValue = row[columnIndex];
+      return cellValue 
+        ? cellToString(cellValue).toLowerCase().includes(filter.toLowerCase())
+        : false;
+    });
   };
 
   let rt = {
@@ -1166,7 +1167,8 @@ class App extends React.Component {
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
-    this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption"))};
+    this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption")) ,isDropdownOpen: false, };// Tracks whether the dropdown is open
+    this.filterColumns = []; // Initialize as an empty array
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1526,27 +1528,44 @@ class App extends React.Component {
           ),
           // Add column selector dropdown
           h("div", {className: "filter-controls"},
-            h("select", {
-              className: "filter-column-select",
-              value: model.filterColumn,
-              onChange: e => {
-                model.filterColumn = e.target.value;
-                model.setResultsFilter(model.resultsFilter);
-                model.didUpdate();
+            h("div", {className: "custom-multi-select"},
+              h("div", {
+                className: "multi-select-header",
+                onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen}),
               },
-              disabled: !model.exportedData
-            },
-            // Add default option
-            h("option", {value: ""}, "Filter by column..."),
-            // Add options for each column in the result, excluding "_" column
-            model.exportedData?.table[0]
-              ?.filter(column => column !== "_") // Filter out the "_" column
-              .map(column =>
-                h("option", {key: column, value: column}, column)
-              ) || []
+                model.filterColumns?.length > 0
+                  ? `Selected (${model.filterColumns.length})`
+                  : "Filter by columns...",
+                h("span", {className: "dropdown-arrow"}, this.state.isDropdownOpen ? "▲" : "▼")
+              ),
+              this.state.isDropdownOpen && h("div", {className: "multi-select-dropdown"},
+                model.exportedData?.table[0]
+                  ?.filter(column => column !== "_") // Exclude "_" column
+                  .map(column =>
+                    h("div", {
+                      key: column,
+                      className: `multi-select-option ${model.filterColumns?.includes(column) ? "selected" : ""}`,
+                      onClick: () => {
+                        if (model.filterColumns?.includes(column)) {
+                          model.filterColumns = model.filterColumns.filter(c => c !== column);
+                        } else {
+                          model.filterColumns = [...(model.filterColumns || []), column];
+                        }
+                        model.setResultsFilter(model.resultsFilter);
+                        this.setState({}); // Trigger re-render
+                      }
+                    }, h("input", {
+                      type: "checkbox",
+                      checked: model.filterColumns?.includes(column) || false, // Ensure `checked` is always a boolean
+                      readOnly: true
+                    }), column)
+                  )
+              )
             ),
             h("input", {
-              placeholder: "Filter Results",
+              placeholder: model.filterColumns?.length > 0 
+                ? `Filter by selected columns (${model.filterColumns.length})` 
+                : "Filter all columns",
               type: "search",
               value: model.resultsFilter,
               onInput: this.onResultsFilterInput

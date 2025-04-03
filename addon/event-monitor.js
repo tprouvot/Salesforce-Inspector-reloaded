@@ -1,5 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, getLinkTarget} from "./inspector.js";
+import {sfConn, apiVersion, getLinkTarget} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
 import {copyToClipboard} from "./data-load.js";
@@ -19,6 +20,7 @@ class Model {
     this.sfLink = "https://" + this.sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
+    this.showMetrics = false;
     this.showMetrics = false;
     this.userInfo = "...";
     this.events = [];
@@ -216,6 +218,7 @@ class App extends React.Component {
   }
 
   onChannelSelection(e) {
+    let {model} = this.props;
     let {model} = this.props;
     model.selectedChannel = e.target.value;
     this.persistParamInUrl("channel", model.selectedChannel);

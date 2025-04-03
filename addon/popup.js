@@ -1,5 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
+import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
@@ -14,6 +15,7 @@ if (typeof browser === "undefined") {
 {
   parent.postMessage({
     insextInitRequest: true,
+    iFrameLocalStorage: getFilteredLocalStorage()
     iFrameLocalStorage: getFilteredLocalStorage()
   }, "*");
   addEventListener("message", function initResponseHandler(e) {
@@ -33,11 +35,34 @@ if (typeof browser === "undefined") {
       } else {
         parent.postMessage({command: request.command}, "*");
       }
+      if (request.command === "open-popup"){
+        parent.postMessage({insextOpenPopup: true}, "*");
+      } else {
+        parent.postMessage({command: request.command}, "*");
+      }
     }
   }
   );
 }
 
+function getFilteredLocalStorage(){
+  //for Salesforce pages
+  let host = parent[0].document.referrer;
+  if (host.length == 0){
+    //for extension pages
+    host = new URLSearchParams(parent.location.search).get("host");
+  } else {
+    host = host.split("https://")[1];
+  }
+  let domainStart = host?.split(".")[0];
+  const storedData = {...localStorage};
+  const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition", "prodBannerText"];
+  const filteredStorage = Object.fromEntries(
+    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith("access_token"))
+  );
+  sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
+  return filteredStorage;
+}
 function getFilteredLocalStorage(){
   //for Salesforce pages
   let host = parent[0].document.referrer;
@@ -1594,6 +1619,10 @@ class UserDetails extends React.PureComponent {
 
   toggleMenu(){
     this.refs.buttonMenu.classList.toggle("slds-is-open");
+  }
+
+  toggleLogMenu(){
+    this.refs.logButtonMenu.classList.toggle("slds-is-open");
   }
 
   toggleLogMenu(){

@@ -11,6 +11,8 @@
 // flowContainer: Flow Debugger
 const visualForceDomains = ["visualforce.com", "vf.force.com"];
 if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #studioBody, #flowContainer") || visualForceDomains.filter(host => location.host.endsWith(host)).length > 0) {
+const visualForceDomains = ["visualforce.com", "vf.force.com"];
+if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #studioBody, #flowContainer") || visualForceDomains.filter(host => location.host.endsWith(host)).length > 0) {
   // We are in a Salesforce org
   chrome.runtime.sendMessage({message: "getSfHost", url: location.href}, sfHost => {
     if (sfHost) {

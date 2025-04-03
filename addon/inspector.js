@@ -14,6 +14,7 @@ export function nullToEmptyString(value) {
   return (value == null) ? "" : value;
 }
 const clientId = "Salesforce Inspector Reloaded";
+const clientId = "Salesforce Inspector Reloaded";
 
 export let sfConn = {
 

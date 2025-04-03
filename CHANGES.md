@@ -40,6 +40,7 @@
 
 ## Version 1.25
 
+- Security improvements thanks to [Rikaard Hosein](https://github.com/rikaardhosein) [fix 661](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/661)
 - Add metadata title on shortcut search [feature 639](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/639) request by [Tal-Fr](https://github.com/Tal-Fr)
 - Fix `Use Favicon Color` option which was not working key [issue 634](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/634) raised by [Gary Woodhouse](https://github.com/Garywoo)
 - Add `Clear` button in Event Monitor and REST Explorer
@@ -63,7 +64,8 @@
 
 ## Version 1.24
 
-- Add new `REST Explore` page to call Salesforce APIs from the extension
+- Fix issues [543](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/543), [538](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/538), [545](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/545) & [546](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/545)
+- Add new REST Explore page to call Salesforce APIs from the extension
 - Add Global Search in Shortcut tab when no result was found
 - Enable users to configure custom headers on Data Import (AssignmentRuleHeader, DuplicateRuleHeader, OwnerChangeOptions ...) [feature 478](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/478)
 - Fix CustomSetting links in popup [issue 473](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/473) (contribution by [Boris Castellani](https://github.com/castellani))
@@ -76,7 +78,7 @@
 - Add option to exclude formula fields from data export autocomplete [feature 415](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/415)
 - Removes whitespace from both ends in user search [feature 410](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/410) (contribution by [César Blanco](https://github.com/cesarblancg))
 - Add setup menu items `Trusted URLs` and `Trusted URL and Browser Policy Violations` to shortcut links
-- Ability to quit popup with escape button [feature 378](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/378) (contribution by [Gerald Gramier](https://github.com/gramier))
+- Ability to quit popup with escape button [feature 378](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/378) (contribution by [Gerald Ramier](https://github.com/gramier))
 - Add option to customize org favicon [feature 180](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/180)
 - Add tooltip to options [feature 399](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/399) (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Fixed popup button disappearance at 100%, also changed horizontal orientation to start at left [issue 404](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/404) (contribution by [Nathan Shulman](https://github.com/nshulman))
@@ -85,13 +87,13 @@
 
 ## Version 1.23
 
-- Add new [setup pages](https://help.salesforce.com/s/articleView?id=release-notes.rn_general_setup_domain_prepare.htm&release=246&type=5) domain [feature 389](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/389) (by [akalatksy](https://github.com/akalatksy))
+- Add new [setup pages](https://help.salesforce.com/s/articleView?id=release-notes.rn_general_setup_domain_prepare.htm&release=246&type=5) domain [feature 389](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/389) (request by [akalatksy](https://github.com/akalatksy))
 - Add "View summary" link on User tab [feature 386](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/386)
 - Add option to hide `Delete Records` button from Data Export page
 - Fix popup not closing in inspect page [issue 159](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/159) (contribution by [Luca Bassani](https://github.com/baslu93))
 - On inspect page, when double clicking on a picklist field, iterate through available values [feature 366](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/366)
 - Integrate Experience Cloud builder link to shortcut search in popup [feature 365](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/365)
-- Add `Flow Versions` button in popup when recordId is a flow [feature 362](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/362)
+- Add `Flow Versions` button in popup when recordId is a flow [feature 362](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/362) (feature request by [Rebbe Pod](https://github.com/RebbePod))
 - Format relations as expected in import process [feature 26](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/26) (contribution by [Olivier Dufour](https://github.com/dufoli))
 - Ability to choose header theme [feature 294](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/294)
 - Add query template customization in Option page [feature 349](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/349)

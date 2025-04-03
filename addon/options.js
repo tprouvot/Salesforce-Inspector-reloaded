@@ -3,6 +3,7 @@ import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString} from "./inspec
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
+import Toast from "./components/Toast.js";
 
 class Model {
 
@@ -85,6 +86,17 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
           {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab", tooltip: "Enabling this option will prevent Lightning Navigation (faster loading) to be used"}},
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Searchable metadata from Shortcut tab",
+              key: "metadataShortcutSearchOptions",
+              checkboxes: [
+                {label: "Flows", name: "flows", checked: true},
+                {label: "Profiles", name: "profiles", checked: true},
+                {label: "PermissionSets", name: "permissionSets", checked: true},
+                {label: "Communities", name: "networks", checked: true},
+                {label: "Apex Classes", name: "classes", checked: false}
+              ]}
+          },
           {option: MultiCheckboxButtonGroup,
             props: {title: "Searchable metadata from Shortcut tab",
               key: "metadataShortcutSearchOptions",
@@ -845,7 +857,9 @@ class App extends React.Component {
 
   exportOptions() {
     const localStorageData = {...localStorage};
+    const localStorageData = {...localStorage};
     const jsonData = JSON.stringify(localStorageData, null, 2);
+    const blob = new Blob([jsonData], {type: "application/json"});
     const blob = new Blob([jsonData], {type: "application/json"});
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -873,6 +887,13 @@ class App extends React.Component {
         for (const [key, value] of Object.entries(importedData)) {
           localStorage.setItem(key, value);
         }
+        this.setState({
+          showToast: true,
+          toastMessage: "Options Imported Successfully!",
+          toastVariant: "success",
+          toastTitle: "Success"
+        });
+        setTimeout(this.hideToast, 3000);
         this.setState({
           showToast: true,
           toastMessage: "Options Imported Successfully!",

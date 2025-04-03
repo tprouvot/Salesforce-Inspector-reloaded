@@ -1527,24 +1527,31 @@ class App extends React.Component {
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
           // Add column selector dropdown
+          
           h("div", {className: "filter-controls"},
-            h("div", {className: "custom-multi-select"},
-              h("div", {
-                className: "multi-select-header",
-                onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen}),
-              },
-                model.filterColumns?.length > 0
-                  ? `Selected (${model.filterColumns.length})`
-                  : "Filter by columns...",
-                h("span", {className: "dropdown-arrow"}, this.state.isDropdownOpen ? "▲" : "▼")
+            h("div", {className: "unified-search-input"},
+              h("input", {
+                className: "filter-input",
+                placeholder: model.filterColumns?.length > 0 
+                  ? `Filter by selected columns (${model.filterColumns.length})` 
+                  : "Filter all columns",
+                type: "search",
+                value: model.resultsFilter,
+                onInput: this.onResultsFilterInput
+              }),
+              h("span", {
+                className: "dropdown-arrow",
+                onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})
+              }, 
+                this.state.isDropdownOpen ? "▲" : "▼"
               ),
-              this.state.isDropdownOpen && h("div", {className: "multi-select-dropdown"},
+              this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
                 model.exportedData?.table[0]
-                  ?.filter(column => column !== "_") // Exclude "_" column
+                  ?.filter(column => column !== "_")
                   .map(column =>
                     h("div", {
                       key: column,
-                      className: `multi-select-option ${model.filterColumns?.includes(column) ? "selected" : ""}`,
+                      className: `dropdown-item ${model.filterColumns?.includes(column) ? "selected" : ""}`,
                       onClick: () => {
                         if (model.filterColumns?.includes(column)) {
                           model.filterColumns = model.filterColumns.filter(c => c !== column);
@@ -1554,23 +1561,17 @@ class App extends React.Component {
                         model.setResultsFilter(model.resultsFilter);
                         this.setState({}); // Trigger re-render
                       }
-                    }, h("input", {
+                    }, 
+                    h("input", {
                       type: "checkbox",
-                      checked: model.filterColumns?.includes(column) || false, // Ensure `checked` is always a boolean
+                      checked: model.filterColumns?.includes(column) || false,
                       readOnly: true
-                    }), column)
+                    }), 
+                    column
                   )
               )
-            ),
-            h("input", {
-              placeholder: model.filterColumns?.length > 0 
-                ? `Filter by selected columns (${model.filterColumns.length})` 
-                : "Filter all columns",
-              type: "search",
-              value: model.resultsFilter,
-              onInput: this.onResultsFilterInput
-            })
-          ),
+            )
+          )),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),

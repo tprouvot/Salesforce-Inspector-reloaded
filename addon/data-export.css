@@ -724,70 +724,56 @@ svg.button-icon {
 .help-text a:visited {
   color: #0176d3;
 }
-/* Multi-select dropdown container */
-.custom-multi-select {
-  position: relative;
-  min-width: 14em; 
-}
 
-/* Dropdown header */
-.multi-select-header {
-  padding: 5px 12px;
-  border: 1px solid #DDDBDA;
-  border-radius: 4px 0px 0px 4px;
-  background-color: white;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
+.unified-search-input {
+  position: relative; 
   align-items: center;
+  width: 100%;
+  border: 1px solid #DDDBDA;
+  border-radius: 4px;
 }
 
-/* Dropdown arrow */
-.dropdown-arrow {
+.filter-input {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  outline: none;
   font-size: 12px;
-  color: #706E6B;
+  width: 10rem !important;
 }
 
-/* Dropdown options container */
-.multi-select-dropdown {
+.dropdown-arrow {
+  padding: 8px;
+  cursor: pointer;
+  color: #706E6B;
+  font-size: 12px;
+  user-select: none;
+  background-color: white;
+}
+
+.dropdown-menu {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
   max-height: 250px;
-  overflow-y: auto;
+  overflow: auto;
   background-color: white;
   border: 1px solid #DDDBDA;
   border-radius: 4px;
   z-index: 1000;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 2px;
 }
-
-/* Dropdown option */
-.multi-select-option {
-  padding: 8px 12px;
+.unified-search-input input[type=search]{ 
+  border-radius: 4px 0px 0px 4px !important; 
+  margin-right: 0 !important; 
+}
+.dropdown-item { 
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: background-color 0.2s ease;
 }
 
-.multi-select-option:hover {
-  background-color: #F4F6F9;
-}
-
-.multi-select-option.selected {
-  background-color: #EEF4FF;
-}
-
-/* Checkbox styling */
-.multi-select-option input[type="checkbox"] {
-  margin: 0;
-}
-
-/* Align filter-controls content */
-.filter-controls {
-  display: flex;  
-  align-items: center; /* Align items vertically */ 
-}
+ 

@@ -3,7 +3,6 @@ import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString} from "./inspec
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
-import Toast from "./components/Toast.js";
 
 class Model {
 
@@ -857,9 +856,7 @@ class App extends React.Component {
 
   exportOptions() {
     const localStorageData = {...localStorage};
-    const localStorageData = {...localStorage};
     const jsonData = JSON.stringify(localStorageData, null, 2);
-    const blob = new Blob([jsonData], {type: "application/json"});
     const blob = new Blob([jsonData], {type: "application/json"});
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -887,13 +884,6 @@ class App extends React.Component {
         for (const [key, value] of Object.entries(importedData)) {
           localStorage.setItem(key, value);
         }
-        this.setState({
-          showToast: true,
-          toastMessage: "Options Imported Successfully!",
-          toastVariant: "success",
-          toastTitle: "Success"
-        });
-        setTimeout(this.hideToast, 3000);
         this.setState({
           showToast: true,
           toastMessage: "Options Imported Successfully!",

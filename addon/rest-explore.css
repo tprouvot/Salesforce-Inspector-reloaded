@@ -69,7 +69,7 @@ body {
 
 #user-info {
   background: #f7f9fb;
-  height: 48px;
+  height: auto;
   display: flex;
   align-items: center;
   padding: 0 12px;
@@ -176,7 +176,7 @@ textarea[hidden] {
   padding: 8px 12px;
   border-radius: 5px;
   border: 1px solid #DDDBDA;
-  margin: 12px 12px 0 12px;
+  margin: 0 12px 0 12px;
 }
 #result-area.area{
   border:none;

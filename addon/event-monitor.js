@@ -7,7 +7,8 @@ import {copyToClipboard} from "./data-load.js";
 const channelSuffix = "/event/";
 const channelTypes = [
   {value: "standardPlatformEvent", label: "Standard Platform Event"},
-  {value: "platformEvent", label: "Custom Platform Event"}
+  {value: "platformEvent", label: "Custom Platform Event"},
+  {value: "customChannel", label: "Custom Channel"}
 ];
 
 class Model {
@@ -27,6 +28,7 @@ class Model {
     this.channels = [];
     this.stdPlatformEvent = [];
     this.customPlatformEvent = [];
+    this.customChannel = [];
     this.selectedChannel = "";
     this.channelListening = "";
     this.channelError = "";
@@ -154,21 +156,22 @@ class App extends React.Component {
                     + " AND QualifiedApiName LIKE '%Event' AND (NOT QualifiedApiName LIKE '%ChangeEvent')"
                     + " ORDER BY Label ASC LIMIT 200";
       } else if (channelType == "platformEvent") {
-        query = "SELECT QualifiedApiName, Label FROM EntityDefinition"
-                    + " WHERE isCustomizable = TRUE"
-                    + " AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
+        query = "SELECT QualifiedApiName, Label FROM EntityDefinition WHERE isCustomizable = TRUE AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
+      } else if (channelType == "customChannel"){
+        query = "SELECT FullName, MasterLabel FROM PlatformEventChannel ORDER BY DeveloperName";
       }
       await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
         .then(result => {
           result.records.forEach((channel) => {
+            let name = channel.QualifiedApiName || channel.FullName;
             channels.push({
-              name: channel.QualifiedApiName,
-              label: channel.Label + " (" + channel.QualifiedApiName + ")"
+              name,
+              label: channel.Label || channel.MasterLabel + " (" + name + ")"
             });
           });
         })
         .catch(err => {
-          console.error("An error occured fetching Event Channels of type " + channelType + ": ", err.message);
+          console.error("An error occurred fetching Event Channels of type " + channelType + ": ", err.message);
         });
       sessionStorage.setItem(sfHost + "_" + channelType, JSON.stringify(channels));
     }
@@ -177,24 +180,21 @@ class App extends React.Component {
 
   async getEventChannels(){
     let {model} = this.props;
-    switch (model.selectedChannelType){
-      case "standardPlatformEvent":
-        if (!model.stdPlatformEvent.length){
-          model.stdPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
+
+    if (model.selectedChannelType === "standardPlatformEvent") {
+      if (!model.stdPlatformEvent?.length) {
+        model.stdPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
+      }
+      model.channels = model.stdPlatformEvent;
+    } else if (model.selectedChannelType === "platformEvent" || model.selectedChannelType === "customChannel") {
+      let key = model.selectedChannelType === "platformEvent" ? "customPlatformEvent" : "customChannel";
+      if (!model.customPlatformEvent?.length) {
+        model[key] = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
+        if (!model[key]?.length) {
+          model[key].push({name: null, label: "! No " + model.selectedChannelType + " found !"});
         }
-        model.channels = model.stdPlatformEvent;
-        break;
-      case "platformEvent":
-        if (!model.customPlatformEvent.length){
-          model.customPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
-          if (!model.customPlatformEvent.length){
-            model.customPlatformEvent.push({
-              name: null,
-              label: "! No custom platform event found !"
-            });
-          }
-        }
-        model.channels = model.customPlatformEvent;
+      }
+      model.channels = model[key];
     }
     if (model.args.has("channel")) {
       model.selectedChannel = model.args.get("channel");

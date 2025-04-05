@@ -38,6 +38,7 @@
 - Fix LWC Debug mode force page refresh before User update [issue 718](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/718) (contribution by [Paul Kalinin](https://github.com/Paul-Kalynyn))
 - Fix `event-monitor` Error on Edge [issue 716](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/716) (contribution by [Paul Kalinin](https://github.com/Paul-Kalynyn))
 - Grey out columns that were not imported during data import [feature 507](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/507) request by [Wintermute1974](https://github.com/Wintermute1974) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
+- Fix 'Query Record' not persisting the state of 'Tooling Api' setting [issue 507](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/268)
 
 ## Version 1.25
 

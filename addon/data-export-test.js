@@ -407,7 +407,7 @@ export async function dataExportTest(test) {
   await waitForSpinner();
 
   assertEquals(false, vm.isWorking);
-  assertEquals("No data exported. 4 records.", vm.exportStatus);
+  assertEquals("No data exported.", vm.exportStatus);
   assertEquals([], vm.exportedData.table);
   assertEquals([], vm.exportedData.rowVisibilities);
   assertEquals([true], vm.exportedData.colVisibilities);

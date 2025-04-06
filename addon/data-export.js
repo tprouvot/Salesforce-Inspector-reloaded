@@ -357,8 +357,9 @@ class Model {
       .catch(err => {
         console.error("spinFor", err);
         this.isWorking = false;
-        this.exportStatus = "Error processing queries";
+        this.exportStatus = "Error";
         this.exportError = err.message;
+        this.exportedData = null;
       })
       .then(() => {
         this.spinnerCount--;
@@ -964,11 +965,15 @@ class Model {
               exportedData.addToTable(data[fieldsResponses[exportedData.queryMethod]]);
             }
 
-            let recs = exportedData.records.length;
-            totalRecords = recs;
+            let totalRecords = exportedData.records.length;  
 
+            // Update status to show chunk progress  
+            vm.exportStatus = totalRecords > 0
+            ? `Exported ${totalRecords} records`
+            : `No data exported.`
+            
             // Update status to show chunk progress
-            vm.exportStatus = `Total records: ${totalRecords}`;
+            //vm.exportStatus = `Total records: ${totalRecords}`;
 
             // Handle paginated results
             if (!data.done && isSoql) {
@@ -986,7 +991,6 @@ class Model {
             if (currentChunk === queries.length) {
               vm.queryHistory.add({query: vm.queryInput.value, useToolingApi: exportedData.isTooling});
             }
-
             vm.isWorking = false;
             vm.exportError = null;
             vm.exportedData = exportedData;
@@ -1009,7 +1013,7 @@ class Model {
 
     processQueries().catch(error => {
       console.error("Error processing queries:", error);
-      vm.exportStatus = "Error processing queries";
+      vm.exportStatus = "Error";
       vm.exportError = error.message;
       vm.isWorking = false;
     });
@@ -1029,7 +1033,9 @@ class Model {
     }
   }
   stopExport() {
-    this.exportProgress.abort();
+    if (this.exportProgress && typeof this.exportProgress.abort === 'function') {
+      this.exportProgress.abort();
+    }
   }
   doQueryPlan(){
     let vm = this; // eslint-disable-line consistent-this
@@ -1208,9 +1214,14 @@ class App extends React.Component {
     model.prefHideRelations = !model.prefHideRelations;
     this.onExport();
   }
+  // Modify the onSelectHistoryEntry method
   onSelectHistoryEntry(e) {
     let {model} = this.props;
-    model.selectedHistoryEntry = JSON.parse(e.target.value);
+    const value = e.target.value;
+    // Only parse if value exists and isn't "undefined"
+    model.selectedHistoryEntry = value && value !== "undefined" 
+      ? JSON.parse(value) 
+      : null;
     model.selectHistoryEntry();
     model.didUpdate();
   }
@@ -1229,9 +1240,14 @@ class App extends React.Component {
       model.didUpdate();
     }
   }
+  // Modify the onSelectSavedEntry method
   onSelectSavedEntry(e) {
     let {model} = this.props;
-    model.selectedSavedEntry = JSON.parse(e.target.value);
+    const value = e.target.value;
+    // Only parse if value exists and isn't "undefined"
+    model.selectedSavedEntry = value && value !== "undefined" 
+      ? JSON.parse(value) 
+      : null;
     model.selectSavedEntry();
     model.didUpdate();
   }
@@ -1461,11 +1477,22 @@ class App extends React.Component {
               model.queryTemplates.map(q => h("option", {key: q, value: q}, q))
             ),
             h("div", {className: "button-group"},
-              h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "Query History"),
-                model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+              // Update the select elements to handle null values better
+              h("select", {
+                value: JSON.stringify(model.selectedHistoryEntry) || "", // Provide empty string as fallback
+                onChange: this.onSelectHistoryEntry, 
+                className: "query-history"
+              },
+                h("option", {value: ""}, "Query History"),
+                model.queryHistory.list.map(q => 
+                  h("option", {
+                    key: JSON.stringify(q), 
+                    value: JSON.stringify(q)
+                  }, 
+                  q.query.substring(0, 300))
+                )
               ),
-              h("button", {onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
+            h("button", {onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
             ),
             h("div", {className: "pop-menu saveOptions", hidden: !model.expandSavedOptions},
               h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query"),

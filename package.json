@@ -11,7 +11,7 @@
     "@eslint/compat": "^1.1.1",
     "@eslint/js": "^9.9.1",
     "eslint": "^9.12.0",
-    "eslint-plugin-react": "^7.35.0",
+    "eslint-plugin-react": "^7.37.5",
     "fs-extra": "11.2.0",
     "globals": "^15.9.0",
     "replace-in-file": "8.1.0",

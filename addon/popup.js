@@ -704,10 +704,10 @@ class AllDataBoxUsers extends React.PureComponent {
       return [];
     }
 
-    //TODO: Better search query. SOSL?
+    const escapedUserQuery = userQuery.replace(/'/g, "\\'");
     const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
     const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const queryFrom = "from User where (username like '%" + userQuery + "%' or name like '%" + userQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
+    const queryFrom = "from User where (username like '%" + escapedUserQuery + "%' or name like '%" + escapedUserQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
     const compositeQuery = {
       "compositeRequest": [
         {

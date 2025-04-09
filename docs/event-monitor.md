@@ -1,7 +1,7 @@
 # Event Monitor Page
 
 ## Overview
-The Event Monitor page allows users to subscribe to and display Salesforce Platform Events in real-time. It supports both Standard and Custom Platform Events. The page uses the CometD library to connect to Salesforce and stream events directly to the user's browser.
+The Event Monitor page allows users to subscribe to and display Salesforce Platform Events in real-time. It supports Custom Channel, Standard and Custom Platform Events. The page uses the CometD library to connect to Salesforce and stream events directly to the user's browser.
 
 ![image](https://github.com/user-attachments/assets/e24e10cf-2b6c-4d04-ad6e-3377c833ef1d)
 
@@ -32,7 +32,7 @@ If you are facing the error: No such column 'EventName' on entity 'PlatformEvent
 - Always consider the implications of replaying a large number of events, especially in a production setting.
 
 ## Usage Instructions
-1. **Select Channel Type:** Choose between Standard or Custom Platform Events.
+1. **Select Channel Type:** Choose between Custom Channel, Standard or Custom Platform Events.
 2. **Select Channel:** Pick the specific event channel you want to monitor.
 3. **Set Replay From (Optional):** Define the starting point for replaying events. Use the default value `-1` to receive only new events.
 4. **Subscribe:** Click the "Subscribe" button to start monitoring the selected channel.

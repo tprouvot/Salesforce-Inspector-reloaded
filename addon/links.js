@@ -2,6 +2,7 @@
 export let setupLinks = [
   //Setup
   {label: "Setup Home", link: "/lightning/setup/SetupOneHome/home", section: "Setup", prod: false},
+  {label: "Salesforce Foundations", link: "/lightning/setup/C360ProvisioningSetup/home", section: "Setup", prod: false},
   {label: "Service Setup Assistant", link: "/lightning/setup/ServiceHome/home", section: "Setup", prod: false},
   {label: "Service Setup", link: "/lightning/setup/SetupOneHome/home", section: "Setup", prod: false},
   {label: "Multi-Factor Authentication Assistant", link: "/lightning/setup/MfaAssistant/home", section: "Setup", prod: false},
@@ -338,6 +339,7 @@ export let setupLinks = [
   {label: "Single Sign-On Settings", link: "/lightning/setup/SingleSignOn/home", section: "Settings > Identity", prod: false},
   //Settings > Security
   {label: "Account Owner Report", link: "/lightning/setup/SecurityAccountOwner/home", section: "Settings > Security", prod: false},
+  {label: "API Access Control", link: "/lightning/setup/ApiAccessControl/home", section: "Settings > Security", prod: false},
   {label: "Activations", link: "/lightning/setup/ActivatedIpAddressAndClientBrowsersPage/home", section: "Settings > Security", prod: false},
   {label: "CORS", link: "/lightning/setup/CorsWhitelistEntries/home", section: "Settings > Security", prod: false},
   {label: "CSP Trusted Sites", link: "/lightning/setup/SecurityCspTrustedSite/home", section: "Settings > Security", prod: false},

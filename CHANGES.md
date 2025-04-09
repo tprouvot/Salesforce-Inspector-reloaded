@@ -2,6 +2,19 @@
 
 ## Version 1.26
 
+- Fix ' character search in the popup Users tab [issue 799](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/799) by [Josue Ramirez](https://github.com/jramirez6964)
+- Support Custom Channels in Event Monitor [feature 797](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/797) (idea by [Mehdi Cherfaoui](https://github.com/mehdicherf))
+- `Event Monitor` : fix text selection in PlatformEvent payload, persist replayId in url and deduplicate events received
+- `Download Metadata` page rework
+- Add internal tests for REST Explorer
+- Add `Delete All ApexLogs` Button in popup Org tab [feature 726](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/726) request by [Shubham Bangad](https://github.com/shubhambangad-rubrik)
+- Fix Bulk job results via REST explorer [issue 756](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/756) by [NatanOnteam](https://github.com/NatanOnteam)
+- Fix `Stop` button on `Data Export` page [issue 773](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/773) by Ashoka Poojari
+- Use Lightning Navigation when opening internal Salesforce links from the popup page (contribution by [Joshua Yarmak](https://github.com/toly11))
+- Enable query template multi-line in Data Export [feature 759](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/759) (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
+- Add `Generate package.xml` button from a DeployRequest record (idea by Nicolas ROCHE)
+- Fix sandbox color banner missing in Flow debug [issue 738](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/738) by [Camille Guillory](https://github.com/CamilleGuillory)
+- Fix Upsert Custom Metadata Bug with Metadata Relationship [issue 509](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/509) (contribution by [Joshua Yarmak](https://github.com/toly11))
 - Guess file format on paste in data import [feature 501](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/501) request by [Adam Štěpánek](https://github.com/Damecek)
 - Add chrome extension shortcuts for Setup, Home Page and Dev Console [feature 707](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/707) request by [Danny Gelfenbaum](https://github.com/DannyGelf)
 - Add button on User tab to enable LWC debug mode from the popup [feature 696](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/696) request by [b-r-j](https://github.com/b-r-j)
@@ -9,11 +22,11 @@
 - Add Scale Center links to Shortcut tab search.
 - Add info about PlatformEvent limits and consumptions on `Event Monitor` page [feature 697](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/697)
 - Rename `Add deleted records?` to `Deleted/Archived Records?` in data export [feature 662](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/662) request by [McKay Howell](https://github.com/mckayhowell)
-- Fix `EntityParticle is not supported` error in show-all-data page + add new fields [issue 687](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/687)
 - Add `Donate` button in the popup [discussion 336](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/336)
 - Change user language and locale from the popup [feature 463](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/463)
 - Update user detail post save redirect [feature 671](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/671)
 - Add new domain for Visualforce pages cf [Ensure Access to Your Visualforce Pages in Summer ’24 and Winter ’25](https://help.salesforce.com/s/articleView?id=001406148&type=1)
+- Security improvements thanks to [Rikaard Hosein](https://github.com/rikaardhosein) [fix 661](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/661)
 - Add option for `Field Creator` to allow users to choose between PascalCase and Underscores for new field API names. [feature 655](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/655) (contribution by [Steve Quirion](https://github.com/sqone2))
 - Customize Data Export shortcuts (execute query and insert all fields name in query) [feature 653](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/653) in `chrome://extensions/shortcuts`
 - Add [clientId](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/headers_calloptions.htm) header param to identify the extension in EventLogFile [feature 504](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/504)
@@ -24,6 +37,8 @@
 - Add new options to hide buttons in popup and data export [feature 618](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/618)
 - Added an option for Data Exporter to use local browser time [feature 527](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/527) (contribution by [David Moruzzi](https://github.com/dmoruzzi))
 - Add `calculated` to type column [feature 680](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/680) (contribution by [Lars Lipman](https://github.com/lrlip))
+- Fix LWC Debug mode force page refresh before User update [issue 718](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/718) (contribution by [Paul Kalinin](https://github.com/Paul-Kalynyn))
+- Fix `event-monitor` Error on Edge [issue 716](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/716) (contribution by [Paul Kalinin](https://github.com/Paul-Kalynyn))
 
 ## Version 1.25
 
@@ -108,7 +123,7 @@
 - Add info banner when extension is updated and convert "Generate token" button to alert. [feature 51](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/51) (contribution by [Nathan Shulman](https://github.com/nshulman))
 - Add "Hide fields API names" when users clicked "Show fields API names"
 - Add "Enable Logs" button in the User tab [feature 245](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/245) (contribution by [Antoine Leleu](https://github.com/AntoineLeleu-Salesforce))
-- Add default connected app setting and improve access token renew flow. Note: Due to the simplified redirect url, this is a BREAKING CHANGE for users who have created their own connected app: those users MUST update their connected app Callback URL to the new value before they can use this version of the extension (contribution by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
+- Add default connected app setting and improve access token renew flow. Note: Due to the simplified redirect url, this is a BREAKING CHANGE for users who have created their own connected app: those users MUST update their connected app Callback URL to the new value before they can use this version of the extension (contribution by [Mehdi Cherfaoui](https://github.com/mehdicherf))
 - Allow users to define REST callout headers on showAllData page. The need is to prevent the auto assignation of Accounts, Cases and Leads. [feature 198](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/198) (issue by [SfdxDieter](https://github.com/SfdxDieter))
 - Fix flow scrollability] checkbox on non dev environments [issue 258](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/258) (by [Samuel Krissi](https://github.com/samuelkrissi))
 - Fix 'Record Type not displayed' in popup [issue 255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/255)
@@ -133,7 +148,7 @@
 - Add "Download" option on event log files (contribution by [Annubis45](https://github.com/Annubis45))
 - Fix 'Custom Object Name Links Don't Work' in popup [issue 218](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/218) (contribution by [Jeferson Chaves](https://github.com/JefersonChaves))
 - Show field API Name on Record Page [PR202](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/202) (contribution by [Mouloud Habchi](https://github.com/MD931))
-- Add support for domains protected by Microsoft Defender for Cloud Apps [issue 234](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/234) (contribution by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
+- Add support for domains protected by Microsoft Defender for Cloud Apps [issue 234](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/234) (contribution by [Mehdi Cherfaoui](https://github.com/mehdicherf))
 
 ## Version 1.20.1
 
@@ -166,7 +181,7 @@
 - Fix hardcoded browser in Generate Token url [issue 137](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137) (issue by [kkorynta](https://github.com/kkorynta))
 - Add `Create New Flow`, `Create New Custom Object`, `Create New Permission Set`, `Create New Custom Permission` and `Recycle Bin` shortcuts
 - Update pop-up release note link to github pages
-- Detect SObject on list view page [feature 121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/121) (idea by [Mehdi Cherfaoui](https://github.com/mehdisfdc))
+- Detect SObject on list view page [feature 121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/121) (idea by [Mehdi Cherfaoui](https://github.com/mehdicherf))
 - Automate test setup manual step of contact to multiple accounts [Aidan Majewski](https://github.com/aimaj)
 - In Data export, set input focus in SOQL query text area. [feature 183](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/183) (contribution by [Sarath Addanki](https://github.com/asknet))
 

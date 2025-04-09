@@ -3,6 +3,8 @@
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
   "version": "1.260",
   "version_name": "1.26",
+  "version": "1.260",
+  "version_name": "1.26",
   "icons": {
     "128": "icon128.png"
   },
@@ -74,6 +76,7 @@
         "data-import.html",
         "inspect.html",
         "metadata-retrieve.html",
+        "metadata-retrieve-legacy.html",
         "explore-api.html",
         "rest-explore.html",
         "limits.html",

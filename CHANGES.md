@@ -2,6 +2,8 @@
 
 ## Version 1.27
 
+- Implement search on `Event Monitor` to filter on event details
+
 ## Version 1.26
 
 - Fix ' character search in the popup Users tab [issue 799](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/799) by [Josue Ramirez](https://github.com/jramirez6964)

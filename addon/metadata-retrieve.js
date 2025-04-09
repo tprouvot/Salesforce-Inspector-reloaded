@@ -504,7 +504,7 @@ class App extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#search"})
               ),
               h("input", {className: "filter-input", disabled: model.metadataObjects?.length == 0, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
-              h("a", {href: "about:blank", className: "filter-clear", onClick: this.onClearAndFocusFilter},
+              h("a", {href: "about:blank", className: "filter-clear", title: "Clear filter", onClick: this.onClearAndFocusFilter},
                 h("svg", {className: "filter-clear-icon"},
                   h("use", {xlinkHref: "symbols.svg#clear"})
                 )

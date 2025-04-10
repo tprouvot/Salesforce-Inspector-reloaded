@@ -40,6 +40,7 @@ class Model {
     this.objectSetupLinksRequested = false;
     this.popupTmpReactElement = undefined;
     this.popupReactElement = undefined;
+    this.recordName;
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
@@ -82,7 +83,11 @@ class Model {
   recordHeading() {
     let parts;
     if (this.recordData) {
-      parts = [this.recordData.Name, this.recordData.Id];
+      if (!this.recordName){
+        let fieldName = this.recordData.Name ? "Name" : this.objectData.fields.find(field => field.nameField).name;
+        this.recordName = this.recordData[fieldName];
+      }
+      parts = [this.recordName, this.recordData.Id];
     } else if (this.objectData) {
       parts = [this.objectData.label, this.objectData.keyPrefix];
     } else {

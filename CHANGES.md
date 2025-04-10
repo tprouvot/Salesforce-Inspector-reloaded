@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- `Show All Data` Use alternative field Name in the header (ie CaseNumber) [feature 806](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/806) request by [Mart](https://github.com/Mart-User)
 - Implement search on `Event Monitor` to filter on event details
 
 ## Version 1.26

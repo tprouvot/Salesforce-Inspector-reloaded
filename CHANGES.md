@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Fix 'Query Record' not persiting the state of the 'Tooling Api' settting [issue 268](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/268) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
 - `Show All Data` Use alternative field Name in the header (ie CaseNumber) [feature 806](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/806) request by [Mart](https://github.com/Mart-User)
 - Implement search on `Event Monitor` to filter on event details
 

@@ -676,6 +676,7 @@ class Model {
       columnIgnore() { return columnVm.columnValue.startsWith("_"); },
       columnSkip() {
         columnVm.columnValue = "_" + columnVm.columnValue;
+        self.updateImportTableResult();
       },
       columnValid() {
         let columnName = columnVm.columnValue.split(":");

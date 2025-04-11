@@ -371,6 +371,7 @@ Under `User Experience` tab, enable the option `Highlight PROD with a top border
 
 ## Import / Export configuration (saved query etc.)
 
+### With 1.25 and above
 To export and import your current configuration, go to the options page and click the corresponding icon in the header:
 
 <img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753">

@@ -16,7 +16,9 @@ body:
       description: By submitting this issue, you agree to perform the following checks.
       options:
         - label: I've read the [common issues](https://tprouvot.github.io/Salesforce-Inspector-reloaded/troubleshooting/) and the one I'm about to create is not one of those documented.
+          required: true
         - label: I've searched in the [existing issues](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues?q=is%3Aissue) and the one I'm about to create is not one of those created.
+          required: true
         - label: I've read the [release note](https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/releaseCandidate/CHANGES.md) and the one I'm about to create is not already fixed.
           required: true
   - type: textarea
@@ -39,12 +41,10 @@ body:
       label: Version
       description: Which version are you using?
       options:
-        - 1.24
-        - 1.25
-        - beta
-      default: 0
-    validations:
-      required: true
+        - "1.23"
+        - "1.24"
+        - "1.25"
+        - "beta"
   - type: dropdown
     id: browsers
     attributes:
@@ -54,5 +54,3 @@ body:
         - Firefox
         - Chrome
         - Microsoft Edge
-      validations:
-        required: true

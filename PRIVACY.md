@@ -4,7 +4,7 @@ The Salesforce Inspector Reloaded browser extension/plugin communicates directly
 
 We are saving some info in the browser localStorage to avoid redundant queries and save user extension's preferences. None of the saved elements are related to Salesforce SObject data (Account, Contact etc.)
 
-You can find the list of all the localStorage saved [here](https://github.com/search?q=repo:tprouvot/Salesforce-Inspector-reloaded+"localStorage"+path:addon&type=code) and inspect what is stored by following [this tutorial](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#import-export-configuration-saved-query-etc).
+You can find the list of all the localStorage saved [here](https://github.com/search?q=repo:tprouvot/Salesforce-Inspector-reloaded+"localStorage"+path:addon&type=code) and inspect what is stored by following [this tutorial](https://developer.chrome.com/docs/devtools/storage/localstorage).
 
 The extension communicates via the official Salesforce webservice APIs on behalf of the currently logged in user. This means the extension will be capable of accessing nothing but the data and features the user has been granted access to in Salesforce.
 

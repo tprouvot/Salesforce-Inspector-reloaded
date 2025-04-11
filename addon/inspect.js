@@ -1495,6 +1495,11 @@ class FieldValueCell extends React.Component {
         row.dataEditValue = e.target.value;
         this.setState({picklistValueIndex});
       }
+    } else if (row.entityParticle.DataType == "boolean" && (e.key == "ArrowDown" || e.key == "ArrowUp")) {
+      let currentValue = e.currentTarget.value.toLowerCase();
+      let newValue = currentValue === "true" ? "false" : "true";
+      e.currentTarget.value = newValue;
+      row.dataEditValue = newValue;
     }
   }
   closePopMenu(){

@@ -46,6 +46,7 @@ markdown_extensions:
       base_path:
         - CHANGES.md
         - README.md
+        - PRIVACY.md
       check_paths: true
   - admonition
   - pymdownx.arithmatex:

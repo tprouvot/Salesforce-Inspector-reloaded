@@ -1,7 +1,18 @@
 # Release Notes
 
+## Version 1.27
+
+- Filter result by column in `Data Export`[feature 685](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/685) (contribution by [Brahim LAISSAOUI](https://github.com/laissaouibrahim))
+- Grey out columns that were not imported in `Data Import` [feature 507](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/507) request by [Wintermute1974](https://github.com/Wintermute1974) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
+- `Show All Data`: Iterate through boolean values with up & down key [feature 794](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/794) request by [mplaaguilera](https://github.com/mplaaguilera)
+- Fix 'Query Record' not persiting the state of the 'Tooling Api' settting [issue 268](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/268) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
+- `Show All Data` Use alternative field Name in the header (ie CaseNumber) [feature 806](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/806) request by [Mart](https://github.com/Mart-User)
+- Implement search on `Event Monitor` to filter on event details
+
 ## Version 1.26
 
+- Fix ' character search in the popup Users tab [issue 799](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/799) by [Josue Ramirez](https://github.com/jramirez6964)
+- Support Custom Channels in Event Monitor [feature 797](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/797) (idea by [Mehdi Cherfaoui](https://github.com/mehdicherf))
 - `Event Monitor` : fix text selection in PlatformEvent payload, persist replayId in url and deduplicate events received
 - `Download Metadata` page rework
 - Add internal tests for REST Explorer
@@ -37,8 +48,6 @@
 - Add `calculated` to type column [feature 680](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/680) (contribution by [Lars Lipman](https://github.com/lrlip))
 - Fix LWC Debug mode force page refresh before User update [issue 718](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/718) (contribution by [Paul Kalinin](https://github.com/Paul-Kalynyn))
 - Fix `event-monitor` Error on Edge [issue 716](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/716) (contribution by [Paul Kalinin](https://github.com/Paul-Kalynyn))
-- Filter result by column in `data export`[issue 685](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/685) (contribution by [Brahim LAISSAOUI](https://github.com/laissaouibrahim))
-
 
 ## Version 1.25
 

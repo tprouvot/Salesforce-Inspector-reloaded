@@ -96,6 +96,17 @@ class OptionsTabSelector extends React.Component {
                 {label: "Apex Classes", name: "classes", checked: false}
               ]}
           },
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Searchable metadata from Shortcut tab",
+              key: "metadataShortcutSearchOptions",
+              checkboxes: [
+                {label: "Flows", name: "flows", checked: true},
+                {label: "Profiles", name: "profiles", checked: true},
+                {label: "PermissionSets", name: "permissionSets", checked: true},
+                {label: "Communities", name: "networks", checked: true},
+                {label: "Apex Classes", name: "classes", checked: false}
+              ]}
+          },
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
@@ -155,7 +166,8 @@ class OptionsTabSelector extends React.Component {
         title: "Data Import",
         content: [
           {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200"}},
-          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6"}}
+          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6"}},
+          {option: Option, props: {type: "toggle", title: "Grey Out Skipped Columns in Data Import", key: "greyOutSkippedColumns", tooltip: "Control if skipped columns are greyed out or not in data import"}}
         ]
       },
       {

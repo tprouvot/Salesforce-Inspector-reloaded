@@ -371,6 +371,7 @@ Under `User Experience` tab, enable the option `Highlight PROD with a top border
 
 ## Import / Export configuration (saved query etc.)
 
+### With 1.25 and above
 To export and import your current configuration, go to the options page and click the corresponding icon in the header:
 
 <img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753">
@@ -395,3 +396,9 @@ From a	DeployRequest record, click on the `Generate package.xml` button to downl
 > If you retrieve the related metadata it may have been modified since the deployment, so you are not sure to retrieve what was deployed.
 
 <img width="1143" alt="Generate package.xml from a deployment" src="https://github.com/user-attachments/assets/4acb7422-0547-409d-9e23-d8c3176f8055" />
+
+## Grey out skipped columns in data import
+
+From the 'Options' tab, enable the 'Grey Out Skipped Columns in Data Import' option and perform the data import. The un-imported columns will be greyed out.
+
+<img width="571" alt="Grey out un-imported columns" src="https://github.com/user-attachments/assets/8f23f00b-0b8f-4c5b-8c92-aa97b3975daf" />

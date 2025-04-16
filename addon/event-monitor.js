@@ -7,7 +7,8 @@ import {copyToClipboard} from "./data-load.js";
 const channelSuffix = "/event/";
 const channelTypes = [
   {value: "standardPlatformEvent", label: "Standard Platform Event"},
-  {value: "platformEvent", label: "Custom Platform Event"}
+  {value: "platformEvent", label: "Custom Platform Event"},
+  {value: "customChannel", label: "Custom Channel"}
 ];
 
 class Model {
@@ -20,12 +21,14 @@ class Model {
     this.spinnerCount = 0;
     this.showHelp = false;
     this.showMetrics = false;
+    this.showMetrics = false;
     this.userInfo = "...";
     this.events = [];
     this.selectedChannelType = "";
     this.channels = [];
     this.stdPlatformEvent = [];
     this.customPlatformEvent = [];
+    this.customChannel = [];
     this.selectedChannel = "";
     this.channelListening = "";
     this.channelError = "";
@@ -38,6 +41,7 @@ class Model {
     this.confirmPopup = false;
     this.popConfirmed = false;
     this.isProd = false;
+    this.eventFilter = "";
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -78,17 +82,18 @@ class Model {
     if (this.testCallback) {
       this.testCallback();
     }
-    if (window.Prism) {
-      window.Prism.highlightAll();
-    }
   }
 
   copyAsJson() {
-    copyToClipboard(JSON.stringify(this.selectedEvent ? this.selectedEvent : this.events, null, "    "), null, "  ");
+    copyToClipboard(JSON.stringify(this.selectedEvent ? this.selectedEvent : this.events.filter(event => !event.hidden), null, "    "), null, "  ");
   }
 
   clearEvents(){
     this.events = [];
+    this.eventFilter = "";
+    if (window.Prism) {
+      window.Prism.highlightAll();
+    }
   }
 
 
@@ -137,6 +142,8 @@ class App extends React.Component {
     this.confirmPopupNo = this.confirmPopupNo.bind(this);
     this.retrievePlatformEvent = this.retrievePlatformEvent.bind(this);
     this.disableSubscribe = this.disableSubscribe.bind(this);
+    this.onEventFilterInput = this.onEventFilterInput.bind(this);
+    this.onClearAndFocusFilter = this.onClearAndFocusFilter.bind(this);
     this.getEventChannels();
     this.state = {peLimits: []};
   }
@@ -153,21 +160,22 @@ class App extends React.Component {
                     + " AND QualifiedApiName LIKE '%Event' AND (NOT QualifiedApiName LIKE '%ChangeEvent')"
                     + " ORDER BY Label ASC LIMIT 200";
       } else if (channelType == "platformEvent") {
-        query = "SELECT QualifiedApiName, Label FROM EntityDefinition"
-                    + " WHERE isCustomizable = TRUE"
-                    + " AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
+        query = "SELECT QualifiedApiName, Label FROM EntityDefinition WHERE isCustomizable = TRUE AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
+      } else if (channelType == "customChannel"){
+        query = "SELECT FullName, MasterLabel FROM PlatformEventChannel ORDER BY DeveloperName";
       }
       await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
         .then(result => {
           result.records.forEach((channel) => {
+            let name = channel.QualifiedApiName || channel.FullName;
             channels.push({
-              name: channel.QualifiedApiName,
-              label: channel.Label + " (" + channel.QualifiedApiName + ")"
+              name,
+              label: channel.Label || channel.MasterLabel + " (" + name + ")"
             });
           });
         })
         .catch(err => {
-          console.error("An error occured fetching Event Channels of type " + channelType + ": ", err.message);
+          console.error("An error occurred fetching Event Channels of type " + channelType + ": ", err.message);
         });
       sessionStorage.setItem(sfHost + "_" + channelType, JSON.stringify(channels));
     }
@@ -176,24 +184,21 @@ class App extends React.Component {
 
   async getEventChannels(){
     let {model} = this.props;
-    switch (model.selectedChannelType){
-      case "standardPlatformEvent":
-        if (!model.stdPlatformEvent.length){
-          model.stdPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
+
+    if (model.selectedChannelType === "standardPlatformEvent") {
+      if (!model.stdPlatformEvent?.length) {
+        model.stdPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
+      }
+      model.channels = model.stdPlatformEvent;
+    } else if (model.selectedChannelType === "platformEvent" || model.selectedChannelType === "customChannel") {
+      let key = model.selectedChannelType === "platformEvent" ? "customPlatformEvent" : "customChannel";
+      if (!model.customPlatformEvent?.length) {
+        model[key] = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
+        if (!model[key]?.length) {
+          model[key].push({name: null, label: "! No " + model.selectedChannelType + " found !"});
         }
-        model.channels = model.stdPlatformEvent;
-        break;
-      case "platformEvent":
-        if (!model.customPlatformEvent.length){
-          model.customPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
-          if (!model.customPlatformEvent.length){
-            model.customPlatformEvent.push({
-              name: null,
-              label: "! No custom platform event found !"
-            });
-          }
-        }
-        model.channels = model.customPlatformEvent;
+      }
+      model.channels = model[key];
     }
     if (model.args.has("channel")) {
       model.selectedChannel = model.args.get("channel");
@@ -394,6 +399,33 @@ class App extends React.Component {
     e.preventDefault();
   }
 
+  onEventFilterInput(e) {
+    let {model} = this.props;
+    if (model.events) {
+      model.eventFilter = e.target.value.toLowerCase();
+      model.events = model.events.map(event => {
+        let hidden = !JSON.stringify(event).toLowerCase().includes(model.eventFilter);
+        return {
+          ...event,
+          hidden
+        };
+      });
+      model.didUpdate();
+    }
+  }
+
+  onClearAndFocusFilter(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.eventFilter = "";
+    model.events = model.events.map(event => ({
+      ...event,
+      hidden: false
+    }));
+    this.refs.eventFilter.focus();
+    model.didUpdate();
+  }
+
   getDatetime(d) {
     return (
       `${this.pad(d.getFullYear(), 4)}-${this.pad(d.getMonth() + 1, 2)}-${this.pad(d.getDate(), 2)}T`
@@ -428,6 +460,7 @@ class App extends React.Component {
   render() {
     let {model} = this.props;
     let {peLimits} = this.state;
+    let filteredEvents = model.events.filter(event => !event.hidden);
 
     return h("div", {},
       h("div", {id: "user-info"},
@@ -524,12 +557,23 @@ class App extends React.Component {
         h("div", {className: "result-bar"},
           h("h1", {}, "Event Result"),
           h("div", {className: "button-group"},
-            h("button", {disabled: model.events.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
+            h("button", {disabled: filteredEvents.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
+          ),
+          h("div", {className: "filter-box"},
+            h("svg", {className: "filter-icon"},
+              h("use", {xlinkHref: "symbols.svg#search"})
+            ),
+            h("input", {className: "filter-input", disabled: model.events?.length == 0, placeholder: "Filter", value: model.eventFilter, onChange: this.onEventFilterInput, ref: "eventFilter"}),
+            h("a", {href: "about:blank", className: "filter-clear", title: "Clear filter", onClick: this.onClearAndFocusFilter},
+              h("svg", {className: "filter-clear-icon"},
+                h("use", {xlinkHref: "symbols.svg#clear"})
+              )
+            )
           ),
           h("span", {className: "channel-listening"}, model.channelListening),
           h("span", {className: "channel-error"}, model.channelError),
           h("span", {className: "result-status flex-right"},
-            h("span", {className: "conf-value"}, model.events.length + " events"),
+            h("span", {className: "conf-value"}, filteredEvents.length + " event" + (filteredEvents.length > 1 ? "s" : "")),
             h("div", {className: "button-group"},
               h("button", {disabled: model.events.length == 0, onClick: this.onClearEvents, title: "Clear Events"}, "Clear")
             )
@@ -538,8 +582,22 @@ class App extends React.Component {
         h("div", {id: "result-table"},
           h("div", {},
             h("pre", {className: "language-json reset-margin"}, // Set the language class to JSON for Prism to highlight
-              model.events.map((event, index) => h("code", {onClick: this.onSelectEvent, id: index, key: event.event.replayId, value: event, className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`},
-                JSON.stringify(event, null, 4))
+              filteredEvents.map((event, index) => {
+                // Create a copy of the event object without the 'hidden' property
+                const {hidden, ...eventWithoutHidden} = event;
+                return h("code", {
+                  onClick: this.onSelectEvent,
+                  id: index,
+                  key: event.event.replayId,
+                  value: eventWithoutHidden, // Use the event without the 'hidden' property
+                  className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`
+                },
+                JSON.stringify(eventWithoutHidden, null, 4)
+                );
+              },
+              setTimeout(() => {
+                window.Prism.highlightAll();
+              }, 0) // add the timeout to make sure Prism has finished highlighting the code
               )
             )
           )

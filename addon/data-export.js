@@ -1537,8 +1537,8 @@ class App extends React.Component {
                 value: model.resultsFilter,
                 onInput: this.onResultsFilterInput
               }),
-              h("button", {className: this.state.isDropdownOpen ? "toggle contract" : "toggle expand", title: "Show More Filters", onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
-              model.exportedData && this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
+              h("button", {className: this.state.isDropdownOpen ? "toggle contract" : "toggle expand", title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
+              this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
                 model.exportedData?.table[0]
                   ?.filter(column => column !== "_")
                   .map(column =>

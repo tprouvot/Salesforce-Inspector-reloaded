@@ -50,6 +50,7 @@ class Model {
     this.activeBatches = 0;
     this.isProcessingQueue = false;
     this.importState = null;
+    this.greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true";
     this.showStatus = {
       Queued: true,
       Processing: true,
@@ -1346,8 +1347,7 @@ class ColumnMapper extends React.Component {
   }
   render() {
     let {model, column} = this.props;
-    const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true";
-    let inputClassName = column.columnError() ? "confError" : ((column.isColumnSkipped() && greyOutSkippedColumns) ? "conf-skipped" : "");
+    let inputClassName = column.columnError() ? "confError" : ((column.isColumnSkipped() && model.greyOutSkippedColumns) ? "conf-skipped" : "");
     return h("div", {className: "conf-line"},
       h("label", {htmlFor: "col-" + column.columnIndex}, column.columnOriginalValue),
       h("div", {className: "flex-wrapper"},

@@ -1305,6 +1305,9 @@ class App extends React.Component {
   onResultsFilterInput(e) {
     let {model} = this.props;
     model.setResultsFilter(e.target.value);
+    if (e.target.value.length == 0){
+      this.setState({isDropdownOpen: false});
+    }
     model.didUpdate();
   }
   onSetQueryName(e) {
@@ -1537,7 +1540,7 @@ class App extends React.Component {
                 value: model.resultsFilter,
                 onInput: this.onResultsFilterInput
               }),
-              h("button", {className: this.state.isDropdownOpen ? "toggle contract" : "toggle expand", title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
+              h("button", {className: "toggle no-left-radius no-left-border" + (this.state.isDropdownOpen ? " contract" : " expand"), title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
               this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
                 model.exportedData?.table[0]
                   ?.filter(column => column !== "_")

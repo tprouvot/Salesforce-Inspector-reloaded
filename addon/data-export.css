@@ -794,3 +794,10 @@ svg.button-icon {
   border-radius: 4px 0px 0px 4px !important;
   margin-right: 0 !important;
 }
+.no-left-radius {
+  border-top-left-radius: 0em;
+  border-bottom-left-radius: 0rem;
+}
+.no-left-border {
+  border-left: 0em;
+}

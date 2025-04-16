@@ -593,7 +593,8 @@ export function initScrollTable(scroller) {
           if (colVisible[c] == 0) continue;
           let cell = row[c];
           let td = document.createElement("td");
-          td.className = "scrolltable-cell header";
+          const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true";
+          td.className = `scrolltable-cell header ${(cell.startsWith("_") && greyOutSkippedColumns) ? "skipped" : ""}`;
           td.style.minWidth = colWidths[c] + "px";
           td.style.height = rowHeights[r] + "px";
           renderCell(data, cell, td);

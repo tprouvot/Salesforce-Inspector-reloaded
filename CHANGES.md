@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Grey out columns that were not imported in `Data Import` [feature 507](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/507) request by [Wintermute1974](https://github.com/Wintermute1974) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
 - `Show All Data`: Iterate through boolean values with up & down key [feature 794](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/794) request by [mplaaguilera](https://github.com/mplaaguilera)
 - Fix 'Query Record' not persiting the state of the 'Tooling Api' settting [issue 268](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/268) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
 - `Show All Data` Use alternative field Name in the header (ie CaseNumber) [feature 806](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/806) request by [Mart](https://github.com/Mart-User)

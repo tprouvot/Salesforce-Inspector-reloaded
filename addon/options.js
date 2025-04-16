@@ -166,7 +166,8 @@ class OptionsTabSelector extends React.Component {
         title: "Data Import",
         content: [
           {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200"}},
-          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6"}}
+          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6"}},
+          {option: Option, props: {type: "toggle", title: "Grey Out Skipped Columns in Data Import", key: "greyOutSkippedColumns", tooltip: "Control if skipped columns are greyed out or not in data import"}}
         ]
       },
       {

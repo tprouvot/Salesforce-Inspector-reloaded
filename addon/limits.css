@@ -19,61 +19,63 @@ figcaption > div {
   margin-top: 2px;
 }
 .gauge {
-  display:inline-block;
-  position:relative;
-  width:10rem;
-  height:5rem;
-  overflow:hidden;
+  display: inline-block;
+  position: relative;
+  width: 10rem;
+  height: 5rem;
+  overflow: hidden;
 }
-.gauge:before, .gauge:after, .meter {
-  position:absolute;
-  display:block;
-  content:"";
+.gauge:before,
+.gauge:after,
+.meter {
+  position: absolute;
+  display: block;
+  content: "";
 }
-.gauge:before, .meter {
-  width:10rem;
-  height:5rem;
+.gauge:before,
+.meter {
+  width: 10rem;
+  height: 5rem;
 }
 .gauge:before {
-  border-radius:5rem 5rem 0 0;
-  background:grey;
+  border-radius: 5rem 5rem 0 0;
+  background: grey;
 }
 .gauge:after {
-  position:absolute;
-  bottom:0;
-  left:2.5rem;
-  width:5rem;
-  height:2.5rem;
-  background:#ffffff;
-  border-radius:2.5rem 2.5rem 0 0;
+  position: absolute;
+  bottom: 0;
+  left: 2.5rem;
+  width: 5rem;
+  height: 2.5rem;
+  background: #ffffff;
+  border-radius: 2.5rem 2.5rem 0 0;
 }
 .meter {
-  top:100%;
-  transition:1.5s;
-  transform-origin:center top;
-  border-radius:0 0 6rem 6rem;
-  background:deepskyblue;
+  top: 100%;
+  transition: 1.5s;
+  transform-origin: center top;
+  border-radius: 0 0 6rem 6rem;
+  background: deepskyblue;
 }
 .meter-value-container {
-  position:absolute;
-  bottom:-.75rem;
-  left:2.5rem;
-  z-index:1000;
-  width:5rem;
-  height:2.5rem;
-  overflow:hidden;
+  position: absolute;
+  bottom: -0.75rem;
+  left: 2.5rem;
+  z-index: 1000;
+  width: 5rem;
+  height: 2.5rem;
+  overflow: hidden;
   text-align: center;
 }
 .meter-value {
-  font:bold 1.25rem/1.6 sans-serif;
-  color:#333;
-  line-height:2.5rem;
-  white-space:pre;
-  transition:1.5s;
-  vertical-align:baseline;
-  user-select:none;
+  font: bold 1.25rem/1.6 sans-serif;
+  color: #333;
+  line-height: 2.5rem;
+  white-space: pre;
+  transition: 1.5s;
+  vertical-align: baseline;
+  user-select: none;
 }
-
 
 /*******************
 * General template *
@@ -90,9 +92,9 @@ body {
 .error-message {
   font-size: 1.2em;
   font-weight: bold;
-  margin: .5em 0;
+  margin: 0.5em 0;
   background-color: #fe3;
-  padding: .5em;
+  padding: 0.5em;
   border: 1px solid red;
   border-radius: 7px;
 }
@@ -118,7 +120,8 @@ body {
   margin: 0 1em;
   font-size: 1.4em;
 }
-.object-actions a, .object-actions button {
+.object-actions a,
+.object-actions button {
   display: inline-block;
   border: 1px solid #ddd;
   padding: 6px 10px;
@@ -154,8 +157,29 @@ body {
   animation: spin 4s linear infinite;
 }
 #user-info {
-  font-size: .8125rem;
+  font-size: 0.8125rem;
 }
 #user-info span {
   font-size: 1em;
+}
+svg.icon {
+  fill: #919191;
+}
+svg.icon:hover {
+  fill: #818181;
+}
+.icon {
+  display: inline-block;
+  width: 1.4rem;
+  height: 1.4rem;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1.4rem;
+  -webkit-mask-position: center;
+  margin-left: auto;
+  text-decoration: none;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #919191;
+  display: flex;
+  align-items: center;
 }

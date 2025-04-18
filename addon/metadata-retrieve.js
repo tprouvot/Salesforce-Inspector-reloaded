@@ -418,28 +418,32 @@ class App extends React.Component {
     let {model} = this.props;
     if (model.metadataObjects) {
       model.metadataFilter = e.target.value.toLowerCase();
-      model.metadataObjects = model.metadataObjects.map(metadataObject => {
-        let hidden = !metadataObject.xmlName.toLowerCase().includes(model.metadataFilter);
+
+      model.metadataObjects.forEach(metadataObject => {
+        metadataObject.hidden = !metadataObject.xmlName.toLowerCase().includes(model.metadataFilter);
 
         if (metadataObject.childXmlNames) {
           // Check if any child matches the filter
           const anyChildMatches = metadataObject.childXmlNames.some(child =>
             child.fullName.toLowerCase().includes(model.metadataFilter)
           );
+
           // If any child matches, the parent should be visible
           if (anyChildMatches) {
-            hidden = false;
+            metadataObject.hidden = false;
           }
-          // Update child visibility
-          metadataObject.childXmlNames = metadataObject.childXmlNames.map(child => ({
-            ...child,
-            hidden: !child.fullName.toLowerCase().includes(model.metadataFilter)
-          }));
+
+          // Update child visibility while maintaining references
+          metadataObject.childXmlNames.forEach(child => {
+            child.hidden = !child.fullName.toLowerCase().includes(model.metadataFilter);
+
+            if (child.childXmlNames) {
+              child.childXmlNames.forEach(grandchild => {
+                grandchild.hidden = !grandchild.fullName.toLowerCase().includes(model.metadataFilter);
+              });
+            }
+          });
         }
-        return {
-          ...metadataObject,
-          hidden
-        };
       });
       model.didUpdate();
     }

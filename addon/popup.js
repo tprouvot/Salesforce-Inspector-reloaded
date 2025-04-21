@@ -200,8 +200,12 @@ class App extends React.PureComponent {
     }
   }
   onChangeApi(e) {
-    localStorage.setItem("apiVersion", e.target.value + ".0");
-    this.setState({apiVersionInput: e.target.value});
+    let {sfHost} = this.props;
+    const latestApiVersion = this.getLatestApiVersionFromOrg();
+    //if (latestApiVersion >= e.target.value) {
+      localStorage.setItem("apiVersion", e.target.value + ".0");
+      this.setState({apiVersionInput: e.target.value});
+    //}
   }
   componentDidMount() {
     let {sfHost} = this.props;
@@ -222,6 +226,17 @@ class App extends React.PureComponent {
         sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
       });
     }
+  }
+  getLatestApiVersionFromOrg(sfHost) {
+    let latestApiVersionFromOrg = JSON.parse(sessionStorage.getItem(sfHost + "_latestApiVersionFromOrg"));
+    if (latestApiVersionFromOrg == null) {
+      sfConn.rest("services/data/").then(res => {
+        const lastItem = res[res.length - 1]; //Get the last element of the array
+        latestApiVersionFromOrg = lastItem.version; //Extract the value of the last version
+        sessionStorage.setItem(sfHost + "_latestApiVersionFromOrg", JSON.stringify(latestApiVersionFromOrg));
+      });
+    }
+    return latestApiVersionFromOrg;
   }
   isMac() {
     return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
@@ -398,7 +413,9 @@ class App extends React.PureComponent {
               type: "number",
               title: "Update api version",
               onChange: this.onChangeApi,
-              value: apiVersionInput.split(".0")[0]
+              value: apiVersionInput.split(".0")[0],
+              //max: getlatestApiVersionFromOrg(sfHost)
+              max: 63,
             })
           ),
           h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container", title: `Shortcut :${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"}`},

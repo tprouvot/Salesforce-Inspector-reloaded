@@ -157,8 +157,9 @@ function initButton(sfHost, inInspector) {
   }
 
   function colorizeBanner(faviconColor, isSandbox, bannerText){
+    const sandboxBannerSelector = "div.slds-color__background_gray-1.slds-text-align_center.slds-size_full.slds-text-body_regular.oneSystemMessage";
     if (isSandbox === "false"){
-      const bannerContainer = document.querySelector("div.slds-color__background_gray-1.slds-text-align_center.slds-size_full.slds-text-body_regular.oneSystemMessage");
+      const bannerContainer = document.querySelector(sandboxBannerSelector);
       const envNameBanner = document.createElement("div");
       envNameBanner.className = "slds-notify_alert";
       envNameBanner.style.backgroundColor = faviconColor;
@@ -171,20 +172,39 @@ function initButton(sfHost, inInspector) {
         bannerContainer.appendChild(envNameBanner);
       } else {
         //when login as is displayed the banner is not reachable without mutation obersver
-        const bannerSelector = "div.slds-color__background_gray-1.slds-text-align_center.slds-size_full.slds-text-body_regular.oneSystemMessage";
-        observeElement(bannerSelector, (banner) => {
+        observeElement(sandboxBannerSelector, (banner) => {
           banner.appendChild(envNameBanner);
         });
       }
     } else {
       //header selector depends on the env type (sandbox or trial)
-      const bannerSelector = isSandbox === "true" ? "div.slds-color__background_gray-1.slds-text-align_center.slds-size_full.slds-text-body_regular.oneSystemMessage > div.slds-notify_alert.system-message.level-info.slds-theme_info" : "div.slds-trial-header.slds-grid.oneTrialHeader.oneTrialExperience";
+      const bannerSelector = isSandbox === "true" ? `${sandboxBannerSelector} > div.slds-notify_alert.system-message.level-info.slds-theme_info` : "div.slds-trial-header.slds-grid.oneTrialHeader.oneTrialExperience";
+
+      if (isSandbox){
+        // add a new observer for the new gradient sandbox banner
+        observeElement("devops_center-base-component > lightning-layout", (banner) => {
+          updateBanner(banner, faviconColor);
+        });
+      }
 
       observeElement(bannerSelector, (banner) => {
-        banner.style.backgroundColor = faviconColor;
-        //update sandbox name and Logout action color for new UI
-        [...banner.children].forEach(child => child.style.color = "white");
+        updateBanner(banner, faviconColor);
       });
+    }
+  }
+
+  function updateBanner(banner, faviconColor){
+    let newBanner = banner.classList.contains("navBar-container");
+    if (newBanner){
+      //only way to render backgroundColor is to remove the standard gradient coming with the "navBar-container" class
+      banner.classList.remove("navBar-container");
+    }
+    banner.style.backgroundColor = faviconColor;
+    [...banner.children].forEach(child => child.style.color = "white !important;");
+    if (newBanner){
+      let devOpsInfo = banner.querySelector("devops_center-org-info");
+      //add white color to text in the banner
+      [...devOpsInfo.children].forEach(child => child.classList.add("slds-text-color--inverse"));
     }
   }
 

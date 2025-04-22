@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Update sandbox banner feature to match with new AppDev Bar [feature 815](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/815)
 - Add refresh button on Org Limits and persist filter in url
 - Filter result by column in `Data Export`[feature 685](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/685) (contribution by [Brahim LAISSAOUI](https://github.com/laissaouibrahim))
 - Grey out columns that were not imported in `Data Import` [feature 507](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/507) request by [Wintermute1974](https://github.com/Wintermute1974) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))

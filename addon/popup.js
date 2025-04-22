@@ -704,10 +704,10 @@ class AllDataBoxUsers extends React.PureComponent {
       return [];
     }
 
-    //TODO: Better search query. SOSL?
+    const escapedUserQuery = userQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
     const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const queryFrom = "from User where (username like '%" + userQuery + "%' or name like '%" + userQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
+    const queryFrom = "from User where (username like '%" + escapedUserQuery + "%' or name like '%" + escapedUserQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
     const compositeQuery = {
       "compositeRequest": [
         {
@@ -1600,6 +1600,10 @@ class UserDetails extends React.PureComponent {
     this.refs.logButtonMenu.classList.toggle("slds-is-open");
   }
 
+  toggleLogMenu(){
+    this.refs.logButtonMenu.classList.toggle("slds-is-open");
+  }
+
   render() {
     let {user, linkTarget} = this.props;
     return (
@@ -2243,7 +2247,7 @@ class Autocomplete extends React.PureComponent {
         navigationType: "recordId",
         recordId: value.recordId
       });
-    } else if (value.Id) {
+    } else if (value.link && value.Id) {
       this.handleNavigation(e, `${value.isExternal ? "" : "https://" + sfHost}${value.link}`, {
         navigationType: "url",
         url: `https://${sfHost}${value.link}`

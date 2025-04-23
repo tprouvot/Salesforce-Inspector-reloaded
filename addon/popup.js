@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
+import {sfConn, apiVersion, sessionError, getLinkTarget, getLatestApiVersionFromOrg} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
@@ -201,11 +201,13 @@ class App extends React.PureComponent {
   }
   onChangeApi(e) {
     let {sfHost} = this.props;
-    const latestApiVersion = this.getLatestApiVersionFromOrg();
-    //if (latestApiVersion >= e.target.value) {
+    const latestApiVersion = getLatestApiVersionFromOrg(sfHost);
+    if (latestApiVersion >= e.target.value) {
       localStorage.setItem("apiVersion", e.target.value + ".0");
-      this.setState({apiVersionInput: e.target.value});
-    //}
+      this.setState({apiVersionInput: e.target.value + ".0"});
+    } 
+    const inputApiVersion = document.getElementById("idApiInput");
+    inputApiVersion.setAttribute('max', latestApiVersion);
   }
   componentDidMount() {
     let {sfHost} = this.props;
@@ -226,17 +228,6 @@ class App extends React.PureComponent {
         sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
       });
     }
-  }
-  getLatestApiVersionFromOrg(sfHost) {
-    let latestApiVersionFromOrg = JSON.parse(sessionStorage.getItem(sfHost + "_latestApiVersionFromOrg"));
-    if (latestApiVersionFromOrg == null) {
-      sfConn.rest("services/data/").then(res => {
-        const lastItem = res[res.length - 1]; //Get the last element of the array
-        latestApiVersionFromOrg = lastItem.version; //Extract the value of the last version
-        sessionStorage.setItem(sfHost + "_latestApiVersionFromOrg", JSON.stringify(latestApiVersionFromOrg));
-      });
-    }
-    return latestApiVersionFromOrg;
   }
   isMac() {
     return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
@@ -409,13 +400,12 @@ class App extends React.PureComponent {
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
+              id : "idApiInput",
               className: "api-input",
               type: "number",
               title: "Update api version",
               onChange: this.onChangeApi,
               value: apiVersionInput.split(".0")[0],
-              //max: getlatestApiVersionFromOrg(sfHost)
-              max: 63,
             })
           ),
           h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container", title: `Shortcut :${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"}`},

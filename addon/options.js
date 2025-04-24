@@ -1,5 +1,6 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString} from "./inspector.js";
+import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
+import {nullToEmptyString} from "./utils.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
@@ -113,6 +114,7 @@ class OptionsTabSelector extends React.Component {
             props: {title: "Show buttons",
               key: "hideButtonsOption",
               checkboxes: [
+                {label: "New", name: "new", checked: true},
                 {label: "Explore API", name: "explore-api", checked: true},
                 {label: "Org Limits", name: "org-limits", checked: true},
                 {label: "Options", name: "options", checked: true},

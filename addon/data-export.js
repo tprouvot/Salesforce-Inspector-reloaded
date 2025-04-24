@@ -1,5 +1,6 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, nullToEmptyString, getLinkTarget} from "./inspector.js";
+import {sfConn, apiVersion} from "./inspector.js";
+import {getLinkTarget, nullToEmptyString} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 

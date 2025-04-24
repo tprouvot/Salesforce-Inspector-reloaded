@@ -1,5 +1,6 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
+import {sfConn, apiVersion, sessionError} from "./inspector.js";
+import {getLinkTarget} from "./utils.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
@@ -1954,7 +1955,7 @@ class AllDataSelection extends React.PureComponent {
           : " (Not readable)"
         ))),
         isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
-        selectedValue.sobject.isEverCreatable && !selectedValue.sobject.name.endsWith("__e") ? h("a", {
+        selectedValue.sobject.isEverCreatable /*&& this.displayButton("new")*/ && !selectedValue.sobject.name.endsWith("__e") ? h("a", {
           ref: "showNewBtn",
           href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
           target: linkTarget,

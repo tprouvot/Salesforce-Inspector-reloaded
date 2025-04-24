@@ -1,11 +1,12 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget} from "./utils.js";
+import {getLinkTarget, displayButton} from "./utils.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
 let p = parent;
+let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -111,7 +112,6 @@ class App extends React.PureComponent {
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext,
-      hideButtonsOption: JSON.parse(localStorage.getItem("hideButtonsOption")),
       useLegacyDownloadMetadata: JSON.parse(localStorage.getItem("useLegacyDlMetadata"))
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
@@ -231,14 +231,6 @@ class App extends React.PureComponent {
     const url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${browser}-extension://${chrome.i18n.getMessage("@@extension_id")}/data-export.html`;
     return {...sessionError, url};
   }
-  displayButton(name){
-    const button = this.state.hideButtonsOption?.find((element) => element.name == name);
-    if (button){
-      return button.checked;
-    }
-    //if no option was found, display the button
-    return true;
-  }
   render() {
     let {
       sfHost,
@@ -329,7 +321,7 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
             ),
-            this.displayButton("org-limits") ? h("div", {className: "slds-m-bottom_xx-small"},
+            displayButton("org-limits", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ) : null,
             h("div", {},
@@ -340,7 +332,7 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "metaRetrieveBtn", href: `metadata-retrieve${useLegacyDownloadMetadata ? "-legacy" : ""}.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
             ),
-            this.displayButton("explore-api") ? h("div", {className: "slds-m-bottom_xx-small"},
+            displayButton("explore-api", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
             ) : null,
             h("div", {className: "slds-m-bottom_xx-small"},
@@ -349,7 +341,7 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "eventMonitorBtn", href: eventMonitorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Event ", h("u", {}, "M"), "onitor"))
             ),
-            this.displayButton("generate-token") ? h("div", {className: "slds-m-bottom_xx-small"},
+            displayButton("generate-token", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
                 {
                   ref: "generateToken",
@@ -384,7 +376,7 @@ class App extends React.PureComponent {
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
             ),
           ),
-          this.displayButton("options") ? h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
+          displayButton("options", hideButtonsOption) ? h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
             ),
@@ -1955,7 +1947,7 @@ class AllDataSelection extends React.PureComponent {
           : " (Not readable)"
         ))),
         isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
-        selectedValue.sobject.isEverCreatable /*&& this.displayButton("new")*/ && !selectedValue.sobject.name.endsWith("__e") ? h("a", {
+        selectedValue.sobject.isEverCreatable && displayButton("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e") ? h("a", {
           ref: "showNewBtn",
           href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
           target: linkTarget,

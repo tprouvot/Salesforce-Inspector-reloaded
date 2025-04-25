@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Add `convertCurrency()` , `FORMAT()` and `GROUPING()` to autocomplete suggestions in Data Export [feature 818](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/818) request by [Hubert](https://github.com/dollarSignUsername)
 - Update sandbox banner feature to match with new AppDev Bar [feature 815](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/815)
 - Add refresh button on Org Limits and persist filter in url
 - Filter result by column in `Data Export`[feature 685](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/685) (contribution by [Brahim LAISSAOUI](https://github.com/laissaouibrahim))

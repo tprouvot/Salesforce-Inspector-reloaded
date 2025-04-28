@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString} from "./inspector.js";
+import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString, getLatestApiVersionFromOrg} from "./inspector.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
@@ -338,23 +338,37 @@ class APIVersionOption extends React.Component {
     this.onChangeApiVersion = this.onChangeApiVersion.bind(this);
     this.onRestoreDefaultApiVersion = this.onRestoreDefaultApiVersion.bind(this);
     this.state = {apiVersion: localStorage.getItem("apiVersion") ? localStorage.getItem("apiVersion") : apiVersion};
+    this.tooltipBase = "this component has a maximum version ";
   }
 
   onChangeApiVersion(e) {
-    let apiVersion = e.target.value;
-    this.setState({apiVersion});
-    localStorage.setItem("apiVersion", apiVersion + ".0");
+    let {sfHost} = this.props;
+    if (this.state.apiVersion < e.target.value) {
+      const latestApiVersion = getLatestApiVersionFromOrg(sfHost);
+      if (latestApiVersion >= e.target.value) {
+        localStorage.setItem("apiVersion", e.target.value + ".0");
+        this.setState({apiVersion: e.target.value + ".0"})
+      } else {
+        e.target.setAttribute('max', latestApiVersion);
+        const tooltipApiVersion = document.getElementById("APIVersion_tooltip");
+        tooltipApiVersion.setAttribute('tooltip', tooltipApiVersion.firstChild.innerHTML = this.tooltipBase + latestApiVersion);
+      }
+    } else {
+      localStorage.setItem("apiVersion", e.target.value + ".0");
+      this.setState({apiVersion: e.target.value + ".0"})
+    }
   }
 
   onRestoreDefaultApiVersion(){
     localStorage.removeItem("apiVersion");
     this.setState({apiVersion: defaultApiVersion});
   }
-
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-        h("span", {}, "API Version")
+        h("span", {}, "API Version",
+          h(Tooltip, {tooltip: "this component has a maximum version", idKey: "APIVersion"})
+        ),
       ),
       h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},

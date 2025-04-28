@@ -201,13 +201,19 @@ class App extends React.PureComponent {
   }
   onChangeApi(e) {
     let {sfHost} = this.props;
-    const latestApiVersion = getLatestApiVersionFromOrg(sfHost);
-    if (latestApiVersion >= e.target.value) {
+    if (apiVersion < e.target.value) {
+      const latestApiVersion = getLatestApiVersionFromOrg(sfHost);
+      if (latestApiVersion >= e.target.value) {
+        localStorage.setItem("apiVersion", e.target.value + ".0");
+        this.setState({apiVersionInput: e.target.value + ".0"});
+      } else {
+        e.target.setAttribute('max', latestApiVersion);
+        e.target.setAttribute('title', e.target.title +" Maximum "+ latestApiVersion);
+      }
+    } else {
       localStorage.setItem("apiVersion", e.target.value + ".0");
-      this.setState({apiVersionInput: e.target.value + ".0"});
-    } 
-    const inputApiVersion = document.getElementById("idApiInput");
-    inputApiVersion.setAttribute('max', latestApiVersion);
+      this.setState({apiVersionInput: e.target.value + ".0"})
+    }
   }
   componentDidMount() {
     let {sfHost} = this.props;

@@ -338,7 +338,6 @@ class APIVersionOption extends React.Component {
     this.onChangeApiVersion = this.onChangeApiVersion.bind(this);
     this.onRestoreDefaultApiVersion = this.onRestoreDefaultApiVersion.bind(this);
     this.state = {apiVersion: localStorage.getItem("apiVersion") ? localStorage.getItem("apiVersion") : apiVersion};
-    this.tooltipBase = "this component has a maximum version ";
   }
 
   onChangeApiVersion(e) {
@@ -351,7 +350,7 @@ class APIVersionOption extends React.Component {
       } else {
         e.target.setAttribute('max', latestApiVersion);
         const tooltipApiVersion = document.getElementById("APIVersion_tooltip");
-        tooltipApiVersion.setAttribute('tooltip', tooltipApiVersion.firstChild.innerHTML = this.tooltipBase + latestApiVersion);
+        tooltipApiVersion.setAttribute('tooltip', tooltipApiVersion.firstChild.innerHTML = tooltipApiVersion.firstChild.innerHTML + latestApiVersion);
       }
     } else {
       localStorage.setItem("apiVersion", e.target.value + ".0");
@@ -367,7 +366,7 @@ class APIVersionOption extends React.Component {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "API Version",
-          h(Tooltip, {tooltip: "this component has a maximum version", idKey: "APIVersion"})
+          h(Tooltip, {tooltip: "this component has a maximum version ", idKey: "APIVersion"})
         ),
       ),
       h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),

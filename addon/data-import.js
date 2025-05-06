@@ -310,7 +310,7 @@ class Model {
       return globalDescribe.sobjects
         .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"));
     } else {
-      const hardcodedObjectsPrefix = ["01Z"];//Dashboard can be deleted
+      const hardcodedObjectsPrefix = ["01Z", "00O"];//Dashboard and Report can be deleted
       return globalDescribe.sobjects
         .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable || hardcodedObjectsPrefix.includes(sobjectDescribe.keyPrefix));
     };

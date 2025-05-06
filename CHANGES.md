@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- `Data Import` Automatically detect the SObject based on Id field [feature 483](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/483) request by [Tom Bassett](https://github.com/CRMTom92) and fix [issue 829](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/829)
 - Add `convertCurrency()` , `FORMAT()` and `GROUPING()` to autocomplete suggestions in Data Export [feature 818](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/818) request by [Hubert](https://github.com/dollarSignUsername)
 - Update sandbox banner feature to match with new AppDev Bar [feature 815](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/815)
 - Add refresh button on Org Limits and persist filter in url

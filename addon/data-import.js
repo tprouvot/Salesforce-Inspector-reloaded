@@ -308,13 +308,12 @@ class Model {
 
     if (this.apiType == "Metadata") {
       return globalDescribe.sobjects
-        .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"))
-        .map(sobjectDescribe => sobjectDescribe.name);
+        .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"));
     } else {
+      const hardcodedObjectsPrefix = ["01Z"];//Dashboard can be deleted
       return globalDescribe.sobjects
-        .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable)
-        .map(sobjectDescribe => sobjectDescribe.name);
-    }
+        .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable || hardcodedObjectsPrefix.includes(sobjectDescribe.keyPrefix));
+    };
   }
 
   idLookupList() {
@@ -377,7 +376,7 @@ class Model {
 
   importTypeError() {
     let importType = this.importType;
-    if (!this.sobjectList().some(s => s.toLowerCase() == importType.toLowerCase())) {
+    if (!this.sobjectList().some(s => s.name.toLowerCase() == importType.toLowerCase())) {
       return "Error: Unknown object";
     }
     return "";
@@ -628,6 +627,20 @@ class Model {
     if (data[0][0].startsWith("[") && data[0][0].endsWith("]")) {
       let obj = data[0][0].substr(1, data[0][0].length - 2);
       return obj;
+    }
+
+    // Check if we have an ID field in the data
+    const idIndex = this.importData.importTable.header.findIndex(col => col.columnValue.toLowerCase() === "id");
+    if (idIndex !== -1 && data[0] && data[0][idIndex]) {
+      const idValue = data[0][idIndex];
+      if (idValue && idValue.length >= 3) {
+        const prefix = idValue.substring(0, 3);
+
+        const matchingObject = this.sobjectList().find(sobject => sobject.keyPrefix === prefix);
+        if (matchingObject) {
+          return matchingObject.name;
+        }
+      }
     }
     return "";
   }
@@ -1243,7 +1256,7 @@ class App extends React.Component {
                 )
               )
             ),
-            h("datalist", {id: "sobjectlist"}, model.sobjectList().map(data => h("option", {key: data, value: data}))),
+            h("datalist", {id: "sobjectlist"}, model.sobjectList().map(data => h("option", {key: data.name, value: data.name}))),
             h("datalist", {id: "idlookuplist"}, model.idLookupList().map(data => h("option", {key: data, value: data}))),
             h("datalist", {id: "columnlist"}, model.columnList().map(data => h("option", {key: data, value: data})))
           ),

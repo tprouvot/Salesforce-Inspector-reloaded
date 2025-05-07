@@ -3164,6 +3164,29 @@ a.slds-button--inverse:focus{
   -ms-flex-line-pack:end;
       align-content:flex-end;
 }
+.slds-grid_align-spread,
+.slds-grid--align-spread{
+  -webkit-box-pack:justify;
+      -ms-flex-pack:justify;
+          justify-content:space-between;
+}
+.slds-wrap{
+  -ms-flex-wrap:wrap;
+      flex-wrap:wrap;
+  -webkit-box-align:start;
+      -ms-flex-align:start;
+          align-items:flex-start;
+}
+.slds-nowrap{
+  -webkit-box-flex:1;
+      -ms-flex:1 1 auto;
+          flex:1 1 auto;
+  -ms-flex-wrap:nowrap;
+      flex-wrap:nowrap;
+  -webkit-box-align:stretch;
+      -ms-flex-align:stretch;
+          align-items:stretch;
+}
 
 
 /* Gutters */
@@ -3370,6 +3393,25 @@ a.slds-button--inverse:focus{
   -webkit-box-flex:1;
       -ms-flex:1 1 auto;
           flex:1 1 auto;
+}
+
+/* List */
+
+.slds-list_horizontal,
+.slds-list--horizontal{
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+}
+.slds-list_dotted,
+.slds-list--dotted{
+  margin-left:1.5rem;
+  list-style:disc;
+}
+.slds-list_ordered,
+.slds-list--ordered{
+  margin-left:1.5rem;
+  list-style:decimal;
 }
 
 /* Hide / Show */
@@ -4979,6 +5021,23 @@ a.slds-button--inverse:focus{
 }
 
 /* Text */
+.slds-text-body_regular,
+.slds-text-body--regular{
+  font-size:0.8125rem;
+}
+.slds-text-body_small,
+.slds-text-body--small{
+  font-size:0.75rem;
+}
+.slds-text-title_caps,
+.slds-text-title--caps{
+  font-size:0.75rem;
+  line-height:1.25;
+  color:#3e3e3c;
+  font-weight:400;
+  text-transform:uppercase;
+  letter-spacing:0.0625rem;
+}
 .slds-text-title_bold{
     font-size:0.875rem;
     font-weight:700;
@@ -4994,6 +5053,69 @@ a.slds-button--inverse:focus{
 .slds-text-align_right,
 .slds-text-align--right{
   text-align:right;
+}
+.slds-text-color_default,
+.slds-text-color--default{
+  color:#080707;
+}
+.slds-text-color_weak,
+.slds-text-color--weak{
+  color:#3e3e3c;
+}
+.slds-text-color_error,
+.slds-text-color--error{
+  color:#c23934;
+}
+.slds-text-color_destructive{
+  color:#c23934;
+}
+.slds-text-color_success{
+  color:#027e46;
+}
+.slds-text-color_inverse,
+.slds-text-color--inverse{
+  color:white;
+}
+.slds-text-color_inverse-weak,
+.slds-text-color--inverse-weak{
+  color:#b0adab;
+}
+.slds-text-heading_small,
+.slds-text-heading--small{
+  font-size:1rem;
+  line-height:1.25;
+}
+
+/* Box */
+.slds-box{
+  padding:1rem;
+  border-radius:0.25rem;
+  border:1px solid #dddbda;
+}
+.slds-box_xx-small, .slds-box--xx-small{
+  padding:0.25rem;
+}
+.slds-box_x-small, .slds-box--x-small{
+  padding:0.5rem;
+}
+.slds-box_small, .slds-box--small{
+  padding:0.75rem;
+}
+.slds-box_border, .slds-box--border{
+  padding:0;
+  border-radius:0.25rem;
+  border:1px solid #dddbda;
+}
+.slds-box_link, .slds-box_link:active, .slds-box_link:focus, .slds-box_link:hover{
+  color:inherit;
+  text-decoration:inherit;
+}
+.slds-box_link:hover, .slds-box_link:focus{
+  cursor:pointer;
+  outline:0;
+  border:1px solid #1589ee;
+  -webkit-box-shadow:0 0 0 1px #1589ee inset;
+          box-shadow:0 0 0 1px #1589ee inset;
 }
 
 /* Theme */

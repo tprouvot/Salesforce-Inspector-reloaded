@@ -755,7 +755,7 @@ class enableLogsOption extends React.Component {
         ),
         h("div", {className: "slds-col slds-size_6-of-12 slds-form-element"}),
         h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
-          h("input", {type: "text", id: "debugLogDebugLevel", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "SFDC_DevConsole", value: nullToEmptyString(this.state.debugLogDebugLevel), onChange: this.onChangeDebugLevel})
+          h("input", {type: "text", id: "debugLogDebugLevel", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "SFDC_DevConsole", value: this.state.debugLogDebugLevel, onChange: this.onChangeDebugLevel})
         ),
       ),
       h("div", {className: "slds-col slds-grid slds-wrap slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
@@ -764,9 +764,9 @@ class enableLogsOption extends React.Component {
         ),
         h("div", {className: "slds-col slds-size_6-of-12 slds-form-element"}),
         h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
-          h("input", {type: "number", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", value: nullToEmptyString(this.state.debugLogTimeMinutes), onChange: this.onChangeDebugLogTime})
+          h("input", {type: "text", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "15", value: this.state.debugLogTimeMinutes, onChange: this.onChangeDebugLogTime})
         ),
-      )
+      )  
     );
   }
 }

@@ -110,6 +110,7 @@ class App extends React.PureComponent {
       importHref: "data-import.html?" + hostArg,
       eventMonitorHref: "event-monitor.html?" + hostArg,
       fieldCreatorHref: "field-creator.html?" + hostArg,
+      accessAnalyzerHref: "field-access-analyzer.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext,
       useLegacyDownloadMetadata: JSON.parse(localStorage.getItem("useLegacyDlMetadata"))
@@ -239,7 +240,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, fieldCreatorHref, limitsHref, isFieldsPresent, latestNotesViewed, useLegacyDownloadMetadata} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, fieldCreatorHref, accessAnalyzerHref, limitsHref, isFieldsPresent, latestNotesViewed, useLegacyDownloadMetadata} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -340,6 +341,9 @@ class App extends React.PureComponent {
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "eventMonitorBtn", href: eventMonitorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Event ", h("u", {}, "M"), "onitor"))
+            ),
+            h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "accessAnalyzerBtn", href: accessAnalyzerHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Access ", h("u", {}, "A"), "nalyzer"))
             ),
             displayButton("generate-token", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
@@ -643,7 +647,7 @@ class AllDataBox extends React.PureComponent {
 
   render() {
     let {activeSearchAspect, sobjectsLoading, contextRecordId, contextSobject, contextUserId, contextOrgId, contextPath, sobjectsList} = this.state;
-    let {sfHost, showDetailsSupported, linkTarget, onContextRecordChange, isFieldsPresent, eventMonitorHref} = this.props;
+    let {sfHost, showDetailsSupported, linkTarget, onContextRecordChange, isFieldsPresent, eventMonitorHref, accessAnalyzerHref} = this.props;
 
     return (
       h("div", {className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "")},

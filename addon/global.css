@@ -1,0 +1,20 @@
+/* Global shared styles */
+
+.help-text {
+  background: #fff;
+  border: 1px solid #dddbda;
+  padding: 0 15px;
+  border-radius: 0.25rem;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.help-text a,
+.help-text a:visited {
+  color: #0070d2;
+  text-decoration: none;
+}
+
+.help-text a:hover {
+  text-decoration: underline;
+}

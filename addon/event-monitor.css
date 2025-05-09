@@ -136,14 +136,6 @@ svg.icon:hover {
   display: flex;
   align-items: center;
 }
-.help-text {
-  background: #fff;
-  border: 1px solid #dddbda;
-  padding: 0 15px;
-  border-radius: 0.25rem;
-  margin-top: 10px;
-  margin-bottom: 5px;
-}
 .area {
   background-color: #f8f8f8;
   padding: 8px 12px;
@@ -484,9 +476,6 @@ code {
   width: -moz-available;
   width: -webkit-fill-available;
   width: fill-available;
-}
-.help-text a:visited {
-  color: #0176d3;
 }
 .filter-box {
   white-space: nowrap;

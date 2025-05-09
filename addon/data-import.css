@@ -1,35 +1,35 @@
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-Light.woff2);
-  font-weight:300
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-Light.woff2);
+  font-weight: 300;
 }
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-LightItalic.woff2);
-  font-style:italic;
-  font-weight:300
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-LightItalic.woff2);
+  font-style: italic;
+  font-weight: 300;
 }
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-Regular.woff2);
-  font-weight:400
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-Regular.woff2);
+  font-weight: 400;
 }
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-Italic.woff2);
-  font-style:italic;
-  font-weight:400
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-Italic.woff2);
+  font-style: italic;
+  font-weight: 400;
 }
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-Bold.woff2);
-  font-weight:700
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-Bold.woff2);
+  font-weight: 700;
 }
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-BoldItalic.woff2);
-  font-style:italic;
-  font-weight:700
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-BoldItalic.woff2);
+  font-style: italic;
+  font-weight: 700;
 }
 * {
   box-sizing: border-box;
@@ -40,12 +40,12 @@ html {
 }
 body {
   font-family: "Salesforce Sans", Arial, sans-serif;
-  font-size: .8125rem;
+  font-size: 0.8125rem;
   overflow: hidden;
   margin: 0;
   height: 100%;
   display: flex;
-  background-color: #B0C4DF;
+  background-color: #b0c4df;
   background-image: url(images/lightning_blue_background.png);
   background-repeat: no-repeat;
   background-size: contain;
@@ -80,7 +80,7 @@ body {
 #user-info h1 {
   padding: 0 6px 0 10px;
 }
-#user-info span{
+#user-info span {
   font-size: 1.2em;
 }
 .sf-link {
@@ -94,8 +94,8 @@ body {
   padding-right: 1em;
 }
 .sf-link svg {
-  width: 1.8em;;
-  height: 1.8em;;
+  width: 1.8em;
+  height: 1.8em;
   display: block;
   margin-left: 1px;
   margin-right: 1em;
@@ -113,15 +113,15 @@ body {
   display: flex;
   align-items: center;
 }
-#help-btn:hover .icon{
+#help-btn:hover .icon {
   background-color: #818181;
 }
 #help-btn .icon {
   display: inline-block;
   width: 1.4rem;
-  height: 1.4rem;;
+  height: 1.4rem;
   -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 1.4rem;;
+  -webkit-mask-size: 1.4rem;
   -webkit-mask-image: url(images/help.svg);
   -webkit-mask-position: center;
   background-color: #919191;
@@ -135,14 +135,6 @@ body {
   display: flex;
   align-items: center;
 }
-.help-text {
-  background: #fff;
-  border: 1px solid #DDDBDA;
-  padding: 0 15px;
-  border-radius: 0.25rem;
-  margin-top: 10px;
-  margin-bottom: 5px;
-}
 #result-table {
   margin-top: 3px;
   overflow: auto;
@@ -151,10 +143,10 @@ body {
   margin-bottom: 8px;
 }
 .area {
-  background-color: #F8F8F8;
+  background-color: #f8f8f8;
   padding: 8px 12px;
   border-radius: 5px;
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
   margin: 12px 12px 0 12px;
   flex-grow: 1;
 }
@@ -196,7 +188,9 @@ h1 {
 .area.import-actions {
   flex-grow: 0;
 }
-.conf-label, .columns-label, label {
+.conf-label,
+.columns-label,
+label {
   font-weight: normal;
   color: #4a4a56;
   display: flex;
@@ -228,7 +222,7 @@ h1 {
   display: flex;
   align-items: center;
 }
-.conf-error button{
+.conf-error button {
   margin: 0 0 0 6px;
 }
 .confError {
@@ -262,7 +256,7 @@ h1 {
   padding: 5px;
   max-height: calc(100% - 34px);
 }
-.columns-mapping .conf-line input[type=search] {
+.columns-mapping .conf-line input[type="search"] {
   flex-grow: 1;
   width: auto;
 }
@@ -305,7 +299,7 @@ label.statusGroupEmpty {
   right: 0;
   bottom: 0;
   left: 0;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0, 0, 0, 0.8);
   z-index: 99999;
 }
 #confirm-dialog {
@@ -323,18 +317,18 @@ label.statusGroupEmpty {
   margin-right: 20px;
 }
 select,
-input[type=search],
-input[type=number],
-input[type=text] {
+input[type="search"],
+input[type="number"],
+input[type="text"] {
   width: 335px;
   font-family: inherit;
   padding: 5px 13px;
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
   border-radius: 0.25rem;
   height: 32px;
   position: relative;
 }
-input[type=number]{
+input[type="number"] {
   width: 99px;
 }
 input.object-list {
@@ -407,7 +401,7 @@ option[value="null"][disabled] {
 textarea {
   outline: none;
   border-radius: 0.25rem;
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
 }
 #data {
   resize: none;
@@ -426,7 +420,7 @@ textarea {
   align-items: center;
   margin: 0;
 }
-.button-group{
+.button-group {
   white-space: nowrap;
 }
 .button-group button,
@@ -435,7 +429,7 @@ textarea {
 .button-group input {
   border-left-width: 0;
   border-radius: 0;
-  margin-right: 0
+  margin-right: 0;
 }
 .button-group > :first-child,
 .button-group > [hidden] + * {
@@ -448,8 +442,9 @@ textarea {
   border-bottom-right-radius: 0.25rem;
   margin-right: 10px;
 }
-button, .button {
-  border: 1px solid #DDDBDA;
+button,
+.button {
+  border: 1px solid #dddbda;
   height: 32px;
   display: inline-block;
   text-decoration: none;
@@ -464,8 +459,9 @@ button, .button {
   margin-right: 10px;
   white-space: nowrap;
 }
-button:hover, .button:hover {
-  background-color: #F4F6F9;
+button:hover,
+.button:hover {
+  background-color: #f4f6f9;
   color: #005fb2;
 }
 button.toggle {
@@ -480,13 +476,13 @@ button.toggle {
 .button-icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
-  background-color: #706E6B;
+  background-color: #706e6b;
   display: inline-block;
   width: 16px;
   height: 16px;
 }
 button.toggle:hover .button-icon,
-button.toggle:hover .button-toggle-icon  {
+button.toggle:hover .button-toggle-icon {
   background-color: #004487;
 }
 .flex-right button:last-child {

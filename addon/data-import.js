@@ -1302,7 +1302,7 @@ class App extends React.Component {
           h("h3", {}, "Import Help"),
           h("p", {}, "Use for quick one-off data imports."),
           h("ul", {},
-            h("li", {}, "Enter your CSV or Excel data in the box above.",
+            h("li", {}, "Enter your CSV, Excel or JSON data in the box above.",
               h("ul", {},
                 h("li", {}, "The input must contain a header row with field API names."),
                 h("li", {}, "To use an external ID for a lookup field, the header row should contain the lookup relation name, the target sobject name and the external ID name separated by colons, e.g. \"MyLookupField__r:MyObject__c:MyExternalIdField__c\"."),
@@ -1313,7 +1313,6 @@ class App extends React.Component {
                 h("li", {}, "You can supply the other import options by clicking \"Copy options\" and pasting the options into Excel in the top left cell, just above the header row.")
               )
             ),
-            h("li", {}, "Select your input format"),
             h("li", {}, "Select an action (insert, update, upsert or delete)"),
             h("li", {}, "Enter the API name of the object to import"),
             h("li", {}, "Press the Run button")

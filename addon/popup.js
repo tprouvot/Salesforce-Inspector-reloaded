@@ -110,7 +110,7 @@ class App extends React.PureComponent {
       importHref: "data-import.html?" + hostArg,
       eventMonitorHref: "event-monitor.html?" + hostArg,
       fieldCreatorHref: "field-creator.html?" + hostArg,
-      accessAnalyzerHref: "field-access-analyzer.html?" + hostArg,
+      accessAnalyzerHref: "access-analyzer.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext,
       useLegacyDownloadMetadata: JSON.parse(localStorage.getItem("useLegacyDlMetadata"))
@@ -177,6 +177,7 @@ class App extends React.PureComponent {
       "h": ["click", "homeBtn"],
       "p": ["click", "optionsBtn"],
       "m": ["click", "eventMonitorBtn"],
+      "z": ["click", "accessAnalyzerBtn"],
       "o": ["tab", "objectTab"],
       "u": ["tab", "userTab"],
       "s": ["tab", "shortcutTab"],
@@ -342,9 +343,9 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "eventMonitorBtn", href: eventMonitorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Event ", h("u", {}, "M"), "onitor"))
             ),
-            h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "accessAnalyzerBtn", href: accessAnalyzerHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Access ", h("u", {}, "A"), "nalyzer"))
-            ),
+            displayButton("access-analyzer", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
+              h("a", {ref: "accessAnalyzerBtn", href: accessAnalyzerHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Access Analy", h("u", {}, "z"), "er"))
+            ) : null,
             displayButton("generate-token", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
                 {

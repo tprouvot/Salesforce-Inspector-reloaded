@@ -82,7 +82,8 @@
         "inject.js",
         "field-creator.html",
         "options.html",
-        "event-monitor.html"
+        "event-monitor.html",
+        "access-analyzer.html"
       ],
       "matches": [
         "https://*.salesforce.com/*",
@@ -146,6 +147,9 @@
     },
     "event-monitor": {
       "description": "Event Monitor"
+    },
+    "access-analyzer": {
+      "description": "Access Analyzer"
     }
   }
 }

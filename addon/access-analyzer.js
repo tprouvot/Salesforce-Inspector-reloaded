@@ -30,12 +30,6 @@ class Model {
       this.inputUser = {userId: res.userId, userName: res.userName, profileId: res.profileId};
     }));
 
-    /*let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
-      //change background color for production
-      document.body.classList.add("prod");
-      this.isProd = true;
-    }*/
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -118,9 +112,9 @@ class Model {
 }
 
 /**
-   * Parse a permission metadata file (profile || permission) and, 
+   * Parse a permission metadata file (profile || permission) and,
    * return the access level of specific field
-   * The return a structured object that contains the name, type. 
+   * The return a structured object that contains the name, type.
    * @param cb A function to be called once React has processed the update.
    */
 function parsePermission(permission, qualifiedAPIName) {
@@ -250,20 +244,20 @@ class App extends React.Component {
   }
 
   onImportTypeChange(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.importType = e.target.value;
     model.didUpdate();
   }
 
   onFieldChange(e) {
-    let { model } = this.props;
+    let {model} = this.props;
     model.inputField = e.target.value;
     model.analyzeEnabled = true;
     model.didUpdate();
   }
 
   analyze(){
-    let { model } = this.props;
+    let {model} = this.props;
     model.spinnerCount++;
     console.log("launch analyze");
     model.analyzeEnabled = false;
@@ -274,7 +268,7 @@ class App extends React.Component {
   }
 
   async getProfile(){
-    let { model } = this.props;
+    let {model} = this.props;
 
     let profileName;
     let profile;
@@ -335,7 +329,7 @@ class App extends React.Component {
   }
 
   async getPermissionSets(){
-    let { model } = this.props;
+    let {model} = this.props;
 
     let permissionSetNames = [];
     let permissionSetResult = [];
@@ -366,7 +360,7 @@ class App extends React.Component {
   }
 
   async getFlexipages(){
-    let { model } = this.props;
+    let {model} = this.props;
     model.isRunning = true;
     let flexipageNames = [];
     await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT Id, DeveloperName, Description, Type, EntityDefinitionId FROM FlexiPage WHERE EntityDefinition.DeveloperName = '" + model.importType + "'"))
@@ -392,7 +386,7 @@ class App extends React.Component {
               type: "Lightning Page",
               icon: "lightning_extension",
               name: record.fullName,
-              components: components
+              components
             }
           );
         });
@@ -520,7 +514,7 @@ class App extends React.Component {
         result.access && h("div", {className: "slds-tile__detail"},
           h("dl", {className: "slds-list_horizontal slds-wrap"},
             h("dt", {className: "slds-item_label slds-truncate"}, result.access?.label + ":"),
-            h("dd", {className: `slds-item_detail slds-truncate slds-m-left_small  
+            h("dd", {className: `slds-item_detail slds-truncate slds-m-left_small
               ${result.access?.theme === "success" ? "slds-text-title_bold slds-text-color_success" : result.access?.theme === "error" ? "slds-text-color_error" : "slds-text-color_default"}`}, result.access?.value)
           )
         )
@@ -541,7 +535,7 @@ class App extends React.Component {
           ),
           " Salesforce Home"
         ),
-        h("h1", {}, "Field Access Analyser"),
+        h("h1", {}, "Access Analyser"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
 
@@ -553,6 +547,12 @@ class App extends React.Component {
           h("a", {href: "#", id: "help-btn", title: "", onClick: this.onToggleHelp},
             h("div", {className: "icon"})
           ),
+        ),
+        h("div", {hidden: !model.showHelp, className: "help-text"},
+          h("h3", {}, "Access Analyzer Help"),
+          h("p", {}, "Use this tool to analyze field-level access across different Salesforce components."),
+          h("p", {}, "Select an object and field to see how it's configured in profiles, permission sets, layouts, and Lightning pages."),
+          h("p", {}, "The analysis will show you the complete access picture for the selected field.")
         ),
       ),
       h("div", {className: "area"},

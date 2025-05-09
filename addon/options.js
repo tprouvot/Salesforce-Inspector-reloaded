@@ -98,26 +98,16 @@ class OptionsTabSelector extends React.Component {
                 {label: "Apex Classes", name: "classes", checked: false}
               ]}
           },
-          {option: MultiCheckboxButtonGroup,
-            props: {title: "Searchable metadata from Shortcut tab",
-              key: "metadataShortcutSearchOptions",
-              checkboxes: [
-                {label: "Flows", name: "flows", checked: true},
-                {label: "Profiles", name: "profiles", checked: true},
-                {label: "PermissionSets", name: "permissionSets", checked: true},
-                {label: "Communities", name: "networks", checked: true},
-                {label: "Apex Classes", name: "classes", checked: false}
-              ]}
-          },
           {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
               key: "hideButtonsOption",
               checkboxes: [
-                {label: "New", name: "new", checked: true},
+                {label: "New", name: "new", checked: true, title: "New button from popup"},
                 {label: "Explore API", name: "explore-api", checked: true},
                 {label: "Org Limits", name: "org-limits", checked: true},
                 {label: "Options", name: "options", checked: true},
+                {label: "Access Analyzer", name: "access-analyzer", checked: true},
                 {label: "Generate Access Token", name: "generate-token", checked: true}
               ]}
           },
@@ -644,17 +634,17 @@ class MultiCheckboxButtonGroup extends React.Component {
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_2-of-12 text-align-middle"},
         h("span", {}, this.title)
       ),
-      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control"},
           h("div", {className: "slds-checkbox_button-group"},
             this.state.checkboxes.map((checkbox, index) =>
               h("span", {className: "slds-button slds-checkbox_button", key: this.key + index},
-                h("input", {type: "checkbox", id: `${this.key}-${checkbox.value}-${index}`, name: checkbox.name, checked: checkbox.checked, onChange: this.handleCheckboxChange, title: checkbox.title}),
-                h("label", {className: "slds-checkbox_button__label", htmlFor: `${this.key}-${checkbox.value}-${index}`},
+                h("input", {type: "checkbox", id: `${this.key}-${checkbox.value}-${index}`, name: checkbox.name, checked: checkbox.checked, onChange: this.handleCheckboxChange}),
+                h("label", {title: checkbox.title, className: "slds-checkbox_button__label", htmlFor: `${this.key}-${checkbox.value}-${index}`},
                   h("span", {className: "slds-checkbox_faux"}, checkbox.label)
                 )
               )
@@ -766,7 +756,7 @@ class enableLogsOption extends React.Component {
         h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
           h("input", {type: "text", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "15", value: this.state.debugLogTimeMinutes, onChange: this.onChangeDebugLogTime})
         ),
-      )  
+      )
     );
   }
 }

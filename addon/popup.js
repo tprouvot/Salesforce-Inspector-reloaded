@@ -218,7 +218,7 @@ class App extends React.PureComponent {
   setOrgInfo(sfHost) {
     let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
     if (orgInfo == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType,TimeZoneSidKey+FROM+Organization").then(res => {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType+FROM+Organization").then(res => {
         orgInfo = res.records[0];
         sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
       });

@@ -371,10 +371,9 @@ class Model {
     }
 
     // Fetch fields using a Tooling API call, which returns fields not readable by the current user, but fails if the user does not have access to the Tooling API.
-    // The Tooling API is not very stable. It often gives "An unexpected error occurred. Please include this ErrorId if you contact support".
     // We would like to query all meta-fields, to show them when the user clicks a field for more details.
     // But, the more meta-fields we query, the more likely the query is to fail, and the meta-fields that cause failure vary depending on the entity we query, the org we are in, and the current Salesforce release.
-    // Therefore qe query the minimum set of meta-fields needed by our main UI.
+    // Therefore we query the minimum set of meta-fields needed by our main UI.
     this.spinFor(
       "querying tooling particles",
       sfConn.rest("/services/data/v" + apiVersion + "/tooling/query/?q=" + encodeURIComponent("SELECT QualifiedApiName, Label, DataType, ReferenceTo, Length, Precision, Scale, IsAutonumber, IsCaseSensitive, IsDependentPicklist, IsEncrypted, IsIdLookup, IsHtmlFormatted, IsNillable, IsUnique, IsCalculated, InlineHelpText, FieldDefinition.DurableId, EntityDefinition.DurableId FROM EntityParticle WHERE EntityDefinition.QualifiedApiName = '" + this.sobjectName + "'")).then(res => {
@@ -668,7 +667,7 @@ class FieldRow extends TableRow {
         + (!fieldDescribe.nillable ? ", required" : "")
         + (fieldDescribe.restrictedPicklist ? ", restricted" : "")
         + (fieldDescribe.unique ? ", unique" : "")
-        + (fieldDescribe.calculated ? "*" : "");
+        + (fieldDescribe.calculated ? ", calculated" : "");
     }
     let particle = this.entityParticle;
     if (particle) {
@@ -685,7 +684,7 @@ class FieldRow extends TableRow {
         + (particle.IsHtmlFormatted ? ", html" : "")
         + (!particle.IsNillable ? ", required" : "")
         + (particle.IsUnique ? ", unique" : "")
-        + (particle.IsCalculated ? "*" : "");
+        + (particle.IsCalculated ? ", calculated" : "");
     }
     return undefined;
   }

@@ -97,6 +97,7 @@ class Model {
     this.filteredApiList;
     this.requestTemplates = localStorage.getItem("requestTemplates") ? this.requestTemplates = localStorage.getItem("requestTemplates").split("//") : [
       {key: "getLimit", endpoint: `/services/data/v${apiVersion}/limits`, method: "GET", body: ""},
+      {key: "executeApex", endpoint: `/services/data/v${apiVersion}/tooling/executeAnonymous/?anonymousBody=System.debug(LoggingLevel.INFO, 'Executing apex example');`, method: "GET", body: ""},
       {key: "getAccount", endpoint: `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name+FROM+Account+LIMIT+1`, method: "GET", body: ""},
       {key: "createAccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/`, method: "POST", body: '{  \n"Name" : "SFIR",\n"Industry" : "Chrome Extension"\n}'},
       {key: "updateAccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "PATCH", body: '{  \n"Name" : "SFIR Updated"\n}'},
@@ -163,7 +164,7 @@ class Model {
     copyToClipboard(this.apiResponse.value, null, "  ");
   }
   clear(){
-      this.apiResponse.value = "";
+    this.apiResponse.value = "";
   }
   selectSavedEntry() {
     let delimiter = ":";
@@ -230,7 +231,10 @@ class Model {
   doSend() {
     this.startTime = performance.now();
     this.canSendRequest = false;
-    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress}, true)
+    let api = this.request.endpoint.startsWith("/services/async/") ? "bulk" : "normal";
+    let responseType = this.request.endpoint.startsWith("/services/async/") ? "xml" : "json";
+    this.request.method = this.request.method.toUpperCase();
+    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress}, true)
       .catch(err => {
         this.canSendRequest = true;
         this.totalTime = performance.now() - this.startTime;
@@ -259,10 +263,12 @@ class Model {
   parseResponse(result, status) {
 
     this.resultClass = result.status < 300 ? "success" : result.status > 399 ? "error" : "";
+    let format = result.responseType.length > 0 ? result.responseType : "xml";
     this.apiResponse = {
       status,
       code: result.status,
-      value: result.response ? JSON.stringify(result.response, null, "    ") : "NONE"
+      format,
+      value: result.response ? this.formatResponse(result.response, format) : "NONE"
     };
     if (this.resultClass === "success"){
       let newApis = Object.keys(result.response)
@@ -279,6 +285,36 @@ class Model {
       this.filteredApiList = this.apiList.filter(api => api.endpoint.toLowerCase().includes(this.request.endpoint.toLowerCase()));
     }
   }
+
+  formatResponse(resp, format) {
+    if (format === "xml") {
+      return this.formatXml(resp);
+    } else {
+      return JSON.stringify(resp, null, "    ");
+    }
+  }
+
+  formatXml(sourceXml) {
+    let xmlDoc = new DOMParser().parseFromString(sourceXml, "application/xml");
+    let xsltDoc = new DOMParser().parseFromString([
+      '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform">',
+      '  <xsl:strip-space elements="*"/>',
+      '  <xsl:template match="para[content-style][not(text())]">',
+      '    <xsl:value-of select="normalize-space(.)"/>',
+      "  </xsl:template>",
+      '  <xsl:template match="node()|@*">',
+      '    <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>',
+      "  </xsl:template>",
+      '  <xsl:output indent="yes"/>',
+      "</xsl:stylesheet>",
+    ].join("\n"), "application/xml");
+
+    let xsltProcessor = new XSLTProcessor();
+    xsltProcessor.importStylesheet(xsltDoc);
+    let resultDoc = xsltProcessor.transformToDocument(xmlDoc);
+    let resultXml = new XMLSerializer().serializeToString(resultDoc);
+    return resultXml;
+  };
 }
 
 
@@ -404,7 +440,9 @@ class App extends React.Component {
   onSetEndpoint(e){
     let {model} = this.props;
     model.request.endpoint = e.target.value;
-    model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(e.target.value.toLowerCase()));
+    //replace current endpoint with latest on the have the autocomplete works for all api versions
+    let updatedApiEndpoint = e.target.value.replace(/\/data\/v\d+\.0\//, `/data/v${apiVersion}/`);
+    model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(updatedApiEndpoint.toLowerCase()));
     model.didUpdate();
   }
 
@@ -591,8 +629,8 @@ class App extends React.Component {
         h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
         h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null},
           model.apiResponse && h("div", {},
-            h("pre", {className: "language-json reset-margin"}, // Set the language class to JSON for Prism to highlight
-              h("code", {className: "language-json"}, model.apiResponse.value)
+            h("pre", {className: "reset-margin"}, // Set the language class for Prism to highlight
+              h("code", {className: "language-" + model.apiResponse.format}, model.apiResponse.value)
             )
           )
         )

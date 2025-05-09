@@ -3,6 +3,7 @@ import {popupTest} from "./popup-test.js";
 import {csvParseTest} from "./csv-parse-test.js";
 import {dataImportTest} from "./data-import-test.js";
 import {dataExportTest} from "./data-export-test.js";
+import {restExploreTest} from "./rest-explore-test.js";
 
 let seenError = false;
 class Test {
@@ -117,6 +118,7 @@ addEventListener("load", () => {
       let sfHost = args.get("host");
       await sfConn.getSession(sfHost);
       let test = new Test(sfHost);
+
       updateProgress("popupTest");
       await popupTest(test);
       updateProgress("csvParseTest", "popupTest");
@@ -126,6 +128,9 @@ addEventListener("load", () => {
       updateProgress("dataExportTest", "dataImportTest");
       await dataExportTest(test);
       updateProgress(null, "dataExportTest");
+      await restExploreTest(test);
+      updateProgress(null, "restExploreTest");
+
       window.anonApex.hidden = true;
       test.assert(!seenError, "Expected no error");
       console.log("Salesforce Inspector unit tests finished successfully");

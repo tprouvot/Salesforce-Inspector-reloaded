@@ -310,6 +310,10 @@ button:disabled > svg.button-icon{
   fill: #dddbda;
 }
 
+button > svg.disabled{
+  fill: #dddbda;
+}
+
 .highlighted {
   background-color: rgb(0, 112, 210);
   border-color: rgb(0, 112, 210);
@@ -714,4 +718,8 @@ svg.button-icon {
 .expanded{
   overflow: auto;
   height: 200px;
+}
+.help-text a,
+.help-text a:visited {
+  color: #0176d3;
 }

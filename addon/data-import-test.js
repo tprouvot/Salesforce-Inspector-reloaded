@@ -38,7 +38,7 @@ export async function dataImportTest(test) {
   await waitForSpinner();
 
   // Autocomplete lists
-  assert(vm.sobjectList().indexOf("Inspector_Test__c") > -1);
+  assert(vm.sobjectList().find(obj => obj.name === "Inspector_Test__c"));
   assertEquals(["Id", "Name"], vm.idLookupList());
   assertEquals(["Checkbox__c", "Id", "Lookup__c", "Lookup__r:Inspector_Test__c:Id", "Lookup__r:Inspector_Test__c:Name", "Name", "Number__c", "Owner:Group:Id", "Owner:Group:Name", "Owner:User:Email", "Owner:User:EmployeeNumber", "Owner:User:FederationIdentifier", "Owner:User:Id", "Owner:User:Username", "OwnerId", "__Action", "__Errors", "__Id", "__Status"].sort(), vm.columnList().sort());
 
@@ -169,10 +169,10 @@ export async function dataImportTest(test) {
   records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Id from Inspector_Test__c order by Name")));
   vm.dataFormat = "csv";
   vm.didUpdate();
+  vm.setData("Id,_foo*,__Status\r\n" + records[5].Id + ",foo,Queued\r\n" + records[6].Id + ",foo,Succeeded");
   vm.importAction = "delete";
   vm.importActionSelected = true;
   vm.didUpdate();
-  vm.setData("Id,_foo*,__Status\r\n" + records[5].Id + ",foo,Queued\r\n" + records[6].Id + ",foo,Succeeded");
   assertEquals({Queued: 1, Processing: 0, Succeeded: 1, Failed: 0}, vm.importCounts());
   vm.doImport();
   assertEquals({text: "1 records will be deleted. 1 records will be skipped because they have __Status Succeeded or Failed.", action: undefined}, vm.confirmPopup);

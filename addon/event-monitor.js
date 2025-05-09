@@ -1,5 +1,6 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, getLinkTarget} from "./inspector.js";
+import {getLinkTarget} from "./utils.js";
+import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
 import {copyToClipboard} from "./data-load.js";

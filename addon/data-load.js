@@ -1,5 +1,6 @@
 import {sfConn, apiVersion} from "./inspector.js";
 
+const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true" && !window.location.href.includes("data-export");
 // Inspired by C# System.Linq.Enumerable
 export function Enumerable(iterable) {
   this[Symbol.iterator] = iterable[Symbol.iterator].bind(iterable);
@@ -593,7 +594,6 @@ export function initScrollTable(scroller) {
           if (colVisible[c] == 0) continue;
           let cell = row[c];
           let td = document.createElement("td");
-          const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true";
           td.className = `scrolltable-cell header ${(cell.startsWith("_") && greyOutSkippedColumns) ? "skipped" : ""}`;
           td.style.minWidth = colWidths[c] + "px";
           td.style.height = rowHeights[r] + "px";

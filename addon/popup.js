@@ -200,20 +200,23 @@ class App extends React.PureComponent {
       refs.showAllDataBox.refs[target].click();
     }
   }
-  onChangeApi(e) {
+  async onChangeApi(e) {
     let {sfHost} = this.props;
-    if (apiVersion < e.target.value) {
-      const latestApiVersion = getLatestApiVersionFromOrg(sfHost);
-      if (latestApiVersion >= e.target.value) {
-        localStorage.setItem("apiVersion", e.target.value + ".0");
-        this.setState({apiVersionInput: e.target.value + ".0"});
+    const inputElt = e.target;
+    const newApiVersion = e.target.value;
+    if (apiVersion < newApiVersion) {
+      const latestApiVersion = await getLatestApiVersionFromOrg(sfHost);
+      if (latestApiVersion >= newApiVersion) {
+        localStorage.setItem("apiVersion", newApiVersion + ".0");
+        this.setState({apiVersionInput: newApiVersion + ".0"});
       } else {
-        e.target.setAttribute("max", latestApiVersion);
-        e.target.setAttribute("title", e.target.title + " Maximum " + latestApiVersion);
+        inputElt.setAttribute("max", latestApiVersion);
+        inputElt.setCustomValidity("Maximum version available: " + latestApiVersion);
+        inputElt.reportValidity();
       }
     } else {
-      localStorage.setItem("apiVersion", e.target.value + ".0");
-      this.setState({apiVersionInput: e.target.value + ".0"});
+      localStorage.setItem("apiVersion", newApiVersion + ".0");
+      this.setState({apiVersionInput: newApiVersion + ".0"});
     }
   }
   componentDidMount() {

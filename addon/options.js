@@ -343,21 +343,23 @@ class APIVersionOption extends React.Component {
     this.state = {apiVersion: localStorage.getItem("apiVersion") ? localStorage.getItem("apiVersion") : apiVersion};
   }
 
-  onChangeApiVersion(e) {
-    let {sfHost} = this.props;
-    if (this.state.apiVersion < e.target.value) {
-      const latestApiVersion = getLatestApiVersionFromOrg(sfHost);
-      if (latestApiVersion >= e.target.value) {
-        localStorage.setItem("apiVersion", e.target.value + ".0");
-        this.setState({apiVersion: e.target.value + ".0"});
+  async onChangeApiVersion(e) {
+    let {sfHost} = this.props.model;
+    const inputElt = e.target;
+    const newApiVersion = e.target.value;
+    if (this.state.apiVersion < newApiVersion) {
+      const latestApiVersion = await getLatestApiVersionFromOrg(sfHost);
+      if (latestApiVersion >= newApiVersion) {
+        localStorage.setItem("apiVersion", newApiVersion + ".0");
+        this.setState({apiVersion: newApiVersion + ".0"});
       } else {
-        e.target.setAttribute("max", latestApiVersion);
-        const tooltipApiVersion = document.getElementById("APIVersion_tooltip");
-        tooltipApiVersion.setAttribute("tooltip", tooltipApiVersion.firstChild.innerHTML = tooltipApiVersion.firstChild.innerHTML + latestApiVersion);
+        inputElt.setAttribute("max", latestApiVersion);
+        inputElt.setCustomValidity("Maximum version available: " + latestApiVersion);
+        inputElt.reportValidity();
       }
     } else {
-      localStorage.setItem("apiVersion", e.target.value + ".0");
-      this.setState({apiVersion: e.target.value + ".0"});
+      localStorage.setItem("apiVersion", newApiVersion + ".0");
+      this.setState({apiVersion: newApiVersion + ".0"});
     }
   }
 
@@ -369,7 +371,7 @@ class APIVersionOption extends React.Component {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "API Version",
-          h(Tooltip, {tooltip: "this component has a maximum version ", idKey: "APIVersion"})
+          h(Tooltip, {tooltip: "Update api version", idKey: "APIVersion"})
         ),
       ),
       h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),

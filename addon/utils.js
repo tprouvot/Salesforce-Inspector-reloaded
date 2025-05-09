@@ -1,3 +1,5 @@
+import {sfConn} from "./inspector.js";
+
 export function getLinkTarget(e = {}) {
   if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
     return "_blank";
@@ -20,15 +22,14 @@ export function displayButton(buttonName, hideButtonsOption){
   return true;
 }
 
-export function getLatestApiVersionFromOrg(sfHost) {
+export async function getLatestApiVersionFromOrg(sfHost) {
   let latestApiVersionFromOrg = sessionStorage.getItem(sfHost + "_latestApiVersionFromOrg");
   if (latestApiVersionFromOrg != null) {
     return latestApiVersionFromOrg;
   } else {
-    sfConn.rest("services/data/").then(res => {
-      latestApiVersionFromOrg = res[res.length - 1].version; //Extract the value of the last version
-      sessionStorage.setItem(sfHost + "_latestApiVersionFromOrg", latestApiVersionFromOrg);
-      return latestApiVersionFromOrg;
-    });
+    const res = await sfConn.rest("services/data/");
+    latestApiVersionFromOrg = res[res.length - 1].version; //Extract the value of the last version
+    sessionStorage.setItem(sfHost + "_latestApiVersionFromOrg", latestApiVersionFromOrg);
+    return latestApiVersionFromOrg;
   }
 }

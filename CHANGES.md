@@ -3,6 +3,7 @@
 ## Version 1.27
 
 - Fix empty lines in picklist values causing deployment errors in Field Creator [issue 787](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/787) (contribution by [Vivek Sharma](https://github.com/vicky773h))
+- `Data Import` Automatically detect the SObject based on Id field [feature 483](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/483) request by [Tom Bassett](https://github.com/CRMTom92) and fix [issue 829](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/829) & [issue 832](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/832)
 - Add `convertCurrency()` , `FORMAT()` and `GROUPING()` to autocomplete suggestions in Data Export [feature 818](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/818) request by [Hubert](https://github.com/dollarSignUsername)
 - Update sandbox banner feature to match with new AppDev Bar [feature 815](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/815)
 - Add refresh button on Org Limits and persist filter in url
@@ -12,6 +13,7 @@
 - Fix 'Query Record' not persiting the state of the 'Tooling Api' settting [issue 268](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/268) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
 - `Show All Data` Use alternative field Name in the header (ie CaseNumber) [feature 806](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/806) request by [Mart](https://github.com/Mart-User)
 - Implement search on `Event Monitor` to filter on event details
+- Prevent selection of an API version higher than the latest available [issue 464](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/464) (contribution by [Salwa Hammou](https://github.com/SalwaHm))
 
 ## Version 1.26
 

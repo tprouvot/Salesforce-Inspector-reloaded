@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton} from "./utils.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg} from "./utils.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
@@ -200,9 +200,24 @@ class App extends React.PureComponent {
       refs.showAllDataBox.refs[target].click();
     }
   }
-  onChangeApi(e) {
-    localStorage.setItem("apiVersion", e.target.value + ".0");
-    this.setState({apiVersionInput: e.target.value});
+  async onChangeApi(e) {
+    let {sfHost} = this.props;
+    const inputElt = e.target;
+    const newApiVersion = e.target.value;
+    if (apiVersion < newApiVersion) {
+      const latestApiVersion = await getLatestApiVersionFromOrg(sfHost);
+      if (latestApiVersion >= newApiVersion) {
+        localStorage.setItem("apiVersion", newApiVersion + ".0");
+        this.setState({apiVersionInput: newApiVersion + ".0"});
+      } else {
+        inputElt.setAttribute("max", latestApiVersion);
+        inputElt.setCustomValidity("Maximum version available: " + latestApiVersion);
+        inputElt.reportValidity();
+      }
+    } else {
+      localStorage.setItem("apiVersion", newApiVersion + ".0");
+      this.setState({apiVersionInput: newApiVersion + ".0"});
+    }
   }
   componentDidMount() {
     let {sfHost} = this.props;
@@ -218,7 +233,7 @@ class App extends React.PureComponent {
   setOrgInfo(sfHost) {
     let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
     if (orgInfo == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType,TimeZoneSidKey+FROM+Organization").then(res => {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType+FROM+Organization").then(res => {
         orgInfo = res.records[0];
         sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
       });
@@ -387,11 +402,12 @@ class App extends React.PureComponent {
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
+              id: "idApiInput",
               className: "api-input",
               type: "number",
               title: "Update api version",
               onChange: this.onChangeApi,
-              value: apiVersionInput.split(".0")[0]
+              value: apiVersionInput.split(".0")[0],
             })
           ),
           h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container", title: `Shortcut :${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"}`},

@@ -848,6 +848,7 @@ class CustomShortcuts extends React.Component {
   }
 
   handleInputChange(field, value) {
+    //TODO check if the link contains the host prefix, if so delete it from the link before storing the value
     this.setState({
       newShortcut: {
         ...this.state.newShortcut,
@@ -860,84 +861,111 @@ class CustomShortcuts extends React.Component {
     const {shortcuts, editingIndex, newShortcut} = this.state;
 
     return h("div", {className: "slds-grid slds-grid_vertical"},
-      // Table header
-      h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-        h("div", {className: "slds-col slds-size_3-of-12"}, "Label"),
-        h("div", {className: "slds-col slds-size_4-of-12"}, "Link"),
-        h("div", {className: "slds-col slds-size_3-of-12"}, "Section"),
-        h("div", {className: "slds-col slds-size_2-of-12"}, "Actions")
-      ),
-      // Table rows
-      [...shortcuts, editingIndex === shortcuts.length ? newShortcut : null].map((shortcut, index) =>
-        shortcut && h("div", {
-          key: editingIndex === index ? `new-${index}` : `${shortcut.label}-${shortcut.link}-${index}`,
-          className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"
-        },
-        editingIndex === index ? [
-          h("div", {key: "label", className: "slds-col slds-size_3-of-12 slds-m-right_small"},
-            h("input", {
-              type: "text",
-              className: "slds-input",
-              value: newShortcut.label,
-              onChange: (e) => this.handleInputChange("label", e.target.value)
-            })
-          ),
-          h("div", {key: "link", className: "slds-col slds-size_4-of-12 slds-m-right_small"},
-            h("input", {
-              type: "text",
-              className: "slds-input",
-              value: newShortcut.link,
-              onChange: (e) => this.handleInputChange("link", e.target.value)
-            })
-          ),
-          h("div", {key: "section", className: "slds-col slds-size_3-of-12 slds-m-right_small"},
-            h("input", {
-              type: "text",
-              className: "slds-input",
-              value: newShortcut.section,
-              onChange: (e) => this.handleInputChange("section", e.target.value)
-            })
-          ),
-          h("div", {key: "actions", className: "slds-col slds-size_2-of-12 slds-m-right_small"},
-            h("button", {
-              className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-right_x-small",
-              onClick: this.onSaveShortcut,
-              title: "Save"
-            }, h("svg", {className: "slds-button__icon"},
-              h("use", {xlinkHref: "symbols.svg#check"})
-            )),
-            h("button", {
-              className: "slds-button slds-button_icon slds-button_icon-border-filled",
-              onClick: this.onCancelEdit,
-              title: "Cancel"
-            }, h("svg", {className: "slds-button__icon"},
-              h("use", {xlinkHref: "symbols.svg#close"})
-            ))
+      h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered"},
+        h("thead", {},
+          h("tr", {className: "slds-line-height_reset"},
+            h("th", {scope: "col"},
+              h("div", {className: "slds-truncate", title: "Label"}, "Label")
+            ),
+            h("th", {scope: "col"},
+              h("div", {className: "slds-truncate", title: "Link"}, "Link")
+            ),
+            h("th", {scope: "col"},
+              h("div", {className: "slds-truncate", title: "Section"}, "Section")
+            ),
+            h("th", {scope: "col"},
+              h("div", {className: "slds-truncate", title: "Actions"}, "Actions")
+            )
           )
-        ] : [
-          h("div", {key: "label", className: "slds-col slds-size_3-of-12"}, shortcut.label),
-          h("div", {key: "link", className: "slds-col slds-size_4-of-12"}, shortcut.link),
-          h("div", {key: "section", className: "slds-col slds-size_3-of-12"}, shortcut.section),
-          h("div", {key: "actions", className: "slds-col slds-size_2-of-12"},
-            h("button", {
-              className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-right_x-small",
-              onClick: () => this.onEditShortcut(index),
-              title: "Edit"
-            }, h("svg", {className: "slds-button__icon"},
-              h("use", {xlinkHref: "symbols.svg#edit"})
-            )),
-            h("button", {
-              className: "slds-button slds-button_icon slds-button_icon-border-filled",
-              onClick: () => this.onDeleteShortcut(index),
-              title: "Delete"
-            }, h("svg", {className: "slds-button__icon"},
-              h("use", {xlinkHref: "symbols.svg#delete"})
-            ))
+        ),
+        h("tbody", {},
+          [...shortcuts, editingIndex === shortcuts.length ? newShortcut : null].map((shortcut, index) =>
+            shortcut && h("tr", {
+              key: editingIndex === index ? `new-${index}` : `${shortcut.label}-${shortcut.link}-${index}`,
+              className: "slds-hint-parent"
+            },
+            editingIndex === index ? [
+              h("td", {key: "label", "data-label": "Label"},
+                h("div", {className: "slds-truncate"},
+                  h("input", {
+                    type: "text",
+                    className: "slds-input",
+                    value: newShortcut.label,
+                    onChange: (e) => this.handleInputChange("label", e.target.value)
+                  })
+                )
+              ),
+              h("td", {key: "link", "data-label": "Link"},
+                h("div", {className: "slds-truncate"},
+                  h("input", {
+                    type: "text",
+                    className: "slds-input",
+                    value: newShortcut.link,
+                    onChange: (e) => this.handleInputChange("link", e.target.value)
+                  })
+                )
+              ),
+              h("td", {key: "section", "data-label": "Section"},
+                h("div", {className: "slds-truncate"},
+                  h("input", {
+                    type: "text",
+                    className: "slds-input",
+                    value: newShortcut.section,
+                    onChange: (e) => this.handleInputChange("section", e.target.value)
+                  })
+                )
+              ),
+              h("td", {key: "actions", "data-label": "Actions"},
+                h("div", {className: "slds-truncate"},
+                  h("button", {
+                    className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-right_x-small",
+                    onClick: this.onSaveShortcut,
+                    title: "Save"
+                  }, h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#check"})
+                  )),
+                  h("button", {
+                    className: "slds-button slds-button_icon slds-button_icon-border-filled",
+                    onClick: this.onCancelEdit,
+                    title: "Cancel"
+                  }, h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#close"})
+                  ))
+                )
+              )
+            ] : [
+              h("td", {key: "label", "data-label": "Label"},
+                h("div", {className: "slds-truncate", title: shortcut.label}, shortcut.label)
+              ),
+              h("td", {key: "link", "data-label": "Link"},
+                h("div", {className: "slds-truncate", title: shortcut.link}, shortcut.link)
+              ),
+              h("td", {key: "section", "data-label": "Section"},
+                h("div", {className: "slds-truncate", title: shortcut.section}, shortcut.section)
+              ),
+              h("td", {key: "actions", "data-label": "Actions"},
+                h("div", {className: "slds-truncate"},
+                  h("button", {
+                    className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-right_x-small",
+                    onClick: () => this.onEditShortcut(index),
+                    title: "Edit"
+                  }, h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#edit"})
+                  )),
+                  h("button", {
+                    className: "slds-button slds-button_icon slds-button_icon-border-filled",
+                    onClick: () => this.onDeleteShortcut(index),
+                    title: "Delete"
+                  }, h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#delete"})
+                  ))
+                )
+              )
+            ]
+            )
           )
-        ]
         )
       ),
-      // Add new row button
       h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
         h("div", {className: "slds-col slds-size_12-of-12"},
           h("button", {

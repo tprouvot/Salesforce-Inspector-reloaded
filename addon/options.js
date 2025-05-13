@@ -214,7 +214,7 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Tab8",
         title: "Custom Shortcuts",
         content: [
-          {option: Option, props: {type: "toggle", title: "Include managed packages metadata", key: "includeManagedMetadata"}}
+          {option: CustomShortcuts, props: {}}
         ]
       }
     ];
@@ -269,7 +269,7 @@ class OptionsContainer extends React.Component {
   }
 
   render() {
-    return h("div", {id: this.props.id, className: this.getClass(), role: "tabpanel"}, this.props.content.map((c) => h(c.option, {storageKey: c.props?.key, ...c.props, model: this.model})));
+    return h("div", {id: this.props.id, key: this.props.id, className: this.getClass(), role: "tabpanel"}, this.props.content.map((c) => h(c.option, {storageKey: c.props?.key, ...c.props, model: this.model})));
   }
 
 }
@@ -778,6 +778,176 @@ class enableLogsOption extends React.Component {
         h("div", {className: "slds-col slds-size_3-of-12 slds-form-element"},
           h("input", {type: "number", id: "debugLogTimeMinutes", className: "slds-input slds-text-align_right slds-m-right_small", value: nullToEmptyString(this.state.debugLogTimeMinutes), onChange: this.onChangeDebugLogTime})
         ),
+      )
+    );
+  }
+}
+
+class CustomShortcuts extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.sfHost = props.model.sfHost;
+    this.onAddShortcut = this.onAddShortcut.bind(this);
+    this.onEditShortcut = this.onEditShortcut.bind(this);
+    this.onDeleteShortcut = this.onDeleteShortcut.bind(this);
+    this.onSaveShortcut = this.onSaveShortcut.bind(this);
+    this.onCancelEdit = this.onCancelEdit.bind(this);
+    this.state = {
+      shortcuts: JSON.parse(localStorage.getItem(this.sfHost + "_orgLinks") || "[]"),
+      editingIndex: -1,
+      newShortcut: {label: "", link: "", section: ""}
+    };
+  }
+
+  onAddShortcut() {
+    this.setState({
+      editingIndex: this.state.shortcuts.length,
+      newShortcut: {label: "", link: "", section: ""}
+    });
+  }
+
+  onEditShortcut(index) {
+    this.setState({
+      editingIndex: index,
+      newShortcut: {...this.state.shortcuts[index]}
+    });
+  }
+
+  onDeleteShortcut(index) {
+    const newShortcuts = [...this.state.shortcuts];
+    newShortcuts.splice(index, 1);
+    this.setState({shortcuts: newShortcuts});
+    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(newShortcuts));
+  }
+
+  onSaveShortcut() {
+    const {shortcuts, editingIndex, newShortcut} = this.state;
+    const newShortcuts = [...shortcuts];
+
+    if (editingIndex === shortcuts.length) {
+      newShortcuts.push(newShortcut);
+    } else {
+      newShortcuts[editingIndex] = newShortcut;
+    }
+
+    this.setState({
+      shortcuts: newShortcuts,
+      editingIndex: -1,
+      newShortcut: {label: "", link: "", section: ""}
+    });
+
+    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(newShortcuts));
+  }
+
+  onCancelEdit() {
+    this.setState({
+      editingIndex: -1,
+      newShortcut: {label: "", link: "", section: ""}
+    });
+  }
+
+  handleInputChange(field, value) {
+    this.setState({
+      newShortcut: {
+        ...this.state.newShortcut,
+        [field]: value
+      }
+    });
+  }
+
+  render() {
+    const {shortcuts, editingIndex, newShortcut} = this.state;
+
+    return h("div", {className: "slds-grid slds-grid_vertical"},
+      // Table header
+      h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_3-of-12"}, "Label"),
+        h("div", {className: "slds-col slds-size_4-of-12"}, "Link"),
+        h("div", {className: "slds-col slds-size_3-of-12"}, "Section"),
+        h("div", {className: "slds-col slds-size_2-of-12"}, "Actions")
+      ),
+      // Table rows
+      [...shortcuts, editingIndex === shortcuts.length ? newShortcut : null].map((shortcut, index) =>
+        shortcut && h("div", {
+          key: editingIndex === index ? `new-${index}` : `${shortcut.label}-${shortcut.link}-${index}`,
+          className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"
+        },
+        editingIndex === index ? [
+          h("div", {key: "label", className: "slds-col slds-size_3-of-12 slds-m-right_small"},
+            h("input", {
+              type: "text",
+              className: "slds-input",
+              value: newShortcut.label,
+              onChange: (e) => this.handleInputChange("label", e.target.value)
+            })
+          ),
+          h("div", {key: "link", className: "slds-col slds-size_4-of-12 slds-m-right_small"},
+            h("input", {
+              type: "text",
+              className: "slds-input",
+              value: newShortcut.link,
+              onChange: (e) => this.handleInputChange("link", e.target.value)
+            })
+          ),
+          h("div", {key: "section", className: "slds-col slds-size_3-of-12 slds-m-right_small"},
+            h("input", {
+              type: "text",
+              className: "slds-input",
+              value: newShortcut.section,
+              onChange: (e) => this.handleInputChange("section", e.target.value)
+            })
+          ),
+          h("div", {key: "actions", className: "slds-col slds-size_2-of-12 slds-m-right_small"},
+            h("button", {
+              className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-right_x-small",
+              onClick: this.onSaveShortcut,
+              title: "Save"
+            }, h("svg", {className: "slds-button__icon"},
+              h("use", {xlinkHref: "symbols.svg#check"})
+            )),
+            h("button", {
+              className: "slds-button slds-button_icon slds-button_icon-border-filled",
+              onClick: this.onCancelEdit,
+              title: "Cancel"
+            }, h("svg", {className: "slds-button__icon"},
+              h("use", {xlinkHref: "symbols.svg#close"})
+            ))
+          )
+        ] : [
+          h("div", {key: "label", className: "slds-col slds-size_3-of-12"}, shortcut.label),
+          h("div", {key: "link", className: "slds-col slds-size_4-of-12"}, shortcut.link),
+          h("div", {key: "section", className: "slds-col slds-size_3-of-12"}, shortcut.section),
+          h("div", {key: "actions", className: "slds-col slds-size_2-of-12"},
+            h("button", {
+              className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-right_x-small",
+              onClick: () => this.onEditShortcut(index),
+              title: "Edit"
+            }, h("svg", {className: "slds-button__icon"},
+              h("use", {xlinkHref: "symbols.svg#edit"})
+            )),
+            h("button", {
+              className: "slds-button slds-button_icon slds-button_icon-border-filled",
+              onClick: () => this.onDeleteShortcut(index),
+              title: "Delete"
+            }, h("svg", {className: "slds-button__icon"},
+              h("use", {xlinkHref: "symbols.svg#delete"})
+            ))
+          )
+        ]
+        )
+      ),
+      // Add new row button
+      h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_12-of-12"},
+          h("button", {
+            className: "slds-button slds-button_icon slds-button_icon-border-filled",
+            onClick: this.onAddShortcut,
+            title: "Add Shortcut"
+          }, h("svg", {className: "slds-button__icon"},
+            h("use", {xlinkHref: "symbols.svg#add"})
+          ))
+        )
       )
     );
   }

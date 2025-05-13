@@ -1448,6 +1448,7 @@ class FieldValueCell extends React.Component {
     this.onRecordIdClick = this.onRecordIdClick.bind(this);
     this.onLinkClick = this.onLinkClick.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
+    this.onPicklistChange = this.onPicklistChange.bind(this);
 
     this.state = {picklistValueIndex: -1};
     this.closePopMenu = this.closePopMenu.bind(this);
@@ -1456,10 +1457,17 @@ class FieldValueCell extends React.Component {
     let {row} = this.props;
     if (row.tryEdit()) {
       let td = e.currentTarget;
-      row.rowList.model.didUpdate(() => td.querySelector("textarea").focus());
+      row.rowList.model.didUpdate(() => {
+        row.entityParticle.DataType === "picklist" ? td.querySelector("select").focus() : td.querySelector("textarea").focus()
+      });
     }
   }
   onDataEditValueInput(e) {
+    let {row} = this.props;
+    row.dataEditValue = e.target.value;
+    row.rowList.model.didUpdate();
+  }
+  onPicklistChange(e) {
     let {row} = this.props;
     row.dataEditValue = e.target.value;
     row.rowList.model.didUpdate();
@@ -1484,16 +1492,7 @@ class FieldValueCell extends React.Component {
   }
   onKeyDown(e) {
     let {row} = this.props;
-    let {picklistValueIndex} = this.state;
-    if (row.entityParticle.DataType == "picklist" && (e.key == "ArrowDown" || e.key == "ArrowUp")) {
-      let down = e.key == "ArrowDown" ? true : false;
-      down ? picklistValueIndex++ : picklistValueIndex--;
-      if (0 <= picklistValueIndex && picklistValueIndex < row.fieldDescribe.picklistValues.length){
-        e.currentTarget.value = row.fieldDescribe.picklistValues[picklistValueIndex].value;
-        row.dataEditValue = e.target.value;
-        this.setState({picklistValueIndex});
-      }
-    } else if (row.entityParticle.DataType == "boolean" && (e.key == "ArrowDown" || e.key == "ArrowUp")) {
+    if (row.entityParticle.DataType == "boolean" && (e.key == "ArrowDown" || e.key == "ArrowUp")) {
       let currentValue = e.currentTarget.value.toLowerCase();
       let newValue = currentValue === "true" ? "false" : "true";
       e.currentTarget.value = newValue;
@@ -1508,6 +1507,21 @@ class FieldValueCell extends React.Component {
   render() {
     let {row, col} = this.props;
     if (row.isEditing()) {
+      if (row.entityParticle.DataType === "picklist") {
+        return h("td", {className: col.className},
+          h("select", {
+            value: row.dataEditValue || "",
+            onChange: this.onPicklistChange,
+            className: "picklist-select"
+          },
+            h("option", {value: ""}, ""),
+            row.fieldDescribe.picklistValues.map(pickval => 
+              h("option", {key: pickval.value, value: pickval.value}, pickval.value)
+            )
+          ),
+          h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6")
+        );
+      }
       return h("td", {className: col.className},
         h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
         h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6")

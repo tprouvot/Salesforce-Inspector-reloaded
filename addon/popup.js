@@ -1259,8 +1259,11 @@ class AllDataBoxOrg extends React.PureComponent {
   }
 
   getApiVersion(instanceStatus){
+    let {sfHost} = this.props;
     if (instanceStatus){
       let apiVersion = (instanceStatus.releaseNumber.substring(0, 3) / 2) - 64;
+      //store it for maximum version allowed
+      sessionStorage.setItem(sfHost + "_latestApiVersionFromOrg", apiVersion + ".0");
       return apiVersion;
     }
     return null;

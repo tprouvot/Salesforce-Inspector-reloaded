@@ -191,7 +191,7 @@ class OptionsTabSelector extends React.Component {
       },
       {
         id: 7,
-        tabTitle: "Tab6",
+        tabTitle: "Tab7",
         title: "Metadata",
         content: [
           {option: Option, props: {type: "toggle", title: "Include managed packages metadata", key: "includeManagedMetadata"}},
@@ -207,6 +207,14 @@ class OptionsTabSelector extends React.Component {
             }
           },
           {option: Option, props: {type: "toggle", title: "Use legacy version", key: "useLegacyDlMetadata", default: false}},
+        ]
+      },
+      {
+        id: 8,
+        tabTitle: "Tab8",
+        title: "Custom Shortcuts",
+        content: [
+          {option: Option, props: {type: "toggle", title: "Include managed packages metadata", key: "includeManagedMetadata"}}
         ]
       }
     ];

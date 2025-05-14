@@ -40,6 +40,7 @@ class Model {
     this.objectSetupLinksRequested = false;
     this.popupTmpReactElement = undefined;
     this.popupReactElement = undefined;
+    this.recordName;
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
@@ -82,7 +83,11 @@ class Model {
   recordHeading() {
     let parts;
     if (this.recordData) {
-      parts = [this.recordData.Name, this.recordData.Id];
+      if (!this.recordName){
+        let fieldName = this.recordData.Name ? "Name" : this.objectData.fields.find(field => field.nameField).name;
+        this.recordName = this.recordData[fieldName];
+      }
+      parts = [this.recordName, this.recordData.Id];
     } else if (this.objectData) {
       parts = [this.objectData.label, this.objectData.keyPrefix];
     } else {
@@ -376,9 +381,7 @@ class Model {
     // Therefore we query the minimum set of meta-fields needed by our main UI.
     this.spinFor(
       "querying tooling particles",
-      //sfConn.rest("/services/data/v" + apiVersion + "/tooling/query/?q=" + encodeURIComponent("SELECT QualifiedApiName, Label, DataType, ReferenceTo, Length, Precision, Scale, IsAutonumber, IsCaseSensitive, IsDependentPicklist, IsEncrypted, IsIdLookup, IsHtmlFormatted, IsNillable, IsUnique, IsCalculated, InlineHelpText, FieldDefinition.DurableId, EntityDefinition.DurableId FROM EntityParticle WHERE EntityDefinition.QualifiedApiName = '" + this.sobjectName + "'")).then(res => {
-
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent("SELECT QualifiedApiName, EntityDefinitionId, FieldDefinitionId, NamespacePrefix, DeveloperName, MasterLabel, Label, Length, DataType, ServiceDataTypeId, ValueTypeId, ExtraTypeInfo, IsAutonumber, ByteLength, IsCaseSensitive, IsUnique, IsCreatable, IsUpdatable, IsDefaultedOnCreate, IsWriteRequiresMasterRead, IsCalculated, IsHighScaleNumber, IsHtmlFormatted, IsNameField, IsNillable, IsPermissionable, IsEncrypted, Digits, InlineHelpText, RelationshipName, ReferenceTargetField, Name, Mask, MaskType, IsWorkflowFilterable, IsCompactLayoutable, Precision, Scale, IsFieldHistoryTracked, IsApiFilterable, IsApiSortable, IsApiGroupable, IsListVisible, IsLayoutable, IsDependentPicklist, IsDeprecatedAndHidden, IsDisplayLocationInDecimal, DefaultValueFormula, IsIdLookup, IsNamePointing, RelationshipOrder, ReferenceTo, IsComponent, IsCompound,  FieldDefinition.DurableId, EntityDefinition.DurableId FROM EntityParticle WHERE EntityDefinition.QualifiedApiName ='" + this.sobjectName + "'")).then(res => {
+      sfConn.rest("/services/data/v" + apiVersion + "/tooling/query/?q=" + encodeURIComponent("SELECT QualifiedApiName, Label, DataType, ReferenceTo, Length, Precision, Scale, IsAutonumber, IsCaseSensitive, IsDependentPicklist, IsEncrypted, IsIdLookup, IsHtmlFormatted, IsNillable, IsUnique, IsCalculated, InlineHelpText, FieldDefinition.DurableId, EntityDefinition.DurableId FROM EntityParticle WHERE EntityDefinition.QualifiedApiName = '" + this.sobjectName + "'")).then(res => {
         for (let entityParticle of res.records) {
           this.fieldRows.getRow(entityParticle.QualifiedApiName).entityParticle = entityParticle;
           if (!this.entityDefinitionDurableId){
@@ -1490,6 +1493,11 @@ class FieldValueCell extends React.Component {
         row.dataEditValue = e.target.value;
         this.setState({picklistValueIndex});
       }
+    } else if (row.entityParticle.DataType == "boolean" && (e.key == "ArrowDown" || e.key == "ArrowUp")) {
+      let currentValue = e.currentTarget.value.toLowerCase();
+      let newValue = currentValue === "true" ? "false" : "true";
+      e.currentTarget.value = newValue;
+      row.dataEditValue = newValue;
     }
   }
   closePopMenu(){

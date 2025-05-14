@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://tprouvot.github.io/Salesforce-Inspector-reloaded/
+    about: You may find some answers to your questions !
+  - name: Salesforce Inspector Reloaded Community Support
+    url: https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions
+    about: Please ask and answer questions here.

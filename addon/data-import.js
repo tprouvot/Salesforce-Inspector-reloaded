@@ -50,6 +50,7 @@ class Model {
     this.activeBatches = 0;
     this.isProcessingQueue = false;
     this.importState = null;
+    this.greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true";
     this.showStatus = {
       Queued: true,
       Processing: true,
@@ -307,13 +308,12 @@ class Model {
 
     if (this.apiType == "Metadata") {
       return globalDescribe.sobjects
-        .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"))
-        .map(sobjectDescribe => sobjectDescribe.name);
+        .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"));
     } else {
+      const hardcodedObjectsPrefix = ["01Z", "00O"];//Dashboard and Report can be deleted
       return globalDescribe.sobjects
-        .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable)
-        .map(sobjectDescribe => sobjectDescribe.name);
-    }
+        .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable || hardcodedObjectsPrefix.includes(sobjectDescribe.keyPrefix));
+    };
   }
 
   idLookupList() {
@@ -376,7 +376,7 @@ class Model {
 
   importTypeError() {
     let importType = this.importType;
-    if (!this.sobjectList().some(s => s.toLowerCase() == importType.toLowerCase())) {
+    if (!this.sobjectList().some(s => s.name.toLowerCase() == importType.toLowerCase())) {
       return "Error: Unknown object";
     }
     return "";
@@ -628,6 +628,20 @@ class Model {
       let obj = data[0][0].substr(1, data[0][0].length - 2);
       return obj;
     }
+
+    // Check if we have an ID field in the data
+    const idIndex = this.importData.importTable.header.findIndex(col => col.columnValue.toLowerCase() === "id");
+    if (idIndex !== -1 && data[0] && data[0][idIndex]) {
+      const idValue = data[0][idIndex];
+      if (idValue && idValue.length >= 3) {
+        const prefix = idValue.substring(0, 3);
+
+        const matchingObject = this.sobjectList().find(sobject => sobject.keyPrefix === prefix);
+        if (matchingObject) {
+          return matchingObject.name;
+        }
+      }
+    }
     return "";
   }
 
@@ -676,6 +690,7 @@ class Model {
       columnIgnore() { return columnVm.columnValue.startsWith("_"); },
       columnSkip() {
         columnVm.columnValue = "_" + columnVm.columnValue;
+        self.updateImportTableResult();
       },
       columnValid() {
         let columnName = columnVm.columnValue.split(":");
@@ -709,6 +724,9 @@ class Model {
       columnUnknownField() {
         return columnVm.columnError() === "Error: Unknown field";
 
+      },
+      isColumnSkipped() {
+        return columnVm.columnValue.startsWith("_");
       }
     };
     return columnVm;
@@ -771,7 +789,12 @@ class Model {
         let fieldTypes = {};
         let selectedObjectFields = this.describeInfo.describeSobject(false, sobjectType).sobjectDescribe?.fields || [];
         selectedObjectFields.forEach(field => {
-          fieldTypes[field.name] = field.soapType;
+          let soapType = field.soapType;
+          // The tns:ID represents a Metadata Relationship. Although not documented, in practice it works only when setting it to xsd:string
+          if (soapType == "tns:ID") {
+            soapType = "xsd:string";
+          }
+          fieldTypes[field.name] = soapType;
         });
 
         let sobject = {};
@@ -1233,7 +1256,7 @@ class App extends React.Component {
                 )
               )
             ),
-            h("datalist", {id: "sobjectlist"}, model.sobjectList().map(data => h("option", {key: data, value: data}))),
+            h("datalist", {id: "sobjectlist"}, model.sobjectList().map(data => h("option", {key: data.name, value: data.name}))),
             h("datalist", {id: "idlookuplist"}, model.idLookupList().map(data => h("option", {key: data, value: data}))),
             h("datalist", {id: "columnlist"}, model.columnList().map(data => h("option", {key: data, value: data})))
           ),
@@ -1337,10 +1360,11 @@ class ColumnMapper extends React.Component {
   }
   render() {
     let {model, column} = this.props;
+    let inputClassName = column.columnError() ? "confError" : ((column.isColumnSkipped() && model.greyOutSkippedColumns) ? "conf-skipped" : "");
     return h("div", {className: "conf-line"},
       h("label", {htmlFor: "col-" + column.columnIndex}, column.columnOriginalValue),
       h("div", {className: "flex-wrapper"},
-        h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: column.columnError() ? "confError" : "", disabled: model.isWorking(), id: "col-" + column.columnIndex}),
+        h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: inputClassName, disabled: model.isWorking(), id: "col-" + column.columnIndex}),
         h("div", {className: "conf-error", hidden: !column.columnError()}, h("span", {}, column.columnError()), " ", h("button", {onClick: this.onColumnSkipClick, hidden: model.isWorking(), title: "Don't import this column"}, "Skip"))
       )
     );

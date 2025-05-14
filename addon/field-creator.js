@@ -1089,10 +1089,14 @@ class App extends React.Component {
         newField.Metadata.valueSet = {
           valueSetDefinition: {
             sorted: field.sortalpha || false,
-            value: field.picklistvalues.split("\n").map((value, index) => ({
-              fullName: value.trim(),
-              default: field.firstvaluedefault && index === 0
-            }))
+            value: field.picklistvalues
+              .split("\n")
+              .map(value => value.trim())
+              .filter(value => value.length > 0)
+              .map((value, index) => ({
+                fullName: value,
+                default: field.firstvaluedefault && index === 0
+              }))
           }
         };
         if (field.type === "MultiselectPicklist") {

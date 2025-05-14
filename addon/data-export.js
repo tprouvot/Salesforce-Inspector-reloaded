@@ -1,5 +1,6 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, nullToEmptyString, getLinkTarget} from "./inspector.js";
+import {sfConn, apiVersion} from "./inspector.js";
+import {getLinkTarget, nullToEmptyString, displayButton} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
@@ -68,6 +69,7 @@ class Model {
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
     this.queryInput = null;
+    this.filterColumn = ""; // Default filter column
     this.initialQuery = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
       this.queryAutocompleteHandler({newDescribe: true});
@@ -156,8 +158,12 @@ class Model {
     this.exportedData.updateColumnsVisibility();
     this.updatedExportedData();
   }
-  setQueryMethod(data){
+  setQueryMethod(data, query, vm){
     let method;
+    let queryParams = "/?q=" + encodeURIComponent(query);
+    const baseParams = {progressHandler: vm.exportProgress};
+    let params = baseParams;
+
     if (data.isTooling){
       method = "tooling/query";
     } else if (this.queryAll){
@@ -166,9 +172,13 @@ class Model {
       method = "search";
     } else if (this.queryInput.value.trim().startsWith("{")){
       method = "graphql";
+      queryParams = "";
+      params = {...baseParams, method: "POST", body: {"query": "query objects " + query}};
     } else {
       method = "query";
     }
+    data.endpoint = "/services/data/v" + apiVersion + "/" + method + queryParams;
+    data.params = params;
     data.queryMethod = method;
   }
   setQueryName(value) {
@@ -837,7 +847,7 @@ class Model {
             }
           })
           .concat(
-            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "convertTimezone", "toLabel"])
+            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "toLabel", "convertTimezone", "convertCurrency", "FORMAT", "GROUPING"])
               .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
               .map(fn => {
                 if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
@@ -949,8 +959,8 @@ class Model {
         return null;
       });
     }
-    this.setQueryMethod(exportedData);
-    vm.spinFor(batchHandler(this.getQueryApiFunction(exportedData.queryMethod, query), {progressHandler: vm.exportProgress})
+    this.setQueryMethod(exportedData, query, vm);
+    vm.spinFor(batchHandler(sfConn.rest(exportedData.endpoint, exportedData.params))
       .catch(error => {
         console.error(error);
         vm.isWorking = false;
@@ -966,13 +976,6 @@ class Model {
     vm.exportError = null;
     vm.exportedData = exportedData;
     vm.updatedExportedData();
-  }
-  getQueryApiFunction(queryMethod, query){
-    if (queryMethod === "graphql"){
-      return sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod, {method: "POST", body: {"query": "query objects " + query}});
-    } else {
-      return sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query));
-    }
   }
   stopExport() {
     this.exportProgress.abort();
@@ -1044,7 +1047,36 @@ function RecordTable(vm) {
       return "" + cell;
     }
   }
-  let isVisible = (row, filter) => !filter || row.some(cell => cellToString(cell).toLowerCase().includes(filter.toLowerCase()));
+
+  let isVisible = (row, filter) => {
+    // If no filter is applied, show all rows
+    if (!filter) {
+      return true;
+    }
+    // If no columns are selected, search all columns
+    if (!vm.filterColumns || vm.filterColumns.length === 0) {
+      return row.some(cell => {
+        if (cell == null) {
+          return false;
+        }
+        return cellToString(cell).toLowerCase().includes(filter.toLowerCase());
+      });
+    }
+
+    // Search in all selected columns
+    return vm.filterColumns.some(column => {
+      const columnIndex = header.findIndex(col => col === column);
+      if (columnIndex === -1) {
+        return false;
+      }
+
+      const cellValue = row[columnIndex];
+      return cellValue
+        ? cellToString(cellValue).toLowerCase().includes(filter.toLowerCase())
+        : false;
+    });
+  };
+
   let rt = {
     records: [],
     table: [],
@@ -1136,7 +1168,8 @@ class App extends React.Component {
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
-    this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption"))};
+    this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption")), isDropdownOpen: false};// Tracks whether the dropdown is open
+    this.filterColumns = []; // Initialize as an empty array
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1273,6 +1306,9 @@ class App extends React.Component {
   onResultsFilterInput(e) {
     let {model} = this.props;
     model.setResultsFilter(e.target.value);
+    if (e.target.value.length == 0){
+      this.setState({isDropdownOpen: false});
+    }
     model.didUpdate();
   }
   onSetQueryName(e) {
@@ -1364,14 +1400,6 @@ class App extends React.Component {
   toggleQueryMoreMenu(){
     this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
   }
-  displayButton(name){
-    const button = this.state.hideButtonsOption?.find((element) => element.name == name);
-    if (button){
-      return button.checked;
-    }
-    //if no option was found, display the button
-    return true;
-  }
 
   render() {
     let {model} = this.props;
@@ -1446,9 +1474,9 @@ class App extends React.Component {
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
             h("div", {className: "flex-right"},
-              h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Export"),
-              this.displayButton("export-query") ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query") : null,
-              h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
+              h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted button-margin"}, "Run Export"),
+              displayButton("export-query", this.state.hideButtonsOption) ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id button-margin"}, "Export Query") : null,
+              h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan", className: "button-margin"}, "Query Plan"),
               h("a", {tabIndex: 4, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
               h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
                 h("div", {className: "button-icon"}),
@@ -1492,10 +1520,48 @@ class App extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#hide"})
               )
             ),
-            this.displayButton("delete")
+            displayButton("delete", this.state.hideButtonsOption)
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
-          h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
+          h("div", {className: "filter-controls"},
+            h("div", {className: "unified-search-input"},
+              h("input", {
+                className: "filter-input",
+                placeholder: model.filterColumns?.length > 0
+                  ? `Filter by (${model.filterColumns.length})`
+                  : "Filter",
+                type: "search",
+                value: model.resultsFilter,
+                onInput: this.onResultsFilterInput
+              }),
+              h("button", {className: "toggle no-left-radius no-left-border" + (this.state.isDropdownOpen ? " contract" : " expand"), title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
+              this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
+                model.exportedData?.table[0]
+                  ?.filter(column => column !== "_")
+                  .map(column =>
+                    h("div", {
+                      key: column,
+                      className: `dropdown-item ${model.filterColumns?.includes(column) ? "selected" : ""}`,
+                      onClick: () => {
+                        if (model.filterColumns?.includes(column)) {
+                          model.filterColumns = model.filterColumns.filter(c => c !== column);
+                        } else {
+                          model.filterColumns = [...(model.filterColumns || []), column];
+                        }
+                        model.setResultsFilter(model.resultsFilter);
+                        this.setState({}); // Trigger re-render
+                      }
+                    },
+                    h("input", {
+                      type: "checkbox",
+                      checked: model.filterColumns?.includes(column) || false,
+                      readOnly: true
+                    }),
+                    column
+                    )
+                  )
+              )
+            )),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),

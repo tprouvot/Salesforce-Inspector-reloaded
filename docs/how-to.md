@@ -110,12 +110,12 @@ Example:
 
 ## Open links in a new tab
 
-If you want to _always_ open extension's links in a new tab, you can set the `openLinksInNewTab` property to `true`
+If you want to _always_ open extension's links in a new tab, you can enable> **Warning**
 
-<img width="904" alt="Open link in a new tab" src="https://github.com/user-attachments/assets/c2586ae8-49e9-4e3f-8a3f-31b2a3689ea1">
+<img width="925" alt="Open link in a new tab" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/7cd6c1fa-af55-4149-a2fb-73611c6f02f9">
 
-If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
-Example:
+> **Warning**
+   > Enabling this option will prevent you to use `Lightning navigation` which allows faster navigation.
 
 - Data <ins>E</ins>xport : e
 - Data <ins>I</ins>mport : i
@@ -140,34 +140,47 @@ Go on a Salesforce flow and check / uncheck the checbox to update navigation scr
 
 ## Add custom links to "Shortcut" tab
 
-Because one of the main use case for custom links is to refer to a record in your org, those links are stored under a property prefixed by the org host url.
-You can find the value by checking the property `_isSandbox`
+<img width="1234" alt="Use custom shortcuts" src="https://github.com/user-attachments/assets/036045b8-133c-46c1-90d0-1db7aa81a190" />
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/319585eb-03a3-4c16-948f-fa721214ba14)
 
-Then copy the url and add `_orgLinks` for the property name.
-Now you can enter the custom links following this convention:
+You can add custom links to the "Shortcut" tab. These links will be stored in the `sfHost + "_orgLinks"` localStorage variable. The links are stored as a JSON array with the following properties:
+- `label`: The label of the link
+- `link`: The link to the page
+- `section`: The section where the link will be displayed
+- `isExternal`: A boolean indicating if the link is external (starts with 'http' or 'www')
 
-```json
-[
-  {
-    "label": "Test myLink",
-    "link": "/lightning/setup/SetupOneHome/home",
-    "section": "Custom",
-    "prod": false
-  },
-  {
-    "label": "EnhancedProfiles",
-    "section": "Custom",
-    "link": "/lightning/setup/EnhancedProfiles/home",
-    "prod": false
-  }
-]
-```
+The links are displayed in a table format with the following features:
+- Sortable columns (click on column headers to sort)
+- Search functionality to filter links by label, link, or section
+- Edit and delete buttons for each link
+- Add button to create new links
 
-ET VOILA !
+To add a new link:
+1. Click the "+" button at the bottom of the table
+2. Fill in the label, link, and section fields
+3. Click the check icon to save or the X icon to cancel
 
-<img width="271" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/02066229-3af1-435d-9370-1dab91760940">
+To edit a link:
+1. Click the edit icon (pencil) next to the link
+2. Modify the fields
+3. Click the check icon to save or the X icon to cancel
+
+To delete a link:
+1. Click the delete icon (trash) next to the link
+
+To search links:
+1. Use the search box at the top of the table
+2. Type any text to filter links by label, link, or section
+3. The table updates in real-time as you type
+
+To sort links:
+1. Click on any column header to sort by that column
+2. Click again to reverse the sort order
+3. The current sort column is indicated by an up/down arrow icon
+
+The links are stored in the browser's localStorage, so they will persist between sessions. The links are specific to each org, so you can have different links for different orgs.
+
+<img width="278" alt="Custom Link Search" src="https://github.com/user-attachments/assets/5ccd6778-4fb2-46d5-9b54-cd47cb03c7bb" />
 
 ## Enable summary view of PermissionSet / PermissionSetGroups from shortcut tab
 
@@ -206,6 +219,14 @@ To make your life easier and avoid third party tools or login to ELF website, we
 When quering EventLogFile, add the "LogFile" field in the query and click on the value to download corresponding log.
 
 ![2023-11-15_14-32-44 (1)](https://github.com/Annubis45/Salesforce-Inspector-reloaded/assets/35368290/ba1fcbed-8428-495e-b03b-7816320d95df)
+
+## Delete All Apex Logs
+
+Sometimes you need to purge the ApexLogs from you org, mostly when the maximum size limit is reached.
+You can now delete all apex logs with a simple click. From the popup, select 'Org' tab and click 'Delete All ApexLogs' button.
+
+<img width="278" alt="Delete All Apex Logs" src="https://github.com/user-attachments/assets/7ba32e4d-1fdd-43e7-89cd-9c480c913211" />
+
 
 ## Enable debug logs
 
@@ -311,6 +332,17 @@ Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and cho
 
 <img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">
 
+### Default shortcuts
+
+If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
+Example:
+
+- Data <ins>E</ins>xport : e
+- Data <ins>I</ins>mport : i
+- Org <ins>L</ins>imits : l
+- <ins>D</ins>ownload Metadata : d
+- E<ins>x</ins>plore API : x
+
 ## Hide additional columns in query results
 
 After running a query in the "Data Export" page, you can hide additional columns in the query results. These columns represent the name of the objects included in your query. They are useful to automatically map the fields to the correct object in the "Data Import" page. The columns are hidden in the exported files (CSV or Excel) as well. You can set a default value, using the 'Hide additionnal Object Name Columns by default on Data Export' option ("Options" -> "Data Export" tab).
@@ -333,7 +365,7 @@ For a duplicate rule, when the Alert option is enabled, bypass alerts and save d
   '{"DuplicateRuleHeader": {"allowSave": true}}'
 ```
 
-If true for a Case or Lead, uses the default (active) assignment rule for a Case or Lead. If specified, don’t specify an assignmentRuleId. If true for an Account, all territory assignment rules are applied. If false for an Account, no territory assignment rules are applied.
+If true for a Case or Lead, uses the default (active) assignment rule for a Case or Lead. If specified, don't specify an assignmentRuleId. If true for an Account, all territory assignment rules are applied. If false for an Account, no territory assignment rules are applied.
 ``` json
   '{"AssignmentRuleHeader": {"useDefaultRule": true}}',
 ```
@@ -352,6 +384,7 @@ Under `User Experience` tab, enable the option `Highlight PROD with a top border
 
 ## Import / Export configuration (saved query etc.)
 
+### With 1.25 and above
 To export and import your current configuration, go to the options page and click the corresponding icon in the header:
 
 <img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753">
@@ -368,3 +401,17 @@ Some of the users may don't need some of those, to make the popup lighter some o
 From the User tab in the popup, click on the user language flag to display the available languages.
 
 ![2024-12-04_16-07-35 (1)](https://github.com/user-attachments/assets/d07da946-dba0-4bb4-8f3b-313392bbf557)
+
+## Generate a package.xml from a deployment
+
+From a	DeployRequest record, click on the `Generate package.xml` button to download the package.xml for this deployment.
+> [!NOTE]
+> If you retrieve the related metadata it may have been modified since the deployment, so you are not sure to retrieve what was deployed.
+
+<img width="1143" alt="Generate package.xml from a deployment" src="https://github.com/user-attachments/assets/4acb7422-0547-409d-9e23-d8c3176f8055" />
+
+## Grey out skipped columns in data import
+
+From the 'Options' tab, enable the 'Grey Out Skipped Columns in Data Import' option and perform the data import. The un-imported columns will be greyed out.
+
+<img width="571" alt="Grey out un-imported columns" src="https://github.com/user-attachments/assets/8f23f00b-0b8f-4c5b-8c92-aa97b3975daf" />

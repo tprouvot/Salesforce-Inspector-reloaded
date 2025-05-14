@@ -1,8 +1,10 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, defaultApiVersion, nullToEmptyString} from "./inspector.js";
+import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
+import {nullToEmptyString, getLatestApiVersionFromOrg} from "./utils.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
+import Tooltip from "./components/Tooltip.js";
 
 class Model {
 
@@ -83,7 +85,7 @@ class OptionsTabSelector extends React.Component {
           {option: ArrowButtonOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Flow Scrollability", key: "scrollOnFlowBuilder"}},
           {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
-          {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab"}},
+          {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab", tooltip: "Enabling this option will prevent Lightning Navigation (faster loading) to be used"}},
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Searchable metadata from Shortcut tab",
@@ -101,6 +103,7 @@ class OptionsTabSelector extends React.Component {
             props: {title: "Show buttons",
               key: "hideButtonsOption",
               checkboxes: [
+                {label: "New", name: "new", checked: true},
                 {label: "Explore API", name: "explore-api", checked: true},
                 {label: "Org Limits", name: "org-limits", checked: true},
                 {label: "Options", name: "options", checked: true},
@@ -108,11 +111,11 @@ class OptionsTabSelector extends React.Component {
                 {label: "Generate Access Token", name: "generate-token", checked: true}
               ]}
           },
-          {option: Option, props: {type: "toggle", title: "Show 'Generate Access Token' button", key: "popupGenerateTokenButton", default: true}},
           {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
           {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
-          {option: Option, props: {type: "text", title: "PROD Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the PROD banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}}
+          {option: Option, props: {type: "text", title: "PROD Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the PROD banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
+          {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}}
         ]
       },
       {
@@ -147,7 +150,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100}},
           {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50}},
-          {option: Option, props: {type: "text", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}}
+          {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}}
         ]
       },
       {
@@ -156,7 +159,8 @@ class OptionsTabSelector extends React.Component {
         title: "Data Import",
         content: [
           {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200"}},
-          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6"}}
+          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6"}},
+          {option: Option, props: {type: "toggle", title: "Grey Out Skipped Columns in Data Import", key: "greyOutSkippedColumns", tooltip: "Control if skipped columns are greyed out or not in data import"}}
         ]
       },
       {
@@ -184,6 +188,34 @@ class OptionsTabSelector extends React.Component {
         title: "Enable Logs",
         content: [
           {option: enableLogsOption, props: {key: 1}}
+        ]
+      },
+      {
+        id: 7,
+        tabTitle: "Tab7",
+        title: "Metadata",
+        content: [
+          {option: Option, props: {type: "toggle", title: "Include managed packages metadata", key: "includeManagedMetadata"}},
+          {option: Option,
+            props: {type: "select",
+              title: "Sort metadata components",
+              key: "sortMetadataBy",
+              default: "fullName",
+              options: [
+                {label: "A-Z", value: "fullName"},
+                {label: "Last Modified Date DESC", value: "lastModifiedDate"}
+              ]
+            }
+          },
+          {option: Option, props: {type: "toggle", title: "Use legacy version", key: "useLegacyDlMetadata", default: false}},
+        ]
+      },
+      {
+        id: 8,
+        tabTitle: "Tab8",
+        title: "Custom Shortcuts",
+        content: [
+          {option: CustomShortcuts, props: {}}
         ]
       }
     ];
@@ -238,7 +270,16 @@ class OptionsContainer extends React.Component {
   }
 
   render() {
-    return h("div", {id: this.props.id, className: this.getClass(), role: "tabpanel"}, this.props.content.map((c) => h(c.option, {storageKey: c.props?.key, ...c.props, model: this.model})));
+    return h("div", {id: this.props.id, key: this.props.id, className: this.getClass(), role: "tabpanel"},
+      this.props.content.map((c, index) =>
+        h(c.option, {
+          key: c.props?.key || `option-${index}`,
+          storageKey: c.props?.key,
+          ...c.props,
+          model: this.model
+        })
+      )
+    );
   }
 
 }
@@ -309,21 +350,36 @@ class APIVersionOption extends React.Component {
     this.state = {apiVersion: localStorage.getItem("apiVersion") ? localStorage.getItem("apiVersion") : apiVersion};
   }
 
-  onChangeApiVersion(e) {
-    let apiVersion = e.target.value;
-    this.setState({apiVersion});
-    localStorage.setItem("apiVersion", apiVersion + ".0");
+  async onChangeApiVersion(e) {
+    let {sfHost} = this.props.model;
+    const inputElt = e.target;
+    const newApiVersion = e.target.value;
+    if (this.state.apiVersion < newApiVersion) {
+      const latestApiVersion = await getLatestApiVersionFromOrg(sfHost);
+      if (latestApiVersion >= newApiVersion) {
+        localStorage.setItem("apiVersion", newApiVersion + ".0");
+        this.setState({apiVersion: newApiVersion + ".0"});
+      } else {
+        inputElt.setAttribute("max", latestApiVersion);
+        inputElt.setCustomValidity("Maximum version available: " + latestApiVersion);
+        inputElt.reportValidity();
+      }
+    } else {
+      localStorage.setItem("apiVersion", newApiVersion + ".0");
+      this.setState({apiVersion: newApiVersion + ".0"});
+    }
   }
 
   onRestoreDefaultApiVersion(){
     localStorage.removeItem("apiVersion");
     this.setState({apiVersion: defaultApiVersion});
   }
-
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-        h("span", {}, "API Version")
+        h("span", {}, "API Version",
+          h(Tooltip, {tooltip: "Update api version", idKey: "APIVersion"})
+        ),
       ),
       h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
@@ -338,79 +394,6 @@ class APIVersionOption extends React.Component {
   }
 }
 
-class Tooltip extends React.Component {
-  constructor(props) {
-    super(props);
-    this.tooltip = props.tooltip;
-    this.tipKey = props.idKey + "_tooltip";
-    this.iconKey = props.idKey + "_icon";
-    this.onClick = this.onClick.bind(this);
-    this.onHover = this.onHover.bind(this);
-    this.onHide = this.onHide.bind(this);
-    this.showTimer = null;
-    // Default to 0 opacity and completely hidden (isTooltipVisible evaluates to display: none)
-    this.state = {
-      isTooltipVisible: false,
-      position: {x: "0", y: "0"},
-      opacity: 0
-    };
-  }
-
-  setTooltipPosition() {
-    // At this point, display was visible but fully transparent in the top left corner of the screen
-    // If isVisible is false, getBoundingClientRect will return 0 for all values
-    const tabHeader = document.querySelectorAll('[id="main-container_header"]')[0];
-    const marginTop = parseInt(window.getComputedStyle(tabHeader).getPropertyValue("margin-top"));
-    const yOffset = tabHeader.getBoundingClientRect().top + marginTop + 2; // Add 2 extra pixels below nubbin
-    const toolTip = document.querySelectorAll(`[id='${this.tipKey}']`)[0];
-    const elRect = document.querySelectorAll(`[id='${this.iconKey}']`)[0].getBoundingClientRect();
-    const toolTipRect = toolTip.getBoundingClientRect();
-    const x = `${elRect.left - 27}px`; // fixed x offset (distance from left edge of tooltip to nubbin point)
-    const y = `${elRect.top - toolTipRect.height - yOffset}px`;
-    // Finally, set opacity to 100% so the user can see it
-    this.setState({position: {x, y}, opacity: 1});
-  }
-
-  onClick(e) {
-    e.preventDefault();
-    this.show();
-  }
-
-  onHover() {
-    this.show(350);
-  }
-
-  show(delay = 0) {
-    clearTimeout(this.showTimer);
-    this.showTimer = setTimeout(() => {
-      this.setState({isTooltipVisible: true});
-      this.setTooltipPosition();
-    }, delay);
-  }
-
-  onHide() {
-    clearTimeout(this.showTimer);
-    this.setState({isTooltipVisible: false});
-  }
-
-  render() {
-    if (!this.tooltip) {
-      return null;
-    }
-
-    return h("span", {style: {marginLeft: "2px"}, id: this.iconKey},
-      h("a", {href: "#", onClick: this.onClick, onMouseEnter: this.onHover, onMouseLeave: this.onHide},
-        h("span", {className: "slds-icon_container slds-icon-utility-info"},
-          h("svg", {className: "slds-icon_xx-small slds-icon-text-default", viewBox: "0 0 40 40", style: {verticalAlign: "unset", margin: "3px"}},
-            h("use", {xlinkHref: "symbols.svg#info", fill: "#9c9c9c"}),
-          )),
-        h("span", {className: "slds-assistive-text"}, "Learn more")
-      ),
-      h("div", {className: "slds-popover slds-popover_tooltip slds-nubbin_bottom-left", role: "tooltip", id: this.tipKey, style: {position: "absolute", left: this.state.position.x, top: this.state.position.y, opacity: this.state.opacity, display: this.state.isTooltipVisible ? "block" : "none"}},
-        h("div", {className: "slds-popover__body"}, this.props.tooltip)
-      ));
-  }
-}
 class Option extends React.Component {
 
   constructor(props) {
@@ -448,6 +431,7 @@ class Option extends React.Component {
   render() {
     const id = this.key;
     const isTextOrNumber = this.type == "text" || this.type == "number";
+    const isTextArea = this.type == "textarea";
     const isSelect = this.type == "select";
 
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
@@ -459,6 +443,11 @@ class Option extends React.Component {
       isTextOrNumber ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
           h("input", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
+        )
+      ))
+      : isTextArea ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          h("textarea", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
         )
       ))
       : isSelect ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
@@ -505,28 +494,28 @@ class FaviconOption extends React.Component {
     this.colorShades = {
       dev: [
         "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue", "CornflowerBlue",
-        "SlateBlue", "SteelBlue", "SkyBlue", "PowderBlue", "MediumSlateBlue",
-        "Indigo", "BlueViolet", "MediumPurple", "CadetBlue", "Aqua",
-        "Turquoise", "DarkTurquoise", "Teal", "LightSlateGray", "MidnightBlue"
+        "#CCCCFF", "SteelBlue", "SkyBlue", "#0F52BA", "Navy",
+        "Indigo", "PowderBlue", "LightBlue", "CadetBlue", "Aqua",
+        "Turquoise", "DarkTurquoise", "#6082B6", "LightSlateGray", "MidnightBlue"
       ],
       uat: [
         "MediumOrchid", "Orchid", "DarkOrchid", "DarkViolet", "DarkMagenta",
         "Purple", "BlueViolet", "Indigo", "DarkSlateBlue", "RebeccaPurple",
         "MediumPurple", "MediumSlateBlue", "SlateBlue", "Plum", "Violet",
-        "Thistle", "Magenta", "DarkOrchid", "Fuchsia", "DarkPurple"
+        "Thistle", "Magenta", "DarkOrchid", "Fuchsia", "#301934"
       ],
       int: [
         "LimeGreen", "SeaGreen", "MediumSeaGreen", "ForestGreen", "Green",
         "DarkGreen", "YellowGreen", "OliveDrab", "DarkOliveGreen",
         "SpringGreen", "LawnGreen", "DarkKhaki",
         "GreenYellow", "DarkSeaGreen", "MediumAquamarine", "DarkCyan",
-        "Teal", "Jade", "MediumForestGreen", "HunterGreen"
+        "Teal", "#00A36C", "#347235", "#355E3B"
       ],
       full: [
         "Orange", "DarkOrange", "Coral", "Tomato", "OrangeRed",
         "Salmon", "IndianRed", "Sienna", "Chocolate", "SaddleBrown",
         "Peru", "DarkSalmon", "RosyBrown", "Brown", "Maroon",
-        "Tangerine", "Peach", "BurntOrange", "Pumpkin", "Amber"
+        "#b9770e", "#FFE5B4", "#CC5500", "#FF7518", "#FFBF00"
       ]
     };
   }
@@ -804,6 +793,350 @@ class enableLogsOption extends React.Component {
   }
 }
 
+class CustomShortcuts extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.sfHost = props.model.sfHost;
+    this.onAddShortcut = this.onAddShortcut.bind(this);
+    this.onEditShortcut = this.onEditShortcut.bind(this);
+    this.onDeleteShortcut = this.onDeleteShortcut.bind(this);
+    this.onSaveShortcut = this.onSaveShortcut.bind(this);
+    this.onCancelEdit = this.onCancelEdit.bind(this);
+    this.onSort = this.onSort.bind(this);
+    this.onSearch = this.onSearch.bind(this);
+    this.state = {
+      shortcuts: JSON.parse(localStorage.getItem(this.sfHost + "_orgLinks") || "[]"),
+      editingIndex: -1,
+      newShortcut: {label: "", link: "", section: "", isExternal: false},
+      sortConfig: {
+        key: null,
+        direction: "asc"
+      },
+      searchTerm: ""
+    };
+  }
+
+  onSearch(e) {
+    this.setState({searchTerm: e.target.value.toLowerCase()});
+  }
+
+  getFilteredShortcuts() {
+    const {shortcuts, searchTerm} = this.state;
+    if (!searchTerm) return shortcuts;
+
+    return shortcuts.filter(shortcut =>
+      shortcut.label.toLowerCase().includes(searchTerm)
+      || shortcut.link.toLowerCase().includes(searchTerm)
+      || shortcut.section.toLowerCase().includes(searchTerm)
+    );
+  }
+
+  onSort(key) {
+    let direction = "asc";
+    if (this.state.sortConfig.key === key && this.state.sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+
+    const sortedShortcuts = [...this.state.shortcuts].sort((a, b) => {
+      if (a[key] === null) return 1;
+      if (b[key] === null) return -1;
+      if (a[key] === undefined) return 1;
+      if (b[key] === undefined) return -1;
+
+      const aValue = a[key].toString().toLowerCase();
+      const bValue = b[key].toString().toLowerCase();
+
+      if (aValue < bValue) {
+        return direction === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+
+    this.setState({
+      shortcuts: sortedShortcuts,
+      sortConfig: {key, direction}
+    });
+  }
+
+  getSortIcon(key) {
+    if (this.state.sortConfig.key !== key) {
+      return null;
+    }
+    return this.state.sortConfig.direction === "asc" ? "up" : "down";
+  }
+
+  handleInputChange(field, value) {
+    if (field === "link") {
+      // Get the base domain without protocol
+      const baseDomain = this.sfHost.split(".")[0];
+
+      // Check if the link contains the base domain
+      if (value.includes(baseDomain)) {
+        // Extract the path part after the domain
+        const urlParts = value.split(".com");
+        if (urlParts.length > 1) {
+          // Keep everything after the domain
+          value = urlParts[1];
+        }
+      }
+    }
+
+    this.setState({
+      newShortcut: {
+        ...this.state.newShortcut,
+        [field]: value,
+        isExternal: field === "link" ? (value.startsWith("http") || value.startsWith("www")) : this.state.newShortcut.isExternal
+      }
+    });
+  }
+
+  onAddShortcut() {
+    this.setState({
+      editingIndex: this.state.shortcuts.length,
+      newShortcut: {label: "", link: "", section: "", isExternal: false}
+    });
+  }
+
+  onEditShortcut(index) {
+    this.setState({
+      editingIndex: index,
+      newShortcut: {...this.state.shortcuts[index]}
+    });
+  }
+
+  onDeleteShortcut(index) {
+    const newShortcuts = [...this.state.shortcuts];
+    newShortcuts.splice(index, 1);
+    this.setState({shortcuts: newShortcuts});
+    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(newShortcuts));
+  }
+
+  onSaveShortcut() {
+    const {shortcuts, editingIndex, newShortcut} = this.state;
+    const newShortcuts = [...shortcuts];
+
+    // Ensure isExternal is set correctly before saving
+    newShortcut.isExternal = newShortcut.link.startsWith("http") || newShortcut.link.startsWith("www");
+
+    if (editingIndex === shortcuts.length) {
+      newShortcuts.push(newShortcut);
+    } else {
+      newShortcuts[editingIndex] = newShortcut;
+    }
+
+    this.setState({
+      shortcuts: newShortcuts,
+      editingIndex: -1,
+      newShortcut: {label: "", link: "", section: "", isExternal: false}
+    });
+
+    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(newShortcuts));
+  }
+
+  onCancelEdit() {
+    this.setState({
+      editingIndex: -1,
+      newShortcut: {label: "", link: "", section: ""}
+    });
+  }
+
+  render() {
+    const {editingIndex, newShortcut} = this.state;
+    const filteredShortcuts = this.getFilteredShortcuts();
+
+    return h("div", {className: "slds-grid slds-grid_vertical"},
+      h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_12-of-12"},
+          h("div", {className: "slds-form-element"},
+            h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left"},
+              h("svg", {className: "slds-input__icon slds-input__icon_left slds-icon-text-default", "aria-hidden": true},
+                h("use", {xlinkHref: "symbols.svg#search"})
+              ),
+              h("input", {
+                type: "search",
+                placeholder: "Search shortcuts...",
+                className: "slds-input",
+                value: this.state.searchTerm,
+                onChange: this.onSearch
+              })
+            )
+          )
+        )
+      ),
+      h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered"},
+        h("thead", {},
+          h("tr", {className: "slds-line-height_reset"},
+            h("th", {
+              scope: "col",
+              className: "slds-is-sortable",
+              onClick: () => this.onSort("label")
+            },
+            h("div", {className: "slds-grid slds-grid_align-spread slds-truncate", title: "Label"},
+              h("span", {}, "Label"),
+              this.getSortIcon("label") && h("span", {className: "slds-icon_container slds-icon-utility-" + this.getSortIcon("label")},
+                h("svg", {className: "slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": true},
+                  h("use", {xlinkHref: "symbols.svg#" + this.getSortIcon("label")})
+                )
+              )
+            )
+            ),
+            h("th", {
+              scope: "col",
+              className: "slds-is-sortable",
+              onClick: () => this.onSort("link")
+            },
+            h("div", {className: "slds-grid slds-grid_align-spread slds-truncate", title: "Link"},
+              h("span", {}, "Link"),
+              this.getSortIcon("link") && h("span", {className: "slds-icon_container slds-icon-utility-" + this.getSortIcon("link")},
+                h("svg", {className: "slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": true},
+                  h("use", {xlinkHref: "symbols.svg#" + this.getSortIcon("link")})
+                )
+              )
+            )
+            ),
+            h("th", {
+              scope: "col",
+              className: "slds-is-sortable",
+              onClick: () => this.onSort("section")
+            },
+            h("div", {className: "slds-grid slds-grid_align-spread slds-truncate", title: "Section"},
+              h("span", {}, "Section"),
+              this.getSortIcon("section") && h("span", {className: "slds-icon_container slds-icon-utility-" + this.getSortIcon("section")},
+                h("svg", {className: "slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": true},
+                  h("use", {xlinkHref: "symbols.svg#" + this.getSortIcon("section")})
+                )
+              )
+            )
+            ),
+            h("th", {scope: "col"},
+              h("div", {className: "slds-truncate", title: "External"}, "External")
+            ),
+            h("th", {scope: "col"},
+              h("div", {className: "slds-truncate", title: "Actions"}, "Actions")
+            )
+          )
+        ),
+        h("tbody", {},
+          [...filteredShortcuts, editingIndex === filteredShortcuts.length ? newShortcut : null].map((shortcut, index) =>
+            shortcut && h("tr", {
+              key: editingIndex === index ? `new-${index}` : `${shortcut.label}-${shortcut.link}-${index}`,
+              className: "slds-hint-parent"
+            },
+            editingIndex === index ? [
+              h("td", {key: "label", "data-label": "Label"},
+                h("div", {className: "slds-truncate"},
+                  h("input", {
+                    type: "text",
+                    className: "slds-input slds-m-right_small",
+                    value: newShortcut.label,
+                    onChange: (e) => this.handleInputChange("label", e.target.value)
+                  })
+                )
+              ),
+              h("td", {key: "link", "data-label": "Link"},
+                h("div", {className: "slds-truncate"},
+                  h("input", {
+                    type: "text",
+                    className: "slds-input slds-m-right_small",
+                    value: newShortcut.link,
+                    onChange: (e) => this.handleInputChange("link", e.target.value)
+                  })
+                )
+              ),
+              h("td", {key: "section", "data-label": "Section"},
+                h("div", {className: "slds-truncate"},
+                  h("input", {
+                    type: "text",
+                    className: "slds-input slds-m-right_small",
+                    value: newShortcut.section,
+                    onChange: (e) => this.handleInputChange("section", e.target.value)
+                  })
+                )
+              ),
+              h("td", {key: "external", "data-label": "External"},
+                h("div", {className: "slds-truncate"},
+                  newShortcut.isExternal && h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#check"})
+                  )
+                )
+              ),
+              h("td", {key: "actions", "data-label": "Actions"},
+                h("div", {className: "slds-truncate"},
+                  h("button", {
+                    className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-right_x-small",
+                    onClick: this.onSaveShortcut,
+                    title: "Save"
+                  }, h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#check"})
+                  )),
+                  h("button", {
+                    className: "slds-button slds-button_icon slds-button_icon-border-filled",
+                    onClick: this.onCancelEdit,
+                    title: "Cancel"
+                  }, h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#close"})
+                  ))
+                )
+              )
+            ] : [
+              h("td", {key: "label", "data-label": "Label"},
+                h("div", {className: "slds-truncate", title: shortcut.label}, shortcut.label)
+              ),
+              h("td", {key: "link", "data-label": "Link"},
+                h("div", {className: "slds-truncate", title: shortcut.link}, shortcut.link)
+              ),
+              h("td", {key: "section", "data-label": "Section"},
+                h("div", {className: "slds-truncate", title: shortcut.section}, shortcut.section)
+              ),
+              h("td", {key: "external", "data-label": "External"},
+                h("div", {className: "slds-truncate"},
+                  shortcut.isExternal && h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#check"})
+                  )
+                )
+              ),
+              h("td", {key: "actions", "data-label": "Actions"},
+                h("div", {className: "slds-truncate"},
+                  h("button", {
+                    className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-right_x-small",
+                    onClick: () => this.onEditShortcut(index),
+                    title: "Edit"
+                  }, h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#edit"})
+                  )),
+                  h("button", {
+                    className: "slds-button slds-button_icon slds-button_icon-border-filled",
+                    onClick: () => this.onDeleteShortcut(index),
+                    title: "Delete"
+                  }, h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#delete"})
+                  ))
+                )
+              )
+            ]
+            )
+          )
+        )
+      ),
+      h("div", {className: "slds-grid slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_12-of-12"},
+          h("button", {
+            className: "slds-button slds-button_icon slds-button_icon-border-filled",
+            onClick: this.onAddShortcut,
+            title: "Add Shortcut"
+          }, h("svg", {className: "slds-button__icon"},
+            h("use", {xlinkHref: "symbols.svg#add"})
+          ))
+        )
+      )
+    );
+  }
+}
+
 let h = React.createElement;
 
 class App extends React.Component {
@@ -815,7 +1148,7 @@ class App extends React.Component {
     this.exportOptions = this.exportOptions.bind(this);
     this.importOptions = this.importOptions.bind(this);
     this.hideToast = this.hideToast.bind(this);
-    this.state = {importTitle: "Export Options"};
+    this.state = {};
   }
 
   exportOptions() {
@@ -893,7 +1226,7 @@ class App extends React.Component {
               h("use", {xlinkHref: "symbols.svg#download"})
             )
           ),
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: this.state.importTitle},
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Import Options"},
             h("svg", {className: "slds-button__icon"},
               h("use", {xlinkHref: "symbols.svg#upload"})
             )

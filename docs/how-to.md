@@ -196,7 +196,7 @@ Then when you click on a PermissionSet / PermissionSetGroups search result, you'
 
 ## Customize Create / Update rest callout headers (to prevent execution of auto assignment rules for Accounts, Cases, or Leads)
 
-[Assignment Rule Header](https://developer.salesforce.com/docs/atlas.en-us.api_rest/meta/headers_autoassign.htm)
+[Assignment Rule Header](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/headers_autoassign.htm)
 
 From the popup, click on "Options" button and select the API tab.
 

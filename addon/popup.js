@@ -1066,6 +1066,7 @@ class AllDataBoxShortcut extends React.PureComponent {
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
+    this.onAddShortcut = this.onAddShortcut.bind(this);
   }
 
   componentDidMount() {
@@ -1185,6 +1186,11 @@ class AllDataBoxShortcut extends React.PureComponent {
     window.open(link);
   }
 
+  onAddShortcut(){
+    let {sfHost} = this.props;
+    window.open("options.html?host=" + sfHost + "&selectedTab=8");
+  }
+
   resultRender(matches, shortcutQuery) {
     return matches.map(value => ({
       key: value.Id,
@@ -1220,7 +1226,9 @@ class AllDataBoxShortcut extends React.PureComponent {
           inputSearchDelay: 200,
           placeholderText: "Quick find links, shortcuts",
           resultRender: this.resultRender,
-          sfHost
+          sfHost,
+          icon: "add",
+          onIconClick: this.onAddShortcut
         }),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
@@ -2044,6 +2052,7 @@ class AllDataRecordDetails extends React.PureComponent {
 class AllDataSearch extends React.PureComponent {
   constructor(props) {
     super(props);
+    this.inputIcon = props.icon ? props.icon : "down";
     this.state = {
       queryString: "",
       matchingResults: [],
@@ -2086,7 +2095,11 @@ class AllDataSearch extends React.PureComponent {
     this.getMatchesDelayed("");
   }
   onAllDataArrowClick() {
-    this.refs.showAllDataInp.focus();
+    if (this.inputIcon == "down"){
+      this.refs.showAllDataInp.focus();
+    } else {
+      this.props.onIconClick();
+    }
   }
   getMatchesDelayed(userQuery) {
     let {queryDelayTimer} = this.state;
@@ -2126,8 +2139,8 @@ class AllDataSearch extends React.PureComponent {
           queryString,
           sfHost
         }),
-        h("svg", {viewBox: "0 0 24 24", onClick: this.onAllDataArrowClick},
-          h("path", {d: "M3.8 6.5h16.4c.4 0 .8.6.4 1l-8 9.8c-.3.3-.9.3-1.2 0l-8-9.8c-.4-.4-.1-1 .4-1z"})
+        h("svg", {className: "button-icon", onClick: this.onAllDataArrowClick},
+          h("use", {xlinkHref: "symbols.svg#" + this.inputIcon})
         )
       )
     );

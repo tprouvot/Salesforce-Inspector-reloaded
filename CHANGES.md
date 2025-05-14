@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Create, Edit and Delete custom shortcuts links in Options page [feature 102](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/102)
 - Fix empty lines in picklist values causing deployment errors in Field Creator [issue 787](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/787) (contribution by [Vivek Sharma](https://github.com/vicky773h))
 - `Data Import` Automatically detect the SObject based on Id field [feature 483](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/483) request by [Tom Bassett](https://github.com/CRMTom92) and fix [issue 829](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/829) & [issue 832](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/832)
 - Add `convertCurrency()` , `FORMAT()` and `GROUPING()` to autocomplete suggestions in Data Export [feature 818](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/818) request by [Hubert](https://github.com/dollarSignUsername)

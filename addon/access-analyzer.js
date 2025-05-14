@@ -592,26 +592,23 @@ class App extends React.Component {
         )
       ),
       h("div", {className: "area", id: "result-area"},
-        h("div", {className: "result-bar"}
-          //h("h1", {}, "Result : "),
-        ),
         h("div", {className: "slds-m-horizontal_xx-large", id: "RESULT"},
-          //LINE 1 - PERMISSIONS
-          h("div", {className: "slds-grid slds-gutters"},
-
+          h("div", {className: "slds-grid slds-gutters slds-wrap"},
+            //LINE 1 - PERMISSIONS
             //COL 1 - PROFILE
-            model.profileResult.name && h("div", {className: "slds-col slds-size_4-of-12 slds-box slds-m-right_medium slds-theme_default"},
+            model.profileResult.name && h("div", {className: "slds-col slds-size_3-of-12 slds-box slds-m-vertical_xx-small slds-theme_shade"},
               //
-              h("article", {className: "slds-tile slds-m-around_xsmall"},
-                h("h1", {className: "slds-tile__title slds-truncate", title: "Profile"}, "Profile"),
+              h("article", {className: "slds-tile slds-m-around_xx-small"},
+                h("h2", {className: "slds-tile__title slds-truncate slds-m-bottom_xx-small slds-text-heading_small slds-text-color_default", title: "Profile"}, "Profile"),
                 //Build Profile Result Card
                 this.buildAccessResultCard(model.profileResult)
               )
             ),
+            h("div", {className: "slds-col slds-size_1-of-12"}),
             //COL 2 - PERMISSION SETS
-            model.profileResult.name && h("div", {className: "slds-col slds-size_8-of-12 slds-box slds-theme_shade"},
-              h("article", {className: "slds-tile"},
-                h("h1", {className: "slds-tile__title slds-truncate", title: "Permission Sets"}, "Permission Sets",
+            model.profileResult.name && h("div", {className: "slds-col slds-size_8-of-12 slds-box slds-m-vertical_xx-small slds-theme_shade"},
+              h("article", {className: "slds-tile slds-p-around_xx-small"},
+                h("h2", {className: "slds-tile__title slds-truncate slds-m-bottom_xx-small slds-text-heading_small slds-text-color_default", title: "Permission Sets"}, "Permission Sets",
                   h("div", {className: "slds-grid slds-gutters"},
                     //model.psResult.length < 1 && h("p", {className: "slds-m-around_medium slds-text-body_small"}, "No permission set containing this field was found."),
                     model.psResult.length > 0 && model.psResult.map(ps =>
@@ -622,14 +619,11 @@ class App extends React.Component {
                   )
                 )
               )
-            )
-          ),
-
-          //LINE 2 - LAYOUT ASSIGNMENT
-          h("div", {className: "slds-grid slds-gutters slds-wrap"},
-            model.layoutResult.length > 0 && h("div", {className: "slds-col slds-box slds-theme_default"},
-              h("article", {className: "slds-tile"},
-                h("h1", {className: "slds-tile__title slds-truncate", title: "Layout"}, "Layout Assignment"),
+            ),
+            //LINE 2 - LAYOUT ASSIGNMENT
+            model.layoutResult.length > 0 && h("div", {className: "slds-col slds-size_12-of-12 slds-box slds-m-vertical_xx-small slds-theme_shade"},
+              h("article", {className: "slds-tile slds-m-around_xx-small"},
+                h("h2", {className: "slds-tile__title slds-truncate slds-m-bottom_xx-small slds-text-heading_small slds-text-color_default", title: "Layout"}, "Layout Assignment"),
                 h("div", {className: "slds-grid slds-gutters"},
                   model.layoutResult.length > 0 && model.layoutResult.map(layout =>
                     h("div", {key: layout.name, className: "slds-col"},
@@ -638,66 +632,22 @@ class App extends React.Component {
                   )
                 )
               )
-            )
-          ),
-
-          //LINE 3 - LIGTHNING PAGE
-          !model.isRunning && h("div", {className: "slds-grid slds-gutters slds-wrap"},
-            h("div", {className: "slds-col slds-box slds-theme_default"},
-              h("article", {className: "slds-tile"},
-                h("h1", {className: "slds-tile__title slds-truncate", title: "Lightning Page"}, "Lightning page"),
+            ),
+            //LINE 3 - LIGTHNING PAGE
+            !model.isRunning && h("div", {className: "slds-col slds-size_12-of-12 slds-box slds-m-vertical_xx-small slds-theme_shade"},
+              h("article", {className: "slds-tile slds-m-around_xx-small"},
+                h("h2", {className: "slds-tile__title slds-truncate slds-m-bottom_xx-small slds-text-heading_small slds-text-color_default", title: "Lightning Page"}, "Lightning page"),
                 h("div", {className: "slds-grid slds-gutters"},
-                  model.flexipageResult.length < 1 && h("p", {className: "slds-m-around_medium slds-text-body_small"}, "No custom lightning page found, see page layout access"),
+                  model.flexipageResult.length < 1 && h("p", {className: "slds-m-around_xx-small slds-text-body_small"}, "No custom lightning page found, see page layout access"),
                   model.flexipageResult.length > 0 && model.flexipageResult.map(page =>
-
                     h("div", {key: page.name, className: "slds-col"},
                       this.buildAccessResultCard(page)
                     )
-
-                    /*
-
-                    h("div", {key: page.name, className: "slds-card slds-m-around_medium"},
-                      h("div", {className: "slds-card__header slds-grid"},
-                        h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
-                          h("div", {className: "slds-media__figure"},
-                            h("span", {className: "slds-icon_container", title: page.type},
-                              h("svg", {className: "slds-icon slds-icon_small"},
-                                h("use", {xlinkHref: `symbols.svg#${page.icon}`, fill: "#9c9c9c"})
-                              )
-                            )
-                          ),
-                          h("div", {className: "slds-media__body"},
-                            h("h1", {className: "slds-card__header-title"},
-                              h("a", {href: "#", className: "slds-card__header-link slds-truncate", title: page.type},
-                                h("span", {}, page.name)
-                              )
-                            )
-                          )
-                        )
-                      ),
-                      h("div", {className: "slds-card__body slds-card__body_inner"},
-                        page.components?.length > 0 && page.components.map(comp =>
-                          h("article", {key: comp.name, className: "slds-tile slds-box"},
-                            h("h3", {className: "slds-truncate slds-text-heading_small"}, comp.name),
-                            h("div", {className: "slds-tile__detail"},
-                              h("dl", {className: "slds-list_horizontal slds-wrap"},
-                                h("dt", {className: "slds-item_label slds-truncate"}, "Behavior: "),
-                                h("dd", {className: "slds-item_detail slds-truncate slds-m-left_small"}, comp.behavior)
-                              ),
-                              h("dl", {className: "slds-list_horizontal slds-wrap"},
-                                h("dt", {className: "slds-item_label slds-truncate"}, "Filter : "),
-                                h("dd", {className: "slds-item_detail slds-truncate slds-m-left_small"}, JSON.stringify(comp.filter))
-                              )
-                            )
-                          )
-                        )
-                      )
-                    ) */
                   )
                 )
               )
             )
-          )
+          )//END OF GRID
         )
       )
     );

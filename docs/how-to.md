@@ -140,34 +140,47 @@ Go on a Salesforce flow and check / uncheck the checbox to update navigation scr
 
 ## Add custom links to "Shortcut" tab
 
-Because one of the main use case for custom links is to refer to a record in your org, those links are stored under a property prefixed by the org host url.
-You can find the value by checking the property `_isSandbox`
+<img width="1234" alt="Use custom shortcuts" src="https://github.com/user-attachments/assets/036045b8-133c-46c1-90d0-1db7aa81a190" />
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/319585eb-03a3-4c16-948f-fa721214ba14)
 
-Then copy the url and add `_orgLinks` for the property name.
-Now you can enter the custom links following this convention:
+You can add custom links to the "Shortcut" tab. These links will be stored in the `sfHost + "_orgLinks"` localStorage variable. The links are stored as a JSON array with the following properties:
+- `label`: The label of the link
+- `link`: The link to the page
+- `section`: The section where the link will be displayed
+- `isExternal`: A boolean indicating if the link is external (starts with 'http' or 'www')
 
-```json
-[
-  {
-    "label": "Test myLink",
-    "link": "/lightning/setup/SetupOneHome/home",
-    "section": "Custom",
-    "prod": false
-  },
-  {
-    "label": "EnhancedProfiles",
-    "section": "Custom",
-    "link": "/lightning/setup/EnhancedProfiles/home",
-    "prod": false
-  }
-]
-```
+The links are displayed in a table format with the following features:
+- Sortable columns (click on column headers to sort)
+- Search functionality to filter links by label, link, or section
+- Edit and delete buttons for each link
+- Add button to create new links
 
-ET VOILA !
+To add a new link:
+1. Click the "+" button at the bottom of the table
+2. Fill in the label, link, and section fields
+3. Click the check icon to save or the X icon to cancel
 
-<img width="271" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/02066229-3af1-435d-9370-1dab91760940">
+To edit a link:
+1. Click the edit icon (pencil) next to the link
+2. Modify the fields
+3. Click the check icon to save or the X icon to cancel
+
+To delete a link:
+1. Click the delete icon (trash) next to the link
+
+To search links:
+1. Use the search box at the top of the table
+2. Type any text to filter links by label, link, or section
+3. The table updates in real-time as you type
+
+To sort links:
+1. Click on any column header to sort by that column
+2. Click again to reverse the sort order
+3. The current sort column is indicated by an up/down arrow icon
+
+The links are stored in the browser's localStorage, so they will persist between sessions. The links are specific to each org, so you can have different links for different orgs.
+
+<img width="278" alt="Custom Link Search" src="https://github.com/user-attachments/assets/5ccd6778-4fb2-46d5-9b54-cd47cb03c7bb" />
 
 ## Enable summary view of PermissionSet / PermissionSetGroups from shortcut tab
 
@@ -183,7 +196,7 @@ Then when you click on a PermissionSet / PermissionSetGroups search result, you'
 
 ## Customize Create / Update rest callout headers (to prevent execution of auto assignment rules for Accounts, Cases, or Leads)
 
-[Assignment Rule Header](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/headers_autoassign.htm)
+[Assignment Rule Header](https://developer.salesforce.com/docs/atlas.en-us.api_rest/meta/headers_autoassign.htm)
 
 From the popup, click on "Options" button and select the API tab.
 
@@ -352,7 +365,7 @@ For a duplicate rule, when the Alert option is enabled, bypass alerts and save d
   '{"DuplicateRuleHeader": {"allowSave": true}}'
 ```
 
-If true for a Case or Lead, uses the default (active) assignment rule for a Case or Lead. If specified, don’t specify an assignmentRuleId. If true for an Account, all territory assignment rules are applied. If false for an Account, no territory assignment rules are applied.
+If true for a Case or Lead, uses the default (active) assignment rule for a Case or Lead. If specified, don't specify an assignmentRuleId. If true for an Account, all territory assignment rules are applied. If false for an Account, no territory assignment rules are applied.
 ``` json
   '{"AssignmentRuleHeader": {"useDefaultRule": true}}',
 ```

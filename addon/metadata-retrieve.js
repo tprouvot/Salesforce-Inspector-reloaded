@@ -74,7 +74,7 @@ class Model {
           "DescribeMetadata",
           sfConn.soap(metadataApi, "describeMetadata", {apiVersion})
         );
-        let availableMetadataObjects = res.metadataObjects.filter(metadataObject => metadataObject.xmlName != "InstalledPackage");
+        let availableMetadataObjects = res.metadataObjects;
 
         this.metadataObjects = availableMetadataObjects;
         this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);

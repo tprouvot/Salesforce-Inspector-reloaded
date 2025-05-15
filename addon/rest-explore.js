@@ -365,7 +365,10 @@ class App extends React.Component {
     this.handleQuerySelection = this.handleQuerySelection.bind(this);
     this.onSaveQuery = this.onSaveQuery.bind(this);
     this.hideToast = this.hideToast.bind(this);
-    this.state = {};
+    this.state = {
+      isQueryMenuOpen: false,
+      isSuggestionsOpen: false
+    };
   }
 
   hideToast() {
@@ -450,6 +453,9 @@ class App extends React.Component {
     let endpointInput = this.refs.endpoint;
     endpointInput.value = model.request.endpoint;
 
+    // Add click outside listener
+    document.addEventListener("click", this.handleMenuClickOutside);
+
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
@@ -505,23 +511,27 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     //this.scrollTable.viewportChange();
   }
-  handleLookupSelection(target, event){
+  handleLookupSelection(target, event) {
     let {model} = this.props;
     model.lookupOption = target;
     model.suggestedQueries = model.getSearchedList();
-    this.toggleQueryMenu();
+    this.closeAllMenus();
     model.didUpdate();
   }
-  handleQuerySelection(target){
+  handleQuerySelection(target) {
     let {model} = this.props;
     model.request = target;
     this.refs.endpoint.value = model.request.endpoint;
     this.refs.queryName.value = model.request.label ? model.request.label : "";
     this.resetRequest(model);
+    this.closeAllMenus();
     model.didUpdate();
   }
-  handleQuerySelectionBlur(){
-    this.toggleSuggestedQuery();
+  handleQuerySelectionBlur() {
+    // Don't close immediately on blur to allow for clicks
+    setTimeout(() => {
+      this.closeAllMenus();
+    }, 200);
   }
   onSetAsDefault(option){
     let {model} = this.props;
@@ -595,13 +605,33 @@ class App extends React.Component {
         return "";
     }
   }
-  toggleQueryMenu(){
-    this.refs.queryMenu.classList.toggle("slds-is-open");
-  }
-  toggleSuggestedQuery(){
-    this.refs.querySuggestions.classList.toggle("slds-is-open");
-  }
-  searchQuery(){
+  toggleQueryMenu = (forceState) => {
+    this.setState(prevState => ({
+      isQueryMenuOpen: forceState !== undefined ? forceState : !prevState.isQueryMenuOpen,
+      isSuggestionsOpen: false // Close suggestions when toggling query menu
+    }));
+  };
+  toggleSuggestions = (forceState) => {
+    this.setState(prevState => ({
+      isSuggestionsOpen: forceState !== undefined ? forceState : !prevState.isSuggestionsOpen,
+      isQueryMenuOpen: false // Close query menu when toggling suggestions
+    }));
+  };
+  closeAllMenus = () => {
+    this.setState({
+      isQueryMenuOpen: false,
+      isSuggestionsOpen: false
+    });
+  };
+  handleMenuClickOutside = (event) => {
+    const queryMenu = this.refs.queryMenu;
+    const querySuggestions = this.refs.querySuggestions;
+
+    if (!queryMenu?.contains(event.target) && !querySuggestions?.contains(event.target)) {
+      this.closeAllMenus();
+    }
+  };
+  searchQuery() {
     let {model} = this.props;
     const searchTerm = this.refs.lookupSearch.value.toLowerCase();
     const searchedList = model.getSearchedList();
@@ -610,6 +640,7 @@ class App extends React.Component {
       const endpointMatch = query.endpoint.toLowerCase().includes(searchTerm);
       return bodyMatch || endpointMatch;
     });
+    this.toggleSuggestions(true); // Keep suggestions open while searching
     model.didUpdate();
   }
   render() {
@@ -650,158 +681,171 @@ class App extends React.Component {
                   h("label", {className: "slds-form-element__label slds-assistive-text", htmlFor: "combobox-id-1", id: "combobox-label-id-34"}, "Filter Search by:"),
                   h("div", {className: "slds-form-element__control"},
                     h("div", {className: "slds-combobox_container"},
-                      h("div", {ref: "queryMenu", className: "slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click", onClick: () => this.toggleQueryMenu(), "aria-controls": "primary-combobox-id-1"},
-                        h("div", {className: "slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right", role: "none"},
-                          h("div", {
-                            role: "combobox",
-                            tabIndex: "0",
-                            onBlur: () => this.toggleQueryMenu(),
-                            className: "slds-input_faux slds-combobox__input slds-combobox__input-value",
-                            "aria-labelledby": "combobox-label-id-34",
-                            id: "combobox-id-1-selected-value",
-                            "aria-controls": "objectswitcher-listbox-id-1",
-                            "aria-expanded": "false",
-                            "aria-haspopup": "listbox"
-                          },
-                          h("span", {className: "option-selected", id: "combobox-value-id-25"}, model.lookupOption.label)
-                          ),
-                          h("span", {className: "slds-icon_container slds-icon-utility-down slds-input__icon slds-input__icon_right"},
-                            h("svg", {className: "slds-icon slds-icon slds-icon_xx-small slds-icon-text-default", "aria-hidden": "true"},
-                              h("use", {xlinkHref: "symbols.svg#down"})
-                            )
+                      h("div", {ref: "queryMenu",
+                        className: `slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click ${this.state.isQueryMenuOpen ? "slds-is-open" : ""}`,
+                        onClick: (e) => {
+                          e.stopPropagation();
+                          this.toggleQueryMenu();
+                        },
+                        "aria-controls": "primary-combobox-id-1"},
+                      h("div", {className: "slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right", role: "none"},
+                        h("div", {
+                          role: "combobox",
+                          tabIndex: "0",
+                          onBlur: () => this.toggleQueryMenu(),
+                          className: "slds-input_faux slds-combobox__input slds-combobox__input-value",
+                          "aria-labelledby": "combobox-label-id-34",
+                          id: "combobox-id-1-selected-value",
+                          "aria-controls": "objectswitcher-listbox-id-1",
+                          "aria-expanded": "false",
+                          "aria-haspopup": "listbox"
+                        },
+                        h("span", {className: "option-selected", id: "combobox-value-id-25"}, model.lookupOption.label)
+                        ),
+                        h("span", {className: "slds-icon_container slds-icon-utility-down slds-input__icon slds-input__icon_right"},
+                          h("svg", {className: "slds-icon slds-icon slds-icon_xx-small slds-icon-text-default", "aria-hidden": "true"},
+                            h("use", {xlinkHref: "symbols.svg#down"})
+                          )
+                        )
+                      ),
+                      h("div", {
+                        className: "slds-dropdown slds-dropdown_length-5 slds-dropdown_x-small slds-dropdown_left",
+                        role: "listbox",
+                        "aria-label": "{{Placeholder for Dropdown Items}}",
+                        tabIndex: "0",
+                        "aria-busy": "false"
+                      },
+                      h("ul", {className: "slds-listbox slds-listbox_vertical", role: "group", "aria-label": "{{Placeholder for Dropdown Options}}"},
+                        h("li", {role: "presentation", className: "slds-listbox__item"},
+                          h("div", {id: "option232", className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small", role: "presentation"},
+                            h("h3", {className: "slds-listbox__option-header", role: "presentation"}, "Select Query Type")
                           )
                         ),
-                        h("div", {
-                          className: "slds-dropdown slds-dropdown_length-5 slds-dropdown_x-small slds-dropdown_left",
-                          role: "listbox",
-                          "aria-label": "{{Placeholder for Dropdown Items}}",
-                          tabIndex: "0",
-                          "aria-busy": "false"
-                        },
-                        h("ul", {className: "slds-listbox slds-listbox_vertical", role: "group", "aria-label": "{{Placeholder for Dropdown Options}}"},
-                          h("li", {role: "presentation", className: "slds-listbox__item"},
-                            h("div", {id: "option232", className: "slds-media slds-listbox__option slds-listbox__option_plain slds-media_small", role: "presentation"},
-                              h("h3", {className: "slds-listbox__option-header", role: "presentation"}, "Select Query Type")
-                            )
-                          ),
-                          h("div", {id: "lookup-listbox", role: "listbox", "aria-orientation": "vertical"}, [
-                            h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation"}, [
-                              ...model.lookupOptions.map((option) =>
-                                h("li", {
-                                  className: "slds-listbox__item",
-                                  role: "presentation",
-                                  key: option.key,
-                                  "data-id": option.key,
-                                  onMouseDown: (event) => this.handleLookupSelection(option, event)
+                        h("div", {id: "lookup-listbox", role: "listbox", "aria-orientation": "vertical"}, [
+                          h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation"}, [
+                            ...model.lookupOptions.map((option) =>
+                              h("li", {
+                                className: "slds-listbox__item",
+                                role: "presentation",
+                                key: option.key,
+                                "data-id": option.key,
+                                onMouseDown: (event) => this.handleLookupSelection(option, event)
+                              }, [
+                                h("div", {
+                                  id: `option${option.key}`,
+                                  className: "icon-hover-container slds-media slds-listbox__option slds-listbox__option_plain slds-media_small slds-is-selected",
+                                  role: "option"
                                 }, [
-                                  h("div", {
-                                    id: `option${option.key}`,
-                                    className: "icon-hover-container slds-media slds-listbox__option slds-listbox__option_plain slds-media_small slds-is-selected",
-                                    role: "option"
-                                  }, [
-                                    h("span", {className: "slds-media__figure slds-listbox__option-icon"}, [
-                                      h("span", {className: "slds-icon_container slds-icon-utility-check slds-current-color"}, [
-                                        h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"}, [
-                                          h("use", {xlinkHref: `symbols.svg#${option.icon}`})
-                                        ])
+                                  h("span", {className: "slds-media__figure slds-listbox__option-icon"}, [
+                                    h("span", {className: "slds-icon_container slds-icon-utility-check slds-current-color"}, [
+                                      h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"}, [
+                                        h("use", {xlinkHref: `symbols.svg#${option.icon}`})
                                       ])
-                                    ]),
-                                    h("span", {className: "slds-media__body"}, [
-                                      h("span", {className: "slds-truncate", title: option.label}, option.label)
-                                    ]),
-                                    h("button", {className: `slds-icon_container slds-button slds-button_icon slds-input__icon slds-input__icon_right ${option.class}`,
-                                      title: "Set as default",
-                                      onClick: (event) => {
-                                        event.stopPropagation(); //prevent triggering handleQuerySelection
-                                        this.onSetAsDefault(option);
-                                      }},
-                                    h("svg", {className: "slds-button__icon slds-icon_x-small", "aria-hidden": "true"},
-                                      h("use", {xlinkHref: "symbols.svg#heart"})
-                                    )
-                                    )
-                                  ])
+                                    ])
+                                  ]),
+                                  h("span", {className: "slds-media__body"}, [
+                                    h("span", {className: "slds-truncate", title: option.label}, option.label)
+                                  ]),
+                                  h("button", {className: `slds-icon_container slds-button slds-button_icon slds-input__icon slds-input__icon_right ${option.class}`,
+                                    title: "Set as default",
+                                    onClick: (event) => {
+                                      event.stopPropagation(); //prevent triggering handleQuerySelection
+                                      this.onSetAsDefault(option);
+                                    }},
+                                  h("svg", {className: "slds-button__icon slds-icon_x-small", "aria-hidden": "true"},
+                                    h("use", {xlinkHref: "symbols.svg#heart"})
+                                  )
+                                  )
                                 ])
-                              )
-                            ])
+                              ])
+                            )
                           ])
-                        )
-                        )
+                        ])
+                      )
+                      )
                       )
                     )
                   )
                 )
               ),
               h("div", {className: "slds-combobox_container slds-combobox-addon_end"},
-                h("div", {ref: "querySuggestions", className: "slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click", id: "primary-combobox-id-1"},
-                  h("div", {className: "slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right", role: "none"},
-                    h("input", {
-                      type: "text",
-                      className: "slds-input slds-combobox__input",
-                      ref: "lookupSearch",
-                      id: "combobox-id-1",
-                      "aria-autocomplete": "list",
-                      "aria-controls": "listbox-id-1",
-                      "aria-expanded": "false",
-                      "aria-haspopup": "listbox",
-                      autoComplete: "off",
-                      role: "combobox",
-                      placeholder: "Search query...",
-                      onClick: () => this.toggleSuggestedQuery(),
-                      onKeyUp: () => this.searchQuery(),
-                      onBlur: () => this.handleQuerySelectionBlur()
-                    }),
-                    h("span", {className: "slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right", title: "Search icon"},
-                      h("svg", {className: "slds-icon slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
-                        h("use", {xlinkHref: "symbols.svg#search"})
-                      )
-                    )
-                  ),
-                  h("div", {
-                    id: "listbox-id-1",
-                    className: "slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid",
-                    role: "listbox",
-                    tabIndex: "0",
-                    "aria-busy": "false"
+                h("div", {ref: "querySuggestions",
+                  className: `slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click ${this.state.isSuggestionsOpen ? "slds-is-open" : ""}`,
+                  onClick: (e) => {
+                    e.stopPropagation();
+                    this.toggleSuggestions();
                   },
-                  h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation"},
-                    model.suggestedQueries.map((query, index) =>
-                      h("li", {
-                        role: "presentation",
-                        className: "slds-listbox__item",
-                        key: index,
-                        onMouseDown: () => this.handleQuerySelection(query)
-                      },
-                      h("div", {
-                        id: `option${index}`,
-                        className: "slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta",
-                        role: "option"
-                      },
-                      h("span", {className: "slds-media__figure slds-listbox__option-icon"},
-                        h("span", {className: "slds-icon_container slds-icon-standard-account"},
-                          h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
-                            h("use", {xlinkHref: `symbols.svg#${query.list.icon}`})
-                          )
-                        )
-                      ),
-                      h("span", {className: "slds-media__body", title: query.endpoint},
-                        h("span", {className: "slds-listbox__option-text slds-listbox__option-text_entity"}, query.endpoint),
-                        h("span", {className: "slds-listbox__option-meta slds-listbox__option-meta_entity"}, query.list.label + " • " + query.method + (query.label ? " • " + query.label : ""))
-                      ),
-                      h("button", {className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right",
-                        title: "Delete Query",
-                        onClick: (event) => {
-                          event.stopPropagation(); //prevent triggering handleQuerySelection
-                          this.onDeleteQuery(query);
-                        }},
-                      h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-                        h("use", {xlinkHref: "symbols.svg#delete"})
-                      )
-                      )
-                      )
-                      )
+                  id: "primary-combobox-id-1"},
+                h("div", {className: "slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right", role: "none"},
+                  h("input", {
+                    type: "text",
+                    className: "slds-input slds-combobox__input",
+                    ref: "lookupSearch",
+                    id: "combobox-id-1",
+                    "aria-autocomplete": "list",
+                    "aria-controls": "listbox-id-1",
+                    "aria-expanded": "false",
+                    "aria-haspopup": "listbox",
+                    autoComplete: "off",
+                    role: "combobox",
+                    placeholder: "Search query...",
+                    onClick: () => this.toggleSuggestions(),
+                    onFocus: () => this.toggleSuggestions(true),
+                    onKeyUp: () => this.searchQuery(),
+                    onBlur: () => this.handleQuerySelectionBlur()
+                  }),
+                  h("span", {className: "slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right", title: "Search icon"},
+                    h("svg", {className: "slds-icon slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
+                      h("use", {xlinkHref: "symbols.svg#search"})
                     )
                   )
+                ),
+                h("div", {
+                  id: "listbox-id-1",
+                  className: "slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid",
+                  role: "listbox",
+                  tabIndex: "0",
+                  "aria-busy": "false"
+                },
+                h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation"},
+                  model.suggestedQueries.map((query, index) =>
+                    h("li", {
+                      role: "presentation",
+                      className: "slds-listbox__item",
+                      key: index,
+                      onMouseDown: () => this.handleQuerySelection(query)
+                    },
+                    h("div", {
+                      id: `option${index}`,
+                      className: "slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta",
+                      role: "option"
+                    },
+                    h("span", {className: "slds-media__figure slds-listbox__option-icon"},
+                      h("span", {className: "slds-icon_container slds-icon-standard-account"},
+                        h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
+                          h("use", {xlinkHref: `symbols.svg#${query.list.icon}`})
+                        )
+                      )
+                    ),
+                    h("span", {className: "slds-media__body", title: query.endpoint},
+                      h("span", {className: "slds-listbox__option-text slds-listbox__option-text_entity"}, query.endpoint),
+                      h("span", {className: "slds-listbox__option-meta slds-listbox__option-meta_entity"}, query.list.label + " • " + query.method + (query.label ? " • " + query.label : ""))
+                    ),
+                    h("button", {className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right",
+                      title: "Delete Query",
+                      onClick: (event) => {
+                        event.stopPropagation(); //prevent triggering handleQuerySelection
+                        this.onDeleteQuery(query);
+                      }},
+                    h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                      h("use", {xlinkHref: "symbols.svg#delete"})
+                    )
+                    )
+                    )
+                    )
                   )
+                )
+                )
                 )
               ),
               h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left-right"},

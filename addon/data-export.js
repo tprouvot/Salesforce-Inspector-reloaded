@@ -358,6 +358,10 @@ class Model {
     promise
       .catch(err => {
         console.error("spinFor", err);
+        this.isWorking = false;
+        this.exportStatus = "Error";
+        this.exportError = err.message;
+        this.exportedData = null;
       })
       .then(() => {
         this.spinnerCount--;
@@ -863,6 +867,57 @@ class Model {
       return;
     }
   }
+  // Add this method to Model class to split queries
+  splitQueryWithInClause(query) {
+    const MAX_CHUNK_SIZE = 10000;
+
+    // Skip if this is a SOSL query (starts with FIND)
+    if (query.trim().toUpperCase().startsWith("FIND")) {
+      return [query];
+    }
+
+    // Updated regex to capture field name and values in IN clause
+    const inClauseRegex = /WHERE\s+(\w+)\s+IN\s*\((.*?)\)/i;
+    const match = query.match(inClauseRegex);
+
+    if (!match) {
+    // No IN clause, return original query
+      return [query];
+    }
+
+    // Extract field name and values
+    const fieldName = match[1];
+    const values = match[2].split(",").map(val => val.trim());
+
+    const chunks = [];
+    let currentChunk = [];
+    let currentSize = 0;
+
+    // Create chunks respecting MAX_CHUNK_SIZE
+    for (const value of values) {
+      if (currentSize + value.length + 1 > MAX_CHUNK_SIZE) {
+        chunks.push(currentChunk);
+        currentChunk = [];
+        currentSize = 0;
+      }
+      currentChunk.push(value);
+      currentSize += value.length + 1;
+    }
+
+    if (currentChunk.length > 0) {
+      chunks.push(currentChunk);
+    }
+
+    // Create queries for each chunk using the actual field name
+    return chunks.map(chunk =>
+      query.replace(
+        match[0],
+        `WHERE ${fieldName} IN (${chunk.join(",")})`
+      )
+    );
+  }
+
+  // Modify doExport to handle chunked queries
   doExport() {
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
@@ -870,115 +925,119 @@ class Model {
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
-    let query = vm.queryInput.value;
-    function batchHandler(batch) {
-      return batch.catch(err => {
-        if (err.name == "AbortError") {
-          return {records: [], done: true, totalSize: -1};
-        }
-        throw err;
-      }).then(data => {
-        let fieldsResponses = {query: "records", queryAll: "records", "tooling/query": "records", search: "searchRecords", graphql: "data"};
-        let isSoql = fieldsResponses[exportedData.queryMethod] === "records";
-        if (exportedData.queryMethod === "graphql"){
-          exportedData.sobject = Object.keys(data.data.uiapi.query)[0];
-          let dataGraph = data.data.uiapi.query[exportedData.sobject].edges.map(record => {
-            const firstProperty = Object.keys(record.node)[0];
 
-            const transformed = {};
-            if (firstProperty) {
-              for (const key in record.node) {
-                if (Object.prototype.hasOwnProperty.call(record.node, key)) {
-                  transformed[key] = (typeof record.node[key] === "object" && "value" in record.node[key]) ? record.node[key].value : record.node[key];
-                  transformed.attributes = {type: exportedData.sobject};
-                }
-              }
+    // Get chunked queries
+    let queries = this.splitQueryWithInClause(vm.queryInput.value);
+    let totalRecords = 0;
+    let currentChunk = 0;
+
+    // Process chunks sequentially
+    async function processQueries() {
+      for (const query of queries) {
+        currentChunk++;
+        function batchHandler(batch) {
+          return batch.catch(err => {
+            if (err.name == "AbortError") {
+              return {records: [], done: true, totalSize: -1};
             }
-            return transformed;
+            throw err;
+          }).then(data => {
+            let fieldsResponses = {query: "records", queryAll: "records", "tooling/query": "records", search: "searchRecords", graphql: "data"};
+            let isSoql = fieldsResponses[exportedData.queryMethod] === "records";
+
+            // Process data as before
+            if (exportedData.queryMethod === "graphql"){
+              // Handle GraphQL response
+              exportedData.sobject = Object.keys(data.data.uiapi.query)[0];
+              let dataGraph = data.data.uiapi.query[exportedData.sobject].edges.map(record => {
+                const firstProperty = Object.keys(record.node)[0];
+                const transformed = {};
+                if (firstProperty) {
+                  for (const key in record.node) {
+                    if (Object.prototype.hasOwnProperty.call(record.node, key)) {
+                      transformed[key] = (typeof record.node[key] === "object" && "value" in record.node[key]) ? record.node[key].value : record.node[key];
+                      transformed.attributes = {type: exportedData.sobject};
+                    }
+                  }
+                }
+                return transformed;
+              });
+              exportedData.addToTable(dataGraph);
+            } else {
+              exportedData.addToTable(data[fieldsResponses[exportedData.queryMethod]]);
+            }
+
+            let totalRecords = exportedData.records.length;  
+
+            // Update status to show chunk progress  
+            vm.exportStatus = totalRecords > 0
+            ? `Exported ${totalRecords} records`
+            : `No data exported.`
+            
+            // Update status to show chunk progress
+            //vm.exportStatus = `Total records: ${totalRecords}`;
+
+            // Handle paginated results
+            if (!data.done && isSoql) {
+              let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
+              vm.isWorking = true;
+              vm.exportError = null;
+              vm.exportedData = exportedData;
+              vm.markPerf();
+              vm.updatedExportedData();
+              vm.didUpdate();
+              return pr;
+            }
+
+            // Add to history only once all chunks are processed
+            if (currentChunk === queries.length) {
+              vm.queryHistory.add({query: vm.queryInput.value, useToolingApi: exportedData.isTooling});
+            }
+            vm.isWorking = false;
+            vm.exportError = null;
+            vm.exportedData = exportedData;
+            vm.markPerf();
+            vm.updatedExportedData();
+            return null;
           });
-          exportedData.addToTable(dataGraph);
-        } else {
-          exportedData.addToTable(data[fieldsResponses[exportedData.queryMethod]]);
         }
 
-        let recs = exportedData.records.length;
-        let total = exportedData.totalSize;
-        if (data.totalSize != -1) {
-          exportedData.totalSize = isSoql ? data.totalSize : recs;
-          total = exportedData.totalSize;
-        }
-        if (!data.done && isSoql) {
-          let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
-          vm.isWorking = true;
-          vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
-          vm.exportError = null;
-          vm.exportedData = exportedData;
-          vm.markPerf();
-          vm.updatedExportedData();
-          vm.didUpdate();
-          return pr;
-        }
-        vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
-        if (recs == 0) {
-          vm.isWorking = false;
-          vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
-          vm.exportError = null;
-          vm.exportedData = exportedData;
-          vm.markPerf();
-          vm.updatedExportedData();
-          return null;
-        }
-        vm.isWorking = false;
-        vm.exportStatus = `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
-        vm.exportError = null;
-        vm.exportedData = exportedData;
-        vm.markPerf();
-        vm.updatedExportedData();
-        return null;
-      }, err => {
-        if (err.name != "SalesforceRestError") {
-          throw err; // not a SalesforceRestError
-        }
-        let recs = exportedData.records.length;
-        let total = exportedData.totalSize;
-        if (total != -1) {
-          // We already got some data. Show it, and indicate that not all data was exported
-          vm.isWorking = false;
-          vm.exportStatus = `Exported ${recs} of ${total} record${s(total)}. Stopped by error.`;
-          vm.exportError = null;
-          vm.exportedData = exportedData;
-          vm.updatedExportedData();
-          vm.markPerf();
-          return null;
-        }
-        vm.isWorking = false;
-        vm.exportStatus = "Error";
-        vm.exportError = err.message;
-        vm.exportedData = null;
-        vm.updatedExportedData();
-        return null;
-      });
+        vm.setQueryMethod(exportedData, query, vm);
+        // Fix: Use vm instead of this
+        await vm.spinFor(batchHandler(vm.getQueryApiFunction(exportedData.queryMethod, query), {progressHandler: vm.exportProgress}));
+      }
+
+      // Set final status
+      vm.exportStatus = queries.length > 1
+        ? `Exported ${totalRecords} records from ${queries.length} chunks`
+        : `Exported ${totalRecords} records`;
     }
-    this.setQueryMethod(exportedData, query, vm);
-    vm.spinFor(batchHandler(sfConn.rest(exportedData.endpoint, exportedData.params))
-      .catch(error => {
-        console.error(error);
-        vm.isWorking = false;
-        vm.exportStatus = "Error";
-        vm.exportError = "UNEXPECTED EXCEPTION:" + error;
-        vm.exportedData = null;
-        vm.markPerf();
-        vm.updatedExportedData();
-      }));
+
+    processQueries().catch(error => {
+      console.error("Error processing queries:", error);
+      vm.exportStatus = "Error";
+      vm.exportError = error.message;
+      vm.isWorking = false;
+    });
+
     vm.setResultsFilter("");
     vm.isWorking = true;
-    vm.exportStatus = "Exporting...";
+    vm.exportStatus = queries.length > 1 ? "Processing chunks..." : "Exporting...";
     vm.exportError = null;
     vm.exportedData = exportedData;
     vm.updatedExportedData();
   }
+  getQueryApiFunction(queryMethod, query){
+    if (queryMethod === "graphql"){
+      return sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod, {method: "POST", body: {"query": "query objects " + query}});
+    } else {
+      return sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query));
+    }
+  }
   stopExport() {
-    this.exportProgress.abort();
+    if (this.exportProgress && typeof this.exportProgress.abort === 'function') {
+      this.exportProgress.abort();
+    }
   }
   doQueryPlan(){
     let vm = this; // eslint-disable-line consistent-this
@@ -1187,9 +1246,14 @@ class App extends React.Component {
     model.prefHideRelations = !model.prefHideRelations;
     this.onExport();
   }
+  // Modify the onSelectHistoryEntry method
   onSelectHistoryEntry(e) {
     let {model} = this.props;
-    model.selectedHistoryEntry = JSON.parse(e.target.value);
+    const value = e.target.value;
+    // Only parse if value exists and isn't "undefined"
+    model.selectedHistoryEntry = value && value !== "undefined" 
+      ? JSON.parse(value) 
+      : null;
     model.selectHistoryEntry();
     model.didUpdate();
   }
@@ -1208,9 +1272,14 @@ class App extends React.Component {
       model.didUpdate();
     }
   }
+  // Modify the onSelectSavedEntry method
   onSelectSavedEntry(e) {
     let {model} = this.props;
-    model.selectedSavedEntry = JSON.parse(e.target.value);
+    const value = e.target.value;
+    // Only parse if value exists and isn't "undefined"
+    model.selectedSavedEntry = value && value !== "undefined" 
+      ? JSON.parse(value) 
+      : null;
     model.selectSavedEntry();
     model.didUpdate();
   }
@@ -1436,11 +1505,22 @@ class App extends React.Component {
               model.queryTemplates.map(q => h("option", {key: q, value: q}, q))
             ),
             h("div", {className: "button-group"},
-              h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "Query History"),
-                model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+              // Update the select elements to handle null values better
+              h("select", {
+                value: JSON.stringify(model.selectedHistoryEntry) || "", // Provide empty string as fallback
+                onChange: this.onSelectHistoryEntry, 
+                className: "query-history"
+              },
+                h("option", {value: ""}, "Query History"),
+                model.queryHistory.list.map(q => 
+                  h("option", {
+                    key: JSON.stringify(q), 
+                    value: JSON.stringify(q)
+                  }, 
+                  q.query.substring(0, 300))
+                )
               ),
-              h("button", {onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
+            h("button", {onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
             ),
             h("div", {className: "pop-menu saveOptions", hidden: !model.expandSavedOptions},
               h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query"),

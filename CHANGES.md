@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Add automatic SOQL query typo removal in Data Export [feature 844](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/844)
 - Rework REST Explore header
 - Create, Edit and Delete custom shortcuts links in Options page [feature 102](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/102)
 - Fix empty lines in picklist values causing deployment errors in Field Creator [issue 787](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/787) (contribution by [Vivek Sharma](https://github.com/vicky773h))
@@ -42,7 +43,7 @@
 - Add `Donate` button in the popup [discussion 336](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/336)
 - Change user language and locale from the popup [feature 463](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/463)
 - Update user detail post save redirect [feature 671](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/671)
-- Add new domain for Visualforce pages cf [Ensure Access to Your Visualforce Pages in Summer ’24 and Winter ’25](https://help.salesforce.com/s/articleView?id=001406148&type=1)
+- Add new domain for Visualforce pages cf [Ensure Access to Your Visualforce Pages in Summer '24 and Winter '25](https://help.salesforce.com/s/articleView?id=001406148&type=1)
 - Security improvements thanks to [Rikaard Hosein](https://github.com/rikaardhosein) [fix 661](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/661)
 - Add option for `Field Creator` to allow users to choose between PascalCase and Underscores for new field API names. [feature 655](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/655) (contribution by [Steve Quirion](https://github.com/sqone2))
 - Customize Data Export shortcuts (execute query and insert all fields name in query) [feature 653](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/653) in `chrome://extensions/shortcuts`

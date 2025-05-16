@@ -774,7 +774,7 @@ class Model {
           yield {value: "LAST_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the last n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the next n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next week and continues for the next n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "N_DAYS_AGO:n", title: "Starts at 12:00:00 AM on the day n days before the current day and continues for 24 hours. (The range doesn’t include today.)", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_DAYS_AGO:n", title: "Starts at 12:00:00 AM on the day n days before the current day and continues for 24 hours. (The range doesn't include today.)", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "LAST_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous week and continues for the last n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "N_WEEKS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the month that started n months before the start of the current month and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_MONTHS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next month and continues for the next n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
@@ -863,6 +863,21 @@ class Model {
       return;
     }
   }
+  removeTypo(query) {
+    // Remove double commas
+    query = query.replace(/,\s*,/g, ",");
+
+    // Remove comma before FROM
+    query = query.replace(/,\s+FROM\s+/gi, " FROM ");
+
+    // Remove trailing comma before FROM
+    query = query.replace(/,\s*FROM\s+/gi, " FROM ");
+
+    // Remove multiple spaces
+    query = query.replace(/\s+/g, " ");
+
+    return query.trim();
+  }
   doExport() {
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
@@ -870,7 +885,8 @@ class Model {
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
-    let query = vm.queryInput.value;
+    let query = vm.removeTypo(vm.queryInput.value);
+    vm.queryInput.value = query; // Update the input value with the cleaned query
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {

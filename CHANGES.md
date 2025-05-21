@@ -20,6 +20,7 @@
 
 ## Version 1.26
 
+- Refactor field-creator api calls to match with extension standards
 - Fix ' character search in the popup Users tab [issue 799](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/799) by [Josue Ramirez](https://github.com/jramirez6964)
 - Support Custom Channels in Event Monitor [feature 797](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/797) (idea by [Mehdi Cherfaoui](https://github.com/mehdicherf))
 - `Event Monitor` : fix text selection in PlatformEvent payload, persist replayId in url and deduplicate events received

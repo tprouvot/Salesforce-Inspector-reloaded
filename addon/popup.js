@@ -1,7 +1,10 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, sessionError} from "./inspector.js";
+import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
+import AlertBanner from "./components/AlertBanner.js";
+
+let p = parent;
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -11,7 +14,7 @@ if (typeof browser === "undefined") {
 {
   parent.postMessage({
     insextInitRequest: true,
-    iFrameLocalStorage: JSON.parse(JSON.stringify(localStorage))
+    iFrameLocalStorage: getFilteredLocalStorage()
   }, "*");
   addEventListener("message", function initResponseHandler(e) {
     if (e.source == parent) {
@@ -25,12 +28,34 @@ if (typeof browser === "undefined") {
   });
   chrome.runtime.onMessage.addListener((request) => {
     if (request.msg === "shortcut_pressed") {
-      parent.postMessage({insextOpenPopup: true}, "*");
+      if (request.command === "open-popup"){
+        parent.postMessage({insextOpenPopup: true}, "*");
+      } else {
+        parent.postMessage({command: request.command}, "*");
+      }
     }
   }
   );
 }
 
+function getFilteredLocalStorage(){
+  //for Salesforce pages
+  let host = parent[0].document.referrer;
+  if (host.length == 0){
+    //for extension pages
+    host = new URLSearchParams(parent.location.search).get("host");
+  } else {
+    host = host.split("https://")[1];
+  }
+  let domainStart = host?.split(".")[0];
+  const storedData = {...localStorage};
+  const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition", "prodBannerText"];
+  const filteredStorage = Object.fromEntries(
+    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith("access_token"))
+  );
+  sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
+  return filteredStorage;
+}
 function closePopup() {
   parent.postMessage({insextClosePopup: true}, "*");
 }
@@ -84,7 +109,9 @@ class App extends React.PureComponent {
       eventMonitorHref: "event-monitor.html?" + hostArg,
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
-      latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext
+      latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext,
+      hideButtonsOption: JSON.parse(localStorage.getItem("hideButtonsOption")),
+      useLegacyDownloadMetadata: JSON.parse(localStorage.getItem("useLegacyDlMetadata"))
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
@@ -199,16 +226,17 @@ class App extends React.PureComponent {
   isMac() {
     return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
   }
-  getBannerUrlAction(sessionError, sfHost, clientId, browser) {
-    let url;
-    let title;
-    let text;
-    if (sessionError){
-      text = "Access Token Expired";
-      title = "Generate New Token";
+  getBannerUrlAction(sessionError = {}, sfHost, clientId, browser) {
+    const url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${browser}-extension://${chrome.i18n.getMessage("@@extension_id")}/data-export.html`;
+    return {...sessionError, url};
+  }
+  displayButton(name){
+    const button = this.state.hideButtonsOption?.find((element) => element.name == name);
+    if (button){
+      return button.checked;
     }
-    url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=` + clientId + "&redirect_uri=" + browser + "-extension://" + chrome.i18n.getMessage("@@extension_id") + "/data-export.html";
-    return {title, url, text};
+    //if no option was found, display the button
+    return true;
   }
   render() {
     let {
@@ -218,7 +246,7 @@ class App extends React.PureComponent {
       inInspector,
       addonVersion
     } = this.props;
-    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, fieldCreatorHref, limitsHref, isFieldsPresent, latestNotesViewed} = this.state;
+    let {isInSetup, contextUrl, apiVersionInput, exportHref, importHref, eventMonitorHref, fieldCreatorHref, limitsHref, isFieldsPresent, latestNotesViewed, useLegacyDownloadMetadata} = this.state;
     let hostArg = new URLSearchParams();
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
@@ -276,11 +304,10 @@ class App extends React.PureComponent {
             }
           }
         }),
-        h("div", {id: "invalidTokenBanner", className: "hide"},
-          h(AlertBanner, {type: "warning",
+        h("div", {id: "toastBanner", className: "hide"},
+          h(AlertBanner, {type: bannerUrlAction.type,
             bannerText: bannerUrlAction.text,
-            iconName: "warning",
-            iconTitle: "Warning",
+            iconName: bannerUrlAction.icon,
             assistiveTest: bannerUrlAction.text,
             onClose: null,
             link: {
@@ -301,28 +328,27 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
             ),
-            h("div", {className: "slds-m-bottom_xx-small"},
+            this.displayButton("org-limits") ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
-            ),
+            ) : null,
             h("div", {},
               h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Field Crea", h("u", {}, "t"), "or (beta)"))
             ),
           ),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
-            // Advanded features should be put below this line, and the layout adjusted so they are below the fold
             h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "metaRetrieveBtn", href: "metadata-retrieve.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
+              h("a", {ref: "metaRetrieveBtn", href: `metadata-retrieve${useLegacyDownloadMetadata ? "-legacy" : ""}.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
             ),
-            h("div", {className: "slds-m-bottom_xx-small"},
+            this.displayButton("explore-api") ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
-            ),
+            ) : null,
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "restExploreBtn", href: "rest-explore.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "R"), "EST Explore"))
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "eventMonitorBtn", href: eventMonitorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Event ", h("u", {}, "M"), "onitor"))
             ),
-            localStorage.getItem("popupGenerateTokenButton") !== "false" ? h("div", {className: "slds-m-bottom_xx-small"},
+            this.displayButton("generate-token") ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
                 {
                   ref: "generateToken",
@@ -357,11 +383,11 @@ class App extends React.PureComponent {
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
             ),
           ),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
+          this.displayButton("options") ? h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
             ),
-          )
+          ) : null
         ),
         h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
           h("div", {className: "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small"},
@@ -375,10 +401,21 @@ class App extends React.PureComponent {
               value: apiVersionInput.split(".0")[0]
             })
           ),
-          h("div", {className: "slds-col slds-size_5-of-12 slds-text-align_left"},
-            h("span", {className: "footer-small-text"}, `${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"} to open`)
+          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container", title: `Shortcut :${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"}`},
+            h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=short#customize-extensions-shortcuts", target: linkTarget},
+              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
+                h("use", {xlinkHref: "symbols.svg#type", style: {fill: "#9c9c9c"}})
+              )
+            )
           ),
-          h("div", {className: "slds-col slds-size_2-of-12 slds-text-align_right slds-icon_container slds-m-right_small", title: "Documentation"},
+          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container", title: "Donate"},
+            h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/donate/", target: linkTarget},
+              h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
+                h("use", {xlinkHref: "symbols.svg#heart", style: {fill: "#9c9c9c"}})
+              )
+            )
+          ),
+          h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container", title: "Documentation"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/", target: linkTarget},
               h("svg", {className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small", viewBox: "0 0 52 52"},
                 h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})
@@ -391,7 +428,7 @@ class App extends React.PureComponent {
                 h("use", {xlinkHref: "symbols.svg#settings", style: {fill: "#9c9c9c"}})
               )
             )
-          ),
+          )
         )
       )
     );
@@ -402,7 +439,7 @@ class AllDataBox extends React.PureComponent {
 
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"}); //Enum. Supported aspects
+    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"});
 
     this.state = {
       activeSearchAspect: this.SearchAspectTypes.sobject,
@@ -548,7 +585,8 @@ class AllDataBox extends React.PureComponent {
     function getObjects(url, api) {
       return sfConn.rest(url).then(describe => {
         for (let sobject of describe.sobjects) {
-          addEntity(sobject, api);
+          // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
+          addEntity({...sobject, isCustomSetting: sobject.customSetting}, api);
         }
       }).catch(err => {
         console.error("list " + api + " sobjects", err);
@@ -666,10 +704,10 @@ class AllDataBoxUsers extends React.PureComponent {
       return [];
     }
 
-    //TODO: Better search query. SOSL?
+    const escapedUserQuery = userQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
     const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const queryFrom = "from User where (username like '%" + userQuery + "%' or name like '%" + userQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
+    const queryFrom = "from User where (username like '%" + escapedUserQuery + "%' or name like '%" + escapedUserQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
     const compositeQuery = {
       "compositeRequest": [
         {
@@ -713,10 +751,10 @@ class AllDataBoxUsers extends React.PureComponent {
       return;
     }
     //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
-    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled";
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref";
     //TODO implement a try catch to remove non existing fields ProfileId or IsPortalEnabled (experience is not enabled)
-    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId";
-    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId";
+    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref";
     const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
     const compositeQuery = {
       "compositeRequest": [
@@ -741,6 +779,7 @@ class AllDataBoxUsers extends React.PureComponent {
       //const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + selectedUserId); //Does not return profile details. Query call is therefore prefered
       const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
       let userDetail = userResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records[0];
+      userDetail.debugModeActionLabel = userDetail.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
       //query NetworkMember only if it is a portal user (display "Login to Experience" button)
       if (userDetail.IsPortalEnabled){
         await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+NetworkId+FROM+NetworkMember+WHERE+MemberId='" + userDetail.Id + "'").then(res => {
@@ -948,12 +987,6 @@ class AllDataBoxSObject extends React.PureComponent {
     });
   }
 
-  clickShowDetailsBtn() {
-    if (this.refs.allDataSelection) {
-      this.refs.allDataSelection.clickShowDetailsBtn();
-    }
-  }
-
   clickAllDataBtn() {
     if (this.refs.allDataSelection) {
       this.refs.allDataSelection.clickAllDataBtn();
@@ -1037,6 +1070,7 @@ class AllDataBoxShortcut extends React.PureComponent {
     }
     try {
       setIsLoading(true);
+      shortcutSearch = shortcutSearch.trim();
 
       //search for shortcuts
       let result = setupLinks.filter(item => item.label.toLowerCase().includes(shortcutSearch.toLowerCase()));
@@ -1044,38 +1078,37 @@ class AllDataBoxShortcut extends React.PureComponent {
         element.detail = element.section;
         element.name = element.link;
         element.Id = element.name;
+        element.isSetupLink = true;
       });
 
-      let metadataShortcutSearch = localStorage.getItem("metadataShortcutSearch");
-      if (metadataShortcutSearch == null) {
-        //enable metadata search by default
-        localStorage.setItem("metadataShortcutSearch", true);
+      let metadataShortcutSearchOptions = localStorage.getItem("metadataShortcutSearchOptions");
+      //handle previous option which was not detailled by metadata type
+      let metadataShortcutSearch = localStorage.getItem("metadataShortcutSearch") != "false";
+      if (metadataShortcutSearchOptions) {
+        metadataShortcutSearchOptions = JSON.parse(metadataShortcutSearchOptions);
+        metadataShortcutSearch = metadataShortcutSearchOptions.find(elm => elm.checked == true) != undefined;
       }
 
       //search for metadata if user did not disabled it
-      if (metadataShortcutSearch == "true"){
-        const flowSelect = "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const profileSelect = "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const permSetSelect = "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30";
-        const compositeQuery = {
-          "compositeRequest": [
-            {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(flowSelect),
-              "referenceId": "flowSelect"
-            }, {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(profileSelect),
-              "referenceId": "profileSelect"
-            }, {
-              "method": "GET",
-              "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(permSetSelect),
-              "referenceId": "permSetSelect"
-            }
-          ]
+      if (metadataShortcutSearch){
+        const queries = {
+          flows: "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          profiles: "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          permissionSets: "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%" + shortcutSearch + "%' LIMIT 30",
+          networks: "SELECT NetworkId, Network.Name, Network.Status, Network.UrlPathPrefix, SiteId FROM WebStoreNetwork WHERE Network.Name LIKE '%" + shortcutSearch + "%' LIMIT 50",
+          classes: "SELECT Id, Name, NamespacePrefix, ApiVersion, Status, LengthWithoutComments FROM ApexClass WHERE Name LIKE '%" + shortcutSearch + "%' LIMIT 50"
         };
+        // If metadataShortcutSearchOptions is null, assume all options are checked
+        const defaultOptions = ["flows", "profiles", "permissionSets", "networks", "classes"].map(name => ({name, checked: true}));
+        const effectiveOptions = metadataShortcutSearchOptions || defaultOptions;
 
-        const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
+        const compositeRequest = effectiveOptions.filter(setting => setting.checked).map(setting => ({
+          method: "GET",
+          url: "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(queries[setting.name]),
+          referenceId: setting.name + "Select"
+        }));
+
+        const searchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: {compositeRequest}});
         let results = searchResult.compositeResponse.filter((elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0);
 
         let enablePermSetSummary = localStorage.getItem("enablePermSetSummary") === "true";
@@ -1098,29 +1131,29 @@ class AllDataBoxShortcut extends React.PureComponent {
               rec.detail = rec.attributes.type + " • " + rec.Type;
               rec.detail += rec.License?.Name != null ? " • " + rec.License?.Name : "";
 
-              let psetOrGroupId;
-              let type;
-              if (rec.Type === "Group"){
-                psetOrGroupId = rec.PermissionSetGroupId;
-                type = "PermSetGroups";
-              } else {
-                psetOrGroupId = rec.Id;
-                type = "PermSets";
-              }
+              const isGroup = rec.Type === "Group";
+              let psetOrGroupId = isGroup ? rec.PermissionSetGroupId : rec.Id;
+              let type = isGroup ? "PermSetGroups" : "PermSets";
               let endLink = enablePermSetSummary ? psetOrGroupId + "/summary" : "page?address=%2F" + psetOrGroupId;
               rec.link = "/lightning/setup/" + type + "/" + endLink;
-            } else if (rec.attributes.type === "Network"){
-              rec.link = "/sfsites/picasso/core/config/commeditor.jsp?servlet/networks/switch?networkId=" + rec.Id;
+            } else if (rec.attributes.type === "ApexClass"){
+              rec.link = "/lightning/setup/ApexClasses/page?address=%2F" + rec.Id;
               rec.label = rec.Name;
-              let url = rec.UrlPathPrefix ? " • /" + rec.UrlPathPrefix : "";
-              rec.name = rec.Id + url;
-              rec.detail = rec.attributes.type + " (" + rec.Status + ") • Builder";
+              rec.name = rec.NamespacePrefix ? rec.NamespacePrefix + "__" + rec.Name : rec.Name;
+              rec.detail = rec.attributes.type + " • " + rec.ApiVersion + ".0 • " + rec.Status + (rec.NamespacePrefix ? "" : " • Length: " + rec.LengthWithoutComments);
+            } else if (rec.attributes.type === "WebStoreNetwork"){
+              rec.link = `/sfsites/picasso/core/config/commeditor.jsp?servlet%2Fnetworks%2Fswitch%3FnetworkId%3D${rec.NetworkId}%26startURL%3D%252FcommunitySetup%252FcwApp.app%2523%252Fc%252Fhome&siteId=${rec.SiteId}&`;
+              rec.label = rec.Network.Name;
+              let url = rec.Network.UrlPathPrefix ? " • /" + rec.Network.UrlPathPrefix : "";
+              rec.name = rec.NetworkId + url;
+              rec.detail = "Network (" + rec.Network.Status + ") • Builder";
             }
+            rec.title = rec.name;
             result.push(rec);
           });
         });
       }
-      //if no result found, add the globzl search link
+      //if no result found, add the global search link
       result.length > 0 ? result : result.push({link: "/one/one.app#" + this.getEncodedGlobalSearch(shortcutSearch), label: '"' + shortcutSearch + '"', detail: "No results found", name: "Use Global Search"});
       return result;
     } catch (err) {
@@ -1148,13 +1181,13 @@ class AllDataBoxShortcut extends React.PureComponent {
       key: value.Id,
       value,
       element: [
-        h("div", {className: "autocomplete-item-main", key: "main"},
+        h("div", {className: "autocomplete-item-main", title: value.title, key: "main" + value.Id},
           h(MarkSubstring, {
             text: value.label,
             start: value.label.toLowerCase().indexOf(shortcutQuery.toLowerCase()),
             length: shortcutQuery.length
           })),
-        h("div", {className: "autocomplete-item-sub small", key: "sub"},
+        h("div", {className: "autocomplete-item-sub small", title: value.title, key: "sub" + value.Id},
           h("div", {}, value.detail),
           h(MarkSubstring, {
             text: value.name,
@@ -1171,7 +1204,15 @@ class AllDataBoxShortcut extends React.PureComponent {
 
     return (
       h("div", {ref: "shortcutsBox", className: "users-box"},
-        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 200, placeholderText: "Quick find links, shortcuts", resultRender: this.resultRender}),
+        h(AllDataSearch, {
+          ref: "allDataSearch",
+          getMatches: this.getMatches,
+          onDataSelect: this.onDataSelect,
+          inputSearchDelay: 200,
+          placeholderText: "Quick find links, shortcuts",
+          resultRender: this.resultRender,
+          sfHost
+        }),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
             ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
@@ -1187,6 +1228,7 @@ class AllDataBoxOrg extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {};
+    this.deleteApexLogs = this.deleteApexLogs.bind(this);
   }
 
   componentDidMount() {
@@ -1215,6 +1257,55 @@ class AllDataBoxOrg extends React.PureComponent {
     return null;
   }
 
+  async deleteApexLogs() {
+
+    const elt = document.querySelector("#deleteLogs");
+    elt.classList.toggle("progress-working");
+    let apexLogIds = [];
+    const queryResult = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=SELECT+Id+FROM+ApexLog+ORDER+BY+LogLength+DESC`);
+
+    if (queryResult.records && queryResult.records.length > 0) {
+      apexLogIds = queryResult.records.map(log => log.Id);
+    }
+
+    if (apexLogIds.length === 0) {
+      this.updateDeleteButton(true, elt, "No Apex logs found to delete.");
+      return;
+    }
+
+    // 200 ids is the API limitation
+    const chunkedIds = [];
+    for (let i = 0; i < apexLogIds.length; i += 200) {
+      chunkedIds.push(apexLogIds.slice(i, i + 200));
+    }
+
+    let allSuccess = true;
+    for (const idGroup of chunkedIds) {
+      const idsString = idGroup.join(",");
+      const deleteResult = await sfConn.rest(`/services/data/v${apiVersion}/composite/sobjects?ids=${idsString}&allOrNone=false`, {method: "DELETE"});
+      console.log(deleteResult);
+
+      if (Array.isArray(deleteResult)) {
+        const hasError = deleteResult.find(response => response.success === false);
+        if (hasError) {
+          allSuccess = false;
+        }
+      } else {
+        allSuccess = false;
+      }
+    }
+    if (allSuccess) {
+      this.updateDeleteButton(true, elt, "Successfully deleted all Apex logs.", "success");
+    } else {
+      this.updateDeleteButton(false, elt, "Some Apex logs could not be deleted. Check the console for details.");
+    }
+  }
+
+  updateDeleteButton(success, elt, message) {
+    elt.title = message;
+    elt.classList.toggle(success ? "progress-success" : "progress-error");
+  }
+
   setInstanceStatus(instanceName, sfHost){
     let instanceStatusLocal = JSON.parse(sessionStorage.getItem(sfHost + "_instanceStatus"));
     if (instanceStatusLocal == null){
@@ -1239,11 +1330,11 @@ class AllDataBoxOrg extends React.PureComponent {
     return (
       h("div", {ref: "orgBox", className: "users-box"},
         h("div", {className: "all-data-box-inner"},
-          h("div", {className: "all-data-box-data"},
+          h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},
             h("table", {},
               h("tbody", {},
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget}, "Org Id:")),
+                  h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget, onClick: handleLightningLinkClick}, "Org Id:")),
                   h("td", {}, orgInfo.Id.substring(0, 15))
                 ),
                 h("tr", {},
@@ -1274,7 +1365,14 @@ class AllDataBoxOrg extends React.PureComponent {
                   h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
                   h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
                 ),
-              )))))
+              )
+            )
+          ),
+          h("div", {ref: "orgButtons", className: "user-buttons center small-font"},
+            h("a", {href: "#", id: "deleteLogs", disabled: false, onClick: (e) => { this.deleteApexLogs(e); }, className: "slds-button slds-button_neutral", title: "Delete all ApexLog"}, "Delete All ApexLogs")
+          )
+        )
+      )
     );
   }
 }
@@ -1284,6 +1382,9 @@ class UserDetails extends React.PureComponent {
     super(props);
     this.sfHost = props.sfHost;
     this.enableDebugLog = this.enableDebugLog.bind(this);
+    this.toggleDisplay = this.toggleDisplay.bind(this);
+    this.onSelectLanguage = this.onSelectLanguage.bind(this);
+    this.state = {};
   }
 
   openUrlInIncognito(targetUrl) {
@@ -1331,6 +1432,33 @@ class UserDetails extends React.PureComponent {
     const element = document.querySelector("#enableDebugLog");
     element.setAttribute("disabled", true);
     element.text = "Logs Enabled";
+  }
+
+  toggleDisplay(event, refKey) {
+    event.target.style.display = "none";
+    this.fectchLocalesAndLanguages(refKey);
+  }
+
+  fectchLocalesAndLanguages(refKey){
+    if (!this.state.userLocales){
+      sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/describe`, {method: "GET"}).then(res => {
+        let userLanguages = res.fields.find(field => field.name === "LanguageLocaleKey");
+        let userLocales = res.fields.find(field => field.name === "LocaleSidKey");
+        this.setState({userLocales: userLocales.picklistValues, userLanguages: userLanguages.picklistValues.filter(item => item.active)});
+        this.refs[refKey].classList.toggle("hide");
+      });
+    } else {
+      this.refs[refKey].classList.toggle("hide");
+    }
+  }
+
+  onSelectLanguage(e, userId){
+    sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/${userId}`, {method: "PATCH",
+      body: {
+        [e.target.name]: e.target.value
+      }}).then(
+      browser.runtime.sendMessage({message: "reloadPage"})
+    ).catch(err => console.log("Error during user language update", err));
   }
 
   getTraceFlags(userId, DTnow, debugLogDebugLevel, debugTimeInMs){
@@ -1425,7 +1553,7 @@ class UserDetails extends React.PureComponent {
 
   getUserDetailLink(userId) {
     let {sfHost} = this.props;
-    return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1";
+    return "https://" + sfHost + "/lightning/setup/ManageUsers/page?address=%2F" + userId + "%3Fnoredirect%3D1%26isUserEntityOverride%3D1";
   }
 
   getUserPsetLink(userId) {
@@ -1457,8 +1585,23 @@ class UserDetails extends React.PureComponent {
     return "https://" + sfHost + "/lightning/setup/ManageUsers/" + userId + "/summary";
   }
 
-  openMenu(){
+  enableDebugMode(user){
+    sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + user.Id, {method: "PATCH",
+      body: {UserPreferencesUserDebugModePref: !user.UserPreferencesUserDebugModePref
+      }}).then(() => browser.runtime.sendMessage({message: "reloadPage"})
+    ).catch(err => console.log("Error during user debug mode activation", err));
+  }
+
+  toggleMenu(){
     this.refs.buttonMenu.classList.toggle("slds-is-open");
+  }
+
+  toggleLogMenu(){
+    this.refs.logButtonMenu.classList.toggle("slds-is-open");
+  }
+
+  toggleLogMenu(){
+    this.refs.logButtonMenu.classList.toggle("slds-is-open");
   }
 
   render() {
@@ -1472,8 +1615,12 @@ class UserDetails extends React.PureComponent {
                 h("th", {}, "Name:"),
                 h("td", {className: "oneliner"},
                   (user.IsActive) ? "" : h("span", {title: "User is inactive"}, "⚠ "),
-                  //user.Name + " (" + user.Alias + ")"
-                  h("a", {href: this.getUserSummaryLink(user.Id), target: linkTarget, title: "View summary"}, user.Name)
+                  h("a", {
+                    href: this.getUserSummaryLink(user.Id),
+                    target: linkTarget,
+                    title: "View summary",
+                    onClick: handleLightningLinkClick
+                  }, user.Name)
                   ,
                   " (" + user.Alias + ")"
                 )
@@ -1495,7 +1642,11 @@ class UserDetails extends React.PureComponent {
                 h("th", {}, "Profile:"),
                 h("td", {className: "oneliner"},
                   (user.Profile)
-                    ? h("a", {href: this.getProfileLink(user.ProfileId), target: linkTarget}, user.Profile.Name)
+                    ? h("a", {
+                      href: this.getProfileLink(user.ProfileId),
+                      target: linkTarget,
+                      onClick: handleLightningLinkClick
+                    }, user.Profile.Name)
                     : h("em", {className: "inactive"}, "unknown")
                 )
               ),
@@ -1506,29 +1657,55 @@ class UserDetails extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Language:"),
                 h("td", {},
-                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Language: " + user.LanguageLocaleKey}),
+                  h("div", {className: "pointer flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Update Language " + user.LanguageLocaleKey, onClick: (e) => { this.toggleDisplay(e, "LanguageLocaleKey"); }}),
+                  h("select", {ref: "LanguageLocaleKey", name: "LanguageLocaleKey", className: "hide", defaultValue: user.LanguageLocaleKey, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
+                    this.state.userLanguages?.map(q => h("option", {key: q.value, value: q.value}, q.label))
+                  ),
                   " | ",
-                  h("div", {className: "flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Locale: " + user.LocaleSidKey})
+                  h("div", {className: "pointer flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Update Locale: " + user.LocaleSidKey, onClick: (e) => { this.toggleDisplay(e, "LocaleSidKey"); }}),
+                  h("select", {ref: "LocaleSidKey", name: "LocaleSidKey", className: "hide", defaultValue: user.LanguageLocaleKey, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
+                    this.state.userLanguages?.map(q => h("option", {key: q.value, value: q.value}, q.label))
+                  ),
                 )
               )
             )
           )),
         h("div", {ref: "userButtons", className: "user-buttons center small-font"},
-          h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "Details"),
-          h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
-          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
-          h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs")
+          h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral"}, "Details"),
+          h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
+          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
+          //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
+          h("div", {className: "user-buttons justify-center slds-button-group top-space", role: "group"},
+            h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs"),
+            h("div", {ref: "logButtonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleLogMenu(), title: "Show options"},
+                h("svg", {className: "slds-button__icon"},
+                  h("use", {xlinkHref: "symbols.svg#down"})
+                ),
+                h("span", {className: "slds-assistive-text"}, "Show options")
+              ),
+              h("div", {className: "slds-dropdown slds-dropdown_right", onMouseLeave: () => this.toggleLogMenu()},
+                h("ul", {className: "slds-dropdown__list", role: "menu"},
+                  h("li", {className: "slds-dropdown__item", role: "presentation"},
+                    h("a", {id: "enableDebugMode", onClick: () => this.enableDebugMode(user), tabIndex: "1"},
+                      h("span", {className: "slds-truncate", title: user.debugModeActionLabel + " Debug Mode for Lightning Components"}, user.debugModeActionLabel + " Debug Mode")
+                    )
+                  )
+                )
+              )
+            ),
+          )
         ),
         this.doSupportLoginAs(user) ? h("div", {className: "user-buttons justify-center small-font slds-button-group top-space", role: "group"},
           h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs"),
           h("div", {ref: "buttonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
-            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.openMenu(), title: "Show other LoginAs options"},
+            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleMenu(), title: "Show other LoginAs options"},
               h("svg", {className: "slds-button__icon"},
                 h("use", {xlinkHref: "symbols.svg#down"})
               ),
               h("span", {className: "slds-assistive-text"}, "Show other LoginAs options")
             ),
-            h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.openMenu()},
+            h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.toggleMenu()},
               h("ul", {className: "slds-dropdown__list", role: "menu"},
                 h("li", {className: "slds-dropdown__item", role: "presentation"},
                   h("a", {onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, tabIndex: "0"},
@@ -1550,71 +1727,12 @@ class UserDetails extends React.PureComponent {
 }
 
 
-class ShowDetailsButton extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      detailsLoading: false,
-      detailsShown: false,
-    };
-    this.onDetailsClick = this.onDetailsClick.bind(this);
-  }
-  canShowDetails() {
-    let {showDetailsSupported, selectedValue, contextRecordId} = this.props;
-    return showDetailsSupported && contextRecordId && selectedValue.sobject.keyPrefix == contextRecordId.substring(0, 3) && selectedValue.sobject.availableApis.length > 0;
-  }
-  onDetailsClick() {
-    let {sfHost, selectedValue} = this.props;
-    let {detailsShown} = this.state;
-    if (detailsShown || !this.canShowDetails()) {
-      return;
-    }
-    let tooling = !selectedValue.sobject.availableApis.includes("regularApi");
-    let url = "/services/data/v" + apiVersion + "/" + (tooling ? "tooling/" : "") + "sobjects/" + selectedValue.sobject.name + "/describe/";
-    this.setState({detailsShown: true, detailsLoading: true});
-    Promise.all([
-      sfConn.rest(url),
-      getAllFieldSetupLinks(sfHost, selectedValue.sobject.name)
-    ]).then(([res, insextAllFieldSetupLinks]) => {
-      this.setState({detailsShown: true, detailsLoading: false});
-      parent.postMessage({insextShowStdPageDetails: true, insextData: res, insextAllFieldSetupLinks}, "*");
-      closePopup();
-    }).catch(error => {
-      this.setState({detailsShown: false, detailsLoading: false});
-      console.error(error);
-      alert(error);
-    });
-  }
-  render() {
-    let {detailsLoading, detailsShown} = this.state;
-    return (
-      h("div", {},
-        h("a",
-          {
-            id: "showStdPageDetailsBtn",
-            className: "button" + (detailsLoading ? " loading" : "" + " page-button slds-button slds-button_neutral slds-m-bottom_xx-small"),
-            disabled: detailsShown,
-            onClick: this.onDetailsClick,
-            style: {display: !this.canShowDetails() ? "none" : ""}
-          },
-          h("span", {}, "Show field ", h("u", {}, "m"), "etadata")
-        )
-      )
-    );
-  }
-}
-
-
 class AllDataSelection extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
       flowDefinitionId: null
     };
-  }
-
-  clickShowDetailsBtn() {
-    this.refs.showDetailsBtn.onDetailsClick();
   }
   clickAllDataBtn() {
     this.refs.showAllDataBtn.click();
@@ -1646,12 +1764,16 @@ class AllDataSelection extends React.PureComponent {
       return undefined;
     }
   }
+  getUrl(basePath, params) {
+    const {sfHost, selectedValue} = this.props;
+    const args = new URLSearchParams({host: sfHost, ...params});
+    return `${basePath}?${args}`;
+  }
   getDeployStatusUrl() {
-    let {sfHost, selectedValue} = this.props;
-    let args = new URLSearchParams();
-    args.set("host", sfHost);
-    args.set("checkDeployStatus", selectedValue.recordId);
-    return "explore-api.html?" + args;
+    return this.getUrl("explore-api.html", {checkDeployStatus: this.props.selectedValue.recordId});
+  }
+  getGeneratePackageUrl() {
+    return this.getUrl("metadata-retrieve.html", {deployRequestId: this.props.selectedValue.recordId});
   }
   redirectToFlowVersions(){
     return "https://" + this.props.sfHost + "/lightning/setup/Flows/page?address=%2F" + this.state.flowDefinitionId;
@@ -1750,19 +1872,36 @@ class AllDataSelection extends React.PureComponent {
               h("tr", {},
                 h("th", {}, "Name:"),
                 h("td", {},
-                  h("a", {href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, selectedValue.sobject.name)
+                  h("a", {
+                    href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
+                    target: linkTarget,
+                    onClick: handleLightningLinkClick
+                  }, selectedValue.sobject.name)
                 )
               ),
               h("tr", {},
                 h("th", {}, "Links:"),
                 h("td", {},
-                  h("a", {href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Fields"),
+                  h("a", {
+                    href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
+                    target: linkTarget,
+                    onClick: handleLightningLinkClick
+                  }, "Fields"),
                   selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 0 ? h("span", {},
                     h("span", {}, " / "),
-                    h("a", {href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId), target: linkTarget}, "Record Types"),
+                    h("a", {
+                    // TODO add check for record type support (such as custom metadata types and custom settings)
+                      href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId),
+                      target: linkTarget,
+                      onClick: handleLightningLinkClick
+                    }, "Record Types"),
                   ) : null,
                   selectedValue.sobject.name.endsWith("__e") ? null : h("span", {}, h("span", {}, " / "),
-                    h("a", {href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "List")
+                    h("a", {
+                      href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting),
+                      target: linkTarget,
+                      onClick: handleLightningLinkClick
+                    }, "List")
                   ),
                   selectedValue.sobject.name.endsWith("__e") || selectedValue.sobject.name.endsWith("__mdt") ? null : h("span", {}, h("span", {}, " / "),
                     h("a", {href: this.getObjectListAccess(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Access")
@@ -1794,9 +1933,10 @@ class AllDataSelection extends React.PureComponent {
 
           h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
-        h(ShowDetailsButton, {ref: "showDetailsBtn", sfHost, showDetailsSupported, selectedValue, contextRecordId}),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
           ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+        selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
+          ? h("a", {href: this.getGeneratePackageUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Generate package.xml") : null,
         flowDefinitionId
           ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
         buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
@@ -1814,7 +1954,13 @@ class AllDataSelection extends React.PureComponent {
           : " (Not readable)"
         ))),
         isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
-        selectedValue.sobject.isEverCreatable && !selectedValue.sobject.name.endsWith("__e") ? h("a", {ref: "showNewBtn", href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
+        selectedValue.sobject.isEverCreatable && !selectedValue.sobject.name.endsWith("__e") ? h("a", {
+          ref: "showNewBtn",
+          href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
+          target: linkTarget,
+          onClick: handleLightningLinkClick,
+          className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"
+        }, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
         selectedValue.sobject.name.endsWith("__e") ? h("a", {href: this.getSubscribeUrl(selectedValue.sobject.name), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}), "Subscribe to Event")) : null,
       )
     );
@@ -1825,6 +1971,18 @@ class AllDataRecordDetails extends React.PureComponent {
 
   getRecordLink(sfHost, recordId) {
     return "https://" + sfHost + "/" + recordId;
+  }
+  openRecordLink(e) {
+    e.preventDefault();
+    closePopup();
+    const url = e.target.href;
+    const target = getLinkTarget(e);
+    const recordId = e.target.dataset.recordId;
+    if (target === "_blank") {
+      window.open(url, target);
+    } else {
+      lightningNavigate({navigationType: "recordId", recordId}, url);
+    }
   }
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
@@ -1839,13 +1997,22 @@ class AllDataRecordDetails extends React.PureComponent {
             recordIdDetails.recordName ? h("tr", {},
               h("th", {}, "Name:"),
               h("td", {},
-                h("a", {href: this.getRecordLink(sfHost, selectedValue.recordId), target: linkTarget}, recordIdDetails.recordName)
+                h("a", {
+                  href: this.getRecordLink(sfHost, selectedValue.recordId),
+                  target: linkTarget,
+                  "data-record-id": selectedValue.recordId,
+                  onClick: this.openRecordLink
+                }, recordIdDetails.recordName)
               )
             ) : null,
             recordIdDetails.recordTypeName ? h("tr", {},
               h("th", {}, "RecType:"),
               h("td", {},
-                h("a", {href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId), target: linkTarget}, recordIdDetails.recordTypeName)
+                h("a", {
+                  href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId),
+                  target: linkTarget,
+                  onClick: handleLightningLinkClick
+                }, recordIdDetails.recordTypeName)
               )
             ) : null,
             h("tr", {},
@@ -1860,41 +2027,6 @@ class AllDataRecordDetails extends React.PureComponent {
     } else {
       return null;
     }
-  }
-}
-
-
-// props: {style: "base"|"warning"|"error"|"offline", icon: utility SVG name (without utility prefix),
-// bannerText: header, link: {text, props}, assistiveText: icon description, onClose: function}
-class AlertBanner extends React.PureComponent {
-  // From SLDS Alert Banner spec https://www.lightningdesignsystem.com/components/alert/
-
-  render() {
-    let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
-    const theme = ["warning", "error", "offline"].includes(type) ? type : "info";
-    const themeClass = `slds-theme_${theme}`;
-    return (
-      h("div", {className: `slds-notify slds-notify_alert ${themeClass}`, role: "alert"},
-        h("span", {className: "slds-assistive-text"}, assistiveText | "Notification"),
-        h("span", {className: "slds-icon_container slds-m-right_small", title: iconTitle},
-          h("svg", {className: "slds-icon slds-icon_neither-small-nor-x-small slds-icon-text-default", viewBox: "0 0 52 52"},
-            h("use", {xlinkHref: `symbols.svg#${iconName}`})
-          ),
-        ),
-        h("h2", {}, bannerText,
-          h("p", {}, ""),
-          link && h("a", link.props, link.text)
-        ),
-        onClose && h("div", {className: "slds-notify__close"},
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},
-            h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"},
-              h("use", {xlinkHref: "symbols.svg#close"})
-            ),
-            h("span", {className: "slds-assistive-text"}, "Close"),
-          )
-        )
-      )
-    );
   }
 }
 class AllDataSearch extends React.PureComponent {
@@ -2108,12 +2240,31 @@ class Autocomplete extends React.PureComponent {
     this.setState({resultsMouseIsDown: false});
   }
   onResultClick(e, value) {
-    let {sfHost} = this.props;
-    if (value.isRecent){
-      window.open("https://" + sfHost + "/" + value.recordId, getLinkTarget(e));
+    const {sfHost} = this.props;
+
+    if (value.isRecent) {
+      this.handleNavigation(e, `https://${sfHost}/${value.recordId}`, {
+        navigationType: "recordId",
+        recordId: value.recordId
+      });
+    } else if (value.link && value.Id) {
+      this.handleNavigation(e, `${value.isExternal ? "" : "https://" + sfHost}${value.link}`, {
+        navigationType: "url",
+        url: `https://${sfHost}${value.link}`
+      });
     } else {
       this.props.updateInput(value);
       this.setState({showResults: false, selectedIndex: 0});
+    }
+  }
+  handleNavigation(e, url, navigationParams) {
+    const linkTarget = getLinkTarget(e);
+    closePopup();
+
+    if (linkTarget === "_blank" || localStorage.getItem("lightningNavigation") == "false") {
+      window.open(url, linkTarget);
+    } else {
+      lightningNavigate(navigationParams, url);
     }
   }
   onResultMouseEnter(index) {
@@ -2262,12 +2413,20 @@ function sfLocaleKeyToCountryCode(localeKey) {
   return splitted[(splitted.length > 1 && !localeKey.includes("_LATN_")) ? 1 : 0].toLowerCase();
 }
 
-function getLinkTarget(e) {
-  if (JSON.parse(localStorage.getItem("openLinksInNewTab")) || (e.ctrlKey || e.metaKey)) {
-    return "_blank";
-  } else {
-    return "_top";
-  }
+window.getRecordId = getRecordId; // for unit tests
+
+function lightningNavigate(details, fallbackURL) {
+  p.postMessage({lightningNavigate: {...details, fallbackURL}}, "*");
 }
 
-window.getRecordId = getRecordId; // for unit tests
+function handleLightningLinkClick(e) {
+  e.preventDefault(); // Prevent the default link behavior (href navigation)
+  closePopup();
+  const url = e.currentTarget.href;
+  const target = getLinkTarget(e);
+  if (target === "_blank") {
+    window.open(url, target);
+  } else {
+    lightningNavigate({navigationType: "url", url}, url);
+  }
+}

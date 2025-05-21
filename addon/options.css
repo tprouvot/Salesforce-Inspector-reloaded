@@ -142,6 +142,8 @@ body {
     border: 1px solid #DDDBDA;
     margin: 12px 12px 0 12px;
     flex-grow: 1;
+    overflow: auto;
+    max-height: 100vh;
 }
 
 .prod {

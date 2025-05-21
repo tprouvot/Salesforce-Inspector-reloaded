@@ -22,7 +22,7 @@ class Model {
     this.statusLink = null;
     this.metadataObjects = [];
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
-    this.sortMetadataBy = localStorage.getItem("sortMetadataBy");
+    this.sortMetadataBy = JSON.parse(localStorage.getItem("sortMetadataBy")) || "fullName";
     this.packageXml;
     this.metadataFilter = "";
     this.deployRequestId;
@@ -666,9 +666,7 @@ class ObjectSelector extends React.Component {
                 }
               }
             });
-            //sort the child once added to meta.childXmlNames so that if there is already some child from deployRequest, those are also sorted
-            let sortField = model.sortMetadataBy.length > 0 ? model.sortMetadataBy : "fullName";
-            meta.childXmlNames.sort((a, b) => a[sortField] > b[sortField] ? 1 : a[sortField] < b[sortField] ? -1 : 0);
+            meta.childXmlNames.sort((a, b) => a[model.sortMetadataBy] > b[model.sortMetadataBy] ? 1 : a[model.sortMetadataBy] < b[model.sortMetadataBy] ? -1 : 0);
           }
         })
       );

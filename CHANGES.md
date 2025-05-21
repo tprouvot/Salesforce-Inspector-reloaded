@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Fix issue with the sorting of child components in Download Metadata
 - Add AgentForce integration to generate SOQL queries in Data Export [feature 850](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/850)
 - Add automatic SOQL query typo removal in Data Export [feature 844](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/844)
 - Remove the exclusion of InstalledPackage in Download Metadata page [feature 641](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/641) request by [yuandake](https://github.com/yuandake)

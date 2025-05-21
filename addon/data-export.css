@@ -357,21 +357,6 @@ textarea[readonly] {
   align-items: center;
 }
 
-#help-btn:hover .icon {
-  background-color: #818181;
-}
-
-#help-btn .icon {
-  display: inline-block;
-  width: 1.4rem;
-  height: 1.4rem;
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 1.4rem;
-  -webkit-mask-image: url(images/help.svg);
-  -webkit-mask-position: center;
-  background-color: #919191;
-}
-
 #spinner {
   left: -15px;
   top: 9px;
@@ -800,4 +785,23 @@ svg.button-icon {
 }
 .no-left-border {
   border-left: 0em;
+}
+svg.icon {
+  fill: #919191;
+}
+svg.icon:hover {
+  fill: #818181;
+}
+.icon {
+  display: inline-block;
+  width: 1.4rem;
+  height: 1.4rem;
+  vertical-align: middle;
+  vertical-align: -webkit-baseline-middle;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1.4rem;
+  -webkit-mask-position: center;
+}
+.marginTop {
+  margin-top: 10px;
 }

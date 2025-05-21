@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
-import {nullToEmptyString, getLatestApiVersionFromOrg} from "./utils.js";
+import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
@@ -141,7 +141,8 @@ class OptionsTabSelector extends React.Component {
               key: "hideExportButtonsOption",
               checkboxes: [
                 {label: "Delete Records", name: "delete", checked: true},
-                {label: "Export Query", name: "export-query", checked: false}
+                {label: "Export Query", name: "export-query", checked: false},
+                {label: "AgentForce", name: "export-agentforce", checked: false}
               ]}
           },
           {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
@@ -149,7 +150,8 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100}},
           {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50}},
-          {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}}
+          {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}},
+          {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}}
         ]
       },
       {
@@ -406,7 +408,7 @@ class Option extends React.Component {
     this.placeholder = props.placeholder;
     let value = localStorage.getItem(this.key);
     if (props.default !== undefined && value === null) {
-      value = JSON.stringify(props.default);
+      value = props.type != "text" ? JSON.stringify(props.default) : props.default;
       localStorage.setItem(this.key, value);
     }
     this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value)

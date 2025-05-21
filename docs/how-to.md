@@ -93,20 +93,6 @@ Add a new property `csvSeparator` containing the needed separator for CSV files
 
    <img alt="Update csv separator" src="../assets/images/how-to/csv-separator.png?raw=true" height="300">
 
-## Disable query input autofocus
-
-Option available in Data Export tab
-
-<img width="809" alt="Disable query input" src="https://github.com/user-attachments/assets/6f928f58-e437-47aa-b2d2-378f534e7a08">
-
-## Add custom query templates
-
-Enter value in "Query Templates" option with your custom queries separated by "//" character.
-Example:
-
-`SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE`
-
-<img width="895" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/16490965-ec4f-42d7-a534-8f24febe1ee3">
 
 ## Open links in a new tab
 
@@ -213,12 +199,6 @@ Since the plugin's api version is only updated when all productions have been up
 
 ![2023-11-10_09-50-55 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6ae51a29-9887-41a6-8148-d9e12c2dc10d)
 
-## Download Event Log Files
-
-To make your life easier and avoid third party tools or login to ELF website, we implemented the download option from the data export page.
-When quering EventLogFile, add the "LogFile" field in the query and click on the value to download corresponding log.
-
-![2023-11-15_14-32-44 (1)](https://github.com/Annubis45/Salesforce-Inspector-reloaded/assets/35368290/ba1fcbed-8428-495e-b03b-7816320d95df)
 
 ## Delete All Apex Logs
 
@@ -251,26 +231,6 @@ Warning: Salesforce is slower for users who have debug mode enabled.
 
 <img width="278" alt="Enable Debug Mode" src="https://github.com/user-attachments/assets/f4dabb96-6b1d-48a1-828d-cc7d5da92e57" />
 
-## Display query performance in Data Export
-
-To enable performance metrics for queries on the data export page, open the Options screen and select the Data Export tab,
-then set "Display Query Execution Time" to enabled. Total time for the query to process and, when applicable, batch stats (Total Number of Batches, Min/Max/Avg Batch Time)
-are displayed.
-
-## Test GraphQL query
-
-> [!WARNING]
-> DEPRECATED : Since you can use Data Export to test GraphQL and also REST Explore to run the request, this should not be useful anymore.
-
-
-- Open popup and click on "Explore API" button.
-- Right click on the page and select "Inspect"
-- Execute the code in dev console:
-
-`var myQuery = { "query": "query accounts { uiapi { query { Account { edges { node { Id  Name { value } } } } } } }" };`
-`display(sfConn.rest("/services/data/v59.0/graphql", {method: "POST", body: myQuery}));`
-
-![2024-02-09_17-01-42 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6689fad3-9549-41b9-8371-55adae037793)
 
 ## Customize extension's favicon
 
@@ -299,33 +259,6 @@ From the option page, enable "Use favicon color on sandbox banner"
 <img width="1087" alt="image" src="https://github.com/user-attachments/assets/f90999c2-f93e-423a-bcb7-18a8aa717a17">
 
 
-
-## Select all fields in a query
-
-This functionality already exists in the legacy version but since many users don't know about it, I would like to document it.
-When on the export page, put the cursor between `SELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
-If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM`.
-
-![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)
-
-## Customize Select all fields in a query shortcut
-
-If the default `Ctrl + space` shortcut is already used by another extension or app, you can customize it in `chrome://extensions/shortcuts` and choose the one you prefer.
-
-<img width="1133" alt="Customize Select all fields in a query shortcut" src="https://github.com/user-attachments/assets/f0bca12a-7c92-4fbe-9ca4-a8db51b050e9">
-
-## Exclude formula fields from data export autocomplete
-
-You can exclude formula fields to be included in the autocomplete by disable the toogle
-
-<img width="898" alt="Exclude formula fields from autocomplete" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/aa9db6c4-099d-49ea-a343-7c64e472450d">
-
-## Convert times from data export to local time
-
-You can configure Data Export to convert times to local time. Navigate to Options -> Data Export and enable "Show local time".
-
-<img width="898" alt="Show local time in data export checkbox option" src="../assets/images/how-to/show-local-time.png?raw=true">
-
 ## Customize extension's shortcuts
 
 Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.
@@ -342,12 +275,6 @@ Example:
 - Org <ins>L</ins>imits : l
 - <ins>D</ins>ownload Metadata : d
 - E<ins>x</ins>plore API : x
-
-## Hide additional columns in query results
-
-After running a query in the "Data Export" page, you can hide additional columns in the query results. These columns represent the name of the objects included in your query. They are useful to automatically map the fields to the correct object in the "Data Import" page. The columns are hidden in the exported files (CSV or Excel) as well. You can set a default value, using the 'Hide additionnal Object Name Columns by default on Data Export' option ("Options" -> "Data Export" tab).
-
-![2024-05-16_17-54-24 (1)](https://github.com/guillaumeSF/Salesforce-Inspector-reloaded/assets/166603639/45fda19b-b426-4b11-91cb-4f0fbc5c47d7)
 
 ## Configure Import options in Data Import
 

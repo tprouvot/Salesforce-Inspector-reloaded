@@ -1,4 +1,4 @@
-import {sfConn} from "./inspector.js";
+import {sfConn, apiVersion} from "./inspector.js";
 
 export async function dataImportTest(test) {
   console.log("TEST data-import");
@@ -105,7 +105,7 @@ export async function dataImportTest(test) {
   assertEquals(0, vm.activeBatches);
   assertEquals({Queued: 0, Processing: 0, Succeeded: 3, Failed: 1}, vm.importCounts());
   assertEquals([["Name", "Checkbox__c", "Number__c", "Lookup__r:Inspector_Test__c:Name", "__Status", "__Id", "__Action", "__Errors"], ["test3", "false", "300.03", "", "Succeeded", "--id--", "Inserted", ""], ["test4", "false", "400.04", "test1", "Succeeded", "--id--", "Inserted", ""], ["test5", "true", "500.05", "", "Succeeded", "--id--", "Inserted", ""], ["test6", "true", "600.06", "notfound", "Failed", "", "", "INVALID_FIELD: Foreign key external ID: notfound not found for field Name in entity Inspector_Test__c []"]], vm.importTableResult.table.map(row => row.map(cell => /^[a-zA-Z0-9]{18}$/.test(cell) ? "--id--" : cell)));
-  records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
+  records = getRecords(await sfConn.rest("/services/data/" + apiVersion + "/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
   assertEquals([
     {Name: "test1", Checkbox__c: false, Number__c: 100.01, Lookup__r: null},
     {Name: "test2", Checkbox__c: true, Number__c: 200.02, Lookup__r: null},
@@ -129,7 +129,7 @@ export async function dataImportTest(test) {
   await waitForSpinner();
   assertEquals({Queued: 0, Processing: 0, Succeeded: 2, Failed: 0}, vm.importCounts());
   assertEquals([["Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], ["test6", "600.06", "Succeeded", "--id--", "Inserted", ""], ["test7", "700.07", "Succeeded", "--id--", "Inserted", ""]], vm.importTableResult.table.map(row => row.map(cell => /^[a-zA-Z0-9]{18}$/.test(cell) ? "--id--" : cell)));
-  records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
+  records = getRecords(await sfConn.rest("/services/data/" + apiVersion + "/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
   assertEquals([
     {Name: "test1", Checkbox__c: false, Number__c: 100.01, Lookup__r: null},
     {Name: "test2", Checkbox__c: true, Number__c: 200.02, Lookup__r: null},
@@ -141,7 +141,7 @@ export async function dataImportTest(test) {
   ], records);
 
   // Update csv
-  records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Id from Inspector_Test__c order by Name")));
+  records = getRecords(await sfConn.rest("/services/data/" + apiVersion + "/query/?q=" + encodeURIComponent("select Id from Inspector_Test__c order by Name")));
   vm.dataFormat = "csv";
   vm.didUpdate();
   vm.importAction = "update";
@@ -154,7 +154,7 @@ export async function dataImportTest(test) {
   await waitForSpinner();
   assertEquals({Queued: 0, Processing: 0, Succeeded: 2, Failed: 0}, vm.importCounts());
   assertEquals([["Id", "Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], [records[4].Id, "test5update", "500.50", "Succeeded", records[4].Id, "Updated", ""], [records[5].Id, "test6update", "600.60", "Succeeded", records[5].Id, "Updated", ""]], vm.importTableResult.table);
-  records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
+  records = getRecords(await sfConn.rest("/services/data/" + apiVersion + "/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
   assertEquals([
     {Name: "test1", Checkbox__c: false, Number__c: 100.01, Lookup__r: null},
     {Name: "test2", Checkbox__c: true, Number__c: 200.02, Lookup__r: null},
@@ -166,7 +166,7 @@ export async function dataImportTest(test) {
   ], records);
 
   // Delete csv (with ignored column and status column)
-  records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Id from Inspector_Test__c order by Name")));
+  records = getRecords(await sfConn.rest("/services/data/" + apiVersion + "/query/?q=" + encodeURIComponent("select Id from Inspector_Test__c order by Name")));
   vm.dataFormat = "csv";
   vm.didUpdate();
   vm.setData("Id,_foo*,__Status\r\n" + records[5].Id + ",foo,Queued\r\n" + records[6].Id + ",foo,Succeeded");
@@ -182,7 +182,7 @@ export async function dataImportTest(test) {
   await waitForSpinner();
   assertEquals({Queued: 0, Processing: 0, Succeeded: 2, Failed: 0}, vm.importCounts());
   assertEquals([["Id", "_foo*", "__Status", "__Id", "__Action", "__Errors"], [records[5].Id, "foo", "Succeeded", records[5].Id, "Deleted", ""], [records[6].Id, "foo", "Succeeded", "", "", ""]], vm.importTableResult.table);
-  records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
+  records = getRecords(await sfConn.rest("/services/data/" + apiVersion + "/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
   assertEquals([
     {Name: "test1", Checkbox__c: false, Number__c: 100.01, Lookup__r: null},
     {Name: "test2", Checkbox__c: true, Number__c: 200.02, Lookup__r: null},
@@ -207,7 +207,7 @@ export async function dataImportTest(test) {
   await waitForSpinner();
   assertEquals({Queued: 0, Processing: 0, Succeeded: 2, Failed: 0}, vm.importCounts());
   assertEquals([["Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], ["test2", "222", "Succeeded", "--id--", "Updated", ""], ["test6", "666", "Succeeded", "--id--", "Inserted", ""]], vm.importTableResult.table.map(row => row.map(cell => /^[a-zA-Z0-9]{18}$/.test(cell) ? "--id--" : cell)));
-  records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
+  records = getRecords(await sfConn.rest("/services/data/" + apiVersion + "/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
   assertEquals([
     {Name: "test1", Checkbox__c: false, Number__c: 100.01, Lookup__r: null},
     {Name: "test2", Checkbox__c: true, Number__c: 222, Lookup__r: null},
@@ -264,7 +264,7 @@ export async function dataImportTest(test) {
   await waitForSpinner();
   assertEquals({Queued: 0, Processing: 0, Succeeded: 16, Failed: 0}, vm.importCounts());
   assertEquals([["Name", "__Status", "__Id", "__Action", "__Errors"], ["test10", "Succeeded", "--id--", "Inserted", ""], ["test11", "Succeeded", "--id--", "Inserted", ""], ["test12", "Succeeded", "--id--", "Inserted", ""], ["test13", "Succeeded", "--id--", "Inserted", ""], ["test14", "Succeeded", "--id--", "Inserted", ""], ["test15", "Succeeded", "--id--", "Inserted", ""], ["test16", "Succeeded", "--id--", "Inserted", ""], ["test17", "Succeeded", "--id--", "Inserted", ""], ["test18", "Succeeded", "--id--", "Inserted", ""], ["test19", "Succeeded", "--id--", "Inserted", ""], ["test20", "Succeeded", "--id--", "Inserted", ""], ["test21", "Succeeded", "--id--", "Inserted", ""], ["test22", "Succeeded", "--id--", "Inserted", ""], ["test23", "Succeeded", "--id--", "Inserted", ""], ["test24", "Succeeded", "--id--", "Inserted", ""], ["test25", "Succeeded", "--id--", "Inserted", ""]], vm.importTableResult.table.map(row => row.map(cell => /^[a-zA-Z0-9]{18}$/.test(cell) ? "--id--" : cell)));
-  records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Name from Inspector_Test__c order by Name")));
+  records = getRecords(await sfConn.rest("/services/data/" + apiVersion + "/query/?q=" + encodeURIComponent("select Name from Inspector_Test__c order by Name")));
   assertEquals([
     {Name: "test10"}, {Name: "test11"}, {Name: "test12"}, {Name: "test13"}, {Name: "test14"}, {Name: "test15"}, {Name: "test16"}, {Name: "test17"}, {Name: "test18"}, {Name: "test19"}, {Name: "test20"}, {Name: "test21"}, {Name: "test22"}, {Name: "test23"}, {Name: "test24"}, {Name: "test25"}
   ], records);
@@ -299,7 +299,7 @@ export async function dataImportTest(test) {
   assertEquals(0, vm.activeBatches);
   assertEquals({Queued: 13, Processing: 0, Succeeded: 3, Failed: 0}, vm.importCounts());
   assertEquals([["Name", "__Status", "__Id", "__Action", "__Errors"], ["test10", "Succeeded", "--id--", "Inserted", ""], ["test11", "Succeeded", "--id--", "Inserted", ""], ["test12", "Succeeded", "--id--", "Inserted", ""], ["test13", "Queued", "", "", ""], ["test14", "Queued", "", "", ""], ["test15", "Queued", "", "", ""], ["test16", "Queued", "", "", ""], ["test17", "Queued", "", "", ""], ["test18", "Queued", "", "", ""], ["test19", "Queued", "", "", ""], ["test20", "Queued", "", "", ""], ["test21", "Queued", "", "", ""], ["test22", "Queued", "", "", ""], ["test23", "Queued", "", "", ""], ["test24", "Queued", "", "", ""], ["test25", "Queued", "", "", ""]], vm.importTableResult.table.map(row => row.map(cell => /^[a-zA-Z0-9]{18}$/.test(cell) ? "--id--" : cell)));
-  records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Name from Inspector_Test__c order by Name")));
+  records = getRecords(await sfConn.rest("/services/data/" + apiVersion + "/query/?q=" + encodeURIComponent("select Name from Inspector_Test__c order by Name")));
   assertEquals([
     {Name: "test10"}, {Name: "test11"}, {Name: "test12"}
   ], records);
@@ -360,7 +360,7 @@ export async function dataImportTest(test) {
   await waitForSpinner();
   assertEquals({Queued: 0, Processing: 0, Succeeded: 0, Failed: 2}, vm.importCounts());
   assertEquals([["Name", "unknownfield", "__Status", "__Id", "__Action", "__Errors"], ["test2", "222", "Failed", "", "", "INVALID_FIELD: No such column 'unknownfield' on entity 'Inspector_Test__c'. If you are attempting to use a custom field, be sure to append the '__c' after the custom field name. Please reference your WSDL or the describe call for the appropriate names."], ["test6", "666", "Failed", "", "", "INVALID_FIELD: No such column 'unknownfield' on entity 'Inspector_Test__c'. If you are attempting to use a custom field, be sure to append the '__c' after the custom field name. Please reference your WSDL or the describe call for the appropriate names."]], vm.importTableResult.table);
-  records = getRecords(await sfConn.rest("/services/data/v35.0/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
+  records = getRecords(await sfConn.rest("/services/data/" + apiVersion + "/query/?q=" + encodeURIComponent("select Name, Checkbox__c, Number__c, Lookup__r.Name from Inspector_Test__c order by Name")));
   assertEquals([], records);
 
   // Delete from data-export

@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, displayButton} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
@@ -117,6 +117,7 @@ class Model {
       "SELECT Id FROM WHERE ORDER BY"
     ];
     this.separator = getSeparator();
+    this.soqlPrompt = "";
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -191,6 +192,9 @@ class Model {
   }
   toggleHelp() {
     this.showHelp = !this.showHelp;
+  }
+  toggleAI() {
+    this.showAI = !this.showAI;
   }
   toggleExpand() {
     this.expandAutocomplete = !this.expandAutocomplete;
@@ -993,6 +997,30 @@ class Model {
     vm.exportedData = exportedData;
     vm.updatedExportedData();
   }
+  async generateSoql() {
+    this.isWorking = true;
+    let promptTemplateName = localStorage.getItem(this.sfHost + "_exportAgentForcePrompt");
+    const promptTemplate = new PromptTemplate(promptTemplateName ? promptTemplateName : Constants.PromptTemplateSOQL);
+
+    this.spinFor(
+      promptTemplate.generate({
+        Description: this.soqlPrompt.value
+      }).then(result => {
+        // Extract SOQL from the result
+        const soqlMatch = result.result.match(/&lt;soql&gt;(.*?)&lt;\/soql&gt;/);
+        const extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
+        this.queryInput.value = extractedSoql;
+        this.isWorking = false;
+        this.didUpdate();
+      }).catch(error => {
+        console.error(error);
+        this.isWorking = false;
+        this.exportStatus = "Error";
+        this.exportError = "Failed to generate SOQL: " + error;
+        this.didUpdate();
+      })
+    );
+  }
   stopExport() {
     this.exportProgress.abort();
   }
@@ -1171,9 +1199,11 @@ class App extends React.Component {
     this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
+    this.onToggleAI = this.onToggleAI.bind(this);
     this.onToggleExpand = this.onToggleExpand.bind(this);
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
+    this.onGenerateSoql = this.onGenerateSoql.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
     this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
@@ -1262,6 +1292,12 @@ class App extends React.Component {
     model.toggleHelp();
     model.didUpdate();
   }
+  onToggleAI(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.toggleAI();
+    model.didUpdate();
+  }
   onToggleExpand(e) {
     e.preventDefault();
     let {model} = this.props;
@@ -1277,6 +1313,11 @@ class App extends React.Component {
   onExport() {
     let {model} = this.props;
     model.doExport();
+    model.didUpdate();
+  }
+  onGenerateSoql() {
+    let {model} = this.props;
+    model.generateSoql();
     model.didUpdate();
   }
   onCopyQuery() {
@@ -1340,8 +1381,8 @@ class App extends React.Component {
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
-
     model.setQueryInput(queryInput);
+    model.soqlPrompt = this.refs.prompt;
     //Set the cursor focus on query text area
     if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
       queryInput.focus();
@@ -1436,9 +1477,16 @@ class App extends React.Component {
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
           ),
+          displayButton("export-agentforce", this.state.hideButtonsOption) ? h("a", {href: "#", id: "einstein-btn", title: "AgentForce help", onClick: this.onToggleAI},
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#einstein"})
+            )
+          ) : null,
           h("a", {href: "#", id: "help-btn", title: "Export Help", onClick: this.onToggleHelp},
-            h("div", {className: "icon"})
-          ),
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#question"})
+            )
+          )
         ),
       ),
       h("div", {className: "area"},
@@ -1517,6 +1565,14 @@ class App extends React.Component {
           h("p", {}, "Press Ctrl+Enter or F5 to execute the export."),
           h("p", {}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
           h("p", {}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
+        ),
+        h("div", {hidden: !model.showAI, className: "einstein-text"},
+          h("h3", {}, "AgentForce SOQL query builder"),
+          h("p", {}, "Enter a description of the SOQL you want to be generated"),
+          h("textarea", {id: "prompt", ref: "prompt"}),
+          h("div", {className: "flex-right marginTop"},
+            h("button", {tabIndex: 1, onClick: this.onGenerateSoql, title: "Generate SOQL", className: "highlighted button-margin"}, "Generate SOQL")
+          )
         )
       ),
       h("div", {className: "area", id: "result-area"},

@@ -71,6 +71,10 @@ Some of the users may don't need some of those, to make the UI lighter some of t
 
 ## Generate SOQL queries with AgentForce
 
+> **Prerequisite**
+> Agentforce needs to be enabled.
+> The prompt GenerateSOQL needs to be deployed in the org.
+
 You can use AgentForce to generate SOQL queries directly from the Data Export page. This feature leverages Salesforce's Prompt Templates to help you write queries more efficiently.
 
 > **Note**
@@ -82,3 +86,38 @@ By default, the AgentForce button is hidden. To enable it:
 3. Optionally, you can customize the prompt template name that will be used for generating queries
 
 <img width="1443" alt="AgentForce SOQL builder" src="https://github.com/user-attachments/assets/deab54b8-df9a-4b74-ab81-b27aea5be800" />
+
+
+GenerateSOQL.genAiPromptTemplate meta content:
+
+``` xml
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>anEjRSM7QudV59rn+lQuKa5VlLkCpKFNWwKc0odntGw=_1</activeVersionIdentifier>
+    <description>Prompt used to generate a SOQL query based on a description.</description>
+    <developerName>GenerateSOQL</developerName>
+    <masterLabel>Generate SOQL</masterLabel>
+    <templateVersions>
+        <content>As a Salesforce expert in SOQL, return a SOQL query based on this description : {!$Input:Description}.
+
+Instructions:** 
+1. Based on the description, construct a Salesforce SOQL that adheres to the specified SObject and make sure this object exists and is queryable. 
+2. Ensure the SOQL is syntactically correct, keep in mind the query plan statement and use a maximum of indexed fields for the filters if needed.
+3. Output the generated Salesforce SOQL query clearly enclosed within `&lt;soql&gt;` tags.
+4. Output if the tooling api needs to be used for this query  `&lt;toolingApi&gt;true&lt;/toolingApi&gt;` 
+</content>
+        <inputs>
+            <apiName>Description</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Description</masterLabel>
+            <referenceName>Input:Description</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>anEjRSM7QudV59rn+lQuKa5VlLkCpKFNWwKc0odntGw=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>
+```

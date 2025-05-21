@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
-    <activeVersionIdentifier>anEjRSM7QudV59rn+lQuKa5VlLkCpKFNWwKc0odntGw=_6</activeVersionIdentifier>
+    <activeVersionIdentifier>anEjRSM7QudV59rn+lQuKa5VlLkCpKFNWwKc0odntGw=_1</activeVersionIdentifier>
     <description>Prompt used to generate a SOQL query based on a description.</description>
     <developerName>GenerateSOQL</developerName>
     <masterLabel>Generate SOQL</masterLabel>
@@ -22,7 +22,7 @@ Instructions:** 
         </inputs>
         <primaryModel>sfdc_ai__DefaultOpenAIGPT4</primaryModel>
         <status>Published</status>
-        <versionIdentifier>anEjRSM7QudV59rn+lQuKa5VlLkCpKFNWwKc0odntGw=_6</versionIdentifier>
+        <versionIdentifier>anEjRSM7QudV59rn+lQuKa5VlLkCpKFNWwKc0odntGw=_1</versionIdentifier>
     </templateVersions>
     <type>einstein_gpt__flex</type>
     <visibility>Global</visibility>

@@ -2,9 +2,9 @@
 
 ## Version 1.27
 
-- Fix issue with the sorting of child components in Download Metadata
 - Add AgentForce integration to generate SOQL queries in Data Export [feature 850](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/850)
 - Add automatic SOQL query typo removal in Data Export [feature 844](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/844)
+- Refactor field-creator api calls to match with extension standards
 - Remove the exclusion of InstalledPackage in Download Metadata page [feature 641](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/641) request by [yuandake](https://github.com/yuandake)
 - Create, Edit and Delete custom shortcuts links in Options page [feature 102](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/102)
 - Fix empty lines in picklist values causing deployment errors in Field Creator [issue 787](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/787) (contribution by [Vivek Sharma](https://github.com/vicky773h))
@@ -22,7 +22,8 @@
 
 ## Version 1.26
 
-- Refactor field-creator api calls to match with extension standards
+- Fix popup button is not displayed after chrome update [issue 855](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/855)
+- Fix issue with the sorting of child components in Download Metadata
 - Fix ' character search in the popup Users tab [issue 799](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/799) by [Josue Ramirez](https://github.com/jramirez6964)
 - Support Custom Channels in Event Monitor [feature 797](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/797) (idea by [Mehdi Cherfaoui](https://github.com/mehdicherf))
 - `Event Monitor` : fix text selection in PlatformEvent payload, persist replayId in url and deduplicate events received

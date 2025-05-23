@@ -41,8 +41,10 @@ if (typeof browser === "undefined") {
 }
 
 function getFilteredLocalStorage(){
+  //foreach child of parent, return the first element that is a window
+  let parentChild = parent[0] instanceof Window ? parent[0] : parent[1];
   //for Salesforce pages
-  let host = parent[0].document.referrer;
+  let host = parentChild.document.referrer;
   if (host.length == 0){
     //for extension pages
     host = new URLSearchParams(parent.location.search).get("host");

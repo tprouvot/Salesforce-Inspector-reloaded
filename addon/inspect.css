@@ -756,3 +756,22 @@ th[tabindex] {
   right: 0;
   text-align: right;
 }
+
+.picklist-select {
+  width: 100%;
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.picklist-select:hover {
+  border-color: #999;
+}
+.picklist-select:focus {
+  outline: none;
+  border-color: #0070d2;
+  box-shadow: 0 0 3px #0070d2;
+}

@@ -29,7 +29,7 @@ function initButton(sfHost, inInspector) {
   btn.accessKey = "i";
   btn.title = "Show Salesforce details (Alt+I / Shift+Alt+I)";
   rootEl.appendChild(btn);
-  loadPopup();
+  loadPopup(sfHost);
   document.body.appendChild(rootEl);
 
   addFlowScrollability();
@@ -204,13 +204,13 @@ function initButton(sfHost, inInspector) {
     document.head.appendChild(style);
   }
 
-  function loadPopup() {
+  function loadPopup(sfHost) {
     btn.addEventListener("click", () => {
       const isInactive = !rootEl.classList.contains("insext-active");
       togglePopup(isInactive);
     });
 
-    let popupSrc = chrome.runtime.getURL("popup.html");
+    let popupSrc = chrome.runtime.getURL("popup.html?host=" + sfHost);
     let popupEl = document.createElement("iframe");
     function getOrientation(source) {
       const o = (source === "localStorage")

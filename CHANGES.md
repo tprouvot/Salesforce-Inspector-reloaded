@@ -2,6 +2,7 @@
 
 ## Version 1.26
 
+- Fix popup button is not displayed after chrome update [issue 855](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/855)
 - Fix issue with the sorting of child components in Download Metadata
 - Fix ' character search in the popup Users tab [issue 799](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/799) by [Josue Ramirez](https://github.com/jramirez6964)
 - Support Custom Channels in Event Monitor [feature 797](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/797) (idea by [Mehdi Cherfaoui](https://github.com/mehdicherf))

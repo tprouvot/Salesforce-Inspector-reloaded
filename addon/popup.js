@@ -39,14 +39,8 @@ if (typeof browser === "undefined") {
 }
 
 function getFilteredLocalStorage(){
-  //for Salesforce pages
-  let host = parent[0].document.referrer;
-  if (host.length == 0){
-    //for extension pages
-    host = new URLSearchParams(parent.location.search).get("host");
-  } else {
-    host = host.split("https://")[1];
-  }
+  let host = new URLSearchParams(window.location.search).get("host");
+
   let domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
   const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition", "prodBannerText"];

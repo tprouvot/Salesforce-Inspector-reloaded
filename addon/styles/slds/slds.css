@@ -5100,7 +5100,12 @@ a.slds-button--inverse:focus {
     var(--sds-c-icon-color-background, transparent)
   );
 }
-
+.slds-icon-standard-account {
+  background-color: var(
+    --slds-c-icon-color-background,
+    var(--sds-c-icon-color-background, #5867e8)
+  );
+}
 /* Input */
 
 .slds-input-has-icon .slds-input__icon {

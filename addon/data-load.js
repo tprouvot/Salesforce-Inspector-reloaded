@@ -1,5 +1,6 @@
 import {sfConn, apiVersion} from "./inspector.js";
 
+const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true" && !window.location.href.includes("data-export");
 // Inspired by C# System.Linq.Enumerable
 export function Enumerable(iterable) {
   this[Symbol.iterator] = iterable[Symbol.iterator].bind(iterable);
@@ -193,6 +194,9 @@ function renderCell(rt, cell, td) {
         let aQuery = document.createElement("a");
         let query = "SELECT Id FROM " + objectType + " WHERE Id = '" + recordId + "'";
         let queryArgs = new URLSearchParams();
+        if (rt.isTooling) {
+          queryArgs.set("useToolingApi", "1");
+        }
         queryArgs.set("host", rt.sfHost);
         queryArgs.set("query", query);
         aQuery.href = "data-export.html?" + queryArgs;
@@ -590,7 +594,7 @@ export function initScrollTable(scroller) {
           if (colVisible[c] == 0) continue;
           let cell = row[c];
           let td = document.createElement("td");
-          td.className = "scrolltable-cell header";
+          td.className = `scrolltable-cell header ${(cell.startsWith("_") && greyOutSkippedColumns) ? "skipped" : ""}`;
           td.style.minWidth = colWidths[c] + "px";
           td.style.height = rowHeights[r] + "px";
           renderCell(data, cell, td);

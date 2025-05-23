@@ -1,5 +1,6 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, nullToEmptyString, getLinkTarget} from "./inspector.js";
+import {sfConn, apiVersion} from "./inspector.js";
+import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
@@ -68,6 +69,7 @@ class Model {
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
     this.queryInput = null;
+    this.filterColumn = ""; // Default filter column
     this.initialQuery = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
       this.queryAutocompleteHandler({newDescribe: true});
@@ -115,6 +117,7 @@ class Model {
       "SELECT Id FROM WHERE ORDER BY"
     ];
     this.separator = getSeparator();
+    this.soqlPrompt = "";
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -189,6 +192,9 @@ class Model {
   }
   toggleHelp() {
     this.showHelp = !this.showHelp;
+  }
+  toggleAI() {
+    this.showAI = !this.showAI;
   }
   toggleExpand() {
     this.expandAutocomplete = !this.expandAutocomplete;
@@ -772,7 +778,7 @@ class Model {
           yield {value: "LAST_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the last n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the next n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next week and continues for the next n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "N_DAYS_AGO:n", title: "Starts at 12:00:00 AM on the day n days before the current day and continues for 24 hours. (The range doesn’t include today.)", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_DAYS_AGO:n", title: "Starts at 12:00:00 AM on the day n days before the current day and continues for 24 hours. (The range doesn't include today.)", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "LAST_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous week and continues for the last n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "N_WEEKS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the month that started n months before the start of the current month and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_MONTHS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next month and continues for the next n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
@@ -845,7 +851,7 @@ class Model {
             }
           })
           .concat(
-            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "convertTimezone", "toLabel"])
+            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "toLabel", "convertTimezone", "convertCurrency", "FORMAT", "GROUPING"])
               .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
               .map(fn => {
                 if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
@@ -861,6 +867,21 @@ class Model {
       return;
     }
   }
+  removeTypo(query) {
+    // Remove double commas
+    query = query.replace(/,\s*,/g, ",");
+
+    // Remove comma before FROM
+    query = query.replace(/,\s+FROM\s+/gi, " FROM ");
+
+    // Remove trailing comma before FROM
+    query = query.replace(/,\s*FROM\s+/gi, " FROM ");
+
+    // Remove multiple spaces
+    query = query.replace(/\s+/g, " ");
+
+    return query.trim();
+  }
   doExport() {
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
@@ -868,7 +889,8 @@ class Model {
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
-    let query = vm.queryInput.value;
+    let query = vm.removeTypo(vm.queryInput.value);
+    vm.queryInput.value = query; // Update the input value with the cleaned query
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
@@ -975,6 +997,30 @@ class Model {
     vm.exportedData = exportedData;
     vm.updatedExportedData();
   }
+  async generateSoql() {
+    this.isWorking = true;
+    let promptTemplateName = localStorage.getItem(this.sfHost + "_exportAgentForcePrompt");
+    const promptTemplate = new PromptTemplate(promptTemplateName ? promptTemplateName : Constants.PromptTemplateSOQL);
+
+    this.spinFor(
+      promptTemplate.generate({
+        Description: this.soqlPrompt.value
+      }).then(result => {
+        // Extract SOQL from the result
+        const soqlMatch = result.result.match(/&lt;soql&gt;(.*?)&lt;\/soql&gt;/);
+        const extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
+        this.queryInput.value = extractedSoql;
+        this.isWorking = false;
+        this.didUpdate();
+      }).catch(error => {
+        console.error(error);
+        this.isWorking = false;
+        this.exportStatus = "Error";
+        this.exportError = "Failed to generate SOQL: " + error;
+        this.didUpdate();
+      })
+    );
+  }
   stopExport() {
     this.exportProgress.abort();
   }
@@ -1045,7 +1091,36 @@ function RecordTable(vm) {
       return "" + cell;
     }
   }
-  let isVisible = (row, filter) => !filter || row.some(cell => cellToString(cell).toLowerCase().includes(filter.toLowerCase()));
+
+  let isVisible = (row, filter) => {
+    // If no filter is applied, show all rows
+    if (!filter) {
+      return true;
+    }
+    // If no columns are selected, search all columns
+    if (!vm.filterColumns || vm.filterColumns.length === 0) {
+      return row.some(cell => {
+        if (cell == null) {
+          return false;
+        }
+        return cellToString(cell).toLowerCase().includes(filter.toLowerCase());
+      });
+    }
+
+    // Search in all selected columns
+    return vm.filterColumns.some(column => {
+      const columnIndex = header.findIndex(col => col === column);
+      if (columnIndex === -1) {
+        return false;
+      }
+
+      const cellValue = row[columnIndex];
+      return cellValue
+        ? cellToString(cellValue).toLowerCase().includes(filter.toLowerCase())
+        : false;
+    });
+  };
+
   let rt = {
     records: [],
     table: [],
@@ -1124,9 +1199,11 @@ class App extends React.Component {
     this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
+    this.onToggleAI = this.onToggleAI.bind(this);
     this.onToggleExpand = this.onToggleExpand.bind(this);
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
+    this.onGenerateSoql = this.onGenerateSoql.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
     this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
@@ -1137,7 +1214,8 @@ class App extends React.Component {
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
-    this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption"))};
+    this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption")), isDropdownOpen: false};// Tracks whether the dropdown is open
+    this.filterColumns = []; // Initialize as an empty array
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1214,6 +1292,12 @@ class App extends React.Component {
     model.toggleHelp();
     model.didUpdate();
   }
+  onToggleAI(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.toggleAI();
+    model.didUpdate();
+  }
   onToggleExpand(e) {
     e.preventDefault();
     let {model} = this.props;
@@ -1229,6 +1313,11 @@ class App extends React.Component {
   onExport() {
     let {model} = this.props;
     model.doExport();
+    model.didUpdate();
+  }
+  onGenerateSoql() {
+    let {model} = this.props;
+    model.generateSoql();
     model.didUpdate();
   }
   onCopyQuery() {
@@ -1274,6 +1363,9 @@ class App extends React.Component {
   onResultsFilterInput(e) {
     let {model} = this.props;
     model.setResultsFilter(e.target.value);
+    if (e.target.value.length == 0){
+      this.setState({isDropdownOpen: false});
+    }
     model.didUpdate();
   }
   onSetQueryName(e) {
@@ -1289,8 +1381,8 @@ class App extends React.Component {
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
-
     model.setQueryInput(queryInput);
+    model.soqlPrompt = this.refs.prompt;
     //Set the cursor focus on query text area
     if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
       queryInput.focus();
@@ -1365,13 +1457,6 @@ class App extends React.Component {
   toggleQueryMoreMenu(){
     this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
   }
-  displayButton(name){
-    const button = this.state.hideButtonsOption?.find((element) => element.name == name);
-    if (button){
-      return button.checked;
-    }
-    return true;
-  }
 
   render() {
     let {model} = this.props;
@@ -1392,9 +1477,16 @@ class App extends React.Component {
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
           ),
+          displayButton("export-agentforce", this.state.hideButtonsOption) ? h("a", {href: "#", id: "einstein-btn", title: "AgentForce help", onClick: this.onToggleAI},
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#einstein"})
+            )
+          ) : null,
           h("a", {href: "#", id: "help-btn", title: "Export Help", onClick: this.onToggleHelp},
-            h("div", {className: "icon"})
-          ),
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#question"})
+            )
+          )
         ),
       ),
       h("div", {className: "area"},
@@ -1446,9 +1538,9 @@ class App extends React.Component {
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
             h("div", {className: "flex-right"},
-              h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Export"),
-              this.displayButton("export-query") ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query") : null,
-              h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
+              h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted button-margin"}, "Run Export"),
+              displayButton("export-query", this.state.hideButtonsOption) ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id button-margin"}, "Export Query") : null,
+              h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan", className: "button-margin"}, "Query Plan"),
               h("a", {tabIndex: 4, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
               h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
                 h("div", {className: "button-icon"}),
@@ -1473,6 +1565,14 @@ class App extends React.Component {
           h("p", {}, "Press Ctrl+Enter or F5 to execute the export."),
           h("p", {}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
           h("p", {}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
+        ),
+        h("div", {hidden: !model.showAI, className: "einstein-text"},
+          h("h3", {}, "AgentForce SOQL query builder"),
+          h("p", {}, "Enter a description of the SOQL you want to be generated"),
+          h("textarea", {id: "prompt", ref: "prompt"}),
+          h("div", {className: "flex-right marginTop"},
+            h("button", {tabIndex: 1, onClick: this.onGenerateSoql, title: "Generate SOQL", className: "highlighted button-margin"}, "Generate SOQL")
+          )
         )
       ),
       h("div", {className: "area", id: "result-area"},
@@ -1492,10 +1592,48 @@ class App extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#hide"})
               )
             ),
-            this.displayButton("delete")
+            displayButton("delete", this.state.hideButtonsOption)
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
-          h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
+          h("div", {className: "filter-controls"},
+            h("div", {className: "unified-search-input"},
+              h("input", {
+                className: "filter-input",
+                placeholder: model.filterColumns?.length > 0
+                  ? `Filter by (${model.filterColumns.length})`
+                  : "Filter",
+                type: "search",
+                value: model.resultsFilter,
+                onInput: this.onResultsFilterInput
+              }),
+              h("button", {className: "toggle no-left-radius no-left-border" + (this.state.isDropdownOpen ? " contract" : " expand"), title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
+              this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
+                model.exportedData?.table[0]
+                  ?.filter(column => column !== "_")
+                  .map(column =>
+                    h("div", {
+                      key: column,
+                      className: `dropdown-item ${model.filterColumns?.includes(column) ? "selected" : ""}`,
+                      onClick: () => {
+                        if (model.filterColumns?.includes(column)) {
+                          model.filterColumns = model.filterColumns.filter(c => c !== column);
+                        } else {
+                          model.filterColumns = [...(model.filterColumns || []), column];
+                        }
+                        model.setResultsFilter(model.resultsFilter);
+                        this.setState({}); // Trigger re-render
+                      }
+                    },
+                    h("input", {
+                      type: "checkbox",
+                      checked: model.filterColumns?.includes(column) || false,
+                      readOnly: true
+                    }),
+                    column
+                    )
+                  )
+              )
+            )),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),

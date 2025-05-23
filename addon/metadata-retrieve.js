@@ -22,7 +22,7 @@ class Model {
     this.statusLink = null;
     this.metadataObjects = [];
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
-    this.sortMetadataBy = localStorage.getItem("sortMetadataBy");
+    this.sortMetadataBy = JSON.parse(localStorage.getItem("sortMetadataBy")) || "fullName";
     this.packageXml;
     this.metadataFilter = "";
     this.deployRequestId;
@@ -74,7 +74,7 @@ class Model {
           "DescribeMetadata",
           sfConn.soap(metadataApi, "describeMetadata", {apiVersion})
         );
-        let availableMetadataObjects = res.metadataObjects.filter(metadataObject => metadataObject.xmlName != "InstalledPackage");
+        let availableMetadataObjects = res.metadataObjects;
 
         this.metadataObjects = availableMetadataObjects;
         this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
@@ -508,7 +508,7 @@ class App extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#search"})
               ),
               h("input", {className: "filter-input", disabled: model.metadataObjects?.length == 0, placeholder: "Filter", value: model.metadataFilter, onChange: this.onMetadataFilterInput, ref: "metadataFilter"}),
-              h("a", {href: "about:blank", className: "filter-clear", onClick: this.onClearAndFocusFilter},
+              h("a", {href: "about:blank", className: "filter-clear", title: "Clear filter", onClick: this.onClearAndFocusFilter},
                 h("svg", {className: "filter-clear-icon"},
                   h("use", {xlinkHref: "symbols.svg#clear"})
                 )
@@ -666,9 +666,7 @@ class ObjectSelector extends React.Component {
                 }
               }
             });
-            //sort the child once added to meta.childXmlNames so that if there is already some child from deployRequest, those are also sorted
-            let sortField = model.sortMetadataBy.length > 0 ? model.sortMetadataBy : "fullName";
-            meta.childXmlNames.sort((a, b) => a[sortField] > b[sortField] ? 1 : a[sortField] < b[sortField] ? -1 : 0);
+            meta.childXmlNames.sort((a, b) => a[model.sortMetadataBy] > b[model.sortMetadataBy] ? 1 : a[model.sortMetadataBy] < b[model.sortMetadataBy] ? -1 : 0);
           }
         })
       );

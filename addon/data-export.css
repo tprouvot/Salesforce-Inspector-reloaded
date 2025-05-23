@@ -1,40 +1,40 @@
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-Light.woff2);
-  font-weight: 300
+  font-weight: 300;
 }
 
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-LightItalic.woff2);
   font-style: italic;
-  font-weight: 300
+  font-weight: 300;
 }
 
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-Regular.woff2);
-  font-weight: 400
+  font-weight: 400;
 }
 
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-Italic.woff2);
   font-style: italic;
-  font-weight: 400
+  font-weight: 400;
 }
 
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-Bold.woff2);
-  font-weight: 700
+  font-weight: 700;
 }
 
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-BoldItalic.woff2);
   font-style: italic;
-  font-weight: 700
+  font-weight: 700;
 }
 
 * {
@@ -57,10 +57,10 @@ body,
 
 body {
   font-family: "Salesforce Sans", Arial, sans-serif;
-  font-size: .8125rem;
+  font-size: 0.8125rem;
   overflow: hidden;
   margin: 0;
-  background-color: #B0C4DF;
+  background-color: #b0c4df;
   background-image: url(images/lightning_blue_background.png);
   background-repeat: no-repeat;
   background-size: contain;
@@ -97,9 +97,7 @@ body {
 
 .sf-link svg {
   width: 1.8em;
-  ;
   height: 1.8em;
-  ;
   display: block;
   margin-left: 1px;
   margin-right: 1em;
@@ -117,7 +115,7 @@ textarea {
   font-size: 0.9rem;
   padding: 8px 10px;
   border-radius: 0.25rem;
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
 }
 
 textarea[hidden] {
@@ -126,7 +124,7 @@ textarea[hidden] {
 
 .help-text {
   background: #fff;
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
   padding: 0 15px;
   border-radius: 0.25rem;
   margin-top: 10px;
@@ -169,14 +167,14 @@ textarea[hidden] {
   overflow: auto;
   flex: 1 1 0;
   background-color: #fff;
-  border-top: 1px solid #DDDBDA;
+  border-top: 1px solid #dddbda;
 }
 
 .area {
-  background-color: #F8F8F8;
+  background-color: #f8f8f8;
   padding: 8px 12px;
   border-radius: 5px;
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
   margin: 12px 12px 0 12px;
 }
 
@@ -221,7 +219,7 @@ h1 {
 }
 
 .area * {
-  vertical-align: middle
+  vertical-align: middle;
 }
 
 .query-history-controls {
@@ -231,28 +229,29 @@ h1 {
 }
 
 select,
-input[type=search],
-input[type=save],
-input[type=default] {
+input[type="search"],
+input[type="save"],
+input[type="default"] {
   width: 8.5rem;
   font-family: inherit;
   padding: 5px 13px;
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
   height: 32px;
   position: relative;
   border-radius: 0.25rem;
 }
 
-input[type=search] {
+input[type="search"] {
   background-image: url(images/search.svg);
   background-repeat: no-repeat;
   background-size: 1rem;
   background-position: 10px 7px;
   padding-left: 35px;
   margin-right: 10px;
+  border-radius: 0px 4px 4px 0px;
 }
 
-input[type=save] {
+input[type="save"] {
   background-image: url(images/save.svg);
   background-repeat: no-repeat;
   background-size: 1rem;
@@ -306,11 +305,11 @@ input:disabled:hover {
   color: #dddbda;
 }
 
-button:disabled > svg.button-icon{
+button:disabled > svg.button-icon {
   fill: #dddbda;
 }
 
-button > svg.disabled{
+button > svg.disabled {
   fill: #dddbda;
 }
 
@@ -345,7 +344,7 @@ textarea[readonly] {
   outline: none;
   border-radius: 0;
   border: none;
-  border-top: 1px solid #DDDBDA;
+  border-top: 1px solid #dddbda;
 }
 
 #help-btn {
@@ -356,23 +355,6 @@ textarea[readonly] {
   color: #919191;
   display: flex;
   align-items: center;
-}
-
-#help-btn:hover .icon {
-  background-color: #818181;
-}
-
-#help-btn .icon {
-  display: inline-block;
-  width: 1.4rem;
-  height: 1.4rem;
-  ;
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 1.4rem;
-  ;
-  -webkit-mask-image: url(images/help.svg);
-  -webkit-mask-position: center;
-  background-color: #919191;
 }
 
 #spinner {
@@ -421,7 +403,8 @@ textarea[readonly] {
   border-color: #870500;
 }
 
-.delete-btn:disabled, .delete-btn:disabled:hover {
+.delete-btn:disabled,
+.delete-btn:disabled:hover {
   background-color: #c9c7c5;
   border-color: #c9c7c5;
   color: white;
@@ -456,17 +439,17 @@ button[hidden],
 .button-group input {
   border-left-width: 0;
   border-radius: 0;
-  margin-right: 0
+  margin-right: 0;
 }
 
-.button-group> :first-child,
-.button-group>[hidden]+* {
+.button-group > :first-child,
+.button-group > [hidden] + * {
   border-top-left-radius: 0.25rem;
   border-bottom-left-radius: 0.25rem;
   border-left-width: 1px;
 }
 
-.button-group> :last-child {
+.button-group > :last-child {
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
   margin-right: 10px;
@@ -474,7 +457,7 @@ button[hidden],
 
 button,
 .button {
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
   height: 32px;
   display: inline-block;
   text-decoration: none;
@@ -486,13 +469,16 @@ button,
   position: relative;
   line-height: 32px;
   border-radius: 0.25rem;
-  margin-right: 10px;
   white-space: nowrap;
+}
+
+.button-margin {
+  margin-right: 10px;
 }
 
 button:hover,
 .button:hover {
-  background-color: #F4F6F9;
+  background-color: #f4f6f9;
   color: #005fb2;
 }
 
@@ -504,7 +490,7 @@ button.toggle .button-toggle-icon,
 button.toggle .button-icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
-  background-color: #706E6B;
+  background-color: #706e6b;
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -567,7 +553,7 @@ svg.button-icon {
 }
 
 .autocomplete-results a {
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
   border-radius: 0.25rem;
   padding: 0px 4px;
   text-decoration: none;
@@ -591,7 +577,7 @@ svg.button-icon {
   margin: -1px 2px 0 1px;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 0.95rem;
-  background-color: #706E6B;
+  background-color: #706e6b;
   width: 16px;
   height: 16px;
 }
@@ -607,7 +593,7 @@ svg.button-icon {
 
 .object .autocomplete-icon {
   -webkit-mask-image: url(images/sobject.svg);
-  background-color: #04844B;
+  background-color: #04844b;
 }
 
 .variable .autocomplete-icon {
@@ -715,11 +701,107 @@ svg.button-icon {
   top: 0;
   z-index: 2;
 }
-.expanded{
+.expanded {
   overflow: auto;
   height: 200px;
 }
 .help-text a,
 .help-text a:visited {
   color: #0176d3;
+}
+
+.unified-search-input {
+  position: relative;
+  align-items: center;
+  width: 100%;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid #dddbda;
+  border-radius: 4px;
+  height: 32px;
+  font-size: 0.8125rem;
+  color: #16325c;
+}
+
+.filter-input:focus {
+  border-color: #1589ee;
+  box-shadow: 0 0 3px #0070d2;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 250px;
+  overflow: auto;
+  background-color: white;
+  border: 1px solid #dddbda;
+  border-radius: 4px;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 2px;
+  padding: 4px 0;
+}
+
+.dropdown-item {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  color: #16325c;
+  transition: background-color 0.1s linear;
+}
+
+.dropdown-item:hover {
+  background-color: #f4f6f9;
+}
+
+.dropdown-item input[type="checkbox"] {
+  margin-right: 8px;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid #dddbda;
+  border-radius: 0.125rem;
+  flex-shrink: 0;
+}
+
+.dropdown-item.selected {
+  background-color: #f4f6f9;
+  font-weight: 700;
+}
+
+.unified-search-input input[type="search"] {
+  border-radius: 4px 0px 0px 4px !important;
+  margin-right: 0 !important;
+}
+.no-left-radius {
+  border-top-left-radius: 0em;
+  border-bottom-left-radius: 0rem;
+}
+.no-left-border {
+  border-left: 0em;
+}
+svg.icon {
+  fill: #919191;
+}
+svg.icon:hover {
+  fill: #818181;
+}
+.icon {
+  display: inline-block;
+  width: 1.4rem;
+  height: 1.4rem;
+  vertical-align: middle;
+  vertical-align: -webkit-baseline-middle;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 1.4rem;
+  -webkit-mask-position: center;
+}
+.marginTop {
+  margin-top: 10px;
 }

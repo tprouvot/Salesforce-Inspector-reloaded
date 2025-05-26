@@ -27,6 +27,17 @@ class Model {
     this.metadataFilter = "";
     this.deployRequestId;
     this.allSelected = false;
+    let deployOptions = localStorage.getItem("deployOptions");
+    this.deployOptions = deployOptions ? JSON.parse(deployOptions) : {
+      allowMissingFiles: false,
+      checkOnly: false,
+      ignoreWarnings: false,
+      purgeOnDelete: false,
+      singlePackage: true,
+      performRetrieve: true,
+      rollbackOnError: true,
+      testLevel: "NoTestRun"
+    };
     this.spinFor(
       "getting user info",
       sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
@@ -313,6 +324,7 @@ class App extends React.Component {
     this.downloadXml = this.downloadXml.bind(this);
     this.onSelectAllChange = this.onSelectAllChange.bind(this);
     this.onUpdateManagedPackageSelection = this.onUpdateManagedPackageSelection.bind(this);
+    this.onUpdateDeployOptions = this.onUpdateDeployOptions.bind(this);
     this.onMetadataFilterInput = this.onMetadataFilterInput.bind(this);
     this.onClearAndFocusFilter = this.onClearAndFocusFilter.bind(this);
     this.hideToast = this.hideToast.bind(this);
@@ -372,6 +384,11 @@ class App extends React.Component {
     let {model} = this.props;
     copyToClipboard(model.packageXml);
   }
+  showOptions(){
+    let {model} = this.props;
+    model.showOptions = !model.showOptions;
+    model.didUpdate();
+  }
   onImportPackage(){
     let {model} = this.props;
     const fileInput = this.refs.fileInput;
@@ -426,18 +443,11 @@ class App extends React.Component {
           model.progress = "deploying";
           model.didUpdate();
 
-          // Create deployment options
-          const deployOptions = {
-            allowMissingFiles: true,
-            performRetrieve: false,
-            rollbackOnError: true
-          };
-
           // Start deployment
           const metadataApi = sfConn.wsdl(apiVersion, "Metadata");
           const result = await sfConn.soap(metadataApi, "deploy", {
             zipFile: btoa(String.fromCharCode.apply(null, zipBytes)),
-            deployOptions
+            deployOptions: model.deployOptions
           });
 
           // Poll for deployment status
@@ -528,6 +538,15 @@ class App extends React.Component {
     model.includeManagedPackage = e.target.checked;
     localStorage.setItem("includeManagedMetadata", model.includeManagedPackage);
     model.didUpdate();
+  }
+  onUpdateDeployOptions(e) {
+    let {model} = this.props;
+    const key = e.target.name || e.target.id;
+    if (key && model.deployOptions.hasOwnProperty(key)) {
+      model.deployOptions[key] = e.target.checked;
+      model.didUpdate();
+      localStorage.setItem("deployOptions", JSON.stringify(model.deployOptions));
+    }
   }
   onMetadataFilterInput(e) {
     let {model} = this.props;
@@ -672,6 +691,11 @@ class App extends React.Component {
                   h("use", {xlinkHref: "symbols.svg#copy"})
                 )
               ),
+              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.showOptions(), title: "Display Deployment Settings"},
+                h("svg", {className: "slds-button__icon"},
+                  h("use", {xlinkHref: "symbols.svg#settings"})
+                )
+              ),
               h("input", {
                 type: "file",
                 style: {display: "none"},
@@ -679,7 +703,43 @@ class App extends React.Component {
                 onChange: this.onImportPackage,
                 accept: "text/xml,.xml,application/zip,.zip"
               })
-            ),
+            )
+          ),
+          model.showOptions && h("div", {className: "options-text slds-grid slds-grid_align-spread slds-wrap"},
+            h("h2", {className: "slds-text-title_bold"}, "Deployment Settings"),
+            Object.entries(model.deployOptions)
+              .filter(([_, value]) => typeof value === "boolean")
+              .map(([key, value]) =>
+                h("div", {className: "slds-col slds-size_1-of-5 slds-p-around_x-small", key},
+                  h("label", {className: "slds-checkbox_toggle max-width-small"},
+                    h("span", {className: "slds-form-element__label slds-m-bottom_none"}, key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())),
+                    h("input", {type: "checkbox", name: key, checked: value, onChange: this.onUpdateDeployOptions}),
+                    h("span", {className: "slds-checkbox_faux_container center-label"},
+                      h("span", {className: "slds-checkbox_faux"}),
+                      h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                      h("span", {className: "slds-checkbox_off"}, "Disabled"),
+                    )
+                  )
+                )
+              ),
+            h("div", {className: "slds-col slds-size_1-of-5 slds-p-around_x-small"},
+              h("label", {className: "slds-form-element__label"}, "Test Level"),
+              h("div", {className: "slds-form-element__control"},
+                h("select", {
+                  className: "slds-select",
+                  value: model.deployOptions.testLevel,
+                  onChange: (e) => {
+                    model.deployOptions.testLevel = e.target.value;
+                    model.didUpdate();
+                  }
+                },
+                h("option", {value: "NoTestRun"}, "No Test Run"),
+                h("option", {value: "RunSpecifiedTests"}, "Run Specified Tests"),
+                h("option", {value: "RunLocalTests"}, "Run Local Tests"),
+                h("option", {value: "RunAllTestsInOrg"}, "Run All Tests in Org")
+                )
+              )
+            )
           ),
           h("div", {id: "result-table", ref: "scroller"},
             model.metadataObjects

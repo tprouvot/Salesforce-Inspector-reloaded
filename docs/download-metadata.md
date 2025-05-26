@@ -51,6 +51,25 @@ This page allows users to retrieve metadata from a Salesforce organization. It p
 * **Metadata Filtering:** Use a search filter to find specific metadata components.
 * **Legacy Version Support:** Users can opt to use a legacy version of metadata retrieval if needed.
 
+## Deployment Options Configuration
+
+When deploying metadata, you can configure the following options:
+
+### Boolean Options
+* **Allow Missing Files:** When enabled, allows deployment to succeed even if files specified in the package.xml are missing.
+* **Check Only:** When enabled, validates the deployment without making any changes to the organization.
+* **Ignore Warnings:** When enabled, allows deployment to succeed even if there are warnings.
+* **Purge On Delete:** When enabled, removes deleted components from the organization.
+* **Single Package:** When enabled, treats the deployment as a single package.
+* **Perform Retrieve:** When enabled, performs a retrieve operation before deployment.
+* **Rollback On Error:** When enabled, rolls back the deployment if an error occurs.
+
+### Test Level Options
+* **No Test Run:** No tests are run. This is the default for development environments.
+* **Run Specified Tests:** Only runs the tests specified in the runTests option. Requires 75% code coverage for each class and trigger.
+* **Run Local Tests:** Runs all tests in your org except those from installed managed and unlocked packages. This is the default for production deployments.
+* **Run All Tests In Org:** Runs all tests in your org, including tests from managed packages.
+
 ## Generating Package.xml from Deployment Request
 
 To generate a `package.xml` from a `deployRequestId`, the system:

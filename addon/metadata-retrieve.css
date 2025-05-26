@@ -195,3 +195,16 @@ textarea {
 .margin-grandchild {
   margin-left: 20px !important;
 }
+.options-text {
+  padding: 0 15px;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+h2 {
+  font-size: 0.9rem;
+  display: inline;
+  color: #080707;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: revert;
+}

@@ -24,14 +24,21 @@ This page allows users to retrieve metadata from a Salesforce organization. It p
 * Automatically group and sort metadata components.
 * Generate a `package.xml` file based on the deployment request.
 
-### 4. Filtering and Selection Options
+### 4. Metadata Deployment
+
+* Deploy metadata components directly from a ZIP file.
+* Import and deploy package ZIP files containing metadata.
+* View deployment status and results in real-time.
+* Access deployment error details with direct links to Salesforce deployment status page.
+
+### 5. Filtering and Selection Options
 
 * Search metadata components using a filter input.
 * Select all or deselect all metadata components.
 * Expand/collapse metadata categories.
 * Choose whether to include managed package metadata.
 
-### 5. User Experience Enhancements
+### 6. User Experience Enhancements
 
 * Displays user and organization information.
 * Provides real-time status updates for metadata retrieval.
@@ -44,6 +51,25 @@ This page allows users to retrieve metadata from a Salesforce organization. It p
 * **Metadata Filtering:** Use a search filter to find specific metadata components.
 * **Legacy Version Support:** Users can opt to use a legacy version of metadata retrieval if needed.
 
+## Deployment Options Configuration
+
+When deploying metadata, you can configure the following options:
+
+### Boolean Options
+* **Allow Missing Files:** When enabled, allows deployment to succeed even if files specified in the package.xml are missing.
+* **Check Only:** When enabled, validates the deployment without making any changes to the organization.
+* **Ignore Warnings:** When enabled, allows deployment to succeed even if there are warnings.
+* **Purge On Delete:** When enabled, removes deleted components from the organization.
+* **Single Package:** When enabled, treats the deployment as a single package.
+* **Perform Retrieve:** When enabled, performs a retrieve operation before deployment.
+* **Rollback On Error:** When enabled, rolls back the deployment if an error occurs.
+
+### Test Level Options
+* **No Test Run:** No tests are run. This is the default for development environments.
+* **Run Specified Tests:** Only runs the tests specified in the runTests option. Requires 75% code coverage for each class and trigger.
+* **Run Local Tests:** Runs all tests in your org except those from installed managed and unlocked packages. This is the default for production deployments.
+* **Run All Tests In Org:** Runs all tests in your org, including tests from managed packages.
+
 ## Generating Package.xml from Deployment Request
 
 To generate a `package.xml` from a `deployRequestId`, the system:
@@ -52,6 +78,16 @@ To generate a `package.xml` from a `deployRequestId`, the system:
 2. Groups components by metadata type.
 3. Constructs a `package.xml` file.
 4. Allows users to download or use the generated file for retrieval.
+
+## Deploying Metadata
+
+To deploy metadata to a Salesforce organization:
+
+1. Click the upload button to select a ZIP file containing metadata components.
+2. The system will automatically process the ZIP file and initiate deployment.
+3. Monitor the deployment status through the interface.
+4. View detailed deployment results, including any errors or warnings.
+5. Access the Salesforce deployment status page directly for more detailed information.
 
 ## Conclusion
 

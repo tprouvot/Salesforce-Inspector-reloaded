@@ -64,7 +64,8 @@ body {
     background-color: #b1adab;
   }
 }
-.progress-working {
+.progress-working,
+.progress-deploying {
   animation: working 1s cubic-bezier(0.5, 0.4, 0.5, 0.6) infinite;
 }
 .body {
@@ -193,4 +194,17 @@ textarea {
 }
 .margin-grandchild {
   margin-left: 20px !important;
+}
+.options-text {
+  padding: 0 15px;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+.options-text > h2 {
+  font-size: 0.9rem;
+  display: inline;
+  color: #080707;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: revert;
 }

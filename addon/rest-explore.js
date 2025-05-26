@@ -827,7 +827,7 @@ class App extends React.Component {
                         )
                       )
                     ),
-                    h("span", {className: "slds-media__body", title: query.endpoint},
+                    h("span", {className: "slds-media__body", title: query.body},
                       h("span", {className: "slds-listbox__option-text slds-listbox__option-text_entity"}, query.endpoint),
                       h("span", {className: "slds-listbox__option-meta slds-listbox__option-meta_entity"}, query.list.label + " • " + query.method + (query.label ? " • " + query.label : ""))
                     ),

@@ -5033,7 +5033,39 @@ a.slds-button--inverse:focus {
 }
 
 /* Icon */
-
+.slds-icon-text-default {
+  /*! @css-var-fallback fill */
+  --slds-c-icon-color-foreground: var(
+    --slds-c-icon-color-foreground-default,
+    var(
+      --sds-c-icon-color-foreground-default,
+      var(--slds-g-color-neutral-base-50, #747474)
+    )
+  );
+}
+.slds-icon-text-default.slds-is-disabled {
+  fill: var(--slds-g-color-neutral-base-80, #c9c9c9);
+}
+.slds-icon-text-warning {
+  /*! @css-var-fallback fill */
+  --slds-c-icon-color-foreground: var(--slds-g-color-warning-base-50, #fe9339);
+}
+.slds-icon-text-success {
+  /*! @css-var-fallback fill */
+  --slds-c-icon-color-foreground: var(--slds-g-color-success-base-50, #2e844a);
+}
+.slds-icon-text-error {
+  /*! @css-var-fallback fill */
+  --slds-c-icon-color-foreground: var(--slds-g-color-error-base-40, #ea001e);
+}
+.slds-icon-text-light {
+  /*! @css-var-fallback fill */
+  --slds-c-icon-color-foreground: var(--slds-g-color-neutral-base-50, #aeaeae);
+}
+.slds-current-color .slds-icon {
+  /*! @css-var-fallback fill */
+  --slds-c-icon-color-foreground: currentColor;
+}
 .slds-icon {
   width: 2rem;
   height: 2rem;
@@ -9033,11 +9065,22 @@ a.slds-button--inverse:focus {
   opacity: 0;
   fill: #0176d3;
 }
-.slds-listbox__option.slds-is-selected .slds-listbox__icon-selected {
-  opacity: 1;
+.slds-listbox__option:hover {
+  cursor: pointer;
 }
-.slds-listbox__option.slds-is-selected .slds-listbox__option-icon {
-  color: #0176d3;
+.slds-listbox__option:focus {
+  outline: 0;
+}
+.slds-listbox__option .slds-truncate {
+  display: inline-block;
+  vertical-align: middle;
+}
+.slds-listbox__option[aria-disabled="true"] {
+  color: var(--slds-g-color-neutral-base-50, #c9c9c9);
+}
+.slds-listbox__option-header {
+  font-size: 0.875rem;
+  font-weight: 700;
 }
 .slds-listbox__option-icon {
   width: 1.5rem;
@@ -9058,6 +9101,20 @@ a.slds-button--inverse:focus {
 .slds-listbox__option[aria-disabled="true"] .slds-listbox__option-icon {
   color: currentColor;
 }
+
+.slds-combobox_container__icon {
+  color: var(--slds-g-color-neutral-base-50, #aeaeae);
+}
+.slds-listbox__icon-selected {
+  opacity: 0;
+  fill: #0176d3;
+}
+.slds-listbox__option.slds-is-selected .slds-listbox__icon-selected {
+  opacity: 1;
+}
+.slds-listbox__option.slds-is-selected .slds-listbox__option-icon {
+  color: #0176d3;
+}
 .slds-listbox__option-text_entity,
 .slds-listbox__option-text--entity {
   max-width: 100%;
@@ -9076,7 +9133,92 @@ a.slds-button--inverse:focus {
 .slds-listbox__option[aria-disabled="true"] .slds-listbox__option-meta {
   color: currentColor;
 }
+.slds-listbox_vertical,
+.slds-listbox--vertical {
+}
+.slds-listbox_vertical .slds-listbox__option:focus,
+.slds-listbox_vertical .slds-listbox__option:hover,
+.slds-listbox_vertical .slds-listbox__option.slds-has-focus,
+.slds-listbox--vertical .slds-listbox__option:focus,
+.slds-listbox--vertical .slds-listbox__option:hover,
+.slds-listbox--vertical .slds-listbox__option.slds-has-focus {
+  background-color: var(--slds-g-color-neutral-base-95, #f3f3f3);
+  text-decoration: none;
+}
+.slds-listbox_vertical .slds-listbox__option:focus,
+.slds-listbox_vertical .slds-listbox__option.slds-has-focus,
+.slds-listbox--vertical .slds-listbox__option:focus,
+.slds-listbox--vertical .slds-listbox__option.slds-has-focus {
+  -webkit-box-shadow: var(--slds-g-shadow-inset-focus-1, 0 0 3px #0176d3);
+  box-shadow: var(--slds-g-shadow-inset-focus-1, 0 0 3px #0176d3);
+  outline: 0;
+}
+.slds-listbox_vertical .slds-listbox__option[aria-disabled="true"],
+.slds-listbox_vertical .slds-listbox__option[role="presentation"]:hover,
+.slds-listbox--vertical .slds-listbox__option[aria-disabled="true"],
+.slds-listbox--vertical .slds-listbox__option[role="presentation"]:hover {
+  background-color: transparent;
+  cursor: default;
+}
+.slds-listbox_vertical .slds-listbox__option_entity,
+.slds-listbox_vertical .slds-listbox__option--entity,
+.slds-listbox--vertical .slds-listbox__option_entity,
+.slds-listbox--vertical .slds-listbox__option--entity {
+  padding: 0.25rem 0.75rem;
+}
+.slds-listbox_vertical .slds-listbox__option_entity .slds-media__figure,
+.slds-listbox_vertical .slds-listbox__option--entity .slds-media__figure,
+.slds-listbox--vertical .slds-listbox__option_entity .slds-media__figure,
+.slds-listbox--vertical .slds-listbox__option--entity .slds-media__figure {
+  margin-right: 0.5rem;
+}
+.slds-listbox_vertical .slds-listbox__option_plain,
+.slds-listbox_vertical .slds-listbox__option--plain,
+.slds-listbox--vertical .slds-listbox__option_plain,
+.slds-listbox--vertical .slds-listbox__option--plain {
+  padding: 0.5rem 0.75rem;
+}
+.slds-listbox_vertical .slds-listbox__option_term,
+.slds-listbox--vertical .slds-listbox__option_term {
+  padding: 0.5rem 0.75rem;
+}
+.slds-listbox_vertical .slds-listbox__option_has-meta .slds-media__figure,
+.slds-listbox_vertical .slds-listbox__option--has-meta .slds-media__figure,
+.slds-listbox--vertical .slds-listbox__option_has-meta .slds-media__figure,
+.slds-listbox--vertical .slds-listbox__option--has-meta .slds-media__figure {
+  margin-top: 0.25rem;
+}
 
+.slds-dueling-list__options
+  .slds-listbox_vertical
+  .slds-listbox__option.slds-is-selected:focus,
+.slds-dueling-list__options
+  .slds-listbox_vertical
+  .slds-listbox__option.slds-is-selected.slds-has-focus,
+.slds-dueling-list__options
+  .slds-listbox--vertical
+  .slds-listbox__option.slds-is-selected:focus,
+.slds-dueling-list__options
+  .slds-listbox--vertical
+  .slds-listbox__option.slds-is-selected.slds-has-focus {
+  -webkit-box-shadow: var(--slds-g-shadow-inset-inverse-focus-1);
+  box-shadow: var(--slds-g-shadow-inset-inverse-focus-1);
+}
+.slds-input-has-icon_left .slds-combobox__input[value],
+.slds-input-has-icon_left .slds-combobox__input.slds-combobox__input-value,
+.slds-input-has-icon_left-right .slds-combobox__input[value],
+.slds-input-has-icon_left-right
+  .slds-combobox__input.slds-combobox__input-value,
+.slds-input-has-icon--left .slds-combobox__input[value],
+.slds-input-has-icon--left .slds-combobox__input.slds-combobox__input-value,
+.slds-input-has-icon--left-right .slds-combobox__input[value],
+.slds-input-has-icon--left-right
+  .slds-combobox__input.slds-combobox__input-value {
+  padding-left: 2.25rem;
+}
+.slds-listbox__option.slds-is-selected .slds-listbox__option-icon {
+  color: #0176d3;
+}
 .slds-listbox_object-switcher,
 .slds-listbox--object-switcher {
   -ms-flex-negative: 0;

@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Add Metadata Deploy feature
 - Fix issue with the sorting of child components in Download Metadata
 - Add AgentForce integration to generate SOQL queries in Data Export [feature 850](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/850)
 - Add automatic SOQL query typo removal in Data Export [feature 844](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/844)
@@ -15,7 +16,7 @@
 - Filter result by column in `Data Export`[feature 685](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/685) (contribution by [Brahim LAISSAOUI](https://github.com/laissaouibrahim))
 - Grey out columns that were not imported in `Data Import` [feature 507](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/507) request by [Wintermute1974](https://github.com/Wintermute1974) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
 - `Show All Data`: Iterate through boolean values with up & down key [feature 794](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/794) request by [mplaaguilera](https://github.com/mplaaguilera)
-- Fix 'Query Record' not persiting the state of the 'Tooling Api' settting [issue 268](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/268) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
+- Fix 'Query Record' not persisting the state of the 'Tooling Api' setting [issue 268](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/268) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
 - `Show All Data` Use alternative field Name in the header (ie CaseNumber) [feature 806](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/806) request by [Mart](https://github.com/Mart-User)
 - Implement search on `Event Monitor` to filter on event details
 - Prevent selection of an API version higher than the latest available [issue 464](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/464) (contribution by [Salwa Hammou](https://github.com/SalwaHm))

@@ -200,7 +200,7 @@ textarea {
   margin-top: 10px;
   margin-bottom: 5px;
 }
-h2 {
+.options-text > h2 {
   font-size: 0.9rem;
   display: inline;
   color: #080707;

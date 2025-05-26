@@ -77,6 +77,14 @@ class Model {
         let availableMetadataObjects = res.metadataObjects;
 
         this.metadataObjects = availableMetadataObjects;
+        // Add a CustomField metadata to the metadata objects (not returned by describeMetadata)
+        this.metadataObjects.push({
+          xmlName: "CustomField",
+          childXmlNames: [],
+          isFolder: false,
+          selected: false,
+          expanded: false
+        });
         this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
         this.metadataObjects = availableMetadataObjects.map(obj => ({...obj, isFolder: false}));
 

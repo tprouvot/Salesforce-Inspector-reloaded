@@ -118,6 +118,7 @@ class Model {
     ];
     this.separator = getSeparator();
     this.soqlPrompt = "";
+    this.enableQueryTypoFix = localStorage.getItem("enableQueryTypoFix") == "true";
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -870,13 +871,10 @@ class Model {
   removeTypo(query) {
     // Remove double commas
     query = query.replace(/,\s*,/g, ",");
-
     // Remove comma before FROM
     query = query.replace(/,\s+FROM\s+/gi, " FROM ");
-
     // Remove trailing comma before FROM
     query = query.replace(/,\s*FROM\s+/gi, " FROM ");
-
     // Remove multiple spaces
     query = query.replace(/\s+/g, " ");
 
@@ -889,7 +887,7 @@ class Model {
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
-    let query = vm.removeTypo(vm.queryInput.value);
+    let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
     vm.queryInput.value = query; // Update the input value with the cleaned query
     function batchHandler(batch) {
       return batch.catch(err => {

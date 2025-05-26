@@ -24,14 +24,21 @@ This page allows users to retrieve metadata from a Salesforce organization. It p
 * Automatically group and sort metadata components.
 * Generate a `package.xml` file based on the deployment request.
 
-### 4. Filtering and Selection Options
+### 4. Metadata Deployment
+
+* Deploy metadata components directly from a ZIP file.
+* Import and deploy package ZIP files containing metadata.
+* View deployment status and results in real-time.
+* Access deployment error details with direct links to Salesforce deployment status page.
+
+### 5. Filtering and Selection Options
 
 * Search metadata components using a filter input.
 * Select all or deselect all metadata components.
 * Expand/collapse metadata categories.
 * Choose whether to include managed package metadata.
 
-### 5. User Experience Enhancements
+### 6. User Experience Enhancements
 
 * Displays user and organization information.
 * Provides real-time status updates for metadata retrieval.
@@ -52,6 +59,16 @@ To generate a `package.xml` from a `deployRequestId`, the system:
 2. Groups components by metadata type.
 3. Constructs a `package.xml` file.
 4. Allows users to download or use the generated file for retrieval.
+
+## Deploying Metadata
+
+To deploy metadata to a Salesforce organization:
+
+1. Click the upload button to select a ZIP file containing metadata components.
+2. The system will automatically process the ZIP file and initiate deployment.
+3. Monitor the deployment status through the interface.
+4. View detailed deployment results, including any errors or warnings.
+5. Access the Salesforce deployment status page directly for more detailed information.
 
 ## Conclusion
 

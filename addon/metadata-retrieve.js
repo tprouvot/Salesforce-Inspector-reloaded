@@ -389,25 +389,132 @@ class App extends React.Component {
 
     const file = fileInput.files[0];
     const fileName = fileInput.files[0].name;
-    const reader = new FileReader();
+    const fileExtension = fileName.split(".").pop().toLowerCase();
 
-    reader.onload = (event) => {
-      try {
-        const importedPackage = event.target.result;
-        model.packageXml = importedPackage;
-        this.setState({
-          showToast: true,
-          toastMessage: fileName + " imported successfully!",
-          toastVariant: "success",
-          toastTitle: "Success"
-        });
-        setTimeout(this.hideToast, 3000);
+    if (fileExtension === "xml") {
+      // Handle XML file import (existing behavior)
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importedPackage = event.target.result;
+          model.packageXml = importedPackage;
+          this.setState({
+            showToast: true,
+            toastMessage: fileName + " imported successfully!",
+            toastVariant: "success",
+            toastTitle: "Success"
+          });
+          setTimeout(this.hideToast, 3000);
+          model.didUpdate();
+        } catch (error) {
+          console.error(error);
+          this.setState({
+            showToast: true,
+            toastMessage: "Failed to import XML file: " + error.message,
+            toastVariant: "error",
+            toastTitle: "Error"
+          });
+        }
+      };
+      reader.readAsText(file);
+    } else if (fileExtension === "zip") {
+      // Handle ZIP file deployment
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const zipBytes = new Uint8Array(event.target.result);
+          model.progress = "deploying";
+          model.didUpdate();
+
+          // Create deployment options
+          const deployOptions = {
+            allowMissingFiles: true,
+            performRetrieve: false,
+            rollbackOnError: true
+          };
+
+          // Start deployment
+          const metadataApi = sfConn.wsdl(apiVersion, "Metadata");
+          const result = await sfConn.soap(metadataApi, "deploy", {
+            zipFile: btoa(String.fromCharCode.apply(null, zipBytes)),
+            deployOptions
+          });
+
+          // Poll for deployment status
+          let deployResult;
+          let pollCount = 0;
+          const maxPolls = 50;
+          const pollInterval = 2000;
+
+          while (pollCount < maxPolls) {
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+            deployResult = await sfConn.soap(metadataApi, "checkDeployStatus", {
+              id: result.id,
+              includeDetails: true
+            });
+
+            if (deployResult.done) {
+              // Check for component failures
+              if (deployResult.details && deployResult.details.componentFailures) {
+                const failures = deployResult.details.componentFailures;
+                if (Array.isArray(failures) && failures.length > 0) {
+                  const formattedFailures = failures.map((f, index) => {
+                    const componentInfo = f.componentType ? `${f.componentType} "${f.fullName}"` : f.fullName;
+                    return `[${index + 1}] ${componentInfo} : ${f.problem}`;
+                  }).join("\n");
+                  const error = new Error(formattedFailures);
+                  error.id = deployResult.id;
+                  throw error;
+                }
+              }
+              break;
+            }
+            pollCount++;
+          }
+
+          if (!deployResult.done) {
+            throw new Error("Deployment timed out");
+          }
+
+          if (!deployResult.success) {
+            throw new Error("Deployment failed: " + JSON.stringify(deployResult.details));
+          }
+
+          this.setState({
+            showToast: true,
+            toastMessage: "Metadata deployed successfully!",
+            toastVariant: "success",
+            toastTitle: "Success"
+          });
+          model.progress = "done";
+          setTimeout(this.hideToast, 3000);
+        } catch (error) {
+          console.error(error);
+          this.setState({
+            showToast: true,
+            toastMessage: {
+              pre: "",
+              linkText: `${error.id}: `,
+              linkTitle: "View deployment error in Salesforce",
+              link: `https://${this.props.model.sfHost}/lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${error.id}%26retURL%3D%252Fchangemgmt%252FmonitorDeployment.apexpa`,
+              post: error.message,
+            },
+            toastVariant: "error",
+            toastTitle: "Error"
+          });
+          model.progress = "error";
+        }
         model.didUpdate();
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    reader.readAsText(file);
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      this.setState({
+        showToast: true,
+        toastMessage: "Unsupported file type. Please use .xml or .zip files.",
+        toastVariant: "error",
+        toastTitle: "Error"
+      });
+    }
   }
   onPastePackage(e){
     let {model} = this.props;
@@ -504,6 +611,7 @@ class App extends React.Component {
           h("span", {className: "progress progress-" + model.progress},
             model.progress == "ready" ? "Ready"
             : model.progress == "working" ? "Retrieving metadata..."
+            : model.progress == "deploying" ? "Deploying metadata..."
             : model.progress == "done" ? "Finished"
             : "Error!"
           ),
@@ -539,7 +647,10 @@ class App extends React.Component {
               )
             ),
             h("div", {className: "flex-right"},
-              h("button", {onClick: this.onStartClick}, "Retrieve Metadata"),
+              h("button", {
+                onClick: this.onStartClick,
+                disabled: !model.deployRequestId && (!model.metadataObjects || !model.metadataObjects.some(obj => obj.selected))
+              }, "Retrieve Metadata"),
               model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Download Metadata") : null,
               model.statusLink ? h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Save status info"},
                 h("svg", {className: "slds-button__icon"},
@@ -551,7 +662,7 @@ class App extends React.Component {
                   h("use", {xlinkHref: "symbols.svg#download"})
                 )
               ),
-              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Import package.xml"},
+              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Import package.xml or package zip file"},
                 h("svg", {className: "slds-button__icon"},
                   h("use", {xlinkHref: "symbols.svg#upload"})
                 )
@@ -566,7 +677,7 @@ class App extends React.Component {
                 style: {display: "none"},
                 ref: "fileInput",
                 onChange: this.onImportPackage,
-                accept: "text/xml"
+                accept: "text/xml,.xml,application/zip,.zip"
               })
             ),
           ),

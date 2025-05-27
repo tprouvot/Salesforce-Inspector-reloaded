@@ -41,6 +41,11 @@ if (typeof browser === "undefined") {
 }
 
 function getFilteredLocalStorage(){
+  const existingFilteredStorage = sessionStorage.getItem("filteredStorage");
+  if (existingFilteredStorage) {
+    return JSON.parse(existingFilteredStorage);
+  }
+
   let host = new URLSearchParams(window.location.search).get("host");
 
   let domainStart = host?.split(".")[0];

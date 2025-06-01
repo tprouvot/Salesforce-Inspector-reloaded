@@ -17,6 +17,7 @@
 - `Show All Data` Use alternative field Name in the header (ie CaseNumber) [feature 806](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/806) request by [Mart](https://github.com/Mart-User)
 - Implement search on `Event Monitor` to filter on event details
 - Prevent selection of an API version higher than the latest available [issue 464](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/464) (contribution by [Salwa Hammou](https://github.com/SalwaHm))
+- Ability to change `ClientId` header from [feature 504](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/504) for enhanced local development (contribution by [David Moruzzi](https://github.com/dmoruzzi))
 
 ## Version 1.26
 

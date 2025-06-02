@@ -67,25 +67,25 @@ Since the extension offers more features, the number of button is increasing.
 Some of the users may don't need some of those, to make the UI lighter some of the buttons can be hidden:
 - Delete Records
 - Export Query
-- AgentForce icon
+- Agentforce icon
 
-## Generate SOQL queries with AgentForce
+## Generate SOQL queries with Agentforce
 
 > **Prerequisite**
 > Agentforce needs to be enabled.
 > The prompt GenerateSOQL needs to be deployed in the org.
 
-You can use AgentForce to generate SOQL queries directly from the Data Export page. This feature leverages Salesforce's Prompt Templates to help you write queries more efficiently.
+You can use Agentforce to generate SOQL queries directly from the Data Export page. This feature leverages Salesforce's Prompt Templates to help you write queries more efficiently.
 
 > **Note**
 > The standard Salesforce 'Prompt Template User' permission is required to use this feature.
 
-By default, the AgentForce button is hidden. To enable it:
+By default, the Agentforce button is hidden. To enable it:
 1. Go to Options -> Data Export
-2. Enable "Show AgentForce button"
+2. Enable "Show Agentforce button"
 3. Optionally, you can customize the prompt template name that will be used for generating queries
 
-<img width="1443" alt="AgentForce SOQL builder" src="https://github.com/user-attachments/assets/deab54b8-df9a-4b74-ab81-b27aea5be800" />
+<img width="1443" alt="Agentforce SOQL builder" src="https://github.com/user-attachments/assets/deab54b8-df9a-4b74-ab81-b27aea5be800" />
 
 
 GenerateSOQL.genAiPromptTemplate meta content:

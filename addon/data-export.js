@@ -1475,7 +1475,7 @@ class App extends React.Component {
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
           ),
-          displayButton("export-agentforce", this.state.hideButtonsOption) ? h("a", {href: "#", id: "einstein-btn", title: "AgentForce help", onClick: this.onToggleAI},
+          displayButton("export-agentforce", this.state.hideButtonsOption) ? h("a", {href: "#", id: "einstein-btn", title: "Agentforce help", onClick: this.onToggleAI},
             h("svg", {className: "icon"},
               h("use", {xlinkHref: "symbols.svg#einstein"})
             )
@@ -1565,7 +1565,7 @@ class App extends React.Component {
           h("p", {}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
         ),
         h("div", {hidden: !model.showAI, className: "einstein-text"},
-          h("h3", {}, "AgentForce SOQL query builder"),
+          h("h3", {}, "Agentforce SOQL query builder"),
           h("p", {}, "Enter a description of the SOQL you want to be generated"),
           h("textarea", {id: "prompt", ref: "prompt"}),
           h("div", {className: "flex-right marginTop"},

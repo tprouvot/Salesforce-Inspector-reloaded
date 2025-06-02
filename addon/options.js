@@ -142,7 +142,7 @@ class OptionsTabSelector extends React.Component {
               checkboxes: [
                 {label: "Delete Records", name: "delete", checked: true},
                 {label: "Export Query", name: "export-query", checked: false},
-                {label: "AgentForce", name: "export-agentforce", checked: false}
+                {label: "Agentforce", name: "export-agentforce", checked: false}
               ]}
           },
           {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},

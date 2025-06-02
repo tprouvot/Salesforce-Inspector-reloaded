@@ -9,7 +9,8 @@ const channelTypes = [
   {value: "standardPlatformEvent", label: "Standard Platform Event", prefix: "/event/"},
   {value: "platformEvent", label: "Custom Platform Event", prefix: "/event/"},
   {value: "customChannel", label: "Custom Channel", prefix: "/event/"},
-  {value: "changeEvent", label: "Change Event", prefix: "/data/"}
+  {value: "changeEvent", label: "Change Event", prefix: "/data/"},
+  {value: "realTimeEvent", label: "Real-Time Event", prefix: "/event/"}
 ];
 
 class Model {
@@ -174,14 +175,16 @@ class App extends React.Component {
           label: "All Change Events"
         });
         query = "SELECT MasterLabel, SelectedEntity FROM PlatformEventChannelMember WHERE EventChannel = 'ChangeEvents' ORDER BY MasterLabel";
+      } else if (channelType == "realTimeEvent") {
+        query = "SELECT EntityName FROM RealTimeEvent WHERE IsEnabled = true ORDER BY EntityName";
       }
       await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
         .then(result => {
           result.records.forEach((channel) => {
-            let name = channel.QualifiedApiName || channel.FullName || channel.SelectedEntity;
+            let name = channel.QualifiedApiName || channel.FullName || channel.SelectedEntity || channel.EntityName;
             channels.push({
               name,
-              label: channel.SelectedEntity ? channel.SelectedEntity.replace(/([A-Z])/g, " $1").replace(/__?/g, "__c") : channel.Label || channel.MasterLabel + " (" + name + ")"
+              label: channel.SelectedEntity ? channel.SelectedEntity.replace(/([A-Z])/g, " $1").replace(/__?/g, "__c") : channel.Label || channel.MasterLabel || channel.EntityName + " (" + name + ")"
             });
           });
         })
@@ -195,29 +198,45 @@ class App extends React.Component {
 
   async getEventChannels(){
     let {model} = this.props;
+    const channelType = model.selectedChannelType;
+    await this.handleChannelEvents(model, channelType);
+    this.setSelectedChannel(model);
+    model.didUpdate();
+  }
 
-    if (model.selectedChannelType === "standardPlatformEvent") {
-      if (!model.stdPlatformEvent?.length) {
-        model.stdPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
+  async handleChannelEvents(model, channelType) {
+    const channelKey = this.getChannelTypeKey(channelType);
+
+    if (!model[channelKey]?.length) {
+      model[channelKey] = await this.retrievePlatformEvent(channelType, model.sfHost);
+
+      // Add "No events found" message if needed
+      if (!model[channelKey]?.length) {
+        model[channelKey].push({name: null, label: "! No " + channelType + " found !"});
       }
-      model.channels = model.stdPlatformEvent;
-    } else if (model.selectedChannelType === "platformEvent" || model.selectedChannelType === "customChannel" || model.selectedChannelType === "changeEvent") {
-      let key = model.selectedChannelType === "platformEvent" ? "customPlatformEvent"
-        : model.selectedChannelType === "changeEvent" ? "changeEvent" : "customChannel";
-      if (!model[key]?.length) {
-        model[key] = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
-        if (!model[key]?.length) {
-          model[key].push({name: null, label: "! No " + model.selectedChannelType + " found !"});
-        }
-      }
-      model.channels = model[key];
     }
+
+    model.channels = model[channelKey];
+  }
+
+  getChannelTypeKey(channelType) {
+    const keyMap = {
+      "platformEvent": "customPlatformEvent",
+      "changeEvent": "changeEvent",
+      "customChannel": "customChannel",
+      "realTimeEvent": "realTimeEvents",
+      "standardPlatformEvent": "stdPlatformEvent"
+    };
+
+    return keyMap[channelType] || channelType;
+  }
+
+  setSelectedChannel(model) {
     if (model.args.has("channel")) {
       model.selectedChannel = model.args.get("channel");
-    } else {
+    } else if (model.channels?.length > 0) {
       model.selectedChannel = model.channels[0].name;
     }
-    model.didUpdate();
   }
 
   onChannelTypeChange(e) {

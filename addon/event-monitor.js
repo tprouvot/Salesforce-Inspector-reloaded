@@ -573,7 +573,7 @@ class App extends React.Component {
               ),
               h("div", {className: "slds-col slds-align-bottom"},
                 h("button", {
-                  className: "slds-button slds-button_brand",
+                  className: "slds-button slds-button_neutral",
                   onClick: this.onSuscribeToChannel,
                   title: "Subscribe to channel",
                   disabled: this.disableSubscribe()

@@ -5,11 +5,11 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {CometD} from "./lib/cometd/cometd.js";
 import {copyToClipboard} from "./data-load.js";
 
-const channelSuffix = "/event/";
 const channelTypes = [
-  {value: "standardPlatformEvent", label: "Standard Platform Event"},
-  {value: "platformEvent", label: "Custom Platform Event"},
-  {value: "customChannel", label: "Custom Channel"}
+  {value: "standardPlatformEvent", label: "Standard Platform Event", prefix: "/event/"},
+  {value: "platformEvent", label: "Custom Platform Event", prefix: "/event/"},
+  {value: "customChannel", label: "Custom Channel", prefix: "/event/"},
+  {value: "changeEvent", label: "Change Event", prefix: "/data/"}
 ];
 
 class Model {
@@ -30,6 +30,7 @@ class Model {
     this.stdPlatformEvent = [];
     this.customPlatformEvent = [];
     this.customChannel = [];
+    this.changeEvent = [];
     this.selectedChannel = "";
     this.channelListening = "";
     this.channelError = "";
@@ -164,14 +165,21 @@ class App extends React.Component {
         query = "SELECT QualifiedApiName, Label FROM EntityDefinition WHERE isCustomizable = TRUE AND KeyPrefix LIKE 'e%' ORDER BY Label ASC";
       } else if (channelType == "customChannel"){
         query = "SELECT FullName, MasterLabel FROM PlatformEventChannel ORDER BY DeveloperName";
+      } else if (channelType == "changeEvent") {
+        // Add "All" option first
+        channels.push({
+          name: "ChangeEvents",
+          label: "All Change Events"
+        });
+        query = "SELECT MasterLabel, SelectedEntity FROM PlatformEventChannelMember WHERE EventChannel = 'ChangeEvents' ORDER BY MasterLabel";
       }
       await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
         .then(result => {
           result.records.forEach((channel) => {
-            let name = channel.QualifiedApiName || channel.FullName;
+            let name = channel.QualifiedApiName || channel.FullName || channel.SelectedEntity;
             channels.push({
               name,
-              label: channel.Label || channel.MasterLabel + " (" + name + ")"
+              label: channel.SelectedEntity ? channel.SelectedEntity.replace(/([A-Z])/g, " $1").replace(/__?/g, "__c") : channel.Label || channel.MasterLabel + " (" + name + ")"
             });
           });
         })
@@ -191,9 +199,10 @@ class App extends React.Component {
         model.stdPlatformEvent = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
       }
       model.channels = model.stdPlatformEvent;
-    } else if (model.selectedChannelType === "platformEvent" || model.selectedChannelType === "customChannel") {
-      let key = model.selectedChannelType === "platformEvent" ? "customPlatformEvent" : "customChannel";
-      if (!model.customPlatformEvent?.length) {
+    } else if (model.selectedChannelType === "platformEvent" || model.selectedChannelType === "customChannel" || model.selectedChannelType === "changeEvent") {
+      let key = model.selectedChannelType === "platformEvent" ? "customPlatformEvent"
+        : model.selectedChannelType === "changeEvent" ? "changeEvent" : "customChannel";
+      if (!model[key]?.length) {
         model[key] = await this.retrievePlatformEvent(model.selectedChannelType, model.sfHost);
         if (!model[key]?.length) {
           model[key].push({name: null, label: "! No " + model.selectedChannelType + " found !"});
@@ -268,7 +277,12 @@ class App extends React.Component {
 
     //Load Salesforce Replay Extension
     let replayExtension = new cometdReplayExtension();
-    replayExtension.setChannel(channelSuffix + model.selectedChannel);
+
+    let channelPath;
+    const selectedType = channelTypes.find(type => type.value === model.selectedChannelType);
+    channelPath = selectedType.prefix + model.selectedChannel;
+
+    replayExtension.setChannel(channelPath);
     replayExtension.setReplay(model.replayId);
     replayExtension.setExtensionEnabled = true;
     cometd.registerExtension("SalesforceReplayExtension", replayExtension);
@@ -277,7 +291,7 @@ class App extends React.Component {
       if (h.successful) {
         model.cometd = cometd;
         // Subscribe to receive messages from the server.
-        model.subscription = cometd.subscribe(channelSuffix + model.selectedChannel,
+        model.subscription = cometd.subscribe(channelPath,
           (message) => {
             const eventExists = model.events.some(event => event.event.replayId === message.data?.event?.replayId);
             if (!eventExists) {
@@ -286,7 +300,7 @@ class App extends React.Component {
             model.didUpdate();
           }, (subscribeReply) => {
             if (subscribeReply.successful) {
-              model.channelListening = "Listening on " + channelSuffix + model.selectedChannel + " ...";
+              model.channelListening = "Listening on " + channelPath + " ...";
             } else {
               model.channelError = "Error : " + subscribeReply.error;
               model.isListenning = false;
@@ -511,7 +525,10 @@ class App extends React.Component {
             h("span", {className: "conf-label"}, "Channel :"),
             h("span", {className: "conf-value"},
               h("select", {value: model.selectedChannel, onChange: this.onChannelSelection, disabled: model.isListenning},
-                ...model.channels.map((entity) => h("option", {key: entity.name, value: entity.name}, entity.label))
+                ...model.channels.map((entity) => {
+                  let channelName = entity.name;
+                  return h("option", {key: entity.name, value: channelName}, entity.label);
+                })
               )
             ),
             h("span", {className: "conf-label"}, "Replay From :"),

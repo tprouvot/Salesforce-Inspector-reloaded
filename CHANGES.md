@@ -2,7 +2,7 @@
 
 ## Version 1.27
 
-- Support Change Data Capture Events in Event Monitor [feature 867](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/867) (idea by Ammon Ho)
+- Support Manual channel configuration and Change Data Capture Events on `Event Monitor` [feature 859](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/859) (idea by [David Moruzzi](https://github.com/dmoruzzi)) and [feature 867](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/867) (idea by Ammon Ho)
 - Add Metadata Deploy feature
 - Fix issue with the sorting of child components in Download Metadata
 - Add Agentforce integration to generate SOQL queries in Data Export [feature 850](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/850)

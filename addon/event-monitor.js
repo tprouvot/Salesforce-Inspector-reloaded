@@ -32,6 +32,7 @@ class Model {
     this.customChannel = [];
     this.changeEvent = [];
     this.selectedChannel = "";
+    this.customChannelPath = "";
     this.channelListening = "";
     this.channelError = "";
     this.isListenning = false;
@@ -59,7 +60,7 @@ class Model {
     if (args.has("channel")) {
       let channel = args.get("channel");
       this.selectedChannel = channel;
-      this.selectedChannelType = channel.endsWith("__e") ? "platformEvent" : "standardPlatformEvent";
+      this.selectedChannelType = channel.endsWith("__e") ? "platformEvent" : channel.endsWith("ChangeEvent") ? "changeEvent" : "standardPlatformEvent";
     } else if (args.get("channelType")){
       this.selectedChannelType = args.get("channelType");
     } else {
@@ -146,6 +147,7 @@ class App extends React.Component {
     this.disableSubscribe = this.disableSubscribe.bind(this);
     this.onEventFilterInput = this.onEventFilterInput.bind(this);
     this.onClearAndFocusFilter = this.onClearAndFocusFilter.bind(this);
+    this.onCustomChannelInput = this.onCustomChannelInput.bind(this);
     this.getEventChannels();
     this.state = {peLimits: []};
   }
@@ -279,8 +281,12 @@ class App extends React.Component {
     let replayExtension = new cometdReplayExtension();
 
     let channelPath;
-    const selectedType = channelTypes.find(type => type.value === model.selectedChannelType);
-    channelPath = selectedType.prefix + model.selectedChannel;
+    if (model.customChannelPath) {
+      channelPath = model.customChannelPath;
+    } else {
+      const selectedType = channelTypes.find(type => type.value === model.selectedChannelType);
+      channelPath = selectedType.prefix + model.selectedChannel;
+    }
 
     replayExtension.setChannel(channelPath);
     replayExtension.setReplay(model.replayId);
@@ -441,6 +447,12 @@ class App extends React.Component {
     model.didUpdate();
   }
 
+  onCustomChannelInput(e) {
+    let {model} = this.props;
+    model.customChannelPath = e.target.value;
+    model.didUpdate();
+  }
+
   getDatetime(d) {
     return (
       `${this.pad(d.getFullYear(), 4)}-${this.pad(d.getMonth() + 1, 2)}-${this.pad(d.getDate(), 2)}T`
@@ -469,7 +481,7 @@ class App extends React.Component {
 
   disableSubscribe(){
     let {model} = this.props;
-    return model.isListenning || model.selectedChannel == null;
+    return model.isListenning || (model.selectedChannel == null && !model.customChannelPath);
   }
 
   render() {
@@ -510,33 +522,72 @@ class App extends React.Component {
         h("div", {className: "area-header"},
           h("h1", {}, "Subscribe to a channel")
         ),
-        h("div", {className: "conf-line"},
-          h("label", {title: "Channel Selection"},
-            h("span", {className: "conf-label"}, "Channel Type :"),
-            h("span", {className: "conf-value"},
-              h("select", {value: model.selectedChannelType,
-                onChange: this.onChannelTypeChange,
-                disabled: model.isListenning
-              },
-              ...channelTypes.map((type) => h("option", {key: type.value, value: type.value}, type.label)
-              )
-              )
-            ),
-            h("span", {className: "conf-label"}, "Channel :"),
-            h("span", {className: "conf-value"},
-              h("select", {value: model.selectedChannel, onChange: this.onChannelSelection, disabled: model.isListenning},
+        h("div", {className: "slds-form"},
+          h("div", {className: "slds-form-element"},
+            h("div", {className: "slds-form-element__control slds-grid slds-gutters_small"},
+              h("div", {className: "slds-col"},
+                h("span", {className: "slds-form-element__label"}, "Channel"),
+                h("input", {
+                  type: "text",
+                  className: "slds-input",
+                  value: model.customChannelPath,
+                  onChange: this.onCustomChannelInput,
+                  disabled: model.isListenning,
+                  placeholder: "/event/LoginAsEventStream"
+                })
+              ),
+              h("div", {className: "slds-col"},
+                h("span", {className: "slds-form-element__label"}, "Channel Type"),
+                h("select", {
+                  className: "slds-select",
+                  value: model.selectedChannelType,
+                  onChange: this.onChannelTypeChange,
+                  disabled: model.isListenning
+                },
+                ...channelTypes.map((type) => h("option", {key: type.value, value: type.value}, type.label))
+                )
+              ),
+              h("div", {className: "slds-col"},
+                h("span", {className: "slds-form-element__label"}, "Channel"),
+                h("select", {
+                  className: "slds-select",
+                  value: model.selectedChannel,
+                  onChange: this.onChannelSelection,
+                  disabled: model.isListenning
+                },
                 ...model.channels.map((entity) => {
                   let channelName = entity.name;
                   return h("option", {key: entity.name, value: channelName}, entity.label);
                 })
+                )
+              ),
+              h("div", {className: "slds-col"},
+                h("span", {className: "slds-form-element__label"}, "Replay From"),
+                h("input", {
+                  type: "number",
+                  className: "slds-input",
+                  value: model.replayId,
+                  onChange: this.onReplayIdChange,
+                  disabled: model.isListenning
+                })
+              ),
+              h("div", {className: "slds-col slds-align-bottom"},
+                h("button", {
+                  className: "slds-button slds-button_brand",
+                  onClick: this.onSuscribeToChannel,
+                  title: "Subscribe to channel",
+                  disabled: this.disableSubscribe()
+                }, "Subscribe")
+              ),
+              h("div", {className: "slds-col slds-align-bottom"},
+                h("button", {
+                  className: "slds-button slds-button_neutral",
+                  onClick: this.onUnsuscribeToChannel,
+                  title: "Unsubscribe to channel",
+                  disabled: !model.isListenning
+                }, "Unsubscribe")
               )
-            ),
-            h("span", {className: "conf-label"}, "Replay From :"),
-            h("span", {className: "conf-value"},
-              h("input", {type: "number", className: "conf-replay-value", value: model.replayId, onChange: this.onReplayIdChange, disabled: model.isListenning})
-            ),
-            h("button", {onClick: this.onSuscribeToChannel, title: "Suscribe to channel", disabled: this.disableSubscribe()}, "Subscribe"),
-            h("button", {onClick: this.onUnsuscribeToChannel, title: "Unsuscribe to channel", disabled: !model.isListenning}, "Unsubscribe")
+            )
           )
         ),
         h("div", {hidden: !model.showHelp, className: "help-text"},

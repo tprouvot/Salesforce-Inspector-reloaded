@@ -8733,3 +8733,20 @@ a.slds-button--inverse:focus {
   text-align: left;
   padding-left: 0.5rem;
 }
+/* Align */
+
+.slds-align-top {
+  vertical-align: top;
+  -ms-flex-item-align: start;
+  align-self: flex-start;
+}
+.slds-align-middle {
+  vertical-align: middle;
+  -ms-flex-item-align: center;
+  align-self: center;
+}
+.slds-align-bottom {
+  vertical-align: bottom;
+  -ms-flex-item-align: end;
+  align-self: flex-end;
+}

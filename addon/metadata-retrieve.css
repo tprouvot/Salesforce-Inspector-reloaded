@@ -208,3 +208,6 @@ textarea {
   line-height: 1.25;
   margin: revert;
 }
+select {
+  width: auto;
+}

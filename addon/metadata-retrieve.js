@@ -18,7 +18,6 @@ class Model {
     this.userInfo = "...";
     this.logMessages = [];
     this.progress = "ready";
-    this.downloadLink = null;
     this.statusLink = null;
     this.metadataObjects = [];
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
@@ -36,7 +35,8 @@ class Model {
       singlePackage: true,
       performRetrieve: true,
       rollbackOnError: true,
-      testLevel: "NoTestRun"
+      testLevel: "NoTestRun",
+      runTests: null
     };
     this.spinFor(
       "getting user info",
@@ -226,9 +226,16 @@ class Model {
 
       // Process the ZIP response
       let zipBin = Uint8Array.from(atob(res.zipFile), c => c.charCodeAt(0));
-      this.downloadLink = URL.createObjectURL(new Blob([zipBin], {type: "application/zip"}));
-      this.statusLink = URL.createObjectURL(new Blob([statusJson], {type: "application/json"}));
+      const blob = new Blob([zipBin], {type: "application/zip"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "metadata.zip";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
 
+      this.statusLink = URL.createObjectURL(new Blob([statusJson], {type: "application/json"}));
       this.progress = "done";
       this.didUpdate();
     } catch (e) {
@@ -463,11 +470,14 @@ class App extends React.Component {
               includeDetails: true
             });
 
-            if (deployResult.done) {
+            if (deployResult.done == "true" && deployResult.details) {
               // Check for component failures
-              if (deployResult.details && deployResult.details.componentFailures) {
-                const failures = deployResult.details.componentFailures;
-                if (Array.isArray(failures) && failures.length > 0) {
+              if (deployResult.details.componentFailures) {
+                const failures = Array.isArray(deployResult.details.componentFailures)
+                  ? deployResult.details.componentFailures
+                  : [deployResult.details.componentFailures];
+
+                if (failures.length > 0) {
                   const formattedFailures = failures.map((f, index) => {
                     const componentInfo = f.componentType ? `${f.componentType} "${f.fullName}"` : f.fullName;
                     return `[${index + 1}] ${componentInfo} : ${f.problem}`;
@@ -476,6 +486,23 @@ class App extends React.Component {
                   error.id = deployResult.id;
                   throw error;
                 }
+              }
+              if (deployResult.details.runTestResult
+                && deployResult.details.runTestResult.failures
+                && (
+                  Array.isArray(deployResult.details.runTestResult.failures)
+                    ? deployResult.details.runTestResult.failures.length > 0
+                    : true
+                )
+              ) {
+                const failures = Array.isArray(deployResult.details.runTestResult.failures)
+                  ? deployResult.details.runTestResult.failures
+                  : [deployResult.details.runTestResult.failures];
+
+                const formattedFailures = failures.map((f, index) => `[${index + 1}] ${f.name}.${f.methodName} : ${f.message}\n${f.stackTrace || ""}`).join("\n");
+                const error = new Error(formattedFailures);
+                error.id = deployResult.id;
+                throw error;
               }
               break;
             }
@@ -670,7 +697,6 @@ class App extends React.Component {
                 onClick: this.onStartClick,
                 disabled: !model.deployRequestId && (!model.metadataObjects || !model.metadataObjects.some(obj => obj.selected))
               }, "Retrieve Metadata"),
-              model.downloadLink ? h("a", {href: model.downloadLink, download: "metadata.zip", className: "button"}, "Download Metadata") : null,
               model.statusLink ? h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Save status info"},
                 h("svg", {className: "slds-button__icon"},
                   h("use", {xlinkHref: "symbols.svg#info"})
@@ -705,38 +731,65 @@ class App extends React.Component {
               })
             )
           ),
-          model.showOptions && h("div", {className: "options-text slds-grid slds-grid_align-spread slds-wrap"},
-            h("h2", {className: "slds-text-title_bold"}, "Deployment Settings"),
-            Object.entries(model.deployOptions)
-              .filter(([_, value]) => typeof value === "boolean")
-              .map(([key, value]) =>
-                h("div", {className: "slds-col slds-size_1-of-5 slds-p-around_x-small", key},
-                  h("label", {className: "slds-checkbox_toggle max-width-small"},
-                    h("span", {className: "slds-form-element__label slds-m-bottom_none"}, key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())),
-                    h("input", {type: "checkbox", name: key, checked: value, onChange: this.onUpdateDeployOptions}),
-                    h("span", {className: "slds-checkbox_faux_container center-label"},
-                      h("span", {className: "slds-checkbox_faux"}),
-                      h("span", {className: "slds-checkbox_on"}, "Enabled"),
-                      h("span", {className: "slds-checkbox_off"}, "Disabled"),
+          model.showOptions && h("div", {className: "options-text"},
+            h("h2", {className: "slds-text-title_bold slds-col slds-size_1-of-1"}, "Deployment Settings"),
+            h("div", {className: "slds-grid slds-grid_align-spread slds-wrap"},
+              Object.entries(model.deployOptions)
+                .filter(([_, value]) => typeof value === "boolean")
+                .map(([key, value]) =>
+                  h("div", {className: "slds-col slds-size_1-of-9 slds-p-around_x-small", key},
+                    h("label", {className: "slds-checkbox_toggle max-width-small"},
+                      h("span", {className: "slds-form-element__label slds-m-bottom_none"}, key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())),
+                      h("input", {type: "checkbox", name: key, checked: value, onChange: this.onUpdateDeployOptions}),
+                      h("span", {className: "slds-checkbox_faux_container center-label"},
+                        h("span", {className: "slds-checkbox_faux"}),
+                        h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                        h("span", {className: "slds-checkbox_off"}, "Disabled"),
+                      )
                     )
                   )
                 )
+            ),
+            h("div", {className: "slds-grid slds-grid_align-spread"},
+              h("div", {className: "slds-col slds-size_1-of-4 slds-p-around_x-small"},
+                h("label", {className: "slds-form-element__label"}, "Test Level"),
+                h("div", {className: "slds-form-element__control"},
+                  h("select", {
+                    className: "slds-select",
+                    value: model.deployOptions.testLevel,
+                    onChange: (e) => {
+                      model.deployOptions.testLevel = e.target.value;
+                      if (e.target.value === "RunSpecifiedTests") {
+                        setTimeout(() => {
+                          const specifiedTestsInput = document.querySelector('input[placeholder="Comma-separated test class names"]');
+                          if (specifiedTestsInput) {
+                            specifiedTestsInput.focus();
+                          }
+                        }, 0);
+                      }
+                      model.didUpdate();
+                    }
+                  },
+                  h("option", {value: "NoTestRun"}, "No Test Run"),
+                  h("option", {value: "RunSpecifiedTests"}, "Run Specified Tests"),
+                  h("option", {value: "RunLocalTests"}, "Run Local Tests"),
+                  h("option", {value: "RunAllTestsInOrg"}, "Run All Tests in Org")
+                  )
+                )
               ),
-            h("div", {className: "slds-col slds-size_1-of-5 slds-p-around_x-small"},
-              h("label", {className: "slds-form-element__label"}, "Test Level"),
-              h("div", {className: "slds-form-element__control"},
-                h("select", {
-                  className: "slds-select",
-                  value: model.deployOptions.testLevel,
-                  onChange: (e) => {
-                    model.deployOptions.testLevel = e.target.value;
-                    model.didUpdate();
-                  }
-                },
-                h("option", {value: "NoTestRun"}, "No Test Run"),
-                h("option", {value: "RunSpecifiedTests"}, "Run Specified Tests"),
-                h("option", {value: "RunLocalTests"}, "Run Local Tests"),
-                h("option", {value: "RunAllTestsInOrg"}, "Run All Tests in Org")
+              model.deployOptions.testLevel === "RunSpecifiedTests" && h("div", {className: "slds-col slds-size_3-of-4 slds-p-around_x-small"},
+                h("label", {className: "slds-form-element__label"}, "Specified Tests"),
+                h("div", {className: "slds-form-element__control"},
+                  h("input", {
+                    type: "text",
+                    className: "slds-input",
+                    placeholder: "Comma-separated test class names",
+                    value: model.deployOptions.runTests || "",
+                    onChange: (e) => {
+                      model.deployOptions.runTests = e.target.value;
+                      model.didUpdate();
+                    }
+                  })
                 )
               )
             )

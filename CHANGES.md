@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- `Metadata` Handle SpecifiedTest + Start zip download when ready [feature 319](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/319) request by [Alfredo Chissotti](https://github.com/Astisme)
 - Add Metadata Deploy feature
 - Fix issue with the sorting of child components in Download Metadata
 - Add Agentforce integration to generate SOQL queries in Data Export [feature 850](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/850)

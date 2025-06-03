@@ -4736,7 +4736,13 @@ a.slds-button--inverse:focus {
   -ms-flex-line-pack: end;
   align-content: flex-end;
 }
-
+.slds-wrap {
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap;
+  -webkit-box-align: start;
+  -ms-flex-align: start;
+  align-items: flex-start;
+}
 /* Gutters */
 
 .slds-gutters {

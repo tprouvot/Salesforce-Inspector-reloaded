@@ -444,24 +444,30 @@ class App extends React.PureComponent {
 }
 
 class AllDataBox extends React.PureComponent {
-
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"});
-
+    this.SearchAspectTypes = {
+      sobject: "sobject",
+      users: "users",
+      shortcuts: "shortcuts",
+      org: "org"
+    };
+    const defaultPopupTab = localStorage.getItem("defaultPopupTab");
+    const defaultTab = defaultPopupTab ? JSON.parse(defaultPopupTab).find(tab => tab.checked)?.name : "sobject";
     this.state = {
-      activeSearchAspect: this.SearchAspectTypes.sobject,
-      sobjectsList: null,
-      sobjectsLoading: true,
-      usersBoxLoading: false,
+      activeSearchAspect: this.SearchAspectTypes[defaultTab],
+      sobjectsLoading: false,
       contextRecordId: null,
+      contextSobject: null,
       contextUserId: null,
       contextOrgId: null,
       contextPath: null,
-      contextSobject: null
+      sobjectsList: []
     };
     this.onAspectClick = this.onAspectClick.bind(this);
-    this.parseContextUrl = this.ensureKnownBrowserContext.bind(this);
+    this.loadSobjects = this.loadSobjects.bind(this);
+    this.ensureKnownBrowserContext = this.ensureKnownBrowserContext.bind(this);
+    this.ensureKnownUserContext = this.ensureKnownUserContext.bind(this);
   }
 
   componentDidMount() {

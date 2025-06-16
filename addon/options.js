@@ -114,7 +114,18 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
           {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
           {option: Option, props: {type: "text", title: "PROD Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the PROD banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
-          {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}}
+          {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Default Popup Tab",
+              key: "defaultPopupTab",
+              unique: true,
+              checkboxes: [
+                {label: "Object", name: "sobject", checked: true},
+                {label: "Users", name: "users"},
+                {label: "Shortcuts", name: "shortcuts"},
+                {label: "Org", name: "org"}
+              ]}
+          },
         ]
       },
       {
@@ -637,6 +648,7 @@ class MultiCheckboxButtonGroup extends React.Component {
 
     this.title = props.title;
     this.key = props.storageKey;
+    this.unique = props.unique || false;
 
     // Load checkboxes from localStorage or default to props.checkboxes
     const storedCheckboxes = localStorage.getItem(this.key) ? JSON.parse(localStorage.getItem(this.key)) : [];
@@ -659,9 +671,11 @@ class MultiCheckboxButtonGroup extends React.Component {
 
   handleCheckboxChange = (event) => {
     const {name, checked} = event.target;
-    const updatedCheckboxes = this.state.checkboxes.map((checkbox) =>
-      checkbox.name === name ? {...checkbox, checked} : checkbox
-    );
+    const updatedCheckboxes = this.state.checkboxes.map((checkbox) => ({
+      ...checkbox,
+      checked: this.unique && checked ? checkbox.name === name : checkbox.name === name ? checked : checkbox.checked
+    }));
+
     localStorage.setItem(this.key, JSON.stringify(updatedCheckboxes));
     this.setState({checkboxes: updatedCheckboxes});
   };

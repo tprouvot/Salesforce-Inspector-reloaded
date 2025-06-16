@@ -2,6 +2,31 @@ site_name: Salesforce Inspector reloaded
 site_url: https://tprouvot.github.io/Salesforce-Inspector-reloaded/
 repo_url: https://github.com/tprouvot/Salesforce-Inspector-reloaded
 site_author: Thomas Prouvot
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Welcome: welcome.md
+      - Configure Connected App: how-to/#use-sf-inspector-with-a-connected-app
+      - Release Notes: release-note.md
+  - Features:
+      - Data Management:
+          - Data Export: data-export.md
+          - Data Import: data-import.md
+      - Metadata:
+          - Download Metadata: download-metadata.md
+          - Field Creator: field-creator.md
+      - API:
+          - Event Monitor: event-monitor.md
+          - REST Explorer: rest-explorer.md
+          - Org Limits: limits.md
+      - How-To: how-to.md
+  - Support:
+      - Troubleshooting: troubleshooting.md
+      - Privacy Policy: privacy.md
+      - Donate: donate.md
+      - Developer Notes: dev-notes.md
+
 theme:
   name: material
   logo: assets/images/icon128.png
@@ -16,6 +41,7 @@ theme:
     - content.tabs.link
     - content.code.annotation
     - content.code.copy
+    - navigation.expand
   language: en
   palette:
     - scheme: default
@@ -56,9 +82,7 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.mark
   - attr_list
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.emoji
 
 copyright: |
   &copy; 2025 <a href="https://github.com/tprouvot" target="_blank" rel="noopener">Thomas Prouvot</a>

@@ -342,3 +342,16 @@ From a	DeployRequest record, click on the `Generate package.xml` button to downl
 From the 'Options' tab, enable the 'Grey Out Skipped Columns in Data Import' option and perform the data import. The un-imported columns will be greyed out.
 
 <img width="571" alt="Grey out un-imported columns" src="https://github.com/user-attachments/assets/8f23f00b-0b8f-4c5b-8c92-aa97b3975daf" />
+
+## Default Popup Tab
+You can configure which tab should be selected by default when opening the popup. To do this:
+1. Open the options page
+2. Go to the "User Experience" tab
+3. Find the "Default Popup Tab" option
+4. Select your preferred tab:
+   - Object: Shows the SObject search and details
+   - Users: Shows the user search and details
+   - Shortcuts: Shows your configured shortcuts
+   - Org: Shows organization information
+
+The selected tab will be remembered and used as the default when opening the popup.

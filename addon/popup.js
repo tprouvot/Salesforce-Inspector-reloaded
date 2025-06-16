@@ -456,18 +456,17 @@ class AllDataBox extends React.PureComponent {
     const defaultTab = defaultPopupTab ? JSON.parse(defaultPopupTab).find(tab => tab.checked)?.name : "sobject";
     this.state = {
       activeSearchAspect: this.SearchAspectTypes[defaultTab],
-      sobjectsLoading: false,
+      sobjectsList: null,
+      sobjectsLoading: true,
+      usersBoxLoading: false,
       contextRecordId: null,
-      contextSobject: null,
       contextUserId: null,
       contextOrgId: null,
       contextPath: null,
-      sobjectsList: []
+      contextSobject: null
     };
     this.onAspectClick = this.onAspectClick.bind(this);
-    this.loadSobjects = this.loadSobjects.bind(this);
-    this.ensureKnownBrowserContext = this.ensureKnownBrowserContext.bind(this);
-    this.ensureKnownUserContext = this.ensureKnownUserContext.bind(this);
+    this.parseContextUrl = this.ensureKnownBrowserContext.bind(this);
   }
 
   componentDidMount() {

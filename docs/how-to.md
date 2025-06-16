@@ -199,6 +199,12 @@ Since the plugin's api version is only updated when all productions have been up
 
 ![2023-11-10_09-50-55 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6ae51a29-9887-41a6-8148-d9e12c2dc10d)
 
+## Set Custom ClientId for Log Files
+
+To make your life easier when developing changes for the Salesforce Inspector Reloaded extension, you may want to override the default clientId to identify API usage.
+
+<img alt="Set Custom ClientId Header on API Calls" src="../assets/images/how-to/set-clientId.png?raw=true" height="300">
+
 
 ## Delete All Apex Logs
 

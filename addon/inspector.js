@@ -2,7 +2,7 @@ export let defaultApiVersion = "63.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 
 export let sessionError;
-const clientId = "Salesforce Inspector Reloaded";
+const clientId = localStorage.getItem("clientId") == null ? "Salesforce Inspector Reloaded" : localStorage.getItem("clientId");
 
 export let sfConn = {
 

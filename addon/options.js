@@ -134,7 +134,20 @@ class OptionsTabSelector extends React.Component {
         title: "API",
         content: [
           {option: APIVersionOption, props: {key: 1}},
-          {option: APIKeyOption, props: {key: 2}},
+          {option: Option,
+            props: {type: "text",
+              title: "API Consumer Key",
+              placeholder: "Consumer Key",
+              key: this.sfHost + "_clientId",
+              inputSize: "5",
+              actionButton: {
+                label: "Delete Token",
+                title: "Delete the connected app generated token",
+                onClick: (e, model) => {
+                  localStorage.removeItem(model.sfHost + "_clientId");
+                  e.target.disabled = true;
+                }
+              }}},
           {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders"}}
         ]
       },
@@ -397,7 +410,7 @@ class APIVersionOption extends React.Component {
       h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-form-element__control"},
-          h("button", {className: "button button-brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
+          h("button", {className: "slds-button slds-button_brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
         ) : null,
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
           h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
@@ -418,6 +431,8 @@ class Option extends React.Component {
     this.label = props.label;
     this.tooltip = props.tooltip;
     this.placeholder = props.placeholder;
+    this.actionButton = props.actionButton;
+    this.inputSize = props.inputSize || "3";
     let value = localStorage.getItem(this.key);
     if (props.default !== undefined && value === null) {
       value = props.type != "text" ? JSON.stringify(props.default) : props.default;
@@ -448,22 +463,31 @@ class Option extends React.Component {
     const isSelect = this.type == "select";
 
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, this.title,
           h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
         )
       ),
-      isTextOrNumber ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      this.actionButton && h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control"},
+          h("button", {
+            className: "slds-button slds-button_brand",
+            onClick: (e) => this.actionButton.onClick(e, this.props.model),
+            title: this.actionButton.title || "Action"
+          }, this.actionButton.label || "Action")
+        )
+      ),
+      isTextOrNumber ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
           h("input", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
         )
       ))
-      : isTextArea ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      : isTextArea ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
           h("textarea", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
         )
       ))
-      : isSelect ? (h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      : isSelect ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
           h("select", {
             className: "slds-input slds-m-right_small",
@@ -633,7 +657,7 @@ class FaviconOption extends React.Component {
           )
         ),
         h("div", {className: "slds-form-element__control"},
-          h("button", {className: "button button-brand", onClick: this.populateFaviconColors, title: "Use favicon for all orgs I've visited"}, "Populate All")
+          h("button", {className: "slds-button slds-button_brand", onClick: this.populateFaviconColors, title: "Use favicon for all orgs I've visited"}, "Populate All")
         )
       )
     );
@@ -704,34 +728,6 @@ class MultiCheckboxButtonGroup extends React.Component {
   }
 }
 
-class APIKeyOption extends React.Component {
-
-  constructor(props) {
-    super(props);
-    this.sfHost = props.model.sfHost;
-    this.onChangeApiKey = this.onChangeApiKey.bind(this);
-    this.state = {apiKey: localStorage.getItem(this.sfHost + "_clientId") ? localStorage.getItem(this.sfHost + "_clientId") : ""};
-  }
-
-  onChangeApiKey(e) {
-    let apiKey = e.target.value;
-    this.setState({apiKey});
-    localStorage.setItem(this.sfHost + "_clientId", apiKey);
-  }
-
-  render() {
-    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-        h("span", {}, "API Consumer Key")
-      ),
-      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
-          h("input", {type: "text", id: "apiKeyInput", className: "slds-input", placeholder: "Consumer Key", value: nullToEmptyString(this.state.apiKey), onChange: this.onChangeApiKey}),
-        )
-      )
-    );
-  }
-}
 
 class CSVSeparatorOption extends React.Component {
 

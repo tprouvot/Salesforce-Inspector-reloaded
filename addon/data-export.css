@@ -114,7 +114,8 @@ textarea {
   word-wrap: normal;
   font-size: 0.9rem;
   padding: 8px 10px;
-  border-radius: 0.25rem;
+  border-bottom-right-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
   border: 1px solid #dddbda;
 }
 
@@ -804,4 +805,57 @@ svg.icon:hover {
 }
 .marginTop {
   margin-top: 10px;
+}
+
+.query-tabs {
+  display: flex;
+  padding: 0;
+}
+
+.query-tab {
+  padding: 8px 16px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-bottom: none;
+  margin-right: 4px;
+  border-radius: 4px 4px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.query-tab.active {
+  background: #fff;
+  border-color: #dddbda;
+  border-bottom-color: #fff;
+  margin-bottom: -1px;
+}
+
+.query-tab-close {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 12px;
+  color: #706e6b;
+}
+
+.query-tab-close:hover {
+  background: #f3f2f2;
+}
+
+.add-tab-button {
+  padding: 8px;
+  cursor: pointer;
+  color: #706e6b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.add-tab-button:hover {
+  background: #f3f2f2;
 }

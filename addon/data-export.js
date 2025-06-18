@@ -138,6 +138,10 @@ class Model {
     if (args.has("error")) {
       this.exportError = args.get("error") + " " + args.get("error_description");
     }
+
+    this.queryTabs = [];
+    this.activeTabIndex = 0;
+    this.loadQueryTabs();
   }
 
   updatedExportedData() {
@@ -539,6 +543,7 @@ class Model {
         isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
       }
     }
+    vm.updateCurrentTabName(sobjectName);
     let {sobjectStatus, sobjectDescribe} = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
     if (!sobjectDescribe) {
       switch (sobjectStatus) {
@@ -952,6 +957,11 @@ class Model {
         vm.exportedData = exportedData;
         vm.markPerf();
         vm.updatedExportedData();
+        // Store the results in the current tab
+        if (vm.queryTabs[vm.activeTabIndex]) {
+          vm.queryTabs[vm.activeTabIndex].results = exportedData;
+          vm.saveQueryTabs();
+        }
         return null;
       }, err => {
         if (err.name != "SalesforceRestError") {
@@ -1043,6 +1053,87 @@ class Model {
         {value: "Get Feedback on Query Performance", title: "Get Feedback on Query Performance", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "", link: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_query_explain.htm"},
       ]
     };
+  }
+
+  loadQueryTabs() {
+    const savedTabs = localStorage.getItem(`${this.sfHost}_queryTabs`);
+    if (savedTabs) {
+      this.queryTabs = JSON.parse(savedTabs);
+    } else {
+      this.queryTabs = [{name: "Query 1", query: this.initialQuery, results: null}];
+    }
+    this.activeTabIndex = 0;
+  }
+
+  saveQueryTabs() {
+    // Create a copy of the tabs without the results property
+    const tabsToSave = this.queryTabs.map(tab => ({
+      name: tab.name,
+      query: tab.query
+    }));
+    localStorage.setItem(`${this.sfHost}_queryTabs`, JSON.stringify(tabsToSave));
+  }
+
+  addQueryTab() {
+    const newTabName = `Query ${this.queryTabs.length + 1}`;
+    this.queryTabs.push({name: newTabName, query: "", results: null});
+    this.activeTabIndex = this.queryTabs.length - 1;
+    this.saveQueryTabs();
+    this.didUpdate();
+  }
+
+  removeQueryTab(index) {
+    if (this.queryTabs.length > 1) {
+      this.queryTabs.splice(index, 1);
+      if (this.activeTabIndex >= index) {
+        this.activeTabIndex = Math.max(0, this.activeTabIndex - 1);
+      }
+      this.saveQueryTabs();
+      this.didUpdate();
+    }
+  }
+
+  setActiveTab(index) {
+    this.activeTabIndex = index;
+    // Update the query input value to match the current tab's query
+    if (this.queryInput) {
+      this.queryInput.value = this.queryTabs[index].query;
+    }
+    // Update the exported data with the tab's results
+    this.exportedData = this.queryTabs[index].results;
+    // Update the UI with the new data
+    if (this.exportedData) {
+      this.exportStatus = `Loaded ${this.exportedData.records.length} record${s(this.exportedData.records.length)}`;
+    } else {
+      this.exportStatus = "";
+    }
+    this.updatedExportedData();
+    this.didUpdate();
+  }
+
+  updateCurrentTabQuery(query) {
+    if (this.queryTabs[this.activeTabIndex]) {
+      this.queryTabs[this.activeTabIndex].query = query;
+      this.saveQueryTabs();
+    }
+  }
+
+  updateCurrentTabName(name) {
+    if (this.queryTabs[this.activeTabIndex] && this.queryTabs[this.activeTabIndex].name !== name) {
+      // Check if there are any other tabs with the same name
+      let count = 1;
+      let newName = name;
+      while (this.queryTabs.some(tab => tab.name === newName)) {
+        newName = `${name} (${count})`;
+        count++;
+      }
+      this.queryTabs[this.activeTabIndex].name = newName;
+      this.saveQueryTabs();
+    }
+  }
+
+  getCurrentTabQuery() {
+    return this.queryTabs[this.activeTabIndex]?.query || "";
   }
 }
 
@@ -1214,6 +1305,10 @@ class App extends React.Component {
     this.onStopExport = this.onStopExport.bind(this);
     this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption")), isDropdownOpen: false};// Tracks whether the dropdown is open
     this.filterColumns = []; // Initialize as an empty array
+    this.onAddTab = this.onAddTab.bind(this);
+    this.onRemoveTab = this.onRemoveTab.bind(this);
+    this.onTabClick = this.onTabClick.bind(this);
+    this.onQueryInput = this.onQueryInput.bind(this);
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1376,6 +1471,29 @@ class App extends React.Component {
     model.stopExport();
     model.didUpdate();
   }
+  onAddTab(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.addQueryTab();
+  }
+  onRemoveTab(e, index) {
+    e.preventDefault();
+    e.stopPropagation();
+    let {model} = this.props;
+    model.removeQueryTab(index);
+  }
+  onTabClick(e, index) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.setActiveTab(index);
+  }
+
+  onQueryInput(e) {
+    let {model} = this.props;
+    model.updateCurrentTabQuery(e.target.value);
+    model.queryAutocompleteHandler();
+    model.didUpdate();
+  }
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
@@ -1392,6 +1510,7 @@ class App extends React.Component {
     }
     queryInput.addEventListener("input", queryAutocompleteEvent);
     queryInput.addEventListener("select", queryAutocompleteEvent);
+
     // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
     queryInput.addEventListener("keyup", queryAutocompleteEvent);
     queryInput.addEventListener("mouseup", queryAutocompleteEvent);
@@ -1414,6 +1533,7 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
+
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
@@ -1531,7 +1651,32 @@ class App extends React.Component {
             ),
           ),
         ),
-        h("textarea", {id: "query", ref: "query", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
+        h("div", {className: "query-tabs"},
+          model.queryTabs.map((tab, index) =>
+            h("div", {
+              key: index,
+              className: `query-tab ${index === model.activeTabIndex ? "active" : ""}`,
+              onClick: e => this.onTabClick(e, index)
+            },
+            h("span", {}, tab.name),
+            h("span", {
+              className: "query-tab-close",
+              onClick: e => this.onRemoveTab(e, index)
+            }, "×")
+            )
+          ),
+          h("div", {
+            className: "add-tab-button",
+            onClick: this.onAddTab,
+            title: "Add new query tab"
+          }, "+")
+        ),
+        h("textarea", {
+          id: "query",
+          ref: "query",
+          style: {maxHeight: (model.winInnerHeight - 200) + "px"},
+          onChange: this.onQueryInput
+        }),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),

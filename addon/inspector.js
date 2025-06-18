@@ -1,4 +1,4 @@
-export let defaultApiVersion = "63.0";
+export let defaultApiVersion = "64.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 
 export let sessionError;

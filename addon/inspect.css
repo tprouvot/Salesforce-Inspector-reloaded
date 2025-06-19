@@ -750,6 +750,20 @@ th[tabindex] {
   display: block;
 }
 
+.pop-menu a.expand-collapse-btn {
+  color: #706e6b;
+  font-style: italic;
+  border-top: 1px solid #e0e0e0;
+  margin-top: 3px;
+  padding-top: 8px;
+  cursor: pointer;
+}
+
+.pop-menu a.expand-collapse-btn:hover {
+  background-color: #f4f6f9;
+  color: #0070d2;
+}
+
 .object-actions .pop-menu,
 .field-actions .pop-menu,
 .child-actions .pop-menu {

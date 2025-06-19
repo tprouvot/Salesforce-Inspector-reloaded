@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git add:*)",
+      "Bash(git stash push:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)",
+      "Bash(git push:*)",
+      "Bash(npm run eslint:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(grep:*)",
+      "Bash(npm run chrome-dev-build:*)"
+    ],
+    "deny": []
+  }
+}

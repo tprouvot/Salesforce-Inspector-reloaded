@@ -796,13 +796,14 @@ class FieldRow extends TableRow {
   toggleRecordIdPop(elem) {
     if (this.recordIdPop) {
       this.recordIdPop = null;
+      this.recordIdPopExpanded = false;
       return;
     }
     let recordId = this.dataTypedValue;
     let keyPrefix = recordId.substring(0, 3);
-    let links;
+    let objectLinks = [];
     if (this.rowList.model.globalDescribe) {
-      links = this.rowList.model.globalDescribe.sobjects
+      objectLinks = this.rowList.model.globalDescribe.sobjects
         .filter(sobject => sobject.keyPrefix == keyPrefix)
         .map(sobject => {
           let args = new URLSearchParams();
@@ -814,13 +815,63 @@ class FieldRow extends TableRow {
           args.set("recordId", recordId);
           return {href: "inspect.html?" + args, text: "Show all data (" + sobject.name + ")"};
         });
-    } else {
-      links = [];
     }
+    
+    // Store full list for expand/collapse functionality
+    this.allObjectLinks = objectLinks;
+    this.recordIdPopExpanded = this.recordIdPopExpanded || false;
+    
+    // Create visible links based on expanded state
+    let links = this.getVisibleObjectLinks();
+    
+    // Always add standard actions at the end
     links.push({href: this.idLink(), text: "View in Salesforce"});
     links.push({href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
+    
     this.recordIdPop = links;
     elem.props.onOpenPopup(elem);
+  }
+  
+  getVisibleObjectLinks() {
+    const DISPLAY_LIMIT = 3;
+    let objectLinks = this.allObjectLinks || [];
+    
+    if (objectLinks.length <= DISPLAY_LIMIT) {
+      // Show all if we have few items
+      return [...objectLinks];
+    }
+    
+    if (this.recordIdPopExpanded) {
+      // Show all items plus collapse button
+      let links = [...objectLinks];
+      links.push({
+        href: "#", 
+        text: "[...] Show fewer object types", 
+        className: "expand-collapse-btn", 
+        isCollapseBtn: true
+      });
+      return links;
+    } else {
+      // Show limited items plus expand button
+      let links = objectLinks.slice(0, DISPLAY_LIMIT);
+      let remainingCount = objectLinks.length - DISPLAY_LIMIT;
+      links.push({
+        href: "#", 
+        text: `[...] Show ${remainingCount} more object types`, 
+        className: "expand-collapse-btn", 
+        isExpandBtn: true
+      });
+      return links;
+    }
+  }
+  
+  toggleExpandCollapse() {
+    this.recordIdPopExpanded = !this.recordIdPopExpanded;
+    // Refresh the popup with new visible links
+    this.recordIdPop = this.getVisibleObjectLinks();
+    // Always add standard actions at the end
+    this.recordIdPop.push({href: this.idLink(), text: "View in Salesforce"});
+    this.recordIdPop.push({href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
   }
   showReferenceUrl(type) {
     let args = new URLSearchParams();
@@ -1480,6 +1531,11 @@ class FieldValueCell extends React.Component {
     if (e.target.className?.includes("copy-id")) {
       navigator.clipboard.writeText(e.target.id);
       this.onRecordIdClick(e);
+    } else if (e.target.className?.includes("expand-collapse-btn")) {
+      e.preventDefault(); // Prevent navigation to "#"
+      const {row} = this.props;
+      row.toggleExpandCollapse();
+      row.rowList.model.didUpdate();
     }
   }
   onKeyDown(e) {

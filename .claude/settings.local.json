@@ -11,7 +11,11 @@
       "Bash(npm run eslint:*)",
       "WebFetch(domain:github.com)",
       "Bash(grep:*)",
-      "Bash(npm run chrome-dev-build:*)"
+      "Bash(npm run chrome-dev-build:*)",
+      "Bash(git commit:*)",
+      "Bash(rm:*)",
+      "Bash(node:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

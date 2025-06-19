@@ -704,6 +704,11 @@ class FieldRow extends TableRow {
     }
     return [];
   }
+  
+  isPolymorphicField() {
+    let refTypes = this.referenceTypes();
+    return refTypes && refTypes.length > 1;
+  }
   fieldIsCalculated() {
     if (this.fieldDescribe) {
       return this.fieldDescribe.calculated;
@@ -802,33 +807,77 @@ class FieldRow extends TableRow {
     let recordId = this.dataTypedValue;
     let keyPrefix = recordId.substring(0, 3);
     let objectLinks = [];
-    if (this.rowList.model.globalDescribe) {
-      objectLinks = this.rowList.model.globalDescribe.sobjects
-        .filter(sobject => sobject.keyPrefix == keyPrefix)
-        .map(sobject => {
-          let args = new URLSearchParams();
-          args.set("host", this.rowList.model.sfHost);
-          args.set("objectType", sobject.name);
-          if (this.rowList.model.useToolingApi) {
-            args.set("useToolingApi", "1");
-          }
-          args.set("recordId", recordId);
-          return {href: "inspect.html?" + args, text: "Show all data (" + sobject.name + ")"};
-        });
+    
+    // Check if this is a polymorphic field that can reference multiple object types
+    if (this.isPolymorphicField()) {
+      // For polymorphic fields, show all possible object types based on key prefix
+      if (this.rowList.model.globalDescribe) {
+        objectLinks = this.rowList.model.globalDescribe.sobjects
+          .filter(sobject => sobject.keyPrefix == keyPrefix)
+          .map(sobject => {
+            let args = new URLSearchParams();
+            args.set("host", this.rowList.model.sfHost);
+            args.set("objectType", sobject.name);
+            if (this.rowList.model.useToolingApi) {
+              args.set("useToolingApi", "1");
+            }
+            args.set("recordId", recordId);
+            return {href: "inspect.html?" + args, text: "Show all data (" + sobject.name + ")"};
+          });
+      }
+      
+      // Store full list for expand/collapse functionality
+      this.allObjectLinks = objectLinks;
+      this.recordIdPopExpanded = this.recordIdPopExpanded || false;
+      
+      // Create visible links based on expanded state (with expand/collapse logic)
+      let links = this.getVisibleObjectLinks();
+      
+      // Always add standard actions at the end
+      links.push({href: this.idLink(), text: "View in Salesforce"});
+      links.push({href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
+      
+      this.recordIdPop = links;
+    } else {
+      // For regular lookup fields, try to use the specific object type from field metadata
+      let refTypes = this.referenceTypes();
+      if (refTypes && refTypes.length === 1) {
+        // Single object type - use it directly
+        let specificObjectType = refTypes[0];
+        let args = new URLSearchParams();
+        args.set("host", this.rowList.model.sfHost);
+        args.set("objectType", specificObjectType);
+        if (this.rowList.model.useToolingApi) {
+          args.set("useToolingApi", "1");
+        }
+        args.set("recordId", recordId);
+        objectLinks = [{href: "inspect.html?" + args, text: "Show all data (" + specificObjectType + ")"}];
+      } else {
+        // Fallback to key prefix lookup for unidentified cases
+        if (this.rowList.model.globalDescribe) {
+          objectLinks = this.rowList.model.globalDescribe.sobjects
+            .filter(sobject => sobject.keyPrefix == keyPrefix)
+            .map(sobject => {
+              let args = new URLSearchParams();
+              args.set("host", this.rowList.model.sfHost);
+              args.set("objectType", sobject.name);
+              if (this.rowList.model.useToolingApi) {
+                args.set("useToolingApi", "1");
+              }
+              args.set("recordId", recordId);
+              return {href: "inspect.html?" + args, text: "Show all data (" + sobject.name + ")"};
+            });
+        }
+      }
+      
+      // For non-polymorphic fields, show all links directly (no expand/collapse)
+      let links = [...objectLinks];
+      links.push({href: this.idLink(), text: "View in Salesforce"});
+      links.push({href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
+      
+      this.recordIdPop = links;
     }
     
-    // Store full list for expand/collapse functionality
-    this.allObjectLinks = objectLinks;
-    this.recordIdPopExpanded = this.recordIdPopExpanded || false;
-    
-    // Create visible links based on expanded state
-    let links = this.getVisibleObjectLinks();
-    
-    // Always add standard actions at the end
-    links.push({href: this.idLink(), text: "View in Salesforce"});
-    links.push({href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
-    
-    this.recordIdPop = links;
     elem.props.onOpenPopup(elem);
   }
   

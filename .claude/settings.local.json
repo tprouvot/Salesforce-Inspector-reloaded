@@ -15,7 +15,18 @@
       "Bash(git commit:*)",
       "Bash(rm:*)",
       "Bash(node:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git count-objects:*)",
+      "Bash(git gc:*)",
+      "Bash(git repack:*)",
+      "Bash(git prune:*)",
+      "Bash(git remote:*)",
+      "Bash(find:*)",
+      "Bash(true)",
+      "Bash(npm cache clean:*)",
+      "WebFetch(domain:developer.salesforce.com)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

@@ -146,6 +146,15 @@
     },
     "event-monitor": {
       "description": "Event Monitor"
+    },
+    "link-setup": {
+      "description": "Open Setup"
+    },
+    "link-home": {
+      "description": "Open Home Page"
+    },
+    "link-dev": {
+      "description": "Open Developer Console"
     }
   }
 }

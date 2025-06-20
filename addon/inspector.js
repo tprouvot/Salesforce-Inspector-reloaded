@@ -120,6 +120,10 @@ export let sfConn = {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "Error";
       sessionError = {text: error, type: "error", icon: "error"};
       showToastBanner();
+      let err = new Error();
+      err.name = "Forbidden";
+      err.message = error;
+      throw err;
     } else {
       if (!logErrors) { console.error("Received error response from Salesforce REST API", xhr); }
       let err = new Error();

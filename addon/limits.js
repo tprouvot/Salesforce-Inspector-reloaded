@@ -184,8 +184,10 @@ class App extends React.Component {
               h("use", {xlinkHref: "symbols.svg#refresh"})
             )
           ),
-          h("a", {href: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_limits.htm", target: "_blank", id: "help-btn", title: "Org Limits Help", onClick: null},
-            h("div", {className: "icon"})
+          h("a", {href: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_limits.htm", target: "_blank", title: "Org Limits Help", onClick: null},
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#help"})
+            )
           ),
           h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
             h("span", {className: "slds-assistive-text"}),

@@ -41,6 +41,11 @@ if (typeof browser === "undefined") {
 }
 
 function getFilteredLocalStorage(){
+  const existingFilteredStorage = sessionStorage.getItem("filteredStorage");
+  if (existingFilteredStorage) {
+    return JSON.parse(existingFilteredStorage);
+  }
+
   let host = new URLSearchParams(window.location.search).get("host");
 
   let domainStart = host?.split(".")[0];
@@ -439,13 +444,18 @@ class App extends React.PureComponent {
 }
 
 class AllDataBox extends React.PureComponent {
-
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"});
-
+    this.SearchAspectTypes = {
+      sobject: "sobject",
+      users: "users",
+      shortcuts: "shortcuts",
+      org: "org"
+    };
+    const defaultPopupTab = localStorage.getItem("defaultPopupTab");
+    const defaultTab = defaultPopupTab ? JSON.parse(defaultPopupTab).find(tab => tab.checked)?.name : "sobject";
     this.state = {
-      activeSearchAspect: this.SearchAspectTypes.sobject,
+      activeSearchAspect: this.SearchAspectTypes[defaultTab],
       sobjectsList: null,
       sobjectsLoading: true,
       usersBoxLoading: false,

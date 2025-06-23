@@ -8,6 +8,18 @@ If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM
 
 ![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)
 
+## Multiple Query Tabs
+
+<img width="1428" alt="Multiple Query tabs" src="https://github.com/user-attachments/assets/2e48a0b9-998e-436e-87cf-5a28fba3db58" />
+
+The Data Export page now supports multiple query tabs, allowing you to work on several queries at once without losing context.
+
+- **Automatic Tab Naming**: When you write a SOQL query, the tab will be automatically renamed based on the SObject name detected in the `FROM` clause. For example, `SELECT Id FROM Account` will rename the tab to "Account".
+- **Handling Duplicate Names**: If you open a new tab for an SObject that already has a tab, a number will be appended to the name to keep them unique (e.g., "Account (1)", "Account (2)").
+- **Preserved Context**: Each tab remembers its own query and the results from the last time it was run. When you switch between tabs, the query and its results are instantly restored.
+
+A new tab can be created by clicking the `+` button in the tab bar.
+
 ## Disable query input autofocus
 
 Option available in Data Export tab
@@ -67,25 +79,25 @@ Since the extension offers more features, the number of button is increasing.
 Some of the users may don't need some of those, to make the UI lighter some of the buttons can be hidden:
 - Delete Records
 - Export Query
-- AgentForce icon
+- Agentforce icon
 
-## Generate SOQL queries with AgentForce
+## Generate SOQL queries with Agentforce
 
 > **Prerequisite**
 > Agentforce needs to be enabled.
 > The prompt GenerateSOQL needs to be deployed in the org.
 
-You can use AgentForce to generate SOQL queries directly from the Data Export page. This feature leverages Salesforce's Prompt Templates to help you write queries more efficiently.
+You can use Agentforce to generate SOQL queries directly from the Data Export page. This feature leverages Salesforce's Prompt Templates to help you write queries more efficiently.
 
 > **Note**
 > The standard Salesforce 'Prompt Template User' permission is required to use this feature.
 
-By default, the AgentForce button is hidden. To enable it:
+By default, the Agentforce button is hidden. To enable it:
 1. Go to Options -> Data Export
-2. Enable "Show AgentForce button"
+2. Enable "Show Agentforce button"
 3. Optionally, you can customize the prompt template name that will be used for generating queries
 
-<img width="1443" alt="AgentForce SOQL builder" src="https://github.com/user-attachments/assets/deab54b8-df9a-4b74-ab81-b27aea5be800" />
+<img width="1443" alt="Agentforce SOQL builder" src="https://github.com/user-attachments/assets/deab54b8-df9a-4b74-ab81-b27aea5be800" />
 
 
 GenerateSOQL.genAiPromptTemplate meta content:

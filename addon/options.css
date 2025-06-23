@@ -180,17 +180,6 @@ button,
   white-space: nowrap;
 }
 
-button:hover,
-.button:hover {
-  background-color: #f4f6f9;
-  color: #005fb2;
-}
-.button-brand {
-  background-color: #0070d2;
-  border-color: #0070d2;
-  color: #fff;
-}
-
 .button-brand:focus:not([disabled]),
 .button-brand:hover:not([disabled]) {
   background-color: #005fb2;

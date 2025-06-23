@@ -163,6 +163,7 @@ function initButton(sfHost, inInspector) {
       const envNameBanner = document.createElement("div");
       envNameBanner.className = "slds-notify_alert";
       envNameBanner.style.backgroundColor = faviconColor;
+      envNameBanner.style.color = "white";
       const envNameSpan = document.createElement("span");
       envNameSpan.textContent = bannerText ? bannerText : "WARNING: THIS IS PRODUCTION";
       envNameBanner.appendChild(envNameSpan);

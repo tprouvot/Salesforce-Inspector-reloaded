@@ -118,6 +118,7 @@ class Model {
     ];
     this.separator = getSeparator();
     this.soqlPrompt = "";
+    this.enableQueryTypoFix = localStorage.getItem("enableQueryTypoFix") == "true";
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -137,6 +138,10 @@ class Model {
     if (args.has("error")) {
       this.exportError = args.get("error") + " " + args.get("error_description");
     }
+
+    this.queryTabs = [];
+    this.activeTabIndex = 0;
+    this.loadQueryTabs();
   }
 
   updatedExportedData() {
@@ -538,6 +543,7 @@ class Model {
         isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
       }
     }
+    vm.updateCurrentTabName(sobjectName);
     let {sobjectStatus, sobjectDescribe} = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
     if (!sobjectDescribe) {
       switch (sobjectStatus) {
@@ -870,13 +876,10 @@ class Model {
   removeTypo(query) {
     // Remove double commas
     query = query.replace(/,\s*,/g, ",");
-
     // Remove comma before FROM
     query = query.replace(/,\s+FROM\s+/gi, " FROM ");
-
     // Remove trailing comma before FROM
     query = query.replace(/,\s*FROM\s+/gi, " FROM ");
-
     // Remove multiple spaces
     query = query.replace(/\s+/g, " ");
 
@@ -889,7 +892,7 @@ class Model {
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
-    let query = vm.removeTypo(vm.queryInput.value);
+    let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
     vm.queryInput.value = query; // Update the input value with the cleaned query
     function batchHandler(batch) {
       return batch.catch(err => {
@@ -954,6 +957,11 @@ class Model {
         vm.exportedData = exportedData;
         vm.markPerf();
         vm.updatedExportedData();
+        // Store the results in the current tab
+        if (vm.queryTabs[vm.activeTabIndex]) {
+          vm.queryTabs[vm.activeTabIndex].results = exportedData;
+          vm.saveQueryTabs();
+        }
         return null;
       }, err => {
         if (err.name != "SalesforceRestError") {
@@ -1045,6 +1053,87 @@ class Model {
         {value: "Get Feedback on Query Performance", title: "Get Feedback on Query Performance", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "", link: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_query_explain.htm"},
       ]
     };
+  }
+
+  loadQueryTabs() {
+    const savedTabs = localStorage.getItem(`${this.sfHost}_queryTabs`);
+    if (savedTabs) {
+      this.queryTabs = JSON.parse(savedTabs);
+    } else {
+      this.queryTabs = [{name: "Query 1", query: this.initialQuery, results: null}];
+    }
+    this.activeTabIndex = 0;
+  }
+
+  saveQueryTabs() {
+    // Create a copy of the tabs without the results property
+    const tabsToSave = this.queryTabs.map(tab => ({
+      name: tab.name,
+      query: tab.query
+    }));
+    localStorage.setItem(`${this.sfHost}_queryTabs`, JSON.stringify(tabsToSave));
+  }
+
+  addQueryTab() {
+    const newTabName = `Query ${this.queryTabs.length + 1}`;
+    this.queryTabs.push({name: newTabName, query: "", results: null});
+    this.activeTabIndex = this.queryTabs.length - 1;
+    this.saveQueryTabs();
+    this.didUpdate();
+  }
+
+  removeQueryTab(index) {
+    if (this.queryTabs.length > 1) {
+      this.queryTabs.splice(index, 1);
+      if (this.activeTabIndex >= index) {
+        this.activeTabIndex = Math.max(0, this.activeTabIndex - 1);
+      }
+      this.saveQueryTabs();
+      this.didUpdate();
+    }
+  }
+
+  setActiveTab(index) {
+    this.activeTabIndex = index;
+    // Update the query input value to match the current tab's query
+    if (this.queryInput) {
+      this.queryInput.value = this.queryTabs[index].query;
+    }
+    // Update the exported data with the tab's results
+    this.exportedData = this.queryTabs[index].results;
+    // Update the UI with the new data
+    if (this.exportedData) {
+      this.exportStatus = `Loaded ${this.exportedData.records.length} record${s(this.exportedData.records.length)}`;
+    } else {
+      this.exportStatus = "";
+    }
+    this.updatedExportedData();
+    this.didUpdate();
+  }
+
+  updateCurrentTabQuery(query) {
+    if (this.queryTabs[this.activeTabIndex]) {
+      this.queryTabs[this.activeTabIndex].query = query;
+      this.saveQueryTabs();
+    }
+  }
+
+  updateCurrentTabName(name) {
+    if (this.queryTabs[this.activeTabIndex] && this.queryTabs[this.activeTabIndex].name !== name) {
+      // Check if there are any other tabs with the same name
+      let count = 1;
+      let newName = name;
+      while (this.queryTabs.some(tab => tab.name === newName)) {
+        newName = `${name} (${count})`;
+        count++;
+      }
+      this.queryTabs[this.activeTabIndex].name = newName;
+      this.saveQueryTabs();
+    }
+  }
+
+  getCurrentTabQuery() {
+    return this.queryTabs[this.activeTabIndex]?.query || "";
   }
 }
 
@@ -1216,6 +1305,10 @@ class App extends React.Component {
     this.onStopExport = this.onStopExport.bind(this);
     this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption")), isDropdownOpen: false};// Tracks whether the dropdown is open
     this.filterColumns = []; // Initialize as an empty array
+    this.onAddTab = this.onAddTab.bind(this);
+    this.onRemoveTab = this.onRemoveTab.bind(this);
+    this.onTabClick = this.onTabClick.bind(this);
+    this.onQueryInput = this.onQueryInput.bind(this);
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1378,6 +1471,29 @@ class App extends React.Component {
     model.stopExport();
     model.didUpdate();
   }
+  onAddTab(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.addQueryTab();
+  }
+  onRemoveTab(e, index) {
+    e.preventDefault();
+    e.stopPropagation();
+    let {model} = this.props;
+    model.removeQueryTab(index);
+  }
+  onTabClick(e, index) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.setActiveTab(index);
+  }
+
+  onQueryInput(e) {
+    let {model} = this.props;
+    model.updateCurrentTabQuery(e.target.value);
+    model.queryAutocompleteHandler();
+    model.didUpdate();
+  }
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
@@ -1394,6 +1510,7 @@ class App extends React.Component {
     }
     queryInput.addEventListener("input", queryAutocompleteEvent);
     queryInput.addEventListener("select", queryAutocompleteEvent);
+
     // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
     queryInput.addEventListener("keyup", queryAutocompleteEvent);
     queryInput.addEventListener("mouseup", queryAutocompleteEvent);
@@ -1416,6 +1533,7 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
+
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
@@ -1477,7 +1595,7 @@ class App extends React.Component {
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
           ),
-          displayButton("export-agentforce", this.state.hideButtonsOption) ? h("a", {href: "#", id: "einstein-btn", title: "AgentForce help", onClick: this.onToggleAI},
+          displayButton("export-agentforce", this.state.hideButtonsOption) ? h("a", {href: "#", id: "einstein-btn", title: "Agentforce help", onClick: this.onToggleAI},
             h("svg", {className: "icon"},
               h("use", {xlinkHref: "symbols.svg#einstein"})
             )
@@ -1533,7 +1651,32 @@ class App extends React.Component {
             ),
           ),
         ),
-        h("textarea", {id: "query", ref: "query", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
+        h("div", {className: "query-tabs"},
+          model.queryTabs.map((tab, index) =>
+            h("div", {
+              key: index,
+              className: `query-tab ${index === model.activeTabIndex ? "active" : ""}`,
+              onClick: e => this.onTabClick(e, index)
+            },
+            h("span", {}, tab.name),
+            h("span", {
+              className: "query-tab-close",
+              onClick: e => this.onRemoveTab(e, index)
+            }, "×")
+            )
+          ),
+          h("div", {
+            className: "add-tab-button",
+            onClick: this.onAddTab,
+            title: "Add new query tab"
+          }, "+")
+        ),
+        h("textarea", {
+          id: "query",
+          ref: "query",
+          style: {maxHeight: (model.winInnerHeight - 200) + "px"},
+          onChange: this.onQueryInput
+        }),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
@@ -1567,7 +1710,7 @@ class App extends React.Component {
           h("p", {}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
         ),
         h("div", {hidden: !model.showAI, className: "einstein-text"},
-          h("h3", {}, "AgentForce SOQL query builder"),
+          h("h3", {}, "Agentforce SOQL query builder"),
           h("p", {}, "Enter a description of the SOQL you want to be generated"),
           h("textarea", {id: "prompt", ref: "prompt"}),
           h("div", {className: "flex-right marginTop"},

@@ -10,13 +10,13 @@ If you enabled "API client whitelisting" (a.k.a "API Access Control") in your or
 
 To secure the extension usage, you can use a OAuth 2.0 flow to get an access token, linked to a connected app installed in your org.
 
-1. Open the extension and scroll down to the “Generate Access Token” button.
-2. You should see the “OAUTH_APP_BLOCKED” error which is normal at this stage.
-3. Go to “Connected Apps OAuth Usage” in setup and search for “Salesforce Inspector reloaded”.
-4. Click “Install” and then confirm installation.
+1. Open the extension and scroll down to the "Generate Access Token" button.
+2. You should see the "OAUTH_APP_BLOCKED" error which is normal at this stage.
+3. Go to "Connected Apps OAuth Usage" in setup and search for "Salesforce Inspector reloaded".
+4. Click "Install" and then confirm installation.
 5. Now configure the profiles or permissions sets which will have the right to use the extension.
-6. Go back to “Connected Apps OAuth Usage” and click “Unblock” next to “Salesforce Inspector reloaded”
-7. Once again, open the extension and scroll down to the “Generate Access Token” button
+6. Go back to "Connected Apps OAuth Usage" and click "Unblock" next to "Salesforce Inspector reloaded"
+7. Once again, open the extension and scroll down to the "Generate Access Token" button
 
 ![2024-05-28_16-12-29 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1cb41271-ea61-4e25-9c68-2a50764c4cec)
 
@@ -276,30 +276,6 @@ Example:
 - <ins>D</ins>ownload Metadata : d
 - E<ins>x</ins>plore API : x
 
-## Configure Import options in Data Import
-
-You can configure the [SOAP headers](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/soap_headers.htm) when importing records to specify Assignment Rule, Duplicate Rule or OwnerChangeOptions.
-Because custom headers can be hard to configure, you could iterate through suggestions by pressing down key.
-If you want to include new suggestions, feel free to open a new [feature request](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=enhancement&projects=&template=feature_request.md).
-
-If true, the account team is kept with the account when the account owner is changed. If false, the account team is deleted:
-``` json
-{"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}
-```
-
-For a duplicate rule, when the Alert option is enabled, bypass alerts and save duplicate records by setting this property to true:
-``` json
-  '{"DuplicateRuleHeader": {"allowSave": true}}'
-```
-
-If true for a Case or Lead, uses the default (active) assignment rule for a Case or Lead. If specified, don't specify an assignmentRuleId. If true for an Account, all territory assignment rules are applied. If false for an Account, no territory assignment rules are applied.
-``` json
-  '{"AssignmentRuleHeader": {"useDefaultRule": true}}',
-```
-
-<img width="503" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/e2d21970-ddc5-4c42-a54e-ffb7ffdcb278">
-
-
 ## Highlight PROD with a top border
 
 Production environment are critical, to avoid confusion with other orgs, you can enable an option which will add a 2px border on the top of the Salesforce UI and also in the extension's pages.
@@ -337,8 +313,15 @@ From a	DeployRequest record, click on the `Generate package.xml` button to downl
 
 <img width="1143" alt="Generate package.xml from a deployment" src="https://github.com/user-attachments/assets/4acb7422-0547-409d-9e23-d8c3176f8055" />
 
-## Grey out skipped columns in data import
+## Default Popup Tab
+You can configure which tab should be selected by default when opening the popup. To do this:
+1. Open the options page
+2. Go to the "User Experience" tab
+3. Find the "Default Popup Tab" option
+4. Select your preferred tab:
+   - Object: Shows the SObject search and details
+   - Users: Shows the user search and details
+   - Shortcuts: Shows your configured shortcuts
+   - Org: Shows organization information
 
-From the 'Options' tab, enable the 'Grey Out Skipped Columns in Data Import' option and perform the data import. The un-imported columns will be greyed out.
-
-<img width="571" alt="Grey out un-imported columns" src="https://github.com/user-attachments/assets/8f23f00b-0b8f-4c5b-8c92-aa97b3975daf" />
+The selected tab will be remembered and used as the default when opening the popup.

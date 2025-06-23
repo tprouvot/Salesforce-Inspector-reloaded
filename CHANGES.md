@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Support for multiple SOQL/SOSL tabs in `Data Export` [feature 132](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/132) (requested Erlend Hansen)
 - Add button in Option page to delete generated access token (cf [troubleshooting](https://tprouvot.github.io/Salesforce-Inspector-reloaded/troubleshooting/#generate-new-token-error))
 - Add option to configure default popup tab [feature 877](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/877) (requested by William Salomon)
 - Support Manual channel configuration and Change Data Capture Events on `Event Monitor` [feature 859](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/859) (idea by [David Moruzzi](https://github.com/dmoruzzi)) and [feature 867](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/867) (idea by Ammon Ho)

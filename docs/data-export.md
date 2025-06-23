@@ -8,6 +8,18 @@ If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM
 
 ![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)
 
+## Multiple Query Tabs
+
+<img width="1428" alt="Multiple Query tabs" src="https://github.com/user-attachments/assets/2e48a0b9-998e-436e-87cf-5a28fba3db58" />
+
+The Data Export page now supports multiple query tabs, allowing you to work on several queries at once without losing context.
+
+- **Automatic Tab Naming**: When you write a SOQL query, the tab will be automatically renamed based on the SObject name detected in the `FROM` clause. For example, `SELECT Id FROM Account` will rename the tab to "Account".
+- **Handling Duplicate Names**: If you open a new tab for an SObject that already has a tab, a number will be appended to the name to keep them unique (e.g., "Account (1)", "Account (2)").
+- **Preserved Context**: Each tab remembers its own query and the results from the last time it was run. When you switch between tabs, the query and its results are instantly restored.
+
+A new tab can be created by clicking the `+` button in the tab bar.
+
 ## Disable query input autofocus
 
 Option available in Data Export tab

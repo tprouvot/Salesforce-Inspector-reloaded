@@ -1060,7 +1060,7 @@ class Model {
     if (savedTabs) {
       this.queryTabs = JSON.parse(savedTabs);
     } else {
-      this.queryTabs = [{name: "Query 1", query: this.initialQuery, results: null}];
+      this.queryTabs = [{name: "Query 1", query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null}];
     }
     this.activeTabIndex = 0;
   }
@@ -1069,14 +1069,16 @@ class Model {
     // Create a copy of the tabs without the results property
     const tabsToSave = this.queryTabs.map(tab => ({
       name: tab.name,
-      query: tab.query
+      query: tab.query,
+      queryTooling: tab.queryTooling,
+      queryAll: tab.queryAll
     }));
     localStorage.setItem(`${this.sfHost}_queryTabs`, JSON.stringify(tabsToSave));
   }
 
   addQueryTab() {
     const newTabName = `Query ${this.queryTabs.length + 1}`;
-    this.queryTabs.push({name: newTabName, query: "", results: null});
+    this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null});
     this.activeTabIndex = this.queryTabs.length - 1;
     this.saveQueryTabs();
     this.didUpdate();
@@ -1099,6 +1101,8 @@ class Model {
     if (this.queryInput) {
       this.queryInput.value = this.queryTabs[index].query;
     }
+    this.queryTooling = this.queryTabs[index].queryTooling;
+    this.queryAll = this.queryTabs[index].queryAll;
     // Update the exported data with the tab's results
     this.exportedData = this.queryTabs[index].results;
     // Update the UI with the new data
@@ -1114,6 +1118,13 @@ class Model {
   updateCurrentTabQuery(query) {
     if (this.queryTabs[this.activeTabIndex]) {
       this.queryTabs[this.activeTabIndex].query = query;
+      this.saveQueryTabs();
+    }
+  }
+
+  updateCurrentTabProperty(propertyName, value) {
+    if (this.queryTabs[this.activeTabIndex]) {
+      this.queryTabs[this.activeTabIndex][propertyName] = value;
       this.saveQueryTabs();
     }
   }
@@ -1313,11 +1324,13 @@ class App extends React.Component {
   onQueryAllChange(e) {
     let {model} = this.props;
     model.queryAll = e.target.checked;
+    model.updateCurrentTabProperty("queryAll", model.queryAll);
     model.didUpdate();
   }
   onQueryToolingChange(e) {
     let {model} = this.props;
     model.queryTooling = e.target.checked;
+    model.updateCurrentTabProperty("queryTooling", model.queryTooling);
     model.queryAutocompleteHandler();
     model.didUpdate();
   }

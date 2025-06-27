@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow Scanner - Salesforce Inspector</title>
+  <meta name="description" content="Comprehensive static analysis tool for Salesforce Flows">
+  <link rel="stylesheet" href="button.css">
+  <link rel="stylesheet" href="flow-scanner.css">
+  <link rel="stylesheet" href="styles/slds/slds.css">
+</head>
+<body>
+  <div id="flow-scanner-app" class="flow-scanner-app">
+    <!-- Header matching options page design -->
+    <div id="user-info" class="slds-border_bottom">
+      <a href="#" class="sf-link" id="salesforce-home-link">
+        <svg viewBox="0 0 24 24">
+          <path d="M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"/>
+        </svg>
+        Salesforce Home
+      </a>
+      <h1 class="slds-text-title_bold">Flow Scanner</h1>
+      <span id="flow-scanner-subtitle">Comprehensive static analysis for Salesforce Flows</span>
+      <div class="flex-right">
+        <div class="flow-scanner-note-header">
+          <small>💡 Based on <a href="https://github.com/Lightning-Flow-Scanner" target="_blank" rel="noopener noreferrer">Lightning Flow Scanner</a></small>
+        </div>
+        <a 
+          href="https://www.google.com" 
+          target="_blank" 
+          id="help-btn" 
+          title="Flow Scanner Help">
+          <div class="icon"></div>
+        </a>
+      </div>
+    </div>
+    
+    <!-- Main container matching options layout -->
+    <div class="main-container slds-card slds-m-around_small" id="main-container_header">
+      <!-- Flow Information Section -->
+      <div class="flow-info-section" id="flow-info-section" role="region" aria-labelledby="flow-info-title">
+        <div class="flow-info-header">
+          <h2 id="flow-info-title" class="flow-info-title">
+            <span class="flow-icon">⚡</span>
+            Flow Information
+          </h2>
+        </div>
+        
+        <div class="flow-info-card compact">
+          <div class="flow-header-row">
+            <div class="flow-label-section">
+              <div class="flow-label" id="flow-label">Loading label...</div>
+              <div class="flow-api-name" id="flow-name">Initializing Flow Scanner...</div>
+            </div>
+            <div class="flow-detail-item"><span class="detail-label">Type</span><span class="detail-value" id="flow-type">Loading...</span></div>
+            <div class="flow-detail-item"><span class="detail-label">Elements</span><span class="detail-value" id="flow-elements-count">Analyzing...</span></div>
+            <div class="flow-detail-item"><span class="detail-label">Triggering Object/Event</span><span class="detail-value" id="flow-trigger-object">—</span></div>
+            <div class="flow-detail-item"><span class="detail-label">Trigger</span><span class="detail-value" id="flow-trigger-type">—</span></div>
+            <div class="flow-status-section"><span class="flow-status-badge" id="flow-status-badge" role="status" aria-live="polite"><span id="flow-status-text">Initializing...</span></span></div>
+          </div>
+          <div class="flow-desc-row">
+            <div class="flow-description-container">
+              <button class="description-toggle-btn" id="description-toggle-btn" type="button" aria-expanded="true">
+                <span class="toggle-icon" id="toggle-icon">▼</span>
+                <span id="toggle-label">Hide description</span>
+              </button>
+              <div class="flow-description" id="flow-description">Loading flow description...</div>
+            </div>
+            <div class="flow-actions">
+              <button id="scan-button" class="scan-button" type="button" aria-describedby="scan-button-desc"><span class="scan-icon">🔍</span><span class="scan-text">Scan Flow</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Scan Results Section -->
+      <div 
+        class="scan-results-section" 
+        id="results-section" 
+        style="display: none;"
+        aria-labelledby="results-title"
+        aria-live="polite">
+
+        <!-- Results Summary -->
+        <div class="results-summary" id="results-summary" role="status" aria-live="polite">
+          <div class="summary-stats" role="group" aria-label="Scan results summary">
+            <div class="stat-item total" role="group" aria-label="Total issues">
+              <span class="stat-number" id="total-issues" aria-label="Total issues count">0</span>
+              <span class="stat-label">Total</span>
+            </div>
+            <div class="stat-item error" role="group" aria-label="Error issues">
+              <span class="stat-number" id="error-count" aria-label="Error count">0</span>
+              <span class="stat-label">Errors</span>
+            </div>
+            <div class="stat-item warning" role="group" aria-label="Warning issues">
+              <span class="stat-number" id="warning-count" aria-label="Warning count">0</span>
+              <span class="stat-label">Warnings</span>
+            </div>
+            <div class="stat-item info" role="group" aria-label="Information issues">
+              <span class="stat-number" id="info-count" aria-label="Info count">0</span>
+              <span class="stat-label">Info</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results Container -->
+        <div id="results-container" class="results-container" role="region" aria-labelledby="results-title">
+          <div class="empty-state" role="status" aria-live="polite">
+            <div class="empty-icon" aria-hidden="true">🔍</div>
+            <h3>Ready to Scan</h3>
+            <p>Click "Scan Flow" to analyze the current flow for potential issues and improvements.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div 
+      class="loading-overlay" 
+      id="loading-overlay" 
+      style="display: none;"
+      role="dialog"
+      aria-labelledby="loading-title"
+      aria-describedby="loading-description"
+      aria-modal="true">
+      <div class="loading-card">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <h3 id="loading-title">Analyzing Flow...</h3>
+        <p id="loading-description">Please wait while we scan your flow for potential issues.</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Screen reader only content -->
+  <div class="sr-only" aria-live="polite" aria-atomic="true" id="sr-announcements"></div>
+  
+  <!-- Include Flow Scanner Core -->
+  <script src="flow-scanner-core.js"></script>
+  <script src="button.js"></script>
+  <script type="module" src="flow-scanner.js"></script>
+</body>
+</html> 

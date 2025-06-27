@@ -6,6 +6,14 @@ import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
 
+const FLOW_SCANNER_RULES_VERSION = "2"; // Increment this if config structure changes
+
+const normalizeSeverity = (sev, direction = "ui") => {
+  if (direction === "ui") return sev === "note" ? "info" : sev;
+  if (direction === "storage") return sev === "info" ? "note" : sev;
+  return sev;
+};
+
 class Model {
 
   constructor(sfHost) {
@@ -75,6 +83,57 @@ class OptionsTabSelector extends React.Component {
     this.state = {
       selectedTabId: initialTabId
     };
+
+    // Initialize rule checkboxes with fallback for when lightningflowscanner is not available
+    let ruleCheckboxes = [];
+    // Use scanner core defaults if available
+    if (window.lightningflowscanner && typeof window.lightningflowscanner.getRules === "function") {
+      try {
+        ruleCheckboxes = window.lightningflowscanner.getRules().map(rule => ({
+          label: rule.label || rule.name,
+          name: rule.name,
+          checked: true,
+          configurable: rule.isConfigurable || false,
+          configType: rule.configType || null,
+          defaultValue: rule.defaultValue || null,
+          severity: rule.defaultSeverity || rule.severity || "error",
+          description: rule.description || "",
+          config: rule.defaultValue ? {[rule.configType]: rule.defaultValue} : {}
+        }));
+      } catch (error) {
+        console.warn("Error getting rules from lightningflowscanner:", error);
+        // fallback to hardcoded below
+      }
+    }
+    if (!ruleCheckboxes || ruleCheckboxes.length === 0) {
+      // fallback to hardcoded
+      ruleCheckboxes = [
+        {label: "API Version", name: "APIVersion", checked: true, configurable: true, configType: "threshold", defaultValue: 50, severity: "error", description: "Checks if the flow API version meets the minimum required version"},
+        {label: "Auto Layout", name: "AutoLayout", checked: true, configurable: false, severity: "error", description: "Recommends using Auto-Layout mode"},
+        {label: "Copy API Name", name: "CopyAPIName", checked: true, configurable: false, severity: "error", description: "Detects copied elements with default API names"},
+        {label: "Cyclomatic Complexity", name: "CyclomaticComplexity", checked: true, configurable: true, configType: "threshold", defaultValue: 25, severity: "error", description: "Warns when flow complexity is too high"},
+        {label: "DML Statement in Loop", name: "DMLStatementInLoop", checked: true, configurable: false, severity: "error", description: "Identifies DML operations inside loops"},
+        {label: "Duplicate DML Operation", name: "DuplicateDMLOperation", checked: true, configurable: false, severity: "error", description: "Detects potential duplicate DML operations"},
+        {label: "Flow Description", name: "FlowDescription", checked: true, configurable: false, severity: "error", description: "Ensures flows have descriptions"},
+        {label: "Flow Name", name: "FlowName", checked: true, configurable: true, configType: "expression", defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+", severity: "error", description: "Validates flow naming conventions"},
+        {label: "Get Record All Fields", name: "GetRecordAllFields", checked: true, configurable: false, severity: "error", description: "Warns against using 'Get All Fields'"},
+        {label: "Hardcoded ID", name: "HardcodedId", checked: true, configurable: false, severity: "error", description: "Detects hardcoded Salesforce IDs"},
+        {label: "Hardcoded URL", name: "HardcodedUrl", checked: true, configurable: false, severity: "error", description: "Finds hardcoded URLs"},
+        {label: "Inactive Flow", name: "InactiveFlow", checked: true, configurable: false, severity: "error", description: "Identifies inactive flows"},
+        {label: "Missing Fault Path", name: "MissingFaultPath", checked: true, configurable: false, severity: "error", description: "Checks for missing error handling paths"},
+        {label: "Missing Null Handler", name: "MissingNullHandler", checked: true, configurable: false, severity: "error", description: "Ensures Get Records have null handling"},
+        {label: "Process Builder", name: "ProcessBuilder", checked: true, configurable: false, severity: "error", description: "Recommends migrating from Process Builder"},
+        {label: "Recursive After Update", name: "RecursiveAfterUpdate", checked: true, configurable: false, severity: "error", description: "Warns about potential recursion"},
+        {label: "Same Record Field Updates", name: "SameRecordFieldUpdates", checked: true, configurable: false, severity: "error", description: "Suggests before-save flows for updates"},
+        {label: "SOQL Query in Loop", name: "SOQLQueryInLoop", checked: true, configurable: false, severity: "error", description: "Identifies SOQL queries inside loops"},
+        {label: "Trigger Order", name: "TriggerOrder", checked: true, configurable: false, severity: "error", description: "Recommends setting trigger order"},
+        {label: "Unconnected Element", name: "UnconnectedElement", checked: true, configurable: false, severity: "error", description: "Finds unused flow elements"},
+        {label: "Unsafe Running Context", name: "UnsafeRunningContext", checked: true, configurable: false, severity: "error", description: "Warns about system mode flows"},
+        {label: "Unused Variable", name: "UnusedVariable", checked: true, configurable: false, severity: "error", description: "Identifies unused variables"},
+        {label: "Action Calls in Loop", name: "ActionCallsInLoop", checked: false, configurable: false, severity: "error", description: "Identifies action calls inside loops (Beta)"}
+      ];
+    }
+    console.log("Flow Scanner ruleCheckboxes:", ruleCheckboxes);
 
     this.tabs = [
       {
@@ -233,12 +292,20 @@ class OptionsTabSelector extends React.Component {
               ]
             }
           },
-          {option: Option, props: {type: "toggle", title: "Use legacy version", key: "useLegacyDlMetadata", default: false}},
+          {option: Option, props: {type: "toggle", title: "Use legacy version", key: "useLegacyDlMetadata", default: false}}
         ]
       },
       {
         id: 8,
         tabTitle: "Tab8",
+        title: "Flow Scanner",
+        content: [
+          {option: FlowScannerRulesOption, props: {title: "Enabled Rules", key: "flowScannerRules", checkboxes: ruleCheckboxes}}
+        ]
+      },
+      {
+        id: 9,
+        tabTitle: "Tab9",
         title: "Custom Shortcuts",
         content: [
           {option: CustomShortcuts, props: {}}
@@ -1149,6 +1216,506 @@ class CustomShortcuts extends React.Component {
   }
 }
 
+class FlowScannerRulesOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.handleRuleToggle = this.handleRuleToggle.bind(this);
+    this.handleConfigChange = this.handleConfigChange.bind(this);
+    this.handleCheckAll = this.handleCheckAll.bind(this);
+    this.handleUncheckAll = this.handleUncheckAll.bind(this);
+    this.handleResetToDefaults = this.handleResetToDefaults.bind(this);
+    this.handleSeverityChange = this.handleSeverityChange.bind(this);
+
+    this.title = props.title;
+    this.key = props.key || "flowScannerRules";
+
+    // Migrate old configuration format to new format
+    this.migrateConfiguration();
+
+    const storedRaw = localStorage.getItem(this.key);
+    let stored;
+    try {
+      stored = JSON.parse(storedRaw || "[]");
+    } catch (e) {
+      console.warn("Failed to parse flowScannerRules, resetting", e);
+      stored = [];
+    }
+
+    if (!Array.isArray(stored)) {
+      if (stored && typeof stored === "object") {
+        stored = Object.entries(stored).map(([name, checked]) => ({name, checked: !!checked}));
+      } else {
+        stored = [];
+      }
+    }
+
+    const updatedRules = this.mergeRules(stored, props.checkboxes);
+    this.state = {rules: updatedRules};
+  }
+
+  migrateConfiguration() {
+    const storedRaw = localStorage.getItem(this.key);
+    if (!storedRaw) return;
+
+    try {
+      const stored = JSON.parse(storedRaw);
+      if (!Array.isArray(stored)) return;
+
+      let needsUpdate = false;
+      const migrated = stored.map(rule => {
+        if (rule.name === "APIVersion" && rule.configType === "expression" && rule.config && rule.config.expression) {
+          // Migrate APIVersion from old format to new format
+          const expressionValue = rule.config.expression;
+          let thresholdValue = 50; // default
+
+          if (typeof expressionValue === "string") {
+            if (expressionValue.includes("<")) {
+              // Old format: "<50" -> extract 50
+              thresholdValue = parseInt(expressionValue.replace(/[<>]/g, "")) || 50;
+            } else {
+              // New format: "65" -> use 65
+              thresholdValue = parseInt(expressionValue) || 50;
+            }
+          }
+
+          needsUpdate = true;
+          return {
+            ...rule,
+            configType: "threshold",
+            config: {threshold: thresholdValue}
+          };
+        }
+        return rule;
+      });
+
+      if (needsUpdate) {
+        console.log("Migrating APIVersion configuration from old format to new format");
+        localStorage.setItem(this.key, JSON.stringify(migrated));
+      }
+    } catch (e) {
+      console.warn("Failed to migrate configuration:", e);
+    }
+  }
+
+  mergeRules(storedRules, defaultRules) {
+    // Define known configurable rules that should always have config fields
+    const knownConfigurableRules = {
+      "APIVersion": {configType: "threshold", defaultValue: 50},
+      "FlowName": {configType: "expression", defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+"},
+      "CyclomaticComplexity": {configType: "threshold", defaultValue: 25},
+      "AutoLayout": {configType: "enabled", defaultValue: true},
+      "ProcessBuilder": {configType: "enabled", defaultValue: true}
+    };
+
+    const merged = [];
+    for (const defaultRule of defaultRules) {
+      const storedRule = storedRules.find(r => r.name === defaultRule.name);
+      const knownConfig = knownConfigurableRules[defaultRule.name];
+      
+      // Handle configuration migration for APIVersion rule
+      let config = {};
+      let configType = defaultRule.configType;
+      let configurable = defaultRule.configurable;
+      
+      if (storedRule && storedRule.config) {
+        if (defaultRule.name === "APIVersion") {
+          // Migrate APIVersion from old format to new format
+          if (storedRule.configType === "expression" && storedRule.config.expression) {
+            // Old format: convert expression to threshold
+            const expressionValue = storedRule.config.expression;
+            let thresholdValue = 50; // default
+            
+            if (typeof expressionValue === "string") {
+              if (expressionValue.includes("<")) {
+                // Old format: "<50" -> extract 50
+                thresholdValue = parseInt(expressionValue.replace(/[<>]/g, "")) || 50;
+              } else {
+                // New format: "65" -> use 65
+                thresholdValue = parseInt(expressionValue) || 50;
+              }
+            }
+            
+            config = {threshold: thresholdValue};
+            configType = "threshold";
+          } else {
+            // New format: use threshold directly
+            config = storedRule.config;
+          }
+        } else {
+          // Other rules: use stored config as is
+          config = storedRule.config;
+        }
+      } else if (knownConfig) {
+        // Known configurable rule without stored config: use default
+        config = {[knownConfig.configType]: knownConfig.defaultValue};
+        configType = knownConfig.configType;
+        configurable = true;
+      } else if (defaultRule.defaultValue) {
+        // Use default configuration
+        config = {[defaultRule.configType]: defaultRule.defaultValue};
+      }
+      
+      // Ensure known configurable rules are always marked as configurable
+      if (knownConfig) {
+        configurable = true;
+        configType = configType || knownConfig.configType;
+      }
+      
+      merged.push({
+        ...defaultRule,
+        checked: storedRule ? storedRule.checked : defaultRule.checked,
+        config,
+        configType,
+        configurable,
+        severity: storedRule ? storedRule.severity || defaultRule.severity : defaultRule.severity
+      });
+    }
+    return merged;
+  }
+
+  getRuleDescription(ruleName) {
+    const descriptions = {
+      "APIVersion": "Checks if the flow uses an outdated API version.",
+      "AutoLayout": "Recommends using Auto-Layout mode.",
+      "CopyAPIName": "Detects copied elements with default API names.",
+      "CyclomaticComplexity": "Warns when flow complexity is too high.",
+      "DMLStatementInLoop": "Identifies DML operations inside loops.",
+      "DuplicateDMLOperation": "Detects potential duplicate DML operations.",
+      "FlowDescription": "Ensures flows have descriptions.",
+      "FlowName": "Validates flow naming conventions.",
+      "GetRecordAllFields": "Warns against using 'Get All Fields'.",
+      "HardcodedId": "Detects hardcoded Salesforce IDs.",
+      "HardcodedUrl": "Finds hardcoded URLs.",
+      "InactiveFlow": "Identifies inactive flows.",
+      "MissingFaultPath": "Checks for missing error handling paths.",
+      "MissingNullHandler": "Ensures Get Records have null handling.",
+      "ProcessBuilder": "Recommends migrating from Process Builder.",
+      "RecursiveAfterUpdate": "Warns about potential recursion.",
+      "SameRecordFieldUpdates": "Suggests before-save flows for updates.",
+      "SOQLQueryInLoop": "Identifies SOQL queries inside loops.",
+      "TriggerOrder": "Recommends setting trigger order.",
+      "UnconnectedElement": "Finds unused flow elements.",
+      "UnsafeRunningContext": "Warns about system mode flows.",
+      "UnusedVariable": "Identifies unused variables.",
+      "ActionCallsInLoop": "Identifies action calls inside loops (Beta)."
+    };
+    return descriptions[ruleName] || "Checks for potential issues and best practices.";
+  }
+
+  handleRuleToggle(ruleName) {
+    const updatedRules = this.state.rules.map(rule => {
+      if (rule.name === ruleName) {
+        return {...rule, checked: !rule.checked};
+      }
+      return rule;
+    });
+
+    this.setState({rules: updatedRules});
+    localStorage.setItem(this.key, JSON.stringify(updatedRules));
+  }
+
+  handleConfigChange(ruleName, configKey, value) {
+    const updatedRules = this.state.rules.map(rule => {
+      if (rule.name === ruleName) {
+        const updatedConfig = {...rule.config, [configKey]: value};
+        return {...rule, config: updatedConfig};
+      }
+      return rule;
+    });
+
+    this.setState({rules: updatedRules});
+    localStorage.setItem(this.key, JSON.stringify(updatedRules));
+  }
+
+  handleCheckAll() {
+    const updatedRules = this.state.rules.map(rule => ({...rule, checked: true}));
+    this.setState({rules: updatedRules});
+    localStorage.setItem(this.key, JSON.stringify(updatedRules));
+  }
+
+  handleUncheckAll() {
+    const updatedRules = this.state.rules.map(rule => ({...rule, checked: false}));
+    this.setState({rules: updatedRules});
+    localStorage.setItem(this.key, JSON.stringify(updatedRules));
+  }
+
+  handleResetToDefaults() {
+    // Re-fetch ruleCheckboxes from scanner core if available
+    let defaultRules = [];
+    if (window.lightningflowscanner && typeof window.lightningflowscanner.getRules === "function") {
+      try {
+        defaultRules = window.lightningflowscanner.getRules().map(rule => ({
+          label: rule.label || rule.name,
+          name: rule.name,
+          checked: true,
+          configurable: rule.isConfigurable || false,
+          configType: rule.configType || null,
+          defaultValue: rule.defaultValue || null,
+          severity: rule.defaultSeverity || rule.severity || "error",
+          description: rule.description || "",
+          config: rule.defaultValue ? {[rule.configType]: rule.defaultValue} : {}
+        }));
+      } catch (error) {
+        console.warn("Failed to get rules from scanner core, using fallback:", error);
+        defaultRules = ruleCheckboxes;
+      }
+    } else {
+      defaultRules = ruleCheckboxes;
+    }
+
+    // Ensure known configurable rules always have their config fields
+    const knownConfigurableRules = {
+      "APIVersion": {configType: "threshold", defaultValue: 50},
+      "FlowName": {configType: "expression", defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+"},
+      "CyclomaticComplexity": {configType: "threshold", defaultValue: 25},
+      "AutoLayout": {configType: "enabled", defaultValue: true},
+      "ProcessBuilder": {configType: "enabled", defaultValue: true}
+    };
+
+    // Merge with known configurable rules to ensure config fields are always present
+    defaultRules = defaultRules.map(rule => {
+      const knownConfig = knownConfigurableRules[rule.name];
+      if (knownConfig) {
+        return {
+          ...rule,
+          configurable: true,
+          configType: rule.configType || knownConfig.configType,
+          defaultValue: rule.defaultValue || knownConfig.defaultValue,
+          config: rule.config || (knownConfig.defaultValue ? {[knownConfig.configType]: knownConfig.defaultValue} : {})
+        };
+      }
+      return rule;
+    });
+
+    const updatedRules = this.mergeRules([], defaultRules); // no stored, just defaults
+    this.setState({rules: updatedRules});
+    localStorage.setItem(this.key, JSON.stringify(updatedRules));
+  }
+
+  handleSeverityChange(ruleName, value) {
+    const updatedRules = this.state.rules.map(rule => {
+      if (rule.name === ruleName) {
+        return {...rule, severity: value};
+      }
+      return rule;
+    });
+    this.setState({rules: updatedRules});
+    localStorage.setItem(this.key, JSON.stringify(updatedRules));
+  }
+
+  renderConfigInput(rule) {
+    if (!rule.configurable) return null;
+
+    const configValue = rule.config[rule.configType] || rule.defaultValue || "";
+
+    if (rule.configType === "expression") {
+      return h("div", {className: "rule-config-right"},
+        h("input", {
+          type: "text",
+          className: "slds-input slds-input_small",
+          value: configValue,
+          onChange: (e) => this.handleConfigChange(rule.name, rule.configType, e.target.value),
+          placeholder: rule.defaultValue || "",
+          title: `Configuration for ${rule.label}`,
+          "aria-label": `${rule.label} configuration`
+        }),
+        InfoIcon({
+          tooltipId: `config-help-${rule.name}`,
+          tooltip: h("span", {},
+            `Configuration for ${rule.label}. `,
+            rule.configType === "expression" ? h("a", {href: "https://regex101.com/", target: "_blank", rel: "noopener noreferrer"}, "Regex help") : ""
+          ),
+          className: "config-help slds-m-left_xx-small",
+          placement: "right"
+        })
+      );
+    }
+
+    if (rule.configType === "threshold") {
+      return h("div", {className: "rule-config-right"},
+        h("input", {
+          type: "number",
+          className: "slds-input slds-input_small",
+          value: configValue,
+          onChange: (e) => this.handleConfigChange(rule.name, rule.configType, parseInt(e.target.value) || rule.defaultValue),
+          min: rule.name === "APIVersion" ? "1" : "1",
+          max: rule.name === "APIVersion" ? "100" : "100",
+          title: `Threshold for ${rule.label}`,
+          "aria-label": `${rule.label} threshold`
+        }),
+        InfoIcon({
+          tooltipId: `config-help-${rule.name}`,
+          tooltip: rule.name === "APIVersion" 
+            ? `Minimum API version required for flows. Flows with lower API versions will trigger this rule.`
+            : `Threshold value for ${rule.label}. Higher values are more permissive.`,
+          className: "config-help slds-m-left_xx-small",
+          placement: "right"
+        })
+      );
+    }
+
+    return null;
+  }
+
+  render() {
+    const {title} = this.props;
+    const {rules} = this.state;
+
+    // Debug: Log rules to see which ones are configurable
+    console.log("🔍 Flow Scanner Rules Debug:", {
+      totalRules: rules.length,
+      configurableRules: rules.filter(r => r.configurable).map(r => ({
+        name: r.name,
+        configurable: r.configurable,
+        configType: r.configType,
+        config: r.config,
+        defaultValue: r.defaultValue
+      })),
+      apiversionRule: rules.find(r => r.name === "APIVersion")
+    });
+
+    return h("div", {className: "option-group flow-scanner-section"},
+      h("h3", {}, title),
+      h("div", {className: "flow-scanner-desc slds-grid slds-align_absolute-center"},
+        "Configure which Flow Scanner rules are enabled and their settings. Only enabled rules will be used when scanning flows. ",
+        InfoIcon({
+          tooltipId: "section-help-tip",
+          tooltip: "Flow Scanner analyzes Salesforce Flows for best practices, anti-patterns, and common mistakes. Toggle rules on or off and configure their settings as needed. For more information, see the documentation.",
+          className: "section-help-icon slds-m-left_x-small",
+          placement: "below"
+        })
+      ),
+      h("div", {className: "rules-actions-toolbar", role: "toolbar", "aria-label": "Bulk actions"},
+        h("button", {
+          className: "button button-brand button-small rules-action-btn",
+          type: "button",
+          onClick: this.handleCheckAll,
+          tabIndex: 0,
+          "aria-label": "Enable all rules"
+        }, "Check All"),
+        h("button", {
+          className: "button button-neutral button-small rules-action-btn",
+          type: "button",
+          onClick: this.handleUncheckAll,
+          tabIndex: 0,
+          "aria-label": "Disable all rules"
+        }, "Uncheck All"),
+        h("button", {
+          className: "button button-neutral button-small rules-action-btn",
+          type: "button",
+          onClick: () => {
+            if (window.confirm("Reset all Flow Scanner rules to defaults?")) this.handleResetToDefaults();
+          },
+          tabIndex: 0,
+          "aria-label": "Reset rules to defaults"
+        }, "Reset to Defaults")
+      ),
+      h("div", {className: "rules-container"},
+        rules.map((rule) =>
+          h("div", {
+            key: rule.name,
+            className: "rule-row-horizontal" + (rule.configurable ? " rule-row-highlight" : ""),
+            tabIndex: 0,
+            "aria-label": `${rule.label}: ${rule.description}`
+          },
+            // Toggle
+            h("div", {className: "rule-toggle-container"},
+              h("label", {className: "slds-checkbox_toggle slds-grid"},
+                h("input", {
+                  type: "checkbox",
+                  "aria-describedby": `desc-${rule.name}`,
+                  checked: rule.checked,
+                  onChange: () => this.handleRuleToggle(rule.name),
+                  tabIndex: 0
+                }),
+                h("span", {className: "slds-checkbox_faux_container", "aria-live": "assertive"},
+                  h("span", {className: "slds-checkbox_faux"}),
+                  h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                  h("span", {className: "slds-checkbox_off"}, "Disabled")
+                )
+              )
+            ),
+            // Name and Description (left)
+            h("div", {className: "rule-main-info"},
+              h("div", {className: "rule-name-horizontal"},
+                rule.label,
+                rule.name === "ActionCallsInLoop" && h("span", {className: "beta-badge"}, "BETA")
+              ),
+              h("div", {
+                className: "rule-description-horizontal",
+                id: `desc-${rule.name}`,
+                title: rule.description
+              }, rule.description)
+            ),
+            // Config (right-aligned)
+            h("div", {className: "rule-config-group"},
+              this.renderConfigInput(rule),
+              h("label", {htmlFor: `severity-${rule.name}`, className: "slds-form-element__label", style: {marginRight: 4}}, "Severity:"),
+              h("select", {
+                id: `severity-${rule.name}`,
+                value: normalizeSeverity(rule.severity || "error", "ui"),
+                onChange: (e) => this.handleSeverityChange(rule.name, normalizeSeverity(e.target.value, "storage")),
+                className: `severity-select severity-${normalizeSeverity(rule.severity || "error", "ui")}`,
+                style: {marginLeft: 2, minWidth: 80}
+              },
+                h("option", {value: "error"}, "Error"),
+                h("option", {value: "warning"}, "Warning"),
+                h("option", {value: "info"}, "Info")
+              )
+            )
+          )
+        )
+      )
+    );
+  }
+}
+
+// Helper for SLDS info icon
+function InfoIcon({tooltipId, tooltip, className = "", style = {}, tabIndex = 0, placement = ""}) {
+  let tooltipClass = "info-tooltip slds-popover slds-popover_tooltip slds-nubbin_bottom";
+  if (placement === "right") tooltipClass += " info-tooltip-right";
+  if (placement === "below") tooltipClass = "info-tooltip slds-popover slds-popover_tooltip slds-nubbin_top info-tooltip-below";
+  return h("span", {
+    className: `info-icon-container ${className}`,
+    tabIndex,
+    role: "button",
+    "aria-describedby": tooltipId,
+    style,
+    onMouseEnter: () => {
+      const tip = document.getElementById(tooltipId);
+      if (tip) tip.style.display = "block";
+    },
+    onMouseLeave: () => {
+      const tip = document.getElementById(tooltipId);
+      if (tip) tip.style.display = "none";
+    },
+    onFocus: () => {
+      const tip = document.getElementById(tooltipId);
+      if (tip) tip.style.display = "block";
+    },
+    onBlur: () => {
+      const tip = document.getElementById(tooltipId);
+      if (tip) tip.style.display = "none";
+    }
+  },
+    h("svg", {
+      className: "slds-icon slds-icon-text-default slds-icon_xx-small info-icon-svg",
+      "aria-hidden": "true",
+      viewBox: "0 0 52 52",
+      style: {width: "16px", height: "16px", verticalAlign: "middle"}
+    },
+      h("use", {xlinkHref: "symbols.svg#info"})
+    ),
+    h("span", {
+      className: tooltipClass,
+      id: tooltipId,
+      role: "tooltip",
+      style: {display: "none", position: "absolute", zIndex: 1000, minWidth: "180px", maxWidth: "320px"}
+    }, tooltip)
+  );
+}
+
 let h = React.createElement;
 
 class App extends React.Component {
@@ -1226,7 +1793,7 @@ class App extends React.Component {
       h("div", {id: "user-info", className: "slds-border_bottom"},
         h("a", {href: model.sfLink, className: "sf-link"},
           h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
+            h("use", {xlinkHref: "symbols.svg#salesforce-home"})
           ),
           " Salesforce Home"
         ),
@@ -1267,13 +1834,12 @@ class App extends React.Component {
   }
 }
 
+// Initialize the application
 {
-
   let args = new URLSearchParams(location.search.slice(1));
   let sfHost = args.get("host");
   initButton(sfHost, true);
   sfConn.getSession(sfHost).then(() => {
-
     let root = document.getElementById("root");
     let model = new Model(sfHost);
     model.reactCallback = cb => {
@@ -1284,6 +1850,5 @@ class App extends React.Component {
     if (parent && parent.isUnitTest) { // for unit tests
       parent.insextTestLoaded({model});
     }
-
   });
 }

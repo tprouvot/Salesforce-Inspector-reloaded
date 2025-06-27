@@ -1014,12 +1014,24 @@ class Model {
       promptTemplate.generate({
         Description: this.soqlPrompt.value
       }).then(result => {
-        // Extract SOQL from the result
-        const soqlMatch = result.result.match(/&lt;soql&gt;(.*?)&lt;\/soql&gt;/);
-        const extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
-        this.queryInput.value = extractedSoql;
-        this.isWorking = false;
-        this.didUpdate();
+        if (result.result){
+          // Extract SOQL from the result
+          const soqlMatch = result.result.match(/<soql>(.*?)<\/soql>/);
+          const extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
+          this.addQueryTab();
+          this.updateCurrentTabQuery(extractedSoql);
+          //to resolve sobject and rename current tab
+          this.queryAutocompleteHandler();
+          // Update the textarea to show the new query immediately
+          if (this.queryInput) {
+            this.queryInput.value = extractedSoql;
+          }
+          this.saveQueryTabs();
+          this.isWorking = false;
+          this.didUpdate();
+        } else {
+          throw new Error(result.error);
+        }
       }).catch(error => {
         console.error(error);
         this.isWorking = false;

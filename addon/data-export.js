@@ -1214,7 +1214,7 @@ function RecordTable(vm) {
         return false;
       }
 
-      const cellValue = row[columnIndex];
+      const cellValue = String(row[columnIndex]);
       return cellValue
         ? cellToString(cellValue).toLowerCase().includes(filter.toLowerCase())
         : false;

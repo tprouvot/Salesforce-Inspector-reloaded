@@ -8750,3 +8750,90 @@ a.slds-button--inverse:focus {
   -ms-flex-item-align: end;
   align-self: flex-end;
 }
+/* SLDS Overrides and Additions from options.css */
+
+.rule-config-right .slds-input_small {
+  height: 28px;
+  font-size: 0.95rem;
+  padding: 4px 10px;
+  min-width: 120px;
+  max-width: 200px;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .rule-config-right .slds-input_small {
+    min-width: 80px;
+    max-width: 100%;
+  }
+}
+
+.info-tooltip .slds-nubbin_bottom {
+  left: 50%;
+  transform: translateX(-50%);
+}
+.info-tooltip.info-tooltip-right .slds-nubbin_bottom {
+  left: auto;
+  right: 12px;
+  transform: none;
+}
+.info-tooltip.info-tooltip-below .slds-nubbin_top {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.slds-form-element_horizontal {
+  border-bottom: 1px solid #d8dde6;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.slds-section__divider {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.slds-form-element_horizontal .slds-form-element__label {
+  pointer-events: auto !important;
+  user-select: text !important;
+}
+
+.slds-form-element_horizontal .slds-form-element__label .info-icon-container {
+  pointer-events: auto;
+}
+
+.slds-tabs_default__content {
+  padding: 0 !important;
+}
+
+.main-container .slds-form-element_horizontal {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.main-container .slds-p-vertical_small {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.main-container .slds-section__divider {
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.section-group .slds-col > .slds-form-element:first-child {
+  padding-top: 0 !important;
+}
+.section-group .slds-col > .slds-form-element:last-child {
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+}
+
+.section-group .slds-col > *:last-child > .slds-form-element,
+.section-group .slds-col > .slds-form-element:last-child {
+  border-bottom: none !important;
+}
+
+.slds-form-element__control .slds-textarea {
+  width: 100%;
+} 

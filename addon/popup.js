@@ -41,18 +41,17 @@ if (typeof browser === "undefined") {
 }
 
 function getFilteredLocalStorage(){
-  const existingFilteredStorage = sessionStorage.getItem("filteredStorage");
-  if (existingFilteredStorage) {
-    return JSON.parse(existingFilteredStorage);
-  }
-
   let host = new URLSearchParams(window.location.search).get("host");
 
   let domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
-  const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition", "prodBannerText"];
+  const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition"];
+  const keysToSendWithSuffix = ["_prodBannerText"];
   const filteredStorage = Object.fromEntries(
-    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith("access_token"))
+    Object.entries(storedData).filter(([key]) =>
+      (key.startsWith(domainStart) || keysToSend.includes(key) || keysToSendWithSuffix.some(suffix => key.endsWith(suffix)))
+      && !key.endsWith("access_token")
+    )
   );
   sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
   return filteredStorage;
@@ -1688,7 +1687,7 @@ class UserDetails extends React.PureComponent {
                   " | ",
                   h("div", {className: "pointer flag flag-" + sfLocaleKeyToCountryCode(user.LocaleSidKey), title: "Update Locale: " + user.LocaleSidKey, onClick: (e) => { this.toggleDisplay(e, "LocaleSidKey"); }}),
                   h("select", {ref: "LocaleSidKey", name: "LocaleSidKey", className: "hide", defaultValue: user.LanguageLocaleKey, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
-                    this.state.userLanguages?.map(q => h("option", {key: q.value, value: q.value}, q.label))
+                    this.state.userLocales?.map(q => h("option", {key: q.value, value: q.value}, q.label))
                   ),
                 )
               )
@@ -2381,9 +2380,9 @@ function getRecordId(href) {
   
   // Special handling for Flow Builder URLs
   // Flow Builder URLs have the Flow ID in the flowId query parameter
-  if (url.pathname.includes('/builder_platform_interaction/flowBuilder.app')) {
-    const flowId = url.searchParams.get('flowId');
-    if (flowId && flowId.startsWith('301')) {
+  if (url.pathname.includes("/builder_platform_interaction/flowBuilder.app")) {
+    const flowId = url.searchParams.get("flowId");
+    if (flowId && flowId.startsWith("301")) {
       return flowId; // Return the Flow ID (301...)
     }
   }

@@ -10,8 +10,12 @@
   <link rel="stylesheet" href="styles/slds/slds.css">
 </head>
 <body>
+  <!-- Main Application Wrapper -->
   <div id="flow-scanner-app" class="flow-scanner-app">
-    <!-- Header matching options page design -->
+    <!-- =================================================================
+    HEADER
+    - Contains the link to Salesforce Home, the main title, and help button.
+    ================================================================== -->
     <div id="user-info" class="slds-border_bottom">
       <a href="#" class="sf-link" id="salesforce-home-link">
         <svg viewBox="0 0 24 24">
@@ -20,90 +24,148 @@
         Salesforce Home
       </a>
       <h1 class="slds-text-title_bold">Flow Scanner</h1>
-      <span id="flow-scanner-subtitle">Comprehensive static analysis for Salesforce Flows</span>
+      <span>Comprehensive static analysis for Salesforce Flows</span>
       <div class="flex-right">
         <div class="flow-scanner-note-header">
           <small>💡 Based on <a href="https://github.com/Lightning-Flow-Scanner" target="_blank" rel="noopener noreferrer">Lightning Flow Scanner</a></small>
         </div>
-        <a 
-          href="https://www.google.com" 
-          target="_blank" 
-          id="help-btn" 
+        <a
+          href="https://www.google.com"
+          target="_blank"
+          id="help-btn"
           title="Flow Scanner Help">
           <div class="icon"></div>
         </a>
       </div>
     </div>
     
-    <!-- Main container matching options layout -->
-    <div class="main-container slds-card slds-m-around_small" id="main-container_header">
-      <!-- Flow Information Section -->
-      <div class="flow-info-section" id="flow-info-section" role="region" aria-labelledby="flow-info-title">
-        <div class="flow-info-header">
-          <h2 id="flow-info-title" class="flow-info-title">
-            <span class="flow-icon">⚡</span>
-            Flow Information
-          </h2>
-        </div>
+    <!-- =================================================================
+    MAIN CONTENT
+    - Container for the flow information and scan results sections.
+    ================================================================== -->
+    <div class="main-container slds-card slds-m-around_small">
+      <!-- =================================================================
+      FLOW INFORMATION SECTION
+      - Displays metadata about the currently loaded flow.
+      ================================================================== -->
+      <div class="flow-info-section" role="region" aria-labelledby="flow-info-title-text">
+        <h2 class="flow-info-title">
+          <span class="flow-icon" aria-hidden="true">⚡</span>
+          <span class="flow-info-title-text" id="flow-info-title-text">Flow Information</span>
+        </h2>
         
         <div class="flow-info-card compact">
           <div class="flow-header-row">
-            <div class="flow-label-section">
-              <div class="flow-label" id="flow-label">Loading label...</div>
-              <div class="flow-api-name" id="flow-name">Initializing Flow Scanner...</div>
+            <div class="flow-details-grid">
+              <!-- Flow Label -->
+              <div class="flow-detail-item flow-label-item">
+                <span class="detail-label">Flow Label</span>
+                <span class="detail-value" id="flow-label">Loading label...</span>
+              </div>
+              <!-- Flow API Name -->
+              <div class="flow-detail-item flow-apiname-item">
+                <span class="detail-label">Flow API Name</span>
+                <span class="detail-value" id="flow-name">Initializing Flow Scanner...</span>
+              </div>
+              <!-- Flow Status -->
+              <div class="flow-detail-item">
+                <span class="detail-label">Status</span>
+                <span class="flow-status-badge" id="flow-status-badge" role="status" aria-live="polite">
+                  <span id="flow-status-text">Initializing...</span>
+                </span>
+              </div>
+              <!-- Flow Type -->
+              <div class="flow-detail-item">
+                <span class="detail-label">Type</span>
+                <span class="detail-value" id="flow-type">Loading...</span>
+              </div>
+              <!-- Flow API Version -->
+              <div class="flow-detail-item">
+                <span class="detail-label">API Version</span>
+                <span class="detail-value" id="flow-api-version">Loading...</span>
+              </div>
+              <!-- Flow Elements Count -->
+              <div class="flow-detail-item">
+                <span class="detail-label">Elements</span>
+                <span class="detail-value" id="flow-elements-count">Analyzing...</span>
+              </div>
+              <!-- Flow Trigger -->
+              <div class="flow-detail-item">
+                <span class="detail-label">Triggering Object/Event</span>
+                <span class="detail-value" id="flow-trigger-object">—</span>
+              </div>
+              <!-- Flow Trigger Type -->
+              <div class="flow-detail-item">
+                <span class="detail-label">Trigger</span>
+                <span class="detail-value" id="flow-trigger-type">—</span>
+              </div>
             </div>
-            <div class="flow-detail-item"><span class="detail-label">Type</span><span class="detail-value" id="flow-type">Loading...</span></div>
-            <div class="flow-detail-item"><span class="detail-label">Elements</span><span class="detail-value" id="flow-elements-count">Analyzing...</span></div>
-            <div class="flow-detail-item"><span class="detail-label">Triggering Object/Event</span><span class="detail-value" id="flow-trigger-object">—</span></div>
-            <div class="flow-detail-item"><span class="detail-label">Trigger</span><span class="detail-value" id="flow-trigger-type">—</span></div>
-            <div class="flow-status-section"><span class="flow-status-badge" id="flow-status-badge" role="status" aria-live="polite"><span id="flow-status-text">Initializing...</span></span></div>
           </div>
+          <!-- Flow Description -->
           <div class="flow-desc-row">
-            <div class="flow-description-container">
-              <button class="description-toggle-btn" id="description-toggle-btn" type="button" aria-expanded="true">
-                <span class="toggle-icon" id="toggle-icon">▼</span>
-                <span id="toggle-label">Hide description</span>
-              </button>
-              <div class="flow-description" id="flow-description">Loading flow description...</div>
-            </div>
-            <div class="flow-actions">
-              <button id="scan-button" class="scan-button" type="button" aria-describedby="scan-button-desc"><span class="scan-icon">🔍</span><span class="scan-text">Scan Flow</span></button>
+            <div class="flow-description-container collapsed">
+              <div class="flow-desc-header">
+                <button class="description-toggle-btn" id="description-toggle-btn" type="button" aria-expanded="false">
+                  <span class="toggle-icon">▼</span>
+                  <span id="toggle-label">Show description</span>
+                </button>
+              </div>
+              <div class="flow-description clickable" id="flow-description" role="button" tabindex="0" aria-label="Click to toggle description visibility">Loading flow description...</div>
             </div>
           </div>
         </div>
       </div>
       
-      <!-- Scan Results Section -->
-      <div 
-        class="scan-results-section" 
-        id="results-section" 
+      <!-- =================================================================
+      SCAN RESULTS SECTION
+      - This section is hidden by default and becomes visible after a scan.
+      - It contains the summary and detailed results of the scan.
+      ================================================================== -->
+      <div
+        class="scan-results-section"
+        id="results-section"
         style="display: none;"
         aria-labelledby="results-title"
         aria-live="polite">
 
-        <!-- Results Summary -->
+        <!-- Results Summary: High-level statistics of the scan findings. -->
         <div class="results-summary" id="results-summary" role="status" aria-live="polite">
-          <div class="summary-stats" role="group" aria-label="Scan results summary">
-            <div class="stat-item total" role="group" aria-label="Total issues">
-              <span class="stat-number" id="total-issues" aria-label="Total issues count">0</span>
-              <span class="stat-label">Total</span>
+          <div class="summary-body">
+            <div class="summary-title">
+              <span class="results-icon">📊</span>
+              <span>Scan Results</span>
             </div>
-            <div class="stat-item error" role="group" aria-label="Error issues">
-              <span class="stat-number" id="error-count" aria-label="Error count">0</span>
-              <span class="stat-label">Errors</span>
+            <!-- Issue count statistics by severity level -->
+            <div class="summary-stats" role="group" aria-label="Scan results summary">
+              <div class="stat-item total" role="group" aria-label="Total issues">
+                <span class="stat-number" id="total-issues" aria-label="Total issues count">0</span>
+                <span class="stat-label">Total</span>
+              </div>
+              <div class="stat-item error" role="group" aria-label="Error issues">
+                <span class="stat-number" id="error-count" aria-label="Error count">0</span>
+                <span class="stat-label">Errors</span>
+              </div>
+              <div class="stat-item warning" role="group" aria-label="Warning issues">
+                <span class="stat-number" id="warning-count" aria-label="Warning count">0</span>
+                <span class="stat-label">Warnings</span>
+              </div>
+              <div class="stat-item info" role="group" aria-label="Information issues">
+                <span class="stat-number" id="info-count" aria-label="Info count">0</span>
+                <span class="stat-label">Info</span>
+              </div>
             </div>
-            <div class="stat-item warning" role="group" aria-label="Warning issues">
-              <span class="stat-number" id="warning-count" aria-label="Warning count">0</span>
-              <span class="stat-label">Warnings</span>
-            </div>
-            <div class="stat-item info" role="group" aria-label="Information issues">
-              <span class="stat-number" id="info-count" aria-label="Info count">0</span>
-              <span class="stat-label">Info</span>
-            </div>
+          </div>
+          <!-- Action buttons for results management -->
+          <div class="summary-actions">
+            <button id="export-button-summary" class="summary-action-btn" title="Export Results">
+              <span class="export-icon" aria-hidden="true">📁</span> Export
+            </button>
+            <button id="expand-all-btn" class="summary-action-btn">Expand All</button>
+            <button id="collapse-all-btn" class="summary-action-btn">Collapse All</button>
           </div>
         </div>
 
-        <!-- Results Container -->
+        <!-- Results Container: Detailed breakdown of each issue found. -->
         <div id="results-container" class="results-container" role="region" aria-labelledby="results-title">
           <div class="empty-state" role="status" aria-live="polite">
             <div class="empty-icon" aria-hidden="true">🔍</div>
@@ -114,10 +176,13 @@
       </div>
     </div>
     
-    <!-- Loading Overlay -->
-    <div 
-      class="loading-overlay" 
-      id="loading-overlay" 
+    <!-- =================================================================
+    LOADING OVERLAY
+    - Displayed during asynchronous operations like scanning.
+    ================================================================== -->
+    <div
+      class="loading-overlay"
+      id="loading-overlay"
       style="display: none;"
       role="dialog"
       aria-labelledby="loading-title"
@@ -131,10 +196,15 @@
     </div>
   </div>
   
-  <!-- Screen reader only content -->
+  <!-- =================================================================
+  ACCESSIBILITY
+  - A container for screen reader announcements.
+  ================================================================== -->
   <div class="sr-only" aria-live="polite" aria-atomic="true" id="sr-announcements"></div>
   
-  <!-- Include Flow Scanner Core -->
+  <!-- =================================================================
+  SCRIPTS
+  ================================================================== -->
   <script src="flow-scanner-core.js"></script>
   <script src="button.js"></script>
   <script type="module" src="flow-scanner.js"></script>

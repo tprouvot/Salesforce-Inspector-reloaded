@@ -458,7 +458,7 @@ class OptionsTabSelector extends React.Component {
         title: "Flow Scanner",
         sections: [
           {
-            title: "Enabled Rules",
+            title: "Enabled Rules" + (window.lightningflowscanner && window.lightningflowscanner.version ? ` (v${window.lightningflowscanner.version})` : ""),
             options: [
               {component: FlowScannerRulesOption, props: {checkboxes: ruleCheckboxes}}
             ]

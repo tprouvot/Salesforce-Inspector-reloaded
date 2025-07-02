@@ -61,6 +61,12 @@ class FlowScanner {
     try {
       if (typeof lightningflowscanner !== "undefined") {
         this.flowScannerCore = lightningflowscanner;
+        if (this.flowScannerCore.version) {
+          const versionDisplay = document.getElementById("scanner-version-display");
+          if (versionDisplay) {
+            versionDisplay.textContent = `(core v${this.flowScannerCore.version})`;
+          }
+        }
       } else {
         this.flowScannerCore = null;
         throw new Error("Flow Scanner Core library not loaded. Please ensure flow-scanner-core.js is properly included.");
@@ -519,11 +525,9 @@ class FlowScanner {
       // This handles screen flows correctly, which might be converted to just "Flow" in the UI
       const originalFlowType = this.currentFlow.xmlData?.processType || this.currentFlow.processType;
       const currentFlowType = originalFlowType || this.currentFlow.type;
-      
       // Special case for screen flows - they might just show as "Flow" type but have screens
       const hasScreens = Array.isArray(this.currentFlow.xmlData?.screens) && this.currentFlow.xmlData.screens.length > 0;
       const isScreenFlow = currentFlowType === "Flow" && hasScreens;
-      
       // Check if the flow type is in the supported list or if it's a screen flow
       const isFlowTypeSupported = supportedFlowTypes.includes(currentFlowType) || isScreenFlow;
 

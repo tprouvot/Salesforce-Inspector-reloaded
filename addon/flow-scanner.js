@@ -78,6 +78,15 @@ class FlowScanner {
   }
 
   /**
+   * Determines the link target based on user settings and keyboard modifiers.
+   * @param {Event} e - The click event (may be undefined for programmatic use)
+   * @returns {string} '_blank' or '_self'
+   */
+  getLinkTarget(e) {
+    return localStorage.getItem("openLinksInNewTab") == "true" || (e && (e.ctrlKey || e.metaKey)) ? "_blank" : "_self";
+  }
+
+  /**
    * Binds all UI event handlers for the application.
    */
   bindEvents() {
@@ -130,6 +139,17 @@ class FlowScanner {
         this.closeOverlay();
       }
     });
+
+    // Add event handler for help button to open options page
+    const helpBtn = document.getElementById("help-btn");
+    if (helpBtn) {
+      helpBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const target = this.getLinkTarget(e);
+        const url = chrome.runtime.getURL(`options.html?selectedTab=8&host=${this.sfHost}`);
+        window.open(url, target);
+      });
+    }
   }
 
   /**
@@ -1480,9 +1500,7 @@ class FlowScanner {
       const openBtn = document.getElementById("open-options-btn");
       if (openBtn) {
         openBtn.addEventListener("click", (e) => {
-          // Respect the user's preference for opening links in a new tab.
-          const target = localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey) ? "_blank" : "_self";
-          // Open the Options page, pre-selecting the Flow Scanner tab.
+          const target = this.getLinkTarget(e);
           window.open(chrome.runtime.getURL(`options.html?selectedTab=8&host=${this.sfHost}`), target);
         });
       }

@@ -1,8 +1,9 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, displayButton} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
+import Combobox from "./components/Combobox.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -117,6 +118,8 @@ class Model {
       "SELECT Id FROM WHERE ORDER BY"
     ];
     this.separator = getSeparator();
+    this.soqlPrompt = "";
+    this.enableQueryTypoFix = localStorage.getItem("enableQueryTypoFix") == "true";
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -136,6 +139,10 @@ class Model {
     if (args.has("error")) {
       this.exportError = args.get("error") + " " + args.get("error_description");
     }
+
+    this.queryTabs = [];
+    this.activeTabIndex = 0;
+    this.loadQueryTabs();
   }
 
   updatedExportedData() {
@@ -191,6 +198,9 @@ class Model {
   }
   toggleHelp() {
     this.showHelp = !this.showHelp;
+  }
+  toggleAI() {
+    this.showAI = !this.showAI;
   }
   toggleExpand() {
     this.expandAutocomplete = !this.expandAutocomplete;
@@ -534,6 +544,7 @@ class Model {
         isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
       }
     }
+    vm.updateCurrentTabName(sobjectName);
     let {sobjectStatus, sobjectDescribe} = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
     if (!sobjectDescribe) {
       switch (sobjectStatus) {
@@ -866,13 +877,10 @@ class Model {
   removeTypo(query) {
     // Remove double commas
     query = query.replace(/,\s*,/g, ",");
-
     // Remove comma before FROM
     query = query.replace(/,\s+FROM\s+/gi, " FROM ");
-
     // Remove trailing comma before FROM
     query = query.replace(/,\s*FROM\s+/gi, " FROM ");
-
     // Remove multiple spaces
     query = query.replace(/\s+/g, " ");
 
@@ -885,7 +893,7 @@ class Model {
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
-    let query = vm.removeTypo(vm.queryInput.value);
+    let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
     vm.queryInput.value = query; // Update the input value with the cleaned query
     function batchHandler(batch) {
       return batch.catch(err => {
@@ -950,6 +958,11 @@ class Model {
         vm.exportedData = exportedData;
         vm.markPerf();
         vm.updatedExportedData();
+        // Store the results in the current tab
+        if (vm.queryTabs[vm.activeTabIndex]) {
+          vm.queryTabs[vm.activeTabIndex].results = exportedData;
+          vm.saveQueryTabs();
+        }
         return null;
       }, err => {
         if (err.name != "SalesforceRestError") {
@@ -993,6 +1006,42 @@ class Model {
     vm.exportedData = exportedData;
     vm.updatedExportedData();
   }
+  async generateSoql() {
+    this.isWorking = true;
+    let promptTemplateName = localStorage.getItem(this.sfHost + "_exportAgentForcePrompt");
+    const promptTemplate = new PromptTemplate(promptTemplateName ? promptTemplateName : Constants.PromptTemplateSOQL);
+
+    this.spinFor(
+      promptTemplate.generate({
+        Description: this.soqlPrompt.value
+      }).then(result => {
+        if (result.result){
+          // Extract SOQL from the result
+          const soqlMatch = result.result.match(/<soql>(.*?)<\/soql>/);
+          const extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
+          this.addQueryTab();
+          this.updateCurrentTabQuery(extractedSoql);
+          //to resolve sobject and rename current tab
+          this.queryAutocompleteHandler();
+          // Update the textarea to show the new query immediately
+          if (this.queryInput) {
+            this.queryInput.value = extractedSoql;
+          }
+          this.saveQueryTabs();
+          this.isWorking = false;
+          this.didUpdate();
+        } else {
+          throw new Error(result.error);
+        }
+      }).catch(error => {
+        console.error(error);
+        this.isWorking = false;
+        this.exportStatus = "Error";
+        this.exportError = "Failed to generate SOQL: " + error;
+        this.didUpdate();
+      })
+    );
+  }
   stopExport() {
     this.exportProgress.abort();
   }
@@ -1017,6 +1066,98 @@ class Model {
         {value: "Get Feedback on Query Performance", title: "Get Feedback on Query Performance", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "", link: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_query_explain.htm"},
       ]
     };
+  }
+
+  loadQueryTabs() {
+    const savedTabs = localStorage.getItem(`${this.sfHost}_queryTabs`);
+    if (savedTabs) {
+      this.queryTabs = JSON.parse(savedTabs);
+    } else {
+      this.queryTabs = [{name: "Query 1", query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null}];
+    }
+    this.activeTabIndex = 0;
+  }
+
+  saveQueryTabs() {
+    // Create a copy of the tabs without the results property
+    const tabsToSave = this.queryTabs.map(tab => ({
+      name: tab.name,
+      query: tab.query,
+      queryTooling: tab.queryTooling,
+      queryAll: tab.queryAll
+    }));
+    localStorage.setItem(`${this.sfHost}_queryTabs`, JSON.stringify(tabsToSave));
+  }
+
+  addQueryTab() {
+    const newTabName = `Query ${this.queryTabs.length + 1}`;
+    this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null});
+    this.activeTabIndex = this.queryTabs.length - 1;
+    this.saveQueryTabs();
+    this.didUpdate();
+  }
+
+  removeQueryTab(index) {
+    if (this.queryTabs.length > 1) {
+      this.queryTabs.splice(index, 1);
+      if (this.activeTabIndex >= index) {
+        this.activeTabIndex = Math.max(0, this.activeTabIndex - 1);
+      }
+      this.saveQueryTabs();
+      this.didUpdate();
+    }
+  }
+
+  setActiveTab(index) {
+    this.activeTabIndex = index;
+    // Update the query input value to match the current tab's query
+    if (this.queryInput) {
+      this.queryInput.value = this.queryTabs[index].query;
+    }
+    this.queryTooling = this.queryTabs[index].queryTooling;
+    this.queryAll = this.queryTabs[index].queryAll;
+    // Update the exported data with the tab's results
+    this.exportedData = this.queryTabs[index].results;
+    // Update the UI with the new data
+    if (this.exportedData) {
+      this.exportStatus = `Loaded ${this.exportedData.records.length} record${s(this.exportedData.records.length)}`;
+    } else {
+      this.exportStatus = "";
+    }
+    this.updatedExportedData();
+    this.didUpdate();
+  }
+
+  updateCurrentTabQuery(query) {
+    if (this.queryTabs[this.activeTabIndex]) {
+      this.queryTabs[this.activeTabIndex].query = query;
+      this.saveQueryTabs();
+    }
+  }
+
+  updateCurrentTabProperty(propertyName, value) {
+    if (this.queryTabs[this.activeTabIndex]) {
+      this.queryTabs[this.activeTabIndex][propertyName] = value;
+      this.saveQueryTabs();
+    }
+  }
+
+  updateCurrentTabName(name) {
+    if (this.queryTabs[this.activeTabIndex] && this.queryTabs[this.activeTabIndex].name !== name) {
+      // Check if there are any other tabs with the same name
+      let count = 1;
+      let newName = name;
+      while (this.queryTabs.some(tab => tab.name === newName)) {
+        newName = `${name} (${count})`;
+        count++;
+      }
+      this.queryTabs[this.activeTabIndex].name = newName;
+      this.saveQueryTabs();
+    }
+  }
+
+  getCurrentTabQuery() {
+    return this.queryTabs[this.activeTabIndex]?.query || "";
   }
 }
 
@@ -1086,7 +1227,7 @@ function RecordTable(vm) {
         return false;
       }
 
-      const cellValue = row[columnIndex];
+      const cellValue = String(row[columnIndex]);
       return cellValue
         ? cellToString(cellValue).toLowerCase().includes(filter.toLowerCase())
         : false;
@@ -1171,9 +1312,11 @@ class App extends React.Component {
     this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
+    this.onToggleAI = this.onToggleAI.bind(this);
     this.onToggleExpand = this.onToggleExpand.bind(this);
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
+    this.onGenerateSoql = this.onGenerateSoql.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
     this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
@@ -1186,15 +1329,22 @@ class App extends React.Component {
     this.onStopExport = this.onStopExport.bind(this);
     this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption")), isDropdownOpen: false};// Tracks whether the dropdown is open
     this.filterColumns = []; // Initialize as an empty array
+    this.onAddTab = this.onAddTab.bind(this);
+    this.onRemoveTab = this.onRemoveTab.bind(this);
+    this.onTabClick = this.onTabClick.bind(this);
+    this.onQueryInput = this.onQueryInput.bind(this);
+    this.onItemSelection = this.onItemSelection.bind(this);
   }
   onQueryAllChange(e) {
     let {model} = this.props;
     model.queryAll = e.target.checked;
+    model.updateCurrentTabProperty("queryAll", model.queryAll);
     model.didUpdate();
   }
   onQueryToolingChange(e) {
     let {model} = this.props;
     model.queryTooling = e.target.checked;
+    model.updateCurrentTabProperty("queryTooling", model.queryTooling);
     model.queryAutocompleteHandler();
     model.didUpdate();
   }
@@ -1262,6 +1412,12 @@ class App extends React.Component {
     model.toggleHelp();
     model.didUpdate();
   }
+  onToggleAI(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.toggleAI();
+    model.didUpdate();
+  }
   onToggleExpand(e) {
     e.preventDefault();
     let {model} = this.props;
@@ -1277,6 +1433,11 @@ class App extends React.Component {
   onExport() {
     let {model} = this.props;
     model.doExport();
+    model.didUpdate();
+  }
+  onGenerateSoql() {
+    let {model} = this.props;
+    model.generateSoql();
     model.didUpdate();
   }
   onCopyQuery() {
@@ -1337,11 +1498,66 @@ class App extends React.Component {
     model.stopExport();
     model.didUpdate();
   }
+  onAddTab(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.addQueryTab();
+  }
+  onRemoveTab(e, index) {
+    e.preventDefault();
+    e.stopPropagation();
+    let {model} = this.props;
+    model.removeQueryTab(index);
+  }
+  onTabClick(e, index) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.setActiveTab(index);
+  }
+
+  onQueryInput(e) {
+    let {model} = this.props;
+    model.updateCurrentTabQuery(e.target.value);
+    model.queryAutocompleteHandler();
+    model.didUpdate();
+  }
+
+  onItemSelection(item, lookupOption) {
+    let {model} = this.props;
+
+    // Determine the actual selection type
+    let selectionType = lookupOption.key === "all" && item.list ? item.list.key : lookupOption.key;
+
+    // Selection handlers mapping
+    const selectionHandlers = {
+      history: () => {
+        model.selectedHistoryEntry = item;
+        model.selectHistoryEntry();
+      },
+      saved: () => {
+        model.selectedSavedEntry = item;
+        model.selectSavedEntry();
+      },
+      template: () => {
+        model.selectedQueryTemplate = item.query || item;
+        model.selectQueryTemplate();
+      }
+    };
+
+    // Execute the appropriate handler
+    if (selectionHandlers[selectionType]) {
+      selectionHandlers[selectionType]();
+    }
+
+    model.didUpdate();
+  }
+
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
 
     model.setQueryInput(queryInput);
+    model.soqlPrompt = this.refs.prompt;
     //Set the cursor focus on query text area
     if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
       queryInput.focus();
@@ -1436,42 +1652,40 @@ class App extends React.Component {
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
           ),
+          displayButton("export-agentforce", this.state.hideButtonsOption) ? h("a", {href: "#", id: "einstein-btn", title: "Agentforce help", onClick: this.onToggleAI},
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#einstein"})
+            )
+          ) : null,
           h("a", {href: "#", id: "help-btn", title: "Export Help", onClick: this.onToggleHelp},
-            h("div", {className: "icon"})
-          ),
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#question"})
+            )
+          )
         ),
       ),
       h("div", {className: "area"},
         h("div", {className: "area-header"},
+          h(Combobox, {
+            model,
+            savedQueryHistoryKey: "insextSavedQueryHistory",
+            templateKey: "queryTemplates",
+            queryHistoryKey: "insextQueryHistory",
+            defaultTypeKey: "defaultQueryType",
+            queryHistory: model.queryHistory,
+            savedHistory: model.savedHistory,
+            templates: model.queryTemplates.map(template => ({query: template, label: "", useToolingApi: false})),
+            searchProperties: ["query"],
+            displayProperties: {
+              primary: "query",
+              secondary: "label",
+              tertiary: "useToolingApi"
+            },
+            onItemSelection: this.onItemSelection
+          })
         ),
         h("div", {className: "query-controls"},
           h("h1", {}, "Export Query"),
-          h("div", {className: "query-history-controls"},
-            h("select", {value: "", onChange: this.onSelectQueryTemplate, className: "query-history", title: "Check documentation to customize templates"},
-              h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
-              model.queryTemplates.map(q => h("option", {key: q, value: q}, q))
-            ),
-            h("div", {className: "button-group"},
-              h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "Query History"),
-                model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
-              ),
-              h("button", {onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
-            ),
-            h("div", {className: "pop-menu saveOptions", hidden: !model.expandSavedOptions},
-              h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query"),
-              h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
-            ),
-            h("div", {className: "button-group"},
-              h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
-                model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
-              ),
-              h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
-              h("button", {onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
-              h("button", {className: model.expandSavedOptions ? "toggle contract" : "toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"}))
-            ),
-          ),
           h("div", {className: "query-options"},
             h("label", {},
               h("input", {type: "checkbox", checked: model.queryAll, onChange: this.onQueryAllChange, disabled: model.queryTooling}),
@@ -1485,7 +1699,32 @@ class App extends React.Component {
             ),
           ),
         ),
-        h("textarea", {id: "query", ref: "query", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
+        h("div", {className: "query-tabs"},
+          model.queryTabs.map((tab, index) =>
+            h("div", {
+              key: index,
+              className: `query-tab ${index === model.activeTabIndex ? "active" : ""}`,
+              onClick: e => this.onTabClick(e, index)
+            },
+            h("span", {}, tab.name),
+            h("span", {
+              className: "query-tab-close",
+              onClick: e => this.onRemoveTab(e, index)
+            }, "×")
+            )
+          ),
+          h("div", {
+            className: "add-tab-button",
+            onClick: this.onAddTab,
+            title: "Add new query tab"
+          }, "+")
+        ),
+        h("textarea", {
+          id: "query",
+          ref: "query",
+          style: {maxHeight: (model.winInnerHeight - 200) + "px"},
+          onChange: this.onQueryInput
+        }),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
@@ -1517,6 +1756,14 @@ class App extends React.Component {
           h("p", {}, "Press Ctrl+Enter or F5 to execute the export."),
           h("p", {}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
           h("p", {}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
+        ),
+        h("div", {hidden: !model.showAI, className: "einstein-text"},
+          h("h3", {}, "Agentforce SOQL query builder"),
+          h("p", {}, "Enter a description of the SOQL you want to be generated"),
+          h("textarea", {id: "prompt", ref: "prompt"}),
+          h("div", {className: "flex-right marginTop"},
+            h("button", {tabIndex: 1, onClick: this.onGenerateSoql, title: "Generate SOQL", className: "highlighted button-margin"}, "Generate SOQL")
+          )
         )
       ),
       h("div", {className: "area", id: "result-area"},
@@ -1590,6 +1837,23 @@ class App extends React.Component {
         )
       )
     );
+  }
+
+  onSaveQuery() {
+    let {model} = this.props;
+    if (!this.refs.queryName.value.trim()) {
+      alert("Please enter a query label");
+      return;
+    }
+
+    model.queryName = this.refs.queryName.value.trim();
+    model.addToHistory();
+
+    // Clear the input after saving
+    this.refs.queryName.value = "";
+    model.queryName = "";
+
+    model.didUpdate();
   }
 }
 

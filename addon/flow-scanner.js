@@ -465,6 +465,9 @@ class FlowScanner {
         throw new Error("Flow Scanner Core library not available");
       }
 
+      const flow = new this.flowScannerCore.Flow(this.currentFlow.name, this.currentFlow.xmlData);
+      const parsedFlow = {flow, name: this.currentFlow.name};
+
       // Build a reference map of element names to labels.
       this._buildElementMap();
 
@@ -476,108 +479,20 @@ class FlowScanner {
       } catch {
         stored = [];
       }
-
-      // Ensure the stored rules are in a consistent array format.
-      if (!Array.isArray(stored)) {
-        if (stored && typeof stored === "object") {
-          stored = Object.entries(stored).map(([name, checked]) => ({name, checked: !!checked}));
-        } else {
-          stored = [];
+      const customRules = JSON.parse(localStorage.getItem("flowScannerCustomRules") || "[]");
+      customRules.forEach(cr => {
+        if (!stored.find(r => r.name === cr.name)) {
+          stored.push({
+            name: cr.name,
+            label: cr.label,
+            description: cr.description,
+            checked: true,
+            severity: cr.severity,
+            path: cr.path,
+            config: { path: cr.path }
+          });
         }
-      }
-
-      // Filter to get only the rules that are currently enabled.
-      const selectedRules = stored.filter(r => r.checked).map(r => r.name);
-      if (selectedRules.length === 0) {
-        this.showError("No Flow Scanner rules are enabled. Please go to the Options page and enable at least one rule in the Flow Scanner tab.");
-        return;
-      }
-
-      // Execute the scan and display the results.
-      const results = await this.scanWithCore();
-      this.scanResults = results;
-      this.displayResults(results);
-    } catch (error) {
-      this.showError("Failed to scan flow: " + error.message);
-    } finally {
-      this.isScanning = false;
-    }
-  }
-
-  /**
-   * Performs the flow analysis using the Flow Scanner Core library
-   * @returns {Array} Array of scan results with issues found
-   */
-  async scanWithCore() {
-    try {
-      if (!this.currentFlow || !this.currentFlow.xmlData) {
-        return [{
-          rule: "Scan Error",
-          description: "No flow data available for scanning",
-          severity: "error",
-          details: "Flow data is missing or incomplete"
-        }];
-      }
-
-      // List of flow types supported by the scanner rules.
-      const supportedFlowTypes = [
-        "AutoLaunchedFlow",
-        "CustomEvent",
-        "InvocableProcess",
-        "Orchestrator",
-        "EvaluationFlow",
-        "ActionCadenceAutolaunchedFlow",
-        "Flow",
-        "IndividualObjectLinkingFlow",
-        "LoginFlow",
-        "RoutingFlow",
-        "Appointments",
-        "ActionCadenceStepFlow",
-        "ContactRequestFlow",
-        "CustomerLifecycle",
-        "FieldServiceMobile",
-        "FieldServiceWeb",
-        "SurveyEnrich",
-        "Survey"
-      ];
-
-      // Get the flow type, ensuring we use the original processType from metadata
-      // This handles screen flows correctly, which might be converted to just "Flow" in the UI
-      const originalFlowType = this.currentFlow.xmlData?.processType || this.currentFlow.processType;
-      const currentFlowType = originalFlowType || this.currentFlow.type;
-      // Special case for screen flows - they might just show as "Flow" type but have screens
-      const hasScreens = Array.isArray(this.currentFlow.xmlData?.screens) && this.currentFlow.xmlData.screens.length > 0;
-      const isScreenFlow = currentFlowType === "Flow" && hasScreens;
-      // Check if the flow type is in the supported list or if it's a screen flow
-      const isFlowTypeSupported = supportedFlowTypes.includes(currentFlowType) || isScreenFlow;
-
-      // If the flow type is not supported, return a special marker object.
-      if (!isFlowTypeSupported) {
-        const displayType = isScreenFlow ? "Screen Flow" : currentFlowType;
-        return [{
-          isUnsupportedFlow: true,
-          displayType,
-          supportedFlowTypes
-        }];
-      }
-
-      // Prepare the flow data for the core scanner library.
-      const flowData = {
-        Flow: this.currentFlow.xmlData
-      };
-
-      // Initialize the core scanner with the flow data.
-      const flow = new this.flowScannerCore.Flow(this.currentFlow.apiName || this.currentFlow.name, flowData);
-      const parsedFlow = new this.flowScannerCore.ParsedFlow(this.currentFlow.apiName || this.currentFlow.name, flow);
-
-      // Read the user's selected rules from localStorage again.
-      let storedRaw = localStorage.getItem("flowScannerRules");
-      let stored;
-      try {
-        stored = JSON.parse(storedRaw || "[]");
-      } catch {
-        stored = [];
-      }
+      });
 
       // Normalize the format of stored rules.
       if (!Array.isArray(stored)) {
@@ -594,265 +509,276 @@ class FlowScanner {
       // If no rules are enabled, show an error and stop.
       if (selected.length === 0) {
         this.showError("No Flow Scanner rules are enabled. Please go to the Options page and enable at least one rule in the Flow Scanner tab.");
-        return [];
+        return;
       }
 
-      // Build the configuration object for the scanner with enabled rules.
-      let ruleConfig = {rules: {}};
-      selected.forEach(name => {
-        // Find the full configuration for the stored rule.
-        const storedRule = stored.find(r => r.name === name);
-        const ruleConfigEntry = storedRule?.config || {};
-        const severity = storedRule?.severity || "error";
-        const scannerSeverity = normalizeSeverity(severity, "storage");
+      // Separate built-in and custom rules
+      const builtInRuleNames = selected.filter(name => !stored.find(r => r.name === name && (r.path || r.code)));
+      const customRuleDefs = stored.filter(r => r.checked && (r.path || r.code));
 
-        // Set up configuration for each specific rule.
-        if (name === "FlowName") {
-          // FlowName rule uses a regex pattern for validation.
-          const namingRegex = ruleConfigEntry.expression || "[A-Za-z0-9]+_[A-Za-z0-9]+";
-          if (namingRegex) {
-            ruleConfig.rules.FlowName = {expression: namingRegex, severity: scannerSeverity};
-          }
-        } else if (name === "APIVersion") {
-          // APIVersion rule checks if the version is above a certain threshold.
-          let minVersion = 50; // default
-
-          if (ruleConfigEntry.threshold !== undefined) {
-            minVersion = parseInt(ruleConfigEntry.threshold);
-          } else if (ruleConfigEntry.expression !== undefined) {
-            // Handle old format where expression contained the value.
-            const expressionValue = ruleConfigEntry.expression;
-            if (typeof expressionValue === "string" && expressionValue.includes("<")) {
-              // Old format: "<50" -> extract 50.
-              minVersion = parseInt(expressionValue.replace(/[<>]/g, ""));
-            } else {
-              // New format: "65" -> use 65.
-              minVersion = parseInt(expressionValue);
-            }
-          }
-
-          // Fallback to default if parsing fails.
-          if (isNaN(minVersion)) {
-            minVersion = 50; // fallback to default
-          }
-
-          // Set the APIVersion rule configuration.
-          ruleConfig.rules.APIVersion = {expression: `>=${minVersion}`, severity: scannerSeverity};
-        } else if (name === "AutoLayout") {
-          // AutoLayout is a simple rule that can be enabled or disabled.
-          const enabled = ruleConfigEntry.enabled !== false;
-          if (enabled) {
-            ruleConfig.rules.AutoLayout = {severity: scannerSeverity};
-          }
-        } else if (name === "CyclomaticComplexity") {
-          // CyclomaticComplexity requires a threshold value
-          const threshold = ruleConfigEntry.threshold || 25;
-          ruleConfig.rules.CyclomaticComplexity = {threshold, severity: scannerSeverity};
-        } else if (name === "ProcessBuilder") {
-          // ProcessBuilder is a simple enabled/disabled rule
-          const enabled = ruleConfigEntry.enabled !== false;
-          if (enabled) {
-            ruleConfig.rules.ProcessBuilder = {severity: scannerSeverity};
-          }
-        } else {
-          // Default configuration for other simple rules.
-          ruleConfig.rules[name] = {severity: scannerSeverity};
-        }
-      });
-
-      // Handle the APIVersion rule manually to avoid Content Security Policy issues.
+      let results = [];
       let customAPIVersionResult = null;
-      if (ruleConfig.rules.APIVersion && this.currentFlow) {
-        const flowApiVersion = this.currentFlow.apiVersion || this.currentFlow.xmlData?.apiVersion;
-        const minVersion = parseInt(ruleConfig.rules.APIVersion.expression.replace(/[>=<]/g, ""));
-        const operator = ruleConfig.rules.APIVersion.expression.replace(/[0-9]/g, "");
 
-        // Check if the flow's API version violates the configured rule.
-        let isViolation = false;
-        switch (operator) {
-          case ">=":
-            isViolation = flowApiVersion < minVersion;
-            break;
-          case "<=":
-            isViolation = flowApiVersion > minVersion;
-            break;
-          case ">":
-            isViolation = flowApiVersion <= minVersion;
-            break;
-          case "<":
-            isViolation = flowApiVersion >= minVersion;
-            break;
-          case "==":
-          case "=":
-            isViolation = flowApiVersion !== minVersion;
-            break;
-          default:
-            isViolation = flowApiVersion < minVersion; // Default to >= behavior
+      // Run built-in rules
+      if (builtInRuleNames.length > 0) {
+        const ruleConfig = {rules: {}};
+        builtInRuleNames.forEach(name => {
+          const storedRule = stored.find(r => r.name === name);
+          const ruleConfigEntry = storedRule?.config || {};
+          const severity = storedRule?.severity || "error";
+          const scannerSeverity = normalizeSeverity(severity, "storage");
+
+          if (name === "FlowName") {
+            const namingRegex = ruleConfigEntry.expression || "[A-Za-z0-9]+_[A-Za-z0-9]+";
+            if (namingRegex) {
+              ruleConfig.rules.FlowName = {expression: namingRegex, severity: scannerSeverity};
+            }
+          } else if (name === "APIVersion") {
+            let minVersion = 50; // default
+
+            if (ruleConfigEntry.threshold !== undefined) {
+              minVersion = parseInt(ruleConfigEntry.threshold, 10);
+            } else if (ruleConfigEntry.expression !== undefined) {
+              const expressionValue = ruleConfigEntry.expression;
+              if (typeof expressionValue === "string" && expressionValue.includes("<")) {
+                minVersion = parseInt(expressionValue.replace(/[<>]/g, ""), 10);
+              } else {
+                minVersion = parseInt(expressionValue, 10);
+              }
+            }
+
+            if (isNaN(minVersion)) {
+              minVersion = 50; // fallback to default
+            }
+
+            ruleConfig.rules.APIVersion = {expression: `>=${minVersion}`, severity: scannerSeverity};
+          } else if (name === "AutoLayout") {
+            const enabled = ruleConfigEntry.enabled !== false;
+            if (enabled) {
+              ruleConfig.rules.AutoLayout = {severity: scannerSeverity};
+            }
+          } else if (name === "CyclomaticComplexity") {
+            const threshold = ruleConfigEntry.threshold || 25;
+            ruleConfig.rules.CyclomaticComplexity = {threshold, severity: scannerSeverity};
+          } else if (name === "ProcessBuilder") {
+            const enabled = ruleConfigEntry.enabled !== false;
+            if (enabled) {
+              ruleConfig.rules.ProcessBuilder = {severity: scannerSeverity};
+            }
+          } else {
+            ruleConfig.rules[name] = {severity: scannerSeverity};
+          }
+        });
+
+        if (ruleConfig.rules.APIVersion && this.currentFlow) {
+          const flowApiVersion = this.currentFlow.apiVersion || this.currentFlow.xmlData?.apiVersion;
+          const minVersion = parseInt(ruleConfig.rules.APIVersion.expression.replace(/[>=<]/g, ""));
+          const operator = ruleConfig.rules.APIVersion.expression.replace(/[0-9]/g, "");
+          let isViolation = false;
+          switch (operator) {
+            case ">=": isViolation = flowApiVersion < minVersion; break;
+            case "<=": isViolation = flowApiVersion > minVersion; break;
+            case ">": isViolation = flowApiVersion <= minVersion; break;
+            case "<": isViolation = flowApiVersion >= minVersion; break;
+            case "==": case "=": isViolation = flowApiVersion !== minVersion; break;
+            default: isViolation = flowApiVersion < minVersion;
+          }
+          if (isViolation) {
+            const severity = this.mapSeverity(ruleConfig.rules.APIVersion.severity);
+            const expression = `Current: ${flowApiVersion}, Required: ${ruleConfig.rules.APIVersion.expression}`;
+            customAPIVersionResult = {
+              rule: "Outdated API Version",
+              description: "The API version of the flow is outdated.",
+              severity,
+              details: `Flow API Version: ${flowApiVersion} | Required: ${ruleConfig.rules.APIVersion.expression}`,
+              affectedElements: [{elementName: "Flow API Version", elementType: "apiVersion", expression}],
+              ruleDescription: "The API version of the flow is outdated.",
+              ruleLabel: "Outdated API Version",
+              flowName: this.currentFlow.name,
+              name: "Flow API Version",
+              type: "apiVersion",
+              expression
+            };
+          }
+          delete ruleConfig.rules.APIVersion;
         }
 
-        // If a violation is found, create a custom result object.
-        if (isViolation) {
-          customAPIVersionResult = {
-            rule: "Outdated API Version",
-            description: "Introducing newer API components may lead to unexpected issues with older versions of Flows, as they might not align with the underlying mechanics. Starting from API version 50.0, the 'Api Version' attribute has been readily available on the Flow Object. To ensure smooth operation and reduce discrepancies between API versions, it is strongly advised to regularly update and maintain them.",
-            severity: this.mapSeverity(ruleConfig.rules.APIVersion.severity),
-            details: `Flow API Version: ${flowApiVersion} | Required: ${ruleConfig.rules.APIVersion.expression} | Current version is below the minimum required version.`,
-            affectedElements: [{
-              elementName: "Flow API Version",
-              elementType: "apiVersion",
-              metaType: "attribute",
-              dataType: "number",
-              locationX: "",
-              locationY: "",
-              connectsTo: "",
-              expression: `Current: ${flowApiVersion}, Required: ${ruleConfig.rules.APIVersion.expression}`
-            }],
-            ruleDescription: "Introducing newer API components may lead to unexpected issues with older versions of Flows, as they might not align with the underlying mechanics. Starting from API version 50.0, the 'Api Version' attribute has been readily available on the Flow Object. To ensure smooth operation and reduce discrepancies between API versions, it is strongly advised to regularly update and maintain them.",
-            ruleLabel: "Outdated API Version",
-            flowName: this.currentFlow.name,
-            name: "Flow API Version",
-            type: "apiVersion",
-            metaType: "attribute",
-            dataType: "number",
-            locationX: "",
-            locationY: "",
-            connectsTo: "",
-            expression: `Current: ${flowApiVersion}, Required: ${ruleConfig.rules.APIVersion.expression}`
-          };
+        const scanResults = this.flowScannerCore.scan([parsedFlow], ruleConfig);
+        results.push(...this.processScanResults(scanResults));
+      }
+
+      for (const customRuleDef of customRuleDefs) {
+        try {
+          let getCode;
+          if (customRuleDef.code) {
+            getCode = Promise.resolve(customRuleDef.code);
+          } else if (customRuleDef.path) {
+            getCode = fetch(customRuleDef.path).then(res => {
+              if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+              return res.text();
+            });
+          } else {
+            continue; // Should not happen due to filter
+          }
+
+          const code = await getCode;
+          const blob = new Blob([code], {type: "application/javascript"});
+          const url = URL.createObjectURL(blob);
+          const module = await import(url);
+          URL.revokeObjectURL(url);
+
+          const CustomRuleClass = module[customRuleDef.name] || module.default;
+          if (typeof CustomRuleClass !== "function") {
+            const errorLocation = customRuleDef.path ? `in ${customRuleDef.path}` : "in the provided code";
+            throw new Error(`Could not find class '${customRuleDef.name}' ${errorLocation}. Make sure the class is exported correctly.`);
+          }
+
+          const ruleInstance = new CustomRuleClass();
+          const ruleResult = ruleInstance.execute(parsedFlow.flow, customRuleDef.config);
+
+          const processedCustomResult = this.processScanResults([{
+            flow: parsedFlow,
+            ruleResults: [ruleResult]
+          }]);
+          results.push(...processedCustomResult);
+
+        } catch (error) {
+          results.push({
+            rule: `Custom Rule Error: ${customRuleDef.name}`,
+            description: `Failed to load or execute custom rule: ${error.message}`,
+            severity: "error",
+            details: `Path: ${customRuleDef.path || "Pasted Code"}\n${error.stack}`,
+            affectedElements: []
+          });
         }
       }
 
-      // Run the scan with the configured rules.
-      const scanResults = this.flowScannerCore.scan([parsedFlow], ruleConfig);
-      const results = [];
+      if (customAPIVersionResult) {
+        results.push(customAPIVersionResult);
+      }
 
-      // Process the results returned by the core scanner.
-      for (const flowResult of scanResults) {
-        if (flowResult.errorMessage) {
-          results.push({
-            rule: "Scan Error",
-            description: "Failed to scan flow: " + flowResult.errorMessage,
-            severity: "error",
-            details: "Flow: " + this.currentFlow.name
-          });
+      this.scanResults = results;
+      this.displayResults(results);
+    } catch (error) {
+      this.showError("Failed to scan flow: " + error.message);
+      this.scanResults = [{
+        rule: "Scan Error",
+        description: "Failed to scan flow: " + error.message,
+        severity: "error",
+        details: "Flow: " + (this.currentFlow ? this.currentFlow.name : "Unknown")
+      }];
+      this.displayResults(this.scanResults);
+    } finally {
+      this.isScanning = false;
+    }
+  }
+
+  /**
+   * Processes results from the core scanner into a display-friendly format.
+   * @param {Array} scanResults - The raw results from the core scanner.
+   * @returns {Array} An array of formatted violation objects.
+   */
+  processScanResults(scanResults) {
+    const results = [];
+
+    for (const flowResult of scanResults) {
+      if (flowResult.errorMessage) {
+        results.push({
+          rule: "Scan Error",
+          description: "Failed to scan flow: " + flowResult.errorMessage,
+          severity: "error",
+          details: "Flow: " + this.currentFlow.name
+        });
+        continue;
+      }
+
+      const ruleResults = flowResult.ruleResults || flowResult.results || flowResult.issues || [];
+
+      for (const ruleResult of ruleResults) {
+        if (!ruleResult.occurs) {
           continue;
         }
 
-        // Get the list of rule violations.
-        const ruleResults = flowResult.ruleResults || flowResult.results || flowResult.issues || [];
+        if (ruleResult.ruleName === "APIVersion" && ruleResult.errorMessage && ruleResult.errorMessage.includes("unsafe-eval")) {
+          continue;
+        }
 
-        // Process each rule violation.
-        for (const ruleResult of ruleResults) {
-          // Skip if the rule was not violated.
-          if (!ruleResult.occurs) {
-            continue;
-          }
+        const ruleDescription = ruleResult.ruleDefinition?.description || "No description available";
+        const ruleLabel = ruleResult.ruleDefinition?.label || ruleResult.ruleName;
 
-          // Skip APIVersion errors caused by CSP.
-          if (ruleResult.ruleName === "APIVersion" && ruleResult.errorMessage && ruleResult.errorMessage.includes("unsafe-eval")) {
-            continue;
-          }
+        if (ruleResult.details && ruleResult.details.length > 0) {
+          for (const detail of ruleResult.details) {
+            const elementName = detail.name || detail.violation?.name || "Unknown";
+            const elementLabelFromCore = detail.label || detail.violation?.label;
+            const elementLabel = elementLabelFromCore || this._elementMap.get(elementName) || "";
+            const elementType = detail.type || detail.violation?.subtype || "Unknown";
+            const metaType = detail.metaType || detail.violation?.metaType || "";
+            const dataType = detail.dataType || "";
+            const locationX = detail.details?.locationX || detail.violation?.locationX || "";
+            const locationY = detail.details?.locationY || detail.violation?.locationY || "";
+            const connectsTo = detail.details?.connectsTo || "";
+            const expression = detail.details?.expression || detail.violation?.expression || "";
+            const apiName = detail.apiName || detail.violation?.apiName || detail.name || detail.violation?.name || "";
 
-          // Get rule definition details.
-          const ruleDescription = ruleResult.ruleDefinition?.description || "No description available";
-          const ruleLabel = ruleResult.ruleDefinition?.label || ruleResult.ruleName;
-
-          // Process the details of each violation.
-          if (ruleResult.details && ruleResult.details.length > 0) {
-            for (const detail of ruleResult.details) {
-              // Extract information about the affected flow element.
-              const elementName = detail.name || detail.violation?.name || "Unknown";
-              const elementLabelFromCore = detail.label || detail.violation?.label;
-              const elementLabel = elementLabelFromCore || this._elementMap.get(elementName) || "";
-              const elementType = detail.type || detail.violation?.subtype || "Unknown";
-              const metaType = detail.metaType || detail.violation?.metaType || "";
-              const dataType = detail.dataType || "";
-              const locationX = detail.details?.locationX || detail.violation?.locationX || "";
-              const locationY = detail.details?.locationY || detail.violation?.locationY || "";
-              const connectsTo = detail.details?.connectsTo || "";
-              const expression = detail.details?.expression || detail.violation?.expression || "";
-              const apiName = detail.apiName || detail.violation?.apiName || detail.name || detail.violation?.name || "";
-
-              // Create a standardized result object for the UI and export.
-              const result = {
-                rule: ruleLabel,
-                description: ruleDescription,
-                severity: this.mapSeverity(ruleResult.severity),
-                details: this.formatRuleDetails({
-                  elementName,
-                  elementType,
-                  metaType,
-                  dataType,
-                  locationX,
-                  locationY,
-                  connectsTo,
-                  expression
-                }),
-                // Store detailed info about the affected element.
-                affectedElements: [{
-                  elementName,
-                  elementType,
-                  metaType,
-                  dataType,
-                  locationX,
-                  locationY,
-                  connectsTo,
-                  expression,
-                  elementLabel,
-                  apiName
-                }],
-                // Add additional fields for CSV export.
-                ruleDescription,
-                ruleLabel,
-                flowName: this.currentFlow.name,
-                name: elementName,
-                type: elementType,
-                label: elementLabel,
-                apiName,
+            const result = {
+              rule: ruleLabel,
+              description: ruleDescription,
+              severity: this.mapSeverity(ruleResult.severity),
+              details: this.formatRuleDetails({
+                elementName,
+                elementType,
                 metaType,
                 dataType,
                 locationX,
                 locationY,
                 connectsTo,
                 expression
-              };
-
-              results.push(result);
-            }
-          } else {
-            // Handle violations that don't have specific element details.
-            const result = {
-              rule: ruleLabel,
-              description: ruleDescription,
-              severity: this.mapSeverity(ruleResult.severity),
-              details: "Rule violation detected",
-              // Violation does not point to a specific element.
-              affectedElements: [],
-              // Add additional fields for CSV export.
+              }),
+              affectedElements: [{
+                elementName,
+                elementType,
+                metaType,
+                dataType,
+                locationX,
+                locationY,
+                connectsTo,
+                expression,
+                elementLabel,
+                apiName
+              }],
               ruleDescription,
               ruleLabel,
-              flowName: this.currentFlow.name
+              flowName: this.currentFlow.name,
+              name: elementName,
+              type: elementType,
+              label: elementLabel,
+              apiName,
+              metaType,
+              dataType,
+              locationX,
+              locationY,
+              connectsTo,
+              expression
             };
+
             results.push(result);
           }
+        } else {
+          const result = {
+            rule: ruleLabel,
+            description: ruleDescription,
+            severity: this.mapSeverity(ruleResult.severity),
+            details: "Rule violation detected",
+            affectedElements: [],
+            ruleDescription,
+            ruleLabel,
+            flowName: this.currentFlow.name
+          };
+          results.push(result);
         }
       }
-
-      // Add the manually-handled APIVersion result if it exists.
-      if (customAPIVersionResult) {
-        results.push(customAPIVersionResult);
-      }
-
-      return results;
-    } catch (error) {
-      this.showError("Failed to scan flow: " + error.message);
-      return [{
-        rule: "Scan Error",
-        description: "Failed to scan flow: " + error.message,
-        severity: "error",
-        details: "Flow: " + (this.currentFlow ? this.currentFlow.name : "Unknown")
-      }];
     }
+    return results;
   }
 
   /**
@@ -1636,13 +1562,14 @@ async function init() {
   } catch (error) {
     // Display a detailed error message if initialization fails.
     const resultsContainer = document.getElementById("results-container");
+
     if (resultsContainer) {
       resultsContainer.innerHTML = `
         <div class="empty-state" style="color: #c62828;">
           <div class="empty-icon">❌</div>
           <h3>Initialization Error</h3>
           <p><strong>Error:</strong> ${error.message}</p>
-          <p><strong>Stack:</strong> ${error.stack}</p>
+          <pre><strong>Stack:</strong> ${error.stack}</pre>
           <p>Please check the browser console for more details.</p>
         </div>
       `;

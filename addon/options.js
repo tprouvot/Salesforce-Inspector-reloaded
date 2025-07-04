@@ -7,7 +7,7 @@ import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
 
 // --- Generic Helpers ---
-let h = React.createElement;
+const h = React.createElement;
 
 // Move normalizeSeverity here so it is available everywhere
 const normalizeSeverity = (sev, direction = "ui") => {
@@ -17,46 +17,50 @@ const normalizeSeverity = (sev, direction = "ui") => {
 };
 
 function InfoIcon({tooltipId, tooltip, className = "", style = {}, tabIndex = 0, placement = ""}) {
-  let tooltipClass = "info-tooltip slds-popover slds-popover_tooltip slds-nubbin_bottom";
-  if (placement === "right") tooltipClass += " info-tooltip-right";
-  if (placement === "below") tooltipClass = "info-tooltip slds-popover slds-popover_tooltip slds-nubbin_top info-tooltip-below";
+  const tooltipClass = "slds-popover slds-popover_tooltip slds-nubbin_" + (placement || "bottom-left");
   return h("span", {
     className: `info-icon-container ${className}`,
-    tabIndex,
-    role: "button",
-    "aria-describedby": tooltipId,
     style,
-    onMouseEnter: () => {
-      const tip = document.getElementById(tooltipId);
-      if (tip) tip.style.display = "block";
+    tabIndex,
+    onMouseOver: e => {
+      const popover = e.currentTarget.querySelector(".slds-popover");
+      if (popover) {
+        popover.style.display = "block";
+      }
     },
-    onMouseLeave: () => {
-      const tip = document.getElementById(tooltipId);
-      if (tip) tip.style.display = "none";
+    onMouseOut: e => {
+      const popover = e.currentTarget.querySelector(".slds-popover");
+      if (popover) {
+        popover.style.display = "none";
+      }
     },
-    onFocus: () => {
-      const tip = document.getElementById(tooltipId);
-      if (tip) tip.style.display = "block";
+    onFocus: e => {
+      const popover = e.currentTarget.querySelector(".slds-popover");
+      if (popover) {
+        popover.style.display = "block";
+      }
     },
-    onBlur: () => {
-      const tip = document.getElementById(tooltipId);
-      if (tip) tip.style.display = "none";
+    onBlur: e => {
+      const popover = e.currentTarget.querySelector(".slds-popover");
+      if (popover) {
+        popover.style.display = "none";
+      }
     }
   },
-    h("svg", {
-      className: "slds-icon slds-icon-text-default slds-icon_xx-small info-icon-svg",
-      "aria-hidden": "true",
-      viewBox: "0 0 52 52",
-      style: {width: "16px", height: "16px", verticalAlign: "middle"}
-    },
-      h("use", {xlinkHref: "symbols.svg#info"})
-    ),
-    h("span", {
-      className: tooltipClass,
-      id: tooltipId,
-      role: "tooltip",
-      style: {display: "none", position: "absolute", zIndex: 1000, minWidth: "180px", maxWidth: "320px"}
-    }, tooltip)
+  h("svg", {
+    className: "slds-icon slds-icon-text-default slds-icon_xx-small info-icon-svg",
+    "aria-hidden": "true",
+    viewBox: "0 0 52 52",
+    style: {width: "16px", height: "16px", verticalAlign: "middle"}
+  },
+  h("use", {xlinkHref: "symbols.svg#info"})
+  ),
+  h("span", {
+    className: tooltipClass,
+    id: tooltipId,
+    role: "tooltip",
+    style: {display: "none", position: "absolute", zIndex: 1000, minWidth: "180px", maxWidth: "320px"}
+  }, tooltip)
   );
 }
 
@@ -80,7 +84,7 @@ class Option extends React.Component {
     }
     this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value)
       : this.type == "select" ? (value || props.default || props.options?.[0]?.value)
-      : value};
+        : value};
     this.title = props.title;
   }
 
@@ -122,37 +126,51 @@ class Option extends React.Component {
           h("input", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
         )
       ))
-      : isTextArea ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-          h("textarea", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
-        )
-      ))
-      : isSelect ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-          h("select", {
-            className: "slds-input slds-m-right_small",
-            value: this.state[this.key],
-            onChange: this.onChange
-          },
-          this.props.options.map(opt =>
-            h("option", {key: opt.value, value: opt.value}, opt.label)
-          ))
-        )
-      ))
-      : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
-        h("label", {className: "slds-checkbox_toggle slds-grid"},
-          h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
-          h("span", {id, className: "slds-checkbox_faux_container center-label"},
-            h("span", {className: "slds-checkbox_faux"}),
-            h("span", {className: "slds-checkbox_on"}, "Enabled"),
-            h("span", {className: "slds-checkbox_off"}, "Disabled"),
+        : isTextArea ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+          h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+            h("textarea", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
           )
-        )
-      ))
+        ))
+          : isSelect ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+            h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+              h("select", {
+                className: "slds-input slds-m-right_small",
+                value: this.state[this.key],
+                onChange: this.onChange
+              },
+              this.props.options.map(opt =>
+                h("option", {key: opt.value, value: opt.value}, opt.label)
+              ))
+            )
+          ))
+            : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+            h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
+              h("label", {className: "slds-checkbox_toggle slds-grid"},
+                h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
+                h("span", {id, className: "slds-checkbox_faux_container center-label"},
+                  h("span", {className: "slds-checkbox_faux"}),
+                  h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                  h("span", {className: "slds-checkbox_off"}, "Disabled"),
+                )
+              )
+            ))
     );
   }
 }
+
+Option.propTypes = {
+  storageKey: React.PropTypes.string.isRequired,
+  type: React.PropTypes.string.isRequired,
+  label: React.PropTypes.string,
+  tooltip: React.PropTypes.string,
+  placeholder: React.PropTypes.string,
+  actionButton: React.PropTypes.object,
+  inputSize: React.PropTypes.string,
+  default: React.PropTypes.any,
+  title: React.PropTypes.string,
+  options: React.PropTypes.array,
+  model: React.PropTypes.object
+};
 
 // --- Tab-Specific Components (in tab order) ---
 
@@ -910,71 +928,62 @@ class FlowScannerRulesOption extends React.Component {
     this.handleUncheckAll = this.handleUncheckAll.bind(this);
     this.handleResetToDefaults = this.handleResetToDefaults.bind(this);
     this.handleSeverityChange = this.handleSeverityChange.bind(this);
+    this.handleDeleteRule = this.handleDeleteRule.bind(this);
+    this.loadAndMergeRules = this.loadAndMergeRules.bind(this);
+    this.saveRules = this.saveRules.bind(this);
 
     this.title = props.title;
     this.key = props.key || "flowScannerRules";
+    this.customKey = "flowScannerCustomRules";
 
-    // Migrate old configuration format to new format
+    this.state = {
+      rules: [],
+    };
+  }
+
+  componentDidMount() {
     this.migrateConfiguration();
+    this.loadAndMergeRules();
+  }
 
-    const storedRaw = localStorage.getItem(this.key);
-    let stored;
-    try {
-      stored = JSON.parse(storedRaw || "[]");
-    } catch (e) {
-      console.warn("Failed to parse flowScannerRules, resetting", e);
-      stored = [];
-    }
+  loadAndMergeRules() {
+    const stored = JSON.parse(localStorage.getItem(this.key) || "[]");
+    const customStored = JSON.parse(localStorage.getItem(this.customKey) || "[]");
+    const mergedRules = this.mergeRules(stored, this.props.checkboxes, customStored);
+    this.setState({rules: mergedRules});
+  }
 
-    if (!Array.isArray(stored)) {
-      if (stored && typeof stored === "object") {
-        stored = Object.entries(stored).map(([name, checked]) => ({name, checked: !!checked}));
-      } else {
-        stored = [];
-      }
-    }
-
-    const updatedRules = this.mergeRules(stored, props.checkboxes);
-    this.state = {rules: updatedRules};
+  saveRules(rules) {
+    const defaultRules = rules.filter(r => !r.isCustom);
+    const customRules = rules.filter(r => r.isCustom);
+    localStorage.setItem(this.key, JSON.stringify(defaultRules));
+    localStorage.setItem(this.customKey, JSON.stringify(customRules));
   }
 
   migrateConfiguration() {
     const storedRaw = localStorage.getItem(this.key);
     if (!storedRaw) return;
-
     try {
       const stored = JSON.parse(storedRaw);
       if (!Array.isArray(stored)) return;
-
       let needsUpdate = false;
       const migrated = stored.map(rule => {
         if (rule.name === "APIVersion" && rule.configType === "expression" && rule.config && rule.config.expression) {
-          // Migrate APIVersion from old format to new format
           const expressionValue = rule.config.expression;
-          let thresholdValue = 50; // default
-
+          let thresholdValue = 50;
           if (typeof expressionValue === "string") {
             if (expressionValue.includes("<")) {
-              // Old format: "<50" -> extract 50
               thresholdValue = parseInt(expressionValue.replace(/[<>]/g, "")) || 50;
             } else {
-              // New format: "65" -> use 65
               thresholdValue = parseInt(expressionValue) || 50;
             }
           }
-
           needsUpdate = true;
-          return {
-            ...rule,
-            configType: "threshold",
-            config: {threshold: thresholdValue}
-          };
+          return {...rule, configType: "threshold", config: {threshold: thresholdValue}};
         }
         return rule;
       });
-
       if (needsUpdate) {
-        console.log("Migrating APIVersion configuration from old format to new format");
         localStorage.setItem(this.key, JSON.stringify(migrated));
       }
     } catch (e) {
@@ -982,8 +991,7 @@ class FlowScannerRulesOption extends React.Component {
     }
   }
 
-  mergeRules(storedRules, defaultRules) {
-    // Define known configurable rules that should always have config fields
+  mergeRules(storedRules, defaultRules, customRules = []) {
     const knownConfigurableRules = {
       "APIVersion": {configType: "threshold", defaultValue: 50},
       "FlowName": {configType: "expression", defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+"},
@@ -991,61 +999,27 @@ class FlowScannerRulesOption extends React.Component {
       "AutoLayout": {configType: "enabled", defaultValue: true},
       "ProcessBuilder": {configType: "enabled", defaultValue: true}
     };
-
     const merged = [];
+    const defaultRuleNames = new Set(defaultRules.map(r => r.name));
     for (const defaultRule of defaultRules) {
       const storedRule = storedRules.find(r => r.name === defaultRule.name);
       const knownConfig = knownConfigurableRules[defaultRule.name];
-      
-      // Handle configuration migration for APIVersion rule
       let config = {};
       let configType = defaultRule.configType;
       let configurable = defaultRule.configurable;
-      
       if (storedRule && storedRule.config) {
-        if (defaultRule.name === "APIVersion") {
-          // Migrate APIVersion from old format to new format
-          if (storedRule.configType === "expression" && storedRule.config.expression) {
-            // Old format: convert expression to threshold
-            const expressionValue = storedRule.config.expression;
-            let thresholdValue = 50; // default
-            
-            if (typeof expressionValue === "string") {
-              if (expressionValue.includes("<")) {
-                // Old format: "<50" -> extract 50
-                thresholdValue = parseInt(expressionValue.replace(/[<>]/g, "")) || 50;
-              } else {
-                // New format: "65" -> use 65
-                thresholdValue = parseInt(expressionValue) || 50;
-              }
-            }
-            
-            config = {threshold: thresholdValue};
-            configType = "threshold";
-          } else {
-            // New format: use threshold directly
-            config = storedRule.config;
-          }
-        } else {
-          // Other rules: use stored config as is
-          config = storedRule.config;
-        }
+        config = storedRule.config;
       } else if (knownConfig) {
-        // Known configurable rule without stored config: use default
         config = {[knownConfig.configType]: knownConfig.defaultValue};
         configType = knownConfig.configType;
         configurable = true;
       } else if (defaultRule.defaultValue) {
-        // Use default configuration
         config = {[defaultRule.configType]: defaultRule.defaultValue};
       }
-      
-      // Ensure known configurable rules are always marked as configurable
       if (knownConfig) {
         configurable = true;
         configType = configType || knownConfig.configType;
       }
-      
       merged.push({
         ...defaultRule,
         checked: storedRule ? storedRule.checked : defaultRule.checked,
@@ -1055,6 +1029,11 @@ class FlowScannerRulesOption extends React.Component {
         severity: storedRule ? storedRule.severity || defaultRule.severity : defaultRule.severity,
         isBeta: defaultRule.isBeta || false
       });
+    }
+    for (const customRule of customRules) {
+      if (!defaultRuleNames.has(customRule.name)) {
+        merged.push({...customRule, isCustom: true});
+      }
     }
     return merged;
   }
@@ -1089,248 +1068,119 @@ class FlowScannerRulesOption extends React.Component {
   }
 
   handleRuleToggle(ruleName) {
-    const updatedRules = this.state.rules.map(rule => {
-      if (rule.name === ruleName) {
-        return {...rule, checked: !rule.checked};
-      }
-      return rule;
-    });
-
+    const updatedRules = this.state.rules.map(rule => (rule.name === ruleName) ? {...rule, checked: !rule.checked} : rule);
     this.setState({rules: updatedRules});
-    localStorage.setItem(this.key, JSON.stringify(updatedRules));
+    this.saveRules(updatedRules);
   }
 
   handleConfigChange(ruleName, configKey, value) {
     const updatedRules = this.state.rules.map(rule => {
       if (rule.name === ruleName) {
-        const updatedConfig = {...rule.config, [configKey]: value};
-        return {...rule, config: updatedConfig};
+        return {...rule, config: {...rule.config, [configKey]: value}};
       }
       return rule;
     });
-
     this.setState({rules: updatedRules});
-    localStorage.setItem(this.key, JSON.stringify(updatedRules));
+    this.saveRules(updatedRules);
   }
 
   handleCheckAll() {
     const updatedRules = this.state.rules.map(rule => ({...rule, checked: true}));
     this.setState({rules: updatedRules});
-    localStorage.setItem(this.key, JSON.stringify(updatedRules));
+    this.saveRules(updatedRules);
   }
 
   handleUncheckAll() {
     const updatedRules = this.state.rules.map(rule => ({...rule, checked: false}));
     this.setState({rules: updatedRules});
-    localStorage.setItem(this.key, JSON.stringify(updatedRules));
+    this.saveRules(updatedRules);
   }
 
   handleResetToDefaults() {
-    // Re-fetch ruleCheckboxes from scanner core if available
-    let defaultRules = [];
-    if (window.lightningflowscanner && typeof window.lightningflowscanner.getRules === "function") {
-      try {
-        const rules = window.lightningflowscanner.getRules();
-        const betaRules = (typeof window.lightningflowscanner.getBetaRules === "function")
-          ? window.lightningflowscanner.getBetaRules().map(r => ({...r, isBeta: true}))
-          : [];
-        const allRules = [...rules, ...betaRules];
-        defaultRules = allRules.map(rule => ({
-          label: rule.label || rule.name,
-          name: rule.name,
-          checked: true,
-          configurable: rule.isConfigurable || false,
-          configType: rule.configType || null,
-          defaultValue: rule.defaultValue || null,
-          severity: rule.defaultSeverity || rule.severity || "error",
-          description: rule.description || "",
-          isBeta: rule.isBeta || false,
-          config: rule.defaultValue ? {[rule.configType]: rule.defaultValue} : {}
-        }));
-      } catch (error) {
-        console.warn("Failed to get rules from scanner core, using props as fallback:", error);
-        defaultRules = this.props.checkboxes;
-      }
-    } else {
-      defaultRules = this.props.checkboxes;
+    if (window.confirm("This will reset all default rules to their original settings and remove all custom rules. Are you sure?")) {
+      localStorage.removeItem(this.key);
+      localStorage.removeItem(this.customKey);
+      this.loadAndMergeRules();
     }
-
-    // Ensure known configurable rules always have their config fields
-    const knownConfigurableRules = {
-      "APIVersion": {configType: "threshold", defaultValue: 50},
-      "FlowName": {configType: "expression", defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+"},
-      "CyclomaticComplexity": {configType: "threshold", defaultValue: 25},
-      "AutoLayout": {configType: "enabled", defaultValue: true},
-      "ProcessBuilder": {configType: "enabled", defaultValue: true}
-    };
-
-    // Merge with known configurable rules to ensure config fields are always present
-    defaultRules = defaultRules.map(rule => {
-      const knownConfig = knownConfigurableRules[rule.name];
-      if (knownConfig) {
-        return {
-          ...rule,
-          configurable: true,
-          configType: rule.configType || knownConfig.configType,
-          defaultValue: rule.defaultValue || knownConfig.defaultValue,
-          config: rule.config || (knownConfig.defaultValue ? {[knownConfig.configType]: knownConfig.defaultValue} : {})
-        };
-      }
-      return rule;
-    });
-
-    const updatedRules = this.mergeRules([], defaultRules); // no stored, just defaults
-    this.setState({rules: updatedRules});
-    localStorage.setItem(this.key, JSON.stringify(updatedRules));
   }
 
   handleSeverityChange(ruleName, value) {
-    const updatedRules = this.state.rules.map(rule => {
-      if (rule.name === ruleName) {
-        return {...rule, severity: value};
-      }
-      return rule;
-    });
+    const updatedRules = this.state.rules.map(rule => (rule.name === ruleName) ? {...rule, severity: value} : rule);
     this.setState({rules: updatedRules});
-    localStorage.setItem(this.key, JSON.stringify(updatedRules));
+    this.saveRules(updatedRules);
+  }
+
+  handleDeleteRule(ruleName) {
+    if (window.confirm(`Are you sure you want to delete the rule "${ruleName}"?`)) {
+      const customRules = JSON.parse(localStorage.getItem(this.customKey) || "[]");
+      const updatedCustomRules = customRules.filter(rule => rule.name !== ruleName);
+      localStorage.setItem(this.customKey, JSON.stringify(updatedCustomRules));
+      this.loadAndMergeRules();
+    }
   }
 
   renderConfigInput(rule) {
     if (!rule.configurable) return null;
-
-    const configValue = rule.config[rule.configType] || rule.defaultValue || "";
-
+    const configValue = rule.config && rule.config[rule.configType] ? rule.config[rule.configType] : rule.defaultValue;
     if (rule.configType === "expression") {
       return h("div", {className: "rule-config-right"},
         h("input", {
-          type: "text",
-          className: "slds-input slds-input_small",
-          value: configValue,
-          onChange: (e) => this.handleConfigChange(rule.name, rule.configType, e.target.value),
-          placeholder: rule.defaultValue || "",
-          title: `Configuration for ${rule.label}`,
-          "aria-label": `${rule.label} configuration`
+          type: "text", className: "slds-input slds-input_small", value: configValue,
+          onChange: e => this.handleConfigChange(rule.name, rule.configType, e.target.value),
+          placeholder: rule.defaultValue || "", title: `Configuration for ${rule.label}`, "aria-label": `${rule.label} configuration`
         }),
-        InfoIcon({
+        h(InfoIcon, {
           tooltipId: `config-help-${rule.name}`,
-          tooltip: h("span", {},
-            `Configuration for ${rule.label}. `,
-            rule.configType === "expression" ? h("a", {href: "https://regex101.com/", target: "_blank", rel: "noopener noreferrer"}, "Regex help") : ""
-          ),
-          className: "config-help slds-m-left_xx-small",
-          placement: "right"
+          tooltip: h("span", {}, `Configuration for ${rule.label}. `, rule.configType === "expression" ? h("a", {href: "https://regex101.com/", target: "_blank", rel: "noopener noreferrer"}, "Regex help") : ""),
+          className: "config-help slds-m-left_xx-small", placement: "right"
         })
       );
     }
-
     if (rule.configType === "threshold") {
       return h("div", {className: "rule-config-right"},
         h("input", {
-          type: "number",
-          className: "slds-input slds-input_small",
-          value: configValue,
-          onChange: (e) => this.handleConfigChange(rule.name, rule.configType, parseInt(e.target.value) || rule.defaultValue),
-          min: rule.name === "APIVersion" ? "1" : "1",
-          max: rule.name === "APIVersion" ? "100" : "100",
-          title: `Threshold for ${rule.label}`,
-          "aria-label": `${rule.label} threshold`
+          type: "number", className: "slds-input slds-input_small", value: configValue,
+          onChange: e => this.handleConfigChange(rule.name, rule.configType, parseInt(e.target.value) || rule.defaultValue),
+          min: "1", max: "100", title: `Threshold for ${rule.label}`, "aria-label": `${rule.label} threshold`
         }),
-        InfoIcon({
+        h(InfoIcon, {
           tooltipId: `config-help-${rule.name}`,
-          tooltip: rule.name === "APIVersion" 
-            ? `Minimum API version required for flows. Flows with lower API versions will trigger this rule.`
-            : `Threshold value for ${rule.label}. Higher values are more permissive.`,
-          className: "config-help slds-m-left_xx-small",
-          placement: "right"
+          tooltip: rule.name === "APIVersion" ? "Minimum API version required for flows. Flows with lower API versions will trigger this rule." : `Threshold value for ${rule.label}. Higher values are more permissive.`,
+          className: "config-help slds-m-left_xx-small", placement: "right"
         })
       );
     }
-
     return null;
   }
 
   render() {
     const {title, error, scannerVersion} = this.props;
     const {rules} = this.state;
-
     if (error) {
       return h("div", {className: "option-group flow-scanner-section"},
         h("h3", {}, title),
-        h("div", {className: "slds-box slds-box_small slds-theme_error slds-m-around_medium"},
-          h("p", {}, error)
-        )
+        h("div", {className: "slds-box slds-box_small slds-theme_error slds-m-around_medium"}, h("p", {}, error))
       );
     }
-
     const versionDisplay = scannerVersion ? ` (v${scannerVersion})` : "";
-
-    // Debug: Log rules to see which ones are configurable
-    console.log("🔍 Flow Scanner Rules Debug:", {
-      totalRules: rules.length,
-      configurableRules: rules.filter(r => r.configurable).map(r => ({
-        name: r.name,
-        configurable: r.configurable,
-        configType: r.configType,
-        config: r.config,
-        defaultValue: r.defaultValue
-      })),
-      apiversionRule: rules.find(r => r.name === "APIVersion")
-    });
-
     return h("div", {className: "option-group flow-scanner-section"},
       h("h3", {}, `${title}${versionDisplay}`),
       h("div", {className: "flow-scanner-desc slds-grid slds-align_absolute-center"},
         "Configure which Flow Scanner rules are enabled and their settings. Only enabled rules will be used when scanning flows. ",
-        InfoIcon({
-          tooltipId: "section-help-tip",
-          tooltip: "Flow Scanner analyzes Salesforce Flows for best practices, anti-patterns, and common mistakes. Toggle rules on or off and configure their settings as needed. For more information, see the documentation.",
-          className: "section-help-icon slds-m-left_x-small",
-          placement: "below"
-        })
+        h(InfoIcon, {tooltipId: "section-help-tip", tooltip: "Flow Scanner analyzes Salesforce Flows for best practices, anti-patterns, and common mistakes. Toggle rules on or off and configure their settings as needed. For more information, see the documentation.", className: "section-help-icon slds-m-left_x-small", placement: "below"})
       ),
       h("div", {className: "rules-actions-toolbar", role: "toolbar", "aria-label": "Bulk actions"},
-        h("button", {
-          className: "button button-brand button-small rules-action-btn",
-          type: "button",
-          onClick: this.handleCheckAll,
-          tabIndex: 0,
-          "aria-label": "Enable all rules"
-        }, "Check All"),
-        h("button", {
-          className: "button button-neutral button-small rules-action-btn",
-          type: "button",
-          onClick: this.handleUncheckAll,
-          tabIndex: 0,
-          "aria-label": "Disable all rules"
-        }, "Uncheck All"),
-        h("button", {
-          className: "button button-neutral button-small rules-action-btn",
-          type: "button",
-          onClick: () => {
-            if (window.confirm("Reset all Flow Scanner rules to defaults?")) this.handleResetToDefaults();
-          },
-          tabIndex: 0,
-          "aria-label": "Reset rules to defaults"
-        }, "Reset to Defaults")
+        h("button", {className: "slds-button slds-button_brand slds-button_small", onClick: this.handleCheckAll, tabIndex: 0, "aria-label": "Enable all rules"}, "Check All"),
+        h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: this.handleUncheckAll, tabIndex: 0, "aria-label": "Disable all rules"}, "Uncheck All"),
+        h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: this.handleResetToDefaults, tabIndex: 0, "aria-label": "Reset rules to defaults"}, "Reset to Defaults"),
+        h("button", {className: "slds-button slds-button_success slds-button_small", onClick: this.props.onShowAddRuleModal, tabIndex: 0, "aria-label": "Add custom rule"}, "Add Custom Rule")
       ),
       h("div", {className: "rules-container"},
         rules.map((rule) =>
-          h("div", {
-            key: rule.name,
-            className: "rule-row-horizontal" + (rule.configurable ? " rule-row-highlight" : ""),
-            tabIndex: 0,
-            "aria-label": `${rule.label}: ${rule.description}`
-          },
-            // Toggle
+          h("div", {key: rule.name, className: `rule-row-horizontal${rule.configurable ? " rule-row-highlight" : ""}${rule.isCustom ? " custom-rule" : ""}`, tabIndex: 0, "aria-label": `${rule.label}: ${rule.description}`},
             h("div", {className: "rule-toggle-container"},
               h("label", {className: "slds-checkbox_toggle slds-grid"},
-                h("input", {
-                  type: "checkbox",
-                  "aria-describedby": `desc-${rule.name}`,
-                  checked: rule.checked,
-                  onChange: () => this.handleRuleToggle(rule.name),
-                  tabIndex: 0
-                }),
+                h("input", {type: "checkbox", "aria-describedby": `desc-${rule.name}`, checked: rule.checked, onChange: () => this.handleRuleToggle(rule.name), tabIndex: 0}),
                 h("span", {className: "slds-checkbox_faux_container", "aria-live": "assertive"},
                   h("span", {className: "slds-checkbox_faux"}),
                   h("span", {className: "slds-checkbox_on"}, "Enabled"),
@@ -1338,32 +1188,24 @@ class FlowScannerRulesOption extends React.Component {
                 )
               )
             ),
-            // Name and Description (left)
             h("div", {className: "rule-main-info"},
               h("div", {className: "rule-name-horizontal"},
                 rule.label,
-                rule.isBeta && h("span", {className: "beta-badge"}, "BETA")
+                rule.isBeta && h("span", {className: "beta-badge"}, "BETA"),
+                rule.isCustom && h("span", {className: "custom-badge"}, "CUSTOM")
               ),
-              h("div", {
-                className: "rule-description-horizontal",
-                id: `desc-${rule.name}`,
-                title: rule.description
-              }, rule.description)
+              h("div", {className: "rule-description-horizontal", id: `desc-${rule.name}`, title: rule.description}, rule.description)
             ),
-            // Config (right-aligned)
             h("div", {className: "rule-config-group"},
               this.renderConfigInput(rule),
               h("label", {htmlFor: `severity-${rule.name}`, className: "slds-form-element__label", style: {marginRight: 4}}, "Severity:"),
-              h("select", {
-                id: `severity-${rule.name}`,
-                value: normalizeSeverity(rule.severity || "error", "ui"),
-                onChange: (e) => this.handleSeverityChange(rule.name, normalizeSeverity(e.target.value, "storage")),
-                className: `severity-select severity-${normalizeSeverity(rule.severity || "error", "ui")}`,
-                style: {marginLeft: 2, minWidth: 80}
-              },
+              h("select", {id: `severity-${rule.name}`, value: normalizeSeverity(rule.severity || "error", "ui"), onChange: e => this.handleSeverityChange(rule.name, normalizeSeverity(e.target.value, "storage")), className: `severity-select severity-${normalizeSeverity(rule.severity || "error", "ui")}`, style: {marginLeft: 2, minWidth: 80}},
                 h("option", {value: "error"}, "Error"),
                 h("option", {value: "warning"}, "Warning"),
                 h("option", {value: "info"}, "Info")
+              ),
+              rule.isCustom && h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.handleDeleteRule(rule.name), title: "Delete Rule"},
+                h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"}, h("use", {xlinkHref: "symbols.svg#delete"}))
               )
             )
           )
@@ -1421,13 +1263,16 @@ class OptionsTabSelector extends React.Component {
     this.model = props.model;
     this.sfHost = this.model.sfHost;
 
+    // Bind methods first
+    this.onTabSelect = this.onTabSelect.bind(this);
+
     // Get the tab from the URL or default to 1
     const urlParams = new URLSearchParams(window.location.search);
     const initialTabId = parseInt(urlParams.get("selectedTab")) || 1;
 
     this.state = {
       selectedTabId: initialTabId,
-      flowScannerError: null
+      flowScannerError: null,
     };
 
     // Initialize rule checkboxes
@@ -1637,7 +1482,7 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Tab8",
         title: "Flow Scanner",
         content: [
-          {option: FlowScannerRulesOption, props: {title: "Enabled Rules", key: "flowScannerRules", checkboxes: ruleCheckboxes, error: this.state.flowScannerError, scannerVersion}}
+          {option: FlowScannerRulesOption, props: {title: "Enabled Rules", key: "flowScannerRules", checkboxes: ruleCheckboxes, error: this.state.flowScannerError, scannerVersion, onShowAddRuleModal: this.props.onShowAddRuleModal}}
         ]
       },
       {
@@ -1741,7 +1586,56 @@ class App extends React.Component {
     this.exportOptions = this.exportOptions.bind(this);
     this.importOptions = this.importOptions.bind(this);
     this.hideToast = this.hideToast.bind(this);
-    this.state = {};
+    // Add modal logic
+    this.showAddRuleModal = this.showAddRuleModal.bind(this);
+    this.hideAddRuleModal = this.hideAddRuleModal.bind(this);
+    this.handleSaveCustomRule = this.handleSaveCustomRule.bind(this);
+    this._renderModal = this._renderModal.bind(this);
+    this.renderAddRuleForm = this.renderAddRuleForm.bind(this);
+    this.customKey = "flowScannerCustomRules";
+    this.state = {
+      // toast state
+      showToast: false,
+      toastMessage: "",
+      toastVariant: "",
+      toastTitle: "",
+      // modal state
+      isAddRuleModalOpen: false,
+      newRuleName: "",
+      newRuleLabel: "",
+      newRuleDescription: "",
+      newRuleCode: "",
+      newRuleSeverity: "error"
+    };
+    this.modalContainer = null;
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    console.log("[Modal Debug] componentDidUpdate, prev open:", prevState.isAddRuleModalOpen, "current open:", this.state.isAddRuleModalOpen);
+    if (this.state.isAddRuleModalOpen && !prevState.isAddRuleModalOpen) {
+      this.modalContainer = document.createElement("div");
+      document.body.appendChild(this.modalContainer);
+      console.log("[Modal Debug] Modal container created:", this.modalContainer);
+      this._renderModal();
+    } else if (!this.state.isAddRuleModalOpen && prevState.isAddRuleModalOpen) {
+      if (this.modalContainer) {
+        console.log("[Modal Debug] Unmounting and removing modal container");
+        ReactDOM.unmountComponentAtNode(this.modalContainer);
+        document.body.removeChild(this.modalContainer);
+        this.modalContainer = null;
+      }
+    } else if (this.state.isAddRuleModalOpen) {
+      console.log("[Modal Debug] Modal already open, re-rendering");
+      this._renderModal();
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.modalContainer) {
+      ReactDOM.unmountComponentAtNode(this.modalContainer);
+      document.body.removeChild(this.modalContainer);
+      this.modalContainer = null;
+    }
   }
 
   exportOptions() {
@@ -1795,15 +1689,134 @@ class App extends React.Component {
   }
 
   hideToast() {
-    let {model} = this.props;
-    this.state = {showToast: false, toastMessage: ""};
-    model.didUpdate();
+    this.setState({showToast: false, toastMessage: ""});
+  }
+
+  showAddRuleModal() {
+    console.log("[Modal Debug] showAddRuleModal called");
+    document.body.classList.add("slds-scrollable_none");
+    document.body.classList.add("slds-modal_open");
+    this.setState({isAddRuleModalOpen: true});
+  }
+
+  hideAddRuleModal() {
+    document.body.classList.remove("slds-scrollable_none");
+    document.body.classList.remove("slds-modal_open");
+    this.setState({
+      isAddRuleModalOpen: false,
+      newRuleName: "",
+      newRuleLabel: "",
+      newRuleDescription: "",
+      newRuleCode: "",
+      newRuleSeverity: "error"
+    });
+  }
+
+  handleSaveCustomRule() {
+    const {newRuleName, newRuleLabel, newRuleDescription, newRuleCode, newRuleSeverity} = this.state;
+    const newRule = {
+      name: newRuleName,
+      label: newRuleLabel,
+      description: newRuleDescription,
+      code: newRuleCode,
+      severity: newRuleSeverity,
+      isCustom: true,
+      checked: true
+    };
+    const customRules = JSON.parse(localStorage.getItem(this.customKey) || "[]");
+    customRules.push(newRule);
+    localStorage.setItem(this.customKey, JSON.stringify(customRules));
+    this.hideAddRuleModal();
+    window.location.reload();
+  }
+
+  _renderModal() {
+    console.log("[Modal Debug] _renderModal invoked");
+    const {newRuleName, newRuleLabel, newRuleDescription, newRuleSeverity, newRuleCode} = this.state;
+    const isFormValid = newRuleName && newRuleLabel && newRuleDescription && newRuleSeverity && newRuleCode;
+    const modalWithBackdrop = h("div", {},
+      h("section", {
+        role: "dialog", 
+        tabIndex: "-1", 
+        "aria-modal": "true", 
+        "aria-labelledby": "modal-heading", 
+        className: "slds-modal slds-modal_medium slds-fade-in-open"
+      },
+        h("div", {className: "slds-modal__container"},
+          h("div", {className: "slds-modal__header"},
+            h("button", {
+              className: "slds-button slds-button_icon slds-modal__close slds-button_icon-inverse",
+              title: "Close",
+              onClick: this.hideAddRuleModal
+            },
+            h("svg", {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
+              h("use", {xlinkHref: "symbols.svg#close"})
+            ),
+            h("span", {className: "slds-assistive-text"}, "Close")
+            ),
+            h("h2", {id: "modal-heading", className: "slds-modal__title slds-text-heading_medium"}, "Add Custom Flow Scanner Rule")
+          ),
+          h("div", {className: "slds-modal__content slds-p-around_medium"},
+            this.renderAddRuleForm()
+          ),
+          h("div", {className: "slds-modal__footer"},
+            h("button", {className: "slds-button slds-button_neutral", onClick: this.hideAddRuleModal}, "Cancel"),
+            h("button", {className: "slds-button slds-button_brand", onClick: this.handleSaveCustomRule, disabled: !isFormValid}, "Save")
+          )
+        )
+      ),
+      h("div", {className: "slds-backdrop slds-backdrop_open", role: "presentation"})
+    );
+    console.log("[Modal Debug] Rendering modalWithBackdrop into container", this.modalContainer);
+    if (this.modalContainer) {
+      ReactDOM.render(modalWithBackdrop, this.modalContainer);
+    }
+  }
+
+  renderAddRuleForm() {
+    const {newRuleName, newRuleLabel, newRuleDescription, newRuleSeverity, newRuleCode} = this.state;
+    return h("div", {className: "slds-form slds-form_stacked"},
+      h("div", {className: "slds-form-element"},
+        h("label", {className: "slds-form-element__label", htmlFor: "new-rule-name"}, "Rule Name (must match the exported class name)"),
+        h("div", {className: "slds-form-element__control"},
+          h("input", {type: "text", id: "new-rule-name", className: "slds-input", placeholder: "e.g., MyCustomRule", value: newRuleName, onChange: e => this.setState({newRuleName: e.target.value.trim()})})
+        )
+      ),
+      h("div", {className: "slds-form-element"},
+        h("label", {className: "slds-form-element__label", htmlFor: "new-rule-label"}, "Label"),
+        h("div", {className: "slds-form-element__control"},
+          h("input", {type: "text", id: "new-rule-label", className: "slds-input", placeholder: "e.g., My Custom Rule", value: newRuleLabel, onChange: e => this.setState({newRuleLabel: e.target.value})})
+        )
+      ),
+      h("div", {className: "slds-form-element"},
+        h("label", {className: "slds-form-element__label", htmlFor: "new-rule-description"}, "Description"),
+        h("div", {className: "slds-form-element__control"},
+          h("textarea", {id: "new-rule-description", className: "slds-textarea", placeholder: "A short description of what this rule does.", value: newRuleDescription, onChange: e => this.setState({newRuleDescription: e.target.value})})
+        )
+      ),
+      h("div", {className: "slds-form-element"},
+        h("label", {className: "slds-form-element__label", htmlFor: "new-rule-severity"}, "Severity"),
+        h("div", {className: "slds-form-element__control"},
+          h("select", {id: "new-rule-severity", className: "slds-select", value: newRuleSeverity, onChange: e => this.setState({newRuleSeverity: e.target.value})},
+            h("option", {value: "error"}, "Error"),
+            h("option", {value: "warning"}, "Warning"),
+            h("option", {value: "info"}, "Info")
+          )
+        )
+      ),
+      h("div", {className: "slds-form-element"},
+        h("label", {className: "slds-form-element__label", htmlFor: "new-rule-code"}, "Rule Code"),
+        h("div", {className: "slds-form-element__control"},
+          h("textarea", {id: "new-rule-code", className: "slds-textarea", placeholder: "Paste your JavaScript rule code here. e.g., export default class MyCustomRule { ... }", value: newRuleCode, onChange: e => this.setState({newRuleCode: e.target.value}), rows: 10, style: {fontFamily: "monospace"}})
+        )
+      )
+    );
   }
 
   render() {
-    const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
     return h("div", {},
+      // Manual portal-based modal rendering will handle overlay when isAddRuleModalOpen is true
       h("div", {id: "user-info", className: "slds-border_bottom"},
         h("a", {href: model.sfLink, className: "sf-link"},
           h("svg", {viewBox: "0 0 24 24"},
@@ -1842,7 +1855,7 @@ class App extends React.Component {
           onClose: this.hideToast
         }),
       h("div", {className: "main-container slds-card slds-m-around_small", id: "main-container_header"},
-        h(OptionsTabSelector, {model})
+        h(OptionsTabSelector, {model, onShowAddRuleModal: this.showAddRuleModal})
       )
     );
   }

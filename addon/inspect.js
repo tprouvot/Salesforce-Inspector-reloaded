@@ -209,39 +209,55 @@ class Model {
     if (actionName == "saving record" && message.includes("FIELD_CUSTOM_VALIDATION_EXCEPTION")) {
       let validationMessage = message.substring(message.indexOf("FIELD_CUSTOM_VALIDATION_EXCEPTION") + "FIELD_CUSTOM_VALIDATION_EXCEPTION".length);
       validationMessage = validationMessage.replace(/^[:\s,]+/, "").trim();
-      // Query for validation rules with matching error message
-      let query = `SELECT Id, ValidationName, Metadata, EntityDefinition.QualifiedApiName FROM ValidationRule WHERE ErrorMessage = '${validationMessage.replace(/'/g, "\\'")}'`;
+
+      let query = `SELECT Id FROM ValidationRule WHERE ErrorMessage = '${validationMessage.replace(/'/g, "\\'")}'`;
       let queryUrl = `/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(query)}`;
+
       this.spinFor(
         "querying validation rules",
         sfConn.rest(queryUrl).then(result => {
           if (result.records && result.records.length > 0) {
-            let links = [];
-            let count = 0;
-            result.records.forEach((vr) => {
-              let setupLinks = getObjectSetupLinks(this.sfHost, vr.EntityDefinition.QualifiedApiName);
-              let vrSetupLink = setupLinks.validationRules || `https://${this.sfHost}/lightning/setup/ObjectManager/${vr.EntityDefinition.QualifiedApiName}/ValidationRules/${vr.Id}/view`;
-              links.push({
-                url: vrSetupLink,
-                label: `[${count + 1}]`,
-                description: `${vr.ValidationName}\nError Condition Formula: ${vr.Metadata.errorConditionFormula}`
-              });
-              count++;
+            let metadataPromises = result.records.map((vr, index) => {
+              let queryMetadata = `SELECT ValidationName, Metadata, EntityDefinition.QualifiedApiName FROM ValidationRule WHERE Id = '${vr.Id}' LIMIT 5`;
+              let queryMetadataUrl = `/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(queryMetadata)}`;
+
+              return sfConn.rest(queryMetadataUrl)
+                .then(metaResult => {
+                  if (metaResult.records && metaResult.records.length > 0) {
+                    let vrData = metaResult.records[0];
+                    return {
+                      url: `https://${this.sfHost}/lightning/setup/ObjectManager/${vrData.EntityDefinition.QualifiedApiName}/ValidationRules/${vr.Id}/view`,
+                      label: `[${index + 1}]`,
+                      description: `${vrData.ValidationName}\nError Condition Formula: ${vrData.Metadata.errorConditionFormula}`
+                    };
+                  }
+                  return null;
+                })
+                .catch(err => {
+                  console.error("Failed to query validation rule metadata:", err);
+                  return null;
+                });
             });
-            if (count > 0) {
-              error.links = links;
-            }
+
+            return Promise.all(metadataPromises).then(links => {
+              error.links = links.filter(Boolean);
+              this.errorMessages.push(error);
+            });
+          } else {
+            this.errorMessages.push(error);
           }
+          return null;
         }).catch(err => {
           console.error("Failed to query validation rules:", err);
+          this.errorMessages.push(error);
         })
       );
+    } else {
+      this.errorMessages.push(error);
     }
-
-    this.errorMessages.push(error);
   }
   clearSaveError() {
-    let i = this.errorMessages.findIndex(e => ["saving record", "deleting record", "creating record"].some(actionName => e.startsWith(`Error ${actionName}:`)));
+    let i = this.errorMessages.findIndex(e => ["saving record", "deleting record", "creating record"].some(actionName => e.message.startsWith(`Error ${actionName}:`)));
     if (i != -1) {
       this.errorMessages.splice(i, 1);
     }

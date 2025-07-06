@@ -26,6 +26,8 @@
 - Implement search on `Event Monitor` to filter on event details
 - Prevent selection of an API version higher than the latest available [issue 464](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/464) (contribution by [Salwa Hammou](https://github.com/SalwaHm))
 - Fix error propagation on rest 403 [issue 881](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/881) (contribution by [Sebastien Colladon](https://github.com/scolladon))
+- Add link and preview to validation's rule message on Show all data page [feature 863](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/863) (contribution by [Matheus Delazeri](https://github.com/matheus-delazeri))
+- Fix data-import-test by prefixing the API version with 'v' on rest calls
 
 ## Version 1.26
 

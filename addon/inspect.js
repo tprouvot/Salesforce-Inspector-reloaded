@@ -72,7 +72,7 @@ class Model {
     promise
       .catch(err => {
         console.error(err);
-        this.errorMessages.push("Error " + actionName + ": " + err.message);
+        this.addError(actionName, err.message);
       })
       .then(() => {
         this.spinnerCount--;
@@ -198,6 +198,40 @@ class Model {
       );
     } else {
       console.error("unknown edit mode", this.editMode);
+    }
+  }
+  addError(actionName, message) {
+    let error = {
+      message: "Error " + actionName + ": " + message,
+      links: []
+    };
+    // If it's a validation's rule error message, get the link for it
+    if (actionName == "saving record" && message.includes("FIELD_CUSTOM_VALIDATION_EXCEPTION")) {
+      let validationMessage = message.substring(message.indexOf("FIELD_CUSTOM_VALIDATION_EXCEPTION") + "FIELD_CUSTOM_VALIDATION_EXCEPTION".length);
+      validationMessage = validationMessage.replace(/^[:\s,]+/, "").trim();
+
+      let query = `SELECT Id, ValidationName, Metadata, EntityDefinition.QualifiedApiName FROM ValidationRule WHERE Active = true AND EntityDefinitionId = '${this.entityDefinitionDurableId}' AND ErrorMessage = '${validationMessage.replace(/'/g, "\\'")}'`;
+      let queryUrl = `/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(query)}`;
+
+      this.spinFor(
+        "querying validation rules",
+        sfConn.rest(queryUrl).then(result => {
+          if (result.records && result.records.length > 0) {
+            error.links = result.records.map((vr, index) => ({
+              url: `https://${this.sfHost}/lightning/setup/ObjectManager/${vr.EntityDefinition.QualifiedApiName}/ValidationRules/${vr.Id}/view`,
+              label: `[${index + 1}]`,
+              description: `${vr.ValidationName}\nError Condition Formula: ${vr.Metadata.errorConditionFormula}`
+            }));
+          }
+          this.errorMessages.push(error);
+          return null;
+        }).catch(err => {
+          console.error("Failed to query validation rules:", err);
+          this.errorMessages.push(error);
+        })
+      );
+    } else {
+      this.errorMessages.push(error);
     }
   }
   clearSaveError() {
@@ -1209,7 +1243,19 @@ class App extends React.Component {
           )
         ),
         h("div", {className: "table-container " + (model.fieldRows.selectedColumnMap.size < 2 && model.childRows.selectedColumnMap.size < 2 ? "empty " : "")},
-          h("div", {hidden: model.errorMessages.length == 0, className: "error-message"}, model.errorMessages.map((data, index) => h("div", {key: index}, data))),
+          h("div", {hidden: model.errorMessages.length == 0, className: "error-message"}, model.errorMessages.map((data, index) => h("div", {key: index}, [
+            data.message,
+            data.links && data.links.length > 0 ? " " : null,
+            data.links ? data.links.map((link, linkIndex) =>
+              h("a", {
+                key: linkIndex,
+                href: link.url,
+                title: link.description,
+                target: "_blank",
+                style: {marginLeft: "5px"}
+              }, link.label)
+            ) : null
+          ]))),
           model.useTab == "all" || model.useTab == "fields" ? h(RowTable, {
             model,
             rowList: model.fieldRows,

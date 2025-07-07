@@ -593,6 +593,19 @@ class Model {
 
     // If we are on the right hand side of a comparison operator, autocomplete field values
     let isFieldValue = query.substring(0, selStart).match(/\s*[<>=!]+\s*('?[^'\s]*)$/);
+
+    // In clause on picklist field
+    let isInWithValues = query.substring(0, selStart).match(/\s*in\s*\(\s*(?:(?:'[^']*'\s*,\s*)+|')('?[^'\s]*)$/i);
+    let inValuesUtilized = '';
+    if(isInWithValues){ 
+      if(isInWithValues[0] && isInWithValues[0].match(/\s*in\s*\(\s*(?:')$/i)){ // extra single quote
+        selStart -= 1;
+        isInWithValues[0] = isInWithValues[0].substring(0, isInWithValues[0].length- 1);
+      }
+      isFieldValue = isInWithValues;
+      inValuesUtilized = isInWithValues[0].toLowerCase();
+    }
+
     let fieldName = null;
     if (isFieldValue) {
       let fieldEnd = selStart - isFieldValue[0].length;
@@ -747,7 +760,11 @@ class Model {
         return;
       }
       let ar = new Enumerable(contextValueFields).flatMap(function* ({field}) {
-        yield* field.picklistValues.map(pickVal => ({value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: ""}));
+        yield* field.picklistValues.filter(
+          pickVal => !inValuesUtilized.includes(pickVal.value.toLowerCase())
+        ).map(
+          pickVal => ({value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: ""})
+        );
         if (field.type == "boolean") {
           yield {value: "true", title: "true", suffix: " ", rank: 1};
           yield {value: "false", title: "false", suffix: " ", rank: 1};

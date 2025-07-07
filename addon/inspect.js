@@ -210,42 +210,20 @@ class Model {
       let validationMessage = message.substring(message.indexOf("FIELD_CUSTOM_VALIDATION_EXCEPTION") + "FIELD_CUSTOM_VALIDATION_EXCEPTION".length);
       validationMessage = validationMessage.replace(/^[:\s,]+/, "").trim();
 
-      let query = `SELECT Id FROM ValidationRule WHERE ErrorMessage = '${validationMessage.replace(/'/g, "\\'")}'`;
+      let query = `SELECT Id, ValidationName, Metadata, EntityDefinition.QualifiedApiName FROM ValidationRule WHERE Active = true AND EntityDefinitionId = '${this.entityDefinitionDurableId}' AND ErrorMessage = '${validationMessage.replace(/'/g, "\\'")}'`;
       let queryUrl = `/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(query)}`;
 
       this.spinFor(
         "querying validation rules",
         sfConn.rest(queryUrl).then(result => {
           if (result.records && result.records.length > 0) {
-            let metadataPromises = result.records.map((vr, index) => {
-              let queryMetadata = `SELECT ValidationName, Metadata, EntityDefinition.QualifiedApiName FROM ValidationRule WHERE Id = '${vr.Id}' LIMIT 5`;
-              let queryMetadataUrl = `/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(queryMetadata)}`;
-
-              return sfConn.rest(queryMetadataUrl)
-                .then(metaResult => {
-                  if (metaResult.records && metaResult.records.length > 0) {
-                    let vrData = metaResult.records[0];
-                    return {
-                      url: `https://${this.sfHost}/lightning/setup/ObjectManager/${vrData.EntityDefinition.QualifiedApiName}/ValidationRules/${vr.Id}/view`,
-                      label: `[${index + 1}]`,
-                      description: `${vrData.ValidationName}\nError Condition Formula: ${vrData.Metadata.errorConditionFormula}`
-                    };
-                  }
-                  return null;
-                })
-                .catch(err => {
-                  console.error("Failed to query validation rule metadata:", err);
-                  return null;
-                });
-            });
-
-            return Promise.all(metadataPromises).then(links => {
-              error.links = links.filter(Boolean);
-              this.errorMessages.push(error);
-            });
-          } else {
-            this.errorMessages.push(error);
+            error.links = result.records.map((vr, index) => ({
+              url: `https://${this.sfHost}/lightning/setup/ObjectManager/${vr.EntityDefinition.QualifiedApiName}/ValidationRules/${vr.Id}/view`,
+              label: `[${index + 1}]`,
+              description: `${vr.ValidationName}\nError Condition Formula: ${vr.Metadata.errorConditionFormula}`
+            }));
           }
+          this.errorMessages.push(error);
           return null;
         }).catch(err => {
           console.error("Failed to query validation rules:", err);
@@ -257,7 +235,7 @@ class Model {
     }
   }
   clearSaveError() {
-    let i = this.errorMessages.findIndex(e => ["saving record", "deleting record", "creating record"].some(actionName => e.message.startsWith(`Error ${actionName}:`)));
+    let i = this.errorMessages.findIndex(e => ["saving record", "deleting record", "creating record"].some(actionName => e.startsWith(`Error ${actionName}:`)));
     if (i != -1) {
       this.errorMessages.splice(i, 1);
     }
@@ -1268,7 +1246,7 @@ class App extends React.Component {
           h("div", {hidden: model.errorMessages.length == 0, className: "error-message"}, model.errorMessages.map((data, index) => h("div", {key: index}, [
             data.message,
             data.links && data.links.length > 0 ? " " : null,
-            data.links ? data.links.map((link, linkIndex) => 
+            data.links ? data.links.map((link, linkIndex) =>
               h("a", {
                 key: linkIndex,
                 href: link.url,

@@ -1672,10 +1672,22 @@ class App extends React.Component {
             templateKey: "queryTemplates",
             queryHistoryKey: "insextQueryHistory",
             defaultTypeKey: "defaultQueryType",
-            queryHistory: model.queryHistory,
-            savedHistory: model.savedHistory,
-            templates: model.queryTemplates.map(template => ({query: template, label: "", useToolingApi: false})),
-            searchProperties: ["query"],
+            queryHistory: {
+              ...model.queryHistory,
+              list: model.queryHistory.list.map(item => ({
+                ...item,
+                useToolingApi: item.useToolingApi ? "Tooling API" : "Standard API"
+              }))
+            },
+            savedHistory: {
+              ...model.savedHistory,
+              list: model.savedHistory.list.map(item => ({
+                ...item,
+                useToolingApi: item.useToolingApi ? "Tooling API" : "Standard API"
+              }))
+            },
+            templates: model.queryTemplates.map(template => ({query: template, label: "", useToolingApi: ""})),
+            searchProperties: ["query", "label"],
             displayProperties: {
               primary: "query",
               secondary: "label",

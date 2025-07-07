@@ -869,3 +869,6 @@ svg.icon:hover {
 .icon-hover-container:hover .icon-hover {
   visibility: visible;
 }
+#itemLabel {
+  padding-right: 0px;
+}

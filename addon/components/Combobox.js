@@ -31,7 +31,8 @@ class Combobox extends React.Component {
     this.onSaveItem = this.onSaveItem.bind(this);
     this.state = {
       isQueryMenuOpen: false,
-      isSuggestionsOpen: false
+      isSuggestionsOpen: false,
+      currentSearchTerm: ""
     };
   }
 
@@ -52,8 +53,16 @@ class Combobox extends React.Component {
   closeAllMenus = () => {
     this.setState({
       isQueryMenuOpen: false,
-      isSuggestionsOpen: false
+      isSuggestionsOpen: false,
+      currentSearchTerm: "" // Clear search term when closing menus
     });
+  };
+
+  clearSelection = () => {
+    this.item = null;
+    if (this.refs.lookupSearch) {
+      this.refs.lookupSearch.value = "";
+    }
   };
 
   handleLookupSelection(target) {
@@ -67,12 +76,20 @@ class Combobox extends React.Component {
     // Don't close immediately on blur to allow for clicks
     setTimeout(() => {
       this.closeAllMenus();
+      // Clear inputs if no item is selected
+      if (!this.item) {
+        this.clearSelection();
+      }
     }, 100);
   }
 
   handleItemSelection(target) {
     this.onItemSelection(target, this.lookupOption);
     this.item = target;
+
+    target.label = target.label ? target.label : "";
+    this.refs.itemName.value = target.label;
+
     this.closeAllMenus();
     this.model.didUpdate();
   }
@@ -185,8 +202,40 @@ class Combobox extends React.Component {
       })
     );
 
+    // Store the current search term
+    this.setState({currentSearchTerm: searchTerm});
+
     this.toggleSuggestions(true); // Keep suggestions open while searching
     this.model.didUpdate();
+  }
+
+  highlightText(text, searchTerm) {
+    // Convert to string and handle null/undefined
+    const textStr = text != null ? String(text) : "";
+
+    if (!textStr || !searchTerm || searchTerm.trim() === "") {
+      return textStr;
+    }
+
+    // Create a case-insensitive regex for the search term
+    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+    const parts = textStr.split(regex);
+
+    // Return an array of React elements with highlighted matches
+    return parts.map((part, index) => {
+      if (part.toLowerCase() === searchTerm.toLowerCase()) {
+        return h("mark", {
+          key: index,
+          style: {
+            verticalAlign: "baseline",
+            lineHeight: "inherit",
+            padding: "0",
+            margin: "0"
+          }
+        }, part);
+      }
+      return part;
+    });
   }
 
   render() {
@@ -340,8 +389,20 @@ class Combobox extends React.Component {
                   )
                 ),
                 h("span", {className: "slds-media__body", title: item[this.displayProperties.primary]},
-                  h("span", {className: "slds-listbox__option-text slds-listbox__option-text_entity"}, item[this.displayProperties.primary]),
-                  h("span", {className: "slds-listbox__option-meta slds-listbox__option-meta_entity"}, item.list.label + " • " + item[this.displayProperties.tertiary] + (item[this.displayProperties.secondary] ? " • " + item[this.displayProperties.secondary] : ""))
+                  h("span", {className: "slds-listbox__option-text slds-listbox__option-text_entity"},
+                    this.highlightText(item[this.displayProperties.primary], this.state.currentSearchTerm)
+                  ),
+                  h("span", {className: "slds-listbox__option-meta slds-listbox__option-meta_entity"},
+                    [
+                      this.highlightText(item.list.label, this.state.currentSearchTerm),
+                      " • ",
+                      this.highlightText(item[this.displayProperties.tertiary], this.state.currentSearchTerm),
+                      item[this.displayProperties.secondary] ? [
+                        " • ",
+                        this.highlightText(item[this.displayProperties.secondary], this.state.currentSearchTerm)
+                      ] : null
+                    ]
+                  )
                 ),
                 h("button", {className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right",
                   title: "Delete Query",
@@ -361,11 +422,13 @@ class Combobox extends React.Component {
             )
           ),
           h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left-right"},
-            h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default"},
-              h("use", {xlinkHref: "symbols.svg#save"})
-            ),
-            h("input", {type: "text", ref: "itemName", id: "itemLabel", className: "slds-input slds-m-left_xx-small", placeholder: "Label"}),
-            h("button", {onClick: this.onSaveItem, title: "Save", className: "slds-m-left_xx-small"}, "Save")
+            h("div", {className: "slds-grid slds-grid_vertical-align-center"},
+              h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default"},
+                h("use", {xlinkHref: "symbols.svg#save"})
+              ),
+              h("input", {type: "text", ref: "itemName", id: "itemLabel", className: "slds-input slds-m-left_xx-small", placeholder: "Label"}),
+              h("button", {onClick: this.onSaveItem, title: "Save", className: "slds-m-left_xx-small"}, "Save")
+            )
           )
         )
       ));

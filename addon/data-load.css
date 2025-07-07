@@ -7,8 +7,8 @@
   padding-left: 8px;
 }
 
-#result-table table tr:hover>td {
-  background-color: #F3F2F2;
+#result-table table tr:hover > td {
+  background-color: #f3f2f2;
 }
 
 .scrolltable-scrolled {
@@ -21,7 +21,7 @@
 }
 
 .scrolltable-cell {
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
   overflow: hidden;
   padding: 0 4px;
   background-color: white;
@@ -31,7 +31,7 @@
 
 .scrolltable-cell.header {
   font-weight: 700;
-  background-color: #FAFAF9;
+  background-color: #fafaf9;
   border-top: none;
   padding-top: 7px;
   padding-bottom: 7px;
@@ -55,8 +55,8 @@
   padding-left: 8px;
 }
 
-#result-table table tr:hover>td {
-  background-color: #F3F2F2;
+#result-table table tr:hover > td {
+  background-color: #f3f2f2;
 }
 
 .scrolltable-scrolled {
@@ -69,7 +69,7 @@
 }
 
 .scrolltable-cell {
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
   overflow: hidden;
   padding: 0 4px;
   background-color: white;
@@ -79,7 +79,7 @@
 
 .scrolltable-cell.header {
   font-weight: 700;
-  background-color: #FAFAF9;
+  background-color: #fafaf9;
   border-top: none;
   padding-top: 7px;
   padding-bottom: 7px;
@@ -149,7 +149,7 @@
   -webkit-mask-size: 1rem;
   -webkit-mask-image: url(images/record_lookup.svg);
   -webkit-mask-position: center;
-  background-color: #706E6B;
+  background-color: #706e6b;
 }
 
 .pop-menu a.copy-id .icon {
@@ -157,7 +157,7 @@
   -webkit-mask-size: 1rem;
   -webkit-mask-image: url(images/copy.svg);
   -webkit-mask-position: center;
-  background-color: #706E6B;
+  background-color: #706e6b;
 }
 
 .pop-menu a.download-salesforce .icon {
@@ -180,17 +180,23 @@
 }
 
 .pop-menu a.view-salesforce .icon {
-  background-color: #009DDC;
+  background-color: #009ddc;
 }
 
 .pop-menu a.view-inspector .icon {
-  background-color: #D8BE5F;
+  background-color: #d8be5f;
 }
 
 .pop-menu a:hover {
-  background-color: #F3F2F2;
+  background-color: #f3f2f2;
 }
 
 .pop-menu a:active {
-  background-color: #ECEBEA;
+  background-color: #ecebea;
+}
+
+/* Comprehensive override to prevent SLDS interference with scrolltable */
+#result-table .scrolltable-scrolled table,
+.scrolltable-scrolled table {
+  width: auto !important;
 }

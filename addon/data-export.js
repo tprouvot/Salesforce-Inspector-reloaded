@@ -596,11 +596,11 @@ class Model {
 
     // In clause on picklist field
     let isInWithValues = query.substring(0, selStart).match(/\s*in\s*\(\s*(?:(?:'[^']*'\s*,\s*)+|')('?[^'\s]*)$/i);
-    let inValuesUtilized = '';
-    if(isInWithValues){ 
-      if(isInWithValues[0] && isInWithValues[0].match(/\s*in\s*\(\s*(?:')$/i)){ // extra single quote
+    let inValuesUtilized = "";
+    if (isInWithValues){
+      if (isInWithValues[0] && isInWithValues[0].match(/\s*in\s*\(\s*(?:')$/i)){ // extra single quote
         selStart -= 1;
-        isInWithValues[0] = isInWithValues[0].substring(0, isInWithValues[0].length- 1);
+        isInWithValues[0] = isInWithValues[0].substring(0, isInWithValues[0].length - 1);
       }
       isFieldValue = isInWithValues;
       inValuesUtilized = isInWithValues[0].toLowerCase();

@@ -124,8 +124,8 @@ export async function dataImportTest(test) {
   assertEquals({text: "2 records will be created.", action: undefined}, vm.confirmPopup);
   vm.confirmPopupYes();
   assertEquals(null, vm.confirmPopup);
-  assertEquals({Queued: 0, Processing: 2, Succeeded: 0, Failed: 0}, vm.importCounts());
-  assertEquals([["Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], ["test6", "600.06", "Processing", "", "", ""], ["test7", "700.07", "Processing", "", "", ""]], vm.importTableResult.table);
+  assertEquals({Queued: 1, Processing: 1, Succeeded: 0, Failed: 0}, vm.importCounts());
+  assertEquals([["Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], ["test6", "600.06", "Processing", "", "", ""], ["test7", "700.07", "Queued", "", "", ""]], vm.importTableResult.table);
   await waitForSpinner();
   assertEquals({Queued: 0, Processing: 0, Succeeded: 2, Failed: 0}, vm.importCounts());
   assertEquals([["Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], ["test6", "600.06", "Succeeded", "--id--", "Inserted", ""], ["test7", "700.07", "Succeeded", "--id--", "Inserted", ""]], vm.importTableResult.table.map(row => row.map(cell => /^[a-zA-Z0-9]{18}$/.test(cell) ? "--id--" : cell)));
@@ -150,7 +150,7 @@ export async function dataImportTest(test) {
   vm.doImport();
   assertEquals({text: "2 records will be updated.", action: undefined}, vm.confirmPopup);
   vm.confirmPopupYes();
-  assertEquals([["Id", "Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], [records[4].Id, "test5update", "500.50", "Processing", "", "", ""], [records[5].Id, "test6update", "600.60", "Processing", "", "", ""]], vm.importTableResult.table);
+  assertEquals([["Id", "Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], [records[4].Id, "test5update", "500.50", "Processing", "", "", ""], [records[5].Id, "test6update", "600.60", "Queued", "", "", ""]], vm.importTableResult.table);
   await waitForSpinner();
   assertEquals({Queued: 0, Processing: 0, Succeeded: 2, Failed: 0}, vm.importCounts());
   assertEquals([["Id", "Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], [records[4].Id, "test5update", "500.50", "Succeeded", records[4].Id, "Updated", ""], [records[5].Id, "test6update", "600.60", "Succeeded", records[5].Id, "Updated", ""]], vm.importTableResult.table);
@@ -203,7 +203,7 @@ export async function dataImportTest(test) {
   vm.doImport();
   assertEquals({text: "2 records will be upserted.", action: undefined}, vm.confirmPopup);
   vm.confirmPopupYes();
-  assertEquals([["Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], ["test2", "222", "Processing", "", "", ""], ["test6", "666", "Processing", "", "", ""]], vm.importTableResult.table);
+  assertEquals([["Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], ["test2", "222", "Processing", "", "", ""], ["test6", "666", "Queued", "", "", ""]], vm.importTableResult.table);
   await waitForSpinner();
   assertEquals({Queued: 0, Processing: 0, Succeeded: 2, Failed: 0}, vm.importCounts());
   assertEquals([["Name", "Number__c", "__Status", "__Id", "__Action", "__Errors"], ["test2", "222", "Succeeded", "--id--", "Updated", ""], ["test6", "666", "Succeeded", "--id--", "Inserted", ""]], vm.importTableResult.table.map(row => row.map(cell => /^[a-zA-Z0-9]{18}$/.test(cell) ? "--id--" : cell)));

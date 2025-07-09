@@ -1084,6 +1084,9 @@ class App extends React.Component {
     model.didUpdate();
     // Save to local storage
   }
+  onGoToSalesforceRecord(){
+    history.back();
+  }
   handleClick(e){
     const {model} = this.props;
     if (model.popupReactElement){ // There is a popup
@@ -1176,6 +1179,11 @@ class App extends React.Component {
           ),
           h("span", {className: "object-actions"},
             model.editMode == null && model.recordData && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
+              title: "View record in Salesforce",
+              className: "button",
+              onClick: this.onGoToSalesforceRecord
+            }, "View record in Salesforce") : null,
+            model.editMode == null && model.recordData && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
               title: "Inline edit the values of this record",
               className: "button",
               disabled: !model.canUpdate(),
@@ -1201,7 +1209,6 @@ class App extends React.Component {
               )
             ),
             model.objectActionsOpen && h("div", {className: "pop-menu"},
-              model.viewLink() ? h("a", {href: model.viewLink()}, "View record in Salesforce") : null,
               model.editLayoutLink() ? h("a", {href: model.editLayoutLink(), target: linkTarget}, "Edit page layout") : null,
               model.objectSetupLinks && h("a", {href: model.objectSetupLinks.lightningSetupLink, target: linkTarget}, "Object setup (Lightning)"),
               model.objectSetupLinks && h("a", {href: model.objectSetupLinks.classicSetupLink, target: linkTarget}, "Object setup (Classic)")

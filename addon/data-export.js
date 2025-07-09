@@ -967,6 +967,8 @@ class Model {
           vm.markPerf();
           vm.updatedExportedData();
           return null;
+        } else {
+          vm.updateCurrentTabName(exportedData.records[0].attributes.type);
         }
         vm.isWorking = false;
         vm.exportStatus = `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
@@ -1035,7 +1037,7 @@ class Model {
           // Extract SOQL from the result
           const soqlMatch = result.result.match(/<soql>(.*?)<\/soql>/);
           const extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
-          this.addQueryTab();
+          //this.addQueryTab();
           this.updateCurrentTabQuery(extractedSoql);
           //to resolve sobject and rename current tab
           this.queryAutocompleteHandler();
@@ -1119,6 +1121,7 @@ class Model {
       if (this.activeTabIndex >= index) {
         this.activeTabIndex = Math.max(0, this.activeTabIndex - 1);
       }
+      this.setActiveTab(this.activeTabIndex);
       this.saveQueryTabs();
       this.didUpdate();
     }
@@ -1159,7 +1162,7 @@ class Model {
   }
 
   updateCurrentTabName(name) {
-    if (this.queryTabs[this.activeTabIndex] && this.queryTabs[this.activeTabIndex].name !== name) {
+    if (this.queryTabs[this.activeTabIndex] && !this.queryTabs[this.activeTabIndex].name.includes(name)) {
       // Check if there are any other tabs with the same name
       let count = 1;
       let newName = name;

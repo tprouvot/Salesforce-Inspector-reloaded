@@ -13,7 +13,8 @@ class Combobox extends React.Component {
     this.templates = props.templates;
     this.searchProperties = props.searchProperties;
     this.displayProperties = props.displayProperties;
-    this.onItemSelection = props.onItemSelection; // External handler function
+    this.onItemSelection = props.onItemSelection;
+    this.onSaveItemExternal = props.onSaveItem;
     this.lookupOptions = [{key: "all", label: "All Types", class: "icon-hover", icon: "filter"}, {key: "history", label: "History", icon: "recent", class: "icon-hover"}, {key: "saved", label: "Saved", icon: "individual", class: "icon-hover"}, {key: "template", label: "Template", icon: "query_editor", class: "icon-hover"}];
     this.lookupOption = null;
     this.item = null;
@@ -80,7 +81,7 @@ class Combobox extends React.Component {
       if (!this.item) {
         this.clearSelection();
       }
-    }, 100);
+    }, 50);
   }
 
   handleItemSelection(target) {
@@ -106,36 +107,7 @@ class Combobox extends React.Component {
   }
 
   onSaveItem() {
-    //TODO finish methdo
-    //TODO check if add function can be used
-    let label = this.refs.itemName.value;
-
-    let key = this.item.list.key;
-    if (key === "history"){
-      //if the request comes from the history, set the key to saved to save it as new Saved query
-      key = "saved";
-    }
-    let keyList = this.getStorageKeyList(key);
-
-    // Find the index of the existing request with the same key
-    let existingRequestIndex = keyList.list.findIndex(q => q.key === this.item.key);
-
-    // Replace the existing request if found, otherwise add a new one
-    if (existingRequestIndex !== -1) {
-      keyList.list[existingRequestIndex] = {...this.item};
-    } else {
-      keyList.list.push({...this.item});
-    }
-    localStorage[keyList.key] = JSON.stringify(keyList.list);
-    // Update state to display the toast notification
-    this.setState({
-      showToast: true,
-      toastMessage: `Query '${this.item.label}' saved successfully!`,
-      toastVariant: "success",
-      toastTitle: "Success"
-    });
-    setTimeout(this.hideToast, 3000);
-    this.model.didUpdate();
+    this.props.onSaveItemExternal(this.refs.itemName.value);
   }
 
   onDeleteItem(item){

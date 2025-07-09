@@ -1693,7 +1693,8 @@ class App extends React.Component {
               secondary: "label",
               tertiary: "useToolingApi"
             },
-            onItemSelection: this.onItemSelection
+            onItemSelection: this.onItemSelection,
+            onSaveItemExternal: this.onSaveQuery
           })
         ),
         h("div", {className: "query-controls"},
@@ -1851,20 +1852,19 @@ class App extends React.Component {
     );
   }
 
-  onSaveQuery() {
-    let {model} = this.props;
-    if (!this.refs.queryName.value.trim()) {
+  onSaveQuery(label) {
+    let {model} = this;
+    if (!label.trim()) {
       alert("Please enter a query label");
       return;
     }
 
-    model.queryName = this.refs.queryName.value.trim();
+    model.queryName = label.trim();
     model.addToHistory();
 
     // Clear the input after saving
-    this.refs.queryName.value = "";
+    label = "";
     model.queryName = "";
-
     model.didUpdate();
   }
 }

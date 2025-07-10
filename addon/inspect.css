@@ -126,31 +126,6 @@ a:hover {
   fill: white;
 }
 
-.sf-back,
-.sf-back:active,
-.sf-back:focus,
-.sf-back:hover{
-  background-color: rgb(6, 28, 63);
-  border-radius: 3px;
-  line-height: 1.8em;
-  text-decoration: none;
-  display: inline-block;
-  padding: 2px;
-  color: white;
-  margin-right: 4px;
-}
-
-.sf-back svg {
-  width: 1.8em;
-  height: 1.8em;
-  display: block;
-  margin: 1px;
-  float: left;
-  background-color: #62B7ED;
-  border-radius: 2px;
-  fill: white;
-}
-
 table {
   width: 100%;
   border-spacing: 0px;
@@ -469,7 +444,7 @@ th[tabindex] {
   width: 100%;
   display: flex;
   align-items: center;
-  padding: 0 4px;
+  padding: 0 12px;
   flex-wrap: wrap;
   border-bottom: 1px solid #d8dde6;
 }
@@ -780,4 +755,8 @@ th[tabindex] {
 .child-actions .pop-menu {
   right: 0;
   text-align: right;
+}
+.sf-nav-group > a.sf-back {
+  color: unset;
+  margin-right: 4px;
 }

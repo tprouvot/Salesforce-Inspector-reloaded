@@ -1211,6 +1211,7 @@ class App extends React.Component {
               )
             ),
             model.objectActionsOpen && h("div", {className: "pop-menu"},
+              model.viewLink() ? h("a", {href: model.viewLink()}, "View record in Salesforce") : null,
               model.editLayoutLink() ? h("a", {href: model.editLayoutLink(), target: linkTarget}, "Edit page layout") : null,
               model.objectSetupLinks && h("a", {href: model.objectSetupLinks.lightningSetupLink, target: linkTarget}, "Object setup (Lightning)"),
               model.objectSetupLinks && h("a", {href: model.objectSetupLinks.classicSetupLink, target: linkTarget}, "Object setup (Classic)")

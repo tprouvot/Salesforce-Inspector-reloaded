@@ -1,6 +1,8 @@
-/* Flow Scanner - Salesforce Inspector Component for Flow Analysis */
-
-/* Font definitions for Salesforce Sans typeface */
+/**
+ * @file Salesforce Inspector Reloaded
+ * @description This file provides the styles for the Flow Scanner component,
+ * which is used to analyze and report on Salesforce Flows.
+ */
 @font-face {
   font-family:'Salesforce Sans';
   src:url(fonts/SalesforceSans-Light.woff2);
@@ -35,15 +37,14 @@
   font-weight:700
 }
 
-/* Base element styles */
 * {
   box-sizing: border-box;
   vertical-align: middle;
 }
 
-/* Body styling with Salesforce-like background */
 html,body {
   height: 100%;
+  width: 100%;
 }
 body {
   font-family: "Salesforce Sans", Arial, sans-serif;
@@ -51,6 +52,7 @@ body {
   overflow: hidden;
   margin: 0;
   display: flex;
+  width: 100vw;
   background-color: #B0C4DF !important;
   background-image: url(images/lightning_blue_background.png) !important;
   background-repeat: no-repeat !important;
@@ -58,27 +60,27 @@ body {
   background-position: 0px 48px !important;
 }
 
-/* Main application container */
 .flow-scanner-app {
   display: flex;
   flex-grow: 1;
   flex-direction: column;
-  width: 100%;
+  width: 100vw;
+  min-width: 0;
 }
 
-/* Utility class for hidden elements */
 [hidden] {
   display: none !important;
 }
 
-/* Header styling for the application navigation bar */
 #user-info {
   background: #f7f9fb;
   min-height: 48px;
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 12px; /* match Data Export header horizontal padding */
   flex-wrap: wrap;
+  width: 100vw;
+  min-width: 0;
 }
 
 #user-info h1 {
@@ -89,7 +91,6 @@ body {
   font-size: 1em;
 }
 
-/* Salesforce home link styling */
 .sf-link {
   background-color: rgb(6, 28, 63);
   border-radius: 3px;
@@ -113,26 +114,25 @@ body {
   fill: white;
 }
 
-/* Right-aligned content in the header */
 .flex-right {
   margin-left: auto;
   display: flex;
   align-items: center;
 }
 
-/* Main content container styling */
 .main-container {
   background-color: #F8F8F8;
   padding: 8px 12px;
   border-radius: 5px;
   border: 1px solid #DDDBDA;
-  margin: 12px 12px 0 12px;
+  margin: 12px 0 0 0;
+  width: 100vw;
+  min-width: 0;
   flex-grow: 1;
   overflow: auto;
   min-height: 0;
 }
 
-/* Flow description container and styling */
 .flow-description-container {
   display: flex;
   flex-direction: column;
@@ -146,7 +146,6 @@ body {
   display: none;
 }
 
-/* Flow description text styling */
 .flow-description {
   font-size: 0.85rem;
   color: #495057;
@@ -159,7 +158,6 @@ body {
   word-break: break-word;
 }
 
-/* Interactive description styling with hover/focus states */
 .flow-description.clickable {
   cursor: pointer;
   user-select: text;
@@ -182,7 +180,6 @@ body {
   transform: translateY(1px);
 }
 
-/* Description header with action buttons */
 .flow-desc-header {
   display: flex;
   align-items: center;
@@ -195,7 +192,6 @@ body {
   flex-shrink: 0;
 }
 
-/* Description toggle button styling */
 .description-toggle-btn {
   background: none;
   border: none;
@@ -230,7 +226,6 @@ body {
   display: none;
 }
 
-/* Flow status badge */
 .flow-status-badge {
   display: inline-flex;
   align-items: center;
@@ -277,7 +272,6 @@ body {
   border-color: #f5c6cb;
 }
 
-/* Action buttons */
 .action-buttons {
   display: flex;
   gap: 8px;
@@ -328,7 +322,6 @@ button:hover,
   color: white;
 }
 
-/* Scan Results Section - Minimalist Design */
 .scan-results-section {
   margin-top: 24px;
   background: white;
@@ -336,8 +329,6 @@ button:hover,
   border: 1px solid #e9ecef;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
-
-/* Results Header */
 
 .results-title {
   display: flex;
@@ -352,21 +343,20 @@ button:hover,
   font-size: 1.125rem;
 }
 
-/* Results Summary - New Title-Centric Design */
 .results-summary {
   background: #f3f4f6;
-  border-radius: 8px; /* Slightly larger radius */
-  padding: 0; /* Remove padding to allow header/body to control it */
-  margin-bottom: 16px; /* More space */
+  border-radius: 8px; 
+  padding: 0; 
+  margin-bottom: 16px; 
   border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Add subtle shadow */
-  overflow: hidden; /* To contain the border-radius */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+  overflow: hidden; 
 }
 
 .summary-title {
-  font-size: 1.1rem; /* Larger font */
-  font-weight: 700; /* Bolder */
-  color: #24292e; /* Darker, more prominent color */
+  font-size: 1.1rem; 
+  font-weight: 700; 
+  color: #24292e; 
   margin: 0;
   gap: 8px;
 }
@@ -463,7 +453,7 @@ button:hover,
 
 .summary-action-btn:hover {
   background-color: #f9fafb;
-  border-color: #0366d6; /* Use a standard blue */
+  border-color: #0366d6; 
   color: #0366d6;
 }
 
@@ -494,12 +484,10 @@ button:hover,
   }
 }
 
-/* Results Container */
 .results-container {
   padding: 0;
 }
 
-/* Empty State */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -538,7 +526,6 @@ button:hover,
   max-width: 300px;
 }
 
-/* Unsupported flow type message styling */
 .unsupported-flow-intro {
   margin-top: 0;
   margin-bottom: 12px;
@@ -591,7 +578,6 @@ button:hover,
   color: #f0ad4e;
 }
 
-/* Success State */
 .success-state {
   text-align: center;
   padding: 32px 20px;
@@ -646,11 +632,10 @@ button:hover,
   font-weight: 600;
 }
 
-/* Unsupported Flow State - completely separate styling from success state */
 .unsupported-flow-state {
   display: flex;
   flex-direction: column;
-  padding: 20px 20px 24px; /* More compact padding */
+  padding: 20px 20px 24px; 
   color: #f0ad4e;
   width: 100%;
 }
@@ -702,7 +687,6 @@ button:hover,
   align-items: flex-start;
 }
 
-/* Text override management for metrics in the unsupported state */
 .unsupported-metrics .metric-value {
   font-size: 1.25rem;
   font-weight: 700;
@@ -716,7 +700,6 @@ button:hover,
   color: #514f4d;
 }
 
-/* Responsive Design */
 @media (max-width: 1200px) {
   .supported-types-list {
     columns: 3;
@@ -774,26 +757,6 @@ button:hover,
   }
 }
 
-/* Focus styles for accessibility */
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .scan-results-section {
-    border-width: 2px;
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  .accordion-chevron {
-    transition: none;
-  }
-  
-  .stat-item:hover {
-    transform: none;
-  }
-}
-
 button.scanning,
 button.exporting {
   position: relative;
@@ -844,7 +807,6 @@ button.exporting::after {
   transition: background 0.2s ease;
 }
 
-/* Loading overlay */
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -898,7 +860,6 @@ button.exporting::after {
   100% { transform: rotate(360deg); }
 }
 
-/* Screen reader only content */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -911,7 +872,6 @@ button.exporting::after {
   border: 0;
 }
 
-/* Rule Sections - New Layout with Prominent Rule Names */
 .rule-section {
   margin-bottom: 16px;
   background: white;
@@ -1043,7 +1003,6 @@ button.exporting::after {
   border-radius: 3px;
 }
 
-/* New layout for severity grouping */
 .severity-group-layout {
   display: flex;
   gap: 24px;
@@ -1139,7 +1098,6 @@ button.exporting::after {
   transform: rotate(-90deg);
 }
 
-/* Background for collapsed state */
 .severity-group-layout.collapsed.error .severity-title-left {
   background-color: #f8d7da;
 }
@@ -1159,8 +1117,6 @@ button.exporting::after {
   color: #0c5460;
 }
 
-/* --- Three-State Accordion Logic --- */
-/* State 3: All Collapsed */
 .severity-group-layout[data-accordion-state="3"] .rules-container-right {
   display: none;
 }
@@ -1183,7 +1139,6 @@ button.exporting::after {
   transform: rotate(-90deg);
 }
 
-/* State 2: Rules Collapsed */
 .severity-group-layout[data-accordion-state="2"] .rule-section .rule-content {
   max-height: 0 !important;
   padding-top: 0 !important;
@@ -1195,7 +1150,6 @@ button.exporting::after {
   transform: rotate(-90deg);
 }
 
-/* Chevron style for State 2 (partially collapsed) */
 .severity-group-layout[data-accordion-state="2"] > .severity-title-left .accordion-chevron {
   opacity: 0.5;
 }
@@ -1222,7 +1176,6 @@ button.exporting::after {
   color: #0c5460;
 }
 
-/* Flow Information Section - New Design */
 .flow-info-section {
   margin-bottom: 16px;
 }
@@ -1268,19 +1221,14 @@ button.exporting::after {
 
 .detail-value {
   color: #2c3e50;
-  word-break: break-all; /* Allow long values to wrap */
+  word-break: break-all; 
 }
 
 .detail-value.mono {
-  /* No background or border for a cleaner look */
   padding: 0;
   border: none;
   background-color: transparent;
 }
-
-/* Emphasize Element and Type details */
-
-/* De-emphasize other details slightly */
 
 .flow-status-badge {
   display: inline-flex;
@@ -1308,7 +1256,6 @@ button.exporting::after {
   word-break: break-word;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   
   .flow-detail-item {
@@ -1372,7 +1319,7 @@ button.exporting::after {
   color: #2c3e50;
   font-size: 0.9rem;
   line-height: 1.2;
-  word-break: break-all; /* Allow long values to wrap */
+  word-break: break-all; 
 }
 
 .flow-status-badge {
@@ -1417,7 +1364,6 @@ button.exporting::after {
   }
 }
 
-/* Flow Scanner Note in Header - Top Right */
 .flow-scanner-note-header {
   margin-right: 12px;
   color: #6c757d;
@@ -1425,11 +1371,11 @@ button.exporting::after {
   line-height: 1.4;
   display: flex;
   align-items: center;
-  height: 32px; /* ensure alignment with the help button */
+  height: 32px; 
 }
 
 .flow-scanner-note-header a {
-  margin-left: 4px; /* add space between 'Based on' and link */
+  margin-left: 4px; 
   color: #0070d2;
   text-decoration: none;
   font-weight: 500;
@@ -1445,12 +1391,11 @@ button.exporting::after {
   align-items: center;
 }
 
-/* New Tooltip styles */
 .tooltip-container {
   position: relative;
   display: inline-flex;
   align-items: center;
-  margin-left: 8px; /* Space between name and icon */
+  margin-left: 8px; 
 }
 
 .tooltip-container:hover {
@@ -1460,29 +1405,29 @@ button.exporting::after {
 .info-icon {
   width: 16px;
   height: 16px;
-  color: #6c757d; /* A muted gray */
+  color: #6c757d; 
   cursor: help;
   transition: color 0.2s;
-  font-style: normal; /* Prevents inheriting italic style */
-  fill: currentColor; /* Make SVG color inherit from parent */
+  font-style: normal; 
+  fill: currentColor; 
 }
 
 .tooltip-container:hover .info-icon {
-  color: #0070d2; /* Highlight on hover */
+  color: #0070d2; 
 }
 
 .tooltip-content {
   visibility: hidden;
   opacity: 0;
   position: absolute;
-  bottom: calc(100% + 10px); /* Position 10px above the icon */
+  bottom: calc(100% + 10px); 
   left: 50%;
   transform: translateX(-50%);
-  background-color: #24292e; /* Dark background */
-  color: #ffffff; /* White text */
+  background-color: #24292e; 
+  color: #ffffff; 
   padding: 8px 12px;
   border-radius: 6px;
-  z-index: 10000; /* Ensure it's on top of everything */
+  z-index: 10000; 
   width: 300px;
   font-size: 0.8rem;
   line-height: 1.4;
@@ -1492,7 +1437,6 @@ button.exporting::after {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-/* Tooltip arrow */
 .tooltip-content::after {
   content: "";
   position: absolute;
@@ -1509,7 +1453,6 @@ button.exporting::after {
   opacity: 1;
 }
 
-/* New styles for table-based issue details */
 .details-table {
   width: 100%;
   border-collapse: collapse;
@@ -1549,4 +1492,13 @@ button.exporting::after {
   font-size: 1.125rem;
   font-weight: 600;
   color: #2c3e50;
+} 
+
+h1 {
+  font-size: 1rem;
+  display: inline;
+  color: #080707;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: revert;
 } 

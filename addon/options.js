@@ -16,54 +16,6 @@ const normalizeSeverity = (sev, direction = "ui") => {
   return sev;
 };
 
-function InfoIcon({tooltipId, tooltip, className = "", style = {}, tabIndex = 0, placement = ""}) {
-  const tooltipClass = "slds-popover slds-popover_tooltip slds-nubbin_" + (placement || "bottom-left");
-  return h("span", {
-    className: `info-icon-container ${className}`,
-    style,
-    tabIndex,
-    onMouseOver: e => {
-      const popover = e.currentTarget.querySelector(".slds-popover");
-      if (popover) {
-        popover.style.display = "block";
-      }
-    },
-    onMouseOut: e => {
-      const popover = e.currentTarget.querySelector(".slds-popover");
-      if (popover) {
-        popover.style.display = "none";
-      }
-    },
-    onFocus: e => {
-      const popover = e.currentTarget.querySelector(".slds-popover");
-      if (popover) {
-        popover.style.display = "block";
-      }
-    },
-    onBlur: e => {
-      const popover = e.currentTarget.querySelector(".slds-popover");
-      if (popover) {
-        popover.style.display = "none";
-      }
-    }
-  },
-  h("svg", {
-    className: "slds-icon slds-icon-text-default slds-icon_xx-small info-icon-svg",
-    "aria-hidden": "true",
-    viewBox: "0 0 52 52",
-    style: {width: "16px", height: "16px", verticalAlign: "middle"}
-  },
-  h("use", {xlinkHref: "symbols.svg#info"})
-  ),
-  h("span", {
-    className: tooltipClass,
-    id: tooltipId,
-    role: "tooltip",
-    style: {display: "none", position: "absolute", zIndex: 1000, minWidth: "180px", maxWidth: "320px"}
-  }, tooltip)
-  );
-}
-
 class Option extends React.Component {
 
   constructor(props) {
@@ -144,16 +96,16 @@ class Option extends React.Component {
             )
           ))
             : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-            h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
-              h("label", {className: "slds-checkbox_toggle slds-grid"},
-                h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
-                h("span", {id, className: "slds-checkbox_faux_container center-label"},
-                  h("span", {className: "slds-checkbox_faux"}),
-                  h("span", {className: "slds-checkbox_on"}, "Enabled"),
-                  h("span", {className: "slds-checkbox_off"}, "Disabled"),
+              h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
+                h("label", {className: "slds-checkbox_toggle slds-grid"},
+                  h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
+                  h("span", {id, className: "slds-checkbox_faux_container center-label"},
+                    h("span", {className: "slds-checkbox_faux"}),
+                    h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                    h("span", {className: "slds-checkbox_off"}, "Disabled"),
+                  )
                 )
-              )
-            ))
+              ))
     );
   }
 }
@@ -316,6 +268,7 @@ class FaviconOption extends React.Component {
   constructor(props) {
     super(props);
     this.sfHost = props.model.sfHost;
+    this.storageKey = props.storageKey;
     this.onChangeFavicon = this.onChangeFavicon.bind(this);
     this.populateFaviconColors = this.populateFaviconColors.bind(this);
     this.onToogleSmartMode = this.onToogleSmartMode.bind(this);
@@ -429,7 +382,7 @@ class FaviconOption extends React.Component {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "Custom favicon (org specific)",
-          h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
+          h(Tooltip, {tooltip: this.tooltip, idKey: this.storageKey})
         )
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
@@ -933,7 +886,7 @@ class FlowScannerRulesOption extends React.Component {
     this.saveRules = this.saveRules.bind(this);
 
     this.title = props.title;
-    this.key = props.key || "flowScannerRules";
+    this.key = props.storageKey || "flowScannerRules";
     this.customKey = "flowScannerCustomRules";
 
     this.state = {
@@ -1129,10 +1082,9 @@ class FlowScannerRulesOption extends React.Component {
           onChange: e => this.handleConfigChange(rule.name, rule.configType, e.target.value),
           placeholder: rule.defaultValue || "", title: `Configuration for ${rule.label}`, "aria-label": `${rule.label} configuration`
         }),
-        h(InfoIcon, {
-          tooltipId: `config-help-${rule.name}`,
-          tooltip: h("span", {}, `Configuration for ${rule.label}. `, rule.configType === "expression" ? h("a", {href: "https://regex101.com/", target: "_blank", rel: "noopener noreferrer"}, "Regex help") : ""),
-          className: "config-help slds-m-left_xx-small", placement: "right"
+        h(Tooltip, {
+          tooltip: h("span", {}, `Configuration for ${rule.label}. `, h("a", {href: "https://regex101.com/", target: "_blank", rel: "noopener noreferrer"}, "Regex help")),
+          idKey: `config-help-${rule.name}`
         })
       );
     }
@@ -1143,10 +1095,11 @@ class FlowScannerRulesOption extends React.Component {
           onChange: e => this.handleConfigChange(rule.name, rule.configType, parseInt(e.target.value) || rule.defaultValue),
           min: "1", max: "100", title: `Threshold for ${rule.label}`, "aria-label": `${rule.label} threshold`
         }),
-        h(InfoIcon, {
-          tooltipId: `config-help-${rule.name}`,
-          tooltip: rule.name === "APIVersion" ? "Minimum API version required for flows. Flows with lower API versions will trigger this rule." : `Threshold value for ${rule.label}. Higher values are more permissive.`,
-          className: "config-help slds-m-left_xx-small", placement: "right"
+        h(Tooltip, {
+          tooltip: rule.name === "APIVersion"
+            ? "Minimum API version required for flows. Flows with lower API versions will trigger this rule."
+            : `Threshold value for ${rule.label}. Higher values are more permissive.`,
+          idKey: `config-help-${rule.name}`
         })
       );
     }
@@ -1167,7 +1120,7 @@ class FlowScannerRulesOption extends React.Component {
       h("h3", {}, `${title}${versionDisplay}`),
       h("div", {className: "flow-scanner-desc slds-grid slds-align_absolute-center"},
         "Configure which Flow Scanner rules are enabled and their settings. Only enabled rules will be used when scanning flows. ",
-        h(InfoIcon, {tooltipId: "section-help-tip", tooltip: "Flow Scanner analyzes Salesforce Flows for best practices, anti-patterns, and common mistakes. Toggle rules on or off and configure their settings as needed. For more information, see the documentation.", className: "section-help-icon slds-m-left_x-small", placement: "below"})
+        h(Tooltip, {tooltip: "Flow Scanner analyzes Salesforce Flows for best practices, anti-patterns, and common mistakes. Toggle rules on or off and configure their settings as needed. For more information, see the documentation.", idKey: "section-help-tip"})
       ),
       h("div", {className: "rules-actions-toolbar", role: "toolbar", "aria-label": "Bulk actions"},
         h("button", {className: "slds-button slds-button_brand slds-button_small", onClick: this.handleCheckAll, tabIndex: 0, "aria-label": "Enable all rules"}, "Check All"),
@@ -1351,7 +1304,7 @@ class OptionsTabSelector extends React.Component {
                 {label: "Generate Access Token", name: "generate-token", checked: true}
               ]}
           },
-          {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
+          {option: FaviconOption, props: {storageKey: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
           {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
           {option: Option, props: {type: "text", title: "PROD Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the PROD banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
@@ -1482,7 +1435,7 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Tab8",
         title: "Flow Scanner",
         content: [
-          {option: FlowScannerRulesOption, props: {title: "Enabled Rules", key: "flowScannerRules", checkboxes: ruleCheckboxes, error: this.state.flowScannerError, scannerVersion, onShowAddRuleModal: this.props.onShowAddRuleModal}}
+          {option: FlowScannerRulesOption, props: {title: "Enabled Rules", storageKey: "flowScannerRules", checkboxes: ruleCheckboxes, error: this.state.flowScannerError, scannerVersion, onShowAddRuleModal: this.props.onShowAddRuleModal}}
         ]
       },
       {

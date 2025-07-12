@@ -83,8 +83,7 @@
         "field-creator.html",
         "options.html",
         "event-monitor.html",
-        "flow-scanner.html",
-        "flow-scanner-core.js"
+        "flow-scanner.html"
       ],
       "matches": [
         "https://*.salesforce.com/*",

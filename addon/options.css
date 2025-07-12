@@ -193,7 +193,6 @@ button,
   color: #fff;
 }
 
-/* Flow Scanner Rules Option Styles */
 .option-group {
   margin-bottom: 1rem;
 }
@@ -279,15 +278,6 @@ button,
   gap: 6px;
 }
 
-.rule-config-right .slds-input_small {
-  height: 28px;
-  font-size: 0.95rem;
-  padding: 4px 10px;
-  min-width: 180px;
-  max-width: 380px;
-  width: 100%;
-}
-
 .regex-help {
   width: 16px;
   height: 16px;
@@ -313,7 +303,6 @@ button,
   background: #f7faff !important;
 }
 
-/* Flow Scanner Section Enhancements */
 .flow-scanner-section {
   background: #f4f8fb;
   border: 1.5px solid #b3c6e0;
@@ -378,7 +367,6 @@ button,
   }
 }
 
-/* Info icon and tooltip styles */
 .info-icon-container {
   display: inline-block;
   position: relative;
@@ -425,19 +413,7 @@ button,
   bottom: auto;
   transform: translateX(-50%) translateY(8px);
 }
-.info-tooltip .slds-nubbin_bottom {
-  left: 50%;
-  transform: translateX(-50%);
-}
-.info-tooltip.info-tooltip-right .slds-nubbin_bottom {
-  left: auto;
-  right: 12px;
-  transform: none;
-}
-.info-tooltip.info-tooltip-below .slds-nubbin_top {
-  left: 50%;
-  transform: translateX(-50%);
-}
+
 @media (max-width: 600px) {
   .info-tooltip, .info-tooltip.info-tooltip-right, .info-tooltip.info-tooltip-below {
     min-width: 120px;
@@ -449,13 +425,26 @@ button,
 .info-icon-container:hover .info-tooltip {
   display: block !important;
 }
+
+.info-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #16325c;
+}
+
 .section-help-icon {
   margin-left: 8px;
 }
 .regex-help {
   margin-left: 4px;
 }
-/* Remove old help-icon and regex-help backgrounds */
 .help-icon, .regex-help {
   background: none !important;
   border: none !important;
@@ -472,7 +461,6 @@ button,
   margin-left: 4px;
 }
 
-/* Beta badge styling */
 .beta-badge {
   background-color: #ff6b35;
   color: white;
@@ -485,7 +473,6 @@ button,
   vertical-align: middle;
 }
 
-/* Configurable rule highlighting */
 .rule-row-highlight {
   background-color: #f8f9fa;
   border-left: 3px solid #0070d2;
@@ -495,27 +482,12 @@ button,
   background-color: #eef1f6;
 }
 
-/* Configuration input styling */
 .config-help {
   cursor: help;
   color: #706e6b;
   margin-left: 4px;
 }
 
-.rule-config-right .slds-input_small {
-  min-width: 120px;
-  max-width: 200px;
-}
-
-/* Responsive design for config inputs */
-@media (max-width: 900px) {
-  .rule-config-right .slds-input_small {
-    min-width: 80px;
-    max-width: 100%;
-  }
-}
-
-/* Severity dropdown color styles */
 .severity-select {
   min-width: 110px;
   margin-left: 12px;
@@ -541,7 +513,6 @@ button,
   border-color: #0070d2;
 }
 
-/* Config + severity group layout */
 .rule-config-group {
   display: flex;
   align-items: center;
@@ -560,76 +531,4 @@ button,
     gap: 4px;
     margin-left: 0;
   }
-}
-
-/* Modal styles */
-.slds-modal_open {
-  overflow: hidden !important;
-}
-
-.slds-backdrop {
-  background: rgba(43, 40, 38, 0.6) !important;
-  position: fixed !important;
-  top: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  z-index: 9000 !important;
-}
-
-.slds-modal {
-  position: fixed !important;
-  top: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  z-index: 9001 !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: flex-start !important;
-  padding-top: 3rem !important;
-}
-
-.slds-modal__container {
-  position: relative !important;
-  transform: translate(0, 0) !important;
-  margin: 0 auto !important;
-  width: 50% !important;
-  max-width: 40rem !important;
-  min-width: 20rem !important;
-  background: white !important;
-  border-radius: 0.25rem !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
-}
-
-.slds-modal__header {
-  position: relative !important;
-  border-top-left-radius: 0.25rem !important;
-  border-top-right-radius: 0.25rem !important;
-  border-bottom: 2px solid #dddbda !important;
-  padding: 1rem !important;
-  text-align: center !important;
-}
-
-.slds-modal__content {
-  background: white !important;
-  padding: 1rem !important;
-  overflow: auto !important;
-}
-
-.slds-modal__content textarea,
-.slds-modal__content input[type="text"],
-.slds-modal__content select {
-  width: 100% !important;
-}
-
-.slds-modal__footer {
-  border-top: 2px solid #dddbda !important;
-  border-bottom-left-radius: 0.25rem !important;
-  border-bottom-right-radius: 0.25rem !important;
-  padding: 0.75rem 1rem !important;
-  background-color: #f3f2f2 !important;
-  text-align: right !important;
 }

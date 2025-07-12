@@ -116,7 +116,7 @@ Instructions:** 
 1. Based on the description, construct a Salesforce SOQL that adheres to the specified SObject and make sure this object exists and is queryable. 
 2. Ensure the SOQL is syntactically correct, keep in mind the query plan statement and use a maximum of indexed fields for the filters if needed.
 3. Output the generated Salesforce SOQL query clearly enclosed within `&lt;soql&gt;` tags.
-4. Output if the tooling api needs to be used for this query  `&lt;toolingApi&gt;true&lt;/toolingApi&gt;` 
+4. Output if the tooling api needs to be used for this query  `<toolingApi>true</toolingApi>` 
 </content>
         <inputs>
             <apiName>Description</apiName>

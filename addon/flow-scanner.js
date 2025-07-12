@@ -292,13 +292,9 @@ class FlowScanner {
       customRules.forEach(cr => {
         if (!stored.find(r => r.name === cr.name)) {
           stored.push({
-            name: cr.name,
-            label: cr.label,
-            description: cr.description,
-            checked: true,
-            severity: cr.severity,
-            path: cr.path,
-            config: {path: cr.path}
+            ...cr, // Spread the custom rule object
+            checked: cr.checked, // Explicitly respect the stored checked status
+            config: cr.config || (cr.path ? {path: cr.path} : {})
           });
         }
       });
@@ -338,13 +334,11 @@ class FlowScanner {
           const scannerSeverity = normalizeSeverity(severity, "storage");
 
           if (name === "FlowName") {
-            const namingRegex = ruleConfigEntry.expression || "[A-Za-z0-9]+_[A-Za-z0-9]+";
-            if (namingRegex) {
-              ruleConfig.rules.FlowName = {expression: namingRegex, severity: scannerSeverity};
+            if (ruleConfigEntry.expression) {
+              ruleConfig.rules.FlowName = {expression: ruleConfigEntry.expression, severity: scannerSeverity};
             }
           } else if (name === "APIVersion") {
-            let minVersion = 50; // default
-
+            let minVersion;
             if (ruleConfigEntry.threshold !== undefined) {
               minVersion = parseInt(ruleConfigEntry.threshold, 10);
             } else if (ruleConfigEntry.expression !== undefined) {
@@ -355,23 +349,19 @@ class FlowScanner {
                 minVersion = parseInt(expressionValue, 10);
               }
             }
-
-            if (isNaN(minVersion)) {
-              minVersion = 50; // fallback to default
+            if (!isNaN(minVersion)) {
+              ruleConfig.rules.APIVersion = {expression: `>=${minVersion}`, severity: scannerSeverity};
             }
-
-            ruleConfig.rules.APIVersion = {expression: `>=${minVersion}`, severity: scannerSeverity};
           } else if (name === "AutoLayout") {
-            const enabled = ruleConfigEntry.enabled !== false;
-            if (enabled) {
+            if (ruleConfigEntry.enabled !== undefined) {
               ruleConfig.rules.AutoLayout = {severity: scannerSeverity};
             }
           } else if (name === "CyclomaticComplexity") {
-            const threshold = ruleConfigEntry.threshold || 25;
-            ruleConfig.rules.CyclomaticComplexity = {threshold, severity: scannerSeverity};
+            if (ruleConfigEntry.threshold) {
+              ruleConfig.rules.CyclomaticComplexity = {threshold: ruleConfigEntry.threshold, severity: scannerSeverity};
+            }
           } else if (name === "ProcessBuilder") {
-            const enabled = ruleConfigEntry.enabled !== false;
-            if (enabled) {
+            if (ruleConfigEntry.enabled !== undefined) {
               ruleConfig.rules.ProcessBuilder = {severity: scannerSeverity};
             }
           } else {
@@ -412,8 +402,10 @@ class FlowScanner {
           delete ruleConfig.rules.APIVersion;
         }
 
-        const scanResults = this.flowScannerCore.scan([parsedFlow], ruleConfig);
-        results.push(...this.processScanResults(scanResults));
+        if (Object.keys(ruleConfig.rules).length > 0) {
+          const scanResults = this.flowScannerCore.scan([parsedFlow], ruleConfig);
+          results.push(...this.processScanResults(scanResults));
+        }
       }
 
       for (const customRuleDef of customRuleDefs) {
@@ -1066,6 +1058,18 @@ class App extends React.Component {
     const warningCount = severityGroups.warning.length;
     const infoCount = severityGroups.info.length;
     if (totalIssues === 0) {
+      // If no rules are enabled, show warning and prompt to configure
+      if (this.flowScanner.exportError) {
+        return h("div", {className: "scan-results-section"},
+          h("div", {className: "empty-state"},
+            h("div", {className: "empty-icon"}, "⚠️"),
+            h("h3", {}, "No Rules Enabled"),
+            h("p", {}, this.flowScanner.exportError),
+            h("button", {className: "slds-button slds-button_brand", onClick: this.onToggleHelp}, "Configure Rules")
+          )
+        );
+      }
+      // Default no issues found state
       return h("div", {className: "scan-results-section"},
         h("div", {className: "success-state"},
           h("div", {className: "success-icon"}, "✅"),
@@ -1082,13 +1086,12 @@ class App extends React.Component {
             )
           ),
           h("button", {
-            className: "summary-action-btn",
             title: "Scan Flow",
             onClick: this.onScanFlow,
             disabled: this.flowScanner.isScanning
           },
-            h("span", {className: "export-icon", "aria-hidden": "true"}, "⚙️"),
-            " Scan Flow"
+          h("span", {className: "export-icon", "aria-hidden": "true"}, "⚙️"),
+          " Scan Flow"
           )
         )
       );
@@ -1122,16 +1125,16 @@ class App extends React.Component {
             ),
             h("div", {className: "summary-actions"},
               h("button", {
-                className: "summary-action-btn slds-button slds-button_neutral",
+                className: "slds-button slds-button_neutral",
                 title: "Export Results",
                 onClick: this.onExportResults,
                 disabled: totalIssues === 0
               },
-                h("span", {className: "export-icon", "aria-hidden": "true"}, "📁"),
-                " Export"
+              h("span", {className: "export-icon", "aria-hidden": "true"}, "📁"),
+              " Export"
               ),
-              h("button", {className: "summary-action-btn slds-button slds-button_neutral", id: "expand-all-btn", onClick: this.onExpandAll}, "Expand All"),
-              h("button", {className: "summary-action-btn slds-button slds-button_neutral", id: "collapse-all-btn", onClick: this.onCollapseAll}, "Collapse All")
+              h("button", {className: "slds-button slds-button_neutral", id: "expand-all-btn", onClick: this.onExpandAll}, "Expand All"),
+              h("button", {className: "slds-button slds-button_neutral", id: "collapse-all-btn", onClick: this.onCollapseAll}, "Collapse All")
             )
           )
         )
@@ -1160,79 +1163,79 @@ class App extends React.Component {
             className: `severity-group-layout ${severity}${!isSevExpanded ? " collapsed" : ""}`,
             "data-accordion-state": accordionStateAttr
           },
-            h("div", {
-              className: "severity-title-left",
-              role: "button",
-              tabIndex: 0,
-              "aria-expanded": isSevExpanded,
-              "aria-controls": `${severity}-rules-container`,
-              onClick: () => this.onSeverityToggle(severity),
-              onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onSeverityToggle(severity); } }
-            },
-              h("h3", {className: "severity-heading"},
-                h("div", {className: "severity-heading-content"},
+          h("div", {
+            className: "severity-title-left",
+            role: "button",
+            tabIndex: 0,
+            "aria-expanded": isSevExpanded,
+            "aria-controls": `${severity}-rules-container`,
+            onClick: () => this.onSeverityToggle(severity),
+            onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onSeverityToggle(severity); } }
+          },
+            h("h3", {className: "severity-heading"},
+              h("div", {className: "severity-heading-content"},
+                h("svg", {
+                  className: "accordion-chevron",
+                  width: "24",
+                  height: "24",
+                  "aria-hidden": "true",
+                  style: {transform: isSevExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
+                },
+                  h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
+                ),
+                h("span", {className: "severity-label-group"},
+                  severityIcons[severity],
+                  h("span", {}, severityLabels[severity])
+                )
+              )
+            ),
+            h("span", {className: "severity-total-count"}, `${group.length} Issue${group.length === 1 ? "" : "s"}`)
+          ),
+          isSevExpanded && h("div", {className: "rules-container-right", id: `${severity}-rules-container`},
+            Object.entries(rules).map(([ruleType, ruleResults], ruleIdx) => {
+              const description = ruleResults[0].description || "Rule violation detected";
+              const ruleAccordion = sevAccordion.rules || {};
+              const ruleExpanded = ruleAccordion[ruleType] !== false;
+              return h("div", {
+                key: `${severity}-${ruleIdx}`,
+                className: `rule-section compact${ruleExpanded ? " expanded" : " collapsed"} card-bg`,
+                "data-rule-type": ruleType
+              },
+                h("div", {
+                  className: "rule-header",
+                  tabIndex: 0,
+                  role: "button",
+                  "aria-expanded": ruleExpanded,
+                  "aria-controls": `${severity}-${ruleIdx}-content`,
+                  onClick: () => this.onRuleToggle(severity, ruleType),
+                  onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onRuleToggle(severity, ruleType); } }
+                },
+                  h("div", {className: "rule-title-section"},
+                    h("span", {className: "rule-name-compact"}, ruleType),
+                    h("div", {className: "tooltip-container"},
+                      h("svg", {className: "info-icon", "aria-hidden": "true"},
+                        h("use", {xlinkHref: "symbols.svg#info"})
+                      ),
+                      h("div", {className: "tooltip-content"}, description)
+                    ),
+                    h("span", {className: "badge-total circle-badge"}, ruleResults.length)
+                  ),
                   h("svg", {
                     className: "accordion-chevron",
                     width: "24",
                     height: "24",
                     "aria-hidden": "true",
-                    style: {transform: isSevExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
+                    style: {transform: ruleExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
                   },
                     h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
-                  ),
-                  h("span", {className: "severity-label-group"},
-                    severityIcons[severity],
-                    h("span", {}, severityLabels[severity])
                   )
+                ),
+                ruleExpanded && h("div", {className: "rule-content", id: `${severity}-${ruleIdx}-content`},
+                  this.renderRuleTable(ruleResults)
                 )
-              ),
-              h("span", {className: "severity-total-count"}, `${group.length} Issue${group.length === 1 ? "" : "s"}`)
-            ),
-            isSevExpanded && h("div", {className: "rules-container-right", id: `${severity}-rules-container`},
-              Object.entries(rules).map(([ruleType, ruleResults], ruleIdx) => {
-                const description = ruleResults[0].description || "Rule violation detected";
-                const ruleAccordion = sevAccordion.rules || {};
-                const ruleExpanded = ruleAccordion[ruleType] !== false;
-                return h("div", {
-                  key: `${severity}-${ruleIdx}`,
-                  className: `rule-section compact${ruleExpanded ? " expanded" : " collapsed"} card-bg`,
-                  "data-rule-type": ruleType
-                },
-                  h("div", {
-                    className: "rule-header",
-                    tabIndex: 0,
-                    role: "button",
-                    "aria-expanded": ruleExpanded,
-                    "aria-controls": `${severity}-${ruleIdx}-content`,
-                    onClick: () => this.onRuleToggle(severity, ruleType),
-                    onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onRuleToggle(severity, ruleType); } }
-                  },
-                    h("div", {className: "rule-title-section"},
-                      h("span", {className: "rule-name-compact"}, ruleType),
-                      h("div", {className: "tooltip-container"},
-                        h("svg", {className: "info-icon", "aria-hidden": "true"},
-                          h("use", {xlinkHref: "symbols.svg#info"})
-                        ),
-                        h("div", {className: "tooltip-content"}, description)
-                      ),
-                      h("span", {className: "badge-total circle-badge"}, ruleResults.length)
-                    ),
-                    h("svg", {
-                      className: "accordion-chevron",
-                      width: "24",
-                      height: "24",
-                      "aria-hidden": "true",
-                      style: {transform: ruleExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
-                    },
-                      h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
-                    )
-                  ),
-                  ruleExpanded && h("div", {className: "rule-content", id: `${severity}-${ruleIdx}-content`},
-                    this.renderRuleTable(ruleResults)
-                  )
-                );
-              })
-            )
+              );
+            })
+          )
           );
         })
       )
@@ -1283,24 +1286,24 @@ class App extends React.Component {
         onClick: () => this.onSeverityToggle(severity),
         onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onSeverityToggle(severity); } }
       },
-        h("h3", {className: "severity-heading"},
-          h("div", {className: "severity-heading-content"},
-            h("svg", {
-              className: "accordion-chevron",
-              width: "24",
-              height: "24",
-              "aria-hidden": "true",
-              style: {transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
-            },
-              h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
-            ),
-            h("span", {className: "severity-label-group"},
-              severityIcons[severity],
-              h("span", {}, severityLabels[severity])
-            )
+      h("h3", {className: "severity-heading"},
+        h("div", {className: "severity-heading-content"},
+          h("svg", {
+            className: "accordion-chevron",
+            width: "24",
+            height: "24",
+            "aria-hidden": "true",
+            style: {transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
+          },
+          h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
+          ),
+          h("span", {className: "severity-label-group"},
+            severityIcons[severity],
+            h("span", {}, severityLabels[severity])
           )
-        ),
-        h("span", {className: "severity-total-count"}, `${group.length} Issue${group.length === 1 ? "" : "s"}`)
+        )
+      ),
+      h("span", {className: "severity-total-count"}, `${group.length} Issue${group.length === 1 ? "" : "s"}`)
       ),
       isExpanded && h("div", {className: "rules-container-right"},
         Object.entries(rules).map(([ruleType, ruleResults], ruleIdx) => {
@@ -1312,37 +1315,37 @@ class App extends React.Component {
             className: `rule-section compact${ruleExpanded ? " expanded" : " collapsed"} card-bg`,
             "data-rule-type": ruleType
           },
-            h("div", {
-              className: "rule-header",
-              tabIndex: 0,
-              role: "button",
-              "aria-expanded": ruleExpanded,
-              onClick: () => this.onRuleToggle(severity, ruleType),
-              onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onRuleToggle(severity, ruleType); } }
-            },
-              h("div", {className: "rule-title-section"},
-                h("span", {className: "rule-name-compact"}, ruleType),
-                h("div", {className: "tooltip-container"},
-                  h("svg", {className: "info-icon", "aria-hidden": "true"},
-                    h("use", {xlinkHref: "symbols.svg#info"})
-                  ),
-                  h("div", {className: "tooltip-content"}, description)
+          h("div", {
+            className: "rule-header",
+            tabIndex: 0,
+            role: "button",
+            "aria-expanded": ruleExpanded,
+            onClick: () => this.onRuleToggle(severity, ruleType),
+            onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onRuleToggle(severity, ruleType); } }
+          },
+            h("div", {className: "rule-title-section"},
+              h("span", {className: "rule-name-compact"}, ruleType),
+              h("div", {className: "tooltip-container"},
+                h("svg", {className: "info-icon", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#info"})
                 ),
-                h("span", {className: "badge-total circle-badge"}, ruleResults.length)
+                h("div", {className: "tooltip-content"}, description)
               ),
-              h("svg", {
-                className: "accordion-chevron",
-                width: "24",
-                height: "24",
-                "aria-hidden": "true",
-                style: {transform: ruleExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
-              },
-                h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
-              )
+              h("span", {className: "badge-total circle-badge"}, ruleResults.length)
             ),
-            ruleExpanded && h("div", {className: "rule-content"},
-              this.renderRuleTable(ruleResults)
+            h("svg", {
+              className: "accordion-chevron",
+              width: "24",
+              height: "24",
+              "aria-hidden": "true",
+              style: {transform: ruleExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
+            },
+            h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
             )
+          ),
+          ruleExpanded && h("div", {className: "rule-content"},
+            this.renderRuleTable(ruleResults)
+          )
           );
         })
       )
@@ -1436,46 +1439,38 @@ class App extends React.Component {
     const scannerVersion = this.flowScanner?.flowScannerCore?.version || "";
 
     return h("div", {className: "flow-scanner-app"},
-      (() => {
-        return h("div", {id: "user-info", className: "slds-border_bottom"},
-          // Salesforce home link
-          h("a", {href: sfLink, className: "sf-link"},
-            h("svg", {viewBox: "0 0 24 24"},
-              h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-            ),
-            " Salesforce Home"
+      h("div", {id: "user-info", className: "slds-border_bottom"},
+        // Salesforce home link
+        h("a", {href: sfLink, className: "sf-link"},
+          h("svg", {viewBox: "0 0 24 24"},
+            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
           ),
-          // Title
-          h("h1", {}, "Flow Scanner"),
-          // Optional user info (reuse flow label)
-          this.flowScanner?.currentFlow?.label
-            ? h("span", {}, " / " + this.flowScanner.currentFlow.label) : null,
-          // Right side icons & spinner
-          h("div", {className: "flex-right"},
-            // Note about core version
-            h("div", {className: "flow-scanner-note-header"},
-              h("small", {},
-                "💡 Based on ",
-                h("a", {
-                  href: "https://github.com/Lightning-Flow-Scanner",
-                  target: "_blank",
-                  rel: "noopener noreferrer"
-                }, "Lightning Flow Scanner"),
-                scannerVersion ? `\u00A0(core v${scannerVersion})` : null
-              )
-            ),
-            // Help button
-            h("a", {
-              href: "#",
-              id: "help-btn",
-              title: "Open Flow Scanner Options",
-              onClick: this.onToggleHelp
-            },
-              h("div", {className: "icon"})
+          " Salesforce Home"
+        ),
+        // Title
+        h("h1", {}, "Flow Scanner"),
+        // Optional user info (reuse flow label)
+        this.flowScanner?.currentFlow?.label
+          ? h("span", {}, " / " + this.flowScanner.currentFlow.label) : null,
+        // Right side icons & spinner
+        h("div", {className: "flex-right"},
+          // Note about core version
+          h("div", {className: "flow-scanner-note-header"},
+            h("small", {},
+              "💡 Based on ",
+              h("a", {
+                href: "https://github.com/Lightning-Flow-Scanner",
+                target: "_blank",
+                rel: "noopener noreferrer"
+              }, "Lightning Flow Scanner"),
+              scannerVersion ? `\u00A0(core v${scannerVersion})` : null
             )
+          ),
+          h("a", {href: "#", id: "help-btn", title: "Open Flow Scanner Options", onClick: this.onToggleHelp},
+            h("div", {className: "icon"})
           )
-        );
-      })(),
+        )
+      ),
       h("div", {className: "main-container slds-card slds-m-around_small"},
         this.renderFlowInfo(),
         this.state.error ? this.renderError() : this.renderScanResults()

@@ -454,6 +454,60 @@ class Model {
     // Copy to clipboard
     copyToClipboard(csvContent);
   }
+
+  exportTableToExcel() {
+    // Get the current active tab to determine which table to export
+    let activeTab = this.useTab;
+    let rowList;
+
+    if (activeTab === "fields" || activeTab === "all") {
+      rowList = this.fieldRows;
+    } else if (activeTab === "childs") {
+      rowList = this.childRows;
+    } else {
+      // Default to fields if unknown tab
+      rowList = this.fieldRows;
+    }
+
+    // Get visible rows
+    let visibleRows = rowList.rows.filter(row => row.visible());
+
+    if (visibleRows.length === 0) {
+      return;
+    }
+
+    // Get column headers
+    let headers = [];
+    for (let [, col] of rowList.selectedColumnMap) {
+      headers.push(col.label);
+    }
+
+    // Get row data
+    let rows = [];
+    for (let row of visibleRows) {
+      let rowData = [];
+      for (let [colName] of rowList.selectedColumnMap) {
+        let value = row.sortKey(colName);
+        // Convert to string and handle null/undefined
+        rowData.push(value === null || value === undefined ? "" : String(value));
+      }
+      rows.push(rowData);
+    }
+
+    // Create Excel content (CSV format that Excel can open)
+    let csvContent = [headers.join(","), ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))].join("\n");
+
+    // Create and download file
+    let blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});
+    let link = document.createElement("a");
+    let url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${this.objectName()}_${activeTab}_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 }
 
 class RowList {
@@ -636,12 +690,12 @@ class FieldRowList extends RowList {
 
     this.bulkUsageRequestInProgress = true;
 
-    // Take up to 25 requests from the queue
+    // Take up to 5 requests from the queue
     let batch = this.pendingFieldUsageRequests.splice(0, 5);
 
     // First, ensure we have the total record count
     this.fetchTotalRecordCount().then(totalRecords => {
-      // Create composite request with up to 25 queries
+      // Create composite request with up to 5 queries
       let compositeRequest = {
         compositeRequest: batch.map((fieldRow) => {
 
@@ -662,98 +716,128 @@ class FieldRowList extends RowList {
         })
       };
 
-      sfConn.rest("/services/data/v" + apiVersion + "/" + (this.model.useToolingApi ? "tooling/" : "") + "composite", {
-        method: "POST",
-        body: compositeRequest
-      }).then(result => {
-        // Process each field's results
-        batch.forEach((fieldRow) => {
-          let queryResult = result.compositeResponse.find(response => response.referenceId === `fieldUsage_${fieldRow.fieldName}`);
+      // Use spinFor to show loading state
+      this.model.spinFor(
+        "calculating field usage",
+        sfConn.rest("/services/data/v" + apiVersion + "/" + (this.model.useToolingApi ? "tooling/" : "") + "composite", {
+          method: "POST",
+          body: compositeRequest
+        }).then(result => {
+          // Process each field's results
+          batch.forEach((fieldRow) => {
+            this.processFieldUsageResult(fieldRow, result, totalRecords);
+          });
 
-          if (queryResult && queryResult.httpStatusCode === 200 && queryResult.body) {
-            let isGroupable = fieldRow.fieldDescribe && fieldRow.fieldDescribe.groupable;
+          // Process next batch if there are more pending requests
+          this.finishBatchProcessing();
+        }).catch(error => {
+          console.error("Error fetching bulk field usage:", error);
+          console.error("Composite request that failed:", compositeRequest);
+          console.error("Batch fields that failed:", batch.map(fieldRow => fieldRow.fieldName));
 
-            if (!isGroupable) {
-              // For non-groupable fields, the result is a simple count
-              let nonNullRecords = queryResult.body.totalSize || 0;
-              let percentage = totalRecords > 0 ? Math.round((nonNullRecords / totalRecords) * 100) : 0;
-              fieldRow.fieldUsageData = percentage;
-            } else if (queryResult.body.records) {
-              // For other fields, process the GROUP BY results
-              let records = queryResult.body.records;
-              let nonNullRecords = 0;
-
-              // Calculate non-null records from the GROUP BY results
-              records.forEach(record => {
-                // If the field value is not null, add to non-null count
-                if (record[fieldRow.fieldName] !== null && record[fieldRow.fieldName] !== undefined) {
-                  nonNullRecords += record.number;
-                }
-              });
-
-              let percentage = totalRecords > 0 ? Math.round((nonNullRecords / totalRecords) * 100) : 0;
-              fieldRow.fieldUsageData = percentage;
-            } else {
-              console.error(`Composite API error for field ${fieldRow.fieldName}:`, {
-                queryResult,
-                httpStatusCode: queryResult?.httpStatusCode,
-                body: queryResult?.body,
-                hasRecords: queryResult?.body?.records ? true : false
-              });
-              fieldRow.fieldUsageData = "Error";
-            }
-          } else {
-            console.error(`Composite API error for field ${fieldRow.fieldName}:`, {
-              queryResult,
-              httpStatusCode: queryResult?.httpStatusCode,
-              body: queryResult?.body,
-              hasRecords: queryResult?.body?.records ? true : false
-            });
-            fieldRow.fieldUsageData = "Error";
-          }
-        });
-
-        this.model.didUpdate();
-
-        // Process next batch if there are more pending requests
-        this.bulkUsageRequestInProgress = false;
-        if (this.pendingFieldUsageRequests.length > 0) {
-          this.processBulkUsageRequests();
-        }
-      }).catch(error => {
-        console.error("Error fetching bulk field usage:", error);
-        console.error("Composite request that failed:", compositeRequest);
-        console.error("Batch fields that failed:", batch.map(fieldRow => fieldRow.fieldName));
-
-        // Mark all fields in this batch as error
-        batch.forEach(fieldRow => {
-          fieldRow.fieldUsageData = "Error";
-        });
-
-        this.model.didUpdate();
-
-        // Process next batch if there are more pending requests
-        this.bulkUsageRequestInProgress = false;
-        if (this.pendingFieldUsageRequests.length > 0) {
-          this.processBulkUsageRequests();
-        }
-      });
+          // Mark all fields in this batch as error
+          this.markBatchAsError(batch);
+          this.finishBatchProcessing();
+        })
+      );
     }).catch(error => {
       console.error("Error fetching total record count:", error);
 
       // Mark all fields in this batch as error
-      batch.forEach(fieldRow => {
-        fieldRow.fieldUsageData = "Error";
-      });
-
-      this.model.didUpdate();
-
-      // Process next batch if there are more pending requests
-      this.bulkUsageRequestInProgress = false;
-      if (this.pendingFieldUsageRequests.length > 0) {
-        this.processBulkUsageRequests();
-      }
+      this.markBatchAsError(batch);
+      this.finishBatchProcessing();
     });
+  }
+
+  // Helper method to process individual field usage result
+  processFieldUsageResult(fieldRow, result, totalRecords) {
+    let queryResult = result.compositeResponse.find(response => response.referenceId === `fieldUsage_${fieldRow.fieldName}`);
+
+    if (!this.isValidQueryResult(queryResult)) {
+      this.logQueryError(fieldRow.fieldName, queryResult);
+      this.setFieldUsageError(fieldRow);
+      return;
+    }
+
+    let isGroupable = fieldRow.fieldDescribe && fieldRow.fieldDescribe.groupable;
+    let nonNullRecords = this.calculateNonNullRecords(fieldRow, queryResult.body, isGroupable);
+    let percentage = this.calculatePercentage(nonNullRecords, totalRecords);
+
+    this.setFieldUsageSuccess(fieldRow, percentage, nonNullRecords, totalRecords);
+  }
+
+  // Helper method to validate query result
+  isValidQueryResult(queryResult) {
+    return queryResult && queryResult.httpStatusCode === 200 && queryResult.body;
+  }
+
+  // Helper method to calculate non-null records count
+  calculateNonNullRecords(fieldRow, queryBody, isGroupable) {
+    if (!isGroupable) {
+      // For non-groupable fields, the result is a simple count
+      return queryBody.totalSize || 0;
+    } else if (queryBody.records) {
+      // For groupable fields, process the GROUP BY results
+      let nonNullRecords = 0;
+      queryBody.records.forEach(record => {
+        // If the field value is not null, add to non-null count
+        if (record[fieldRow.fieldName] !== null && record[fieldRow.fieldName] !== undefined) {
+          nonNullRecords += record.number;
+        }
+      });
+      return nonNullRecords;
+    }
+    return 0;
+  }
+
+  // Helper method to calculate percentage
+  calculatePercentage(nonNullRecords, totalRecords) {
+    return totalRecords > 0 ? Math.round((nonNullRecords / totalRecords) * 100) : 0;
+  }
+
+  // Helper method to set field usage success
+  setFieldUsageSuccess(fieldRow, percentage, nonNullRecords, totalRecords) {
+    fieldRow.fieldUsageData = percentage;
+    fieldRow.fieldUsageDetails = {
+      nonNullCount: nonNullRecords,
+      totalCount: totalRecords
+    };
+    fieldRow.fieldUsageLoading = false;
+  }
+
+  // Helper method to set field usage error
+  setFieldUsageError(fieldRow) {
+    fieldRow.fieldUsageData = "Error";
+    fieldRow.fieldUsageDetails = {
+      nonNullCount: 0,
+      totalCount: 0
+    };
+    fieldRow.fieldUsageLoading = false;
+  }
+
+  // Helper method to mark entire batch as error
+  markBatchAsError(batch) {
+    batch.forEach(fieldRow => {
+      this.setFieldUsageError(fieldRow);
+    });
+  }
+
+  // Helper method to log query errors
+  logQueryError(fieldName, queryResult) {
+    console.error(`Composite API error for field ${fieldName}:`, {
+      queryResult,
+      httpStatusCode: queryResult?.httpStatusCode,
+      body: queryResult?.body,
+      hasRecords: queryResult?.body?.records ? true : false
+    });
+  }
+
+  // Helper method to finish batch processing
+  finishBatchProcessing() {
+    this.bulkUsageRequestInProgress = false;
+    if (this.pendingFieldUsageRequests.length > 0) {
+      this.processBulkUsageRequests();
+    }
   }
 
   // Trigger usage calculation for all fields
@@ -764,6 +848,7 @@ class FieldRowList extends RowList {
     // Clear any existing usage data and trigger calculation for all fields
     this.rows.forEach(fieldRow => {
       fieldRow.fieldUsageData = null;
+      fieldRow.fieldUsageLoading = false;
     });
 
     // Clear pending requests and start fresh
@@ -896,6 +981,8 @@ class FieldRow extends TableRow {
     this.fieldSetupLinks = null;
     this.fieldSetupLinksRequested = false;
     this.fieldUsageData = null;
+    this.fieldUsageLoading = false;
+    this.fieldUsageDetails = null;
   }
   rowProperties() {
     let props = {};
@@ -1027,6 +1114,11 @@ class FieldRow extends TableRow {
       return 100;
     }
 
+    // If we're currently loading usage data, show loading indicator
+    if (this.fieldUsageLoading) {
+      return "Loading...";
+    }
+
     // If we have cached usage data, return it
     if (this.fieldUsageData !== null) {
       return this.fieldUsageData;
@@ -1036,11 +1128,40 @@ class FieldRow extends TableRow {
     return GET_FIELD_USAGE_LABEL;
   }
 
+  fieldUsageTitle() {
+    // If we don't have field describe info, we can't calculate usage
+    if (!this.fieldDescribe || this.fieldDescribe.type === "textarea" || this.fieldDescribe.type === "address") {
+      return "";
+    }
+
+    // Required fields always have 100% usage
+    if (this.fieldDescribe && !this.fieldDescribe.nillable) {
+      return "Required field - always 100% usage";
+    }
+
+    // If we're currently loading usage data, show loading indicator
+    if (this.fieldUsageLoading) {
+      return "Loading field usage data...";
+    }
+
+    // If we have cached usage data, return the details
+    if (this.fieldUsageData !== null && this.fieldUsageDetails) {
+      return `${this.fieldUsageDetails.nonNullCount} / ${this.fieldUsageDetails.totalCount} records (${this.fieldUsageData}%)`;
+    }
+
+    // Don't automatically trigger calculation - wait for user to click refresh
+    return "Click to calculate field usage";
+  }
+
   fetchFieldUsage() {
     // Skip required fields since we already know they have 100% usage
     if (this.fieldDescribe && !this.fieldDescribe.nillable) {
       return;
     }
+
+    // Set loading state
+    this.fieldUsageLoading = true;
+    this.rowList.model.didUpdate();
 
     // Add this field to the bulk processing queue instead of making individual API calls
     this.rowList.addPendingUsageRequest(this);
@@ -1658,6 +1779,7 @@ class RowTable extends React.Component {
     this.onToggleTableSettings = this.onToggleTableSettings.bind(this);
     this.onClickTableBorderSettings = this.onClickTableBorderSettings.bind(this);
     this.onCopyTable = this.onCopyTable.bind(this);
+    this.onDownloadExcel = this.onDownloadExcel.bind(this);
     this.closePopMenu = this.closePopMenu.bind(this);
     this.onOpenPopup = this.onOpenPopup.bind(this);
     this.showTableBorder = this.props.model.showTableBorder;
@@ -1685,6 +1807,15 @@ class RowTable extends React.Component {
     e.preventDefault();
     e.stopPropagation();
     this.props.model.exportTable();
+    this.tableSettingsOpen = false;
+    this.props.model.didUpdate();
+  }
+  onDownloadExcel(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.props.model.exportTableToExcel();
+    this.tableSettingsOpen = false;
+    this.props.model.didUpdate();
   }
   onOpenPopup(elem){
     this.props.onOpenPopup(elem);
@@ -1713,16 +1844,13 @@ class RowTable extends React.Component {
             }
           }),
           h("th", {className: actionsColumn.className, tabIndex: 0},
-            h("button", {className: "actions-button", onClick: this.onCopyTable, title: "Copy table to clipboard"},
-              h("svg", {className: "actions-icon"},
-                h("use", {xlinkHref: "symbols.svg#copy"})
-              ),
-            ),
             h("button", {className: "table-settings-button", onClick: this.onToggleTableSettings},
               h("div", {className: "table-settings-icon"})
             ),
             this.tableSettingsOpen && h("div", {className: "pop-menu-container"},
               h("div", {className: "pop-menu"},
+                h("a", {className: "table-settings-link", onClick: this.onCopyTable}, "Copy Table"),
+                h("a", {className: "table-settings-link", onClick: this.onDownloadExcel}, "Download CSV"),
                 h("a", {className: "table-settings-link", onClick: this.onClickTableBorderSettings}, this.state.showOrHideBorders),
               )
             ),
@@ -1912,9 +2040,8 @@ class FieldUsageCell extends React.Component {
     e.preventDefault();
     let {row} = this.props;
     if (row.fieldUsage() === GET_FIELD_USAGE_LABEL) {
-      // Find the header button ref to disable it
-      let headerButton = document.querySelector(".field-usage .actions-button");
-      row.rowList.triggerUsageCalculation(headerButton);
+      // Only calculate usage for this specific field
+      row.fetchFieldUsage();
     }
   }
 
@@ -1928,11 +2055,17 @@ class FieldUsageCell extends React.Component {
           href: "about:blank",
           onClick: this.onUsageClick,
           className: "usage-link",
-          title: "Click to calculate field usage"
+          title: row.fieldUsageTitle()
         }, h(TypedValue, {value: usageValue}))
       );
+    } else if (usageValue === "Loading...") {
+      return h("td", {className: col.className + " loading"},
+        h("div", {className: "loading-indicator"},
+          h("span", {className: "loading-text"}, "Loading...")
+        )
+      );
     } else {
-      return h("td", {className: col.className},
+      return h("td", {className: col.className, title: row.fieldUsageTitle()},
         h(TypedValue, {value: usageValue})
       );
     }

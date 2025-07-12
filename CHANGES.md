@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- `Show all data` Analyze field usage by showing the percentage of records that have a value for each field.
 - `Show all data` Add 'back to record' button [feature 884](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/884) (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
 - `Data Export` Suggestions added for queries using IN clause on picklist fields [feature 892](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/892) (contribution by [Luca Bassani](https://github.com/baslu93))
 - Support for multiple SOQL/SOSL tabs in `Data Export` [feature 132](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/132) (requested Erlend Hansen)

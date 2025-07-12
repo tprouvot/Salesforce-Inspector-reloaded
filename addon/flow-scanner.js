@@ -56,7 +56,7 @@ class FlowScanner {
         this.flowScannerCore = lightningflowscanner;
       } else {
         this.flowScannerCore = null;
-        throw new Error("Flow Scanner Core library not loaded. Please ensure flow-scanner-core.js is properly included.");
+        throw new Error("Flow Scanner Core library not loaded. Please ensure lib/flow-scanner-core.js is properly included.");
       }
     } catch (error) {
       this.flowScannerCore = null;
@@ -80,48 +80,47 @@ class FlowScanner {
     if (this.scanResults.length === 0) {
       return;
     }
+    // Define the headers for the CSV file.
+    const csvHeaders = [
+      "ruleDescription",
+      "ruleLabel",
+      "flowName",
+      "name",
+      "apiName",
+      "label",
+      "type",
+      "metaType",
+      "dataType",
+      "locationX",
+      "locationY",
+      "connectsTo",
+      "expression"
+    ];
 
-      // Define the headers for the CSV file.
-      const csvHeaders = [
-        "ruleDescription",
-        "ruleLabel",
-        "flowName",
-        "name",
-        "apiName",
-        "label",
-        "type",
-        "metaType",
-        "dataType",
-        "locationX",
-        "locationY",
-        "connectsTo",
-        "expression"
-      ];
+    const csvRows = [csvHeaders.join(",")];
 
-      const csvRows = [csvHeaders.join(",")];
-
-      // Convert each scan result into a CSV row.
-      this.scanResults.forEach(result => {
-        const row = csvHeaders.map(header => {
-          const value = result[header] || "";
-          // Escape quotes and wrap value in quotes for CSV format.
-          const escapedValue = value.toString().replace(/"/g, '""');
-          return `"${escapedValue}"`;
-        });
-        csvRows.push(row.join(","));
+    // Convert each scan result into a CSV row.
+    this.scanResults.forEach(result => {
+      const row = csvHeaders.map(header => {
+        const value = result[header] || "";
+        // Escape quotes and wrap value in quotes for CSV format.
+        const escapedValue = value.toString().replace(/"/g, '""');
+        return `"${escapedValue}"`;
       });
+      csvRows.push(row.join(","));
+    });
 
-      // Create a Blob and trigger a download.
-      const csvContent = csvRows.join("\n");
-      const blob = new Blob([csvContent], {type: "text/csv"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "flow-scan-" + this.currentFlow.name + "-" + new Date().toISOString().split("T")[0] + ".csv";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    // Create a Blob and trigger a download.
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], {type: "text/csv"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "flow-scan-" + this.currentFlow.name + "-" + new Date().toISOString().split("T")[0] + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   /**
@@ -778,11 +777,11 @@ class App extends React.Component {
     this.initializeFlowScanner();
   }
 
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate() {
     // When scan results are loaded and accordion state is missing rule keys, initialize them to expanded
     if (this.flowScanner?.scanResults && this.flowScanner.scanResults.length > 0) {
-    const severityOrder = ["error", "warning", "info"];
-    const severityGroups = {error: [], warning: [], info: []};
+      const severityOrder = ["error", "warning", "info"];
+      const severityGroups = {error: [], warning: [], info: []};
       this.flowScanner.scanResults.forEach(r => { if (severityGroups[r.severity]) severityGroups[r.severity].push(r); });
       let needsUpdate = false;
       const accordion = {...this.state.accordion};
@@ -791,12 +790,12 @@ class App extends React.Component {
         if (!accordion[severity]) accordion[severity] = {expanded: true, rules: {}};
         if (!accordion[severity].rules) accordion[severity].rules = {};
         // Group by rule
-      const rules = {};
-      group.forEach(result => {
-        const ruleType = result.rule || result.ruleLabel || "Unknown Rule";
-        if (!rules[ruleType]) rules[ruleType] = [];
-        rules[ruleType].push(result);
-      });
+        const rules = {};
+        group.forEach(result => {
+          const ruleType = result.rule || result.ruleLabel || "Unknown Rule";
+          if (!rules[ruleType]) rules[ruleType] = [];
+          rules[ruleType].push(result);
+        });
         Object.keys(rules).forEach(ruleType => {
           if (!(ruleType in accordion[severity].rules)) {
             accordion[severity].rules[ruleType] = true;
@@ -907,7 +906,7 @@ class App extends React.Component {
           const rules = accordion[sev].rules;
           Object.keys(rules).forEach(rule => { rules[rule] = false; });
         });
-        } else {
+      } else {
         // Collapse all severity groups
         ["error", "warning", "info"].forEach(sev => {
           accordion[sev].expanded = false;
@@ -936,7 +935,7 @@ class App extends React.Component {
       } else if (expandedRules.length !== ruleKeys.length) {
         // mixed -> expand all
         ruleKeys.forEach(r => { sevAcc.rules[r] = true; });
-    } else {
+      } else {
         // fully expanded -> collapse group
         sevAcc.expanded = false;
       }
@@ -1151,9 +1150,9 @@ class App extends React.Component {
           const sevAccordion = accordion[severity] || {expanded: true, rules: {}};
           const isSevExpanded = sevAccordion.expanded !== false;
           const ruleKeys = Object.keys(rules);
-          const expandedRules = ruleKeys.filter(r=> sevAccordion.rules && sevAccordion.rules[r]);
+          const expandedRules = ruleKeys.filter(r => sevAccordion.rules && sevAccordion.rules[r]);
           let accordionStateAttr = isSevExpanded ? "1" : "3"; // 1=expanded,3=collapsed
-          if (isSevExpanded && expandedRules.length>0 && expandedRules.length<ruleKeys.length) {
+          if (isSevExpanded && expandedRules.length > 0 && expandedRules.length < ruleKeys.length) {
             accordionStateAttr = "2"; // mixed
           }
           return h("div", {
@@ -1276,77 +1275,77 @@ class App extends React.Component {
         key: severity,
         className: `severity-group-layout ${severity}${!isExpanded ? " collapsed" : ""}`,
       },
-        h("div", {
-          className: "severity-title-left",
-          role: "button",
-          tabIndex: 0,
-          "aria-expanded": isExpanded,
-          onClick: () => this.onSeverityToggle(severity),
-          onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onSeverityToggle(severity); } }
-        },
-          h("h3", {className: "severity-heading"},
-            h("div", {className: "severity-heading-content"},
+      h("div", {
+        className: "severity-title-left",
+        role: "button",
+        tabIndex: 0,
+        "aria-expanded": isExpanded,
+        onClick: () => this.onSeverityToggle(severity),
+        onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onSeverityToggle(severity); } }
+      },
+        h("h3", {className: "severity-heading"},
+          h("div", {className: "severity-heading-content"},
+            h("svg", {
+              className: "accordion-chevron",
+              width: "24",
+              height: "24",
+              "aria-hidden": "true",
+              style: {transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
+            },
+              h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
+            ),
+            h("span", {className: "severity-label-group"},
+              severityIcons[severity],
+              h("span", {}, severityLabels[severity])
+            )
+          )
+        ),
+        h("span", {className: "severity-total-count"}, `${group.length} Issue${group.length === 1 ? "" : "s"}`)
+      ),
+      isExpanded && h("div", {className: "rules-container-right"},
+        Object.entries(rules).map(([ruleType, ruleResults], ruleIdx) => {
+          const description = ruleResults[0].description || "Rule violation detected";
+          const ruleKey = `${severity}__${ruleType}`;
+          const ruleExpanded = expandedRules[ruleKey] !== false; // default to expanded
+          return h("div", {
+            key: `${severity}-${ruleIdx}`,
+            className: `rule-section compact${ruleExpanded ? " expanded" : " collapsed"} card-bg`,
+            "data-rule-type": ruleType
+          },
+            h("div", {
+              className: "rule-header",
+              tabIndex: 0,
+              role: "button",
+              "aria-expanded": ruleExpanded,
+              onClick: () => this.onRuleToggle(severity, ruleType),
+              onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onRuleToggle(severity, ruleType); } }
+            },
+              h("div", {className: "rule-title-section"},
+                h("span", {className: "rule-name-compact"}, ruleType),
+                h("div", {className: "tooltip-container"},
+                  h("svg", {className: "info-icon", "aria-hidden": "true"},
+                    h("use", {xlinkHref: "symbols.svg#info"})
+                  ),
+                  h("div", {className: "tooltip-content"}, description)
+                ),
+                h("span", {className: "badge-total circle-badge"}, ruleResults.length)
+              ),
               h("svg", {
                 className: "accordion-chevron",
                 width: "24",
                 height: "24",
                 "aria-hidden": "true",
-                style: { transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)" }
+                style: {transform: ruleExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
               },
                 h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
-              ),
-              h("span", {className: "severity-label-group"},
-                severityIcons[severity],
-                h("span", {}, severityLabels[severity])
               )
+            ),
+            ruleExpanded && h("div", {className: "rule-content"},
+              this.renderRuleTable(ruleResults)
             )
-          ),
-          h("span", {className: "severity-total-count"}, `${group.length} Issue${group.length === 1 ? "" : "s"}`)
-        ),
-        isExpanded && h("div", {className: "rules-container-right"},
-          Object.entries(rules).map(([ruleType, ruleResults], ruleIdx) => {
-            const description = ruleResults[0].description || "Rule violation detected";
-            const ruleKey = `${severity}__${ruleType}`;
-            const ruleExpanded = expandedRules[ruleKey] !== false; // default to expanded
-            return h("div", {
-              key: `${severity}-${ruleIdx}`,
-              className: `rule-section compact${ruleExpanded ? " expanded" : " collapsed"} card-bg`,
-              "data-rule-type": ruleType
-            },
-              h("div", {
-                className: "rule-header",
-                tabIndex: 0,
-                role: "button",
-                "aria-expanded": ruleExpanded,
-                onClick: () => this.onRuleToggle(severity, ruleType),
-                onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onRuleToggle(severity, ruleType); } }
-              },
-                h("div", {className: "rule-title-section"},
-                  h("span", {className: "rule-name-compact"}, ruleType),
-                  h("div", {className: "tooltip-container"},
-                    h("svg", {className: "info-icon", "aria-hidden": "true"},
-                      h("use", {xlinkHref: "symbols.svg#info"})
-                    ),
-                    h("div", {className: "tooltip-content"}, description)
-                  ),
-                  h("span", {className: "badge-total circle-badge"}, ruleResults.length)
-                ),
-                h("svg", {
-                  className: "accordion-chevron",
-                  width: "24",
-                  height: "24",
-                  "aria-hidden": "true",
-                  style: {transform: ruleExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
-                },
-                  h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
-                )
-              ),
-              ruleExpanded && h("div", {className: "rule-content"},
-                this.renderRuleTable(ruleResults)
-              )
-            );
-          })
-        )
+          );
+        })
+      )
       );
     }).filter(Boolean);
   }
@@ -1438,7 +1437,6 @@ class App extends React.Component {
 
     return h("div", {className: "flow-scanner-app"},
       (() => {
-        const showSpinner = this.state.isLoading || (this.flowScanner && this.flowScanner.isScanning);
         return h("div", {id: "user-info", className: "slds-border_bottom"},
           // Salesforce home link
           h("a", {href: sfLink, className: "sf-link"},
@@ -1450,8 +1448,8 @@ class App extends React.Component {
           // Title
           h("h1", {}, "Flow Scanner"),
           // Optional user info (reuse flow label)
-          this.flowScanner?.currentFlow?.label ?
-            h("span", {}, " / " + this.flowScanner.currentFlow.label) : null,
+          this.flowScanner?.currentFlow?.label
+            ? h("span", {}, " / " + this.flowScanner.currentFlow.label) : null,
           // Right side icons & spinner
           h("div", {className: "flex-right"},
             // Note about core version
@@ -1463,7 +1461,7 @@ class App extends React.Component {
                   target: "_blank",
                   rel: "noopener noreferrer"
                 }, "Lightning Flow Scanner"),
-                scannerVersion ? ` (core v${scannerVersion})` : ""
+                scannerVersion ? `\u00A0(core v${scannerVersion})` : null
               )
             ),
             // Help button

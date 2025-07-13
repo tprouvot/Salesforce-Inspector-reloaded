@@ -1,5 +1,8 @@
 # Release Notes
 
+## [Unreleased]
+- Fix: Enable popup actions (Copy Id, View in Salesforce, etc.) for records identified only by DurableId (e.g., FlowDefinitionView) [#441]
+
 ## Version 1.27
 
 - `Show all data` Analyze field usage by showing the percentage of records that have a value for each field.

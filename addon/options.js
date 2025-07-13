@@ -1,7 +1,8 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
 import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.js";
-/* global initButton */
+import {getFlowScannerRules} from "./flow-rules.js";
+/* global initButton, lightningflowscanner */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
@@ -900,9 +901,7 @@ class FlowScannerRulesOption extends React.Component {
   }
 
   loadAndMergeRules() {
-    const stored = JSON.parse(localStorage.getItem(this.key) || "[]");
-    const customStored = JSON.parse(localStorage.getItem(this.customKey) || "[]");
-    const mergedRules = this.mergeRules(stored, this.props.checkboxes, customStored);
+    const mergedRules = getFlowScannerRules(window.lightningflowscanner);
     this.setState({rules: mergedRules});
   }
 
@@ -942,53 +941,6 @@ class FlowScannerRulesOption extends React.Component {
     } catch (e) {
       console.warn("Failed to migrate configuration:", e);
     }
-  }
-
-  mergeRules(storedRules, defaultRules, customRules = []) {
-    const knownConfigurableRules = {
-      "APIVersion": {configType: "threshold", defaultValue: 50},
-      "FlowName": {configType: "expression", defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+"},
-      "CyclomaticComplexity": {configType: "threshold", defaultValue: 25},
-      "AutoLayout": {configType: "enabled", defaultValue: true},
-      "ProcessBuilder": {configType: "enabled", defaultValue: true}
-    };
-    const merged = [];
-    const defaultRuleNames = new Set(defaultRules.map(r => r.name));
-    for (const defaultRule of defaultRules) {
-      const storedRule = storedRules.find(r => r.name === defaultRule.name);
-      const knownConfig = knownConfigurableRules[defaultRule.name];
-      let config = {};
-      let configType = defaultRule.configType;
-      let configurable = defaultRule.configurable;
-      if (storedRule && storedRule.config) {
-        config = storedRule.config;
-      } else if (knownConfig) {
-        config = {[knownConfig.configType]: knownConfig.defaultValue};
-        configType = knownConfig.configType;
-        configurable = true;
-      } else if (defaultRule.defaultValue) {
-        config = {[defaultRule.configType]: defaultRule.defaultValue};
-      }
-      if (knownConfig) {
-        configurable = true;
-        configType = configType || knownConfig.configType;
-      }
-      merged.push({
-        ...defaultRule,
-        checked: storedRule ? storedRule.checked : defaultRule.checked,
-        config,
-        configType,
-        configurable,
-        severity: storedRule ? storedRule.severity || defaultRule.severity : defaultRule.severity,
-        isBeta: defaultRule.isBeta || false
-      });
-    }
-    for (const customRule of customRules) {
-      if (!defaultRuleNames.has(customRule.name)) {
-        merged.push({...customRule, isCustom: true});
-      }
-    }
-    return merged;
   }
 
   getRuleDescription(ruleName) {

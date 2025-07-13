@@ -1,5 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
+import {getFlowScannerRules} from "./flow-rules.js";
 /* global initButton lightningflowscanner */
 
 /**
@@ -146,13 +147,15 @@ class FlowScanner {
    */
   async getFlowMetadata() {
     try {
+      // Use API version from Options settings if set, otherwise fall back to default import
+      const currentApiVersion = localStorage.getItem("apiVersion") || apiVersion;
       // Add cache-busting parameter to force fresh queries
       const cacheBuster = Math.random();
 
       // Query both Flow and FlowDefinitionView objects to get complete metadata
       const [flowRes, fdvRes] = await Promise.all([
-        sfConn.rest(`/services/data/v${apiVersion}/tooling/query?q=SELECT+Id,Metadata+FROM+Flow+WHERE+Id='${this.flowId}'&cache=${cacheBuster}`),
-        sfConn.rest(`/services/data/v${apiVersion}/query/?q=SELECT+Label,ApiName,ProcessType,TriggerType,TriggerObjectOrEventLabel+FROM+FlowDefinitionView+WHERE+DurableId='${this.flowDefId}'&cache=${cacheBuster}`)
+        sfConn.rest(`/services/data/v${currentApiVersion}/tooling/query?q=SELECT+Id,Metadata+FROM+Flow+WHERE+Id='${this.flowId}'&cache=${cacheBuster}`),
+        sfConn.rest(`/services/data/v${currentApiVersion}/query/?q=SELECT+Label,ApiName,ProcessType,TriggerType,TriggerObjectOrEventLabel+FROM+FlowDefinitionView+WHERE+DurableId='${this.flowDefId}'&cache=${cacheBuster}`)
       ]);
 
       const flowRecord = flowRes.records?.[0];
@@ -280,131 +283,96 @@ class FlowScanner {
       // Build a reference map of element names to labels.
       this._buildElementMap();
 
-      // Retrieve enabled rules from user settings in localStorage.
-      const storedRaw = localStorage.getItem("flowScannerRules");
-      let stored = [];
-      try {
-        stored = JSON.parse(storedRaw || "[]");
-      } catch {
-        stored = [];
-      }
-      const customRules = JSON.parse(localStorage.getItem("flowScannerCustomRules") || "[]");
-      customRules.forEach(cr => {
-        if (!stored.find(r => r.name === cr.name)) {
-          stored.push({
-            ...cr, // Spread the custom rule object
-            checked: cr.checked, // Explicitly respect the stored checked status
-            config: cr.config || (cr.path ? {path: cr.path} : {})
-          });
-        }
-      });
+      // Retrieve core and beta rules from the scanner library
+      const allRules = getFlowScannerRules(this.flowScannerCore);
 
-      // Normalize the format of stored rules.
-      if (!Array.isArray(stored)) {
-        if (stored && typeof stored === "object") {
-          stored = Object.entries(stored).map(([name, checked]) => ({name, checked: !!checked}));
-        } else {
-          stored = [];
-        }
-      }
-
-      // Get the list of enabled rule names.
-      const selected = stored.filter(c => c.checked).map(c => c.name);
-
-      // If no rules are enabled, show an error and stop.
-      if (selected.length === 0) {
-        this.showError("No Flow Scanner rules are enabled. Please go to the Options page and enable at least one rule in the Flow Scanner tab.");
+      // Select only enabled rules
+      const selectedRules = allRules.filter(r => r.checked);
+      if (selectedRules.length === 0) {
+        this.showError("No Flow Scanner rules are enabled. Please enable rules on the Options page.");
         return;
       }
-
-      // Separate built-in and custom rules
-      const builtInRuleNames = selected.filter(name => !stored.find(r => r.name === name && (r.path || r.code)));
-      const customRuleDefs = stored.filter(r => r.checked && (r.path || r.code));
-
+      // Separate built-in vs custom for scanning
+      const builtInRules = selectedRules.filter(r => !r.isCustom && !r.path && !r.code);
+      const customRuleDefs = selectedRules.filter(r => r.isCustom || r.path || r.code);
       let results = [];
-      let customAPIVersionResult = null;
-
-      // Run built-in rules
-      if (builtInRuleNames.length > 0) {
+      // Run built-in rules dynamically based on configType
+      if (builtInRules.length > 0) {
         const ruleConfig = {rules: {}};
-        builtInRuleNames.forEach(name => {
-          const storedRule = stored.find(r => r.name === name);
-          const ruleConfigEntry = storedRule?.config || {};
-          const severity = storedRule?.severity || "error";
-          const scannerSeverity = normalizeSeverity(severity, "storage");
-
-          if (name === "FlowName") {
-            if (ruleConfigEntry.expression) {
-              ruleConfig.rules.FlowName = {expression: ruleConfigEntry.expression, severity: scannerSeverity};
+        builtInRules.forEach(rule => {
+          const {name, configType, config = {}, severity: uiSeverity} = rule;
+          const scannerSeverity = normalizeSeverity(uiSeverity || "error", "storage");
+          const entry = {severity: scannerSeverity};
+          if (configType === "expression" && config.expression != null) {
+            entry.expression = config.expression;
+          } else if (configType === "threshold" && config.threshold != null) {
+            if (name === "APIVersion") {
+              // Convert numeric threshold into expression string understood by core rule
+              entry.expression = `>=${config.threshold}`;
+            } else {
+              entry.threshold = config.threshold;
             }
-          } else if (name === "APIVersion") {
-            let minVersion;
-            if (ruleConfigEntry.threshold !== undefined) {
-              minVersion = parseInt(ruleConfigEntry.threshold, 10);
-            } else if (ruleConfigEntry.expression !== undefined) {
-              const expressionValue = ruleConfigEntry.expression;
-              if (typeof expressionValue === "string" && expressionValue.includes("<")) {
-                minVersion = parseInt(expressionValue.replace(/[<>]/g, ""), 10);
-              } else {
-                minVersion = parseInt(expressionValue, 10);
-              }
-            }
-            if (!isNaN(minVersion)) {
-              ruleConfig.rules.APIVersion = {expression: `>=${minVersion}`, severity: scannerSeverity};
-            }
-          } else if (name === "AutoLayout") {
-            if (ruleConfigEntry.enabled !== undefined) {
-              ruleConfig.rules.AutoLayout = {severity: scannerSeverity};
-            }
-          } else if (name === "CyclomaticComplexity") {
-            if (ruleConfigEntry.threshold) {
-              ruleConfig.rules.CyclomaticComplexity = {threshold: ruleConfigEntry.threshold, severity: scannerSeverity};
-            }
-          } else if (name === "ProcessBuilder") {
-            if (ruleConfigEntry.enabled !== undefined) {
-              ruleConfig.rules.ProcessBuilder = {severity: scannerSeverity};
-            }
-          } else {
-            ruleConfig.rules[name] = {severity: scannerSeverity};
           }
+          ruleConfig.rules[name] = entry;
         });
 
-        if (ruleConfig.rules.APIVersion && this.currentFlow) {
-          const flowApiVersion = this.currentFlow.apiVersion || this.currentFlow.xmlData?.apiVersion;
-          const minVersion = parseInt(ruleConfig.rules.APIVersion.expression.replace(/[>=<]/g, ""));
-          const operator = ruleConfig.rules.APIVersion.expression.replace(/[0-9]/g, "");
-          let isViolation = false;
-          switch (operator) {
-            case ">=": isViolation = flowApiVersion < minVersion; break;
-            case "<=": isViolation = flowApiVersion > minVersion; break;
-            case ">": isViolation = flowApiVersion <= minVersion; break;
-            case "<": isViolation = flowApiVersion >= minVersion; break;
-            case "==": case "=": isViolation = flowApiVersion !== minVersion; break;
-            default: isViolation = flowApiVersion < minVersion;
-          }
-          if (isViolation) {
-            const severity = this.mapSeverity(ruleConfig.rules.APIVersion.severity);
-            const expression = `Current: ${flowApiVersion}, Required: ${ruleConfig.rules.APIVersion.expression}`;
-            customAPIVersionResult = {
-              rule: "Outdated API Version",
-              description: "The API version of the flow is outdated.",
-              severity,
-              details: `Flow API Version: ${flowApiVersion} | Required: ${ruleConfig.rules.APIVersion.expression}`,
-              affectedElements: [{elementName: "Flow API Version", elementType: "apiVersion", expression}],
-              ruleDescription: "The API version of the flow is outdated.",
-              ruleLabel: "Outdated API Version",
-              flowName: this.currentFlow.name,
-              name: "Flow API Version",
-              type: "apiVersion",
-              expression
-            };
-          }
-          delete ruleConfig.rules.APIVersion;
+        // Extract and handle APIVersion manually to avoid unsafe-eval in core rule
+        const apiVersionConfig = ruleConfig.rules.APIVersion;
+        if (ruleConfig.rules.APIVersion) {
+          delete ruleConfig.rules.APIVersion; // prevent core rule execution
         }
 
         if (Object.keys(ruleConfig.rules).length > 0) {
           const scanResults = this.flowScannerCore.scan([parsedFlow], ruleConfig);
           results.push(...this.processScanResults(scanResults));
+        }
+
+        // Manual APIVersion check (if configured)
+        if (apiVersionConfig) {
+          const flowApiVer = this.currentFlow.apiVersion || this.currentFlow.xmlData?.apiVersion;
+          const apiVersionRuleDef = allRules.find(r => r.name === "APIVersion");
+          let requiredExpr;
+
+          if (apiVersionConfig.expression) {
+            requiredExpr = apiVersionConfig.expression;
+          } else if (apiVersionConfig.threshold != null) {
+            requiredExpr = `>=${apiVersionConfig.threshold}`;
+          }
+
+          if (requiredExpr) {
+            const minVer = parseInt(requiredExpr.replace(/[^0-9]/g, ""), 10);
+            const operator = requiredExpr.replace(/[0-9]/g, "").trim();
+            let violation = false;
+            switch (operator) {
+              case ">=": violation = flowApiVer < minVer; break;
+              case "<": violation = flowApiVer >= minVer; break;
+              case ">": violation = flowApiVer <= minVer; break;
+              case "<=": violation = flowApiVer > minVer; break;
+              case "==": case "=": violation = flowApiVer !== minVer; break;
+              default: violation = flowApiVer < minVer;
+            }
+            if (violation) {
+              // Create a result that mimics the core scanner's output and process it generically
+              const manualScanResult = [{
+                flow: parsedFlow,
+                ruleResults: [{
+                  ruleName: "APIVersion",
+                  ruleDefinition: {
+                    description: apiVersionRuleDef.description,
+                    label: apiVersionRuleDef.label
+                  },
+                  occurs: true,
+                  severity: apiVersionConfig.severity,
+                  details: [{
+                    name: String(flowApiVer),
+                    type: "apiVersion",
+                    expression: requiredExpr
+                  }]
+                }]
+              }];
+              results.push(...this.processScanResults(manualScanResult));
+            }
+          }
         }
       }
 
@@ -453,11 +421,6 @@ class FlowScanner {
           });
         }
       }
-
-      if (customAPIVersionResult) {
-        results.push(customAPIVersionResult);
-      }
-
       this.scanResults = results;
     } catch (error) {
       this.showError("Failed to scan flow: " + error.message);
@@ -498,26 +461,46 @@ class FlowScanner {
           continue;
         }
 
-        if (ruleResult.ruleName === "APIVersion" && ruleResult.errorMessage && ruleResult.errorMessage.includes("unsafe-eval")) {
-          continue;
-        }
-
         const ruleDescription = ruleResult.ruleDefinition?.description || "No description available";
         const ruleLabel = ruleResult.ruleDefinition?.label || ruleResult.ruleName;
 
         if (ruleResult.details && ruleResult.details.length > 0) {
           for (const detail of ruleResult.details) {
-            const elementName = detail.name || detail.violation?.name || "Unknown";
-            const elementLabelFromCore = detail.label || detail.violation?.label;
-            const elementLabel = elementLabelFromCore || this._elementMap.get(elementName) || "";
-            const elementType = detail.type || detail.violation?.subtype || "Unknown";
-            const metaType = detail.metaType || detail.violation?.metaType || "";
-            const dataType = detail.dataType || "";
-            const locationX = detail.details?.locationX || detail.violation?.locationX || "";
-            const locationY = detail.details?.locationY || detail.violation?.locationY || "";
-            const connectsTo = detail.details?.connectsTo || "";
-            const expression = detail.details?.expression || detail.violation?.expression || "";
-            const apiName = detail.apiName || detail.violation?.apiName || detail.name || detail.violation?.name || "";
+            let elementName, elementLabel, elementType, apiName, expression, metaType, dataType, locationX, locationY, connectsTo;
+            const potentialElementName = detail.name || detail.violation?.name;
+            // Check if the violation is for a specific element or the flow itself
+            if (potentialElementName && this._elementMap.has(potentialElementName)) {
+              // Element-level violation
+              elementName = potentialElementName;
+              const elementLabelFromCore = detail.label || detail.violation?.label;
+              elementLabel = elementLabelFromCore || this._elementMap.get(elementName) || "";
+              elementType = detail.type || detail.violation?.subtype || "Unknown";
+              metaType = detail.metaType || detail.violation?.metaType || "";
+              dataType = detail.dataType || "";
+              locationX = detail.details?.locationX || detail.violation?.locationX || "";
+              locationY = detail.details?.locationY || detail.violation?.locationY || "";
+              connectsTo = detail.details?.connectsTo || "";
+              expression = detail.details?.expression || detail.violation?.expression || "";
+              apiName = detail.apiName || detail.violation?.apiName || detail.name || detail.violation?.name || "";
+            } else {
+              // Flow-level violation (e.g., Cyclomatic Complexity, Flow Name)
+              elementName = this.currentFlow.apiName;
+              elementLabel = this.currentFlow.label;
+              elementType = "Flow";
+              apiName = this.currentFlow.apiName;
+              // For manual results (like APIVersion), the expression is directly on the detail object.
+              // For core results, it's nested in .details or .violation.
+              const rawCondition = detail.expression || detail.details?.expression || detail.violation?.expression || "";
+              // Add a space after operators for readability. e.g. ">=60" becomes ">= 60"
+              const condition = rawCondition.replace(/([<>=!]+)/g, "$1 ");
+              // Combine the metric value (detail.name) and the condition for a clear description
+              expression = `${detail.name || ""} ${condition}`.trim();
+              metaType = "";
+              dataType = "";
+              locationX = "";
+              locationY = "";
+              connectsTo = "";
+            }
 
             const result = {
               rule: ruleLabel,
@@ -563,15 +546,32 @@ class FlowScanner {
             results.push(result);
           }
         } else {
+          // Handle flow-level violations by creating a synthetic affected element
           const result = {
             rule: ruleLabel,
             description: ruleDescription,
             severity: this.mapSeverity(ruleResult.severity),
-            details: "Rule violation detected",
-            affectedElements: [],
+            details: ruleDescription,
+            affectedElements: [{
+              elementName: this.currentFlow.apiName,
+              elementLabel: this.currentFlow.label,
+              elementType: "Flow",
+              apiName: this.currentFlow.apiName,
+              expression: ruleDescription,
+              metaType: "",
+              dataType: "",
+              locationX: "",
+              locationY: "",
+              connectsTo: ""
+            }],
             ruleDescription,
             ruleLabel,
-            flowName: this.currentFlow.name
+            flowName: this.currentFlow.name,
+            name: this.currentFlow.apiName,
+            type: "Flow",
+            label: this.currentFlow.label,
+            apiName: this.currentFlow.apiName,
+            expression: ruleDescription
           };
           results.push(result);
         }
@@ -838,7 +838,7 @@ class App extends React.Component {
 
   onToggleHelp(e) {
     e.preventDefault();
-    const target = "_blank";
+    const target = this.flowScanner.getLinkTarget(e);
     const url = chrome.runtime.getURL(`options.html?selectedTab=8&host=${this.flowScanner?.sfHost}`);
     window.open(url, target);
   }
@@ -1084,14 +1084,6 @@ class App extends React.Component {
               h("div", {className: "metric-value", id: "clean-percentage"}, "100%"),
               h("div", {className: "metric-label"}, "Clean")
             )
-          ),
-          h("button", {
-            title: "Scan Flow",
-            onClick: this.onScanFlow,
-            disabled: this.flowScanner.isScanning
-          },
-          h("span", {className: "export-icon", "aria-hidden": "true"}, "⚙️"),
-          " Scan Flow"
           )
         )
       );
@@ -1172,24 +1164,24 @@ class App extends React.Component {
             onClick: () => this.onSeverityToggle(severity),
             onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onSeverityToggle(severity); } }
           },
-            h("h3", {className: "severity-heading"},
-              h("div", {className: "severity-heading-content"},
-                h("svg", {
-                  className: "accordion-chevron",
-                  width: "24",
-                  height: "24",
-                  "aria-hidden": "true",
-                  style: {transform: isSevExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
-                },
-                  h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
-                ),
-                h("span", {className: "severity-label-group"},
-                  severityIcons[severity],
-                  h("span", {}, severityLabels[severity])
-                )
+          h("h3", {className: "severity-heading"},
+            h("div", {className: "severity-heading-content"},
+              h("svg", {
+                className: "accordion-chevron",
+                width: "24",
+                height: "24",
+                "aria-hidden": "true",
+                style: {transform: isSevExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
+              },
+              h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
+              ),
+              h("span", {className: "severity-label-group"},
+                severityIcons[severity],
+                h("span", {}, severityLabels[severity])
               )
-            ),
-            h("span", {className: "severity-total-count"}, `${group.length} Issue${group.length === 1 ? "" : "s"}`)
+            )
+          ),
+          h("span", {className: "severity-total-count"}, `${group.length} Issue${group.length === 1 ? "" : "s"}`)
           ),
           isSevExpanded && h("div", {className: "rules-container-right", id: `${severity}-rules-container`},
             Object.entries(rules).map(([ruleType, ruleResults], ruleIdx) => {
@@ -1201,38 +1193,38 @@ class App extends React.Component {
                 className: `rule-section compact${ruleExpanded ? " expanded" : " collapsed"} card-bg`,
                 "data-rule-type": ruleType
               },
-                h("div", {
-                  className: "rule-header",
-                  tabIndex: 0,
-                  role: "button",
-                  "aria-expanded": ruleExpanded,
-                  "aria-controls": `${severity}-${ruleIdx}-content`,
-                  onClick: () => this.onRuleToggle(severity, ruleType),
-                  onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onRuleToggle(severity, ruleType); } }
-                },
-                  h("div", {className: "rule-title-section"},
-                    h("span", {className: "rule-name-compact"}, ruleType),
-                    h("div", {className: "tooltip-container"},
-                      h("svg", {className: "info-icon", "aria-hidden": "true"},
-                        h("use", {xlinkHref: "symbols.svg#info"})
-                      ),
-                      h("div", {className: "tooltip-content"}, description)
-                    ),
-                    h("span", {className: "badge-total circle-badge"}, ruleResults.length)
+              h("div", {
+                className: "rule-header",
+                tabIndex: 0,
+                role: "button",
+                "aria-expanded": ruleExpanded,
+                "aria-controls": `${severity}-${ruleIdx}-content`,
+                onClick: () => this.onRuleToggle(severity, ruleType),
+                onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onRuleToggle(severity, ruleType); } }
+              },
+              h("div", {className: "rule-title-section"},
+                h("span", {className: "rule-name-compact"}, ruleType),
+                h("div", {className: "tooltip-container"},
+                  h("svg", {className: "info-icon", "aria-hidden": "true"},
+                    h("use", {xlinkHref: "symbols.svg#info"})
                   ),
-                  h("svg", {
-                    className: "accordion-chevron",
-                    width: "24",
-                    height: "24",
-                    "aria-hidden": "true",
-                    style: {transform: ruleExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
-                  },
-                    h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
-                  )
+                  h("div", {className: "tooltip-content"}, description)
                 ),
-                ruleExpanded && h("div", {className: "rule-content", id: `${severity}-${ruleIdx}-content`},
-                  this.renderRuleTable(ruleResults)
-                )
+                h("span", {className: "badge-total circle-badge"}, ruleResults.length)
+              ),
+              h("svg", {
+                className: "accordion-chevron",
+                width: "24",
+                height: "24",
+                "aria-hidden": "true",
+                style: {transform: ruleExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
+              },
+              h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
+              )
+              ),
+              ruleExpanded && h("div", {className: "rule-content", id: `${severity}-${ruleIdx}-content`},
+                this.renderRuleTable(ruleResults)
+              )
               );
             })
           )
@@ -1323,25 +1315,25 @@ class App extends React.Component {
             onClick: () => this.onRuleToggle(severity, ruleType),
             onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onRuleToggle(severity, ruleType); } }
           },
-            h("div", {className: "rule-title-section"},
-              h("span", {className: "rule-name-compact"}, ruleType),
-              h("div", {className: "tooltip-container"},
-                h("svg", {className: "info-icon", "aria-hidden": "true"},
-                  h("use", {xlinkHref: "symbols.svg#info"})
-                ),
-                h("div", {className: "tooltip-content"}, description)
+          h("div", {className: "rule-title-section"},
+            h("span", {className: "rule-name-compact"}, ruleType),
+            h("div", {className: "tooltip-container"},
+              h("svg", {className: "info-icon", "aria-hidden": "true"},
+                h("use", {xlinkHref: "symbols.svg#info"})
               ),
-              h("span", {className: "badge-total circle-badge"}, ruleResults.length)
+              h("div", {className: "tooltip-content"}, description)
             ),
-            h("svg", {
-              className: "accordion-chevron",
-              width: "24",
-              height: "24",
-              "aria-hidden": "true",
-              style: {transform: ruleExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
-            },
-            h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
-            )
+            h("span", {className: "badge-total circle-badge"}, ruleResults.length)
+          ),
+          h("svg", {
+            className: "accordion-chevron",
+            width: "24",
+            height: "24",
+            "aria-hidden": "true",
+            style: {transform: ruleExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
+          },
+          h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
+          )
           ),
           ruleExpanded && h("div", {className: "rule-content"},
             this.renderRuleTable(ruleResults)
@@ -1441,11 +1433,15 @@ class App extends React.Component {
     return h("div", {className: "flow-scanner-app"},
       h("div", {id: "user-info", className: "slds-border_bottom"},
         // Salesforce home link
-        h("a", {href: sfLink, className: "sf-link"},
-          h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-          ),
-          " Salesforce Home"
+        h("a", {
+          href: sfLink,
+          className: "sf-link",
+          target: this.flowScanner?.getLinkTarget()
+        },
+        h("svg", {viewBox: "0 0 24 24"},
+          h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
+        ),
+        " Salesforce Home"
         ),
         // Title
         h("h1", {}, "Flow Scanner"),
@@ -1460,10 +1456,10 @@ class App extends React.Component {
               "💡 Based on ",
               h("a", {
                 href: "https://github.com/Lightning-Flow-Scanner",
-                target: "_blank",
+                target: this.flowScanner?.getLinkTarget(),
                 rel: "noopener noreferrer"
               }, "Lightning Flow Scanner"),
-              scannerVersion ? `\u00A0(core v${scannerVersion})` : null
+              scannerVersion ? ` (core v${scannerVersion})` : null
             )
           ),
           h("a", {href: "#", id: "help-btn", title: "Open Flow Scanner Options", onClick: this.onToggleHelp},
@@ -1493,6 +1489,7 @@ class App extends React.Component {
   let root = document.getElementById("root");
   let model = {}; // Placeholder model for compatibility
 
+  // eslint-disable-next-line react/no-deprecated
   ReactDOM.render(h(App, {model}), root);
 
   if (parent && parent.isUnitTest) {

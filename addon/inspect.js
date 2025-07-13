@@ -2019,16 +2019,63 @@ class FieldValueCell extends React.Component {
 }
 
 class FieldTypeCell extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { expanded: false };
+    this.toggleExpanded = this.toggleExpanded.bind(this);
+  }
+
+  toggleExpanded() {
+    this.setState(prev => ({ expanded: !prev.expanded }));
+  }
+
   render() {
-    let {row, col} = this.props;
-    return h("td", {className: col.className + " quick-select"},
-      row.referenceTypes() ? row.referenceTypes().map(data =>
-        h("span", {key: data}, h("a", {href: row.showReferenceUrl(data)}, data), " ")
-      ) : null,
-      !row.referenceTypes() ? h(TypedValue, {value: row.sortKey(col.name)}) : null
+    let { row, col } = this.props;
+    const { expanded } = this.state;
+    const referenceTypes = row.referenceTypes?.() || [];
+
+    const maxToShow = 5;
+    const showAll = expanded || referenceTypes.length <= maxToShow;
+    const visible = showAll ? referenceTypes : referenceTypes.slice(0, maxToShow);
+    const remainingCount = referenceTypes.length - visible.length;
+
+    const links = visible.map((data) =>
+      h("span", { key: data },
+        h("a", { href: row.showReferenceUrl(data) }, data),
+        " "
+      )
+    );
+
+    // +X more link
+    if (!showAll && remainingCount > 0) {
+      links.push(
+        h("a", {
+          className: "text-muted",
+          onClick: this.toggleExpanded,
+          style: { cursor: "pointer", marginLeft: "5px" }
+        }, `+${remainingCount} more`)
+      );
+    }
+
+    // Show less link
+    if (expanded && referenceTypes.length > maxToShow) {
+      links.push(
+        h("a", {
+          className: "text-muted",
+          onClick: this.toggleExpanded,
+          style: { cursor: "pointer", marginLeft: "5px" }
+        }, "Show less")
+      );
+    }
+
+    return h("td", { className: col.className + " quick-select" },
+      links,
+      referenceTypes.length === 0 ? h(TypedValue, { value: row.sortKey(col.name) }) : null
     );
   }
 }
+
+
 
 class FieldUsageCell extends React.Component {
   constructor(props) {

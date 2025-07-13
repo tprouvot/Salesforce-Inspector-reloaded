@@ -1,5 +1,9 @@
 # Release Notes
 
+## [Unreleased]
+
+- `Show All Data` Limit polymorphic reference types shown to 5 with "Show more" / "Show less" toggle in the field details tooltip
+
 ## Version 1.27
 
 - `Show all data` Analyze field usage by showing the percentage of records that have a value for each field.

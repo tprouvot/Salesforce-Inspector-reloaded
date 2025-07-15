@@ -1,11 +1,15 @@
-/* global React ReactDOM */
+/* eslint-disable indent, react/no-deprecated */
+/* global React ReactDOM initButton */
+/* eslint react/prop-types: 0 */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
 import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.js";
 import {getFlowScannerRules} from "./flow-rules.js";
-/* global initButton, lightningflowscanner */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
+
+// --- PropTypes for React 15 ---
+const PropTypes = React.PropTypes;
 
 // --- Generic Helpers ---
 const h = React.createElement;
@@ -32,11 +36,11 @@ class Option extends React.Component {
     this.inputSize = props.inputSize || "3";
     let value = localStorage.getItem(this.key);
     if (props.default !== undefined && value === null) {
-      value = props.type != "text" ? JSON.stringify(props.default) : props.default;
+      value = props.type !== "text" ? JSON.stringify(props.default) : props.default;
       localStorage.setItem(this.key, value);
     }
-    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value)
-      : this.type == "select" ? (value || props.default || props.options?.[0]?.value)
+    this.state = {[this.key]: this.type === "toggle" ? !!JSON.parse(value)
+      : this.type === "select" ? (value || props.default || props.options?.[0]?.value)
         : value};
     this.title = props.title;
   }
@@ -55,9 +59,9 @@ class Option extends React.Component {
 
   render() {
     const id = this.key;
-    const isTextOrNumber = this.type == "text" || this.type == "number";
-    const isTextArea = this.type == "textarea";
-    const isSelect = this.type == "select";
+    const isTextOrNumber = this.type === "text" || this.type === "number";
+    const isTextArea = this.type === "textarea";
+    const isSelect = this.type === "select";
 
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
@@ -112,17 +116,17 @@ class Option extends React.Component {
 }
 
 Option.propTypes = {
-  storageKey: React.PropTypes.string.isRequired,
-  type: React.PropTypes.string.isRequired,
-  label: React.PropTypes.string,
-  tooltip: React.PropTypes.string,
-  placeholder: React.PropTypes.string,
-  actionButton: React.PropTypes.object,
-  inputSize: React.PropTypes.string,
-  default: React.PropTypes.any,
-  title: React.PropTypes.string,
-  options: React.PropTypes.array,
-  model: React.PropTypes.object
+  storageKey: PropTypes.string.isRequired,
+  type: PropTypes.string.isRequired,
+  label: PropTypes.string,
+  tooltip: PropTypes.string,
+  placeholder: PropTypes.string,
+  actionButton: PropTypes.object,
+  inputSize: PropTypes.string,
+  default: PropTypes.any,
+  title: PropTypes.string,
+  options: PropTypes.array,
+  model: PropTypes.object
 };
 
 // --- Tab-Specific Components (in tab order) ---
@@ -213,7 +217,7 @@ class APIVersionOption extends React.Component {
     }
   }
 
-  onRestoreDefaultApiVersion(){
+  onRestoreDefaultApiVersion() {
     localStorage.removeItem("apiVersion");
     this.setState({apiVersion: defaultApiVersion});
   }
@@ -224,9 +228,9 @@ class APIVersionOption extends React.Component {
           h(Tooltip, {tooltip: "Update api version", idKey: "APIVersion"})
         ),
       ),
-      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid s-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-form-element__control"},
+        this.state.apiVersion !== defaultApiVersion ? h("div", {className: "slds-form-element__control"},
           h("button", {className: "slds-button slds-button_brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
         ) : null,
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
@@ -236,6 +240,9 @@ class APIVersionOption extends React.Component {
     );
   }
 }
+APIVersionOption.propTypes = {
+  model: PropTypes.object
+};
 
 class CSVSeparatorOption extends React.Component {
 
@@ -414,6 +421,11 @@ class FaviconOption extends React.Component {
     );
   }
 }
+FaviconOption.propTypes = {
+  model: PropTypes.object,
+  storageKey: PropTypes.string,
+  tooltip: PropTypes.string
+};
 
 class MultiCheckboxButtonGroup extends React.Component {
 
@@ -478,6 +490,12 @@ class MultiCheckboxButtonGroup extends React.Component {
     );
   }
 }
+MultiCheckboxButtonGroup.propTypes = {
+  title: PropTypes.string,
+  storageKey: PropTypes.string,
+  unique: PropTypes.bool,
+  checkboxes: PropTypes.array
+};
 
 class enableLogsOption extends React.Component {
 
@@ -527,6 +545,9 @@ class enableLogsOption extends React.Component {
     );
   }
 }
+enableLogsOption.propTypes = {
+  model: PropTypes.object
+};
 
 class CustomShortcuts extends React.Component {
 
@@ -871,6 +892,9 @@ class CustomShortcuts extends React.Component {
     );
   }
 }
+CustomShortcuts.propTypes = {
+  model: PropTypes.object
+};
 
 class FlowScannerRulesOption extends React.Component {
 
@@ -882,94 +906,58 @@ class FlowScannerRulesOption extends React.Component {
     this.handleUncheckAll = this.handleUncheckAll.bind(this);
     this.handleResetToDefaults = this.handleResetToDefaults.bind(this);
     this.handleSeverityChange = this.handleSeverityChange.bind(this);
-    this.handleDeleteRule = this.handleDeleteRule.bind(this);
     this.loadAndMergeRules = this.loadAndMergeRules.bind(this);
     this.saveRules = this.saveRules.bind(this);
 
     this.title = props.title;
     this.key = props.storageKey || "flowScannerRules";
-    this.customKey = "flowScannerCustomRules";
 
     this.state = {
       rules: [],
+      isLoaded: false,
+      error: null
     };
   }
 
   componentDidMount() {
-    this.migrateConfiguration();
-    this.loadAndMergeRules();
+    this.waitForCoreAndLoadRules();
   }
 
-  loadAndMergeRules() {
-    const mergedRules = getFlowScannerRules(window.lightningflowscanner);
-    this.setState({rules: mergedRules});
+  waitForCoreAndLoadRules() {
+    const maxRetries = 10;
+    let attempt = 0;
+    const interval = setInterval(() => {
+      if (window.lightningflowscanner) {
+        clearInterval(interval);
+        this.migrateConfiguration();
+        this.loadAndMergeRules();
+      } else if (attempt++ > maxRetries) {
+        clearInterval(interval);
+        this.setState({
+          isLoaded: true,
+          error: "Flow Scanner Core library failed to load. Please try reloading the page."
+        });
+      }
+    }, 200);
   }
 
-  saveRules(rules) {
-    const defaultRules = rules.filter(r => !r.isCustom);
-    const customRules = rules.filter(r => r.isCustom);
-    localStorage.setItem(this.key, JSON.stringify(defaultRules));
-    localStorage.setItem(this.customKey, JSON.stringify(customRules));
+  componentWillUnmount() {
   }
 
   migrateConfiguration() {
-    const storedRaw = localStorage.getItem(this.key);
-    if (!storedRaw) return;
-    try {
-      const stored = JSON.parse(storedRaw);
-      if (!Array.isArray(stored)) return;
-      let needsUpdate = false;
-      const migrated = stored.map(rule => {
-        if (rule.name === "APIVersion" && rule.configType === "expression" && rule.config && rule.config.expression) {
-          const expressionValue = rule.config.expression;
-          let thresholdValue = 50;
-          if (typeof expressionValue === "string") {
-            if (expressionValue.includes("<")) {
-              thresholdValue = parseInt(expressionValue.replace(/[<>]/g, "")) || 50;
-            } else {
-              thresholdValue = parseInt(expressionValue) || 50;
-            }
-          }
-          needsUpdate = true;
-          return {...rule, configType: "threshold", config: {threshold: thresholdValue}};
-        }
-        return rule;
-      });
-      if (needsUpdate) {
-        localStorage.setItem(this.key, JSON.stringify(migrated));
-      }
-    } catch (e) {
-      console.warn("Failed to migrate configuration:", e);
-    }
+    // This method should be implemented to migrate any existing configuration
+    // from previous versions to the new format.
+    // For example, you might want to convert old rules to the new format.
+    // This is a placeholder and should be replaced with actual migration logic.
   }
 
-  getRuleDescription(ruleName) {
-    const descriptions = {
-      "APIVersion": "Checks if the flow uses an outdated API version.",
-      "AutoLayout": "Recommends using Auto-Layout mode.",
-      "CopyAPIName": "Detects copied elements with default API names.",
-      "CyclomaticComplexity": "Warns when flow complexity is too high.",
-      "DMLStatementInLoop": "Identifies DML operations inside loops.",
-      "DuplicateDMLOperation": "Detects potential duplicate DML operations.",
-      "FlowDescription": "Ensures flows have descriptions.",
-      "FlowName": "Validates flow naming conventions.",
-      "GetRecordAllFields": "Warns against using 'Get All Fields'.",
-      "HardcodedId": "Detects hardcoded Salesforce IDs.",
-      "HardcodedUrl": "Finds hardcoded URLs.",
-      "InactiveFlow": "Identifies inactive flows.",
-      "MissingFaultPath": "Checks for missing error handling paths.",
-      "MissingNullHandler": "Ensures Get Records have null handling.",
-      "ProcessBuilder": "Recommends migrating from Process Builder.",
-      "RecursiveAfterUpdate": "Warns about potential recursion.",
-      "SameRecordFieldUpdates": "Suggests before-save flows for updates.",
-      "SOQLQueryInLoop": "Identifies SOQL queries inside loops.",
-      "TriggerOrder": "Recommends setting trigger order.",
-      "UnconnectedElement": "Finds unused flow elements.",
-      "UnsafeRunningContext": "Warns about system mode flows.",
-      "UnusedVariable": "Identifies unused variables.",
-      "ActionCallsInLoop": "Identifies action calls inside loops (Beta)."
-    };
-    return descriptions[ruleName] || "Checks for potential issues and best practices.";
+  loadAndMergeRules() {
+    try {
+      const mergedRules = getFlowScannerRules(window.lightningflowscanner);
+      this.setState({rules: mergedRules, isLoaded: true, error: null});
+    } catch (e) {
+      this.setState({isLoaded: true, error: `Failed to load rules: ${e.message}`});
+    }
   }
 
   handleRuleToggle(ruleName) {
@@ -1002,9 +990,8 @@ class FlowScannerRulesOption extends React.Component {
   }
 
   handleResetToDefaults() {
-    if (window.confirm("This will reset all default rules to their original settings and remove all custom rules. Are you sure?")) {
-      localStorage.removeItem(this.key);
-      localStorage.removeItem(this.customKey);
+    if (window.confirm("This will reset all default rules to their original settings. Are you sure?")) {
+      localStorage.removeItem("flowScannerRules");
       this.loadAndMergeRules();
     }
   }
@@ -1015,13 +1002,38 @@ class FlowScannerRulesOption extends React.Component {
     this.saveRules(updatedRules);
   }
 
-  handleDeleteRule(ruleName) {
-    if (window.confirm(`Are you sure you want to delete the rule "${ruleName}"?`)) {
-      const customRules = JSON.parse(localStorage.getItem(this.customKey) || "[]");
-      const updatedCustomRules = customRules.filter(rule => rule.name !== ruleName);
-      localStorage.setItem(this.customKey, JSON.stringify(updatedCustomRules));
-      this.loadAndMergeRules();
-    }
+  saveRules(rules) {
+    const defaultRules = rules.filter(r => !r.isCustom);
+    localStorage.setItem("flowScannerRules", JSON.stringify(defaultRules));
+  }
+
+  getRuleDescription(ruleName) {
+    const descriptions = {
+      "APIVersion": "Checks if the flow uses an outdated API version.",
+      "AutoLayout": "Recommends using Auto-Layout mode.",
+      "CopyAPIName": "Detects copied elements with default API names.",
+      "CyclomaticComplexity": "Warns when flow complexity is too high.",
+      "DMLStatementInLoop": "Identifies DML operations inside loops.",
+      "DuplicateDMLOperation": "Detects potential duplicate DML operations.",
+      "FlowDescription": "Ensures flows have descriptions.",
+      "FlowName": "Validates flow naming conventions.",
+      "GetRecordAllFields": "Warns against using 'Get All Fields'.",
+      "HardcodedId": "Detects hardcoded Salesforce IDs.",
+      "HardcodedUrl": "Finds hardcoded URLs.",
+      "InactiveFlow": "Identifies inactive flows.",
+      "MissingFaultPath": "Checks for missing error handling paths.",
+      "MissingNullHandler": "Ensures Get Records have null handling.",
+      "ProcessBuilder": "Recommends migrating from Process Builder.",
+      "RecursiveAfterUpdate": "Warns about potential recursion.",
+      "SameRecordFieldUpdates": "Suggests before-save flows for updates.",
+      "SOQLQueryInLoop": "Identifies SOQL queries inside loops.",
+      "TriggerOrder": "Recommends setting trigger order.",
+      "UnconnectedElement": "Finds unused flow elements.",
+      "UnsafeRunningContext": "Warns about system mode flows.",
+      "UnusedVariable": "Identifies unused variables.",
+      "ActionCallsInLoop": "Identifies action calls inside loops (Beta)."
+    };
+    return descriptions[ruleName] || "Checks for potential issues and best practices.";
   }
 
   renderConfigInput(rule) {
@@ -1030,9 +1042,13 @@ class FlowScannerRulesOption extends React.Component {
     if (rule.configType === "expression") {
       return h("div", {className: "rule-config-right"},
         h("input", {
-          type: "text", className: "slds-input slds-input_small", value: configValue,
+          type: "text",
+          className: "slds-input slds-input_small",
+          value: configValue,
           onChange: e => this.handleConfigChange(rule.name, rule.configType, e.target.value),
-          placeholder: rule.defaultValue || "", title: `Configuration for ${rule.label}`, "aria-label": `${rule.label} configuration`
+          placeholder: rule.defaultValue || "",
+          title: `Configuration for ${rule.label}`,
+          "aria-label": `${rule.label} configuration`
         }),
         h(Tooltip, {
           tooltip: h("span", {}, `Configuration for ${rule.label}. `, h("a", {href: "https://regex101.com/", target: "_blank", rel: "noopener noreferrer"}, "Regex help")),
@@ -1043,9 +1059,14 @@ class FlowScannerRulesOption extends React.Component {
     if (rule.configType === "threshold") {
       return h("div", {className: "rule-config-right"},
         h("input", {
-          type: "number", className: "slds-input slds-input_small", value: configValue,
+          type: "number",
+          className: "slds-input slds-input_small",
+          value: configValue,
           onChange: e => this.handleConfigChange(rule.name, rule.configType, parseInt(e.target.value) || rule.defaultValue),
-          min: "1", max: "100", title: `Threshold for ${rule.label}`, "aria-label": `${rule.label} threshold`
+          min: "1",
+          max: "100",
+          title: `Threshold for ${rule.label}`,
+          "aria-label": `${rule.label} threshold`
         }),
         h(Tooltip, {
           tooltip: rule.name === "APIVersion"
@@ -1059,14 +1080,35 @@ class FlowScannerRulesOption extends React.Component {
   }
 
   render() {
-    const {title, error, scannerVersion} = this.props;
-    const {rules} = this.state;
+    const {title, scannerVersion} = this.props;
+    const {rules, isLoaded, error} = this.state;
+
+    if (!isLoaded) {
+      return h("div", {className: "option-group flow-scanner-section"},
+        h("h3", {}, title),
+        h("div", {className: "slds-box slds-box_small slds-m-around_medium"},
+          h("div", {className: "slds-spinner_container"},
+            h("div", {className: "slds-spinner slds-spinner_small", role: "status"},
+              h("span", {className: "slds-assistive-text"}, "Loading..."),
+              h("div", {className: "slds-spinner__dot-a"}),
+              h("div", {className: "slds-spinner__dot-b"})
+            )
+          ),
+          h("p", {style: {marginLeft: "30px"}}, "Loading Flow Scanner rules...")
+        )
+      );
+    }
+
     if (error) {
       return h("div", {className: "option-group flow-scanner-section"},
         h("h3", {}, title),
         h("div", {className: "slds-box slds-box_small slds-theme_error slds-m-around_medium"}, h("p", {}, error))
       );
     }
+
+    // Sort rules alphabetically by label
+    const sortedRules = [...rules].sort((a, b) => a.label.localeCompare(b.label));
+
     const versionDisplay = scannerVersion ? ` (v${scannerVersion})` : "";
     return h("div", {className: "option-group flow-scanner-section"},
       h("h3", {}, `${title}${versionDisplay}`),
@@ -1077,12 +1119,11 @@ class FlowScannerRulesOption extends React.Component {
       h("div", {className: "rules-actions-toolbar", role: "toolbar", "aria-label": "Bulk actions"},
         h("button", {className: "slds-button slds-button_brand slds-button_small", onClick: this.handleCheckAll, tabIndex: 0, "aria-label": "Enable all rules"}, "Check All"),
         h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: this.handleUncheckAll, tabIndex: 0, "aria-label": "Disable all rules"}, "Uncheck All"),
-        h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: this.handleResetToDefaults, tabIndex: 0, "aria-label": "Reset rules to defaults"}, "Reset to Defaults"),
-        h("button", {className: "slds-button slds-button_success slds-button_small", onClick: this.props.onShowAddRuleModal, tabIndex: 0, "aria-label": "Add custom rule"}, "Add Custom Rule")
+        h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: this.handleResetToDefaults, tabIndex: 0, "aria-label": "Reset rules to defaults"}, "Reset to Defaults")
       ),
       h("div", {className: "rules-container"},
-        rules.map((rule) =>
-          h("div", {key: rule.name, className: `rule-row-horizontal${rule.configurable ? " rule-row-highlight" : ""}${rule.isCustom ? " custom-rule" : ""}`, tabIndex: 0, "aria-label": `${rule.label}: ${rule.description}`},
+        sortedRules.map((rule) =>
+          h("div", {key: rule.name, className: `rule-row-horizontal${rule.configurable ? " rule-row-highlight" : ""}`, tabIndex: 0, "aria-label": `${rule.label}: ${rule.description}`},
             h("div", {className: "rule-toggle-container"},
               h("label", {className: "slds-checkbox_toggle slds-grid"},
                 h("input", {type: "checkbox", "aria-describedby": `desc-${rule.name}`, checked: rule.checked, onChange: () => this.handleRuleToggle(rule.name), tabIndex: 0}),
@@ -1096,8 +1137,7 @@ class FlowScannerRulesOption extends React.Component {
             h("div", {className: "rule-main-info"},
               h("div", {className: "rule-name-horizontal"},
                 rule.label,
-                rule.isBeta && h("span", {className: "beta-badge"}, "BETA"),
-                rule.isCustom && h("span", {className: "custom-badge"}, "CUSTOM")
+                rule.isBeta && h("span", {className: "beta-badge"}, "BETA")
               ),
               h("div", {className: "rule-description-horizontal", id: `desc-${rule.name}`, title: rule.description}, rule.description)
             ),
@@ -1108,9 +1148,6 @@ class FlowScannerRulesOption extends React.Component {
                 h("option", {value: "error"}, "Error"),
                 h("option", {value: "warning"}, "Warning"),
                 h("option", {value: "info"}, "Info")
-              ),
-              rule.isCustom && h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.handleDeleteRule(rule.name), title: "Delete Rule"},
-                h("svg", {className: "slds-button__icon", viewBox: "0 0 52 52"}, h("use", {xlinkHref: "symbols.svg#delete"}))
               )
             )
           )
@@ -1119,6 +1156,13 @@ class FlowScannerRulesOption extends React.Component {
     );
   }
 }
+FlowScannerRulesOption.propTypes = {
+  title: PropTypes.string,
+  storageKey: PropTypes.string,
+  checkboxes: PropTypes.array,
+  error: PropTypes.string,
+  scannerVersion: PropTypes.string
+};
 
 // --- Tab Container and Selector ---
 
@@ -1135,6 +1179,12 @@ class OptionsTab extends React.Component {
     );
   }
 }
+OptionsTab.propTypes = {
+  id: PropTypes.number,
+  selectedTabId: PropTypes.number,
+  title: PropTypes.string,
+  onTabSelect: PropTypes.func
+};
 
 class OptionsContainer extends React.Component {
 
@@ -1161,6 +1211,12 @@ class OptionsContainer extends React.Component {
   }
 
 }
+OptionsContainer.propTypes = {
+  id: PropTypes.number,
+  selectedTabId: PropTypes.number,
+  content: PropTypes.array,
+  model: PropTypes.object
+};
 
 class OptionsTabSelector extends React.Component {
   constructor(props) {
@@ -1220,7 +1276,6 @@ class OptionsTabSelector extends React.Component {
       console.error("lightningflowscanner core library not available.");
       this.state.flowScannerError = "Flow Scanner core library is not available. The scanner functionality will be disabled.";
     }
-    console.log("Flow Scanner ruleCheckboxes:", ruleCheckboxes);
 
     this.tabs = [
       {
@@ -1387,7 +1442,7 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Tab8",
         title: "Flow Scanner",
         content: [
-          {option: FlowScannerRulesOption, props: {title: "Enabled Rules", storageKey: "flowScannerRules", checkboxes: ruleCheckboxes, error: this.state.flowScannerError, scannerVersion, onShowAddRuleModal: this.props.onShowAddRuleModal}}
+          {option: FlowScannerRulesOption, props: {title: "Enabled Rules", storageKey: "flowScannerRules", checkboxes: ruleCheckboxes, error: this.state.flowScannerError, scannerVersion}}
         ]
       },
       {
@@ -1423,6 +1478,10 @@ class OptionsTabSelector extends React.Component {
     );
   }
 }
+OptionsTabSelector.propTypes = {
+  model: PropTypes.object
+};
+
 
 // --- Main Model and App ---
 
@@ -1433,7 +1492,7 @@ class Model {
     this.sfLink = "https://" + this.sfHost;
     this.userInfo = "...";
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
+    if (localStorage.getItem(sfHost + "_isSandbox") !== "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
       document.body.classList.add("prod");
     }
@@ -1491,56 +1550,13 @@ class App extends React.Component {
     this.exportOptions = this.exportOptions.bind(this);
     this.importOptions = this.importOptions.bind(this);
     this.hideToast = this.hideToast.bind(this);
-    // Add modal logic
-    this.showAddRuleModal = this.showAddRuleModal.bind(this);
-    this.hideAddRuleModal = this.hideAddRuleModal.bind(this);
-    this.handleSaveCustomRule = this.handleSaveCustomRule.bind(this);
-    this._renderModal = this._renderModal.bind(this);
-    this.renderAddRuleForm = this.renderAddRuleForm.bind(this);
-    this.customKey = "flowScannerCustomRules";
     this.state = {
       // toast state
       showToast: false,
       toastMessage: "",
       toastVariant: "",
       toastTitle: "",
-      // modal state
-      isAddRuleModalOpen: false,
-      newRuleName: "",
-      newRuleLabel: "",
-      newRuleDescription: "",
-      newRuleCode: "",
-      newRuleSeverity: "error"
     };
-    this.modalContainer = null;
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    console.log("[Modal Debug] componentDidUpdate, prev open:", prevState.isAddRuleModalOpen, "current open:", this.state.isAddRuleModalOpen);
-    if (this.state.isAddRuleModalOpen && !prevState.isAddRuleModalOpen) {
-      this.modalContainer = document.createElement("div");
-      document.body.appendChild(this.modalContainer);
-      console.log("[Modal Debug] Modal container created:", this.modalContainer);
-      this._renderModal();
-    } else if (!this.state.isAddRuleModalOpen && prevState.isAddRuleModalOpen) {
-      if (this.modalContainer) {
-        console.log("[Modal Debug] Unmounting and removing modal container");
-        ReactDOM.unmountComponentAtNode(this.modalContainer);
-        document.body.removeChild(this.modalContainer);
-        this.modalContainer = null;
-      }
-    } else if (this.state.isAddRuleModalOpen) {
-      console.log("[Modal Debug] Modal already open, re-rendering");
-      this._renderModal();
-    }
-  }
-
-  componentWillUnmount() {
-    if (this.modalContainer) {
-      ReactDOM.unmountComponentAtNode(this.modalContainer);
-      document.body.removeChild(this.modalContainer);
-      this.modalContainer = null;
-    }
   }
 
   exportOptions() {
@@ -1597,131 +1613,9 @@ class App extends React.Component {
     this.setState({showToast: false, toastMessage: ""});
   }
 
-  showAddRuleModal() {
-    console.log("[Modal Debug] showAddRuleModal called");
-    document.body.classList.add("slds-scrollable_none");
-    document.body.classList.add("slds-modal_open");
-    this.setState({isAddRuleModalOpen: true});
-  }
-
-  hideAddRuleModal() {
-    document.body.classList.remove("slds-scrollable_none");
-    document.body.classList.remove("slds-modal_open");
-    this.setState({
-      isAddRuleModalOpen: false,
-      newRuleName: "",
-      newRuleLabel: "",
-      newRuleDescription: "",
-      newRuleCode: "",
-      newRuleSeverity: "error"
-    });
-  }
-
-  handleSaveCustomRule() {
-    const {newRuleName, newRuleLabel, newRuleDescription, newRuleCode, newRuleSeverity} = this.state;
-    const newRule = {
-      name: newRuleName,
-      label: newRuleLabel,
-      description: newRuleDescription,
-      code: newRuleCode,
-      severity: newRuleSeverity,
-      isCustom: true,
-      checked: true
-    };
-    const customRules = JSON.parse(localStorage.getItem(this.customKey) || "[]");
-    customRules.push(newRule);
-    localStorage.setItem(this.customKey, JSON.stringify(customRules));
-    this.hideAddRuleModal();
-    window.location.reload();
-  }
-
-  _renderModal() {
-    console.log("[Modal Debug] _renderModal invoked");
-    const {newRuleName, newRuleLabel, newRuleDescription, newRuleSeverity, newRuleCode} = this.state;
-    const isFormValid = newRuleName && newRuleLabel && newRuleDescription && newRuleSeverity && newRuleCode;
-    const modalWithBackdrop = h("div", {},
-      h("section", {
-        role: "dialog", 
-        tabIndex: "-1", 
-        "aria-modal": "true", 
-        "aria-labelledby": "modal-heading", 
-        className: "slds-modal slds-modal_medium slds-fade-in-open"
-      },
-        h("div", {className: "slds-modal__container"},
-          h("div", {className: "slds-modal__header"},
-            h("button", {
-              className: "slds-button slds-button_icon slds-modal__close slds-button_icon-inverse",
-              title: "Close",
-              onClick: this.hideAddRuleModal
-            },
-            h("svg", {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
-              h("use", {xlinkHref: "symbols.svg#close"})
-            ),
-            h("span", {className: "slds-assistive-text"}, "Close")
-            ),
-            h("h2", {id: "modal-heading", className: "slds-modal__title slds-text-heading_medium"}, "Add Custom Flow Scanner Rule")
-          ),
-          h("div", {className: "slds-modal__content slds-p-around_medium"},
-            this.renderAddRuleForm()
-          ),
-          h("div", {className: "slds-modal__footer"},
-            h("button", {className: "slds-button slds-button_neutral", onClick: this.hideAddRuleModal}, "Cancel"),
-            h("button", {className: "slds-button slds-button_brand", onClick: this.handleSaveCustomRule, disabled: !isFormValid}, "Save")
-          )
-        )
-      ),
-      h("div", {className: "slds-backdrop slds-backdrop_open", role: "presentation"})
-    );
-    console.log("[Modal Debug] Rendering modalWithBackdrop into container", this.modalContainer);
-    if (this.modalContainer) {
-      ReactDOM.render(modalWithBackdrop, this.modalContainer);
-    }
-  }
-
-  renderAddRuleForm() {
-    const {newRuleName, newRuleLabel, newRuleDescription, newRuleSeverity, newRuleCode} = this.state;
-    return h("div", {className: "slds-form slds-form_stacked"},
-      h("div", {className: "slds-form-element"},
-        h("label", {className: "slds-form-element__label", htmlFor: "new-rule-name"}, "Rule Name (must match the exported class name)"),
-        h("div", {className: "slds-form-element__control"},
-          h("input", {type: "text", id: "new-rule-name", className: "slds-input", placeholder: "e.g., MyCustomRule", value: newRuleName, onChange: e => this.setState({newRuleName: e.target.value.trim()})})
-        )
-      ),
-      h("div", {className: "slds-form-element"},
-        h("label", {className: "slds-form-element__label", htmlFor: "new-rule-label"}, "Label"),
-        h("div", {className: "slds-form-element__control"},
-          h("input", {type: "text", id: "new-rule-label", className: "slds-input", placeholder: "e.g., My Custom Rule", value: newRuleLabel, onChange: e => this.setState({newRuleLabel: e.target.value})})
-        )
-      ),
-      h("div", {className: "slds-form-element"},
-        h("label", {className: "slds-form-element__label", htmlFor: "new-rule-description"}, "Description"),
-        h("div", {className: "slds-form-element__control"},
-          h("textarea", {id: "new-rule-description", className: "slds-textarea", placeholder: "A short description of what this rule does.", value: newRuleDescription, onChange: e => this.setState({newRuleDescription: e.target.value})})
-        )
-      ),
-      h("div", {className: "slds-form-element"},
-        h("label", {className: "slds-form-element__label", htmlFor: "new-rule-severity"}, "Severity"),
-        h("div", {className: "slds-form-element__control"},
-          h("select", {id: "new-rule-severity", className: "slds-select", value: newRuleSeverity, onChange: e => this.setState({newRuleSeverity: e.target.value})},
-            h("option", {value: "error"}, "Error"),
-            h("option", {value: "warning"}, "Warning"),
-            h("option", {value: "info"}, "Info")
-          )
-        )
-      ),
-      h("div", {className: "slds-form-element"},
-        h("label", {className: "slds-form-element__label", htmlFor: "new-rule-code"}, "Rule Code"),
-        h("div", {className: "slds-form-element__control"},
-          h("textarea", {id: "new-rule-code", className: "slds-textarea", placeholder: "Paste your JavaScript rule code here. e.g., export default class MyCustomRule { ... }", value: newRuleCode, onChange: e => this.setState({newRuleCode: e.target.value}), rows: 10, style: {fontFamily: "monospace"}})
-        )
-      )
-    );
-  }
-
   render() {
     let {model} = this.props;
     return h("div", {},
-      // Manual portal-based modal rendering will handle overlay when isAddRuleModalOpen is true
       h("div", {id: "user-info", className: "slds-border_bottom"},
         h("a", {href: model.sfLink, className: "sf-link"},
           h("svg", {viewBox: "0 0 24 24"},
@@ -1760,11 +1654,14 @@ class App extends React.Component {
           onClose: this.hideToast
         }),
       h("div", {className: "main-container slds-card slds-m-around_small", id: "main-container_header"},
-        h(OptionsTabSelector, {model, onShowAddRuleModal: this.showAddRuleModal})
+        h(OptionsTabSelector, {model})
       )
     );
   }
 }
+App.propTypes = {
+  model: PropTypes.object
+};
 
 // --- App Initialization ---
 
@@ -1776,8 +1673,10 @@ class App extends React.Component {
     let root = document.getElementById("root");
     let model = new Model(sfHost);
     model.reactCallback = cb => {
+      // eslint-disable-next-line react/no-deprecated
       ReactDOM.render(h(App, {model}), root, cb);
     };
+    // eslint-disable-next-line react/no-deprecated
     ReactDOM.render(h(App, {model}), root);
 
     if (parent && parent.isUnitTest) { // for unit tests

@@ -1,13 +1,24 @@
+/**
+ * @file Core functionality for the Flow Scanner tool.
+ *
+ * This script handles fetching flow metadata from Salesforce, running the
+ * analysis using the core scanner library, and rendering the results in the UI.
+ * It uses React to build the user interface and interacts with the Salesforce
+ * API via the `sfConn` utility.
+ */
+
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 import {getFlowScannerRules} from "./flow-rules.js";
-/* global initButton lightningflowscanner */
+/* global lightningflowscanner */
 
 /**
- * Normalizes severity levels between UI display and storage formats
- * @param {string} sev - The severity level to normalize
- * @param {string} direction - Direction of normalization ('ui' or 'storage')
- * @returns {string} Normalized severity level
+ * Normalizes severity levels between the UI display format ("info") and
+ * the storage format ("note") used by the core scanner library.
+ *
+ * @param {string} sev - The severity level to normalize.
+ * @param {string} [direction="ui"] - The direction of normalization ('ui' or 'storage').
+ * @returns {string} The normalized severity level.
  */
 const normalizeSeverity = (sev, direction = "ui") => {
   if (direction === "ui") return sev === "note" ? "info" : sev;
@@ -16,16 +27,14 @@ const normalizeSeverity = (sev, direction = "ui") => {
 };
 
 /**
- * FlowScanner class - Core functionality for analyzing Salesforce Flows.
- * This class handles fetching flow metadata from Salesforce, running the
- * analysis using the core scanner library, and displaying the results in the UI.
+ * Manages the analysis of Salesforce Flows, including data fetching,
+ * scanning, and results processing.
  */
 class FlowScanner {
   /**
-   * Creates a new FlowScanner instance.
-   * @param {string} sfHost - Salesforce host URL.
-   * @param {string} flowDefId - Flow definition ID.
-   * @param {string} flowId - Flow ID for a specific version.
+   * @param {string} sfHost - The Salesforce host URL.
+   * @param {string} flowDefId - The ID of the flow definition.
+   * @param {string} flowId - The ID of the specific flow version.
    */
   constructor(sfHost, flowDefId, flowId) {
     this.sfHost = sfHost;
@@ -39,7 +48,7 @@ class FlowScanner {
   }
 
   /**
-   * Initializes the FlowScanner, loads flow data, and starts the scan.
+   * Initializes the scanner by loading flow data and running the analysis.
    */
   async init() {
     this.initFlowScannerCore();
@@ -48,8 +57,8 @@ class FlowScanner {
   }
 
   /**
-   * Initializes the Flow Scanner Core library.
-   * @throws {Error} If the core library is not found.
+   * Loads the core flow scanner library and sets it up for use.
+   * @throws {Error} If the core scanner library is not found.
    */
   initFlowScannerCore() {
     try {
@@ -66,16 +75,17 @@ class FlowScanner {
   }
 
   /**
-   * Determines the link target based on user settings and keyboard modifiers.
-   * @param {Event} e - The click event (may be undefined for programmatic use)
-   * @returns {string} '_blank' or '_self'
+   * Determines the target for links based on user settings.
+   * Opens links in a new tab if configured or if Ctrl/Meta key is pressed.
+   * @param {Event} [e] - The click event.
+   * @returns {string} The link target ('_blank' or '_self').
    */
   getLinkTarget(e) {
     return localStorage.getItem("openLinksInNewTab") == "true" || (e && (e.ctrlKey || e.metaKey)) ? "_blank" : "_self";
   }
 
   /**
-   * Handles the export button click to generate and download CSV results
+   * Generates and downloads a CSV file of the scan results.
    */
   handleExportClick() {
     if (this.scanResults.length === 0) {
@@ -102,8 +112,24 @@ class FlowScanner {
 
     // Convert each scan result into a CSV row.
     this.scanResults.forEach(result => {
+      const affected = (result.affectedElements && result.affectedElements.length > 0) ? result.affectedElements[0] : {};
+      const rowData = {
+        ruleDescription: result.description,
+        ruleLabel: result.rule,
+        flowName: result.flowName,
+        name: affected.elementName,
+        apiName: affected.apiName,
+        label: affected.elementLabel,
+        type: affected.elementType,
+        metaType: affected.metaType,
+        dataType: affected.dataType,
+        locationX: affected.locationX,
+        locationY: affected.locationY,
+        connectsTo: affected.connectsTo,
+        expression: affected.expression
+      };
       const row = csvHeaders.map(header => {
-        const value = result[header] || "";
+        const value = rowData[header] || "";
         // Escape quotes and wrap value in quotes for CSV format.
         const escapedValue = value.toString().replace(/"/g, '""');
         return `"${escapedValue}"`;
@@ -125,25 +151,21 @@ class FlowScanner {
   }
 
   /**
-   * Fetches flow metadata from the Salesforce API and updates the UI.
+   * Fetches the flow's metadata from the Salesforce API.
    */
   async loadFlowInfo() {
     try {
-      if (!this.flowDefId || !this.flowId) {
-        this.showError("No flow information found in URL");
-        return;
-      }
       const flowInfo = await this.getFlowMetadata();
       this.currentFlow = flowInfo;
     } catch (error) {
-      this.showError("Failed to load flow information: " + error.message);
+      this.setNoRulesEnabledMessage("Failed to load flow information: " + error.message);
     }
   }
 
   /**
-   * Retrieves flow metadata from Salesforce API
-   * @returns {Object} Flow metadata information
-   * @throws {Error} If API calls fail
+   * Retrieves metadata for the current flow from the Salesforce API.
+   * @returns {Object} An object containing the flow's metadata.
+   * @throws {Error} If the API call fails or the flow is not found.
    */
   async getFlowMetadata() {
     try {
@@ -179,7 +201,7 @@ class FlowScanner {
       if (Array.isArray(xmlData?.screens) && xmlData.screens.length > 0) {
         type = "ScreenFlow";
       }
-      const showProcessType = !(type && processType && type === processType);
+      const showProcessType = type !== processType;
 
       // Construct complete flow information object
       const result = {
@@ -205,7 +227,6 @@ class FlowScanner {
 
   /**
    * Builds a map of flow element API names to their labels for easy lookup.
-   * This is used to display human-readable labels in the scan results.
    * @private
    */
   _buildElementMap() {
@@ -260,12 +281,11 @@ class FlowScanner {
   }
 
   /**
-   * Initiates the flow scanning process. It checks for enabled rules,
-   * performs the scan, and displays the results.
+   * Initiates the flow scan, running all enabled rules and processing the results.
    */
   async scanFlow() {
     if (!this.currentFlow) {
-      this.showError("No flow loaded");
+      this.setNoRulesEnabledMessage("No flow loaded");
       return;
     }
 
@@ -283,152 +303,110 @@ class FlowScanner {
       // Build a reference map of element names to labels.
       this._buildElementMap();
 
-      // Retrieve core and beta rules from the scanner library
+      // Retrieve core and beta rules from the scanner library.
       const allRules = getFlowScannerRules(this.flowScannerCore);
 
-      // Select only enabled rules
-      const selectedRules = allRules.filter(r => r.checked);
-      if (selectedRules.length === 0) {
-        this.showError("No Flow Scanner rules are enabled. Please enable rules on the Options page.");
+      // Select only enabled, built-in rules.
+      const rulesToRun = allRules.filter(r => r.checked && !r.isCustom && !r.path && !r.code);
+      if (rulesToRun.length === 0) {
+        this.setNoRulesEnabledMessage("No Flow Scanner rules are enabled. Please enable rules on the Options page.");
         return;
       }
-      // Separate built-in vs custom for scanning
-      const builtInRules = selectedRules.filter(r => !r.isCustom && !r.path && !r.code);
-      const customRuleDefs = selectedRules.filter(r => r.isCustom || r.path || r.code);
+
       let results = [];
-      // Run built-in rules dynamically based on configType
-      if (builtInRules.length > 0) {
-        const ruleConfig = {rules: {}};
-        builtInRules.forEach(rule => {
-          const {name, configType, config = {}, severity: uiSeverity} = rule;
-          const scannerSeverity = normalizeSeverity(uiSeverity || "error", "storage");
-          const entry = {severity: scannerSeverity};
-          if (configType === "expression" && config.expression != null) {
-            entry.expression = config.expression;
-          } else if (configType === "threshold" && config.threshold != null) {
-            if (name === "APIVersion") {
-              // Convert numeric threshold into expression string understood by core rule
-              entry.expression = `>=${config.threshold}`;
-            } else {
-              entry.threshold = config.threshold;
-            }
-          }
-          ruleConfig.rules[name] = entry;
-        });
-
-        // Extract and handle APIVersion manually to avoid unsafe-eval in core rule
-        const apiVersionConfig = ruleConfig.rules.APIVersion;
-        if (ruleConfig.rules.APIVersion) {
-          delete ruleConfig.rules.APIVersion; // prevent core rule execution
-        }
-
-        if (Object.keys(ruleConfig.rules).length > 0) {
-          const scanResults = this.flowScannerCore.scan([parsedFlow], ruleConfig);
-          results.push(...this.processScanResults(scanResults));
-        }
-
-        // Manual APIVersion check (if configured)
-        if (apiVersionConfig) {
-          const flowApiVer = this.currentFlow.apiVersion || this.currentFlow.xmlData?.apiVersion;
-          const apiVersionRuleDef = allRules.find(r => r.name === "APIVersion");
-          let requiredExpr;
-
-          if (apiVersionConfig.expression) {
-            requiredExpr = apiVersionConfig.expression;
-          } else if (apiVersionConfig.threshold != null) {
-            requiredExpr = `>=${apiVersionConfig.threshold}`;
-          }
-
-          if (requiredExpr) {
-            const minVer = parseInt(requiredExpr.replace(/[^0-9]/g, ""), 10);
-            const operator = requiredExpr.replace(/[0-9]/g, "").trim();
-            let violation = false;
-            switch (operator) {
-              case ">=": violation = flowApiVer < minVer; break;
-              case "<": violation = flowApiVer >= minVer; break;
-              case ">": violation = flowApiVer <= minVer; break;
-              case "<=": violation = flowApiVer > minVer; break;
-              case "==": case "=": violation = flowApiVer !== minVer; break;
-              default: violation = flowApiVer < minVer;
-            }
-            if (violation) {
-              // Create a result that mimics the core scanner's output and process it generically
-              const manualScanResult = [{
-                flow: parsedFlow,
-                ruleResults: [{
-                  ruleName: "APIVersion",
-                  ruleDefinition: {
-                    description: apiVersionRuleDef.description,
-                    label: apiVersionRuleDef.label
-                  },
-                  occurs: true,
-                  severity: apiVersionConfig.severity,
-                  details: [{
-                    name: String(flowApiVer),
-                    type: "apiVersion",
-                    expression: requiredExpr
-                  }]
-                }]
-              }];
-              results.push(...this.processScanResults(manualScanResult));
-            }
-          }
-        }
-      }
-
-      for (const customRuleDef of customRuleDefs) {
-        try {
-          let getCode;
-          if (customRuleDef.code) {
-            getCode = Promise.resolve(customRuleDef.code);
-          } else if (customRuleDef.path) {
-            getCode = fetch(customRuleDef.path).then(res => {
-              if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-              return res.text();
-            });
+      const ruleConfig = {rules: {}};
+      rulesToRun.forEach(rule => {
+        const {name, configType, config = {}, severity: uiSeverity} = rule;
+        const scannerSeverity = normalizeSeverity(uiSeverity || "error", "storage");
+        const entry = {severity: scannerSeverity};
+        if (configType === "expression" && config.expression != null) {
+          entry.expression = config.expression;
+        } else if (configType === "threshold" && config.threshold != null) {
+          if (name === "APIVersion") {
+            // Convert numeric threshold into an expression string for the core rule.
+            entry.expression = `>=${config.threshold}`;
           } else {
-            continue; // Should not happen due to filter
+            entry.threshold = config.threshold;
           }
+        }
+        ruleConfig.rules[name] = entry;
+      });
 
-          const code = await getCode;
-          const blob = new Blob([code], {type: "application/javascript"});
-          const url = URL.createObjectURL(blob);
-          const module = await import(url);
-          URL.revokeObjectURL(url);
+      // --- Handle APIVersion rule separately to avoid unsafe-eval in the core library ---
+      const apiVersionConfig = ruleConfig.rules.APIVersion;
+      if (ruleConfig.rules.APIVersion) {
+        delete ruleConfig.rules.APIVersion;
+      }
 
-          const CustomRuleClass = module[customRuleDef.name] || module.default;
-          if (typeof CustomRuleClass !== "function") {
-            const errorLocation = customRuleDef.path ? `in ${customRuleDef.path}` : "in the provided code";
-            throw new Error(`Could not find class '${customRuleDef.name}' ${errorLocation}. Make sure the class is exported correctly.`);
+      // Run all other built-in rules (if any remain).
+      if (Object.keys(ruleConfig.rules).length > 0) {
+        const scanResults = this.flowScannerCore.scan([parsedFlow], ruleConfig);
+        results.push(...this.processScanResults(scanResults));
+      }
+
+      // Manually evaluate the APIVersion rule, if it was configured.
+      if (apiVersionConfig) {
+        const flowApiVer = this.currentFlow.apiVersion || this.currentFlow.xmlData?.apiVersion;
+        const apiVersionRuleDef = allRules.find(r => r.name === "APIVersion");
+
+        // Determine the required expression (e.g. ">=58").
+        let requiredExpr;
+        if (apiVersionConfig.expression) {
+          requiredExpr = apiVersionConfig.expression;
+        } else if (apiVersionConfig.threshold != null) {
+          requiredExpr = `>=${apiVersionConfig.threshold}`;
+        }
+
+        if (requiredExpr) {
+          const minVer = parseInt(requiredExpr.replace(/[^0-9]/g, ""), 10);
+          const operator = requiredExpr.replace(/[0-9]/g, "").trim();
+          const operators = {
+            ">=": (a, b) => a < b,
+            "<": (a, b) => a >= b,
+            ">": (a, b) => a <= b,
+            "<=": (a, b) => a > b,
+            "==": (a, b) => a !== b,
+            "=": (a, b) => a !== b
+          };
+          const violation = operators[operator] ? operators[operator](flowApiVer, minVer) : flowApiVer < minVer;
+
+          if (violation) {
+            // Craft a result object that mimics the core scanner output so downstream logic remains unchanged.
+            const manualScanResult = [{
+              flow: parsedFlow,
+              ruleResults: [{
+                ruleName: "APIVersion",
+                ruleDefinition: {
+                  description: apiVersionRuleDef?.description || "API Version check",
+                  label: apiVersionRuleDef?.label || "APIVersion"
+                },
+                occurs: true,
+                severity: apiVersionConfig.severity,
+                details: [{
+                  name: String(flowApiVer),
+                  type: "apiVersion",
+                  expression: requiredExpr
+                }]
+              }]
+            }];
+            results.push(...this.processScanResults(manualScanResult));
           }
-
-          const ruleInstance = new CustomRuleClass();
-          const ruleResult = ruleInstance.execute(parsedFlow.flow, customRuleDef.config);
-
-          const processedCustomResult = this.processScanResults([{
-            flow: parsedFlow,
-            ruleResults: [ruleResult]
-          }]);
-          results.push(...processedCustomResult);
-
-        } catch (error) {
-          results.push({
-            rule: `Custom Rule Error: ${customRuleDef.name}`,
-            description: `Failed to load or execute custom rule: ${error.message}`,
-            severity: "error",
-            details: `Path: ${customRuleDef.path || "Pasted Code"}\n${error.stack}`,
-            affectedElements: []
-          });
         }
       }
+
+      // Store final results.
       this.scanResults = results;
     } catch (error) {
-      this.showError("Failed to scan flow: " + error.message);
       this.scanResults = [{
         rule: "Scan Error",
         description: "Failed to scan flow: " + error.message,
         severity: "error",
-        details: "Flow: " + (this.currentFlow ? this.currentFlow.name : "Unknown")
+        flowName: this.currentFlow ? this.currentFlow.name : "Unknown",
+        affectedElements: [{
+          elementName: this.currentFlow ? this.currentFlow.apiName : "Unknown",
+          elementLabel: "Flow",
+          expression: error.message
+        }]
       }];
     } finally {
       this.isScanning = false;
@@ -436,9 +414,9 @@ class FlowScanner {
   }
 
   /**
-   * Processes results from the core scanner into a display-friendly format.
+   * Processes raw results from the core scanner into a display-friendly format.
    * @param {Array} scanResults - The raw results from the core scanner.
-   * @returns {Array} An array of formatted violation objects.
+   * @returns {Array} A list of formatted violation objects.
    */
   processScanResults(scanResults) {
     const results = [];
@@ -449,7 +427,12 @@ class FlowScanner {
           rule: "Scan Error",
           description: "Failed to scan flow: " + flowResult.errorMessage,
           severity: "error",
-          details: "Flow: " + this.currentFlow.name
+          flowName: this.currentFlow.name,
+          affectedElements: [{
+            elementName: this.currentFlow.apiName,
+            elementLabel: "Flow",
+            expression: flowResult.errorMessage
+          }]
         });
         continue;
       }
@@ -468,7 +451,8 @@ class FlowScanner {
           for (const detail of ruleResult.details) {
             let elementName, elementLabel, elementType, apiName, expression, metaType, dataType, locationX, locationY, connectsTo;
             const potentialElementName = detail.name || detail.violation?.name;
-            // Check if the violation is for a specific element or the flow itself
+
+            // Check if the violation is for a specific element or the flow itself.
             if (potentialElementName && this._elementMap.has(potentialElementName)) {
               // Element-level violation
               elementName = potentialElementName;
@@ -483,17 +467,13 @@ class FlowScanner {
               expression = detail.details?.expression || detail.violation?.expression || "";
               apiName = detail.apiName || detail.violation?.apiName || detail.name || detail.violation?.name || "";
             } else {
-              // Flow-level violation (e.g., Cyclomatic Complexity, Flow Name)
+              // Flow-level violation
               elementName = this.currentFlow.apiName;
               elementLabel = this.currentFlow.label;
               elementType = "Flow";
               apiName = this.currentFlow.apiName;
-              // For manual results (like APIVersion), the expression is directly on the detail object.
-              // For core results, it's nested in .details or .violation.
               const rawCondition = detail.expression || detail.details?.expression || detail.violation?.expression || "";
-              // Add a space after operators for readability. e.g. ">=60" becomes ">= 60"
               const condition = rawCondition.replace(/([<>=!]+)/g, "$1 ");
-              // Combine the metric value (detail.name) and the condition for a clear description
               expression = `${detail.name || ""} ${condition}`.trim();
               metaType = "";
               dataType = "";
@@ -506,16 +486,7 @@ class FlowScanner {
               rule: ruleLabel,
               description: ruleDescription,
               severity: this.mapSeverity(ruleResult.severity),
-              details: this.formatRuleDetails({
-                elementName,
-                elementType,
-                metaType,
-                dataType,
-                locationX,
-                locationY,
-                connectsTo,
-                expression
-              }),
+              flowName: this.currentFlow.name,
               affectedElements: [{
                 elementName,
                 elementType,
@@ -527,31 +498,18 @@ class FlowScanner {
                 expression,
                 elementLabel,
                 apiName
-              }],
-              ruleDescription,
-              ruleLabel,
-              flowName: this.currentFlow.name,
-              name: elementName,
-              type: elementType,
-              label: elementLabel,
-              apiName,
-              metaType,
-              dataType,
-              locationX,
-              locationY,
-              connectsTo,
-              expression
+              }]
             };
 
             results.push(result);
           }
         } else {
-          // Handle flow-level violations by creating a synthetic affected element
+          // Fallback for violations without specific details.
           const result = {
             rule: ruleLabel,
             description: ruleDescription,
             severity: this.mapSeverity(ruleResult.severity),
-            details: ruleDescription,
+            flowName: this.currentFlow.name,
             affectedElements: [{
               elementName: this.currentFlow.apiName,
               elementLabel: this.currentFlow.label,
@@ -563,15 +521,7 @@ class FlowScanner {
               locationX: "",
               locationY: "",
               connectsTo: ""
-            }],
-            ruleDescription,
-            ruleLabel,
-            flowName: this.currentFlow.name,
-            name: this.currentFlow.apiName,
-            type: "Flow",
-            label: this.currentFlow.label,
-            apiName: this.currentFlow.apiName,
-            expression: ruleDescription
+            }]
           };
           results.push(result);
         }
@@ -582,11 +532,10 @@ class FlowScanner {
 
   /**
    * Maps severity levels from the core scanner to the UI's format.
-   * @param {string} coreSeverity - The severity level from the core scanner (e.g., 'critical', 'warning').
-   * @returns {string} The corresponding severity level for the UI (e.g., 'error', 'warning').
+   * @param {string} coreSeverity - The severity from the core scanner.
+   * @returns {string} The corresponding UI severity level.
    */
   mapSeverity(coreSeverity) {
-    // Map Flow Scanner Core severity to our format
     switch (coreSeverity?.toLowerCase()) {
       case "error":
       case "critical":
@@ -602,51 +551,8 @@ class FlowScanner {
   }
 
   /**
-   * Formats the details of a rule violation into a human-readable string.
-   * @param {Object} ruleResult - An object containing details about the violation.
-   * @returns {string} A formatted string summarizing the violation details.
-   */
-  formatRuleDetails(ruleResult) {
-    const details = [];
-
-    if (ruleResult.elementName) {
-      details.push(`Element: ${ruleResult.elementName}`);
-    }
-
-    if (ruleResult.elementType) {
-      details.push(`Type: ${ruleResult.elementType}`);
-    }
-
-    if (ruleResult.metaType) {
-      details.push(`Meta Type: ${ruleResult.metaType}`);
-    }
-
-    if (ruleResult.dataType) {
-      details.push(`Data Type: ${ruleResult.dataType}`);
-    }
-
-    if (ruleResult.locationX && ruleResult.locationY) {
-      details.push(`Location: (${ruleResult.locationX}, ${ruleResult.locationY})`);
-    }
-
-    if (ruleResult.connectsTo) {
-      details.push(`Connects to: ${ruleResult.connectsTo}`);
-    }
-
-    if (ruleResult.expression) {
-      const truncatedExpression = ruleResult.expression.length > 100
-        ? ruleResult.expression.substring(0, 100) + "..."
-        : ruleResult.expression;
-      details.push(`Expression: ${truncatedExpression}`);
-    }
-
-    return details.join(" | ");
-  }
-
-  /**
    * Extracts all elements from the current flow's metadata.
-   * This is used to get a count of total elements and to build the element map.
-   * @returns {Array} An array of flow element objects.
+   * @returns {Array} A list of all flow element objects.
    */
   extractFlowElements() {
     if (!this.currentFlow || !this.currentFlow.xmlData) {
@@ -656,7 +562,6 @@ class FlowScanner {
     const elements = [];
     const xmlData = this.currentFlow.xmlData;
 
-    // A list of all possible element types in flow metadata XML.
     const elementTypes = [
       "actionCalls",
       "assignments",
@@ -679,10 +584,14 @@ class FlowScanner {
       "apexPluginCalls",
       "steps",
       "orchestratedStages",
-      "recordRollbacks"
+      "recordRollbacks",
+      "constants",
+      "variables",
+      "textTemplates",
+      "choices",
+      "dynamicChoiceSets"
     ];
 
-    // Iterate over each element type and add them to the elements array.
     elementTypes.forEach(elementType => {
       if (xmlData[elementType]) {
         if (Array.isArray(xmlData[elementType])) {
@@ -705,42 +614,23 @@ class FlowScanner {
       }
     });
 
-    // Separately handle the start element.
-    if (xmlData.start && typeof xmlData.start === "object") {
-      elements.push({
-        name: xmlData.start.name || "Start",
-        type: "start",
-        element: xmlData.start
-      });
-    }
-
     return elements;
   }
 
   /**
-   * Shows an error message in the UI.
-   * If the error is about disabled rules, it provides a button to open the options page.
-   * @param {string} message - The error message to display.
+   * Sets a message to be displayed when no rules are enabled.
+   * @param {string} message - The message to display.
    */
-  showError(message) {
-    this.exportError = message;
-  }
-
-  /**
-   * Closes the scanner overlay by sending a message to the parent window.
-   */
-  closeOverlay() {
-    // This is used when the scanner is opened in an iframe/overlay.
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage({
-        command: "closeFlowScannerOverlay"
-      }, "*");
-    }
+  setNoRulesEnabledMessage(message) {
+    this.noRulesEnabledMessage = message;
   }
 }
 
 let h = React.createElement;
 
+/**
+ * The main React component for the Flow Scanner application.
+ */
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -762,32 +652,57 @@ class App extends React.Component {
     this.onCollapseAll = this.onCollapseAll.bind(this);
     this.onSeverityToggle = this.onSeverityToggle.bind(this);
     this.onRuleToggle = this.onRuleToggle.bind(this);
-    this.onScanFlow = this.onScanFlow.bind(this);
   }
 
   componentDidMount() {
     this.initializeFlowScanner();
   }
 
+  /**
+   * Groups scan results by severity and rule type.
+   * @returns {Object} An object containing the grouped results.
+   */
+  getGroupedResults() {
+    const {scanResults} = this.flowScanner || {};
+    if (!scanResults || scanResults.length === 0) {
+      return {error: {results: [], rules: {}}, warning: {results: [], rules: {}}, info: {results: [], rules: {}}};
+    }
+    const severityOrder = ["error", "warning", "info"];
+    const grouped = {};
+    severityOrder.forEach(severity => {
+      grouped[severity] = {results: [], rules: {}};
+    });
+    scanResults.forEach(result => {
+      const {severity} = result;
+      if (grouped[severity]) {
+        grouped[severity].results.push(result);
+      }
+    });
+    severityOrder.forEach(severity => {
+      const rules = {};
+      grouped[severity].results.forEach(result => {
+        const ruleType = result.rule || "Unknown Rule";
+        if (!rules[ruleType]) {
+          rules[ruleType] = [];
+        }
+        rules[ruleType].push(result);
+      });
+      grouped[severity].rules = rules;
+    });
+    return grouped;
+  }
+
   componentDidUpdate() {
-    // When scan results are loaded and accordion state is missing rule keys, initialize them to expanded
-    if (this.flowScanner?.scanResults && this.flowScanner.scanResults.length > 0) {
-      const severityOrder = ["error", "warning", "info"];
-      const severityGroups = {error: [], warning: [], info: []};
-      this.flowScanner.scanResults.forEach(r => { if (severityGroups[r.severity]) severityGroups[r.severity].push(r); });
+    // When scan results are loaded, initialize accordion state for any new rules.
+    const {scanResults} = this.flowScanner || {};
+    if (scanResults && scanResults.length > 0) {
+      const groupedResults = this.getGroupedResults();
       let needsUpdate = false;
       const accordion = {...this.state.accordion};
-      severityOrder.forEach(severity => {
-        const group = severityGroups[severity];
+      Object.keys(groupedResults).forEach(severity => {
         if (!accordion[severity]) accordion[severity] = {expanded: true, rules: {}};
         if (!accordion[severity].rules) accordion[severity].rules = {};
-        // Group by rule
-        const rules = {};
-        group.forEach(result => {
-          const ruleType = result.rule || result.ruleLabel || "Unknown Rule";
-          if (!rules[ruleType]) rules[ruleType] = [];
-          rules[ruleType].push(result);
-        });
+        const {rules} = groupedResults[severity];
         Object.keys(rules).forEach(ruleType => {
           if (!(ruleType in accordion[severity].rules)) {
             accordion[severity].rules[ruleType] = true;
@@ -812,11 +727,7 @@ class App extends React.Component {
         throw new Error(`Missing required parameters: host=${sfHost}, flowDefId=${flowDefId}, flowId=${flowId}`);
       }
 
-      if (typeof initButton === "undefined") {
-        throw new Error("initButton function not found. Make sure button.js is loaded.");
-      }
-
-      initButton(sfHost, true);
+      window.initButton(sfHost, true);
 
       if (typeof sfConn === "undefined") {
         throw new Error("sfConn not found. Make sure inspector.js is loaded.");
@@ -863,13 +774,6 @@ class App extends React.Component {
     }
   }
 
-  onScanFlow() {
-    if (this.flowScanner) {
-      this.flowScanner.scanFlow();
-    }
-  }
-
-  // Accordion logic matching static version
   onExpandAll() {
     this.setState(state => {
       const accordion = {...state.accordion};
@@ -885,21 +789,17 @@ class App extends React.Component {
   onCollapseAll() {
     this.setState(state => {
       const accordion = {...state.accordion};
-      let anyRuleExpanded = false;
-      ["error", "warning", "info"].forEach(sev => {
-        const rules = accordion[sev].rules;
-        Object.keys(rules).forEach(rule => {
-          if (rules[rule]) anyRuleExpanded = true;
-        });
-      });
+      const anyRuleExpanded = ["error", "warning", "info"].some(sev =>
+        Object.values(accordion[sev].rules).some(isExpanded => isExpanded)
+      );
       if (anyRuleExpanded) {
-        // Collapse all rules, keep severity expanded
+        // If any rules are expanded, collapse all rules but keep severity groups open.
         ["error", "warning", "info"].forEach(sev => {
           const rules = accordion[sev].rules;
           Object.keys(rules).forEach(rule => { rules[rule] = false; });
         });
       } else {
-        // Collapse all severity groups
+        // If all rules are collapsed, collapse the severity groups themselves.
         ["error", "warning", "info"].forEach(sev => {
           accordion[sev].expanded = false;
         });
@@ -912,24 +812,21 @@ class App extends React.Component {
     this.setState(state => {
       const accordion = {...state.accordion};
       const sevAcc = accordion[severity];
-
       const ruleKeys = Object.keys(sevAcc.rules || {});
       const expandedRules = ruleKeys.filter(r => sevAcc.rules[r]);
+      const allRulesExpanded = expandedRules.length === ruleKeys.length;
+      const isGroupCollapsed = !sevAcc.expanded;
 
-      // Cycle logic:
-      // 1) collapsed  -> expand group (keep per-rule state)
-      // 2) expanded & mixed -> expand all
-      // 3) expanded & all rules expanded -> collapse group
-
-      if (!sevAcc.expanded) {
-        // collapsed -> expand group (state 0->1)
+      // This logic cycles through three states:
+      // 1. Collapsed group -> Expand group, keeping rule states.
+      // 2. Expanded group with some/all rules collapsed -> Expand all rules.
+      // 3. Expanded group with all rules expanded -> Collapse group.
+      if (isGroupCollapsed) {
         sevAcc.expanded = true;
-      } else if (expandedRules.length !== ruleKeys.length) {
-        // mixed -> expand all
-        ruleKeys.forEach(r => { sevAcc.rules[r] = true; });
-      } else {
-        // fully expanded -> collapse group
+      } else if (allRulesExpanded) {
         sevAcc.expanded = false;
+      } else {
+        ruleKeys.forEach(r => { sevAcc.rules[r] = true; });
       }
 
       return {accordion};
@@ -943,6 +840,25 @@ class App extends React.Component {
       accordion[severity].rules[ruleType] = !accordion[severity].rules[ruleType];
       return {accordion};
     });
+  }
+
+  // Helper to record mousedown coordinates.
+  handleMouseDown(e) {
+    const el = e.currentTarget;
+    el.dataset.startX = e.clientX;
+    el.dataset.startY = e.clientY;
+  }
+
+  // Helper to ignore click if user dragged to select text.
+  shouldIgnoreClick(e) {
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) {
+      const el = e.currentTarget;
+      const dx = Math.abs(e.clientX - Number(el.dataset.startX));
+      const dy = Math.abs(e.clientY - Number(el.dataset.startY));
+      return dx > 3 || dy > 3;
+    }
+    return false;
   }
 
   renderFlowInfo() {
@@ -1015,7 +931,8 @@ class App extends React.Component {
                 className: "description-toggle-btn",
                 type: "button",
                 "aria-expanded": "false",
-                onClick: this.onToggleDescription
+                onMouseDown: e => this.handleMouseDown(e),
+                onClick: e => { if (this.shouldIgnoreClick(e)) return; this.onToggleDescription(e); }
               },
               h("span", {className: "toggle-icon"}, "▼"),
               h("span", {id: "toggle-label"}, "Show description")
@@ -1050,26 +967,23 @@ class App extends React.Component {
       info: h("span", {className: "sev-ico info", "aria-label": "Info"}, "ℹ️")
     };
     const accordion = this.state.accordion;
-    // Group results by severity and rule
-    const severityGroups = {error: [], warning: [], info: []};
-    results.forEach(r => { if (severityGroups[r.severity]) severityGroups[r.severity].push(r); });
-    // Stats
-    const errorCount = severityGroups.error.length;
-    const warningCount = severityGroups.warning.length;
-    const infoCount = severityGroups.info.length;
+    const groupedResults = this.getGroupedResults();
+    const errorCount = groupedResults.error.results.length;
+    const warningCount = groupedResults.warning.results.length;
+    const infoCount = groupedResults.info.results.length;
     if (totalIssues === 0) {
-      // If no rules are enabled, show warning and prompt to configure
-      if (this.flowScanner.exportError) {
+      // If no rules are enabled, show a warning and prompt to configure them.
+      if (this.flowScanner.noRulesEnabledMessage) {
         return h("div", {className: "scan-results-section"},
           h("div", {className: "empty-state"},
             h("div", {className: "empty-icon"}, "⚠️"),
             h("h3", {}, "No Rules Enabled"),
-            h("p", {}, this.flowScanner.exportError),
+            h("p", {}, this.flowScanner.noRulesEnabledMessage),
             h("button", {className: "slds-button slds-button_brand", onClick: this.onToggleHelp}, "Configure Rules")
           )
         );
       }
-      // Default no issues found state
+      // Default "no issues found" state.
       return h("div", {className: "scan-results-section"},
         h("div", {className: "success-state"},
           h("div", {className: "success-icon"}, "✅"),
@@ -1088,7 +1002,7 @@ class App extends React.Component {
         )
       );
     }
-    // Summary panel
+    // Summary panel for when issues are found.
     return h("div", {className: "scan-results-section", "aria-labelledby": "results-title", "aria-live": "polite"},
       h("div", {className: "results-summary", role: "status", "aria-live": "polite"},
         h("div", {className: "summary-body"},
@@ -1133,22 +1047,17 @@ class App extends React.Component {
       ),
       h("div", {className: "results-container", role: "region", "aria-labelledby": "results-title"},
         severityOrder.map(severity => {
-          const group = severityGroups[severity];
+          const group = groupedResults[severity].results;
           if (!group.length) return null;
-          // Group by rule
-          const rules = {};
-          group.forEach(result => {
-            const ruleType = result.rule || result.ruleLabel || "Unknown Rule";
-            if (!rules[ruleType]) rules[ruleType] = [];
-            rules[ruleType].push(result);
-          });
+          const rules = groupedResults[severity].rules;
           const sevAccordion = accordion[severity] || {expanded: true, rules: {}};
           const isSevExpanded = sevAccordion.expanded !== false;
           const ruleKeys = Object.keys(rules);
           const expandedRules = ruleKeys.filter(r => sevAccordion.rules && sevAccordion.rules[r]);
-          let accordionStateAttr = isSevExpanded ? "1" : "3"; // 1=expanded,3=collapsed
+          // 1=expanded, 2=mixed, 3=collapsed
+          let accordionStateAttr = isSevExpanded ? "1" : "3";
           if (isSevExpanded && expandedRules.length > 0 && expandedRules.length < ruleKeys.length) {
-            accordionStateAttr = "2"; // mixed
+            accordionStateAttr = "2";
           }
           return h("div", {
             key: severity,
@@ -1161,7 +1070,8 @@ class App extends React.Component {
             tabIndex: 0,
             "aria-expanded": isSevExpanded,
             "aria-controls": `${severity}-rules-container`,
-            onClick: () => this.onSeverityToggle(severity),
+            onMouseDown: e => this.handleMouseDown(e),
+            onClick: e => { if (this.shouldIgnoreClick(e)) return; this.onSeverityToggle(severity); },
             onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onSeverityToggle(severity); } }
           },
           h("h3", {className: "severity-heading"},
@@ -1199,7 +1109,8 @@ class App extends React.Component {
                 role: "button",
                 "aria-expanded": ruleExpanded,
                 "aria-controls": `${severity}-${ruleIdx}-content`,
-                onClick: () => this.onRuleToggle(severity, ruleType),
+                onMouseDown: e => this.handleMouseDown(e),
+                onClick: e => { if (this.shouldIgnoreClick(e)) return; this.onRuleToggle(severity, ruleType); e.currentTarget.blur(); },
                 onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onRuleToggle(severity, ruleType); } }
               },
               h("div", {className: "rule-title-section"},
@@ -1222,7 +1133,7 @@ class App extends React.Component {
               h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
               )
               ),
-              ruleExpanded && h("div", {className: "rule-content", id: `${severity}-${ruleIdx}-content`},
+              h("div", {className: "rule-content", id: `${severity}-${ruleIdx}-content`},
                 this.renderRuleTable(ruleResults)
               )
               );
@@ -1232,117 +1143,6 @@ class App extends React.Component {
         })
       )
     );
-  }
-
-  renderResultsDetails(results) {
-    // Group results by severity
-    const severityGroups = {error: [], warning: [], info: []};
-    results.forEach(r => {
-      if (severityGroups[r.severity]) {
-        severityGroups[r.severity].push(r);
-      }
-    });
-
-    const severityOrder = ["error", "warning", "info"];
-    const severityLabels = {error: "Errors", warning: "Warnings", info: "Info"};
-    const severityIcons = {
-      error: h("span", {className: "sev-ico error", "aria-label": "Error"}, "❗"),
-      warning: h("span", {className: "sev-ico warning", "aria-label": "Warning"}, "⚠️"),
-      info: h("span", {className: "sev-ico info", "aria-label": "Info"}, "ℹ️")
-    };
-
-    const {expandedSeverities, expandedRules} = this.state;
-    return severityOrder.map(severity => {
-      const group = severityGroups[severity];
-      if (!group.length) return null;
-
-      // Group by rule within severity
-      const rules = {};
-      group.forEach(result => {
-        const ruleType = result.rule || result.ruleLabel || "Unknown Rule";
-        if (!rules[ruleType]) rules[ruleType] = [];
-        rules[ruleType].push(result);
-      });
-
-      const isExpanded = expandedSeverities[severity];
-
-      return h("div", {
-        key: severity,
-        className: `severity-group-layout ${severity}${!isExpanded ? " collapsed" : ""}`,
-      },
-      h("div", {
-        className: "severity-title-left",
-        role: "button",
-        tabIndex: 0,
-        "aria-expanded": isExpanded,
-        onClick: () => this.onSeverityToggle(severity),
-        onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onSeverityToggle(severity); } }
-      },
-      h("h3", {className: "severity-heading"},
-        h("div", {className: "severity-heading-content"},
-          h("svg", {
-            className: "accordion-chevron",
-            width: "24",
-            height: "24",
-            "aria-hidden": "true",
-            style: {transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
-          },
-          h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
-          ),
-          h("span", {className: "severity-label-group"},
-            severityIcons[severity],
-            h("span", {}, severityLabels[severity])
-          )
-        )
-      ),
-      h("span", {className: "severity-total-count"}, `${group.length} Issue${group.length === 1 ? "" : "s"}`)
-      ),
-      isExpanded && h("div", {className: "rules-container-right"},
-        Object.entries(rules).map(([ruleType, ruleResults], ruleIdx) => {
-          const description = ruleResults[0].description || "Rule violation detected";
-          const ruleKey = `${severity}__${ruleType}`;
-          const ruleExpanded = expandedRules[ruleKey] !== false; // default to expanded
-          return h("div", {
-            key: `${severity}-${ruleIdx}`,
-            className: `rule-section compact${ruleExpanded ? " expanded" : " collapsed"} card-bg`,
-            "data-rule-type": ruleType
-          },
-          h("div", {
-            className: "rule-header",
-            tabIndex: 0,
-            role: "button",
-            "aria-expanded": ruleExpanded,
-            onClick: () => this.onRuleToggle(severity, ruleType),
-            onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.onRuleToggle(severity, ruleType); } }
-          },
-          h("div", {className: "rule-title-section"},
-            h("span", {className: "rule-name-compact"}, ruleType),
-            h("div", {className: "tooltip-container"},
-              h("svg", {className: "info-icon", "aria-hidden": "true"},
-                h("use", {xlinkHref: "symbols.svg#info"})
-              ),
-              h("div", {className: "tooltip-content"}, description)
-            ),
-            h("span", {className: "badge-total circle-badge"}, ruleResults.length)
-          ),
-          h("svg", {
-            className: "accordion-chevron",
-            width: "24",
-            height: "24",
-            "aria-hidden": "true",
-            style: {transform: ruleExpanded ? "rotate(0deg)" : "rotate(-90deg)"}
-          },
-          h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
-          )
-          ),
-          ruleExpanded && h("div", {className: "rule-content"},
-            this.renderRuleTable(ruleResults)
-          )
-          );
-        })
-      )
-      );
-    }).filter(Boolean);
   }
 
   renderRuleTable(ruleResults) {
@@ -1378,7 +1178,7 @@ class App extends React.Component {
           h("tr", {key: idx},
             activeHeaders.map(header => {
               const cellValue = row[header] || "—";
-              const isMono = ["Name", "Connects to", "Expression", "Location"].includes(header);
+              const isMono = MONO_HEADERS.has(header);
               const cellClass = isMono ? "mono" : "";
               return h("td", {key: header},
                 h("div", {className: `cell-content ${cellClass}`, title: cellValue}, cellValue)
@@ -1445,12 +1245,12 @@ class App extends React.Component {
         ),
         // Title
         h("h1", {}, "Flow Scanner"),
-        // Optional user info (reuse flow label)
+        // Optional user info
         this.flowScanner?.currentFlow?.label
           ? h("span", {}, " / " + this.flowScanner.currentFlow.label) : null,
-        // Right side icons & spinner
+        // Right-side header elements
         h("div", {className: "flex-right"},
-          // Note about core version
+          // Note about core library version
           h("div", {className: "flow-scanner-note-header"},
             h("small", {},
               "💡 Based on ",
@@ -1477,22 +1277,16 @@ class App extends React.Component {
   }
 }
 
+const MONO_HEADERS = new Set(["Name", "Connects to", "Expression", "Location"]);
+
 // Initialize the application
 {
-  let args = new URLSearchParams(location.search);
-  let sfHost = args.get("host");
-  let hash = new URLSearchParams(location.hash);
-  if (!sfHost && hash) {
-    sfHost = decodeURIComponent(hash.get("instance_url")).replace(/^https?:\/\//i, "");
-  }
-
   let root = document.getElementById("root");
-  let model = {}; // Placeholder model for compatibility
 
   // eslint-disable-next-line react/no-deprecated
-  ReactDOM.render(h(App, {model}), root);
+  ReactDOM.render(h(App), root);
 
   if (parent && parent.isUnitTest) {
-    parent.insextTestLoaded({model, sfConn});
+    parent.insextTestLoaded({sfConn});
   }
 }

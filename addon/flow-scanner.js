@@ -1259,7 +1259,7 @@ class App extends React.Component {
                 target: this.flowScanner?.getLinkTarget(),
                 rel: "noopener noreferrer"
               }, "Lightning Flow Scanner"),
-              scannerVersion ? ` (core v${scannerVersion})` : null
+              scannerVersion ? `\u00A0(core v${scannerVersion})` : null
             )
           ),
           h("a", {href: "#", id: "help-btn", title: "Open Flow Scanner Options", onClick: this.onToggleHelp},

@@ -156,6 +156,9 @@
     },
     "event-monitor": {
       "description": "Event Monitor"
+    },
+    "flow-scanner": {
+      "description": "Flow Scanner"
     }
   }
 }

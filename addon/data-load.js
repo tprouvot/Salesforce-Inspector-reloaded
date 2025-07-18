@@ -170,7 +170,7 @@ function renderCell(rt, cell, td) {
       td.appendChild(pop);
       let {objectTypes, recordId} = recordInfo();
       let objectType = undefined;
-      function setLinks(linkOptions = { isCopy: true, isQueryRecord: true, isShowAllData: true, isViewInSalesforce: true }) {
+      function setLinks(linkOptions = {isCopy: true, isQueryRecord: true, isShowAllData: true, isViewInSalesforce: true}) {
         // Show All Data link
         if (linkOptions.isShowAllData) {
           let aShow = document.createElement("a");
@@ -239,7 +239,7 @@ function renderCell(rt, cell, td) {
             pop.appendChild(aDownload);
             aDownload.prepend(aDownloadIcon);
             aDownload.addEventListener("click", e => {
-              sfConn.rest(e.target.id, { responseType: "text/csv" }).then(data => {
+              sfConn.rest(e.target.id, {responseType: "text/csv"}).then(data => {
                 let downloadLink = document.createElement("a");
                 downloadLink.download = recordId.split("/")[6];
                 downloadLink.href = "data:text/csv;charset=utf-8," + data;
@@ -277,7 +277,7 @@ function renderCell(rt, cell, td) {
         sfConn.rest(`/services/data/v${apiVersion}/ui-api/records/${recordId}?layoutTypes=Compact`).then(res => {
           objectType = res.apiName;
           setLinks(defaultOptions);
-        }).catch(err => {
+        }).catch(() => {
           objectType = null;
           defaultOptions.isQueryRecord = false;
           defaultOptions.isShowAllData = false;
@@ -303,12 +303,12 @@ function renderCell(rt, cell, td) {
     td.appendChild(a);
   }
   function isRecordId(recordId) {
-    return typeof recordId === "string" &&
-         /^[a-zA-Z0-9]{15,18}$/.test(recordId) &&
-         /^[0-9a-zA-Z]{3}/.test(recordId) &&
-         !recordId.startsWith("000") &&
-         !/[^a-zA-Z0-9]/.test(recordId) &&
-         /[0-9]/.test(recordId.slice(0, 5));
+    return typeof recordId === "string"
+         && /^[a-zA-Z0-9]{15,18}$/.test(recordId)
+         && /^[0-9a-zA-Z]{3}/.test(recordId)
+         && !recordId.startsWith("000")
+         && !/[^a-zA-Z0-9]/.test(recordId)
+         && /[0-9]/.test(recordId.slice(0, 5));
   }
   function isEventLogFile(text) {
     // test the text to identify if this is a path to an eventLogFile

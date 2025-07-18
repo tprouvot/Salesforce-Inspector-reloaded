@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Fix: Enable popup actions for records identified only by DurableId (e.g., FlowDefinitionView) [issue 441](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/441) (contribution by [Tushar Dangayach](https://github.com/rockstartushar))
 - `Show all data` Analyze field usage by showing the percentage of records that have a value for each field.
 - `Show all data` Add 'back to record' button [feature 884](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/884) (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
 - `Data Export` Suggestions added for queries using IN clause on picklist fields [feature 892](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/892) (contribution by [Luca Bassani](https://github.com/baslu93))

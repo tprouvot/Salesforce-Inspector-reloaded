@@ -2019,13 +2019,72 @@ class FieldValueCell extends React.Component {
 }
 
 class FieldTypeCell extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {expanded: false};
+    this.toggleExpanded = this.toggleExpanded.bind(this);
+  }
+
+  toggleExpanded() {
+    this.setState(prev => ({expanded: !prev.expanded}));
+  }
+
   render() {
     let {row, col} = this.props;
+    const {expanded} = this.state;
+    let referenceTypes = row.referenceTypes?.() || [];
+    if (referenceTypes.length > 1 && row.dataTypedValue && row.rowList.model.globalDescribe){
+      // Get the first 3 characters of the ID (the keyPrefix)
+      const dataKeyPrefix = row.dataTypedValue.substring(0, 3);
+
+      // Find the matching object from globalDescribe
+      const matchingObject = row.rowList.model.globalDescribe?.sobjects?.find(
+        sobject => sobject.keyPrefix === dataKeyPrefix
+      );
+
+      // If we found a matching object, filter referenceTypes to only include it
+      if (matchingObject) {
+        referenceTypes = [matchingObject.name];
+      }
+    }
+
+    const maxToShow = 3;
+    const showAll = expanded || referenceTypes.length <= maxToShow;
+    const visible = showAll ? referenceTypes : referenceTypes.slice(0, maxToShow);
+    const remainingCount = referenceTypes.length - visible.length;
+
+    const links = visible.map((data) =>
+      h("span", {key: data},
+        h("a", {href: row.showReferenceUrl(data)}, data),
+        " "
+      )
+    );
+
+    // +X more link
+    if (!showAll && remainingCount > 0) {
+      links.push(
+        h("a", {
+          className: "text-muted",
+          onClick: this.toggleExpanded,
+          style: {cursor: "pointer", marginLeft: "5px"}
+        }, `+${remainingCount} more`)
+      );
+    }
+
+    // Show less link
+    if (expanded && referenceTypes.length > maxToShow) {
+      links.push(
+        h("a", {
+          className: "text-muted",
+          onClick: this.toggleExpanded,
+          style: {cursor: "pointer", marginLeft: "5px"}
+        }, "Show less")
+      );
+    }
+
     return h("td", {className: col.className + " quick-select"},
-      row.referenceTypes() ? row.referenceTypes().map(data =>
-        h("span", {key: data}, h("a", {href: row.showReferenceUrl(data)}, data), " ")
-      ) : null,
-      !row.referenceTypes() ? h(TypedValue, {value: row.sortKey(col.name)}) : null
+      links,
+      referenceTypes.length === 0 ? h(TypedValue, {value: row.sortKey(col.name)}) : null
     );
   }
 }

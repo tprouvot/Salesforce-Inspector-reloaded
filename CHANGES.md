@@ -6,9 +6,6 @@
 - Fix: Enable popup actions for records identified only by DurableId (e.g., FlowDefinitionView) [issue 441](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/441) (contribution by [Tushar Dangayach](https://github.com/rockstartushar))
 - `Show All Data` Analyze field usage by showing the percentage of records that have a value for each field.
 - `Show All Data` Add 'back to record' button [feature 884](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/884) (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
-
-- `Show all Data` Analyze field usage by showing the percentage of records that have a value for each field.
-- `Show all Data` Add 'back to record' button [feature 884](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/884) (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
 - `Data Export` Suggestions added for queries using IN clause on picklist fields [feature 892](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/892) (contribution by [Luca Bassani](https://github.com/baslu93))
 - Support for multiple SOQL/SOSL tabs in `Data Export` [feature 132](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/132) (requested Erlend Hansen)
 - Add button in Option page to delete generated access token (cf [troubleshooting](https://tprouvot.github.io/Salesforce-Inspector-reloaded/troubleshooting/#generate-new-token-error))

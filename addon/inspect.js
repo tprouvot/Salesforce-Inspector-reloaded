@@ -88,7 +88,7 @@ class Model {
     let parts;
     if (this.recordData) {
       if (!this.recordName){
-        let fieldName = this.recordData.Name ? "Name" : this.objectData?.fields.find(field => field.nameField).name;
+        let fieldName = this.recordData.Name ? "Name" : (this.objectData?.fields.find(field => field.nameField)?.name || "Id");
         this.recordName = this.recordData[fieldName];
       }
       parts = [this.recordName, this.recordData.Id];

@@ -1,8 +1,3 @@
-(function() {
-  let script = document.createElement("script");
-  script.src = chrome.runtime.getURL("inject.js");
-  document.body.appendChild(script);
-})();
 
 // sfdcBody: normal Salesforce page
 // ApexCSIPage: Developer Console
@@ -15,6 +10,9 @@ if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #s
   chrome.runtime.sendMessage({message: "getSfHost", url: location.href}, sfHost => {
     if (sfHost) {
       initButton(sfHost, false);
+      let script = document.createElement("script");
+      script.src = chrome.runtime.getURL("inject.js");
+      document.body.appendChild(script);
     }
   });
 }

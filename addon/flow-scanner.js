@@ -10,6 +10,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 import {getFlowScannerRules} from "./flow-rules.js";
+import {getLinkTarget} from "./utils.js";
 /* global lightningflowscanner */
 
 /**
@@ -74,15 +75,7 @@ class FlowScanner {
     }
   }
 
-  /**
-   * Determines the target for links based on user settings.
-   * Opens links in a new tab if configured or if Ctrl/Meta key is pressed.
-   * @param {Event} [e] - The click event.
-   * @returns {string} The link target ('_blank' or '_self').
-   */
-  getLinkTarget(e) {
-    return localStorage.getItem("openLinksInNewTab") == "true" || (e && (e.ctrlKey || e.metaKey)) ? "_blank" : "_self";
-  }
+
 
   /**
    * Generates and downloads a CSV file of the scan results.
@@ -169,15 +162,11 @@ class FlowScanner {
    */
   async getFlowMetadata() {
     try {
-      // Use API version from Options settings if set, otherwise fall back to default import
-      const currentApiVersion = localStorage.getItem("apiVersion") || apiVersion;
-      // Add cache-busting parameter to force fresh queries
-      const cacheBuster = Math.random();
 
       // Query both Flow and FlowDefinitionView objects to get complete metadata
       const [flowRes, fdvRes] = await Promise.all([
-        sfConn.rest(`/services/data/v${currentApiVersion}/tooling/query?q=SELECT+Id,Metadata+FROM+Flow+WHERE+Id='${this.flowId}'&cache=${cacheBuster}`),
-        sfConn.rest(`/services/data/v${currentApiVersion}/query/?q=SELECT+Label,ApiName,ProcessType,TriggerType,TriggerObjectOrEventLabel+FROM+FlowDefinitionView+WHERE+DurableId='${this.flowDefId}'&cache=${cacheBuster}`)
+        sfConn.rest(`/services/data/v${apiVersion}/tooling/query?q=SELECT+Id,Metadata+FROM+Flow+WHERE+Id='${this.flowId}'`),
+        sfConn.rest(`/services/data/v${apiVersion}/query/?q=SELECT+Label,ApiName,ProcessType,TriggerType,TriggerObjectOrEventLabel+FROM+FlowDefinitionView+WHERE+DurableId='${this.flowDefId}'`)
       ]);
 
       const flowRecord = flowRes.records?.[0];
@@ -638,6 +627,7 @@ class App extends React.Component {
       isLoading: true,
       loadingMessage: "Loading Flow Data...",
       loadingDescription: "Please wait while we retrieve the flow metadata from Salesforce.",
+      userInfo: "...",
       // Accordion state: { [severity]: { expanded: bool, rules: { [ruleType]: bool } } }
       accordion: {
         error: {expanded: true, rules: {}},
@@ -735,6 +725,15 @@ class App extends React.Component {
 
       await sfConn.getSession(sfHost);
 
+      // Fetch user info
+      sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
+        this.setState({
+          userInfo: res.userFullName + " / " + res.userName + " / " + res.organizationName
+        });
+      }).catch(() => {
+        // Keep default "..." if getUserInfo fails
+      });
+
       this.flowScanner = new FlowScanner(sfHost, flowDefId, flowId);
       await this.flowScanner.init();
 
@@ -749,7 +748,7 @@ class App extends React.Component {
 
   onToggleHelp(e) {
     e.preventDefault();
-    const target = this.flowScanner.getLinkTarget(e);
+    const target = getLinkTarget(e);
     const url = chrome.runtime.getURL(`options.html?selectedTab=8&host=${this.flowScanner?.sfHost}`);
     window.open(url, target);
   }
@@ -1035,9 +1034,7 @@ class App extends React.Component {
                 title: "Export Results",
                 onClick: this.onExportResults,
                 disabled: totalIssues === 0
-              },
-              h("span", {className: "export-icon", "aria-hidden": "true"}, "📁"),
-              " Export"
+              }, "Export",
               ),
               h("button", {className: "slds-button slds-button_neutral", id: "expand-all-btn", onClick: this.onExpandAll}, "Expand All"),
               h("button", {className: "slds-button slds-button_neutral", id: "collapse-all-btn", onClick: this.onCollapseAll}, "Collapse All")
@@ -1236,7 +1233,7 @@ class App extends React.Component {
         h("a", {
           href: sfLink,
           className: "sf-link",
-          target: this.flowScanner?.getLinkTarget()
+          target: getLinkTarget()
         },
         h("svg", {viewBox: "0 0 24 24"},
           h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
@@ -1245,9 +1242,7 @@ class App extends React.Component {
         ),
         // Title
         h("h1", {}, "Flow Scanner"),
-        // Optional user info
-        this.flowScanner?.currentFlow?.label
-          ? h("span", {}, " / " + this.flowScanner.currentFlow.label) : null,
+        h("span", {}, " / " + this.state.userInfo),
         // Right-side header elements
         h("div", {className: "flex-right"},
           // Note about core library version
@@ -1255,15 +1250,17 @@ class App extends React.Component {
             h("small", {},
               "💡 Based on ",
               h("a", {
-                href: "https://github.com/Lightning-Flow-Scanner",
-                target: this.flowScanner?.getLinkTarget(),
+                href: "https://github.com/Lightning-Flow-Scanner/lightning-flow-scanner-core",
+                target: getLinkTarget(),
                 rel: "noopener noreferrer"
               }, "Lightning Flow Scanner"),
               scannerVersion ? `\u00A0(core v${scannerVersion})` : null
             )
           ),
-          h("a", {href: "#", id: "help-btn", title: "Open Flow Scanner Options", onClick: this.onToggleHelp},
-            h("div", {className: "icon"})
+          h("a", {href: "#", id: "help-btn", title: "Open Flow Scanner Options", onClick: this.onToggleHelp, target: getLinkTarget()},
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#question"})
+            )
           )
         )
       ),

@@ -862,13 +862,15 @@ class App extends React.Component {
 
   renderFlowInfo() {
     if (!this.flowScanner?.currentFlow) {
-      return h("div", {className: "flow-info-section"},
-        h("h2", {className: "flow-info-title"},
-          h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
-          h("span", {className: "flow-info-title-text"}, "Flow Information")
-        ),
-        h("div", {className: "flow-info-card compact"},
-          h("div", {}, "Loading flow information...")
+      return h("div", {className: "area"},
+        h("div", {className: "flow-info-section"},
+          h("h2", {className: "flow-info-title"},
+            h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
+            h("span", {className: "flow-info-title-text"}, "Flow Information")
+          ),
+          h("div", {className: "flow-info-card compact"},
+            h("div", {}, "Loading flow information...")
+          )
         )
       );
     }
@@ -876,76 +878,78 @@ class App extends React.Component {
     const flow = this.flowScanner.currentFlow;
     const elements = this.flowScanner.extractFlowElements();
 
-    return h("div", {className: "flow-info-section", role: "region", "aria-labelledby": "flow-info-title-text"},
-      h("h2", {className: "flow-info-title"},
-        h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
-        h("span", {className: "flow-info-title-text", id: "flow-info-title-text"}, "Flow Information")
-      ),
-      h("div", {className: "flow-info-card compact"},
-        h("div", {className: "flow-header-row"},
-          h("div", {className: "flow-details-grid"},
-            h("div", {className: "flow-detail-item flow-label-item"},
-              h("span", {className: "detail-label"}, "Flow Label"),
-              h("span", {className: "detail-value"}, flow.label || "Unknown Label")
-            ),
-            h("div", {className: "flow-detail-item flow-apiname-item"},
-              h("span", {className: "detail-label"}, "Flow API Name"),
-              h("span", {className: "detail-value"}, flow.apiName || "Unknown API Name")
-            ),
-            h("div", {className: "flow-detail-item"},
-              h("span", {className: "detail-label"}, "Status"),
-              h("span", {
-                className: `flow-status-badge ${flow.status?.toLowerCase()}`,
-                role: "status",
-                "aria-live": "polite",
-                id: "flow-status-badge"
-              }, flow.status)
-            ),
-            h("div", {className: "flow-detail-item"},
-              h("span", {className: "detail-label"}, "Type"),
-              h("span", {className: "detail-value", id: "flow-type"}, flow.type)
-            ),
-            h("div", {className: "flow-detail-item"},
-              h("span", {className: "detail-label"}, "API Version"),
-              h("span", {className: "detail-value", id: "flow-api-version"}, flow.xmlData?.apiVersion || "Unknown")
-            ),
-            h("div", {className: "flow-detail-item"},
-              h("span", {className: "detail-label"}, "Elements"),
-              h("span", {className: "detail-value", id: "flow-elements-count"}, elements.length)
-            ),
-            h("div", {className: "flow-detail-item"},
-              h("span", {className: "detail-label"}, "Triggering Object/Event"),
-              h("span", {className: "detail-value", id: "flow-trigger-object"}, flow.triggerObjectLabel || "—")
-            ),
-            h("div", {className: "flow-detail-item"},
-              h("span", {className: "detail-label"}, "Trigger"),
-              h("span", {className: "detail-value", id: "flow-trigger-type"}, flow.triggerType || "—")
-            )
-          )
+    return h("div", {className: "area"},
+      h("div", {className: "flow-info-section", role: "region", "aria-labelledby": "flow-info-title-text"},
+        h("h2", {className: "flow-info-title"},
+          h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
+          h("span", {className: "flow-info-title-text", id: "flow-info-title-text"}, "Flow Information")
         ),
-        h("div", {className: "flow-desc-row"},
-          h("div", {className: "flow-description-container collapsed"},
-            h("div", {className: "flow-desc-header"},
-              h("button", {
-                className: "description-toggle-btn",
-                type: "button",
-                "aria-expanded": "false",
-                onMouseDown: e => this.handleMouseDown(e),
-                onClick: e => { if (this.shouldIgnoreClick(e)) return; this.onToggleDescription(e); }
-              },
-              h("span", {className: "toggle-icon"}, "▼"),
-              h("span", {id: "toggle-label"}, "Show description")
+        h("div", {className: "flow-info-card compact"},
+          h("div", {className: "flow-header-row"},
+            h("div", {className: "flow-details-grid"},
+              h("div", {className: "flow-detail-item flow-label-item"},
+                h("span", {className: "detail-label"}, "Flow Label"),
+                h("span", {className: "detail-value"}, flow.label || "Unknown Label")
+              ),
+              h("div", {className: "flow-detail-item flow-apiname-item"},
+                h("span", {className: "detail-label"}, "Flow API Name"),
+                h("span", {className: "detail-value"}, flow.apiName || "Unknown API Name")
+              ),
+              h("div", {className: "flow-detail-item flow-status-item"},
+                h("span", {className: "detail-label"}, "Status"),
+                h("span", {
+                  className: `flow-status-badge ${flow.status?.toLowerCase()}`,
+                  role: "status",
+                  "aria-live": "polite",
+                  id: "flow-status-badge"
+                }, flow.status)
+              ),
+              h("div", {className: "flow-detail-item flow-type-item"},
+                h("span", {className: "detail-label"}, "Type"),
+                h("span", {className: "detail-value", id: "flow-type"}, flow.type)
+              ),
+              h("div", {className: "flow-detail-item flow-apiversion-item"},
+                h("span", {className: "detail-label"}, "API Version"),
+                h("span", {className: "detail-value", id: "flow-api-version"}, flow.xmlData?.apiVersion || "Unknown")
+              ),
+              h("div", {className: "flow-detail-item flow-elements-item"},
+                h("span", {className: "detail-label"}, "Elements"),
+                h("span", {className: "detail-value", id: "flow-elements-count"}, elements.length)
+              ),
+              h("div", {className: "flow-detail-item"},
+                h("span", {className: "detail-label"}, "Triggering Object/Event"),
+                h("span", {className: "detail-value", id: "flow-trigger-object"}, flow.triggerObjectLabel || "—")
+              ),
+              h("div", {className: "flow-detail-item"},
+                h("span", {className: "detail-label"}, "Trigger"),
+                h("span", {className: "detail-value", id: "flow-trigger-type"}, flow.triggerType || "—")
               )
-            ),
-            h("div", {
-              className: "flow-description clickable",
-              role: "button",
-              tabIndex: "0",
-              "aria-label": "Click to toggle description visibility",
-              dangerouslySetInnerHTML: {
-                __html: (flow.xmlData?.description || "No description provided").replace(/\n/g, "<br>")
-              }
-            })
+            )
+          ),
+          h("div", {className: "flow-desc-row"},
+            h("div", {className: "flow-description-container collapsed"},
+              h("div", {className: "flow-desc-header"},
+                h("button", {
+                  className: "description-toggle-btn",
+                  type: "button",
+                  "aria-expanded": "false",
+                  onMouseDown: e => this.handleMouseDown(e),
+                  onClick: e => { if (this.shouldIgnoreClick(e)) return; this.onToggleDescription(e); }
+                },
+                h("span", {className: "toggle-icon"}, "▼"),
+                h("span", {id: "toggle-label"}, "Show description")
+                )
+              ),
+              h("div", {
+                className: "flow-description clickable",
+                role: "button",
+                tabIndex: "0",
+                "aria-label": "Click to toggle description visibility",
+                dangerouslySetInnerHTML: {
+                  __html: (flow.xmlData?.description || "No description provided").replace(/\n/g, "<br>")
+                }
+              })
+            )
           )
         )
       )
@@ -954,7 +958,7 @@ class App extends React.Component {
 
   renderScanResults() {
     if (!this.flowScanner?.scanResults) {
-      return h("div", {className: "scan-results-section", style: {display: "none"}});
+      return h("div", {className: "area", style: {display: "none"}});
     }
     const results = this.flowScanner.scanResults;
     const totalIssues = results.length;
@@ -973,7 +977,7 @@ class App extends React.Component {
     if (totalIssues === 0) {
       // If no rules are enabled, show a warning and prompt to configure them.
       if (this.flowScanner.noRulesEnabledMessage) {
-        return h("div", {className: "scan-results-section"},
+        return h("div", {className: "area"},
           h("div", {className: "empty-state"},
             h("div", {className: "empty-icon"}, "⚠️"),
             h("h3", {}, "No Rules Enabled"),
@@ -983,7 +987,7 @@ class App extends React.Component {
         );
       }
       // Default "no issues found" state.
-      return h("div", {className: "scan-results-section"},
+      return h("div", {className: "area"},
         h("div", {className: "success-state"},
           h("div", {className: "success-icon"}, "✅"),
           h("h3", {}, "No Issues Found"),
@@ -1002,43 +1006,41 @@ class App extends React.Component {
       );
     }
     // Summary panel for when issues are found.
-    return h("div", {className: "scan-results-section", "aria-labelledby": "results-title", "aria-live": "polite"},
-      h("div", {className: "results-summary", role: "status", "aria-live": "polite"},
-        h("div", {className: "summary-body"},
-          h("h3", {className: "summary-title"},
-            h("span", {className: "results-icon"}, "📊"),
-            "Scan Results"
-          ),
-          h("div", {className: "summary-right-panel"},
-            h("div", {className: "summary-stats", role: "group", "aria-label": "Scan results summary"},
-              h("div", {className: "stat-item total", role: "group", "aria-label": "Total issues"},
-                h("span", {className: "stat-number", id: "total-issues-count"}, totalIssues),
-                h("span", {className: "stat-label"}, "Total")
-              ),
-              h("div", {className: "stat-item error", role: "group", "aria-label": "Error issues"},
-                h("span", {className: "stat-number", id: "error-issues-count"}, errorCount),
-                h("span", {className: "stat-label"}, "Errors")
-              ),
-              h("div", {className: "stat-item warning", role: "group", "aria-label": "Warning issues"},
-                h("span", {className: "stat-number", id: "warning-issues-count"}, warningCount),
-                h("span", {className: "stat-label"}, "Warnings")
-              ),
-              h("div", {className: "stat-item info", role: "group", "aria-label": "Information issues"},
-                h("span", {className: "stat-number", id: "info-issues-count"}, infoCount),
-                h("span", {className: "stat-label"}, "Info")
-              )
+    return h("div", {className: "area", "aria-labelledby": "results-title", "aria-live": "polite"},
+      h("div", {className: "summary-body", role: "status", "aria-live": "polite"},
+        h("h3", {className: "summary-title"},
+          h("span", {className: "results-icon"}, "📊"),
+          "Scan Results"
+        ),
+        h("div", {className: "summary-right-panel"},
+          h("div", {className: "summary-stats", role: "group", "aria-label": "Scan results summary"},
+            h("div", {className: "stat-item total", role: "group", "aria-label": "Total issues"},
+              h("span", {className: "stat-number", id: "total-issues-count"}, totalIssues),
+              h("span", {className: "stat-label"}, "Total")
             ),
-            h("div", {className: "summary-actions"},
-              h("button", {
-                className: "slds-button slds-button_neutral",
-                title: "Export Results",
-                onClick: this.onExportResults,
-                disabled: totalIssues === 0
-              }, "Export",
-              ),
-              h("button", {className: "slds-button slds-button_neutral", id: "expand-all-btn", onClick: this.onExpandAll}, "Expand All"),
-              h("button", {className: "slds-button slds-button_neutral", id: "collapse-all-btn", onClick: this.onCollapseAll}, "Collapse All")
+            h("div", {className: "stat-item error", role: "group", "aria-label": "Error issues"},
+              h("span", {className: "stat-number", id: "error-issues-count"}, errorCount),
+              h("span", {className: "stat-label"}, "Errors")
+            ),
+            h("div", {className: "stat-item warning", role: "group", "aria-label": "Warning issues"},
+              h("span", {className: "stat-number", id: "warning-issues-count"}, warningCount),
+              h("span", {className: "stat-label"}, "Warnings")
+            ),
+            h("div", {className: "stat-item info", role: "group", "aria-label": "Information issues"},
+              h("span", {className: "stat-number", id: "info-issues-count"}, infoCount),
+              h("span", {className: "stat-label"}, "Info")
             )
+          ),
+          h("div", {className: "summary-actions"},
+            h("button", {
+              className: "slds-button slds-button_neutral",
+              title: "Export Results",
+              onClick: this.onExportResults,
+              disabled: totalIssues === 0
+            }, "Export",
+            ),
+            h("button", {className: "slds-button slds-button_neutral", id: "expand-all-btn", onClick: this.onExpandAll}, "Expand All"),
+            h("button", {className: "slds-button slds-button_neutral", id: "collapse-all-btn", onClick: this.onCollapseAll}, "Collapse All")
           )
         )
       ),
@@ -1213,7 +1215,7 @@ class App extends React.Component {
       return null;
     }
 
-    return h("div", {className: "scan-results-section"},
+    return h("div", {className: "area"},
       h("div", {className: "empty-state"},
         h("div", {className: "empty-icon"}, "❌"),
         h("h3", {}, "Error Occurred"),
@@ -1252,9 +1254,8 @@ class App extends React.Component {
               h("a", {
                 href: "https://github.com/Lightning-Flow-Scanner/lightning-flow-scanner-core",
                 target: getLinkTarget(),
-                rel: "noopener noreferrer"
               }, "Lightning Flow Scanner"),
-              scannerVersion ? `\u00A0(core v${scannerVersion})` : null
+              ` (core v${scannerVersion})`
             )
           ),
           h("a", {href: "#", id: "help-btn", title: "Open Flow Scanner Options", onClick: this.onToggleHelp, target: getLinkTarget()},
@@ -1264,7 +1265,7 @@ class App extends React.Component {
           )
         )
       ),
-      h("div", {className: "area"},
+      h("div", {},
         this.renderFlowInfo(),
         this.state.error ? this.renderError() : this.renderScanResults()
       ),

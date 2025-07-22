@@ -59,7 +59,7 @@ body,
 body {
   font-family: "Salesforce Sans", Arial, sans-serif;
   font-size: 0.8125rem;
-  overflow: hidden;
+  overflow-y: auto;
   margin: 0;
   background-color: #b0c4df;
   background-image: url(images/lightning_blue_background.png);
@@ -324,14 +324,6 @@ button:hover,
   color: white;
 }
 
-.scan-results-section {
-  margin-top: 24px;
-  background: white;
-  border-radius: 12px;
-  border: 1px solid #e9ecef;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
 .results-title {
   display: flex;
   align-items: center;
@@ -343,16 +335,6 @@ button:hover,
 
 .results-icon {
   font-size: 1.125rem;
-}
-
-.results-summary {
-  background: #f3f4f6;
-  border-radius: 8px;
-  padding: 0;
-  margin-bottom: 16px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
 }
 
 .summary-title {
@@ -725,10 +707,6 @@ button:hover,
 }
 
 @media (max-width: 768px) {
-  .results-summary {
-    flex-direction: column;
-  }
-
   .summary-stats {
     gap: 8px;
   }
@@ -1337,9 +1315,20 @@ svg.icon:hover {
   margin-bottom: 0;
 }
 
+/* Give more space to flow label and API name since they can be long */
 .flow-label-item,
 .flow-apiname-item {
-  grid-column: span 2;
+  flex: 2 1 200px;
+  max-width: 400px;
+}
+
+/* Give less space to short fields like status, API version, elements count */
+.flow-status-item,
+.flow-apiversion-item,
+.flow-elements-item,
+.flow-type-item {
+  flex: 0.7 1 100px;
+  max-width: 150px;
 }
 
 .detail-label {

@@ -43,20 +43,46 @@
 }
 
 html,
-body {
+body,
+#root,
+[data-reactroot] {
   height: 100%;
-  width: 100%;
+  line-height: 1.5;
+  color: #16325c;
 }
+
+[data-reactroot] {
+  display: flex;
+  flex-direction: column;
+}
+
 body {
   font-family: "Salesforce Sans", Arial, sans-serif;
   font-size: 0.8125rem;
+  overflow: hidden;
   margin: 0;
+  background-color: #b0c4df;
+  background-image: url(images/lightning_blue_background.png);
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: 0px 48px;
+}
+
+#user-info {
+  background: #f7f9fb;
+  height: 48px;
   display: flex;
-  background-color: #b0c4df !important;
-  background-image: url(images/lightning_blue_background.png) !important;
-  background-repeat: no-repeat !important;
-  background-size: contain !important;
-  background-position: 0px 48px !important;
+  align-items: center;
+  padding: 0 12px;
+  flex-wrap: wrap;
+}
+
+#user-info h1 {
+  padding: 0 6px 0 10px;
+}
+
+#user-info span {
+  font-size: 1em;
 }
 
 .flow-scanner-app {
@@ -68,24 +94,6 @@ body {
 
 [hidden] {
   display: none !important;
-}
-
-#user-info {
-  background: #f7f9fb;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  padding: 0 12px; /* match Data Export header horizontal padding */
-  flex-wrap: wrap;
-  min-width: 0;
-}
-
-#user-info h1 {
-  padding: 0 6px 0 10px;
-}
-
-#user-info span {
-  font-size: 1em;
 }
 
 .sf-link {
@@ -117,16 +125,12 @@ body {
   align-items: center;
 }
 
-.main-container {
+.area {
   background-color: #f8f8f8;
   padding: 8px 12px;
   border-radius: 5px;
   border: 1px solid #dddbda;
   margin: 12px 12px 0 12px;
-  min-width: 0;
-  flex-grow: 1;
-  overflow: auto;
-  min-height: 0;
 }
 
 .flow-description-container {

@@ -1227,7 +1227,7 @@ class App extends React.Component {
     const sfLink = "https://" + sfHost;
     const scannerVersion = this.flowScanner?.flowScannerCore?.version || "";
 
-    return h("div", {className: "flow-scanner-app"},
+    return h("div", {},
       h("div", {id: "user-info", className: "slds-border_bottom"},
         // Salesforce home link
         h("a", {
@@ -1264,7 +1264,7 @@ class App extends React.Component {
           )
         )
       ),
-      h("div", {className: "main-container slds-card slds-m-around_small"},
+      h("div", {className: "area"},
         this.renderFlowInfo(),
         this.state.error ? this.renderError() : this.renderScanResults()
       ),

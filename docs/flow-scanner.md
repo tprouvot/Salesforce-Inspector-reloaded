@@ -11,6 +11,10 @@ The Flow Scanner automatically reviews your Salesforce Flows and checks them aga
 - Understand where issues are located and what they mean
 - Export scan results for documentation or sharing
 
+**Built on Lightning Flow Scanner Core**
+
+The Flow Scanner in Salesforce Inspector Reloaded is powered by the [Lightning Flow Scanner Core](https://github.com/Lightning-Flow-Scanner/lightning-flow-scanner-core), an open-source rule engine capable of conducting static analysis on Salesforce Lightning Flows, Process Builders, and Workflows. This core library provides the comprehensive rule definitions and scanning capabilities that make the Flow Scanner so powerful.
+
 ---
 
 ## How to Launch the Flow Scanner
@@ -96,11 +100,3 @@ You can export the scan results as a CSV file for documentation or sharing:
 - Review errors and warnings before deploying flows to production.
 - Use the export feature to document compliance or share findings with your team.
 - Keep the extension updated for the latest rules and improvements.
-
----
-
-## Need Help?
-
-- Visit the [Salesforce Inspector Reloaded documentation](./index.md) for more guides.
-- Check the Options page for more settings and customization.
-- For feedback or issues, see the extension's support or GitHub page. 

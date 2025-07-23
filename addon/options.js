@@ -5,6 +5,7 @@ import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
+import {getFlowScannerRules} from "./flow-rules.js";
 
 class Model {
 
@@ -256,7 +257,7 @@ class OptionsTabSelector extends React.Component {
           }
         ],
         content: [
-          // Placeholder content for now
+          {option: FlowScannerRules, props: {model: this.model}}
         ]
       },
       {
@@ -272,20 +273,23 @@ class OptionsTabSelector extends React.Component {
 
   handleCheckAll() {
     // Implementation to check all Flow Scanner rules
-    console.log("Check All Flow Scanner rules");
-    // TODO: Implement when Flow Scanner rules component is added
+    if (this.model.flowScannerRulesRef) {
+      this.model.flowScannerRulesRef.checkAllRules();
+    }
   }
 
   handleUncheckAll() {
     // Implementation to uncheck all Flow Scanner rules
-    console.log("Uncheck All Flow Scanner rules");
-    // TODO: Implement when Flow Scanner rules component is added
+    if (this.model.flowScannerRulesRef) {
+      this.model.flowScannerRulesRef.uncheckAllRules();
+    }
   }
 
   handleResetToDefaults() {
     // Implementation to reset Flow Scanner rules to defaults
-    console.log("Reset Flow Scanner rules to defaults");
-    // TODO: Implement when Flow Scanner rules component is added
+    if (this.model.flowScannerRulesRef) {
+      this.model.flowScannerRulesRef.resetToDefaults();
+    }
   }
 
   onTabSelect(e) {
@@ -515,6 +519,13 @@ class Option extends React.Component {
     this.placeholder = props.placeholder;
     this.actionButton = props.actionButton;
     this.inputSize = props.inputSize || "3";
+
+    // Enhanced properties
+    this.enhancedTitle = props.enhancedTitle;
+    this.badge = props.badge; // {label: "Beta", type: "beta|custom"}
+    this.severity = props.severity; // "info|warning|error"
+    this.description = props.description; // Enhanced description display
+
     let value = localStorage.getItem(this.key);
     if (props.default !== undefined && value === null) {
       value = props.type != "text" ? JSON.stringify(props.default) : props.default;
@@ -538,61 +549,144 @@ class Option extends React.Component {
     localStorage.setItem(this.key, inputValue);
   }
 
-  render() {
-    const id = this.key;
+  renderInputControl(id, isEnhanced = false) {
     const isTextOrNumber = this.type == "text" || this.type == "number";
     const isTextArea = this.type == "textarea";
     const isSelect = this.type == "select";
+    const isToggle = this.type == "toggle";
 
-    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
-        h("span", {}, this.title,
-          h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
-        )
-      ),
-      this.actionButton && h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control"},
-          h("button", {
-            className: "slds-button slds-button_brand",
-            onClick: (e) => this.actionButton.onClick(e, this.props.model),
-            title: this.actionButton.title || "Action"
-          }, this.actionButton.label || "Action")
-        )
-      ),
-      isTextOrNumber ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-          h("input", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
-        )
-      ))
-      : isTextArea ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-          h("textarea", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
-        )
-      ))
-      : isSelect ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-          h("select", {
-            className: "slds-input slds-m-right_small",
-            value: this.state[this.key],
-            onChange: this.onChange
-          },
-          this.props.options.map(opt =>
-            h("option", {key: opt.value, value: opt.value}, opt.label)
-          ))
-        )
-      ))
-      : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
-        h("label", {className: "slds-checkbox_toggle slds-grid"},
-          h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
-          h("span", {id, className: "slds-checkbox_faux_container center-label"},
-            h("span", {className: "slds-checkbox_faux"}),
-            h("span", {className: "slds-checkbox_on"}, "Enabled"),
-            h("span", {className: "slds-checkbox_off"}, "Disabled"),
+    if (isToggle) {
+      return isEnhanced ? null : (
+        h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
+          h("label", {className: "slds-checkbox_toggle slds-grid"},
+            h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
+            h("span", {id, className: "slds-checkbox_faux_container center-label"},
+              h("span", {className: "slds-checkbox_faux"}),
+              h("span", {className: "slds-checkbox_on"}, "Enabled"),
+              h("span", {className: "slds-checkbox_off"}, "Disabled"),
+            )
           )
         )
+      );
+    }
+
+    const inputElement = isTextOrNumber ? h("input", {
+      type: this.type,
+      id,
+      className: isEnhanced ? "slds-input enhanced-option-input" : "slds-input",
+      placeholder: this.placeholder,
+      value: nullToEmptyString(this.state[this.key]),
+      onChange: this.onChange
+    })
+      : isTextArea ? h("textarea", {
+        id,
+        className: isEnhanced ? "slds-input enhanced-option-input" : "slds-input",
+        placeholder: this.placeholder,
+        value: nullToEmptyString(this.state[this.key]),
+        onChange: this.onChange
+      })
+      : isSelect ? h("select", {
+        className: isEnhanced ? "slds-input enhanced-option-input" : "slds-input slds-m-right_small",
+        value: this.state[this.key],
+        onChange: this.onChange
+      },
+      this.props.options.map(opt =>
+        h("option", {key: opt.value, value: opt.value}, opt.label)
       ))
-    );
+      : null;
+
+    if (isEnhanced) {
+      return inputElement;
+    } else {
+      // Standard layout wrapping
+      return h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          inputElement
+        )
+      );
+    }
+  }
+
+  render() {
+    const id = this.key;
+    const isToggle = this.type == "toggle";
+    const isEnhanced = this.enhancedTitle || this.badge || this.severity || this.description;
+
+    if (isEnhanced) {
+      // Enhanced layout
+      return h("div", {className: "enhanced-option-row"},
+        // Main content area
+        h("div", {className: "enhanced-option-content"},
+          // Enhanced title with badge
+          h("div", {className: "enhanced-option-title"},
+            h("h4", {className: "enhanced-option-title-text"}, this.enhancedTitle || this.title),
+            this.badge && h("span", {
+              className: `${this.badge.type || "beta"}-badge`
+            }, this.badge.label)
+          ),
+
+          // Description on the same line
+          this.description && h("span", {className: "enhanced-option-description"}, this.description)
+        ),
+
+        // Controls on the right
+        h("div", {className: "enhanced-option-controls"},
+          // Severity selector
+          this.severity && h("select", {
+            className: `severity-select severity-${this.severity}`,
+            value: this.severity,
+            onChange: (e) => {
+              const newSeverity = e.target.value;
+              this.severity = newSeverity;
+              this.setState({}); // Force re-render
+              if (this.props.onSeverityChange) {
+                this.props.onSeverityChange(this.key, newSeverity);
+              }
+            }
+          },
+          h("option", {value: "info"}, "Info"),
+          h("option", {value: "warning"}, "Warning"),
+          h("option", {value: "error"}, "Error")
+          ),
+
+          // Toggle control for all enhanced options (positioned at the end)
+          isToggle && h("div", {className: "slds-form-element__control"},
+            h("label", {className: "slds-checkbox_toggle slds-grid"},
+              h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
+              h("span", {id, className: "slds-checkbox_faux_container center-label"},
+                h("span", {className: "slds-checkbox_faux"}),
+                h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                h("span", {className: "slds-checkbox_off"}, "Disabled"),
+              )
+            )
+          ),
+
+          // Input controls for non-toggle types
+          !isToggle && this.renderInputControl(id, true)
+        )
+      );
+    } else {
+      // Standard layout
+      return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+        h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
+          h("span", {}, this.title,
+            h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
+          )
+        ),
+        this.actionButton && h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+          h("div", {className: "slds-form-element__control"},
+            h("button", {
+              className: "slds-button slds-button_brand",
+              onClick: (e) => this.actionButton.onClick(e, this.props.model),
+              title: this.actionButton.title || "Action"
+            }, this.actionButton.label || "Action")
+          )
+        ),
+        !isToggle ? this.renderInputControl(id, false)
+        : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+        this.renderInputControl(id, false))
+      );
+    }
   }
 }
 
@@ -1227,6 +1321,134 @@ class CustomShortcuts extends React.Component {
           ))
         )
       )
+    );
+  }
+}
+
+class FlowScannerRules extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      rules: [],
+      loading: true
+    };
+    this.loadRules = this.loadRules.bind(this);
+    this.onRuleChange = this.onRuleChange.bind(this);
+  }
+
+  componentDidMount() {
+    this.loadRules();
+    // Set up reference for parent component interaction
+    if (this.props.model) {
+      this.props.model.flowScannerRulesRef = this;
+    }
+  }
+
+  // Methods for external control by action buttons
+  checkAllRules() {
+    const updatedRules = this.state.rules.map(rule => ({...rule, checked: true}));
+    this.setState({rules: updatedRules});
+    localStorage.setItem("flowScannerRules", JSON.stringify(updatedRules));
+  }
+
+  uncheckAllRules() {
+    const updatedRules = this.state.rules.map(rule => ({...rule, checked: false}));
+    this.setState({rules: updatedRules});
+    localStorage.setItem("flowScannerRules", JSON.stringify(updatedRules));
+  }
+
+  resetToDefaults() {
+    // Remove stored rules to force reload with defaults
+    localStorage.removeItem("flowScannerRules");
+    this.loadRules();
+  }
+
+  async loadRules() {
+    try {
+      // Try to load the actual flow-scanner-core if available
+      let flowScannerCore = null;
+
+      if (typeof lightningflowscanner !== "undefined") {
+        flowScannerCore = lightningflowscanner;
+        const rules = getFlowScannerRules(flowScannerCore);
+        this.setState({rules, loading: false});
+      } else {
+        // No flow scanner core available
+        this.setState({rules: [], loading: false});
+      }
+    } catch (error) {
+      console.error("Error loading Flow Scanner rules:", error);
+      this.setState({rules: [], loading: false});
+    }
+  }
+
+  onRuleChange(ruleName, field, value) {
+    const updatedRules = this.state.rules.map(rule => {
+      if (rule.name === ruleName) {
+        if (field === "checked") {
+          return {...rule, checked: value};
+        } else if (field === "severity") {
+          return {...rule, severity: value};
+        } else if (field === "config") {
+          return {...rule, config: {...rule.config, ...value}};
+        }
+      }
+      return rule;
+    });
+
+    this.setState({rules: updatedRules});
+
+    // Save to localStorage
+    localStorage.setItem("flowScannerRules", JSON.stringify(updatedRules));
+  }
+
+  render() {
+    const {rules, loading} = this.state;
+
+    if (loading) {
+      return h("div", {className: "slds-text-align_center slds-p-vertical_large"},
+        h("div", {className: "slds-spinner slds-spinner_medium"},
+          h("div", {className: "slds-spinner__dot-a"}),
+          h("div", {className: "slds-spinner__dot-b"})
+        ),
+        h("p", {className: "slds-m-top_small"}, "Loading Flow Scanner rules...")
+      );
+    }
+
+    if (rules.length === 0) {
+      return h("div", {className: "slds-text-align_center slds-p-vertical_large"},
+        h("p", {}, "No Flow Scanner rules available. Please ensure the Flow Scanner core library is loaded.")
+      );
+    }
+
+    return h("div", {className: "flow-scanner-rules-container"},
+      rules.map(rule => {
+        // Determine badge
+        let badge = null;
+        if (rule.isBeta) {
+          badge = {label: "Beta", type: "beta"};
+        } else if (rule.isCustom) {
+          badge = {label: "Custom", type: "custom"};
+        }
+
+        // Create enhanced option props
+        const optionProps = {
+          type: "toggle",
+          enhancedTitle: rule.label,
+          badge,
+          severity: rule.severity || "info",
+          description: rule.description,
+          storageKey: `flowScannerRule_${rule.name}`,
+          key: `flowScannerRule_${rule.name}`,
+          default: rule.checked !== undefined ? rule.checked : true,
+          onSeverityChange: (key, newSeverity) => {
+            this.onRuleChange(rule.name, "severity", newSeverity);
+          }
+        };
+
+        return h(Option, optionProps);
+      })
     );
   }
 }

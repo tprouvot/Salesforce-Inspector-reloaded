@@ -512,6 +512,7 @@ button,
   padding: 0 8px;
   height: 32px;
 }
+
 .severity-error {
   color: #c23934;
   background: #fdeaea;
@@ -522,7 +523,7 @@ button,
   background: #fff8e1;
   border-color: #ffb75d;
 }
-.severity-info {
+.severity-note {
   color: #0070d2;
   background: #e3f2fd;
   border-color: #0070d2;
@@ -546,4 +547,66 @@ button,
     gap: 4px;
     margin-left: 0;
   }
+}
+
+/* Enhanced Option Component Styles */
+.enhanced-option-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 12px;
+  min-height: 48px;
+  background: #fff;
+  transition: background 0.12s;
+}
+
+.enhanced-option-row:hover {
+  background: #f7faff;
+}
+
+.enhanced-option-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.enhanced-option-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.enhanced-option-title-text {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.875rem;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.enhanced-option-description {
+  font-size: 0.83rem;
+  color: #6c757d;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.enhanced-option-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.enhanced-option-input {
+  min-width: 120px;
 }

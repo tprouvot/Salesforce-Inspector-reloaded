@@ -1663,9 +1663,9 @@ class UserDetails extends React.PureComponent {
                       onClick: (e) => handleUserIdCopy(e, user.Id),
                       style: {marginLeft: '3px'}
                     },
-                    h("svg", {className: "slds-icon slds-icon_small", viewBox: "0 0 52 52", style: {height: '13px'}},
-                      h("use", {xlinkHref: `./images/copy_to_clipboard.svg`})
-                    ),
+                    h("svg", {className: "slds-button__icon"},
+                      h("use", {xlinkHref: "symbols.svg#copy"})
+                    )
                   ),
                 )
               ),

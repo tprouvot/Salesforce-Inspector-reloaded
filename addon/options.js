@@ -512,6 +512,10 @@ class Option extends React.Component {
     super(props);
     this.onChange = this.onChange.bind(this);
     this.onChangeToggle = this.onChangeToggle.bind(this);
+    this.onChangeConfig = this.onChangeConfig.bind(this);
+    this.toggleDescriptionExpanded = this.toggleDescriptionExpanded.bind(this);
+    this.checkForTruncation = this.checkForTruncation.bind(this);
+    this.descriptionRef = {current: null};
     this.key = props.storageKey;
     this.type = props.type;
     this.label = props.label;
@@ -526,14 +530,35 @@ class Option extends React.Component {
     this.severity = props.severity; // "info|warning|error"
     this.description = props.description; // Enhanced description display
 
+    // Configurable rule properties
+    this.isConfigurable = props.isConfigurable;
+    this.configType = props.configType;
+    this.configStorageKey = props.configStorageKey;
+    this.onConfigChange = props.onConfigChange;
+
     let value = localStorage.getItem(this.key);
     if (props.default !== undefined && value === null) {
       value = props.type != "text" ? JSON.stringify(props.default) : props.default;
       localStorage.setItem(this.key, value);
     }
-    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value)
+
+    // Initialize config value if configurable
+    let configValue = null;
+    if (this.isConfigurable && this.configStorageKey) {
+      configValue = localStorage.getItem(this.configStorageKey) || props.configValue;
+      if (configValue !== null && !localStorage.getItem(this.configStorageKey)) {
+        localStorage.setItem(this.configStorageKey, configValue.toString());
+      }
+    }
+
+    this.state = {
+      [this.key]: this.type == "toggle" ? !!JSON.parse(value)
       : this.type == "select" ? (value || props.default || props.options?.[0]?.value)
-      : value};
+      : value,
+      configValue,
+      descriptionExpanded: false,
+      showExpandButton: false
+    };
     this.title = props.title;
   }
 
@@ -543,10 +568,42 @@ class Option extends React.Component {
     localStorage.setItem(this.key, JSON.stringify(enabled));
   }
 
+  onChangeConfig(e) {
+    const configValue = e.target.value;
+    this.setState({configValue});
+    if (this.configStorageKey) {
+      localStorage.setItem(this.configStorageKey, configValue);
+    }
+    if (this.onConfigChange) {
+      this.onConfigChange(this.key, configValue);
+    }
+  }
+
   onChange(e) {
     let inputValue = e.target.value;
     this.setState({[this.key]: inputValue});
     localStorage.setItem(this.key, inputValue);
+  }
+
+  toggleDescriptionExpanded() {
+    this.setState(prevState => ({
+      descriptionExpanded: !prevState.descriptionExpanded
+    }));
+  }
+
+  isDescriptionTruncated() {
+    if (!this.descriptionRef.current || !this.description) {
+      return false;
+    }
+    const element = this.descriptionRef.current;
+    return element.scrollWidth > element.clientWidth;
+  }
+
+  checkForTruncation() {
+    const isTruncated = this.isDescriptionTruncated();
+    if (this.state.showExpandButton !== isTruncated) {
+      this.setState({showExpandButton: isTruncated});
+    }
   }
 
   renderInputControl(id, isEnhanced = false) {
@@ -607,6 +664,28 @@ class Option extends React.Component {
     }
   }
 
+  renderConfigInput() {
+    if (!this.isConfigurable || !this.configType) {
+      return null;
+    }
+
+    const configId = this.configStorageKey || `${this.key}_config`;
+    const inputType = this.configType === "threshold" ? "number" : "text";
+    const placeholder = this.configType === "threshold" ? "Enter threshold value"
+      : this.configType === "expression" ? "Enter regex pattern"
+      : "Enter configuration value";
+
+    return h("input", {
+      type: inputType,
+      id: configId,
+      className: "slds-input enhanced-option-input",
+      placeholder,
+      value: this.state.configValue || "",
+      onChange: this.onChangeConfig,
+      title: `Configure ${this.enhancedTitle || this.title} (${this.configType})`
+    });
+  }
+
   render() {
     const id = this.key;
     const isToggle = this.type == "toggle";
@@ -625,12 +704,35 @@ class Option extends React.Component {
             }, this.badge.label)
           ),
 
-          // Description on the same line
-          this.description && h("span", {className: "enhanced-option-description"}, this.description)
+          // Description on the same line with expand functionality
+          this.description && h("div", {className: "enhanced-option-description-container"},
+            h("span", {
+              className: `enhanced-option-description ${this.state.descriptionExpanded ? "expanded" : ""}`,
+              ref: (el) => {
+                this.descriptionRef.current = el;
+                if (el) {
+                  setTimeout(() => this.checkForTruncation(), 0);
+                }
+              }
+            }, this.description),
+            // Expand icon (only show when text is truncated)
+            this.state.showExpandButton && h("button", {
+              className: "enhanced-option-expand-btn",
+              onClick: this.toggleDescriptionExpanded,
+              title: this.state.descriptionExpanded ? "Collapse description" : "Expand description"
+            },
+            h("svg", {className: `expand-icon ${this.state.descriptionExpanded ? "expanded" : ""}`, viewBox: "0 0 24 24", width: "16", height: "16"},
+              h("path", {d: "M7 10l5 5 5-5z"})
+            )
+            )
+          )
         ),
 
         // Controls on the right
         h("div", {className: "enhanced-option-controls"},
+          // Configuration input (for configurable rules)
+          this.renderConfigInput(),
+
           // Severity selector
           this.severity && h("select", {
             className: `severity-select severity-${this.severity}`,
@@ -670,7 +772,7 @@ class Option extends React.Component {
       return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
         h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
           h("span", {}, this.title,
-            h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
+            h(Tooltip, {tooltip: this.tooltip, idKey: this.key || `option_${this.title || "unnamed"}`})
           )
         ),
         this.actionButton && h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
@@ -808,7 +910,7 @@ class FaviconOption extends React.Component {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "Custom favicon (org specific)",
-          h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
+          h(Tooltip, {tooltip: this.tooltip, idKey: this.key || "favicon_option"})
         )
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
@@ -1331,7 +1433,8 @@ class FlowScannerRules extends React.Component {
     super(props);
     this.state = {
       rules: [],
-      loading: true
+      loading: true,
+      resetCounter: 0
     };
     this.loadRules = this.loadRules.bind(this);
     this.onRuleChange = this.onRuleChange.bind(this);
@@ -1346,21 +1449,49 @@ class FlowScannerRules extends React.Component {
   }
 
   // Methods for external control by action buttons
-  checkAllRules() {
-    const updatedRules = this.state.rules.map(rule => ({...rule, checked: true}));
-    this.setState({rules: updatedRules});
+  setAllRulesChecked(checked) {
+    const updatedRules = this.state.rules.map(rule => ({...rule, checked}));
+    this.setState({
+      rules: updatedRules,
+      resetCounter: this.state.resetCounter + 1
+    });
     localStorage.setItem("flowScannerRules", JSON.stringify(updatedRules));
+
+    // Also update individual rule localStorage keys
+    updatedRules.forEach(rule => {
+      localStorage.setItem(`flowScannerRule_${rule.name}`, JSON.stringify(checked));
+    });
+  }
+
+  checkAllRules() {
+    this.setAllRulesChecked(true);
   }
 
   uncheckAllRules() {
-    const updatedRules = this.state.rules.map(rule => ({...rule, checked: false}));
-    this.setState({rules: updatedRules});
-    localStorage.setItem("flowScannerRules", JSON.stringify(updatedRules));
+    this.setAllRulesChecked(false);
   }
 
   resetToDefaults() {
     // Remove stored rules to force reload with defaults
     localStorage.removeItem("flowScannerRules");
+
+    // Remove all individual rule configuration values
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("flowScannerRuleConfig_")) {
+        keysToRemove.push(key);
+      }
+    }
+
+    // Remove all config keys
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    // Increment reset counter to force component recreation
+    this.setState(prevState => ({
+      resetCounter: prevState.resetCounter + 1
+    }));
+
     this.loadRules();
   }
 
@@ -1391,7 +1522,9 @@ class FlowScannerRules extends React.Component {
         } else if (field === "severity") {
           return {...rule, severity: value};
         } else if (field === "config") {
-          return {...rule, config: {...rule.config, ...value}};
+          // Handle both string and object config values
+          const configValue = typeof value === "string" ? value : {...rule.config, ...value};
+          return {...rule, config: configValue};
         }
       }
       return rule;
@@ -1423,32 +1556,64 @@ class FlowScannerRules extends React.Component {
     }
 
     return h("div", {className: "flow-scanner-rules-container"},
-      rules.map(rule => {
+      rules
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .map(rule => {
         // Determine badge
-        let badge = null;
-        if (rule.isBeta) {
-          badge = {label: "Beta", type: "beta"};
-        } else if (rule.isCustom) {
-          badge = {label: "Custom", type: "custom"};
-        }
-
-        // Create enhanced option props
-        const optionProps = {
-          type: "toggle",
-          enhancedTitle: rule.label,
-          badge,
-          severity: rule.severity || "info",
-          description: rule.description,
-          storageKey: `flowScannerRule_${rule.name}`,
-          key: `flowScannerRule_${rule.name}`,
-          default: rule.checked !== undefined ? rule.checked : true,
-          onSeverityChange: (key, newSeverity) => {
-            this.onRuleChange(rule.name, "severity", newSeverity);
+          let badge = null;
+          if (rule.isBeta) {
+            badge = {label: "Beta", type: "beta"};
+          } else if (rule.isCustom) {
+            badge = {label: "Custom", type: "custom"};
           }
-        };
 
-        return h(Option, optionProps);
-      })
+          // Resolve config value: use stored customization or default
+          let resolvedConfigValue = null;
+          if (rule.isConfigurable) {
+            const configStorageKey = `flowScannerRuleConfig_${rule.name}`;
+            const storedValue = localStorage.getItem(configStorageKey);
+            if (storedValue !== null) {
+              resolvedConfigValue = storedValue;
+            } else if (rule.defaultValue !== undefined && rule.defaultValue !== null) {
+              resolvedConfigValue = rule.defaultValue;
+            } else if (rule.config !== undefined && rule.config !== null) {
+              // Extract the specific config value based on configType
+              if (rule.configType === "expression" && rule.config.expression !== undefined) {
+                resolvedConfigValue = rule.config.expression;
+              } else if (rule.configType === "threshold" && rule.config.threshold !== undefined) {
+                resolvedConfigValue = rule.config.threshold;
+              } else {
+                // Fallback to the entire config object (shouldn't happen with well-formed rules)
+                resolvedConfigValue = rule.config;
+              }
+            }
+          }
+
+          // Create enhanced option props
+          const optionProps = {
+            type: "toggle",
+            enhancedTitle: rule.label,
+            badge,
+            severity: rule.severity || "info",
+            description: rule.description,
+            storageKey: `flowScannerRule_${rule.name}`,
+            key: `flowScannerRule_${rule.name}_${this.state.resetCounter}`,
+            default: rule.checked !== undefined ? rule.checked : true,
+            // Rule configuration properties
+            isConfigurable: rule.isConfigurable,
+            configType: rule.configType,
+            configValue: resolvedConfigValue,
+            configStorageKey: `flowScannerRuleConfig_${rule.name}`,
+            onSeverityChange: (key, newSeverity) => {
+              this.onRuleChange(rule.name, "severity", newSeverity);
+            },
+            onConfigChange: (key, newConfig) => {
+              this.onRuleChange(rule.name, "config", newConfig);
+            }
+          };
+
+          return h(Option, optionProps);
+        })
     );
   }
 }

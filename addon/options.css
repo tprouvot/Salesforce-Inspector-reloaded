@@ -569,7 +569,7 @@ button,
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
 }
 
@@ -578,6 +578,7 @@ button,
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  align-self: flex-start;
 }
 
 .enhanced-option-title-text {
@@ -586,6 +587,14 @@ button,
   font-size: 0.875rem;
   margin: 0;
   white-space: nowrap;
+}
+
+.enhanced-option-description-container {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .enhanced-option-description {
@@ -597,6 +606,42 @@ button,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: all 0.2s ease;
+}
+
+.enhanced-option-description.expanded {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: initial;
+  max-height: none;
+}
+
+.enhanced-option-expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.enhanced-option-expand-btn:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.expand-icon {
+  transition: transform 0.2s ease;
+  fill: #6c757d;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
 }
 
 .enhanced-option-controls {
@@ -609,4 +654,5 @@ button,
 
 .enhanced-option-input {
   min-width: 120px;
+  max-width: 180px;
 }

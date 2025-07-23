@@ -2,8 +2,6 @@ export const flowScannerKnownConfigurableRules = {
   APIVersion: {configType: "threshold", defaultValue: 50},
   FlowName: {configType: "expression", defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+"},
   CyclomaticComplexity: {configType: "threshold", defaultValue: 25},
-  AutoLayout: {configType: "enabled", defaultValue: true},
-  ProcessBuilder: {configType: "enabled", defaultValue: true}
 };
 
 export function getFlowScannerRules(flowScannerCore) {
@@ -90,4 +88,4 @@ export function getFlowScannerRules(flowScannerCore) {
   }
 
   return merged;
-} 
+}

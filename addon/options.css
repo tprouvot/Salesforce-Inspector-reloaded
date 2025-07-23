@@ -305,13 +305,11 @@ button,
 }
 
 .flow-scanner-section {
-  background: #f4f8fb;
-  border: 1.5px solid #b3c6e0;
   border-radius: 7px;
   padding: 12px 12px 8px 12px;
   margin-top: 18px;
   margin-bottom: 1.2rem;
-  box-shadow: 0 2px 8px rgba(44,62,80,0.04);
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.04);
 }
 .flow-scanner-desc {
   font-size: 0.98rem;
@@ -393,7 +391,7 @@ button,
   border-radius: 0.25rem;
   font-size: 0.82rem;
   padding: 6px 12px;
-  box-shadow: 0 2px 8px rgba(44,62,80,0.12);
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.12);
   z-index: 2000;
   white-space: pre-line;
   min-width: 180px;
@@ -416,7 +414,9 @@ button,
 }
 
 @media (max-width: 600px) {
-  .info-tooltip, .info-tooltip.info-tooltip-right, .info-tooltip.info-tooltip-below {
+  .info-tooltip,
+  .info-tooltip.info-tooltip-right,
+  .info-tooltip.info-tooltip-below {
     min-width: 120px;
     max-width: 90vw;
     font-size: 0.78rem;
@@ -428,7 +428,7 @@ button,
 }
 
 .info-tooltip::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 100%;
   left: 50%;
@@ -446,7 +446,8 @@ button,
 .regex-help {
   margin-left: 4px;
 }
-.help-icon, .regex-help {
+.help-icon,
+.regex-help {
   background: none !important;
   border: none !important;
   color: inherit !important;
@@ -456,7 +457,8 @@ button,
   line-height: normal !important;
 }
 
-.help-icon, .regex-help {
+.help-icon,
+.regex-help {
   cursor: help;
   color: #706e6b;
   margin-left: 4px;
@@ -506,7 +508,7 @@ button,
   margin-left: 12px;
   font-weight: bold;
   border-radius: 4px;
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
   padding: 0 8px;
   height: 32px;
 }

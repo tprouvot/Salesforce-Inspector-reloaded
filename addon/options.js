@@ -1,135 +1,396 @@
-/* eslint-disable indent, react/no-deprecated */
-/* global React ReactDOM initButton */
-/* eslint react/prop-types: 0 */
+/* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
 import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.js";
-import {getFlowScannerRules} from "./flow-rules.js";
+/* global initButton */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
 
-// --- PropTypes for React 15 ---
-const PropTypes = React.PropTypes;
+class Model {
 
-// --- Generic Helpers ---
-const h = React.createElement;
+  constructor(sfHost) {
+    this.sfHost = sfHost;
+    this.sfLink = "https://" + this.sfHost;
+    this.userInfo = "...";
+    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
+      //change background color for production
+      document.body.classList.add("prod");
+    }
 
-// Move normalizeSeverity here so it is available everywhere
-const normalizeSeverity = (sev, direction = "ui") => {
-  if (direction === "ui") return sev === "note" ? "info" : sev;
-  if (direction === "storage") return sev === "info" ? "note" : sev;
-  return sev;
-};
+    this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { });
+    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
+      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
+    }));
+  }
 
-class Option extends React.Component {
+  /**
+   * Notify React that we changed something, so it will rerender the view.
+   * Should only be called once at the end of an event or asynchronous operation, since each call can take some time.
+   * All event listeners (functions starting with "on") should call this function if they update the model.
+   * Asynchronous operations should use the spinFor function, which will call this function after the asynchronous operation completes.
+   * Other functions should not call this function, since they are called by a function that does.
+   * @param cb A function to be called once React has processed the update.
+   */
+  didUpdate(cb) {
+    if (this.reactCallback) {
+      this.reactCallback(cb);
+    }
+    if (this.testCallback) {
+      this.testCallback();
+    }
+  }
 
+  /**
+   * Show the spinner while waiting for a promise.
+   * didUpdate() must be called after calling spinFor.
+   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
+   * @param promise The promise to wait for.
+   */
+  spinFor(promise) {
+    this.spinnerCount++;
+    promise
+      .catch(err => {
+        console.error("spinFor", err);
+      })
+      .then(() => {
+        this.spinnerCount--;
+        this.didUpdate();
+      })
+      .catch(err => console.log("error handling failed", err));
+  }
+
+}
+
+class OptionsTabSelector extends React.Component {
   constructor(props) {
     super(props);
-    this.onChange = this.onChange.bind(this);
-    this.onChangeToggle = this.onChangeToggle.bind(this);
-    this.key = props.storageKey;
-    this.type = props.type;
-    this.label = props.label;
-    this.tooltip = props.tooltip;
-    this.placeholder = props.placeholder;
-    this.actionButton = props.actionButton;
-    this.inputSize = props.inputSize || "3";
-    let value = localStorage.getItem(this.key);
-    if (props.default !== undefined && value === null) {
-      value = props.type !== "text" ? JSON.stringify(props.default) : props.default;
-      localStorage.setItem(this.key, value);
-    }
-    this.state = {[this.key]: this.type === "toggle" ? !!JSON.parse(value)
-      : this.type === "select" ? (value || props.default || props.options?.[0]?.value)
-        : value};
-    this.title = props.title;
+    this.model = props.model;
+    this.sfHost = this.model.sfHost;
+
+    // Get the tab from the URL or default to 1
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTabId = parseInt(urlParams.get("selectedTab")) || 1;
+
+    this.state = {
+      selectedTabId: initialTabId
+    };
+
+    this.tabs = [
+      {
+        id: 1,
+        tabTitle: "User Experience",
+        content: [
+          {option: ArrowButtonOption, props: {key: 1}},
+          {option: Option, props: {type: "toggle", title: "Flow Scrollability", key: "scrollOnFlowBuilder"}},
+          {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
+          {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab", tooltip: "Enabling this option will prevent Lightning Navigation (faster loading) to be used"}},
+          {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Searchable metadata from Shortcut tab",
+              key: "metadataShortcutSearchOptions",
+              checkboxes: [
+                {label: "Flows", name: "flows", checked: true},
+                {label: "Profiles", name: "profiles", checked: true},
+                {label: "PermissionSets", name: "permissionSets", checked: true},
+                {label: "Communities", name: "networks", checked: true},
+                {label: "Apex Classes", name: "classes", checked: false}
+              ]}
+          },
+          {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Show buttons",
+              key: "hideButtonsOption",
+              checkboxes: [
+                {label: "New", name: "new", checked: true},
+                {label: "Explore API", name: "explore-api", checked: true},
+                {label: "Org Limits", name: "org-limits", checked: true},
+                {label: "Options", name: "options", checked: true},
+                {label: "Generate Access Token", name: "generate-token", checked: true}
+              ]}
+          },
+          {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
+          {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
+          {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
+          {option: Option, props: {type: "text", title: "PROD Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the PROD banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
+          {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Default Popup Tab",
+              key: "defaultPopupTab",
+              unique: true,
+              checkboxes: [
+                {label: "Object", name: "sobject", checked: true},
+                {label: "Users", name: "users"},
+                {label: "Shortcuts", name: "shortcuts"},
+                {label: "Org", name: "org"}
+              ]}
+          },
+        ]
+      },
+      {
+        id: 2,
+        tabTitle: "API",
+        content: [
+          {option: APIVersionOption, props: {key: 1}},
+          {option: Option,
+            props: {type: "text",
+              title: "API Consumer Key",
+              placeholder: "Consumer Key",
+              key: this.sfHost + "_clientId",
+              inputSize: "5",
+              actionButton: {
+                label: "Delete Token",
+                title: "Delete the connected app generated token",
+                onClick: (e, model) => {
+                  localStorage.removeItem(model.sfHost + "_clientId");
+                  e.target.disabled = true;
+                }
+              }}},
+          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders"}}
+        ]
+      },
+      {
+        id: 3,
+        tabTitle: "Data Export",
+        content: [
+          {option: CSVSeparatorOption, props: {key: 1}},
+          {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
+          {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
+          {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Show buttons",
+              key: "hideExportButtonsOption",
+              checkboxes: [
+                {label: "Delete Records", name: "delete", checked: true},
+                {label: "Export Query", name: "export-query", checked: false},
+                {label: "Agentforce", name: "export-agentforce", checked: false}
+              ]}
+          },
+          {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
+          {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
+          {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
+          {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100}},
+          {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50}},
+          {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}},
+          {option: Option, props: {type: "toggle", title: "Enable Query Typo Fix", key: "enableQueryTypoFix", default: false, tooltip: "Enable automation that removes typos from query input"}},
+          {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}}
+        ]
+      },
+      {
+        id: 4,
+        tabTitle: "Data Import",
+        content: [
+          {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200"}},
+          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6"}},
+          {option: Option, props: {type: "toggle", title: "Grey Out Skipped Columns in Data Import", key: "greyOutSkippedColumns", tooltip: "Control if skipped columns are greyed out or not in data import"}}
+        ]
+      },
+      {
+        id: 5,
+        tabTitle: "Field Creator",
+        content: [
+          {option: Option,
+            props: {
+              type: "select",
+              title: "Field Naming Convention",
+              key: "fieldNamingConvention",
+              default: "pascal",
+              tooltip: "Controls how API names are auto-generated from field labels. PascalCase: 'My Field' -> 'MyField'. Underscores: 'My Field' -> 'My_Field'",
+              options: [
+                {label: "PascalCase", value: "pascal"},
+                {label: "Underscores", value: "underscore"}
+              ]
+            }}
+        ]
+      },
+      {
+        id: 6,
+        tabTitle: "Enable Logs",
+        content: [
+          {option: enableLogsOption, props: {key: 1}}
+        ]
+      },
+      {
+        id: 7,
+        tabTitle: "Metadata",
+        content: [
+          {option: Option, props: {type: "toggle", title: "Include managed packages metadata", key: "includeManagedMetadata"}},
+          {option: Option,
+            props: {type: "select",
+              title: "Sort metadata components",
+              key: "sortMetadataBy",
+              default: "fullName",
+              options: [
+                {label: "A-Z", value: "fullName"},
+                {label: "Last Modified Date DESC", value: "lastModifiedDate"}
+              ]
+            }
+          },
+          {option: Option, props: {type: "toggle", title: "Use legacy version", key: "useLegacyDlMetadata", default: false}},
+        ]
+      },
+      {
+        id: 8,
+        tabTitle: "Flow Scanner",
+        title: "Enabled Rules (v4.49.0)",
+        description: "Configure which Flow Scanner rules are enabled and their settings. Only enabled rules will be used when scanning flows.",
+        descriptionTooltip: "Flow Scanner rules help identify potential issues, best practices violations, and improvements opportunities in your Salesforce Flows. Each rule can be individually enabled or disabled, and some rules have configurable parameters like thresholds or expressions.",
+        actionButtons: [
+          {
+            type: "brand",
+            label: "Check All",
+            title: "Enable all Flow Scanner rules",
+            method: this.handleCheckAll.bind(this)
+          },
+          {
+            type: "neutral",
+            label: "Uncheck All",
+            title: "Disable all Flow Scanner rules",
+            method: this.handleUncheckAll.bind(this)
+          },
+          {
+            type: "neutral",
+            label: "Reset to Defaults",
+            title: "Reset all rules to their default settings",
+            method: this.handleResetToDefaults.bind(this)
+          }
+        ],
+        content: [
+          // Placeholder content for now
+        ]
+      },
+      {
+        id: 9,
+        tabTitle: "Custom Shortcuts",
+        content: [
+          {option: CustomShortcuts, props: {}}
+        ]
+      }
+    ];
+    this.onTabSelect = this.onTabSelect.bind(this);
   }
 
-  onChangeToggle(e) {
-    const enabled = e.target.checked;
-    this.setState({[this.key]: enabled});
-    localStorage.setItem(this.key, JSON.stringify(enabled));
+  handleCheckAll() {
+    // Implementation to check all Flow Scanner rules
+    console.log("Check All Flow Scanner rules");
+    // TODO: Implement when Flow Scanner rules component is added
   }
 
-  onChange(e) {
-    let inputValue = e.target.value;
-    this.setState({[this.key]: inputValue});
-    localStorage.setItem(this.key, inputValue);
+  handleUncheckAll() {
+    // Implementation to uncheck all Flow Scanner rules
+    console.log("Uncheck All Flow Scanner rules");
+    // TODO: Implement when Flow Scanner rules component is added
+  }
+
+  handleResetToDefaults() {
+    // Implementation to reset Flow Scanner rules to defaults
+    console.log("Reset Flow Scanner rules to defaults");
+    // TODO: Implement when Flow Scanner rules component is added
+  }
+
+  onTabSelect(e) {
+    e.preventDefault();
+    const selectedTabId = e.target.tabIndex;
+
+    // Update the URL with the selected tab
+    const url = new URL(window.location);
+    url.searchParams.set("selectedTab", selectedTabId);
+    window.history.pushState({}, "", url);
+
+    this.setState({selectedTabId});
   }
 
   render() {
-    const id = this.key;
-    const isTextOrNumber = this.type === "text" || this.type === "number";
-    const isTextArea = this.type === "textarea";
-    const isSelect = this.type === "select";
-
-    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
-        h("span", {}, this.title,
-          h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
-        )
+    return h("div", {className: "slds-tabs_default"},
+      h("ul", {className: "options-tab-container slds-tabs_default__nav", role: "tablist"},
+        this.tabs.map((tab) => h(OptionsTab, {key: tab.id, title: tab.tabTitle || tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect}))
       ),
-      this.actionButton && h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control"},
-          h("button", {
-            className: "slds-button slds-button_brand",
-            onClick: (e) => this.actionButton.onClick(e, this.props.model),
-            title: this.actionButton.title || "Action"
-          }, this.actionButton.label || "Action")
-        )
-      ),
-      isTextOrNumber ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-          h("input", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
-        )
-      ))
-        : isTextArea ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-          h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-            h("textarea", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
-          )
-        ))
-          : isSelect ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-            h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-              h("select", {
-                className: "slds-input slds-m-right_small",
-                value: this.state[this.key],
-                onChange: this.onChange
-              },
-              this.props.options.map(opt =>
-                h("option", {key: opt.value, value: opt.value}, opt.label)
-              ))
-            )
-          ))
-            : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-              h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
-                h("label", {className: "slds-checkbox_toggle slds-grid"},
-                  h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
-                  h("span", {id, className: "slds-checkbox_faux_container center-label"},
-                    h("span", {className: "slds-checkbox_faux"}),
-                    h("span", {className: "slds-checkbox_on"}, "Enabled"),
-                    h("span", {className: "slds-checkbox_off"}, "Disabled"),
-                  )
-                )
-              ))
+      this.tabs.map((tab) => h(OptionsContainer, {
+        key: tab.id,
+        id: tab.id,
+        title: tab.title,
+        description: tab.description,
+        descriptionTooltip: tab.descriptionTooltip,
+        actionButtons: tab.actionButtons,
+        content: tab.content,
+        selectedTabId: this.state.selectedTabId,
+        model: this.model
+      }))
     );
   }
 }
 
-Option.propTypes = {
-  storageKey: PropTypes.string.isRequired,
-  type: PropTypes.string.isRequired,
-  label: PropTypes.string,
-  tooltip: PropTypes.string,
-  placeholder: PropTypes.string,
-  actionButton: PropTypes.object,
-  inputSize: PropTypes.string,
-  default: PropTypes.any,
-  title: PropTypes.string,
-  options: PropTypes.array,
-  model: PropTypes.object
-};
+class OptionsTab extends React.Component {
 
-// --- Tab-Specific Components (in tab order) ---
+  getClass() {
+    return "options-tab slds-text-align_center slds-tabs_default__item" + (this.props.selectedTabId === this.props.id ? " slds-is-active" : "");
+  }
+
+  render() {
+    return h("li", {key: this.props.id, className: this.getClass(), title: this.props.title, tabIndex: this.props.id, role: "presentation", onClick: this.props.onTabSelect},
+      h("a", {className: "slds-tabs_default__link", href: "#", role: "tab", tabIndex: this.props.id, id: "tab-default-" + this.props.id + "__item"},
+        this.props.title)
+    );
+  }
+}
+
+class OptionsContainer extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+  }
+
+  getClass() {
+    return (this.props.selectedTabId === this.props.id ? "slds-show" : " slds-hide");
+  }
+
+  renderTabHeader() {
+    const {title, description, descriptionTooltip, actionButtons} = this.props;
+
+    if (!title && !description && !actionButtons) {
+      return null;
+    }
+
+    return h("div", {className: "slds-p-around_medium slds-border_bottom"},
+      title && h("h2", {className: "slds-text-heading_large slds-text-title_bold slds-m-bottom_x-small"}, title),
+      description && h("div", {className: "slds-grid slds-grid_align-spread slds-m-bottom_medium"},
+        h("div", {className: "slds-col slds-size_10-of-12"},
+          h("p", {className: "slds-text-body_regular slds-text-color_weak"}, description,
+            descriptionTooltip && h(Tooltip, {tooltip: descriptionTooltip, idKey: `${this.props.id}_description`})
+          )
+        )
+      ),
+      actionButtons && actionButtons.length > 0 && h("div", {className: "slds-button-group", role: "group"},
+        actionButtons.map((button, index) =>
+          h("button", {
+            key: index,
+            className: `slds-button ${button.type === "brand" ? "slds-button_brand" : "slds-button_neutral"}`,
+            onClick: button.method,
+            title: button.title || button.label
+          }, button.label)
+        )
+      )
+    );
+  }
+
+  render() {
+    return h("div", {id: this.props.id, key: this.props.id, className: this.getClass(), role: "tabpanel"},
+      this.renderTabHeader(),
+      h("div", {},
+        this.props.content.map((c, index) =>
+          h(c.option, {
+            key: c.props?.key || `option-${index}`,
+            storageKey: c.props?.key,
+            ...c.props,
+            model: this.model
+          })
+        )
+      )
+    );
+  }
+
+}
 
 class ArrowButtonOption extends React.Component {
 
@@ -217,7 +478,7 @@ class APIVersionOption extends React.Component {
     }
   }
 
-  onRestoreDefaultApiVersion() {
+  onRestoreDefaultApiVersion(){
     localStorage.removeItem("apiVersion");
     this.setState({apiVersion: defaultApiVersion});
   }
@@ -228,9 +489,9 @@ class APIVersionOption extends React.Component {
           h(Tooltip, {tooltip: "Update api version", idKey: "APIVersion"})
         ),
       ),
-      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid s-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
       h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        this.state.apiVersion !== defaultApiVersion ? h("div", {className: "slds-form-element__control"},
+        this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-form-element__control"},
           h("button", {className: "slds-button slds-button_brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
         ) : null,
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
@@ -240,33 +501,97 @@ class APIVersionOption extends React.Component {
     );
   }
 }
-APIVersionOption.propTypes = {
-  model: PropTypes.object
-};
 
-class CSVSeparatorOption extends React.Component {
+class Option extends React.Component {
 
   constructor(props) {
     super(props);
-    this.onChangeCSVSeparator = this.onChangeCSVSeparator.bind(this);
-    this.state = {csvSeparator: localStorage.getItem("csvSeparator") ? localStorage.getItem("csvSeparator") : ","};
+    this.onChange = this.onChange.bind(this);
+    this.onChangeToggle = this.onChangeToggle.bind(this);
+    this.key = props.storageKey;
+    this.type = props.type;
+    this.label = props.label;
+    this.tooltip = props.tooltip;
+    this.placeholder = props.placeholder;
+    this.actionButton = props.actionButton;
+    this.inputSize = props.inputSize || "3";
+    let value = localStorage.getItem(this.key);
+    if (props.default !== undefined && value === null) {
+      value = props.type != "text" ? JSON.stringify(props.default) : props.default;
+      localStorage.setItem(this.key, value);
+    }
+    this.state = {[this.key]: this.type == "toggle" ? !!JSON.parse(value)
+      : this.type == "select" ? (value || props.default || props.options?.[0]?.value)
+      : value};
+    this.title = props.title;
   }
 
-  onChangeCSVSeparator(e) {
-    let csvSeparator = e.target.value;
-    this.setState({csvSeparator});
-    localStorage.setItem("csvSeparator", csvSeparator);
+  onChangeToggle(e) {
+    const enabled = e.target.checked;
+    this.setState({[this.key]: enabled});
+    localStorage.setItem(this.key, JSON.stringify(enabled));
+  }
+
+  onChange(e) {
+    let inputValue = e.target.value;
+    this.setState({[this.key]: inputValue});
+    localStorage.setItem(this.key, inputValue);
   }
 
   render() {
+    const id = this.key;
+    const isTextOrNumber = this.type == "text" || this.type == "number";
+    const isTextArea = this.type == "textarea";
+    const isSelect = this.type == "select";
+
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
-        h("span", {}, "CSV Separator")
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
+        h("span", {}, this.title,
+          h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
+        )
       ),
-      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align_center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align_center slds-gutters_small"},
-        h("input", {type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: nullToEmptyString(this.state.csvSeparator), onChange: this.onChangeCSVSeparator})
-      )
+      this.actionButton && h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control"},
+          h("button", {
+            className: "slds-button slds-button_brand",
+            onClick: (e) => this.actionButton.onClick(e, this.props.model),
+            title: this.actionButton.title || "Action"
+          }, this.actionButton.label || "Action")
+        )
+      ),
+      isTextOrNumber ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          h("input", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
+        )
+      ))
+      : isTextArea ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          h("textarea", {type: this.type, id, className: "slds-input", placeholder: this.placeholder, value: nullToEmptyString(this.state[this.key]), onChange: this.onChange})
+        )
+      ))
+      : isSelect ? (h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
+          h("select", {
+            className: "slds-input slds-m-right_small",
+            value: this.state[this.key],
+            onChange: this.onChange
+          },
+          this.props.options.map(opt =>
+            h("option", {key: opt.value, value: opt.value}, opt.label)
+          ))
+        )
+      ))
+      : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
+      h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
+        h("label", {className: "slds-checkbox_toggle slds-grid"},
+          h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
+          h("span", {id, className: "slds-checkbox_faux_container center-label"},
+            h("span", {className: "slds-checkbox_faux"}),
+            h("span", {className: "slds-checkbox_on"}, "Enabled"),
+            h("span", {className: "slds-checkbox_off"}, "Disabled"),
+          )
+        )
+      ))
     );
   }
 }
@@ -276,7 +601,6 @@ class FaviconOption extends React.Component {
   constructor(props) {
     super(props);
     this.sfHost = props.model.sfHost;
-    this.storageKey = props.storageKey;
     this.onChangeFavicon = this.onChangeFavicon.bind(this);
     this.populateFaviconColors = this.populateFaviconColors.bind(this);
     this.onToogleSmartMode = this.onToogleSmartMode.bind(this);
@@ -390,7 +714,7 @@ class FaviconOption extends React.Component {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
         h("span", {}, "Custom favicon (org specific)",
-          h(Tooltip, {tooltip: this.tooltip, idKey: this.storageKey})
+          h(Tooltip, {tooltip: this.tooltip, idKey: this.key})
         )
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
@@ -421,11 +745,6 @@ class FaviconOption extends React.Component {
     );
   }
 }
-FaviconOption.propTypes = {
-  model: PropTypes.object,
-  storageKey: PropTypes.string,
-  tooltip: PropTypes.string
-};
 
 class MultiCheckboxButtonGroup extends React.Component {
 
@@ -490,12 +809,34 @@ class MultiCheckboxButtonGroup extends React.Component {
     );
   }
 }
-MultiCheckboxButtonGroup.propTypes = {
-  title: PropTypes.string,
-  storageKey: PropTypes.string,
-  unique: PropTypes.bool,
-  checkboxes: PropTypes.array
-};
+
+
+class CSVSeparatorOption extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.onChangeCSVSeparator = this.onChangeCSVSeparator.bind(this);
+    this.state = {csvSeparator: localStorage.getItem("csvSeparator") ? localStorage.getItem("csvSeparator") : ","};
+  }
+
+  onChangeCSVSeparator(e) {
+    let csvSeparator = e.target.value;
+    this.setState({csvSeparator});
+    localStorage.setItem("csvSeparator", csvSeparator);
+  }
+
+  render() {
+    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+        h("span", {}, "CSV Separator")
+      ),
+      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align_center slds-gutters_small"}),
+      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align_center slds-gutters_small"},
+        h("input", {type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: nullToEmptyString(this.state.csvSeparator), onChange: this.onChangeCSVSeparator})
+      )
+    );
+  }
+}
 
 class enableLogsOption extends React.Component {
 
@@ -545,9 +886,6 @@ class enableLogsOption extends React.Component {
     );
   }
 }
-enableLogsOption.propTypes = {
-  model: PropTypes.object
-};
 
 class CustomShortcuts extends React.Component {
 
@@ -892,654 +1230,8 @@ class CustomShortcuts extends React.Component {
     );
   }
 }
-CustomShortcuts.propTypes = {
-  model: PropTypes.object
-};
 
-class FlowScannerRulesOption extends React.Component {
-
-  constructor(props) {
-    super(props);
-    this.handleRuleToggle = this.handleRuleToggle.bind(this);
-    this.handleConfigChange = this.handleConfigChange.bind(this);
-    this.handleCheckAll = this.handleCheckAll.bind(this);
-    this.handleUncheckAll = this.handleUncheckAll.bind(this);
-    this.handleResetToDefaults = this.handleResetToDefaults.bind(this);
-    this.handleSeverityChange = this.handleSeverityChange.bind(this);
-    this.loadAndMergeRules = this.loadAndMergeRules.bind(this);
-    this.saveRules = this.saveRules.bind(this);
-
-    this.title = props.title;
-    this.key = props.storageKey || "flowScannerRules";
-
-    this.state = {
-      rules: [],
-      isLoaded: false,
-      error: null
-    };
-  }
-
-  componentDidMount() {
-    this.waitForCoreAndLoadRules();
-  }
-
-  waitForCoreAndLoadRules() {
-    const maxRetries = 10;
-    let attempt = 0;
-    const interval = setInterval(() => {
-      if (window.lightningflowscanner) {
-        clearInterval(interval);
-        this.migrateConfiguration();
-        this.loadAndMergeRules();
-      } else if (attempt++ > maxRetries) {
-        clearInterval(interval);
-        this.setState({
-          isLoaded: true,
-          error: "Flow Scanner Core library failed to load. Please try reloading the page."
-        });
-      }
-    }, 200);
-  }
-
-  componentWillUnmount() {
-  }
-
-  migrateConfiguration() {
-    // This method should be implemented to migrate any existing configuration
-    // from previous versions to the new format.
-    // For example, you might want to convert old rules to the new format.
-    // This is a placeholder and should be replaced with actual migration logic.
-  }
-
-  loadAndMergeRules() {
-    try {
-      const mergedRules = getFlowScannerRules(window.lightningflowscanner);
-      this.setState({rules: mergedRules, isLoaded: true, error: null});
-    } catch (e) {
-      this.setState({isLoaded: true, error: `Failed to load rules: ${e.message}`});
-    }
-  }
-
-  handleRuleToggle(ruleName) {
-    const updatedRules = this.state.rules.map(rule => (rule.name === ruleName) ? {...rule, checked: !rule.checked} : rule);
-    this.setState({rules: updatedRules});
-    this.saveRules(updatedRules);
-  }
-
-  handleConfigChange(ruleName, configKey, value) {
-    const updatedRules = this.state.rules.map(rule => {
-      if (rule.name === ruleName) {
-        return {...rule, config: {...rule.config, [configKey]: value}};
-      }
-      return rule;
-    });
-    this.setState({rules: updatedRules});
-    this.saveRules(updatedRules);
-  }
-
-  handleCheckAll() {
-    const updatedRules = this.state.rules.map(rule => ({...rule, checked: true}));
-    this.setState({rules: updatedRules});
-    this.saveRules(updatedRules);
-  }
-
-  handleUncheckAll() {
-    const updatedRules = this.state.rules.map(rule => ({...rule, checked: false}));
-    this.setState({rules: updatedRules});
-    this.saveRules(updatedRules);
-  }
-
-  handleResetToDefaults() {
-    if (window.confirm("This will reset all default rules to their original settings. Are you sure?")) {
-      localStorage.removeItem("flowScannerRules");
-      this.loadAndMergeRules();
-    }
-  }
-
-  handleSeverityChange(ruleName, value) {
-    const updatedRules = this.state.rules.map(rule => (rule.name === ruleName) ? {...rule, severity: value} : rule);
-    this.setState({rules: updatedRules});
-    this.saveRules(updatedRules);
-  }
-
-  saveRules(rules) {
-    const defaultRules = rules.filter(r => !r.isCustom);
-    localStorage.setItem("flowScannerRules", JSON.stringify(defaultRules));
-  }
-
-  getRuleDescription(ruleName) {
-    const descriptions = {
-      "APIVersion": "Checks if the flow uses an outdated API version.",
-      "AutoLayout": "Recommends using Auto-Layout mode.",
-      "CopyAPIName": "Detects copied elements with default API names.",
-      "CyclomaticComplexity": "Warns when flow complexity is too high.",
-      "DMLStatementInLoop": "Identifies DML operations inside loops.",
-      "DuplicateDMLOperation": "Detects potential duplicate DML operations.",
-      "FlowDescription": "Ensures flows have descriptions.",
-      "FlowName": "Validates flow naming conventions.",
-      "GetRecordAllFields": "Warns against using 'Get All Fields'.",
-      "HardcodedId": "Detects hardcoded Salesforce IDs.",
-      "HardcodedUrl": "Finds hardcoded URLs.",
-      "InactiveFlow": "Identifies inactive flows.",
-      "MissingFaultPath": "Checks for missing error handling paths.",
-      "MissingNullHandler": "Ensures Get Records have null handling.",
-      "ProcessBuilder": "Recommends migrating from Process Builder.",
-      "RecursiveAfterUpdate": "Warns about potential recursion.",
-      "SameRecordFieldUpdates": "Suggests before-save flows for updates.",
-      "SOQLQueryInLoop": "Identifies SOQL queries inside loops.",
-      "TriggerOrder": "Recommends setting trigger order.",
-      "UnconnectedElement": "Finds unused flow elements.",
-      "UnsafeRunningContext": "Warns about system mode flows.",
-      "UnusedVariable": "Identifies unused variables.",
-      "ActionCallsInLoop": "Identifies action calls inside loops (Beta)."
-    };
-    return descriptions[ruleName] || "Checks for potential issues and best practices.";
-  }
-
-  renderConfigInput(rule) {
-    if (!rule.configurable) return null;
-    const configValue = rule.config && rule.config[rule.configType] ? rule.config[rule.configType] : rule.defaultValue;
-    if (rule.configType === "expression") {
-      return h("div", {className: "rule-config-right"},
-        h("input", {
-          type: "text",
-          className: "slds-input slds-input_small",
-          value: configValue,
-          onChange: e => this.handleConfigChange(rule.name, rule.configType, e.target.value),
-          placeholder: rule.defaultValue || "",
-          title: `Configuration for ${rule.label}`,
-          "aria-label": `${rule.label} configuration`
-        }),
-        h(Tooltip, {
-          tooltip: h("span", {}, `Configuration for ${rule.label}. `, h("a", {href: "https://regex101.com/", target: "_blank", rel: "noopener noreferrer"}, "Regex help")),
-          idKey: `config-help-${rule.name}`
-        })
-      );
-    }
-    if (rule.configType === "threshold") {
-      return h("div", {className: "rule-config-right"},
-        h("input", {
-          type: "number",
-          className: "slds-input slds-input_small",
-          value: configValue,
-          onChange: e => this.handleConfigChange(rule.name, rule.configType, parseInt(e.target.value) || rule.defaultValue),
-          min: "1",
-          max: "100",
-          title: `Threshold for ${rule.label}`,
-          "aria-label": `${rule.label} threshold`
-        }),
-        h(Tooltip, {
-          tooltip: rule.name === "APIVersion"
-            ? "Minimum API version required for flows. Flows with lower API versions will trigger this rule."
-            : `Threshold value for ${rule.label}. Higher values are more permissive.`,
-          idKey: `config-help-${rule.name}`
-        })
-      );
-    }
-    return null;
-  }
-
-  render() {
-    const {title, scannerVersion} = this.props;
-    const {rules, isLoaded, error} = this.state;
-
-    if (!isLoaded) {
-      return h("div", {className: "option-group flow-scanner-section"},
-        h("h3", {}, title),
-        h("div", {className: "slds-box slds-box_small slds-m-around_medium"},
-          h("div", {className: "slds-spinner_container"},
-            h("div", {className: "slds-spinner slds-spinner_small", role: "status"},
-              h("span", {className: "slds-assistive-text"}, "Loading..."),
-              h("div", {className: "slds-spinner__dot-a"}),
-              h("div", {className: "slds-spinner__dot-b"})
-            )
-          ),
-          h("p", {style: {marginLeft: "30px"}}, "Loading Flow Scanner rules...")
-        )
-      );
-    }
-
-    if (error) {
-      return h("div", {className: "option-group flow-scanner-section"},
-        h("h3", {}, title),
-        h("div", {className: "slds-box slds-box_small slds-theme_error slds-m-around_medium"}, h("p", {}, error))
-      );
-    }
-
-    // Sort rules alphabetically by label
-    const sortedRules = [...rules].sort((a, b) => a.label.localeCompare(b.label));
-
-    const versionDisplay = scannerVersion ? ` (v${scannerVersion})` : "";
-    return h("div", {className: "option-group flow-scanner-section"},
-      h("h3", {}, `${title}${versionDisplay}`),
-      h("div", {className: "flow-scanner-desc slds-grid slds-align_absolute-center"},
-        "Configure which Flow Scanner rules are enabled and their settings. Only enabled rules will be used when scanning flows. ",
-        h(Tooltip, {tooltip: "Flow Scanner analyzes Salesforce Flows for best practices, anti-patterns, and common mistakes. Toggle rules on or off and configure their settings as needed. For more information, see the documentation.", idKey: "section-help-tip"})
-      ),
-      h("div", {className: "rules-actions-toolbar", role: "toolbar", "aria-label": "Bulk actions"},
-        h("button", {className: "slds-button slds-button_brand slds-button_small", onClick: this.handleCheckAll, tabIndex: 0, "aria-label": "Enable all rules"}, "Check All"),
-        h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: this.handleUncheckAll, tabIndex: 0, "aria-label": "Disable all rules"}, "Uncheck All"),
-        h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: this.handleResetToDefaults, tabIndex: 0, "aria-label": "Reset rules to defaults"}, "Reset to Defaults")
-      ),
-      h("div", {className: "rules-container"},
-        sortedRules.map((rule) =>
-          h("div", {key: rule.name, className: `rule-row-horizontal${rule.configurable ? " rule-row-highlight" : ""}`, tabIndex: 0, "aria-label": `${rule.label}: ${rule.description}`},
-            h("div", {className: "rule-toggle-container"},
-              h("label", {className: "slds-checkbox_toggle slds-grid"},
-                h("input", {type: "checkbox", "aria-describedby": `desc-${rule.name}`, checked: rule.checked, onChange: () => this.handleRuleToggle(rule.name), tabIndex: 0}),
-                h("span", {className: "slds-checkbox_faux_container", "aria-live": "assertive"},
-                  h("span", {className: "slds-checkbox_faux"}),
-                  h("span", {className: "slds-checkbox_on"}, "Enabled"),
-                  h("span", {className: "slds-checkbox_off"}, "Disabled")
-                )
-              )
-            ),
-            h("div", {className: "rule-main-info"},
-              h("div", {className: "rule-name-horizontal"},
-                rule.label,
-                rule.isBeta && h("span", {className: "beta-badge"}, "BETA")
-              ),
-              h("div", {className: "rule-description-horizontal", id: `desc-${rule.name}`, title: rule.description}, rule.description)
-            ),
-            h("div", {className: "rule-config-group"},
-              this.renderConfigInput(rule),
-              h("label", {htmlFor: `severity-${rule.name}`, className: "slds-form-element__label", style: {marginRight: 4}}, "Severity:"),
-              h("select", {id: `severity-${rule.name}`, value: normalizeSeverity(rule.severity || "error", "ui"), onChange: e => this.handleSeverityChange(rule.name, normalizeSeverity(e.target.value, "storage")), className: `severity-select severity-${normalizeSeverity(rule.severity || "error", "ui")}`, style: {marginLeft: 2, minWidth: 80}},
-                h("option", {value: "error"}, "Error"),
-                h("option", {value: "warning"}, "Warning"),
-                h("option", {value: "info"}, "Info")
-              )
-            )
-          )
-        )
-      )
-    );
-  }
-}
-FlowScannerRulesOption.propTypes = {
-  title: PropTypes.string,
-  storageKey: PropTypes.string,
-  checkboxes: PropTypes.array,
-  error: PropTypes.string,
-  scannerVersion: PropTypes.string
-};
-
-// --- Tab Container and Selector ---
-
-class OptionsTab extends React.Component {
-
-  getClass() {
-    return "options-tab slds-text-align_center slds-tabs_default__item" + (this.props.selectedTabId === this.props.id ? " slds-is-active" : "");
-  }
-
-  render() {
-    return h("li", {key: this.props.id, className: this.getClass(), title: this.props.title, tabIndex: this.props.id, role: "presentation", onClick: this.props.onTabSelect},
-      h("a", {className: "slds-tabs_default__link", href: "#", role: "tab", tabIndex: this.props.id, id: "tab-default-" + this.props.id + "__item"},
-        this.props.title)
-    );
-  }
-}
-OptionsTab.propTypes = {
-  id: PropTypes.number,
-  selectedTabId: PropTypes.number,
-  title: PropTypes.string,
-  onTabSelect: PropTypes.func
-};
-
-class OptionsContainer extends React.Component {
-
-  constructor(props) {
-    super(props);
-    this.model = props.model;
-  }
-
-  getClass() {
-    return (this.props.selectedTabId === this.props.id ? "slds-show" : " slds-hide");
-  }
-
-  render() {
-    return h("div", {id: this.props.id, key: this.props.id, className: this.getClass(), role: "tabpanel"},
-      this.props.content.map((c, index) =>
-        h(c.option, {
-          key: c.props?.key || `option-${index}`,
-          storageKey: c.props?.key,
-          ...c.props,
-          model: this.model
-        })
-      )
-    );
-  }
-
-}
-OptionsContainer.propTypes = {
-  id: PropTypes.number,
-  selectedTabId: PropTypes.number,
-  content: PropTypes.array,
-  model: PropTypes.object
-};
-
-class OptionsTabSelector extends React.Component {
-  constructor(props) {
-    super(props);
-    this.model = props.model;
-    this.sfHost = this.model.sfHost;
-
-    // Bind methods first
-    this.onTabSelect = this.onTabSelect.bind(this);
-
-    // Get the tab from the URL or default to 1
-    const urlParams = new URLSearchParams(window.location.search);
-    const initialTabId = parseInt(urlParams.get("selectedTab")) || 1;
-
-    this.state = {
-      selectedTabId: initialTabId,
-      flowScannerError: null,
-    };
-
-    // Initialize rule checkboxes
-    let ruleCheckboxes = [];
-    let scannerVersion = null;
-    if (window.lightningflowscanner) {
-      if (window.lightningflowscanner.version) {
-        scannerVersion = window.lightningflowscanner.version;
-      }
-      if (typeof window.lightningflowscanner.getRules === "function") {
-        try {
-          const rules = window.lightningflowscanner.getRules();
-          const betaRules = (typeof window.lightningflowscanner.getBetaRules === "function")
-            ? window.lightningflowscanner.getBetaRules().map(r => ({...r, isBeta: true}))
-            : [];
-
-          const allRules = [...rules, ...betaRules];
-
-          ruleCheckboxes = allRules.map(rule => ({
-            label: rule.label || rule.name,
-            name: rule.name,
-            checked: true,
-            configurable: rule.isConfigurable || false,
-            configType: rule.configType || null,
-            defaultValue: rule.defaultValue || null,
-            severity: rule.defaultSeverity || rule.severity || "error",
-            description: rule.description || "",
-            isBeta: rule.isBeta || false,
-            config: rule.defaultValue ? {[rule.configType]: rule.defaultValue} : {}
-          }));
-        } catch (error) {
-          console.error("Error getting rules from lightningflowscanner:", error);
-          this.state.flowScannerError = "Failed to load Flow Scanner rules from the core library. Please check the console for details.";
-        }
-      } else {
-        console.error("lightningflowscanner.getRules is not a function.");
-        this.state.flowScannerError = "Flow Scanner core library is not available or outdated. The scanner functionality will be disabled.";
-      }
-    } else {
-      console.error("lightningflowscanner core library not available.");
-      this.state.flowScannerError = "Flow Scanner core library is not available. The scanner functionality will be disabled.";
-    }
-
-    this.tabs = [
-      {
-        id: 1,
-        tabTitle: "Tab1",
-        title: "User Experience",
-        content: [
-          {option: ArrowButtonOption, props: {key: 1}},
-          {option: Option, props: {type: "toggle", title: "Flow Scrollability", key: "scrollOnFlowBuilder"}},
-          {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
-          {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab", tooltip: "Enabling this option will prevent Lightning Navigation (faster loading) to be used"}},
-          {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
-          {option: MultiCheckboxButtonGroup,
-            props: {title: "Searchable metadata from Shortcut tab",
-              key: "metadataShortcutSearchOptions",
-              checkboxes: [
-                {label: "Flows", name: "flows", checked: true},
-                {label: "Profiles", name: "profiles", checked: true},
-                {label: "PermissionSets", name: "permissionSets", checked: true},
-                {label: "Communities", name: "networks", checked: true},
-                {label: "Apex Classes", name: "classes", checked: false}
-              ]}
-          },
-          {option: Option, props: {type: "toggle", title: "Popup Dark theme", key: "popupDarkTheme"}},
-          {option: MultiCheckboxButtonGroup,
-            props: {title: "Show buttons",
-              key: "hideButtonsOption",
-              checkboxes: [
-                {label: "New", name: "new", checked: true},
-                {label: "Explore API", name: "explore-api", checked: true},
-                {label: "Org Limits", name: "org-limits", checked: true},
-                {label: "Options", name: "options", checked: true},
-                {label: "Generate Access Token", name: "generate-token", checked: true}
-              ]}
-          },
-          {option: FaviconOption, props: {storageKey: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
-          {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
-          {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
-          {option: Option, props: {type: "text", title: "PROD Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the PROD banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
-          {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
-          {option: MultiCheckboxButtonGroup,
-            props: {title: "Default Popup Tab",
-              key: "defaultPopupTab",
-              unique: true,
-              checkboxes: [
-                {label: "Object", name: "sobject", checked: true},
-                {label: "Users", name: "users"},
-                {label: "Shortcuts", name: "shortcuts"},
-                {label: "Org", name: "org"}
-              ]}
-          },
-        ]
-      },
-      {
-        id: 2,
-        tabTitle: "Tab2",
-        title: "API",
-        content: [
-          {option: APIVersionOption, props: {key: 1}},
-          {option: Option,
-            props: {type: "text",
-              title: "API Consumer Key",
-              placeholder: "Consumer Key",
-              key: this.sfHost + "_clientId",
-              inputSize: "5",
-              actionButton: {
-                label: "Delete Token",
-                title: "Delete the connected app generated token",
-                onClick: (e, model) => {
-                  localStorage.removeItem(model.sfHost + "_clientId");
-                  e.target.disabled = true;
-                }
-              }}},
-          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders"}}
-        ]
-      },
-      {
-        id: 3,
-        tabTitle: "Tab3",
-        title: "Data Export",
-        content: [
-          {option: CSVSeparatorOption, props: {key: 1}},
-          {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
-          {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
-          {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
-          {option: MultiCheckboxButtonGroup,
-            props: {title: "Show buttons",
-              key: "hideExportButtonsOption",
-              checkboxes: [
-                {label: "Delete Records", name: "delete", checked: true},
-                {label: "Export Query", name: "export-query", checked: false},
-                {label: "Agentforce", name: "export-agentforce", checked: false}
-              ]}
-          },
-          {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
-          {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
-          {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
-          {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100}},
-          {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50}},
-          {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}},
-          {option: Option, props: {type: "toggle", title: "Enable Query Typo Fix", key: "enableQueryTypoFix", default: false, tooltip: "Enable automation that removes typos from query input"}},
-          {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}}
-        ]
-      },
-      {
-        id: 4,
-        tabTitle: "Tab4",
-        title: "Data Import",
-        content: [
-          {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200"}},
-          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6"}},
-          {option: Option, props: {type: "toggle", title: "Grey Out Skipped Columns in Data Import", key: "greyOutSkippedColumns", tooltip: "Control if skipped columns are greyed out or not in data import"}}
-        ]
-      },
-      {
-        id: 5,
-        tabTitle: "Tab5",
-        title: "Field Creator",
-        content: [
-          {option: Option,
-            props: {
-              type: "select",
-              title: "Field Naming Convention",
-              key: "fieldNamingConvention",
-              default: "pascal",
-              tooltip: "Controls how API names are auto-generated from field labels. PascalCase: 'My Field' -> 'MyField'. Underscores: 'My Field' -> 'My_Field'",
-              options: [
-                {label: "PascalCase", value: "pascal"},
-                {label: "Underscores", value: "underscore"}
-              ]
-            }}
-        ]
-      },
-      {
-        id: 6,
-        tabTitle: "Tab6",
-        title: "Enable Logs",
-        content: [
-          {option: enableLogsOption, props: {key: 1}}
-        ]
-      },
-      {
-        id: 7,
-        tabTitle: "Tab7",
-        title: "Metadata",
-        content: [
-          {option: Option, props: {type: "toggle", title: "Include managed packages metadata", key: "includeManagedMetadata"}},
-          {option: Option,
-            props: {type: "select",
-              title: "Sort metadata components",
-              key: "sortMetadataBy",
-              default: "fullName",
-              options: [
-                {label: "A-Z", value: "fullName"},
-                {label: "Last Modified Date DESC", value: "lastModifiedDate"}
-              ]
-            }
-          },
-          {option: Option, props: {type: "toggle", title: "Use legacy version", key: "useLegacyDlMetadata", default: false}}
-        ]
-      },
-      {
-        id: 8,
-        tabTitle: "Tab8",
-        title: "Flow Scanner",
-        content: [
-          {option: FlowScannerRulesOption, props: {title: "Enabled Rules", storageKey: "flowScannerRules", checkboxes: ruleCheckboxes, error: this.state.flowScannerError, scannerVersion}}
-        ]
-      },
-      {
-        id: 9,
-        tabTitle: "Tab9",
-        title: "Custom Shortcuts",
-        content: [
-          {option: CustomShortcuts, props: {}}
-        ]
-      }
-    ];
-    this.onTabSelect = this.onTabSelect.bind(this);
-  }
-
-  onTabSelect(e) {
-    e.preventDefault();
-    const selectedTabId = e.target.tabIndex;
-
-    // Update the URL with the selected tab
-    const url = new URL(window.location);
-    url.searchParams.set("selectedTab", selectedTabId);
-    window.history.pushState({}, "", url);
-
-    this.setState({selectedTabId});
-  }
-
-  render() {
-    return h("div", {className: "slds-tabs_default"},
-      h("ul", {className: "options-tab-container slds-tabs_default__nav", role: "tablist"},
-        this.tabs.map((tab) => h(OptionsTab, {key: tab.id, title: tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect}))
-      ),
-      this.tabs.map((tab) => h(OptionsContainer, {key: tab.id, id: tab.id, content: tab.content, selectedTabId: this.state.selectedTabId, model: this.model}))
-    );
-  }
-}
-OptionsTabSelector.propTypes = {
-  model: PropTypes.object
-};
-
-
-// --- Main Model and App ---
-
-class Model {
-
-  constructor(sfHost) {
-    this.sfHost = sfHost;
-    this.sfLink = "https://" + this.sfHost;
-    this.userInfo = "...";
-    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
-    if (localStorage.getItem(sfHost + "_isSandbox") !== "true" && (!trialExpDate || trialExpDate === "null")) {
-      //change background color for production
-      document.body.classList.add("prod");
-    }
-
-    this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { });
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-    }));
-  }
-
-  /**
-   * Notify React that we changed something, so it will rerender the view.
-   * Should only be called once at the end of an event or asynchronous operation, since each call can take some time.
-   * All event listeners (functions starting with "on") should call this function if they update the model.
-   * Asynchronous operations should use the spinFor function, which will call this function after the asynchronous operation completes.
-   * Other functions should not call this function, since they are called by a function that does.
-   * @param cb A function to be called once React has processed the update.
-   */
-  didUpdate(cb) {
-    if (this.reactCallback) {
-      this.reactCallback(cb);
-    }
-    if (this.testCallback) {
-      this.testCallback();
-    }
-  }
-
-  /**
-   * Show the spinner while waiting for a promise.
-   * didUpdate() must be called after calling spinFor.
-   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
-   * @param promise The promise to wait for.
-   */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
-  }
-
-}
+let h = React.createElement;
 
 class App extends React.Component {
 
@@ -1550,13 +1242,7 @@ class App extends React.Component {
     this.exportOptions = this.exportOptions.bind(this);
     this.importOptions = this.importOptions.bind(this);
     this.hideToast = this.hideToast.bind(this);
-    this.state = {
-      // toast state
-      showToast: false,
-      toastMessage: "",
-      toastVariant: "",
-      toastTitle: "",
-    };
+    this.state = {};
   }
 
   exportOptions() {
@@ -1610,16 +1296,19 @@ class App extends React.Component {
   }
 
   hideToast() {
-    this.setState({showToast: false, toastMessage: ""});
+    let {model} = this.props;
+    this.state = {showToast: false, toastMessage: ""};
+    model.didUpdate();
   }
 
   render() {
+    const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
     return h("div", {},
       h("div", {id: "user-info", className: "slds-border_bottom"},
         h("a", {href: model.sfLink, className: "sf-link"},
           h("svg", {viewBox: "0 0 24 24"},
-            h("use", {xlinkHref: "symbols.svg#salesforce-home"})
+            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
           ),
           " Salesforce Home"
         ),
@@ -1659,28 +1348,24 @@ class App extends React.Component {
     );
   }
 }
-App.propTypes = {
-  model: PropTypes.object
-};
-
-// --- App Initialization ---
 
 {
+
   let args = new URLSearchParams(location.search.slice(1));
   let sfHost = args.get("host");
   initButton(sfHost, true);
   sfConn.getSession(sfHost).then(() => {
+
     let root = document.getElementById("root");
     let model = new Model(sfHost);
     model.reactCallback = cb => {
-      // eslint-disable-next-line react/no-deprecated
       ReactDOM.render(h(App, {model}), root, cb);
     };
-    // eslint-disable-next-line react/no-deprecated
     ReactDOM.render(h(App, {model}), root);
 
     if (parent && parent.isUnitTest) { // for unit tests
       parent.insextTestLoaded({model});
     }
+
   });
 }

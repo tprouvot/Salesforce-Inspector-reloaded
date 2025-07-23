@@ -642,6 +642,7 @@ class App extends React.Component {
     this.onCollapseAll = this.onCollapseAll.bind(this);
     this.onSeverityToggle = this.onSeverityToggle.bind(this);
     this.onRuleToggle = this.onRuleToggle.bind(this);
+    this.onStatItemClick = this.onStatItemClick.bind(this);
   }
 
   componentDidMount() {
@@ -841,6 +842,37 @@ class App extends React.Component {
     });
   }
 
+  isStatItemClickable(severity, count) {
+    return count > 0 && severity !== "total";
+  }
+
+  onStatItemClick(severity, count) {
+    if (!this.isStatItemClickable(severity, count)) {
+      return;
+    }
+
+    // Ensure the severity section is expanded
+    this.setState(state => {
+      const accordion = {...state.accordion};
+      if (!accordion[severity].expanded) {
+        accordion[severity].expanded = true;
+      }
+      return {accordion};
+    }, () => {
+      // After state update, scroll to the section
+      setTimeout(() => {
+        const targetId = `${severity}-rules-container`;
+        const targetElement = document.getElementById(targetId);
+        if (targetElement) {
+          targetElement.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+        }
+      }, 100);
+    });
+  }
+
   // Helper to record mousedown coordinates.
   handleMouseDown(e) {
     const el = e.currentTarget;
@@ -958,7 +990,7 @@ class App extends React.Component {
 
   renderScanResults() {
     if (!this.flowScanner?.scanResults) {
-      return h("div", {className: "area", style: {display: "none"}});
+      return h("div", {className: "area scan-results-area", style: {display: "none"}});
     }
     const results = this.flowScanner.scanResults;
     const totalIssues = results.length;
@@ -977,7 +1009,7 @@ class App extends React.Component {
     if (totalIssues === 0) {
       // If no rules are enabled, show a warning and prompt to configure them.
       if (this.flowScanner.noRulesEnabledMessage) {
-        return h("div", {className: "area"},
+        return h("div", {className: "area scan-results-area"},
           h("div", {className: "empty-state"},
             h("div", {className: "empty-icon"}, "⚠️"),
             h("h3", {}, "No Rules Enabled"),
@@ -987,7 +1019,7 @@ class App extends React.Component {
         );
       }
       // Default "no issues found" state.
-      return h("div", {className: "area"},
+      return h("div", {className: "area scan-results-area"},
         h("div", {className: "success-state"},
           h("div", {className: "success-icon"}, "✅"),
           h("h3", {}, "No Issues Found"),
@@ -1006,7 +1038,7 @@ class App extends React.Component {
       );
     }
     // Summary panel for when issues are found.
-    return h("div", {className: "area", "aria-labelledby": "results-title", "aria-live": "polite"},
+    return h("div", {className: "area scan-results-area", "aria-labelledby": "results-title", "aria-live": "polite"},
       h("div", {className: "summary-body", role: "status", "aria-live": "polite"},
         h("h3", {className: "summary-title"},
           h("span", {className: "results-icon"}, "📊"),
@@ -1018,29 +1050,44 @@ class App extends React.Component {
               h("span", {className: "stat-number", id: "total-issues-count"}, totalIssues),
               h("span", {className: "stat-label"}, "Total")
             ),
-            h("div", {className: "stat-item error", role: "group", "aria-label": "Error issues"},
-              h("span", {className: "stat-number", id: "error-issues-count"}, errorCount),
-              h("span", {className: "stat-label"}, "Errors")
+            h("div", {
+              className: `stat-item error${this.isStatItemClickable("error", errorCount) ? " clickable" : ""}`,
+              role: "group",
+              "aria-label": "Error issues",
+              onClick: this.isStatItemClickable("error", errorCount) ? () => this.onStatItemClick("error", errorCount) : undefined
+            },
+            h("span", {className: "stat-number", id: "error-issues-count"}, errorCount),
+            h("span", {className: "stat-label"}, "Errors")
             ),
-            h("div", {className: "stat-item warning", role: "group", "aria-label": "Warning issues"},
-              h("span", {className: "stat-number", id: "warning-issues-count"}, warningCount),
-              h("span", {className: "stat-label"}, "Warnings")
+            h("div", {
+              className: `stat-item warning${this.isStatItemClickable("warning", warningCount) ? " clickable" : ""}`,
+              role: "group",
+              "aria-label": "Warning issues",
+              onClick: this.isStatItemClickable("warning", warningCount) ? () => this.onStatItemClick("warning", warningCount) : undefined
+            },
+            h("span", {className: "stat-number", id: "warning-issues-count"}, warningCount),
+            h("span", {className: "stat-label"}, "Warnings")
             ),
-            h("div", {className: "stat-item info", role: "group", "aria-label": "Information issues"},
-              h("span", {className: "stat-number", id: "info-issues-count"}, infoCount),
-              h("span", {className: "stat-label"}, "Info")
+            h("div", {
+              className: `stat-item info${this.isStatItemClickable("info", infoCount) ? " clickable" : ""}`,
+              role: "group",
+              "aria-label": "Information issues",
+              onClick: this.isStatItemClickable("info", infoCount) ? () => this.onStatItemClick("info", infoCount) : undefined
+            },
+            h("span", {className: "stat-number", id: "info-issues-count"}, infoCount),
+            h("span", {className: "stat-label"}, "Info")
             )
           ),
           h("div", {className: "summary-actions"},
             h("button", {
-              className: "slds-button slds-button_neutral",
+              className: "highlighted button-margin",
               title: "Export Results",
               onClick: this.onExportResults,
               disabled: totalIssues === 0
             }, "Export",
             ),
-            h("button", {className: "slds-button slds-button_neutral", id: "expand-all-btn", onClick: this.onExpandAll}, "Expand All"),
-            h("button", {className: "slds-button slds-button_neutral", id: "collapse-all-btn", onClick: this.onCollapseAll}, "Collapse All")
+            h("button", {className: "button-margin", id: "expand-all-btn", onClick: this.onExpandAll}, "Expand All"),
+            h("button", {className: "button-margin", id: "collapse-all-btn", onClick: this.onCollapseAll}, "Collapse All")
           )
         )
       ),
@@ -1215,7 +1262,7 @@ class App extends React.Component {
       return null;
     }
 
-    return h("div", {className: "area"},
+    return h("div", {className: "area scan-results-area"},
       h("div", {className: "empty-state"},
         h("div", {className: "empty-icon"}, "❌"),
         h("h3", {}, "Error Occurred"),
@@ -1265,7 +1312,7 @@ class App extends React.Component {
           )
         )
       ),
-      h("div", {},
+      h("div", {className: "main-content-wrapper"},
         this.renderFlowInfo(),
         this.state.error ? this.renderError() : this.renderScanResults()
       ),

@@ -296,7 +296,7 @@ class FlowScanner {
       const allRules = getFlowScannerRules(this.flowScannerCore);
 
       // Select only enabled, built-in rules.
-      const rulesToRun = allRules.filter(r => r.checked && !r.isCustom && !r.path && !r.code);
+      const rulesToRun = allRules.filter(r => r.checked && !r.path && !r.code);
       if (rulesToRun.length === 0) {
         this.setNoRulesEnabledMessage("No Flow Scanner rules are enabled. Please enable rules on the Options page.");
         return;

@@ -40,11 +40,9 @@ export function getFlowScannerRules(flowScannerCore) {
 
   // Stored overrides from Options page
   const storedRules = JSON.parse(localStorage.getItem("flowScannerRules") || "[]");
-  const customRules = JSON.parse(localStorage.getItem("flowScannerCustomRules") || "[]");
 
-  // Merge defaults with stored overrides, then append customs
+  // Merge defaults with stored overrides
   const merged = [];
-  const defaultNames = new Set(defaultRules.map(r => r.name));
 
   for (const def of defaultRules) {
     const stored = storedRules.find(r => r.name === def.name);
@@ -76,15 +74,9 @@ export function getFlowScannerRules(flowScannerCore) {
       config,
       configType,
       configurable,
-      severity: stored ? stored.severity || def.severity : def.severity,
-      isCustom: false
+      configValue: stored ? stored.configValue : undefined,
+      severity: stored ? stored.severity || def.severity : def.severity
     });
-  }
-
-  for (const cr of customRules) {
-    if (!defaultNames.has(cr.name)) {
-      merged.push({...cr, isCustom: true});
-    }
   }
 
   return merged;

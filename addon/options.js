@@ -67,6 +67,7 @@ class OptionsTabSelector extends React.Component {
   constructor(props) {
     super(props);
     this.model = props.model;
+    this.appRef = props.appRef;
     this.sfHost = this.model.sfHost;
 
     // Get the tab from the URL or default to 1
@@ -254,6 +255,18 @@ class OptionsTabSelector extends React.Component {
             label: "Reset to Defaults",
             title: "Reset all rules to their default settings",
             method: this.handleResetToDefaults.bind(this)
+          },
+          {
+            type: "icon",
+            icon: "download",
+            title: "Export Flow Scanner rules configuration to file",
+            method: this.handleExportRules.bind(this)
+          },
+          {
+            type: "icon",
+            icon: "upload",
+            title: "Import Flow Scanner rules configuration from file",
+            method: this.handleImportRules.bind(this)
           }
         ],
         content: [
@@ -289,6 +302,22 @@ class OptionsTabSelector extends React.Component {
     // Implementation to reset Flow Scanner rules to defaults
     if (this.model.flowScannerRulesRef) {
       this.model.flowScannerRulesRef.resetToDefaults();
+    }
+  }
+
+  handleExportRules() {
+    // Export only Flow Scanner related localStorage keys
+    const flowScannerFilters = ["flowScannerRules"];
+    // Get reference to App component to call its exportOptions method
+    if (this.appRef) {
+      this.appRef.exportOptions(flowScannerFilters);
+    }
+  }
+
+  handleImportRules() {
+    if (this.appRef) {
+      this.appRef.pendingImportFilters = ["flowScannerRules"];
+      this.appRef.refs.fileInput.click();
     }
   }
 
@@ -366,14 +395,27 @@ class OptionsContainer extends React.Component {
         )
       ),
       actionButtons && actionButtons.length > 0 && h("div", {className: "slds-button-group", role: "group"},
-        actionButtons.map((button, index) =>
-          h("button", {
-            key: index,
-            className: `slds-button ${button.type === "brand" ? "slds-button_brand" : "slds-button_neutral"}`,
-            onClick: button.method,
-            title: button.title || button.label
-          }, button.label)
-        )
+        actionButtons.map((button, index) => {
+          if (button.type === "icon") {
+            // Icon button
+            return h("button", {
+              key: index,
+              className: `slds-button slds-button_icon slds-button_icon-border-filled${index > 0 ? " slds-m-left_x-small" : ""}`,
+              onClick: button.method,
+              title: button.title
+            }, h("svg", {className: "slds-button__icon"},
+              h("use", {xlinkHref: `symbols.svg#${button.icon}`})
+            ));
+          } else {
+            // Text button
+            return h("button", {
+              key: index,
+              className: `slds-button ${button.type === "brand" ? "slds-button_brand" : "slds-button_neutral"}`,
+              onClick: button.method,
+              title: button.title || button.label
+            }, button.label);
+          }
+        })
       )
     );
   }
@@ -535,24 +577,30 @@ class Option extends React.Component {
     this.configType = props.configType;
     this.configStorageKey = props.configStorageKey;
     this.onConfigChange = props.onConfigChange;
+    this.onToggleChange = props.onToggleChange;
 
-    let value = localStorage.getItem(this.key);
-    if (props.default !== undefined && value === null) {
-      value = props.type != "text" ? JSON.stringify(props.default) : props.default;
-      localStorage.setItem(this.key, value);
-    }
+    // Handle Flow Scanner rules (no storageKey, managed by parent)
+    const isFlowScannerRule = !this.key && this.onToggleChange;
 
-    // Initialize config value if configurable
-    let configValue = null;
-    if (this.isConfigurable && this.configStorageKey) {
-      configValue = localStorage.getItem(this.configStorageKey) || props.configValue;
-      if (configValue !== null && !localStorage.getItem(this.configStorageKey)) {
-        localStorage.setItem(this.configStorageKey, configValue.toString());
+    let value;
+    if (isFlowScannerRule) {
+      // Use checked prop from parent for Flow Scanner rules
+      value = props.checked;
+    } else {
+      // Use localStorage for regular options
+      value = localStorage.getItem(this.key);
+      if (props.default !== undefined && value === null) {
+        value = props.type != "text" ? JSON.stringify(props.default) : props.default;
+        localStorage.setItem(this.key, value);
       }
     }
 
+    // Initialize config value if configurable (value comes from props)
+    let configValue = props.configValue || null;
+
     this.state = {
-      [this.key]: this.type == "toggle" ? !!JSON.parse(value)
+      [this.key || "checked"]: isFlowScannerRule ? value
+      : this.type == "toggle" ? !!JSON.parse(value)
       : this.type == "select" ? (value || props.default || props.options?.[0]?.value)
       : value,
       configValue,
@@ -564,16 +612,22 @@ class Option extends React.Component {
 
   onChangeToggle(e) {
     const enabled = e.target.checked;
-    this.setState({[this.key]: enabled});
-    localStorage.setItem(this.key, JSON.stringify(enabled));
+    const stateKey = this.key || "checked";
+    this.setState({[stateKey]: enabled});
+
+    // Handle Flow Scanner rules vs regular options
+    if (this.onToggleChange) {
+      // Flow Scanner rule - call parent callback
+      this.onToggleChange(enabled);
+    } else {
+      // Regular option - use localStorage
+      localStorage.setItem(this.key, JSON.stringify(enabled));
+    }
   }
 
   onChangeConfig(e) {
     const configValue = e.target.value;
     this.setState({configValue});
-    if (this.configStorageKey) {
-      localStorage.setItem(this.configStorageKey, configValue);
-    }
     if (this.onConfigChange) {
       this.onConfigChange(this.key, configValue);
     }
@@ -616,7 +670,7 @@ class Option extends React.Component {
       return isEnhanced ? null : (
         h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
           h("label", {className: "slds-checkbox_toggle slds-grid"},
-            h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
+            h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key || "checked"], onChange: this.onChangeToggle}),
             h("span", {id, className: "slds-checkbox_faux_container center-label"},
               h("span", {className: "slds-checkbox_faux"}),
               h("span", {className: "slds-checkbox_on"}, "Enabled"),
@@ -754,7 +808,7 @@ class Option extends React.Component {
           // Toggle control for all enhanced options (positioned at the end)
           isToggle && h("div", {className: "slds-form-element__control"},
             h("label", {className: "slds-checkbox_toggle slds-grid"},
-              h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key], onChange: this.onChangeToggle}),
+              h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key || "checked"], onChange: this.onChangeToggle}),
               h("span", {id, className: "slds-checkbox_faux_container center-label"},
                 h("span", {className: "slds-checkbox_faux"}),
                 h("span", {className: "slds-checkbox_on"}, "Enabled"),
@@ -1456,11 +1510,6 @@ class FlowScannerRules extends React.Component {
       resetCounter: this.state.resetCounter + 1
     });
     localStorage.setItem("flowScannerRules", JSON.stringify(updatedRules));
-
-    // Also update individual rule localStorage keys
-    updatedRules.forEach(rule => {
-      localStorage.setItem(`flowScannerRule_${rule.name}`, JSON.stringify(checked));
-    });
   }
 
   checkAllRules() {
@@ -1474,18 +1523,6 @@ class FlowScannerRules extends React.Component {
   resetToDefaults() {
     // Remove stored rules to force reload with defaults
     localStorage.removeItem("flowScannerRules");
-
-    // Remove all individual rule configuration values
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith("flowScannerRuleConfig_")) {
-        keysToRemove.push(key);
-      }
-    }
-
-    // Remove all config keys
-    keysToRemove.forEach(key => localStorage.removeItem(key));
 
     // Increment reset counter to force component recreation
     this.setState(prevState => ({
@@ -1522,9 +1559,8 @@ class FlowScannerRules extends React.Component {
         } else if (field === "severity") {
           return {...rule, severity: value};
         } else if (field === "config") {
-          // Handle both string and object config values
-          const configValue = typeof value === "string" ? value : {...rule.config, ...value};
-          return {...rule, config: configValue};
+          // Store config value directly in the rule
+          return {...rule, configValue: value};
         }
       }
       return rule;
@@ -1563,17 +1599,13 @@ class FlowScannerRules extends React.Component {
           let badge = null;
           if (rule.isBeta) {
             badge = {label: "Beta", type: "beta"};
-          } else if (rule.isCustom) {
-            badge = {label: "Custom", type: "custom"};
           }
 
-          // Resolve config value: use stored customization or default
+          // Resolve config value from rule object
           let resolvedConfigValue = null;
           if (rule.isConfigurable) {
-            const configStorageKey = `flowScannerRuleConfig_${rule.name}`;
-            const storedValue = localStorage.getItem(configStorageKey);
-            if (storedValue !== null) {
-              resolvedConfigValue = storedValue;
+            if (rule.configValue !== undefined && rule.configValue !== null) {
+              resolvedConfigValue = rule.configValue;
             } else if (rule.defaultValue !== undefined && rule.defaultValue !== null) {
               resolvedConfigValue = rule.defaultValue;
             } else if (rule.config !== undefined && rule.config !== null) {
@@ -1596,14 +1628,16 @@ class FlowScannerRules extends React.Component {
             badge,
             severity: rule.severity || "info",
             description: rule.description,
-            storageKey: `flowScannerRule_${rule.name}`,
+            // No storageKey - managed by FlowScannerRules component
             key: `flowScannerRule_${rule.name}_${this.state.resetCounter}`,
-            default: rule.checked !== undefined ? rule.checked : true,
+            checked: rule.checked !== undefined ? rule.checked : true,
             // Rule configuration properties
             isConfigurable: rule.isConfigurable,
             configType: rule.configType,
             configValue: resolvedConfigValue,
-            configStorageKey: `flowScannerRuleConfig_${rule.name}`,
+            onToggleChange: (checked) => {
+              this.onRuleChange(rule.name, "checked", checked);
+            },
             onSeverityChange: (key, newSeverity) => {
               this.onRuleChange(rule.name, "severity", newSeverity);
             },
@@ -1632,25 +1666,48 @@ class App extends React.Component {
     this.state = {};
   }
 
-  exportOptions() {
-    const localStorageData = {...localStorage};
+  exportOptions(filterKeys = null) {
+    let localStorageData;
+    let filename = "reloadedConfiguration.json";
+
+    if (filterKeys) {
+      // Filter only the specified keys
+      localStorageData = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && filterKeys.some(filter => key.startsWith(filter))) {
+          localStorageData[key] = localStorage.getItem(key);
+        }
+      }
+      filename = "flowScannerRules.json";
+    } else {
+      // Export all localStorage
+      localStorageData = {...localStorage};
+    }
+
     const jsonData = JSON.stringify(localStorageData, null, 2);
     const blob = new Blob([jsonData], {type: "application/json"});
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.href = url;
-    link.download = "reloadedConfiguration.json";
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   }
 
-  importOptions() {
+  importOptions(filterKeys = null) {
     const fileInput = this.refs.fileInput;
 
     if (!fileInput.files.length) {
       console.error("No file selected.");
       return;
+    }
+
+    // Check if we have pending import filters (from Import Rules button)
+    if (this.pendingImportFilters) {
+      filterKeys = this.pendingImportFilters;
+      this.pendingImportFilters = null; // Clear the flag
     }
 
     const file = fileInput.files[0];
@@ -1659,12 +1716,35 @@ class App extends React.Component {
     reader.onload = (event) => {
       try {
         const importedData = JSON.parse(event.target.result);
+
         for (const [key, value] of Object.entries(importedData)) {
-          localStorage.setItem(key, value);
+          if (filterKeys) {
+            // Only import keys that match the filter
+            if (filterKeys.some(filter => key.startsWith(filter))) {
+              localStorage.setItem(key, value);
+            }
+          } else {
+            // Import all keys
+            localStorage.setItem(key, value);
+          }
         }
+
+        // Force refresh of Flow Scanner rules if they exist
+        const {model} = this.props;
+        if (filterKeys && model && model.flowScannerRulesRef) {
+          // Force component re-creation by incrementing reset counter
+          model.flowScannerRulesRef.setState(prevState => ({
+            resetCounter: prevState.resetCounter + 1
+          }));
+          // Reload rules from localStorage (which now has the imported data)
+          model.flowScannerRulesRef.loadRules();
+          // Force a re-render of the parent model
+          model.didUpdate();
+        }
+
         this.setState({
           showToast: true,
-          toastMessage: "Options Imported Successfully!",
+          toastMessage: filterKeys ? "Flow Scanner rules imported successfully!" : "Options Imported Successfully!",
           toastVariant: "success",
           toastTitle: "Success"
         });
@@ -1730,7 +1810,7 @@ class App extends React.Component {
           onClose: this.hideToast
         }),
       h("div", {className: "main-container slds-card slds-m-around_small", id: "main-container_header"},
-        h(OptionsTabSelector, {model})
+        h(OptionsTabSelector, {model, appRef: this})
       )
     );
   }

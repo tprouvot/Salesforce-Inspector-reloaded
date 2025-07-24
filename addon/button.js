@@ -17,10 +17,10 @@ if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #s
 }
 
 function initButton(sfHost, inInspector) {
+  let iFrameLocalStorage;
   let rootEl = document.createElement("div");
   rootEl.id = "insext";
   let btn = document.createElement("div");
-  let iFrameLocalStorage = {};
   btn.className = "insext-btn";
   btn.tabIndex = 0;
   btn.accessKey = "i";
@@ -29,81 +29,55 @@ function initButton(sfHost, inInspector) {
   loadPopup(sfHost);
   document.body.appendChild(rootEl);
 
-  addFlowScrollability();
+  function getOrientation(source) {
+    const o = (source === "localStorage")
+      ? localStorage.getItem("popupArrowOrientation")
+      : iFrameLocalStorage.popupArrowOrientation;
+    return o || "vertical";
+  }
+  // return a value for direction popup will expand, based on position and orientation
+  function calcDirection(pos, o) {
+    if (o === "horizontal") {
+      return pos < 8 ? "right" : pos >= 90 ? "left" : "centered";
+    }
+    return pos >= 55 ? "up" : null;
+  }
 
   function addFlowScrollability(popupEl) {
-    const currentUrl = window.location.href;
-    // Check the current URL for the string "builder_platform_interaction"
-    if (currentUrl.includes("builder_platform_interaction")) {
-      // Create a new checkbox element
-      const headerFlow = document.querySelector("builder_platform_interaction-container-common");
-      const overflowCheckbox = document.createElement("input");
-      overflowCheckbox.type = "checkbox";
-      overflowCheckbox.id = "overflow-checkbox";
-      const checkboxState = iFrameLocalStorage.scrollOnFlowBuilder;
-      // Check local storage for the checkbox state
-      (checkboxState != null) ? (overflowCheckbox.checked = checkboxState) : (overflowCheckbox.checked = true);
-      // Create a new label element for the checkbox
-      const overflowLabel = document.createElement("label");
-      overflowLabel.textContent = "Enable flow scrollability";
-      overflowLabel.htmlFor = "overflow-checkbox";
-      if (currentUrl.includes("sandbox")){
-        overflowCheckbox.className = "checkboxScrollSandbox";
-        overflowLabel.className = "labelCheckboxScrollSandbox";
-      } else {
-        overflowCheckbox.className = "checkboxScrollProd";
-        overflowLabel.className = "labeCheckboxScrollProd";
-      }
-      // Get a reference to the <head> element
-      const head = document.head;
-      // Create a new <style> element
-      const style = document.createElement("style");
-      // Set the initial text content of the <style> element
-      style.textContent = ".canvas {overflow : auto!important ; }";
-      // Append the <style> element to the <head> element
-      head.appendChild(style);
-      // Append the checkbox and label elements to the body of the document
-      headerFlow.appendChild(overflowCheckbox);
-      headerFlow.appendChild(overflowLabel);
-      // Set the overflow property to "auto"
-      overflowCheckbox.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
-      // Listen for changes to the checkbox state
-      overflowCheckbox.addEventListener("change", function() {
-        // Check if the checkbox is currently checked
-        // Save the checkbox state to local storage
-        popupEl.contentWindow.postMessage({
-          updateLocalStorage: true,
-          key: "scrollOnFlowBuilder",
-          value: JSON.stringify(this.checked)
-        }, "*");
-        // Set the overflow property to "auto"
-        this.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
-      });
+    if (iFrameLocalStorage && iFrameLocalStorage.scrollOnFlowBuilder) {
+      popupEl.classList.add("flow-scrollability");
     }
   }
 
-  // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
-  function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos}) {
-    o = o || "vertical"; // Default to vertical
-    const isVertical = o === "vertical";
-    pos = pos ? Math.min(95, pos) + "%" : "122px";
+  function resetPopupClass(o, popupEl) {
+    popupEl.className = "insext-popup";
+    popupEl.classList.add(`insext-popup-${o}`);
+  }
+
+  function setRootCSSProperties(rootElement, buttonElement) {
+    const {
+      popupArrowOrientation: o,
+      popupArrowPosition: pos
+    } = iFrameLocalStorage;
+
+    const isVertical = (o || "vertical") === "vertical";
+    const position = pos ? Math.min(95, pos) + "%" : "122px";
     const [posStyle, oStyle] = isVertical ? ["top", "right"] : ["left", "bottom"];
     const imgSrc = isVertical
       ? "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAPCAYAAADd/14OAAAA40lEQVQoz2P4//8/AzpWzGj6L59U/V8urgxMg/g4FUn6J/+X9E38LxWc8V8htR67IpCkuGfMfxCQjSpENRFFkXvk/1+/foGxQloDSD0DVkVfvnyBY7hCdEVv3rxBwXCFIIdKh2WDFT1+/BgDo1qd2fL/1q1bWDFcoW5xz3/Xppn/oycu/X/x4kUMDFeoWdD136R8wn+f9rlgxSdOnEDBKFajK96/fz8coyjEpnj79u1gjKEQXXFE/+L/Gzdu/G9WMfG/am4HZlzDFAf3LPwfOWEJWBPIwwzYUg9MsXXNFDAN4gMAmASShdkS4AcAAAAASUVORK5CYII="
       : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAKCAYAAABrGwT5AAAAAXNSR0IArs4c6QAAAFBlWElmTU0AKgAAAAgAAgESAAMAAAABAAEAAIdpAAQAAAABAAAAJgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAD6ADAAQAAAABAAAACgAAAADdC3pnAAABWWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNi4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyI+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgoZXuEHAAABKElEQVQoFWNgwAI0C7r+6xb3/AdJKaTW/1fMaAKz0ZUyoguANHKzszEIcnMy3Hn+muHX2+cMLDwCDExs7Az3Z9ShqGdC1gzTKCHAyyDGz8OwszCM4c/Hdwy/P75l+PfrJwO6C+CakTXyc3EwlDnogM09M6eL4e+Xj1gNAGtG15hrrozsIIarSydjNYARXWOKnhQDJycnBubg4GBQDk5lYObhZ2DlFwaHARMocORFBRl4ONgYYtSEUGxE5zzevJDh77cvwEB8AQ4DJnZWFgY2FmaGSCU+dLVY+S+2LWZg+PeP4f+f3wwsP3//Yfj8/SdD6/G3DK/evceqAVkQFHiMwGhjZGFlYPn68xfDwzfvGX78+sPwYFYDSjwia4KxQdHF/JePgZGZmQEASqV1t0W3n+oAAAAASUVORK5CYII=";
-    const btnClass = `insext-btn-${o}`;
-    return {pos, posStyle, oStyle, imgSrc, btnClass};
-  }
+    const btnClass = `insext-btn-${o || "vertical"}`;
 
-  function setRootCSSProperties(rootElement, buttonElement) {
-    const p = calcPopup(iFrameLocalStorage);
-    let img = document.createElement("img");
+    let img = buttonElement.querySelector("img") || document.createElement("img");
     img.role = "presentation";
-    img.src = p.imgSrc;
-    rootElement.style[p.posStyle] = p.pos;
-    rootElement.style[p.oStyle] = 0;
-    buttonElement.classList.add(p.btnClass);
-    buttonElement.appendChild(img);
+    img.src = imgSrc;
+    rootElement.style[posStyle] = position;
+    rootElement.style[oStyle] = 0;
+    buttonElement.className = "insext-btn"; // reset classes
+    buttonElement.classList.add(btnClass);
+    if (!buttonElement.contains(img)) {
+      buttonElement.appendChild(img);
+    }
   }
 
   function observeElement(selector, callback) {
@@ -154,13 +128,11 @@ function initButton(sfHost, inInspector) {
   }
 
   function colorizeBanner(faviconColor, isSandbox, bannerText){
-    const sandboxBannerSelector = "div.slds-color__background_gray-1.slds-text-align_center.slds-size_full.slds-text-body_regular.oneSystemMessage";
     if (isSandbox === "false"){
-      const bannerContainer = document.querySelector(sandboxBannerSelector);
+      const bannerContainer = document.querySelector("div.slds-color__background_gray-1.slds-text-align_center.slds-size_full.slds-text-body_regular.oneSystemMessage");
       const envNameBanner = document.createElement("div");
       envNameBanner.className = "slds-notify_alert";
       envNameBanner.style.backgroundColor = faviconColor;
-      envNameBanner.style.color = "white";
       const envNameSpan = document.createElement("span");
       envNameSpan.textContent = bannerText ? bannerText : "WARNING: THIS IS PRODUCTION";
       envNameBanner.appendChild(envNameSpan);
@@ -170,39 +142,20 @@ function initButton(sfHost, inInspector) {
         bannerContainer.appendChild(envNameBanner);
       } else {
         //when login as is displayed the banner is not reachable without mutation obersver
-        observeElement(sandboxBannerSelector, (banner) => {
+        const bannerSelector = "div.slds-color__background_gray-1.slds-text-align_center.slds-size_full.slds-text-body_regular.oneSystemMessage";
+        observeElement(bannerSelector, (banner) => {
           banner.appendChild(envNameBanner);
         });
       }
     } else {
       //header selector depends on the env type (sandbox or trial)
-      const bannerSelector = isSandbox === "true" ? `${sandboxBannerSelector} > div.slds-notify_alert.system-message.level-info.slds-theme_info` : "div.slds-trial-header.slds-grid.oneTrialHeader.oneTrialExperience";
-
-      if (isSandbox){
-        // add a new observer for the new gradient sandbox banner
-        observeElement("devops_center-base-component > lightning-layout", (banner) => {
-          updateBanner(banner, faviconColor);
-        });
-      }
+      const bannerSelector = isSandbox === "true" ? "div.slds-color__background_gray-1.slds-text-align_center.slds-size_full.slds-text-body_regular.oneSystemMessage > div.slds-notify_alert.system-message.level-info.slds-theme_info" : "div.slds-trial-header.slds-grid.oneTrialHeader.oneTrialExperience";
 
       observeElement(bannerSelector, (banner) => {
-        updateBanner(banner, faviconColor);
+        banner.style.backgroundColor = faviconColor;
+        //update sandbox name and Logout action color for new UI
+        [...banner.children].forEach(child => child.style.color = "white");
       });
-    }
-  }
-
-  function updateBanner(banner, faviconColor){
-    let newBanner = banner.classList.contains("navBar-container");
-    if (newBanner){
-      //only way to render backgroundColor is to remove the standard gradient coming with the "navBar-container" class
-      banner.classList.remove("navBar-container");
-    }
-    banner.style.backgroundColor = faviconColor;
-    [...banner.children].forEach(child => child.style.color = "white !important;");
-    if (newBanner){
-      let devOpsInfo = banner.querySelector("devops_center-org-info");
-      //add white color to text in the banner
-      [...devOpsInfo.children].forEach(child => child.classList.add("slds-text-color--inverse"));
     }
   }
 
@@ -230,24 +183,8 @@ function initButton(sfHost, inInspector) {
 
     let popupSrc = chrome.runtime.getURL("popup.html?host=" + sfHost);
     let popupEl = document.createElement("iframe");
-    function getOrientation(source) {
-      const o = (source === "localStorage")
-        ? localStorage.getItem("popupArrowOrientation")
-        : iFrameLocalStorage.popupArrowOrientation;
-      return o || "vertical";
-    }
-    // return a value for direction popup will expand, based on position and orientation
-    function calcDirection(pos, o) {
-      if (o === "horizontal") {
-        return pos < 8 ? "right" : pos >= 90 ? "left" : "centered";
-      }
-      return pos >= 55 ? "up" : null;
-    }
-    function resetPopupClass(o) {
-      popupEl.className = "insext-popup";
-      popupEl.classList.add(`insext-popup-${o}`);
-    }
-    resetPopupClass(getOrientation("localStorage"));
+
+    resetPopupClass(getOrientation("localStorage"), popupEl);
     popupEl.src = popupSrc;
     addEventListener("message", e => {
       if (e.source != popupEl.contentWindow) {
@@ -259,7 +196,7 @@ function initButton(sfHost, inInspector) {
         const {popupArrowPosition: pos} = iFrameLocalStorage;
         const o = getOrientation("iframe");
         const dir = calcDirection(pos, o);
-        resetPopupClass(o);
+        resetPopupClass(o, popupEl);
         if (dir) {
           popupEl.classList.add(`insext-popup-${o}-${dir}`);
         }
@@ -363,4 +300,37 @@ function initButton(sfHost, inInspector) {
       }
     }
   }
+
+  // Listen for messages from the extension (e.g., from the options page)
+  chrome.runtime.onMessage.addListener((request) => {
+    if (request.action === "optionsChanged" && request.sfHost === sfHost) {
+      // Options have changed, so we need to update the UI
+      // Reload settings from localStorage
+      iFrameLocalStorage = {
+        popupArrowOrientation: localStorage.getItem("popupArrowOrientation"),
+        popupArrowPosition: localStorage.getItem("popupArrowPosition"),
+        scrollOnFlowBuilder: localStorage.getItem("scrollOnFlowBuilder") === "true",
+        colorizeSandboxBanner: localStorage.getItem("colorizeSandboxBanner") === "true",
+        colorizeProdBanner: localStorage.getItem("colorizeProdBanner") === "true",
+        prodBannerText: localStorage.getItem(sfHost + "_prodBannerText"),
+        customFavicon: localStorage.getItem(sfHost + "_customFavicon"),
+      };
+
+      const popupEl = rootEl.querySelector(".insext-popup");
+      if (!popupEl) {
+        return; // popup does not exist
+      }
+      // Re-apply styles and settings
+      const o = getOrientation("iframe");
+      const dir = calcDirection(iFrameLocalStorage.popupArrowPosition, o);
+
+      resetPopupClass(o, popupEl);
+      if (dir) {
+        popupEl.classList.add(`insext-popup-${o}-${dir}`);
+      }
+      setRootCSSProperties(rootEl, btn);
+      addFlowScrollability(popupEl);
+      setFavicon(sfHost);
+    }
+  });
 }

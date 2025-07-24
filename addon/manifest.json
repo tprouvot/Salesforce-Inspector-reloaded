@@ -82,7 +82,9 @@
         "inject.js",
         "field-creator.html",
         "options.html",
-        "event-monitor.html"
+        "event-monitor.html",
+        "flow-scanner.html",
+        "flow-scanner-core.js"
       ],
       "matches": [
         "https://*.salesforce.com/*",

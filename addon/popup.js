@@ -1655,8 +1655,19 @@ class UserDetails extends React.PureComponent {
               ),
               h("tr", {},
                 h("th", {}, "Id:"),
-                h("td", {className: "oneliner"},
-                  h("a", {href: this.getShowAllDataLink(user.Id), target: linkTarget, title: "Show all data"}, user.Id))
+                h("td", {className: "oneliner slds-grid slds-align-middle slds-p-vertical_xx-small"},
+                  h("a", {href: this.getShowAllDataLink(user.Id), target: linkTarget, title: "Show all data"}, user.Id),
+                  h("span", {
+                      className: "slds-icon_container slds-button", 
+                      title: "Copy to clipboard", 
+                      onClick: (e) => handleUserIdCopy(e, user.Id),
+                      style: {marginLeft: '3px'}
+                    },
+                    h("svg", {className: "slds-button__icon"},
+                      h("use", {xlinkHref: "symbols.svg#copy"})
+                    )
+                  ),
+                )
               ),
               h("tr", {},
                 h("th", {}, "E-mail:"),
@@ -2457,5 +2468,32 @@ function handleLightningLinkClick(e) {
     window.open(url, target);
   } else {
     lightningNavigate({navigationType: "url", url}, url);
+  }
+}
+
+function handleUserIdCopy(e, userId) {
+  e.preventDefault();
+
+  // Create a temporary input element to trigger the oncopy event
+  const tempInput = document.createElement("input");
+  tempInput.value = "temp";
+
+  // Set up the copy event to override clipboard data
+  tempInput.addEventListener("copy", (event) => {
+    event.clipboardData.setData("text/plain", userId);
+    event.preventDefault();
+  });
+
+  document.body.appendChild(tempInput);
+
+  try {
+    tempInput.select();
+    // Simulate a copy programatically
+    const success = document.execCommand("copy");
+    if (!success) {
+      alert("Copy failed");
+    }
+  } finally {
+    document.body.removeChild(tempInput);
   }
 }

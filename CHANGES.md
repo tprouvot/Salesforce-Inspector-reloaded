@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Add "Copy Id" icon to the user tab [issue 906](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/906) (contribution by [Arnav Gupta](https://github.com/ArnavGuptaaa)).
 - Fix 'unexpected query key(s): cache' error in REST Explore [issue 909](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/909) issued by [Martin Krchnak](https://github.com/mascot4m)
 - `Show All Data` Limit polymorphic reference types shown to 5 with "Show more" / "Show less" toggle in the field details tooltip [feature 865](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/865) (contribution by [Tushar Dangayach](https://github.com/rockstartushar))
 - Fix: Enable popup actions for records identified only by DurableId (e.g., FlowDefinitionView) [issue 441](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/441) (contribution by [Tushar Dangayach](https://github.com/rockstartushar))

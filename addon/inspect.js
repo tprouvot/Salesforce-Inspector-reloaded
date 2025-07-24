@@ -699,14 +699,7 @@ class FieldRowList extends RowList {
       let compositeRequest = {
         compositeRequest: batch.map((fieldRow) => {
 
-          let query;
-          if (!fieldRow.fieldDescribe.groupable) {
-            // For non-groupable fields (date, lookup, formula, etc.), use simple COUNT with != null
-            query = `SELECT COUNT() FROM ${this.model.objectName()} WHERE ${fieldRow.fieldName} != null`;
-          } else {
-            // For groupable fields, use GROUP BY approach
-            query = `SELECT COUNT(Id) number, ${fieldRow.fieldName} FROM ${this.model.objectName()} GROUP BY ${fieldRow.fieldName} ORDER BY COUNT(Id) DESC`;
-          }
+          let query = `SELECT COUNT() FROM ${this.model.objectName()} WHERE ${fieldRow.fieldName} != null`;
 
           return {
             method: "GET",

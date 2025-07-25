@@ -5,7 +5,7 @@ import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
-import {getFlowScannerRules} from "./flow-rules.js";
+import {getFlowScannerRules} from "./flow-scanner.js";
 
 class Model {
 

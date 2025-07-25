@@ -1386,7 +1386,7 @@ class App extends React.Component {
                 href: "https://github.com/Lightning-Flow-Scanner/lightning-flow-scanner-core",
                 target: getLinkTarget(),
               }, "Lightning Flow Scanner"),
-              ` (core v${scannerVersion})`
+              `\u00A0 (core v${scannerVersion})`
             )
           ),
           h("a", {href: "#", id: "help-btn", title: "Open Flow Scanner Options", onClick: this.onToggleHelp, target: getLinkTarget()},

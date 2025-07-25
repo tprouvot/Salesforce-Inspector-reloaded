@@ -308,3 +308,8 @@ body {
   min-width: 120px;
   max-width: 180px;
 }
+
+/* Allow content to overflow the main container for tooltips */
+.main-container {
+  overflow: visible !important;
+}

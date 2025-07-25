@@ -309,7 +309,8 @@ body {
   max-width: 180px;
 }
 
-/* Allow content to overflow the main container for tooltips */
-.main-container {
-  overflow: visible !important;
+/* Tooltips use fixed positioning to escape container bounds */
+.slds-popover_tooltip {
+  position: fixed !important;
+  z-index: 10000;
 }

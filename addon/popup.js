@@ -1193,7 +1193,7 @@ class AllDataBoxShortcut extends React.PureComponent {
 
   onAddShortcut(){
     let {sfHost} = this.props;
-    window.open("options.html?host=" + sfHost + "&selectedTab=8");
+    window.open("options.html?host=" + sfHost + "&selectedTab=custom-shortcuts");
   }
 
   resultRender(matches, shortcutQuery) {

@@ -848,7 +848,7 @@ class App extends React.Component {
   onToggleHelp(e) {
     e.preventDefault();
     const target = getLinkTarget(e);
-    const url = chrome.runtime.getURL(`options.html?selectedTab=8&host=${this.flowScanner?.sfHost}`);
+    const url = chrome.runtime.getURL(`options.html?selectedTab=flow-scanner&host=${this.flowScanner?.sfHost}`);
     window.open(url, target);
   }
 

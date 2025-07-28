@@ -70,9 +70,9 @@ class OptionsTabSelector extends React.Component {
     this.appRef = props.appRef;
     this.sfHost = this.model.sfHost;
 
-    // Get the tab from the URL or default to 1
+    // Get the tab from the URL or default to "user-experience"
     const urlParams = new URLSearchParams(window.location.search);
-    const initialTabId = parseInt(urlParams.get("selectedTab")) || 1;
+    const initialTabId = urlParams.get("selectedTab") || "user-experience";
 
     this.state = {
       selectedTabId: initialTabId
@@ -80,7 +80,7 @@ class OptionsTabSelector extends React.Component {
 
     this.tabs = [
       {
-        id: 1,
+        id: "user-experience",
         tabTitle: "User Experience",
         content: [
           {option: ArrowButtonOption, props: {key: 1}},
@@ -130,7 +130,7 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
-        id: 2,
+        id: "api",
         tabTitle: "API",
         content: [
           {option: APIVersionOption, props: {key: 1}},
@@ -152,7 +152,7 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
-        id: 3,
+        id: "data-export",
         tabTitle: "Data Export",
         content: [
           {option: CSVSeparatorOption, props: {key: 1}},
@@ -179,7 +179,7 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
-        id: 4,
+        id: "data-import",
         tabTitle: "Data Import",
         content: [
           {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200"}},
@@ -188,7 +188,7 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
-        id: 5,
+        id: "field-creator",
         tabTitle: "Field Creator",
         content: [
           {option: Option,
@@ -206,14 +206,14 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
-        id: 6,
+        id: "enable-logs",
         tabTitle: "Enable Logs",
         content: [
           {option: enableLogsOption, props: {key: 1}}
         ]
       },
       {
-        id: 7,
+        id: "metadata",
         tabTitle: "Metadata",
         content: [
           {option: Option, props: {type: "toggle", title: "Include managed packages metadata", key: "includeManagedMetadata"}},
@@ -232,7 +232,7 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
-        id: 8,
+        id: "flow-scanner",
         tabTitle: "Flow Scanner",
         title: "Enabled Rules (v4.49.0)",
         description: "Configure which Flow Scanner rules are enabled and their settings. Only enabled rules will be used when scanning flows.",
@@ -274,7 +274,7 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
-        id: 9,
+        id: "custom-shortcuts",
         tabTitle: "Custom Shortcuts",
         content: [
           {option: CustomShortcuts, props: {}}
@@ -323,7 +323,7 @@ class OptionsTabSelector extends React.Component {
 
   onTabSelect(e) {
     e.preventDefault();
-    const selectedTabId = e.target.tabIndex;
+    const selectedTabId = e.currentTarget.dataset.tabId;
 
     // Update the URL with the selected tab
     const url = new URL(window.location);
@@ -360,8 +360,8 @@ class OptionsTab extends React.Component {
   }
 
   render() {
-    return h("li", {key: this.props.id, className: this.getClass(), title: this.props.title, tabIndex: this.props.id, role: "presentation", onClick: this.props.onTabSelect},
-      h("a", {className: "slds-tabs_default__link", href: "#", role: "tab", tabIndex: this.props.id, id: "tab-default-" + this.props.id + "__item"},
+    return h("li", {key: this.props.id, className: this.getClass(), title: this.props.title, "data-tab-id": this.props.id, role: "presentation", onClick: this.props.onTabSelect},
+      h("a", {className: "slds-tabs_default__link", href: "#", role: "tab", tabIndex: "0", id: "tab-default-" + this.props.id + "__item"},
         this.props.title)
     );
   }

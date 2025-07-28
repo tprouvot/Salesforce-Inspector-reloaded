@@ -1575,3 +1575,60 @@ h1 {
   line-height: 1.25;
   margin: revert;
 }
+
+.unsupported-flow-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 20px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.unsupported-flow-header {
+  margin-bottom: 32px;
+}
+
+.unsupported-icon-large {
+  color: #f0ad4e;
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.unsupported-title {
+  margin: 0 0 8px 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #d9511c;
+}
+
+.unsupported-subtitle,
+.unsupported-description {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #6c757d;
+  max-width: 700px;
+}
+
+.supported-types-section {
+  width: 100%;
+  max-width: 1200px;
+  margin-top: 24px;
+}
+
+.supported-types-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #28a745;
+  margin: 0 0 8px 0;
+}
+
+.supported-types-header p {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin: 0 0 16px 0;
+}
+
+

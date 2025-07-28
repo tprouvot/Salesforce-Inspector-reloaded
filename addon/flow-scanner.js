@@ -299,57 +299,48 @@ class FlowScanner {
   }
 
   /**
+   * Gets all flow element types from the core scanner library.
+   * @private
+   * @returns {Array} Array of all flow element types
+   */
+  _getFlowElementTypes() {
+    if (!this.flowScannerCore) {
+      return [];
+    }
+
+    // Create a temporary flow instance to access the element type definitions
+    const tempFlow = new this.flowScannerCore.Flow("temp", {});
+    return [
+      ...tempFlow.flowNodes,
+      ...tempFlow.flowResources,
+      ...tempFlow.flowVariables
+    ];
+  }
+
+  /**
    * Builds a map of flow element API names to their labels for easy lookup.
    * @private
    */
   _buildElementMap() {
     this._elementMap = new Map();
-    if (!this.currentFlow || !this.currentFlow.xmlData) {
+    if (!this.currentFlow?.xmlData) {
       return;
     }
 
-    // Define all categories of elements that can exist in flow metadata XML.
     const xmlData = this.currentFlow.xmlData;
-    const elementTypes = [
-      "actionCalls",
-      "assignments",
-      "collectionProcessors",
-      "decisions",
-      "faultPaths",
-      "formulas",
-      "loops",
-      "recordCreates",
-      "recordDeletes",
-      "recordLookups",
-      "recordUpdates",
-      "screens",
-      "start",
-      "subflows",
-      "switches",
-      "waits",
-      "transforms",
-      "customErrors",
-      "apexPluginCalls",
-      "steps",
-      "orchestratedStages",
-      "recordRollbacks",
-      "constants",
-      "variables",
-      "textTemplates",
-      "choices",
-      "dynamicChoiceSets"
-    ];
 
-    // Iterate through each category and map element names to labels.
-    elementTypes.forEach(elementType => {
-      if (xmlData[elementType]) {
-        const elements = Array.isArray(xmlData[elementType]) ? xmlData[elementType] : [xmlData[elementType]];
-        elements.forEach(element => {
-          if (element.name) {
-            this._elementMap.set(element.name, element.label);
-          }
-        });
-      }
+    // Use element types from core library
+    this._getFlowElementTypes().forEach(elementType => {
+      const elements = xmlData[elementType];
+      if (!elements) return;
+
+      // Handle both single elements and arrays efficiently
+      const elementArray = Array.isArray(elements) ? elements : [elements];
+      elementArray.forEach(element => {
+        if (element?.name) {
+          this._elementMap.set(element.name, element.label);
+        }
+      });
     });
   }
 
@@ -370,6 +361,72 @@ class FlowScanner {
         throw new Error("Flow Scanner Core library not available");
       }
 
+      // Check if flow type is supported before proceeding with scan
+      // Use the FlowType class from the core scanner library for authoritative type definitions
+      let supportedFlowTypes = [];
+      let supportedFlowTypesSet = new Set();
+      let unsupportedFlowTypesSet = new Set();
+
+      if (this.flowScannerCore?.FlowType) {
+        // Use the core library's FlowType definitions
+        const FlowType = this.flowScannerCore.FlowType;
+        // Deduplicate the array to fix the duplicate "ContactRequestFlow" issue in core library
+        supportedFlowTypes = [...new Set(FlowType.allTypes())];
+        supportedFlowTypesSet = new Set(supportedFlowTypes);
+        const unsupportedFlowTypes = FlowType.unsupportedTypes || [];
+        unsupportedFlowTypesSet = new Set(unsupportedFlowTypes);
+      } else {
+        // If FlowType is not available, we cannot determine supported types
+        // Return an error state instead of proceeding with empty arrays
+        this.scanResults = [{
+          rule: "Scanner Configuration Error",
+          description: "Flow type validation is unavailable. The FlowType class is not exposed by the core scanner library.",
+          severity: "error",
+          flowName: this.currentFlow.name,
+          affectedElements: [{
+            elementName: this.currentFlow.apiName,
+            elementLabel: "Flow Scanner Core",
+            elementType: "Configuration",
+            expression: "FlowType class not available"
+          }]
+        }];
+        return;
+      }
+
+      // Get flow type using flow properties
+      const originalFlowType = this.currentFlow.xmlData?.processType || this.currentFlow.processType;
+      const currentFlowType = originalFlowType || this.currentFlow.type;
+
+      // Special case for screen flows - they might just show as "Flow" type but have screens
+      const hasScreens = Array.isArray(this.currentFlow.xmlData?.screens) && this.currentFlow.xmlData.screens.length > 0;
+      const isScreenFlow = currentFlowType === "Flow" && hasScreens;
+
+      // Check if the flow type is explicitly unsupported (O(1) lookup)
+      if (unsupportedFlowTypesSet.has(currentFlowType)) {
+        this.scanResults = [{
+          isUnsupportedFlow: true,
+          displayType: currentFlowType,
+          supportedFlowTypes,
+          reason: "explicitly_unsupported"
+        }];
+        return;
+      }
+
+      // Check if the flow type is in the supported list or if it's a screen flow (O(1) lookup)
+      const isFlowTypeSupported = supportedFlowTypesSet.has(currentFlowType) || isScreenFlow;
+
+      // If the flow type is not supported, return a special marker object.
+      if (!isFlowTypeSupported) {
+        const displayType = isScreenFlow ? "Screen Flow" : currentFlowType;
+        this.scanResults = [{
+          isUnsupportedFlow: true,
+          displayType,
+          supportedFlowTypes,
+          reason: "not_in_supported_list"
+        }];
+        return;
+      }
+
       const flow = new this.flowScannerCore.Flow(this.currentFlow.name, this.currentFlow.xmlData);
       const parsedFlow = {flow, name: this.currentFlow.name};
 
@@ -388,10 +445,13 @@ class FlowScanner {
 
       let results = [];
       const ruleConfig = {rules: {}};
-      rulesToRun.forEach(rule => {
+
+      // Optimize rule configuration building
+      for (const rule of rulesToRun) {
         const {name, configType, config = {}, severity: uiSeverity} = rule;
         const scannerSeverity = normalizeSeverity(uiSeverity || "error", "storage");
         const entry = {severity: scannerSeverity};
+
         if (configType === "expression" && config.expression != null) {
           entry.expression = config.expression;
         } else if (configType === "threshold" && config.threshold != null) {
@@ -403,11 +463,11 @@ class FlowScanner {
           }
         }
         ruleConfig.rules[name] = entry;
-      });
+      }
 
       // --- Handle APIVersion rule separately to avoid unsafe-eval in the core library ---
       const apiVersionConfig = ruleConfig.rules.APIVersion;
-      if (ruleConfig.rules.APIVersion) {
+      if (apiVersionConfig) {
         delete ruleConfig.rules.APIVersion;
       }
 
@@ -474,9 +534,9 @@ class FlowScanner {
         rule: "Scan Error",
         description: "Failed to scan flow: " + error.message,
         severity: "error",
-        flowName: this.currentFlow ? this.currentFlow.name : "Unknown",
+        flowName: this.currentFlow?.name || "Unknown",
         affectedElements: [{
-          elementName: this.currentFlow ? this.currentFlow.apiName : "Unknown",
+          elementName: this.currentFlow?.apiName || "Unknown",
           elementLabel: "Flow",
           expression: error.message
         }]
@@ -494,109 +554,99 @@ class FlowScanner {
   processScanResults(scanResults) {
     const results = [];
 
+    // Helper function to create result objects
+    const createResult = (rule, description, severity, affectedElements) => ({
+      rule,
+      description,
+      severity: this.mapSeverity(severity),
+      flowName: this.currentFlow.name,
+      affectedElements
+    });
+
+    // Helper function to create element objects with defaults
+    const createAffectedElement = (elementData) => ({
+      elementName: elementData.elementName || "",
+      elementType: elementData.elementType || "Unknown",
+      metaType: elementData.metaType || "",
+      dataType: elementData.dataType || "",
+      locationX: elementData.locationX || "",
+      locationY: elementData.locationY || "",
+      connectsTo: elementData.connectsTo || "",
+      expression: elementData.expression || "",
+      elementLabel: elementData.elementLabel || "",
+      apiName: elementData.apiName || ""
+    });
+
     for (const flowResult of scanResults) {
       if (flowResult.errorMessage) {
-        results.push({
-          rule: "Scan Error",
-          description: "Failed to scan flow: " + flowResult.errorMessage,
-          severity: "error",
-          flowName: this.currentFlow.name,
-          affectedElements: [{
+        results.push(createResult(
+          "Scan Error",
+          "Failed to scan flow: " + flowResult.errorMessage,
+          "error",
+          [createAffectedElement({
             elementName: this.currentFlow.apiName,
             elementLabel: "Flow",
             expression: flowResult.errorMessage
-          }]
-        });
+          })]
+        ));
         continue;
       }
 
       const ruleResults = flowResult.ruleResults || flowResult.results || flowResult.issues || [];
 
       for (const ruleResult of ruleResults) {
-        if (!ruleResult.occurs) {
-          continue;
-        }
+        if (!ruleResult.occurs) continue;
 
         const ruleDescription = ruleResult.ruleDefinition?.description || "No description available";
         const ruleLabel = ruleResult.ruleDefinition?.label || ruleResult.ruleName;
 
-        if (ruleResult.details && ruleResult.details.length > 0) {
+        if (ruleResult.details?.length > 0) {
           for (const detail of ruleResult.details) {
-            let elementName, elementLabel, elementType, apiName, expression, metaType, dataType, locationX, locationY, connectsTo;
             const potentialElementName = detail.name || detail.violation?.name;
 
+            let elementData;
             // Check if the violation is for a specific element or the flow itself.
             if (potentialElementName && this._elementMap.has(potentialElementName)) {
               // Element-level violation
-              elementName = potentialElementName;
-              const elementLabelFromCore = detail.label || detail.violation?.label;
-              elementLabel = elementLabelFromCore || this._elementMap.get(elementName) || "";
-              elementType = detail.type || detail.violation?.subtype || "Unknown";
-              metaType = detail.metaType || detail.violation?.metaType || "";
-              dataType = detail.dataType || "";
-              locationX = detail.details?.locationX || detail.violation?.locationX || "";
-              locationY = detail.details?.locationY || detail.violation?.locationY || "";
-              connectsTo = detail.details?.connectsTo || "";
-              expression = detail.details?.expression || detail.violation?.expression || "";
-              apiName = detail.apiName || detail.violation?.apiName || detail.name || detail.violation?.name || "";
+              const violation = detail.violation || {};
+              const detailsObj = detail.details || {};
+              elementData = {
+                elementName: potentialElementName,
+                elementLabel: detail.label || violation.label || this._elementMap.get(potentialElementName) || "",
+                elementType: detail.type || violation.subtype || "Unknown",
+                metaType: detail.metaType || violation.metaType || "",
+                dataType: detail.dataType || "",
+                locationX: detailsObj.locationX || violation.locationX || "",
+                locationY: detailsObj.locationY || violation.locationY || "",
+                connectsTo: detailsObj.connectsTo || "",
+                expression: detailsObj.expression || violation.expression || "",
+                apiName: detail.apiName || violation.apiName || detail.name || violation.name || ""
+              };
             } else {
               // Flow-level violation
-              elementName = this.currentFlow.apiName;
-              elementLabel = this.currentFlow.label;
-              elementType = "Flow";
-              apiName = this.currentFlow.apiName;
               const rawCondition = detail.expression || detail.details?.expression || detail.violation?.expression || "";
               const condition = rawCondition.replace(/([<>=!]+)/g, "$1 ");
-              expression = `${detail.name || ""} ${condition}`.trim();
-              metaType = "";
-              dataType = "";
-              locationX = "";
-              locationY = "";
-              connectsTo = "";
+              elementData = {
+                elementName: this.currentFlow.apiName,
+                elementLabel: this.currentFlow.label,
+                elementType: "Flow",
+                apiName: this.currentFlow.apiName,
+                expression: `${detail.name || ""} ${condition}`.trim()
+              };
             }
 
-            const result = {
-              rule: ruleLabel,
-              description: ruleDescription,
-              severity: this.mapSeverity(ruleResult.severity),
-              flowName: this.currentFlow.name,
-              affectedElements: [{
-                elementName,
-                elementType,
-                metaType,
-                dataType,
-                locationX,
-                locationY,
-                connectsTo,
-                expression,
-                elementLabel,
-                apiName
-              }]
-            };
-
-            results.push(result);
+            results.push(createResult(ruleLabel, ruleDescription, ruleResult.severity, [createAffectedElement(elementData)]));
           }
         } else {
           // Fallback for violations without specific details.
-          const result = {
-            rule: ruleLabel,
-            description: ruleDescription,
-            severity: this.mapSeverity(ruleResult.severity),
-            flowName: this.currentFlow.name,
-            affectedElements: [{
-              elementName: this.currentFlow.apiName,
-              elementLabel: this.currentFlow.label,
-              elementType: "Flow",
-              apiName: this.currentFlow.apiName,
-              expression: ruleDescription,
-              metaType: "",
-              dataType: "",
-              locationX: "",
-              locationY: "",
-              connectsTo: ""
-            }]
+          const elementData = {
+            elementName: this.currentFlow.apiName,
+            elementLabel: this.currentFlow.label,
+            elementType: "Flow",
+            apiName: this.currentFlow.apiName,
+            expression: ruleDescription
           };
-          results.push(result);
+          results.push(createResult(ruleLabel, ruleDescription, ruleResult.severity, [createAffectedElement(elementData)]));
         }
       }
     }
@@ -628,63 +678,27 @@ class FlowScanner {
    * @returns {Array} A list of all flow element objects.
    */
   extractFlowElements() {
-    if (!this.currentFlow || !this.currentFlow.xmlData) {
+    if (!this.currentFlow?.xmlData) {
       return [];
     }
 
     const elements = [];
     const xmlData = this.currentFlow.xmlData;
 
-    const elementTypes = [
-      "actionCalls",
-      "assignments",
-      "collectionProcessors",
-      "decisions",
-      "faultPaths",
-      "formulas",
-      "loops",
-      "recordCreates",
-      "recordDeletes",
-      "recordLookups",
-      "recordUpdates",
-      "screens",
-      "start",
-      "subflows",
-      "switches",
-      "waits",
-      "transforms",
-      "customErrors",
-      "apexPluginCalls",
-      "steps",
-      "orchestratedStages",
-      "recordRollbacks",
-      "constants",
-      "variables",
-      "textTemplates",
-      "choices",
-      "dynamicChoiceSets"
-    ];
+    // Use element types from core library
+    this._getFlowElementTypes().forEach(elementType => {
+      const elementData = xmlData[elementType];
+      if (!elementData) return;
 
-    elementTypes.forEach(elementType => {
-      if (xmlData[elementType]) {
-        if (Array.isArray(xmlData[elementType])) {
-          xmlData[elementType].forEach(element => {
-            elements.push({
-              name: element.name || element.label || element.apiName || "Unknown",
-              type: elementType,
-              element
-            });
-          });
-        } else if (typeof xmlData[elementType] === "object") {
-          // Handle cases where there is only one element of a type.
-          const element = xmlData[elementType];
-          elements.push({
-            name: element.name || element.label || element.apiName || elementType,
-            type: elementType,
-            element
-          });
-        }
-      }
+      // Handle both single elements and arrays efficiently
+      const elementArray = Array.isArray(elementData) ? elementData : [elementData];
+      elementArray.forEach(element => {
+        elements.push({
+          name: element?.name || element?.label || element?.apiName || "Unknown",
+          type: elementType,
+          element
+        });
+      });
     });
 
     return elements;
@@ -1077,6 +1091,53 @@ class App extends React.Component {
       return h("div", {className: "area scan-results-area", style: {display: "none"}});
     }
     const results = this.flowScanner.scanResults;
+
+    // Handle unsupported flow type
+    const isUnsupported = results.length === 1 && results[0].isUnsupportedFlow;
+    if (isUnsupported) {
+      const {displayType, supportedFlowTypes, reason} = results[0];
+
+      // Determine the message based on the reason
+      let headerMessage, introMessage;
+      if (reason === "explicitly_unsupported") {
+        headerMessage = `The "${displayType}" flow type is not supported by Flow Scanner.`;
+        introMessage = "This flow type is known to be incompatible with the scanner's analysis capabilities.";
+      } else {
+        headerMessage = `The "${displayType}" flow type is not currently supported.`;
+        introMessage = "Flow Scanner works with specific flow types to ensure accurate analysis.";
+      }
+
+      return h("div", {className: "area scan-results-area"},
+        h("div", {className: "unsupported-flow-state"},
+          // Header section using empty-state pattern
+          h("div", {className: "unsupported-flow-header"},
+            h("div", {className: "unsupported-icon-large"}, "⚠️"),
+            h("h2", {className: "unsupported-title"}, "Unsupported Flow Type"),
+            h("p", {className: "unsupported-subtitle"}, headerMessage),
+            h("p", {className: "unsupported-description"}, introMessage)
+          ),
+
+          // Supported types section using existing card and list styles
+          reason !== "explicitly_unsupported" && h("div", {className: "supported-types-section"},
+            h("div", {className: "flow-info-card"},
+              h("div", {className: "supported-types-header"},
+                h("h3", {},
+                  h("span", {style: {marginRight: "8px"}}, "✅"),
+                  `${supportedFlowTypes.length} Supported Flow Types`
+                ),
+                h("p", {}, "Flow Scanner can analyze flows of the following types:")
+              ),
+              h("ul", {className: "supported-types-list"},
+                supportedFlowTypes.map(type =>
+                  h("li", {key: type}, type)
+                )
+              )
+            )
+          )
+        )
+      );
+    }
+
     const totalIssues = results.length;
     const severityOrder = ["error", "warning", "info"];
     const severityLabels = {error: "Errors", warning: "Warnings", info: "Info"};

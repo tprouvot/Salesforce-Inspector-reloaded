@@ -1962,13 +1962,13 @@ class AllDataSelection extends React.PureComponent {
           h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Check Deploy Status") : null,
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", {href: this.getGeneratePackageUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Generate package.xml") : null,
+          ? h("a", {href: this.getGeneratePackageUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Generate package.xml") : null,
         flowDefinitionId
-          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
+          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Flow Versions") : null,
         flowDefinitionId
-          ? h("a", {href: this.getFlowScannerUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Scanner") : null,
+          ? h("a", {href: this.getFlowScannerUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Flow Scanner") : null,
         buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
           {
             key: button,

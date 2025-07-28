@@ -1,40 +1,40 @@
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-Light.woff2);
-  font-weight: 300
+  font-weight: 300;
 }
 
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-LightItalic.woff2);
   font-style: italic;
-  font-weight: 300
+  font-weight: 300;
 }
 
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-Regular.woff2);
-  font-weight: 400
+  font-weight: 400;
 }
 
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-Italic.woff2);
   font-style: italic;
-  font-weight: 400
+  font-weight: 400;
 }
 
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-Bold.woff2);
-  font-weight: 700
+  font-weight: 700;
 }
 
 @font-face {
-  font-family: 'Salesforce Sans';
+  font-family: "Salesforce Sans";
   src: url(fonts/SalesforceSans-BoldItalic.woff2);
   font-style: italic;
-  font-weight: 700
+  font-weight: 700;
 }
 
 * {
@@ -68,9 +68,9 @@ html {
 
 body {
   font-family: "Salesforce Sans", Arial, sans-serif;
-  font-size: .8125rem;
+  font-size: 0.8125rem;
   margin: 0;
-  background-color: #B0C4DF;
+  background-color: #b0c4df;
   background-image: url(images/lightning_blue_background.png);
   background-repeat: no-repeat;
   background-size: contain;
@@ -80,7 +80,7 @@ body {
 a {
   color: #0070d2;
   text-decoration: none;
-  transition: color .1s linear;
+  transition: color 0.1s linear;
 }
 
 a:active {
@@ -186,22 +186,27 @@ textarea {
   font: inherit;
 }
 
-thead{
+thead {
   top: 0;
   position: sticky;
   z-index: 1;
 }
 
 .th-filter-row {
-  background-color: #FFFFFF;
+  background-color: #ffffff;
 }
 
-.field-label, .field-name, .field-column, .field-actions, .child-column, .child-actions {
+.field-label,
+.field-name,
+.field-column,
+.field-actions,
+.child-column,
+.child-actions {
   padding: 1px 4px;
 }
 
 .border-cell {
-  border-bottom: 1px solid #DDDBDA;
+  border-bottom: 1px solid #dddbda;
 }
 
 .field-label {
@@ -253,11 +258,11 @@ thead{
   vertical-align: middle;
   color: #706e6b;
   border: 1px solid #dddbda;
-  transition: border .15s linear;
+  transition: border 0.15s linear;
   position: relative;
   display: inline-block;
   padding: 0;
-  border-radius: .25rem;
+  border-radius: 0.25rem;
   -webkit-appearance: none;
   white-space: normal;
   cursor: pointer;
@@ -274,9 +279,23 @@ thead{
   box-shadow: 0 0 3px #0070d2;
 }
 
+.actions-button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.actions-button[disabled]:hover,
+.actions-button[disabled]:active,
+.actions-button[disabled]:focus {
+  color: #706e6b;
+  border-color: #dddbda;
+  box-shadow: none;
+}
+
 .actions-icon {
-  width: .75rem;
-  height: .75rem;
+  width: 0.75rem;
+  height: 0.75rem;
   overflow: hidden;
   fill: #b0adab;
 }
@@ -289,7 +308,7 @@ thead{
 .table-settings-icon {
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 1rem;
-  background-color: #706E6B;
+  background-color: #706e6b;
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -322,7 +341,7 @@ th[tabindex] {
   z-index: 99999;
 }
 
-#fieldDetailsView>div.container {
+#fieldDetailsView > div.container {
   width: 600px;
   height: 500px;
   position: relative;
@@ -331,7 +350,7 @@ th[tabindex] {
   background: #fff;
 }
 
-#fieldDetailsView>div.container>div.mainContent {
+#fieldDetailsView > div.container > div.mainContent {
   overflow: auto;
   height: 470px;
   padding: 5px 20px 13px 20px;
@@ -339,7 +358,7 @@ th[tabindex] {
 
 .closeLnk {
   background: #606061;
-  color: #FFFFFF;
+  color: #ffffff;
   line-height: 25px;
   position: absolute;
   right: -12px;
@@ -373,8 +392,8 @@ th[tabindex] {
   background-color: #fff;
   color: #16325c;
   border: 1px solid #d8dde6;
-  border-radius: .25rem;
-  transition: border .1s linear, background-color .1s linear;
+  border-radius: 0.25rem;
+  transition: border 0.1s linear, background-color 0.1s linear;
   display: inline-block;
   line-height: 1.875rem;
   min-height: calc(1.875rem + (1px * 2));
@@ -385,7 +404,7 @@ th[tabindex] {
   outline: 0;
   border-color: #1589ee;
   background-color: #fff;
-  box-shadow: 0 0 3px #0070D2;
+  box-shadow: 0 0 3px #0070d2;
 }
 
 .filter-icon {
@@ -394,7 +413,7 @@ th[tabindex] {
   height: 1rem;
   position: absolute;
   top: 50%;
-  margin-top: -.5rem;
+  margin-top: -0.5rem;
   fill: #9faab5;
 }
 
@@ -404,31 +423,31 @@ th[tabindex] {
   height: 1rem;
   position: absolute;
   top: 50%;
-  margin-top: -.5rem;
+  margin-top: -0.5rem;
   fill: #9faab5;
   line-height: 1;
   vertical-align: middle;
   color: #54698d;
   display: inline-block;
   border: 1px solid transparent;
-  border-radius: .25rem;
-  font-size: .75rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
   text-decoration: none;
   transition: color 50ms linear, background-color 50ms linear;
 }
 
 .filter-clear-icon {
-  width: .875rem;
-  height: .875rem;
+  width: 0.875rem;
+  height: 0.875rem;
   fill: currentColor;
 }
 
 .error-message {
   font-size: 1.2em;
   font-weight: bold;
-  margin: .5em 0;
+  margin: 0.5em 0;
   background-color: #fe3;
-  padding: .5em;
+  padding: 0.5em;
   border: 1px solid red;
   border-radius: 7px;
 }
@@ -456,7 +475,7 @@ th[tabindex] {
 
 .object-tab a {
   color: #54698d;
-  padding: 0 .75rem;
+  padding: 0 0.75rem;
   text-decoration: none;
   height: 3rem;
   line-height: 3rem;
@@ -485,7 +504,7 @@ th[tabindex] {
 
 .object-tab::after {
   display: block;
-  content: '';
+  content: "";
   bottom: 0;
   left: 0;
   right: 0;
@@ -495,16 +514,16 @@ th[tabindex] {
 }
 
 .object-tab .tab-with-icon {
-  padding-right: .375rem;
+  padding-right: 0.375rem;
 }
 
 .object-tab .button-icon-link {
-  padding-left: .375rem;
+  padding-left: 0.375rem;
 }
 
 .button-icon {
-  width: .875rem;
-  height: .875rem;
+  width: 0.875rem;
+  height: 0.875rem;
   fill: currentColor;
   vertical-align: middle;
 }
@@ -531,9 +550,9 @@ th[tabindex] {
   vertical-align: middle;
   border: 1px solid #d8dde6;
   display: inline-block;
-  border-radius: .25rem;
+  border-radius: 0.25rem;
   font: unset;
-  font-size: .75rem;
+  font-size: 0.75rem;
   line-height: 1.875rem;
   transition: color 50ms linear, background-color 50ms linear;
 }
@@ -567,7 +586,7 @@ th[tabindex] {
 
 .button:focus {
   outline: 0;
-  box-shadow: 0 0 3px #0070D2;
+  box-shadow: 0 0 3px #0070d2;
 }
 
 .button:focus:not([disabled]),
@@ -638,12 +657,12 @@ th[tabindex] {
   transform: translateX(-50%);
   white-space: nowrap;
   border: 1px solid #d8dde6;
-  border-radius: .25rem;
-  padding: .25rem 0;
-  font-size: .75rem;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0;
+  font-size: 0.75rem;
   background: #fff;
-  box-shadow: 0 2px 3px 0 rgba(0, 0, 0, .16);
-  margin-top: .5rem;
+  box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
+  margin-top: 0.5rem;
 }
 
 .column-popup::before {
@@ -651,40 +670,40 @@ th[tabindex] {
   height: 1rem;
   position: absolute;
   transform: rotate(45deg);
-  content: '';
+  content: "";
   background-color: inherit;
   left: 50%;
-  top: -.5rem;
-  margin-left: -.5rem;
+  top: -0.5rem;
+  margin-left: -0.5rem;
 }
 
 .column-popup::after {
-  box-shadow: -1px -1px 0 0 rgba(0, 0, 0, .16);
+  box-shadow: -1px -1px 0 0 rgba(0, 0, 0, 0.16);
   z-index: -1;
   width: 1rem;
   height: 1rem;
   position: absolute;
   transform: rotate(45deg);
-  content: '';
+  content: "";
   background-color: inherit;
   left: 50%;
-  top: -.5rem;
-  margin-left: -.5rem;
+  top: -0.5rem;
+  margin-left: -0.5rem;
 }
 
 .column-popup label.menu-item {
   display: block;
-  padding: .2rem .75rem;
+  padding: 0.2rem 0.75rem;
 }
 
 .column-popup span.menu-item {
   display: block;
-  padding: .5rem .75rem;
-  font-size: .75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
   line-height: 1.25;
   color: #54698d;
   text-transform: uppercase;
-  letter-spacing: .0625rem;
+  letter-spacing: 0.0625rem;
 }
 
 .column-popup label.menu-item:hover {
@@ -719,12 +738,12 @@ th[tabindex] {
   display: flex;
   padding: 4px;
   border: 1px solid #d8dde6;
-  background-color: #f7f9fb;;
+  background-color: #f7f9fb;
   justify-content: center;
 }
 
 .edit-bar .button {
-  margin: 0 .25rem;
+  margin: 0 0.25rem;
 }
 
 .child-actions {
@@ -755,4 +774,14 @@ th[tabindex] {
 .child-actions .pop-menu {
   right: 0;
   text-align: right;
+}
+.sf-nav-group > a.sf-back {
+  color: unset;
+  margin-right: 4px;
+}
+th.border-cell.field-usage > button,
+th.field-actions.border-cell > button.actions-button {
+  border: none;
+  background-color: transparent;
+  fill: #706e6b;
 }

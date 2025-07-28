@@ -7,6 +7,7 @@ import AlertBanner from "./components/AlertBanner.js";
 
 let p = parent;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
+const isExtensionPage = document.location.ancestorOrigins?.[0].includes(chrome.i18n.getMessage("@@extension_id"));
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -2003,15 +2004,9 @@ class AllDataRecordDetails extends React.PureComponent {
   }
   openRecordLink(e) {
     e.preventDefault();
-    closePopup();
     const url = e.target.href;
-    const target = getLinkTarget(e);
     const recordId = e.target.dataset.recordId;
-    if (target === "_blank") {
-      window.open(url, target);
-    } else {
-      lightningNavigate({navigationType: "recordId", recordId}, url);
-    }
+    navigateWithExtensionCheck(e, url, {navigationType: "recordId", recordId});
   }
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
@@ -2292,14 +2287,7 @@ class Autocomplete extends React.PureComponent {
     }
   }
   handleNavigation(e, url, navigationParams) {
-    const linkTarget = getLinkTarget(e);
-    closePopup();
-
-    if (linkTarget === "_blank" || localStorage.getItem("lightningNavigation") == "false") {
-      window.open(url, linkTarget);
-    } else {
-      lightningNavigate(navigationParams, url);
-    }
+    navigateWithExtensionCheck(e, url, navigationParams);
   }
   onResultMouseEnter(index) {
     this.setState({selectedIndex: index, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
@@ -2463,14 +2451,19 @@ function lightningNavigate(details, fallbackURL) {
   p.postMessage({lightningNavigate: {...details, fallbackURL}}, "*");
 }
 
+function navigateWithExtensionCheck(e, url, navigationParams, target = null) {
+  const linkTarget = target || getLinkTarget(e);
+  closePopup();
+
+  if (linkTarget === "_blank" || localStorage.getItem("lightningNavigation") == "false" || (isExtensionPage === undefined || isExtensionPage)) {
+    window.open(url, linkTarget);
+  } else {
+    lightningNavigate(navigationParams, url);
+  }
+}
+
 function handleLightningLinkClick(e) {
   e.preventDefault(); // Prevent the default link behavior (href navigation)
-  closePopup();
   const url = e.currentTarget.href;
-  const target = getLinkTarget(e);
-  if (target === "_blank") {
-    window.open(url, target);
-  } else {
-    lightningNavigate({navigationType: "url", url}, url);
-  }
+  navigateWithExtensionCheck(e, url, {navigationType: "url", url});
 }

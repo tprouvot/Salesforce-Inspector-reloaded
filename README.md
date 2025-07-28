@@ -153,19 +153,19 @@ Linting : to assure indentation, formatting and best practices coherence, please
 
 ### Firefox
 
-1. In Firefox, open `about:debugging`.
-2. Select `This Firefox` at the top left.
-3. Click `Load Temporary Add-on…`.
-4. Select the file `addon/manifest.json`. This should be the manifest from the firefoxAddon branch (be sure to discard/not check in when done testing!)
+1. Rename the manifest-firefox.json file to manifest.json (and manifest.json to manifest-chrome.json).
+2. In Firefox, open `about:debugging`.
+3. Select `This Firefox` at the top left.
+4. Click `Load Temporary Add-on…`.
+5. Select the file `addon/manifest.json`.
 
 ### Unit tests
 
 1. Set up an org (e.g. a Developer Edition) and apply the following customizations:
-   1. Everything described in metadata in `test/`. Push to org with `sf deploy metadata -d test/ -o [your-test-org-alias]` or legacy `sfdx force:source:deploy -p test/ -u [your-test-org-alias]`.
+   1. Everything described in metadata in `test/`. Push to org with `sf deploy metadata -d test/ -o [your-test-org-alias]`.
    2. Make sure your user language is set to English.
-   3. Ensure _Allow users to relate a contact to multiple accounts_ is enabled (Setup → Account Settings).
-   4. Ensure the org has no _namespace prefix_ (Setup → Package Manager).
-   5. Assign Permission Set `SfInspector` to your user.
+   3. Ensure the org has no _namespace prefix_ (Setup → Package Manager).
+   4. Assign Permission Set `SfInspector` to your user.
 2. Navigate to one of the extension pages and replace the file name with `test-framework.html`, for example `chrome-extension://example/test-framework.html?host=example.my.salesforce.com`.
 3. Wait until "Salesforce Inspector unit test finished successfully" is shown.
 4. If the test fails, open your browser's developer tools console to see error messages.

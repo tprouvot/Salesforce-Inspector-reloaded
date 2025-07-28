@@ -325,3 +325,41 @@ You can configure which tab should be selected by default when opening the popup
    - Org: Shows organization information
 
 The selected tab will be remembered and used as the default when opening the popup.
+
+## Perform a field usage analysis for an SObject
+
+The field usage analysis feature helps you understand which fields in your Salesforce org are actually being used by calculating the percentage of records that have values for each field.
+
+### How to use
+
+1. **Navigate to an SObject**: Select an SObject from the popup or navigate to any SObject page in Salesforce
+2. **Open Show All Data**: Click the "Show all data" button to open the field inspection page
+3. **Calculate Field Usage**: You have two options:
+   - **Individual field**: Click on "Get field usage" link next to any field to calculate usage for that specific field only
+   - **All fields**: Click on the refresh icon (🔄) in the "Usage (%)" column header to calculate usage for all fields at once
+4. **View Results**:
+   - Hover over any percentage to see the detailed breakdown (e.g., "1,247 / 5,000 records (25%)")
+   - Required fields automatically show 100% usage
+   - Fields that can't be analyzed (like textarea or address fields) will be empty
+5. **Export Results**: Use the table settings menu (gear icon) to copy the table or download as CSV
+
+### Important Notes
+
+> **Warning**
+> Field usage analysis uses Salesforce API calls and counts against your API request limits. For large orgs, consider using this feature in a copy of production to avoid hitting API limits.
+
+- The feature uses Composite API to efficiently batch multiple field queries
+- Loading indicators show when calculations are in progress
+- Results are cached during your session for better performance
+- Required fields (nillable = false) automatically show 100% usage without making API calls
+
+### Use Cases
+
+This feature is particularly useful for:
+- Data cleanup projects
+- Field deprecation planning
+- Org optimization initiatives
+- Documentation and audit requirements
+- Understanding field adoption across your organization
+
+![Smart Field Usage demo](https://github.com/user-attachments/assets/ef93bf3c-8737-4a21-b38b-ce4822f8b573)

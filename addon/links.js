@@ -84,6 +84,11 @@ export let setupLinks = [
   {label: "Package Manager", link: "/lightning/setup/Package/home", section: "Platform Tools > Apps > Packaging", prod: false},
   {label: "Package Usage", link: "/lightning/setup/PackageUsageSummary/home", section: "Platform Tools > Apps > Packaging", prod: false},
 
+  //Platform Tools > Feature Settings > Analytics > Reports & Dashboards
+  {label: "Report Types", link: "/lightning/setup/CustomReportTypeLightning/home", section: "Platform Tools > Feature Settings > Analytics > Reports & Dashboards", prod: false},
+  {label: "Reporting Snapshot", link: "/lightning/setup/AnalyticSnapshots/home", section: "Platform Tools > Feature Settings > Analytics > Reports & Dashboards", prod: false},
+  {label: "Reports and Dashboards Settings", link: "/lightning/setup/ReportUI/home", section: "Platform Tools > Feature Settings > Analytics > Reports & Dashboards", prod: false},
+
   //Platform Tools > Feature Settings > Digital Experiences
   {label: "All Sites", link: "/lightning/setup/SetupNetworks/home", section: "Platform Tools > Feature Settings > Digital Experiences", prod: false},
   {label: "Pages", link: "/lightning/setup/CommunityFlexiPageList/home", section: "Platform Tools > Feature Settings > Digital Experiences", prod: false},

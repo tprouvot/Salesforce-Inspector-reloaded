@@ -593,6 +593,19 @@ class Model {
 
     // If we are on the right hand side of a comparison operator, autocomplete field values
     let isFieldValue = query.substring(0, selStart).match(/\s*[<>=!]+\s*('?[^'\s]*)$/);
+
+    // In clause on picklist field
+    let isInWithValues = query.substring(0, selStart).match(/\s*in\s*\(\s*(?:(?:'[^']*'\s*,\s*)+|')('?[^'\s]*)$/i);
+    let inValuesUtilized = "";
+    if (isInWithValues){
+      if (isInWithValues[0] && isInWithValues[0].match(/\s*in\s*\(\s*(?:')$/i)){ // extra single quote
+        selStart -= 1;
+        isInWithValues[0] = isInWithValues[0].substring(0, isInWithValues[0].length - 1);
+      }
+      isFieldValue = isInWithValues;
+      inValuesUtilized = isInWithValues[0].toLowerCase();
+    }
+
     let fieldName = null;
     if (isFieldValue) {
       let fieldEnd = selStart - isFieldValue[0].length;
@@ -747,7 +760,11 @@ class Model {
         return;
       }
       let ar = new Enumerable(contextValueFields).flatMap(function* ({field}) {
-        yield* field.picklistValues.map(pickVal => ({value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: ""}));
+        yield* field.picklistValues.filter(
+          pickVal => !inValuesUtilized.includes(pickVal.value.toLowerCase())
+        ).map(
+          pickVal => ({value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: ""})
+        );
         if (field.type == "boolean") {
           yield {value: "true", title: "true", suffix: " ", rank: 1};
           yield {value: "false", title: "false", suffix: " ", rank: 1};
@@ -950,6 +967,8 @@ class Model {
           vm.markPerf();
           vm.updatedExportedData();
           return null;
+        } else {
+          vm.updateCurrentTabName(exportedData.records[0].attributes.type);
         }
         vm.isWorking = false;
         vm.exportStatus = `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
@@ -1018,7 +1037,7 @@ class Model {
           // Extract SOQL from the result
           const soqlMatch = result.result.match(/<soql>(.*?)<\/soql>/);
           const extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
-          this.addQueryTab();
+          //this.addQueryTab();
           this.updateCurrentTabQuery(extractedSoql);
           //to resolve sobject and rename current tab
           this.queryAutocompleteHandler();
@@ -1102,6 +1121,7 @@ class Model {
       if (this.activeTabIndex >= index) {
         this.activeTabIndex = Math.max(0, this.activeTabIndex - 1);
       }
+      this.setActiveTab(this.activeTabIndex);
       this.saveQueryTabs();
       this.didUpdate();
     }
@@ -1142,7 +1162,7 @@ class Model {
   }
 
   updateCurrentTabName(name) {
-    if (this.queryTabs[this.activeTabIndex] && this.queryTabs[this.activeTabIndex].name !== name) {
+    if (this.queryTabs[this.activeTabIndex] && !this.queryTabs[this.activeTabIndex].name.includes(name)) {
       // Check if there are any other tabs with the same name
       let count = 1;
       let newName = name;

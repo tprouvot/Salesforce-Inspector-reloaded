@@ -234,7 +234,7 @@ class Model {
     let api = this.request.endpoint.startsWith("/services/async/") ? "bulk" : "normal";
     let responseType = this.request.endpoint.startsWith("/services/async/") ? "xml" : "json";
     this.request.method = this.request.method.toUpperCase();
-    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress}, true)
+    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress, useCache: false}, true)
       .catch(err => {
         this.canSendRequest = true;
         this.totalTime = performance.now() - this.startTime;

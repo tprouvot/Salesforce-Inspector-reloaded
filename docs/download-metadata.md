@@ -18,6 +18,23 @@ This page allows users to retrieve metadata from a Salesforce organization. It p
 * Paste `package.xml` content for metadata retrieval.
 * Copy or download the generated `package.xml` file.
 
+### 2.1 Import Button Functionality
+
+The import button provides multiple ways to load existing metadata configurations:
+
+#### Importing Package.xml Files
+* **File Selection:** Click the import button to open a file picker dialog.
+* **Supported Formats:** Accepts `.xml` files containing valid package.xml content.
+* **Validation:** The system validates the XML structure and metadata types before processing.
+* **Auto-population:** Once imported, the metadata components specified in the package.xml are automatically selected in the interface.
+* **Error Handling:** Invalid or malformed package.xml files will display appropriate error messages.
+
+#### Importing ZIP Files for Deployment
+* **Package ZIP Import:** Import ZIP files containing metadata packages for deployment.
+* **Direct Deployment:** ZIP files with metadata can be directly deployed to the Salesforce organization.
+* **Content Validation:** The system validates the ZIP structure and metadata contents.
+* **Deployment Options:** Configure deployment settings before processing the imported ZIP file.
+
 ### 3. Deployment Request Processing
 
 * Retrieve metadata components from a specific `deployRequestId`.

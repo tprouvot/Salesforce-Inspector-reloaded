@@ -22,7 +22,7 @@ The Flow Scanner in Salesforce Inspector Reloaded is powered by the [Lightning F
 1. **Open Salesforce Inspector Reloaded** in your browser (Chrome or Firefox).
 2. Navigate to a Salesforce Flow in your org.
 3. Look for the **Flow Scanner** button or option (usually available in the Inspector's UI when viewing a Flow):
-![image](https://private-user-images.githubusercontent.com/45099363/471431689-222f22b0-235a-4f23-b346-6e9d6f8b275b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTM2OTYzMzYsIm5iZiI6MTc1MzY5NjAzNiwicGF0aCI6Ii80NTA5OTM2My80NzE0MzE2ODktMjIyZjIyYjAtMjM1YS00ZjIzLWIzNDYtNmU5ZDZmOGIyNzViLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA3MjglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNzI4VDA5NDcxNlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTI2YmIyMzJhMzlkNzMyOWVmMzU2ZWQxMWIxZmRjZDEyYjE3NTQ3ODUyZmMxYmQyZTUwM2E5MDA1MzI4N2Y2MjImWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.aK2T9KaD2xNhUnex_FH84N5zWy0n3kCANJ0H1a8CXI4)
+![image](https://github.com/user-attachments/assets/222f22b0-235a-4f23-b346-6e9d6f8b275b)
 
 4. Click the **Flow Scanner** button to open the scanner overlay.
 
@@ -54,7 +54,7 @@ After scanning, you'll see a results panel with:
 - **Info:** Recommendations or minor suggestions
 
 Exemple of a scan result:
-![image](https://private-user-images.githubusercontent.com/45099363/471435393-0a1879e1-ee4f-489b-970c-785fe8ed083f.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTM2OTY2NTEsIm5iZiI6MTc1MzY5NjM1MSwicGF0aCI6Ii80NTA5OTM2My80NzE0MzUzOTMtMGExODc5ZTEtZWU0Zi00ODliLTk3MGMtNzg1ZmU4ZWQwODNmLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA3MjglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNzI4VDA5NTIzMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTIzOGMyNTI5NWZiNGEzYjA2YjBkOGJiM2I0OWUyY2VjMjZlNjQ0M2Q0NzkxMWE0ZTdiODIyODA5NTZjNTlmZjImWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.9oBlTJx8bJEigd0L1-PB0Fknp8L-G_DEME96sIAR0ps)
+![image](https://github.com/user-attachments/assets/0a1879e1-ee4f-489b-970c-785fe8ed083f)
 
 **No Issues?**
 - If your flow passes all checks, you'll see a success message: "No Issues Found. Great job!"
@@ -79,7 +79,7 @@ You can export the scan results as a CSV file for documentation or sharing:
 - Re-run the scan for updated results.
 
 Option page:
-![image](https://private-user-images.githubusercontent.com/45099363/471432388-24e2b297-7d8f-4db8-b0dd-353fcd742e5f.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTM2OTY2NTEsIm5iZiI6MTc1MzY5NjM1MSwicGF0aCI6Ii80NTA5OTM2My80NzE0MzIzODgtMjRlMmIyOTctN2Q4Zi00ZGI4LWIwZGQtMzUzZmNkNzQyZTVmLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA3MjglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNzI4VDA5NTIzMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWZmODczODE5MzgxYjUwOTE2NjZhZWEyYzM5YzdhYWRmMTVjNjRmY2E2ODdkMjY2ZDQ4YmMwZGVlODRmNTA1MWYmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.LxvZEr6_WUdDbvD6vM0pIyHSJg4OxpEivmVLEiMEt3Q)
+![image](https://github.com/user-attachments/assets/24e2b297-7d8f-4db8-b0dd-353fcd742e5f)
 
 
 ---

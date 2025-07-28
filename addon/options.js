@@ -386,36 +386,35 @@ class OptionsContainer extends React.Component {
     }
 
     return h("div", {className: "slds-p-around_medium slds-border_bottom"},
-      title && h("h2", {className: "slds-text-heading_large slds-text-title_bold slds-m-bottom_x-small"}, title),
-      description && h("div", {className: "slds-grid slds-grid_align-spread slds-m-bottom_medium"},
-        h("div", {className: "slds-col slds-size_10-of-12"},
-          h("p", {className: "slds-text-body_regular slds-text-color_weak"}, description,
-            descriptionTooltip && h(Tooltip, {tooltip: descriptionTooltip, idKey: `${this.props.id}_description`})
+      (title || (actionButtons && actionButtons.length > 0)) && h("div", {className: "slds-grid slds-m-bottom_x-small"},
+        title && h("div", {className: "slds-col"}, h("h2", {className: "slds-text-heading_large slds-text-title_bold"}, title)),
+        actionButtons && actionButtons.length > 0 && h("div", {className: "slds-col_bump-left"},
+          h("div", {className: "slds-button-group", role: "group"},
+            actionButtons.map((button, index) => {
+              if (button.type === "icon") {
+                return h("button", {
+                  key: index,
+                  className: `slds-button slds-button_icon slds-button_icon-border-filled${index > 0 ? " slds-m-left_x-small" : ""}`,
+                  onClick: button.method,
+                  title: button.title
+                }, h("svg", {className: "slds-button__icon"},
+                  h("use", {xlinkHref: `symbols.svg#${button.icon}`})
+                ));
+              }
+              return h("button", {
+                key: index,
+                className: `slds-button ${button.type === "brand" ? "slds-button_brand" : "slds-button_neutral"}`,
+                onClick: button.method,
+                title: button.title || button.label
+              }, button.label);
+            })
           )
         )
       ),
-      actionButtons && actionButtons.length > 0 && h("div", {className: "slds-button-group", role: "group"},
-        actionButtons.map((button, index) => {
-          if (button.type === "icon") {
-            // Icon button
-            return h("button", {
-              key: index,
-              className: `slds-button slds-button_icon slds-button_icon-border-filled${index > 0 ? " slds-m-left_x-small" : ""}`,
-              onClick: button.method,
-              title: button.title
-            }, h("svg", {className: "slds-button__icon"},
-              h("use", {xlinkHref: `symbols.svg#${button.icon}`})
-            ));
-          } else {
-            // Text button
-            return h("button", {
-              key: index,
-              className: `slds-button ${button.type === "brand" ? "slds-button_brand" : "slds-button_neutral"}`,
-              onClick: button.method,
-              title: button.title || button.label
-            }, button.label);
-          }
-        })
+      description && h("div", {className: "slds-m-bottom_medium"},
+        h("p", {className: "slds-text-body_regular slds-text-color_weak"}, description,
+          descriptionTooltip && h(Tooltip, {tooltip: descriptionTooltip, idKey: `${this.props.id}_description`})
+        )
       )
     );
   }

@@ -143,7 +143,7 @@ body {
 .scan-results-area {
   margin: 12px;
   flex: 1;
-  overflow-y: auto;
+  overflow-y: visible; /* allow tooltips to be fully visible */
   min-height: 200px;
 }
 
@@ -522,6 +522,7 @@ button:disabled,
 
 .results-container {
   padding: 0;
+  overflow: visible; /* ensure tooltips are not clipped */
 }
 
 .empty-state {
@@ -915,6 +916,7 @@ svg.icon:hover {
 }
 
 .rule-section {
+  position: relative;
   margin-bottom: 16px;
   background: white;
   border-radius: 12px;
@@ -925,6 +927,7 @@ svg.icon:hover {
 
 .rule-section:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 9999 !important;
 }
 
 .rule-section:last-child {
@@ -1471,10 +1474,6 @@ svg.icon:hover {
   margin-left: 8px;
 }
 
-.tooltip-container:hover {
-  z-index: 10;
-}
-
 .info-icon {
   width: 16px;
   height: 16px;
@@ -1500,7 +1499,7 @@ svg.icon:hover {
   color: #ffffff;
   padding: 8px 12px;
   border-radius: 6px;
-  z-index: 10000;
+  z-index: 10000 !important;
   width: 300px;
   font-size: 0.8rem;
   line-height: 1.4;

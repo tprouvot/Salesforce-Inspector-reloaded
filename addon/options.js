@@ -1,11 +1,11 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
 import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.js";
-/* global initButton */
+import {getFlowScannerRules} from "./flow-scanner.js";
+/* global initButton, lightningflowscanner */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
-import {getFlowScannerRules} from "./flow-scanner.js";
 
 class Model {
 
@@ -1559,8 +1559,9 @@ class FlowScannerRules extends React.Component {
         } else if (field === "severity") {
           return {...rule, severity: value};
         } else if (field === "config") {
-          // Store config value directly in the rule
-          return {...rule, configValue: value};
+          // Update the main config object for the scanner, and configValue for the UI
+          const newConfig = rule.configType ? {[rule.configType]: value} : {};
+          return {...rule, config: newConfig, configValue: value};
         }
       }
       return rule;

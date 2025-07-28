@@ -385,8 +385,8 @@ class OptionsContainer extends React.Component {
       return null;
     }
 
-    return h("div", {className: "slds-p-around_medium slds-border_bottom"},
-      (title || (actionButtons && actionButtons.length > 0)) && h("div", {className: "slds-grid slds-m-bottom_x-small"},
+    return h("div", {className: "slds-p-horizontal_medium slds-p-top_small slds-p-bottom_x-small slds-border_bottom"},
+      (title || (actionButtons && actionButtons.length > 0)) && h("div", {className: "slds-grid"},
         title && h("div", {className: "slds-col"}, h("h2", {className: "slds-text-heading_large slds-text-title_bold"}, title)),
         actionButtons && actionButtons.length > 0 && h("div", {className: "slds-col_bump-left"},
           h("div", {className: "slds-button-group", role: "group"},
@@ -411,7 +411,7 @@ class OptionsContainer extends React.Component {
           )
         )
       ),
-      description && h("div", {className: "slds-m-bottom_medium"},
+      description && h("div", {className: "slds-m-bottom_xx-small"},
         h("p", {className: "slds-text-body_regular slds-text-color_weak"}, description,
           descriptionTooltip && h(Tooltip, {tooltip: descriptionTooltip, idKey: `${this.props.id}_description`})
         )

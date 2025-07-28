@@ -21,7 +21,9 @@ The Flow Scanner in Salesforce Inspector Reloaded is powered by the [Lightning F
 
 1. **Open Salesforce Inspector Reloaded** in your browser (Chrome or Firefox).
 2. Navigate to a Salesforce Flow in your org.
-3. Look for the **Flow Scanner** button or option (usually available in the Inspector's UI when viewing a Flow).
+3. Look for the **Flow Scanner** button or option (usually available in the Inspector's UI when viewing a Flow):
+![image](https://private-user-images.githubusercontent.com/45099363/471431689-222f22b0-235a-4f23-b346-6e9d6f8b275b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTM2OTYzMzYsIm5iZiI6MTc1MzY5NjAzNiwicGF0aCI6Ii80NTA5OTM2My80NzE0MzE2ODktMjIyZjIyYjAtMjM1YS00ZjIzLWIzNDYtNmU5ZDZmOGIyNzViLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA3MjglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNzI4VDA5NDcxNlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTI2YmIyMzJhMzlkNzMyOWVmMzU2ZWQxMWIxZmRjZDEyYjE3NTQ3ODUyZmMxYmQyZTUwM2E5MDA1MzI4N2Y2MjImWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.aK2T9KaD2xNhUnex_FH84N5zWy0n3kCANJ0H1a8CXI4)
+
 4. Click the **Flow Scanner** button to open the scanner overlay.
 
 ---

@@ -89,8 +89,6 @@ Option page:
 - **Keyboard Navigation:**
   - Use <kbd>Tab</kbd> to move between buttons and sections
   - Press <kbd>Enter</kbd> or <kbd>Space</kbd> to expand/collapse result groups
-  - <kbd>Ctrl+E</kbd> (or <kbd>Cmd+E</kbd> on Mac) to quickly export results
-  - <kbd>Escape</kbd> to close the scanner overlay
 
 ---
 

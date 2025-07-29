@@ -752,8 +752,7 @@ class FieldRowList extends RowList {
       return;
     }
 
-    let isGroupable = fieldRow.fieldDescribe && fieldRow.fieldDescribe.groupable;
-    let nonNullRecords = this.calculateNonNullRecords(fieldRow, queryResult.body, isGroupable);
+    let nonNullRecords = this.calculateNonNullRecords(queryResult.body);
     let percentage = this.calculatePercentage(nonNullRecords, totalRecords);
 
     this.setFieldUsageSuccess(fieldRow, percentage, nonNullRecords, totalRecords);
@@ -765,22 +764,8 @@ class FieldRowList extends RowList {
   }
 
   // Helper method to calculate non-null records count
-  calculateNonNullRecords(fieldRow, queryBody, isGroupable) {
-    if (!isGroupable) {
-      // For non-groupable fields, the result is a simple count
-      return queryBody.totalSize || 0;
-    } else if (queryBody.records) {
-      // For groupable fields, process the GROUP BY results
-      let nonNullRecords = 0;
-      queryBody.records.forEach(record => {
-        // If the field value is not null, add to non-null count
-        if (record[fieldRow.fieldName] !== null && record[fieldRow.fieldName] !== undefined) {
-          nonNullRecords += record.number;
-        }
-      });
-      return nonNullRecords;
-    }
-    return 0;
+  calculateNonNullRecords(queryBody) {
+    return queryBody.totalSize || 0;
   }
 
   // Helper method to calculate percentage

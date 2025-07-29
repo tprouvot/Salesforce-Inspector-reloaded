@@ -522,6 +522,33 @@ class RowList {
     this.availableColumns = null;
     this.selectedColumnMap = null;
   }
+
+  getLocalStorageKey() {
+    if (this.listName === "fields") {
+      return "inspectFieldsToDisplay";
+    } else {
+      return "inspectRelationsToDisplay";
+    }
+  }
+
+  saveVisibleColumnsToStorage() {
+    const visibleColumns = Array.from(this.selectedColumnMap.keys());
+    localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(visibleColumns));
+  }
+
+  // Helper method to load visible columns from localStorage
+  loadVisibleColumnsFromStorage(defaultColumns) {
+    const saved = localStorage.getItem(this.getLocalStorageKey());
+    if (saved) {
+      const parsedColumns = JSON.parse(saved);
+      // Validate that saved columns is an array
+      if (Array.isArray(parsedColumns) && parsedColumns.length > 0) {
+        return parsedColumns;
+      }
+    }
+    return defaultColumns;
+  }
+
   getRow(name) {
     if (!name) { // related lists may not have a name
       let row = new this._rowConstructor(name, this._nextReactKey++, this);
@@ -600,6 +627,7 @@ class RowList {
     } else {
       this.selectedColumnMap.delete(col);
     }
+    this.saveVisibleColumnsToStorage();
   }
   toggleAvailableColumns() {
     if (this.availableColumns) {
@@ -630,10 +658,12 @@ class FieldRowList extends RowList {
     this.listName = "fields";
 
     // Only include usage column if objectType parameter is present
-    let columns = ["name", "label", "type"];
+    let defaultColumns = ["name", "label", "type"];
     if (!new URLSearchParams(location.search.slice(1)).get("recordId")) {
-      columns.push("usage");
+      defaultColumns.push("usage");
     }
+
+    let columns = this.loadVisibleColumnsFromStorage(defaultColumns);
 
     this.initColumns(columns);
     this.fetchFieldDescriptions = true;
@@ -903,7 +933,11 @@ class ChildRowList extends RowList {
   constructor(model) {
     super(ChildRow, model);
     this.listName = "childs";
-    this.initColumns(["name", "object", "field", "label"]);
+
+    let defaultColumns = ["name", "object", "field", "label"];
+    let columns = this.loadVisibleColumnsFromStorage(defaultColumns);
+
+    this.initColumns(columns);
   }
   createColumn(col) {
     return {

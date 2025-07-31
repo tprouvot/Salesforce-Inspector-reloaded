@@ -262,6 +262,7 @@ class FlowScanner {
 
       // Extract and normalize flow metadata from API responses
       const xmlData = flowRecord?.Metadata || {};
+      this._removeNullAttributes(xmlData);
       const triggerObjectLabel = flowDefView?.TriggerObjectOrEventLabel || "—";
       const triggerType = flowDefView?.TriggerType || xmlData?.triggerType || null;
       const processType = flowDefView?.ProcessType || xmlData?.processType || null;
@@ -341,6 +342,27 @@ class FlowScanner {
           this._elementMap.set(element.name, element.label);
         }
       });
+    });
+  }
+
+  /**
+   * Recursively removes keys with `null` values from an object.
+   * @param {object} obj The object to clean.
+   */
+  _removeNullAttributes(obj) {
+    if (!obj || typeof obj !== "object") {
+      return;
+    }
+    if (Array.isArray(obj)) {
+      obj.forEach(item => this._removeNullAttributes(item));
+      return;
+    }
+    Object.keys(obj).forEach(key => {
+      if (obj[key] === null) {
+        delete obj[key];
+      } else {
+        this._removeNullAttributes(obj[key]);
+      }
     });
   }
 

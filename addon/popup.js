@@ -24,6 +24,12 @@ if (typeof browser === "undefined") {
       if (e.data.insextInitResponse) {
         init(e.data);
         initLinks(e.data);
+      } else if (e.data.refreshFilteredStorage) {
+        // Parent requests an updated filtered localStorage snapshot
+        parent.postMessage({
+          insextInitRequest: true,
+          iFrameLocalStorage: getFilteredLocalStorage()
+        }, "*");
       } else if (e.data.updateLocalStorage) {
         localStorage.setItem(e.data.key, e.data.value);
       }
@@ -42,11 +48,6 @@ if (typeof browser === "undefined") {
 }
 
 function getFilteredLocalStorage(){
-  const existingFilteredStorage = sessionStorage.getItem("filteredStorage");
-  if (existingFilteredStorage) {
-    return JSON.parse(existingFilteredStorage);
-  }
-
   let host = new URLSearchParams(window.location.search).get("host");
 
   let domainStart = host?.split(".")[0];
@@ -55,7 +56,6 @@ function getFilteredLocalStorage(){
   const filteredStorage = Object.fromEntries(
     Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith("access_token"))
   );
-  sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
   return filteredStorage;
 }
 function closePopup() {

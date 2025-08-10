@@ -32,6 +32,21 @@
   "content_scripts": [
     {
       "matches": [
+        "https://*.lightning.force.com/builder_platform_interaction/*",
+        "https://*.lightning.force.mil/builder_platform_interaction/*",
+        "https://*.lightning.force.com.mcas.ms/builder_platform_interaction/*"
+      ],
+      "all_frames": true,
+      "css": [
+        "button.css"
+      ],
+      "js": [
+        "button.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
         "https://*.salesforce.com/*",
         "https://*.salesforce-setup.com/*",
         "https://*.visual.force.com/*",
@@ -51,6 +66,11 @@
         "https://*.lightning.force.com.mcas.ms/*",
         "https://*.force.com/*",
         "https://*.builder.salesforce-experience.com/*"
+      ],
+      "exclude_matches": [
+        "https://*.lightning.force.com/builder_platform_interaction/*",
+        "https://*.lightning.force.mil/builder_platform_interaction/*",
+        "https://*.lightning.force.com.mcas.ms/builder_platform_interaction/*"
       ],
       "all_frames": true,
       "css": [

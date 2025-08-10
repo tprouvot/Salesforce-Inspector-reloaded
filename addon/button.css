@@ -1,3 +1,7 @@
+/* Flow Builder overlay: minimal neutralization */
+.flow-builder-loading-box {
+    background: none !important;
+ }
 #insext {
     z-index: 1000;
     display: block;

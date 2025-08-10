@@ -3,8 +3,20 @@
 // auraLoadingBox: Lightning / Salesforce1
 // studioBody: Exoperience Builder
 // flowContainer: Flow Debugger
+// Flow Builder: minimal overlay killer (display: none)
+(function() {
+  if (!/builder_platform_interaction|flowBuilder\.app/.test(location.href)) return;
+  if (document.getElementById("sir-flow-overlay-kill")) return;
+  const style = document.createElement("style");
+  style.id = "sir-flow-overlay-kill";
+  style.textContent = ".flow-builder-loading-box{display:none!important}";
+  (document.head || document.documentElement).appendChild(style);
+})();
+
 const visualForceDomains = ["visualforce.com", "vf.force.com"];
-if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #studioBody, #flowContainer") || visualForceDomains.filter(host => location.host.endsWith(host)).length > 0) {
+const isFlowBuilderUrl = (location && location.href && (location.href.includes("builder_platform_interaction") || location.href.includes("flowBuilder.app")));
+// Skip the heavy DOM guard for Flow Builder (we're explicitly injected on those URLs at document_start)
+if (isFlowBuilderUrl || document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #studioBody, #flowContainer") || visualForceDomains.filter(host => location.host.endsWith(host)).length > 0) {
   // We are in a Salesforce org
   chrome.runtime.sendMessage({message: "getSfHost", url: location.href}, sfHost => {
     if (sfHost) {
@@ -37,6 +49,9 @@ function initButton(sfHost, inInspector) {
     if (currentUrl.includes("builder_platform_interaction")) {
       // Create a new checkbox element
       const headerFlow = document.querySelector("builder_platform_interaction-container-common");
+      if (!headerFlow) {
+        return; // container not ready; avoid null append
+      }
       const overflowCheckbox = document.createElement("input");
       overflowCheckbox.type = "checkbox";
       overflowCheckbox.id = "overflow-checkbox";

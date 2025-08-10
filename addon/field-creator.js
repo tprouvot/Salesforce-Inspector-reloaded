@@ -1,5 +1,6 @@
 /* global React ReactDOM field-creator.js */
 import {sfConn, apiVersion} from "./inspector.js";
+import {getUserInfoSpanStyle} from "./utils.js";
 
 let h = React.createElement;
 
@@ -1554,7 +1555,7 @@ class App extends React.Component {
           " Salesforce Home"
         ),
         h("h1", {}, "Field Creator (beta)"),
-        h("span", {}, " / " + userInfo),
+        h("span", {id: "user-info-text", style: getUserInfoSpanStyle(sfConn.instanceHostname)}, " / " + userInfo),
         h("div", {className: "flex-right"},
           h("span", {className: "slds-assistive-text"}),
           h("div", {className: "slds-spinner__dot-a"}),

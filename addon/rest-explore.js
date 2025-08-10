@@ -1,5 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
+import {getUserInfoSpanStyle} from "./utils.js";
 /* global initButton */
 import {copyToClipboard, initScrollTable} from "./data-load.js";
 
@@ -519,7 +520,7 @@ class App extends React.Component {
           " Salesforce Home"
         ),
         h("h1", {}, "REST Explore"),
-        h("span", {}, " / " + model.userInfo),
+        h("span", {id: "user-info-text", style: getUserInfoSpanStyle(model.sfHost)}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
           h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
             h("span", {className: "slds-assistive-text"}),

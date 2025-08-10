@@ -1,5 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
+import {getUserInfoSpanStyle} from "./utils.js";
 import {copyToClipboard} from "./data-load.js";
 /* global initButton */
 
@@ -177,7 +178,7 @@ class App extends React.Component {
           " Salesforce Home"
         ),
         h("h1", {}, model.title),
-        h("span", {}, " / " + model.userInfo),
+        h("span", {id: "user-info-text", style: getUserInfoSpanStyle(sfConn.instanceHostname)}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
           h("a", {href: "#", id: "refresh", title: "Refresh Limits", onClick: this.onRefreshLimits},
             h("svg", {className: "icon"},

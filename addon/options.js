@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
-import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.js";
+import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, getUserInfoSpanStyle} from "./utils.js";
 /* global initButton */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
@@ -112,6 +112,7 @@ class OptionsTabSelector extends React.Component {
           },
           {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
+          {option: Option, props: {type: "toggle", title: "Use favicon color on user info", key: "colorizeOptionsBanner", tooltip: "Use your favicon color for the user info badge across pages."}},
           {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
           {option: Option, props: {type: "text", title: "PROD Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the PROD banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
           {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
@@ -561,6 +562,7 @@ class FaviconOption extends React.Component {
     let favicon = e.target.value;
     this.setState({favicon});
     localStorage.setItem(this.sfHost + "_customFavicon", favicon);
+    applyOptionsHeaderColor();
   }
 
   onToogleSmartMode(e) {
@@ -1231,7 +1233,7 @@ class App extends React.Component {
           " Salesforce Home"
         ),
         h("h1", {className: "slds-text-title_bold"}, "Options"),
-        h("span", {}, " / " + model.userInfo),
+        h("span", {id: "user-info-text", style: getUserInfoSpanStyle(model.sfHost)}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
           h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: this.exportOptions, title: "Export Options"},
             h("svg", {className: "slds-button__icon"},

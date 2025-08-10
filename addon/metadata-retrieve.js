@@ -1,4 +1,5 @@
 import {sfConn, apiVersion} from "./inspector.js";
+import {getUserInfoSpanStyle} from "./utils.js";
 import Toast from "./components/Toast.js";
 import {copyToClipboard} from "./data-load.js";
 
@@ -646,7 +647,7 @@ class App extends React.Component {
             " Salesforce Home"
           ),
           h("h1", {className: "slds-text-title_bold"}, model.title()),
-          h("span", {}, " / " + model.userInfo),
+          h("span", {id: "user-info-text", style: getUserInfoSpanStyle(model.sfHost)}, " / " + model.userInfo),
           h("div", {className: "flex-right"},
             h("div", {role: "status", className: "slds-spinner slds-spinner_large", hidden: model.spinnerCount == 0},
               h("span", {className: "slds-assistive-text"}),

@@ -288,6 +288,12 @@ select:focus {
   border: 1px solid rgb(21, 137, 238);
 }
 
+/* Prevent the first wrapped trigger from shifting left on focus/active */
+.button-group > .query-history-dropdown:first-child > button:focus,
+.button-group > .query-history-dropdown:first-child > button:active {
+  margin-left: 0;
+}
+
 button:active,
 button:focus {
   background-color: rgb(238, 241, 246);
@@ -411,20 +417,6 @@ textarea[readonly] {
   color: white;
 }
 
-.char-btn {
-  color: white;
-  text-decoration: none;
-  background-color: gray;
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 7px;
-  line-height: 14px;
-  text-align: center;
-  margin: 1px 0 0 3px;
-}
-
-.char-btn[hidden],
 button[hidden],
 .button[hidden] {
   display: none;
@@ -434,10 +426,12 @@ button[hidden],
   white-space: nowrap;
 }
 
-.button-group button,
-.button-group .button,
-.button-group select,
-.button-group input {
+.button-group > button,
+.button-group > .button,
+.button-group > select,
+.button-group > input,
+/* Ensure wrapped buttons (like the history/saved dropdown trigger) behave like group items */
+.button-group > .query-history-dropdown > button {
   border-left-width: 0;
   border-radius: 0;
   margin-right: 0;
@@ -450,10 +444,96 @@ button[hidden],
   border-left-width: 1px;
 }
 
+/* When the first group item is a wrapper (e.g., .query-history-dropdown), carry the
+   first-child rounding and left border onto its inner trigger button so the
+   group looks contiguous. */
+.button-group > .query-history-dropdown:first-child > button {
+  border-left-width: 1px;
+  border-top-left-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
+}
+
 .button-group > :last-child {
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
   margin-right: 10px;
+}
+
+/* If the first visible item follows a hidden element, also round the inner trigger */
+.button-group > [hidden] + .query-history-dropdown > button {
+  border-left-width: 1px;
+  border-top-left-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
+}
+
+/* When the last group item is a wrapper, mirror right rounding on its inner button */
+.button-group > .query-history-dropdown:last-child > button {
+  border-top-right-radius: 0.25rem;
+  border-bottom-right-radius: 0.25rem;
+}
+
+/* Query History Dropdown */
+.query-history-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.query-history-dropdown .dropdown-menu {
+  min-width: 300px;
+  max-width: min(800px, calc(100vw - 40px));
+  width: max-content;
+  max-height: calc(100vh - 150px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  right: auto;
+  margin-right: 8px;
+}
+
+.query-history-dropdown .query-history-search {
+  width: 100%;
+  margin: 0;
+}
+
+.query-history-dropdown .dropdown-list {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+.query-history-dropdown .dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: max-content;
+}
+
+.query-history-dropdown .dropdown-item:hover,
+.query-history-dropdown .dropdown-item.active {
+  background-color: #eef4ff;
+}
+
+.query-history-dropdown .dropdown-item.disabled {
+  color: #706E6B;
+  cursor: default;
+}
+
+.query-history-dropdown .dropdown-item-content {
+  white-space: nowrap;
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.query-history-dropdown .dropdown-item .badge {
+  font-size: 10px;
+  background: #f3f2f2;
+  color: #3e3e3c;
+  border: 1px solid #dddbda;
+  border-radius: 8px;
+  padding: 2px 6px;
+  flex-shrink: 0;
 }
 
 button,
@@ -696,12 +776,6 @@ svg.button-icon {
   -webkit-mask-image: url(images/advanced_function.svg);
 }
 
-.header {
-  position: -webkit-sticky;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-}
 .expanded {
   overflow: auto;
   height: 200px;
@@ -746,6 +820,10 @@ svg.button-icon {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-top: 2px;
   padding: 4px 0;
+  max-width: 100vw; /* never exceed viewport width */
+  overflow-x: hidden; /* avoid causing horizontal scroll */
+  max-width: 100vw; /* never exceed viewport width */
+  overflow-x: hidden; /* avoid causing horizontal scroll */
 }
 
 .dropdown-item {
@@ -858,4 +936,41 @@ svg.icon:hover {
 
 .add-tab-button:hover {
   background: #f3f2f2;
+}
+
+/* Query History dropdown refinements */
+.query-history-dropdown .dropdown-menu {
+  padding: 0 8px 8px 8px !important;
+}
+
+.query-history-dropdown .query-history-search {
+  display: block;
+  border-left-width: 1px !important;
+  border-top-left-radius: 4px !important;
+  border-bottom-left-radius: 4px !important;
+}
+
+.query-history-dropdown .dropdown-list {
+  margin: 0 -8px;
+}
+
+.query-history-dropdown .dropdown-item {
+  margin: 0 -8px;
+  padding: 4px 16px;
+}
+
+.query-history-dropdown .dropdown-item.active {
+  box-shadow: inset 2px 0 0 0 #1589ee;
+}
+
+/* Ensure highlighted fragments align perfectly with surrounding text */
+.query-history-dropdown .dropdown-item-content mark,
+.autocomplete-results mark {
+  background-color: #fff1a6;
+  color: inherit;
+  padding: 0; /* remove default vertical padding to keep baseline alignment */
+  line-height: inherit;
+  vertical-align: baseline;
+  border-radius: 2px;
+  display: inline;
 }

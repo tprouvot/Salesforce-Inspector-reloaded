@@ -488,6 +488,7 @@ button[hidden],
   overflow: hidden;
   right: auto;
   margin-right: 8px;
+  overflow-x: auto; /* allow horizontal scroll when content exceeds max width */
 }
 
 .query-history-dropdown .query-history-search {
@@ -497,21 +498,29 @@ button[hidden],
 
 .query-history-dropdown .dropdown-list {
   flex: 1;
-  overflow: auto;
+  overflow: auto; /* allow both axes */
   min-height: 0;
   overscroll-behavior: contain;
 }
 
+/* Ensure a single horizontal scrollbar for all items */
+.query-history-dropdown .dropdown-items {
+  display: inline-block; /* shrink-wrap to the widest item */
+  min-width: 100%; /* but never smaller than the viewport to keep full-row hover */
+}
+
 .query-history-dropdown .dropdown-item {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start; /* left-align contents for consistent feel */
   gap: 8px;
-  min-width: max-content;
+  width: max-content; /* expand to content width for horizontal scroll */
+  min-width: 100%; /* but keep at least the menu width for full-row hover */
+  position: relative; /* enable full-row hover overlay */
 }
 
 .query-history-dropdown .dropdown-item:hover,
 .query-history-dropdown .dropdown-item.active {
-  background-color: #eef4ff;
+  background-color: #eef4ff; /* full-row hover */
 }
 
 .query-history-dropdown .dropdown-item.disabled {
@@ -522,8 +531,10 @@ button[hidden],
 .query-history-dropdown .dropdown-item-content {
   white-space: nowrap;
   display: block;
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 0 auto; /* size by content */
+  width: max-content; /* allow full query text */
+  min-width: auto;
+  overflow: visible;
 }
 
 .query-history-dropdown .dropdown-item .badge {
@@ -534,6 +545,13 @@ button[hidden],
   border-radius: 8px;
   padding: 2px 6px;
   flex-shrink: 0;
+}
+
+/* Inline object highlight (different tone than search mark) */
+.query-history-dropdown .dropdown-item-content .clausemark {
+  background-color: #dff5e1; /* subtle mint green for FROM/WHERE */
+  color: inherit;
+  border-radius: 2px;
 }
 
 button,

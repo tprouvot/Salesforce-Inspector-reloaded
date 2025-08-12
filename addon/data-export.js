@@ -132,13 +132,39 @@ class DropdownHelper {
       t.substring(idx + p.length)
     ];
   }
+  static renderQueryWithClauseHighlight(text, searchTerm) {
+    const baseParts = DropdownHelper.renderHighlightedText(text, searchTerm);
+    const clauseRe = /\b(select|from|where|with|group\s+by|having|order\s+by|limit|offset|for\s+update|for\s+view|all\s+rows|using\s+scope)\b/gi;
+    const out = [];
+    let key = 0;
+    for (const part of baseParts) {
+      if (typeof part !== "string") { out.push(part); continue; }
+      clauseRe.lastIndex = 0;
+      if (!clauseRe.test(part)) { out.push(part); continue; }
+      clauseRe.lastIndex = 0;
+      let last = 0; let m;
+      while ((m = clauseRe.exec(part)) !== null) {
+        if (m.index > last) out.push(part.slice(last, m.index));
+        out.push(h("mark", {key: `cl-${key++}`, className: "clausemark"}, m[0]));
+        last = m.index + m[0].length;
+      }
+      if (last < part.length) out.push(part.slice(last));
+    }
+    return out;
+  }
   static parseSearchContext(value, model, vocabOverride = null) {
     const v = value || "";
     const raw = v.replace(/^\?\s*/, "");
     const tokens = SearchUtils.splitPreservingQuotes(raw);
-    const isObjectSuggest = /^\?\s*$/.test(v) || (/^\?/.test(v) && tokens.length <= 1);
+    let isObjectSuggest = /^\?\s*$/.test(v) || (/^\?/.test(v) && tokens.length <= 1);
     const vocab = (vocabOverride || model.historyObjVocab || []).slice().sort();
     const prefix = SearchUtils.unquote(tokens[0] || "").toLowerCase();
+    // If the user has selected a complete object (e.g., by clicking a suggestion),
+    // we want to immediately show the filtered list even if no text is typed yet.
+    const hasCompletedObject = isObjectSuggest && tokens.length <= 1 && vocab.includes(prefix) && /\s$/.test(v);
+    if (hasCompletedObject) {
+      isObjectSuggest = false;
+    }
     return {v, raw, tokens, isObjectSuggest, vocab, prefix};
   }
 
@@ -1895,42 +1921,62 @@ class App extends React.Component {
           if (ctx.isObjectSuggest) {
             const objs = DropdownHelper.getObjectSuggestions(ctx);
             if (!objs.length) { return []; }
-            return objs.map((o, idx) => h("div", {
-              key: o,
-              id: this.getDropdownActiveId(kind, idx),
-              role: "option",
-              "aria-selected": (idx === activeIdx) ? "true" : "false",
-              className: "dropdown-item" + (idx === activeIdx ? " active" : ""),
-              onMouseEnter: () => this.onDropdownItemMouseEnter(kind, idx),
-              onClick: () => {
-                if (isHistory) { model.setHistorySearchValue(`?${o} `); } else { model.setSavedSearchValue(`?${o} `); }
-                model.didUpdate();
-                this.setState({[this.activeIndexKey(kind)]: 0});
-                const refName = (isHistory ? "historySearchInput" : "savedSearchInput");
-                if (this[refName]) { try { this[refName].focus(); } catch { /* ignore */ } }
-              }
-            },
-            h("span", {className: "dropdown-item-content", title: o}, DropdownHelper.renderHighlightedPrefix(o, ctx.prefix)),
-            h("span", {className: "badge"}, "Object")));
+            const onSelectObj = (o, idx) => {
+              if (isHistory) { model.setHistorySearchValue(`?${o} `); } else { model.setSavedSearchValue(`?${o} `); }
+              model.didUpdate();
+              this.setState({[this.activeIndexKey(kind)]: 0});
+              const refName = (isHistory ? "historySearchInput" : "savedSearchInput");
+              if (this[refName]) { try { this[refName].focus(); } catch { /* ignore */ } }
+            };
+            return h("div", {className: "dropdown-items"},
+              objs.map((o, idx) => h("div", {
+                key: o,
+                id: this.getDropdownActiveId(kind, idx),
+                role: "option",
+                "aria-selected": (idx === activeIdx) ? "true" : "false",
+                className: "dropdown-item" + (idx === activeIdx ? " active" : ""),
+                onMouseEnter: () => this.onDropdownItemMouseEnter(kind, idx),
+                onClick: () => onSelectObj(o, idx)
+              },
+              h("span", {className: "dropdown-item-content", title: o}, DropdownHelper.renderHighlightedPrefix(o, ctx.prefix)),
+              h("span", {className: "badge"}, "Object"))));
           }
           const searchValue = isHistory ? (model.historySearchValue || "") : (model.savedSearchValue || "");
           const ctxHL = DropdownHelper.parseSearchContext(searchValue, model, isHistory ? model.historyObjVocab : model.savedObjVocab);
           const highlightText = ctxHL.tokens.length > 1 ? ctxHL.tokens.slice(1).join(" ") : (searchValue.replace(/^\?\s*/, ""));
           const {entries} = isHistory ? DropdownHelper.getHistoryEntries(model) : DropdownHelper.getSavedEntries(model);
            if (!entries.length) { return []; }
-          return entries.map((q, idx) =>
-            h("div", {
-              key: JSON.stringify(q),
-              id: this.getDropdownActiveId(kind, idx),
-              role: "option",
-              "aria-selected": (idx === activeIdx) ? "true" : "false",
-              className: "dropdown-item" + (idx === activeIdx ? " active" : ""),
-              onMouseEnter: () => this.onDropdownItemMouseEnter(kind, idx),
-              onClick: () => this.selectEntry(kind, q)
-            },
-            h("span", {className: "dropdown-item-content", title: q.query}, DropdownHelper.renderHighlightedText(q.query, highlightText)),
-            q.useToolingApi ? h("span", {className: "badge"}, "Tooling") : null)
-          );
+          return h("div", {className: "dropdown-items"}, entries.map((q, idx) => {
+            const isSaved = !isHistory;
+            const {label, displayQuery, labelDisplay} = (function formatSaved(q) {
+              if (!isSaved || typeof q.query !== "string") return {label: null, displayQuery: q.query, labelDisplay: null};
+              const colonIdx = q.query.indexOf(":");
+              if (colonIdx > -1 && q.query.toLowerCase().indexOf(":select") >= 0) {
+                const rawLabel = q.query.slice(0, colonIdx);
+                return {
+                  label: rawLabel,
+                  displayQuery: q.query.slice(colonIdx + 1),
+                  labelDisplay: rawLabel.length > 30 ? rawLabel.slice(0, 30) + "…" : rawLabel
+                };
+              }
+              return {label: null, displayQuery: q.query, labelDisplay: null};
+            })(q);
+            return h(
+              "div",
+              {
+                key: JSON.stringify(q),
+                id: this.getDropdownActiveId(kind, idx),
+                role: "option",
+                "aria-selected": (idx === activeIdx) ? "true" : "false",
+                className: "dropdown-item" + (idx === activeIdx ? " active" : ""),
+                onMouseEnter: () => this.onDropdownItemMouseEnter(kind, idx),
+                onClick: () => this.selectEntry(kind, q)
+              },
+              q.useToolingApi ? h("span", {className: "badge"}, "Tooling") : null,
+              label ? h("span", {className: "badge", title: label}, labelDisplay) : null,
+              h("span", {className: "dropdown-item-content", title: q.query}, DropdownHelper.renderQueryWithClauseHighlight(displayQuery, highlightText))
+            );
+          }));
         }).call(this)
       )
     ));

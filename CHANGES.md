@@ -3,6 +3,7 @@
 ## Version 1.27
 
 - `Show All Data` Save fields selection [feature 914](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/914)
+- `Show all data` Fix error with loading after open [issue 925](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/925) (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
 - Fix 'unexpected query key(s): cache' error in REST Explore [issue 909](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/909) issued by [Martin Krchnak](https://github.com/mascot4m)
 - `Show All Data` Limit polymorphic reference types shown to 5 with "Show more" / "Show less" toggle in the field details tooltip [feature 865](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/865) (contribution by [Tushar Dangayach](https://github.com/rockstartushar))
 - Fix: Enable popup actions for records identified only by DurableId (e.g., FlowDefinitionView) [issue 441](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/441) (contribution by [Tushar Dangayach](https://github.com/rockstartushar))

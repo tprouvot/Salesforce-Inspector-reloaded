@@ -686,13 +686,12 @@ class FieldOptionModal extends React.Component {
       className: "modal-dialog maxWidth500 maxHeight90vh overflowYAuto",
       onClick: (e) => e.stopPropagation()
     },
-    h("div", {className: "modal-content borderNone backgroundTransparent"},
-      h("div", {className: "modal-header borderBottomNone padding0_0_10_0 relativePosition"},
-        h("h4", {className: "modal-title textAlignCenter width100 margin0"}, "Set Field Options"),
+    h("div", {className: "modal-content relativePosition height100 flexColumn"},
+      h("div", {className: "modal-header flexSpaceBetween alignItemsCenter"},
+        h("h1", {className: "modal-title"}, "Set Field Options"),
         h("button", {
-          "aria-label": "Close Button",
-          type: "button",
-          className: "close absoluteRightTop backgroundTransparent borderNone fontSize1_5 fontWeightBold cursorPointer",
+          type: "button","aria-label": "Close Set Field Options",
+          className: "close cursorPointer backgroundNone borderNone fontSize1_5 fontWeightBold",
           onClick: this.props.onClose
         },
         h("span", {"aria-hidden": "true"}, "×")

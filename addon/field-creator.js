@@ -628,7 +628,7 @@ class FieldOptionModal extends React.Component {
   renderRequiredCheckbox = () => {
     const {field} = this.state;
     return h("div", {className: "checkbox"},
-      h("label", null,
+      h("label", {className: "centerHorizontally"},
         h("input", {
           type: "checkbox",
           id: "required",
@@ -636,7 +636,7 @@ class FieldOptionModal extends React.Component {
           checked: field.required,
           onChange: this.handleInputChange
         }),
-        " Required"
+        "Required"
       )
     );
   };
@@ -644,7 +644,7 @@ class FieldOptionModal extends React.Component {
   renderUniqueCheckbox = () => {
     const {field} = this.state;
     return h("div", {className: "checkbox"},
-      h("label", null,
+      h("label", {className: "centerHorizontally"},
         h("input", {
           type: "checkbox",
           id: "unique",
@@ -652,7 +652,7 @@ class FieldOptionModal extends React.Component {
           checked: field.uniqueSetting,
           onChange: this.handleInputChange
         }),
-        " Unique"
+        "Unique"
       )
     );
   };
@@ -660,7 +660,7 @@ class FieldOptionModal extends React.Component {
   renderExternalIdCheckbox = () => {
     const {field} = this.state;
     return h("div", {className: "checkbox"},
-      h("label", null,
+      h("label", {className: "centerHorizontally"},
         h("input", {
           type: "checkbox",
           id: "externalId",
@@ -668,7 +668,7 @@ class FieldOptionModal extends React.Component {
           checked: field.external,
           onChange: this.handleInputChange
         }),
-        " External ID"
+        "External ID"
       )
     );
   };

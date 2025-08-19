@@ -481,7 +481,7 @@ class FieldOptionModal extends React.Component {
             })
           ),
           h("div", {className: "checkbox"},
-            h("label", null,
+            h("label", {className: "centerHorizontally"},
               h("input", {
                 type: "checkbox",
                 id: `${field.type.toLowerCase()}SortAlpha`,
@@ -493,7 +493,7 @@ class FieldOptionModal extends React.Component {
             )
           ),
           h("div", {className: "checkbox"},
-            h("label", null,
+            h("label", {className: "centerHorizontally"},
               h("input", {
                 type: "checkbox",
                 id: `${field.type.toLowerCase()}FirstValueDefault`,
@@ -555,7 +555,7 @@ class FieldOptionModal extends React.Component {
               type: "text",
               id: `${field.type.toLowerCase()}Length`,
               name: "length",
-              className: "form-control",
+              className: "form-control input-textBox",
               placeholder: "Max is 131,072 characters.",
               value: field.length,
               onChange: this.handleInputChange
@@ -567,7 +567,7 @@ class FieldOptionModal extends React.Component {
               type: "text",
               id: `${field.type.toLowerCase()}VisibleLines`,
               name: "vislines",
-              className: "form-control",
+              className: "form-control input-textBox",
               placeholder: "This field is required.",
               value: field.vislines,
               onChange: this.handleInputChange

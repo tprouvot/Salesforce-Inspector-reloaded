@@ -64,13 +64,14 @@ body {
 #user-info span {
   font-size: 1em;}
 .input-textBox{
-  width: 335px;
+  width: 100%;
     font-family: inherit;
     padding: 5px 13px;
     border: 1px solid #DDDBDA;
     border-radius: 0.25rem;
     height: 32px;
-    position: relative;}
+    position: relative;
+    margin-top: 4px;}
 .firstHeader{
   overflow-y: clip;
     min-height: 130px;}
@@ -128,7 +129,8 @@ textarea {
   font-size: 0.9rem;
   padding: 8px 10px;
   border-radius: 0.25rem;
-  border: 1px solid #DDDBDA;}
+  border: 1px solid #DDDBDA;
+  margin-top: 4px;}
 .fieldsLink:visited {
   color: rgb(0, 0, 238)}
 textarea[hidden] {

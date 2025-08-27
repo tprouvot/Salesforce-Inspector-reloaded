@@ -10,7 +10,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 import {getLinkTarget} from "./utils.js";
-/* global lightningflowscanner */
 
 // Flow Scanner Rules Configuration
 export const flowScannerKnownConfigurableRules = {
@@ -147,11 +146,12 @@ class FlowScanner {
    */
   initFlowScannerCore() {
     try {
-      if (typeof lightningflowscanner !== "undefined") {
-        this.flowScannerCore = lightningflowscanner;
+      const libraryName = window.flowScannerLibraryName;
+      if (libraryName && typeof window[libraryName] !== "undefined") {
+        this.flowScannerCore = window[libraryName];
       } else {
         this.flowScannerCore = null;
-        throw new Error("Flow Scanner Core library not loaded. Please ensure lib/flow-scanner-core.js is properly included.");
+        throw new Error("Flow Scanner Core library not loaded or library name not defined. Please ensure lib/flow-scanner-core.js is properly included and built.");
       }
     } catch (error) {
       this.flowScannerCore = null;
@@ -1466,9 +1466,9 @@ class App extends React.Component {
             h("small", {},
               "💡 Based on ",
               h("a", {
-                href: "https://github.com/Lightning-Flow-Scanner/lightning-flow-scanner-core",
+                href: "https://github.com/corekraft/flow-linter-core",
                 target: getLinkTarget(),
-              }, "Lightning Flow Scanner"),
+              }, "Flow Linter Core"),
               `\u00A0 (core v${scannerVersion})`
             )
           ),

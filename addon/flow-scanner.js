@@ -266,7 +266,12 @@ class FlowScanner {
       const triggerObjectLabel = flowDefView?.TriggerObjectOrEventLabel || "—";
       const triggerType = flowDefView?.TriggerType || xmlData?.triggerType || null;
       const processType = flowDefView?.ProcessType || xmlData?.processType || null;
-      const status = flowRecord?.Metadata?.status || "Unknown";
+      let status = flowRecord?.Metadata?.status || "Unknown";
+      let displayStatus = status;
+      if (status === "InvalidDraft") {
+        status = "Draft";
+        displayStatus = "Draft (Invalid)";
+      }
       const label = flowDefView?.Label || xmlData.label || xmlData.interviewLabel || flowDefView?.ApiName || "Unknown Label";
       const apiName = flowDefView?.ApiName || "Unknown API Name";
 
@@ -286,6 +291,7 @@ class FlowScanner {
         apiName,
         type,
         status,
+        displayStatus,
         xmlData,
         triggerObjectLabel,
         triggerType,
@@ -1054,7 +1060,7 @@ class App extends React.Component {
                   role: "status",
                   "aria-live": "polite",
                   id: "flow-status-badge"
-                }, flow.status)
+                }, flow.displayStatus)
               ),
               h("div", {className: "flow-detail-item flow-type-item"},
                 h("span", {className: "detail-label"}, "Type"),

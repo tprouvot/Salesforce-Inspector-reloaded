@@ -112,17 +112,13 @@ class App extends React.PureComponent {
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext,
-      useLegacyDownloadMetadata: JSON.parse(localStorage.getItem("useLegacyDlMetadata")),
-      toastConfig: null, // Will hold the complete toast configuration
-      showToast: false
+      useLegacyDownloadMetadata: JSON.parse(localStorage.getItem("useLegacyDlMetadata"))
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
     this.updateReleaseNotesViewed = this.updateReleaseNotesViewed.bind(this);
-    this.showToast = this.showToast.bind(this);
-    this.hideToast = this.hideToast.bind(this);
   }
   onContextRecordChange(e) {
     let {sfHost} = this.props;
@@ -163,28 +159,6 @@ class App extends React.PureComponent {
     localStorage.setItem("latestReleaseNotesVersionViewed", version);
     this.setState({
       latestNotesViewed: true
-    });
-  }
-
-  showToast(config) {
-    this.setState({
-      toastConfig: {
-        type: config.type || "info",
-        bannerText: config.bannerText || "Action completed",
-        iconName: config.iconName || "info",
-        assistiveTest: config.assistiveTest || config.bannerText || "Notification",
-        link: config.link || null,
-        onClose: config.onClose || this.hideToast,
-        ...config // Allow any additional AlertBanner props
-      },
-      showToast: true
-    });
-  }
-
-  hideToast() {
-    this.setState({
-      showToast: false,
-      toastConfig: null
     });
   }
   onShortcutKey(e) {
@@ -246,6 +220,7 @@ class App extends React.PureComponent {
     }
   }
   componentDidMount() {
+    let {sfHost} = this.props;
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
     parent.postMessage({insextLoaded: true}, "*");
@@ -343,53 +318,41 @@ class App extends React.PureComponent {
             }
           })
         ),
-        this.state.showToast && this.state.toastConfig && h("div", {id: "toastBanner"},
-          h(AlertBanner, {
-            type: this.state.toastConfig.type,
-            bannerText: this.state.toastConfig.bannerText,
-            iconName: this.state.toastConfig.iconName,
-            assistiveTest: this.state.toastConfig.assistiveTest,
-            onClose: this.state.toastConfig.onClose,
-            link: this.state.toastConfig.link,
-            // Spread any additional props
-            ...Object.keys(this.state.toastConfig)
-              .filter(key => !["type", "bannerText", "iconName", "assistiveTest", "onClose", "link"].includes(key))
-              .reduce((obj, key) => {
-                obj[key] = this.state.toastConfig[key];
-                return obj;
-              }, {})
-          })
-        ),
         h("div", {className: "main", id: "mainTabs"},
-          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, onContextRecordChange: this.onContextRecordChange, isFieldsPresent, eventMonitorHref, showToast: this.showToast}),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
-            h("div", {className: "slds-m-bottom_xx-small"},
+          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, onContextRecordChange: this.onContextRecordChange, isFieldsPresent, eventMonitorHref}),
+          h("div", {className: "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom slds-border_top"},
+            h("p", {className: "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small"}, h("strong", {}, "Data & Metadata")),
+            h("div", {className: "slds-col slds-size_1-of-2 slds-p-horizontal_xx-small slds-m-bottom_xx-small"},
               h("a", {ref: "dataExportBtn", href: exportHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
             ),
-            h("div", {className: "slds-m-bottom_xx-small"},
+            h("div", {className: "slds-col slds-size_1-of-2 slds-p-horizontal_xx-small slds-m-bottom_xx-small"},
               h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
             ),
-            displayButton("org-limits", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
-            ) : null,
-            h("div", {},
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
               h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Field Crea", h("u", {}, "t"), "or"))
             ),
-          ),
-          h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
-            h("div", {className: "slds-m-bottom_xx-small"},
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
               h("a", {ref: "metaRetrieveBtn", href: `metadata-retrieve${useLegacyDownloadMetadata ? "-legacy" : ""}.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
             ),
-            displayButton("explore-api", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
+          ),
+          h("div", {className: "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom"},
+            h("p", {className: "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small"}, h("strong", {}, "Platform Tools")),
+            displayButton("org-limits", hideButtonsOption) ? h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small"},
+              h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "slds-col page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
+            ) : null,
+            displayButton("explore-api", hideButtonsOption) ? h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
             ) : null,
-            h("div", {className: "slds-m-bottom_xx-small"},
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small"},
               h("a", {ref: "restExploreBtn", href: "rest-explore.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "R"), "EST Explore"))
             ),
-            h("div", {className: "slds-m-bottom_xx-small"},
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small"},
               h("a", {ref: "eventMonitorBtn", href: eventMonitorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Event ", h("u", {}, "M"), "onitor"))
             ),
-            displayButton("generate-token", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
+          ),
+          h("div", {className: "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom"},
+            h("p", {className: "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small"}, h("strong", {}, "Management")),
+            displayButton("generate-token", hideButtonsOption) ? h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
               h("a",
                 {
                   ref: "generateToken",
@@ -399,20 +362,7 @@ class App extends React.PureComponent {
                 },
                 h("span", {}, h("u", {}, "G"), "enerate Access Token"))
             ) : null,
-
-            // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
-            inLightning && isInSetup && h("div", {className: "slds-m-bottom_xx-small"},
-              h("a",
-                {
-                  ref: "homeBtn",
-                  href: `https://${sfHost}/lightning/page/home`,
-                  title: "You can choose if you want to open in a new tab or not",
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral"
-                },
-                h("span", {}, "Salesforce ", h("u", {}, "H"), "ome"))
-            ),
-            inLightning && !isInSetup && h("div", {className: "slds-m-bottom_xx-small"},
+            inLightning && !isInSetup && h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
               h("a",
                 {
                   ref: "homeBtn",
@@ -423,14 +373,24 @@ class App extends React.PureComponent {
                 },
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
             ),
+            // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
+          inLightning && isInSetup && h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+            h("a",
+              {
+                ref: "homeBtn",
+                href: `https://${sfHost}/lightning/page/home`,
+                title: "You can choose if you want to open in a new tab or not",
+                target: linkTarget,
+                className: "page-button slds-button slds-button_neutral"
+              },
+              h("span", {}, "Salesforce ", h("u", {}, "H"), "ome"))
           ),
-          displayButton("options", hideButtonsOption) ? h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
-            h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
-            ),
+          displayButton("options", hideButtonsOption) ? h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+            h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "SIR O", h("u", {}, "p"), "tions"))
           ) : null
+          ),
         ),
-        h("div", {className: "slds-grid slds-theme_shade slds-p-around_x-small slds-border_top"},
+        h("div", {className: "slds-grid slds-grid_vertical-align-center slds-theme_shade slds-p-horizontal_medium slds-p-vertical_xx-small slds-border_top"},
           h("div", {className: "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small"},
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
@@ -701,19 +661,19 @@ class AllDataBox extends React.PureComponent {
     let {sfHost, showDetailsSupported, linkTarget, onContextRecordChange, isFieldsPresent, eventMonitorHref} = this.props;
 
     return (
-      h("div", {className: "slds-p-top_small slds-p-horizontal_x-small slds-p-bottom_x-small slds-border_bottom" + (this.isLoading() ? " loading " : "")},
-        h("ul", {className: "small-tabs"},
-          h("li", {ref: "objectTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "active" : ""}, h("span", {}, h("u", {}, "O"), "bjects")),
-          h("li", {ref: "userTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "active" : ""}, h("span", {}, h("u", {}, "U"), "sers")),
-          h("li", {ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "active" : ""}, h("span", {}, h("u", {}, "S"), "hortcuts")),
-          h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "active" : ""}, h("span", {}, "O", h("u", {}, "r"), "g"))
+      h("div", {className: "slds-tabs_scoped slds-p-bottom_xx-small" + (this.isLoading() ? " loading " : "")},
+        h("ul", {className: "slds-tabs_scoped__nav"},
+          h("li", {ref: "objectTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.sobject, className: (activeSearchAspect == this.SearchAspectTypes.sobject) ? "slds-tabs_scoped__item slds-is-active" : "slds-tabs_scoped__item"}, h("span", {className: "slds-tabs_scoped__link"}, h("u", {}, "O"), "bjects")),
+          h("li", {ref: "userTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.users, className: (activeSearchAspect == this.SearchAspectTypes.users) ? "slds-tabs_scoped__item slds-is-active" : "slds-tabs_scoped__item"}, h("span", {className: "slds-tabs_scoped__link"}, h("u", {}, "U"), "sers")),
+          h("li", {ref: "shortcutTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.shortcuts, className: (activeSearchAspect == this.SearchAspectTypes.shortcuts) ? "slds-tabs_scoped__item slds-is-active" : "slds-tabs_scoped__item"}, h("span", {className: "slds-tabs_scoped__link"}, h("u", {}, "S"), "hortcuts")),
+          h("li", {ref: "orgTab", onClick: this.onAspectClick, "data-aspect": this.SearchAspectTypes.org, className: (activeSearchAspect == this.SearchAspectTypes.org) ? "slds-tabs_scoped__item slds-is-active" : "slds-tabs_scoped__item"}, h("span", {className: "slds-tabs_scoped__link"}, "O", h("u", {}, "r"), "g"))
         ),
         (activeSearchAspect == this.SearchAspectTypes.sobject)
           ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, onContextRecordChange, isFieldsPresent, eventMonitorHref})
           : (activeSearchAspect == this.SearchAspectTypes.users)
-            ? h(AllDataBoxUsers, {ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); }, showToast: this.props.showToast}, "Users")
+            ? h(AllDataBoxUsers, {ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); }}, "Users")
             : (activeSearchAspect == this.SearchAspectTypes.shortcuts)
-              ? h(AllDataBoxShortcut, {ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); }, showToast: this.props.showToast}, "Users")
+              ? h(AllDataBoxShortcut, {ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); }}, "Users")
               : (activeSearchAspect == this.SearchAspectTypes.org)
                 ? h(AllDataBoxOrg, {ref: "showAllDataBoxOrg", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("orgBox", value); }}, "Users")
                 : "AllData aspect " + activeSearchAspect + " not implemented"
@@ -725,40 +685,12 @@ class AllDataBox extends React.PureComponent {
 class AllDataBoxUsers extends React.PureComponent {
   constructor(props) {
     super(props);
-    // Load user search preferences early so they are available in render and getMatches
-    const userSearchFields = this.getUserSearchFieldsFromLocalStorage();
-    const {excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.getUserSearchExclusionsFromLocalStorage();
-
     this.state = {
       selectedUser: null,
       selectedUserId: null,
-      userSearchFields,
-      excludeInactiveUsersFromSearch,
-      excludePortalUsersFromSearch,
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
-  }
-
-  getUserSearchExclusionsFromLocalStorage() {
-    // Try to read from new MultiCheckboxButtonGroup format first
-    const userSearchExclusions = localStorage.getItem("userSearchExclusions");
-    const defaultExclusions = {
-      excludePortalUsersFromSearch: false,
-      excludeInactiveUsersFromSearch: false
-    };
-    if (!userSearchExclusions) {
-      return defaultExclusions;
-    }
-    try {
-      const parsed = JSON.parse(userSearchExclusions);
-      return {
-        excludePortalUsersFromSearch: parsed.find(cb => cb.name === "portal")?.checked || false,
-        excludeInactiveUsersFromSearch: parsed.find(cb => cb.name === "inactive")?.checked || false
-      };
-    } catch (e) {
-      return defaultExclusions;
-    }
   }
 
   componentDidMount() {
@@ -773,35 +705,17 @@ class AllDataBoxUsers extends React.PureComponent {
     }
   }
 
-  getUserSearchFieldsFromLocalStorage() {
-    const defaultFields = ["Username", "Email", "Alias", "Name"].map(field => ({name: field, label: field, checked: true}));
-    const userDefaultSearchFieldsOptions = localStorage.getItem("userDefaultSearchFieldsOptions");
-    if (!userDefaultSearchFieldsOptions) {
-      return defaultFields;
-    }
-    try {
-      const parsed = JSON.parse(userDefaultSearchFieldsOptions);
-      if (!Array.isArray(parsed)) {
-        return defaultFields;
-      }
-      const enabledSearchOptions = parsed.filter(field => field && field.name && field.checked === true);
-      return enabledSearchOptions.length > 0 ? enabledSearchOptions : defaultFields;
-    } catch (e) {
-      return defaultFields;
-    }
-  }
-
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
     userQuery = userQuery.trim();
     if (!userQuery) {
       return [];
     }
+
     const escapedUserQuery = userQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
-    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const userSearchWhereClause = this.getUserSearchWhereClause(escapedUserQuery);
-    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
+    const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
+    const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
+    const queryFrom = "from User where (username like '%" + escapedUserQuery + "%' or name like '%" + escapedUserQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
     const compositeQuery = {
       "compositeRequest": [
         {
@@ -830,24 +744,6 @@ class AllDataBoxUsers extends React.PureComponent {
 
   }
 
-  getUserSearchWhereClause(escapedUserQuery) {
-    const {userSearchFields, excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.state;
-
-    let userSearchWhereClause = "(";
-    userSearchFields.forEach(field => {
-      userSearchWhereClause += field.name + " LIKE '%" + escapedUserQuery + "%' OR ";
-    });
-    userSearchWhereClause = userSearchWhereClause.slice(0, -4);
-    userSearchWhereClause += ")";
-    if (excludeInactiveUsersFromSearch) {
-      userSearchWhereClause += " AND IsActive = true";
-    }
-    if (excludePortalUsersFromSearch) {
-      userSearchWhereClause += " AND IsPortalEnabled = false";
-    }
-    return userSearchWhereClause;
-  }
-
   async onDataSelect(userRecord) {
     if (userRecord && userRecord.Id) {
       await this.setState({selectedUserId: userRecord.Id, selectedUser: null});
@@ -863,10 +759,10 @@ class AllDataBoxUsers extends React.PureComponent {
       return;
     }
     //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
-    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref";
     //TODO implement a try catch to remove non existing fields ProfileId or IsPortalEnabled (experience is not enabled)
-    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
-    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
+    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref";
     const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
     const compositeQuery = {
       "compositeRequest": [
@@ -913,13 +809,13 @@ class AllDataBoxUsers extends React.PureComponent {
       key: value.Id,
       value,
       element: [
-        h("div", {className: "autocomplete-item-main", key: "main"},
+        h("div", {className: "dropdown-item slds-wrap", key: "main"},
           h(MarkSubstring, {
             text: value.Name + " (" + value.Alias + ")",
             start: value.Name.toLowerCase().indexOf(userQuery.toLowerCase()),
             length: userQuery.length
           })),
-        h("div", {className: "autocomplete-item-sub small", key: "sub"},
+        h("div", {className: "dropdown-item slds-wrap small", key: "sub"},
           h("div", {}, (value.Profile) ? value.Profile.Name : ""),
           h(MarkSubstring, {
             text: (!value.IsActive) ? "⚠ " + value.Username : value.Username,
@@ -933,16 +829,13 @@ class AllDataBoxUsers extends React.PureComponent {
   render() {
     let {selectedUser} = this.state;
     let {sfHost, linkTarget, contextOrgId, contextUserId, contextPath} = this.props;
-    const placeholderFields = (this.state.userSearchFields && this.state.userSearchFields.length)
-      ? (this.state.userSearchFields.map(field => field.label)).join(", ")
-      : "Username, Email, Alias, Name";
 
     return (
-      h("div", {ref: "usersBox", className: "users-box"},
-        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: placeholderFields + " of user", resultRender: this.resultRender}),
+      h("div", {ref: "usersBox", className: "users-box tab-container slds-p-horizontal_x-small"},
+        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: "Username, email, alias or name of user", resultRender: this.resultRender}),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
-            ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath, showToast: this.props.showToast})
+            ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
             : h("div", {className: "center"}, "No user details available")
         ))
     );
@@ -1124,7 +1017,7 @@ class AllDataBoxSObject extends React.PureComponent {
       key: value.recordId + "#" + value.sobject.name,
       value,
       element: [
-        h("div", {className: "autocomplete-item-main", key: "main"},
+        h("div", {className: "dropdown-item slds-wrap", key: "main"},
           value.recordId || h(MarkSubstring, {
             text: value.sobject.name,
             start: value.sobject.name.toLowerCase().indexOf(userQuery.toLowerCase()),
@@ -1132,7 +1025,7 @@ class AllDataBoxSObject extends React.PureComponent {
           }),
           value.sobject.availableApis.length == 0 ? " (Not readable)" : ""
         ),
-        h("div", {className: "autocomplete-item-sub", key: "sub"},
+        h("div", {className: "dropdown-item slds-wrap", key: "sub"},
           h(MarkSubstring, {
             text: value.sobject.keyPrefix || "---",
             start: value.sobject.keyPrefix == userQuery.substring(0, 3) ? 0 : -1,
@@ -1153,11 +1046,89 @@ class AllDataBoxSObject extends React.PureComponent {
     let {sfHost, showDetailsSupported, sobjectsList, linkTarget, contextRecordId, isFieldsPresent, eventMonitorHref} = this.props;
     let {selectedValue, recordIdDetails} = this.state;
     return (
-      h("div", {},
+      h("div", {className: "tab-container slds-p-horizontal_x-small"},
         h(AllDataSearch, {ref: "allDataSearch", sfHost, onDataSelect: this.onDataSelect, sobjectsList, getMatches: this.getMatches, inputSearchDelay: 0, placeholderText: "Record id, id prefix or object name", title: "Click to show recent items", resultRender: this.resultRender}),
         selectedValue
           ? h(AllDataSelection, {ref: "allDataSelection", sfHost, showDetailsSupported, selectedValue, linkTarget, recordIdDetails, contextRecordId, isFieldsPresent, eventMonitorHref})
-          : h("div", {className: "all-data-box-inner empty"}, "No record to display")
+          : h("div", {className: "all-data-box-inner empty"}, 
+              h("div", {className: "slds-illustration slds-illustration_small slds-m-top_x-small"},
+                h("svg", {
+                className: "slds-illustration__svg empty-state-image",
+                viewBox: "0 0 468 194",
+                "aria-hidden": "true",
+                xmlns: "http://www.w3.org/2000/svg"
+              },
+                h("g", {stroke: "none", strokeWidth: "1", fill: "none", fillRule: "evenodd"},
+                  h("g", {transform: "translate(-67.000000, -112.000000)"},
+                    h("g", null,
+                      h("g", {transform: "translate(245.000000, 200.000000)", className: "slds-illustration__stroke-secondary", strokeLinecap: "round", strokeWidth: "3"},
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M44,17.5 L63,17.5 C62.2789714,12.0723971 64.081543,7.53186978 68.4077148,3.87841797 C73.3754883,-0.195556641 79.2734375,0.717773438 82.440918,2.12353516 C85.6083984,3.52929687 87.9606934,5.46069336 89.5913086,9.10524041 C90.2822266,10.6397351 90.7517904,11.9379883 91,13"}),
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M83,20.5 C84.0558268,16.8461914 86.2227376,14.4572754 89.5007324,13.333252 C94.4177246,11.6472168 99.0800781,13.8925781 100.942383,16.1518555 C102.804687,18.4111328 103.39502,20.2260742 103.746582,22.1201172 C103.980957,23.3828125 104.06543,24.8427734 104,26.5 C108.141764,26.3313802 110.918945,27.1647135 112.331543,29 C114.040039,31.1936035 114.215332,33.817627 113.593018,35.75 C112.970703,37.682373 110.894531,40.5 107,40.5 L28,40.5"}),
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M18,27.5 L83.0004985,27.5"}),
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M0,27.5 L8,27.5"})
+                      ),
+                      h("g", {transform: "translate(135.000000, 152.000000)", className: "slds-illustration__stroke-secondary", strokeLinecap: "round", strokeWidth: "3"},
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M44,17.5 L63,17.5 C62.2789714,12.0723971 64.081543,7.53186978 68.4077148,3.87841797 C73.3754883,-0.195556641 79.2734375,0.717773438 82.440918,2.12353516 C85.6083984,3.52929687 87.9606934,5.46069336 89.5913086,9.10524041 C90.2822266,10.6397351 90.7517904,11.9379883 91,13"}),
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M83,20.5 C84.0558268,16.8461914 86.2227376,14.4572754 89.5007324,13.333252 C94.4177246,11.6472168 99.0800781,13.8925781 100.942383,16.1518555 C102.804687,18.4111328 103.39502,20.2260742 103.746582,22.1201172 C103.980957,23.3828125 104.06543,24.8427734 104,26.5 C108.141764,26.3313802 110.918945,27.1647135 112.331543,29 C114.040039,31.1936035 114.215332,33.817627 113.593018,35.75 C112.970703,37.682373 110.894531,40.5 107,40.5 L28,40.5"}),
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M18,27.5 L83.0004985,27.5"}),
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M0,27.5 L8,27.5"})
+                      ),
+                      h("g", {transform: "translate(69.000000, 256.000000)", className: "slds-illustration__stroke-secondary", strokeLinecap: "round", strokeWidth: "3"},
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M14,36.5 L464,36.5"}),
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M0,36.5 L6,36.5"}),
+                        h("polyline", {vectorEffect: "non-scaling-stroke", strokeLinejoin: "round", points: "234.5 36 279.5 0 313.5 26"}),
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M279.5,1 L279.5,35", strokeLinejoin: "round"}),
+                        h("path", {vectorEffect: "non-scaling-stroke", d: "M313.5,11 C313.5,20.7437888 313.5,25.7437888 313.5,26 C313.5,25.7437888 313.5,20.7437888 313.5,11 Z", strokeLinejoin: "round"}),
+                        h("polyline", {vectorEffect: "non-scaling-stroke", strokeLinejoin: "round", points: "303.5 17 313.5 9 347.5 36"})
+                      ),
+                      h("g", {transform: "translate(113.000000, 178.000000)"},
+                        h("g", {transform: "translate(30.000000, 8.000000)", className: "slds-illustration__fill-secondary"},
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M29.5,60.5 L29.5,12 C29.5,5.372583 34.872583,0 41.5,0 C48.127417,0 53.5,5.372583 53.5,12 L53.5,40.5 L70.5,40.5 L70.5,27 C70.5,23.1340068 73.6340068,20 77.5,20 C81.3659932,20 84.5,23.1340068 84.5,27 L84.5,48.5 C84.5,51.8137085 81.8137085,54.5 78.5,54.5 L53.5,54.5 L53.5,118.5 L29.5,118.5 L29.5,74.5 L6.5,74.5 C3.1862915,74.5 0.5,71.8137085 0.5,68.5 L0.5,39 C0.5,35.1340068 3.63400675,32 7.5,32 C11.3659932,32 14.5,35.1340068 14.5,39 L14.5,60.5 L29.5,60.5 Z"})
+                        ),
+                        h("g", {transform: "translate(59.000000, 7.000000)", fill: "#FFFFFF"},
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M2,11 C3.65332031,8.49145508 5.65181478,6.77364095 7.9954834,5.84655762 C11.5109863,4.45593262 15.2684326,4.95605469 17.8156738,6.2824707 C20.362915,7.60888672 22.3626709,9.64978027 23.2602539,11.81604 C23.8586426,13.2602132 23.8586426,11.7547201 23.2602539,7.29956055 L19.612793,3.56494141 L13.7923584,0.564331055 L8.765625,1.42663574 L4.67321777,3.19787598 C2.69893392,5.13902708 1.69559733,6.16722532 1.66320801,6.2824707 C1.61462402,6.45533878 0.856079102,9.49145508 0.813964844,9.66003418 C0.785888672,9.77242025 1.18123372,10.2190755 2,11 Z"})
+                        ),
+                        h("g", {className: "slds-illustration__stroke-primary", strokeWidth: "3"},
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M0,126.5 L356,126.5", strokeLinecap: "round"}),
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M362.5,126.5 L372.013149,126.5", strokeLinecap: "round"}),
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M107.5,20 L107.5,28", strokeLinecap: "round"}),
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M113,30.6568542 L118.656854,25", strokeLinecap: "round"}),
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M37.5,32 L37.5,40", strokeLinecap: "round"}),
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M44,42.6568542 L49.6568542,37", strokeLinecap: "round"}),
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M25,42.6568542 L30.6568542,37", strokeLinecap: "round", transform: "translate(27.828427, 39.828427) scale(-1, 1) translate(-27.828427, -39.828427)"}),
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M71.5,0 L71.5,8", strokeLinecap: "round"}),
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M79,10.6568542 L84.6568542,5", strokeLinecap: "round"}),
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M58,10.6568542 L63.6568542,5", strokeLinecap: "round", transform: "translate(60.828427, 7.828427) scale(-1, 1) translate(-60.828427, -7.828427)"}),
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M59.5,68.5 L59.5,20 C59.5,13.372583 64.872583,8 71.5,8 C78.127417,8 83.5,13.372583 83.5,20 L83.5,48.5 L100.5,48.5 L100.5,35 C100.5,31.1340068 103.634007,28 107.5,28 C111.365993,28 114.5,31.1340068 114.5,35 L114.5,56.5 C114.5,59.8137085 111.813708,62.5 108.5,62.5 L83.5,62.5 L83.5,126.5 L59.5,126.5 L59.5,82.5 L36.5,82.5 C33.1862915,82.5 30.5,79.8137085 30.5,76.5 L30.5,47 C30.5,43.1340068 33.6340068,40 37.5,40 C41.3659932,40 44.5,43.1340068 44.5,47 L44.5,68.5 L59.5,68.5 Z"}),
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M77,88.5 L92.5,88.5 L92.5,81 C92.5,77.1340068 95.6340068,74 99.5,74 L99.5,74 C103.365993,74 106.5,77.1340068 106.5,81 L106.5,96.5 C106.5,99.8137085 103.813708,102.5 100.5,102.5 L77,102.5", className: "slds-illustration__fill-secondary", strokeLinecap: "round", strokeLinejoin: "round"})
+                        )
+                      ),
+                      h("g", {transform: "translate(429.000000, 242.000000)", className: "slds-illustration__stroke-secondary", strokeLinecap: "round", strokeWidth: "3"},
+                        h("g", null,
+                          h("path", {vectorEffect: "non-scaling-stroke", d: "M12.5,4 L12.5,50"}),
+                          h("polyline", {vectorEffect: "non-scaling-stroke", strokeLinejoin: "round", points: "11 18.5 0.5 18.5 0.5 0"}),
+                          h("polyline", {vectorEffect: "non-scaling-stroke", strokeLinejoin: "round", points: "14 25.5 24.5 25.5 24.5 8"}),
+                          h("polyline", {vectorEffect: "non-scaling-stroke", strokeLinejoin: "round", points: "2.5 31 2.5 38.5 11 38.5"})
+                        )
+                      ),
+                      h("g", {transform: "translate(327.000000, 95.000000)"},
+                        h("g", null,
+                          h("circle", {vectorEffect: "non-scaling-stroke", className: "slds-illustration__fill-secondary", cx: "64", cy: "64", r: "23"}),
+                          h("circle", {vectorEffect: "non-scaling-stroke", className: "slds-illustration__stroke-secondary", strokeWidth: "3", strokeLinecap: "round", strokeLinejoin: "round", strokeDasharray: "135,1,1,18", transform: "translate(64.000000, 64.000000) rotate(230.000000) translate(-64.000000, -64.000000)", cx: "64", cy: "64", r: "45"}),
+                          h("circle", {vectorEffect: "non-scaling-stroke", className: "slds-illustration__stroke-secondary", strokeWidth: "3", strokeLinecap: "round", strokeLinejoin: "round", strokeDasharray: "107,10", transform: "translate(64.000000, 64.000000) rotate(150.000000) translate(-64.000000, -64.000000)", cx: "64", cy: "64", r: "33"})
+                        ),
+                        h("g", {transform: "translate(41.000000, 41.000000)", className: "slds-illustration__stroke-primary", strokeWidth: "3"},
+                          h("circle", {vectorEffect: "non-scaling-stroke", cx: "23", cy: "23", r: "23"})
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
+              h("div", {className: "slds-text-longform"},
+                h("h3", {className: "slds-text-body_regular"}, "No record to display")
+              )
+            ))
       )
     );
   }
@@ -1302,13 +1273,13 @@ class AllDataBoxShortcut extends React.PureComponent {
       key: value.Id,
       value,
       element: [
-        h("div", {className: "autocomplete-item-main", title: value.title, key: "main" + value.Id},
+        h("div", {className: "dropdown-item slds-wrap", title: value.title, key: "main" + value.Id},
           h(MarkSubstring, {
             text: value.label,
             start: value.label.toLowerCase().indexOf(shortcutQuery.toLowerCase()),
             length: shortcutQuery.length
           })),
-        h("div", {className: "autocomplete-item-sub small", title: value.title, key: "sub" + value.Id},
+        h("div", {className: "dropdown-item slds-wrap small", title: value.title, key: "sub" + value.Id},
           h("div", {}, value.detail),
           h(MarkSubstring, {
             text: value.name,
@@ -1324,7 +1295,7 @@ class AllDataBoxShortcut extends React.PureComponent {
     let {sfHost, linkTarget, contextOrgId, contextUserId, contextPath} = this.props;
 
     return (
-      h("div", {ref: "shortcutsBox", className: "users-box"},
+      h("div", {ref: "shortcutsBox", className: "users-box tab-container slds-p-horizontal_x-small"},
         h(AllDataSearch, {
           ref: "allDataSearch",
           getMatches: this.getMatches,
@@ -1338,7 +1309,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         }),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
-            ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath, showToast: this.props.showToast})
+            ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
             : h("div", {className: "center"}, "No shortcut found")
         ))
     );
@@ -1457,47 +1428,47 @@ class AllDataBoxOrg extends React.PureComponent {
     let {linkTarget, sfHost} = this.props;
     let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
     return (
-      h("div", {ref: "orgBox", className: "users-box"},
+      h("div", {ref: "orgBox", className: "users-box tab-container slds-p-horizontal_x-small"},
         h("div", {className: "all-data-box-inner"},
           h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},
             h("table", {},
               h("tbody", {},
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget, onClick: handleLightningLinkClick}, "Org Id:")),
+                  h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget, onClick: handleLightningLinkClick}, "Org Id")),
                   h("td", {}, orgInfo?.Id.substring(0, 15))
                 ),
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo?.InstanceName, title: "Instance status", target: linkTarget}, "Instance:")),
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo?.InstanceName, title: "Instance status", target: linkTarget}, "Instance")),
                   h("td", {}, orgInfo?.InstanceName)
                 ),
                 h("tr", {},
-                  h("th", {}, "Type:"),
+                  h("th", {}, "Type"),
                   h("td", {}, orgInfo?.OrganizationType)
                 ),
                 h("tr", {},
-                  h("th", {}, "Status:"),
+                  h("th", {}, "Status"),
                   h("td", {}, this.state.instanceStatus?.status)
                 ),
                 h("tr", {},
-                  h("th", {}, "Release:"),
+                  h("th", {}, "Release"),
                   h("td", {}, this.state.instanceStatus?.releaseVersion ? (this.state.instanceStatus.releaseVersion + " / " + this.state.instanceStatus?.releaseNumber) : "")
                 ),
                 h("tr", {},
-                  h("th", {}, "Location:"),
+                  h("th", {}, "Location"),
                   h("td", {}, this.state.instanceStatus?.location)
                 ),
                 h("tr", {},
-                  h("th", {}, "API version:"),
+                  h("th", {}, "API vers."),
                   h("td", {}, this.getApiVersion(this.state.instanceStatus))
                 ),
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo?.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo?.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maint.")),
                   h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
                 ),
               )
             )
           ),
-          h("div", {ref: "orgButtons", className: "user-buttons center small-font"},
+          h("div", {ref: "orgButtons", className: "user-buttons center small-font slds-m-bottom_x-small"},
             h("a", {href: "#", id: "deleteLogs", disabled: false, onClick: (e) => { this.deleteApexLogs(e); }, className: "slds-button slds-button_neutral", title: "Delete all ApexLog"}, "Delete All ApexLogs")
           )
         )
@@ -1516,36 +1487,6 @@ class UserDetails extends React.PureComponent {
     this.state = {};
   }
 
-  showSuccessToast(operation, message) {
-    const {showToast} = this.props;
-    if (showToast) {
-      showToast({
-        type: "success",
-        bannerText: operation,
-        iconName: "success",
-        assistiveTest: `${operation} completed successfully`,
-        link: {
-          text: message || `${operation} completed successfully`
-        }
-      });
-    }
-  }
-
-  showErrorToast(operation) {
-
-    const {showToast} = this.props;
-    if (showToast) {
-      showToast({
-        type: "error",
-        bannerText: `${operation} Failed`,
-        iconName: "error",
-        link: {
-          text: null
-        }
-      });
-    }
-  }
-
   openUrlInIncognito(targetUrl) {
     browser.runtime.sendMessage({
       message: "createWindow",
@@ -1555,53 +1496,42 @@ class UserDetails extends React.PureComponent {
   }
 
   async enableDebugLog() {
-    try {
-      let {user} = this.props;
-      const DTnow = new Date(Date.now());
 
-      //Enable debug level and expiration time (minutes) as default parameters.
-      let debugLogDebugLevel = localStorage.getItem(this.sfHost + "_debugLogDebugLevel");
-      if (debugLogDebugLevel == null) {
-        localStorage.setItem(this.sfHost + "_debugLogDebugLevel", "SFDC_DevConsole");
-      }
+    let {user} = this.props;
+    const DTnow = new Date(Date.now());
 
-      let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");
-      if (debugLogTimeMinutes == null) {
-        localStorage.setItem("debugLogTimeMinutes", 15);
-      }
-      let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
-
-      let traceFlags = await this.getTraceFlags(user.Id, DTnow, debugLogDebugLevel, debugTimeInMs);
-      /*If an old trace flag is found on the user and with this debug level
-       *Update the trace flag extending the experiation date.
-       */
-      if (traceFlags.size > 0){
-        this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
-      //Else create new trace flag
-      } else {
-        let debugLog = await this.getDebugLog(debugLogDebugLevel);
-
-        if (debugLog && debugLog.size > 0){
-          this.insertTraceFlag(user.Id, debugLog.records[0].Id, DTnow, debugTimeInMs);
-        } else {
-          throw new Error('Debug Level with developerName = "' + debugLogDebugLevel + '" not found');
-        }
-      }
-
-      // Disable button after executing
-      const element = document.querySelector("#enableDebugLog");
-      element.setAttribute("disabled", true);
-      element.text = "Logs Enabled";
-
-      // Show success message
-      this.showSuccessToast(
-        "Success",
-        "Logs enabled"
-      );
-
-    } catch (err) {
-      this.showErrorToast("Enable Debug Log", err);
+    //Enable debug level and expiration time (minutes) as default parameters.
+    let debugLogDebugLevel = localStorage.getItem(this.sfHost + "_debugLogDebugLevel");
+    if (debugLogDebugLevel == null) {
+      localStorage.setItem(this.sfHost + "_debugLogDebugLevel", "SFDC_DevConsole");
     }
+
+    let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");
+    if (debugLogTimeMinutes == null) {
+      localStorage.setItem("debugLogTimeMinutes", 15);
+    }
+    let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
+
+    let traceFlags = await this.getTraceFlags(user.Id, DTnow, debugLogDebugLevel, debugTimeInMs);
+    /*If an old trace flag is found on the user and with this debug level
+     *Update the trace flag extending the experiation date.
+     */
+    if (traceFlags.size > 0){
+      this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
+    //Else create new trace flag
+    } else {
+      let debugLog = await this.getDebugLog(debugLogDebugLevel);
+
+      if (debugLog && debugLog.size > 0){
+        this.insertTraceFlag(user.Id, debugLog.records[0].Id, DTnow, debugTimeInMs);
+      } else {
+        throw new Error('Debug Level with developerName = "' + debugLogDebugLevel + '" not found');
+      }
+    }
+    //Disable button after executing.
+    const element = document.querySelector("#enableDebugLog");
+    element.setAttribute("disabled", true);
+    element.text = "Logs Enabled";
   }
 
   toggleDisplay(event, refKey) {
@@ -1693,8 +1623,7 @@ class UserDetails extends React.PureComponent {
     let {currentUserId} = this.props;
     //Optimistically show login unless it's logged in user's userid or user is inactive.
     //No API to determine if user is allowed to login as given user. See https://salesforce.stackexchange.com/questions/224342/query-can-i-login-as-for-users
-    const isFrozen = !!user?.UserLogins?.records?.[0]?.IsFrozen;
-    if (!user || user.Id == currentUserId || !user.IsActive || isFrozen) {
+    if (!user || user.Id == currentUserId || !user.IsActive) {
       return false;
     }
     return true;
@@ -1757,20 +1686,10 @@ class UserDetails extends React.PureComponent {
   }
 
   enableDebugMode(user){
-    const action = user.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
-
-    sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + user.Id, {
-      method: "PATCH",
-      body: {UserPreferencesUserDebugModePref: !user.UserPreferencesUserDebugModePref}
-    })
-      .then(() => {
-        this.showSuccessToast(
-          `${action} Debug Mode`,
-          `Debug mode has been ${action.toLowerCase()}d for ${user.Name}`
-        );
-        browser.runtime.sendMessage({message: "reloadPage"});
-      })
-      .catch(err => this.showErrorToast(`${action} Debug Mode`, err));
+    sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + user.Id, {method: "PATCH",
+      body: {UserPreferencesUserDebugModePref: !user.UserPreferencesUserDebugModePref
+      }}).then(() => browser.runtime.sendMessage({message: "reloadPage"})
+    ).catch(err => console.log("Error during user debug mode activation", err));
   }
 
   unfreezeUser(user){
@@ -1793,6 +1712,10 @@ class UserDetails extends React.PureComponent {
     this.refs.logButtonMenu.classList.toggle("slds-is-open");
   }
 
+  toggleLogMenu(){
+    this.refs.logButtonMenu.classList.toggle("slds-is-open");
+  }
+
   render() {
     let {user, linkTarget} = this.props;
     return (
@@ -1801,7 +1724,7 @@ class UserDetails extends React.PureComponent {
           h("table", {className: (user.IsActive) ? "" : "inactive"},
             h("tbody", {},
               h("tr", {},
-                h("th", {}, "Name:"),
+                h("th", {}, "Name"),
                 h("td", {className: "oneliner"},
                   (user.IsActive) ? "" : h("span", {title: "User is inactive"}, "⚠ "),
                   h("a", {
@@ -1815,20 +1738,20 @@ class UserDetails extends React.PureComponent {
                 )
               ),
               h("tr", {},
-                h("th", {}, "Username:"),
-                h("td", {className: "oneliner"}, user.Username)
+                h("th", {}, "Username"),
+                h("td", {className: "oneliner", title: user.Username}, user.Username)
               ),
               h("tr", {},
-                h("th", {}, "Id:"),
+                h("th", {}, "Id"),
                 h("td", {className: "oneliner"},
                   h("a", {href: this.getShowAllDataLink(user.Id), target: linkTarget, title: "Show all data"}, user.Id))
               ),
               h("tr", {},
-                h("th", {}, "E-mail:"),
-                h("td", {className: "oneliner"}, user.Email)
+                h("th", {}, "E-mail"),
+                h("td", {className: "oneliner", title: user.Email}, user.Email)
               ),
               h("tr", {},
-                h("th", {}, "Profile:"),
+                h("th", {}, "Profile"),
                 h("td", {className: "oneliner"},
                   (user.Profile)
                     ? h("a", {
@@ -1840,11 +1763,11 @@ class UserDetails extends React.PureComponent {
                 )
               ),
               user.UserRole ? h("tr", {},
-                h("th", {}, "Role:"),
+                h("th", {}, "Role"),
                 h("td", {className: "oneliner"}, user.UserRole.Name)
               ) : null,
               h("tr", {},
-                h("th", {}, "Language:"),
+                h("th", {}, "Language"),
                 h("td", {},
                   h("div", {className: "pointer flag flag-" + sfLocaleKeyToCountryCode(user.LanguageLocaleKey), title: "Update Language " + user.LanguageLocaleKey, onClick: (e) => { this.toggleDisplay(e, "LanguageLocaleKey"); }}),
                   h("select", {ref: "LanguageLocaleKey", name: "LanguageLocaleKey", className: "hide", defaultValue: user.LanguageLocaleKey, onChange: (e) => { this.onSelectLanguage(e, user.Id); }},
@@ -1859,61 +1782,38 @@ class UserDetails extends React.PureComponent {
               )
             )
           )),
-        h("div", {ref: "userButtons", className: "user-buttons center small-font"},
-          h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral"}, "Details"),
-          h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
-          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
+        h("div", {className: "slds-grid slds-wrap slds-text-align_center"}, 
+        h("div", {ref: "userButtons", className: "slds-button-group slds-grid sfir-padding-horizontal_small slds-size_1-of-1 slds-m-bottom_xx-small"},
+          h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral slds-col"}, "Details"),
+          h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral slds-col", title: "Show / assign user's permission sets"}, "PSets"),
+          h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral slds-col", title: "Show / assign user's permission set groups"}, "PS Groups"),
+        ),
+        h("div", {}),
           //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
           user.UserLogins?.records?.[0]?.IsFrozen
-            ? h("a", {id: "unfreezeUser", className: "slds-button slds-button_neutral", onClick: () => this.unfreezeUser(user)},
-              h("span", {className: "slds-truncate", title: "Unfreeze User Login"}, "Unfreeze")
+            ? h("a", { id: "unfreezeUser", className: "slds-button slds-button_neutral", onClick: () => this.unfreezeUser(user) },
+              h("span", { className: "slds-truncate", title: "Unfreeze User Login" }, "Unfreeze")
             )
-            : h("div", {className: "user-buttons justify-center slds-button-group top-space", role: "group"},
-              h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs"),
-              h("div", {ref: "logButtonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
-                h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleLogMenu(), title: "Show options"},
-                  h("svg", {className: "slds-button__icon"},
-                    h("use", {xlinkHref: "symbols.svg#down"})
-                  ),
-                  h("span", {className: "slds-assistive-text"}, "Show options")
-                ),
-                h("div", {className: "slds-dropdown slds-dropdown_right", onMouseLeave: () => this.toggleLogMenu()},
-                  h("ul", {className: "slds-dropdown__list", role: "menu"},
-                    h("li", {className: "slds-dropdown__item", role: "presentation"},
-                      h("a", {id: "enableDebugMode", onClick: () => this.enableDebugMode(user), tabIndex: "1"},
-                        h("span", {className: "slds-truncate", title: user.debugModeActionLabel + " Debug Mode for Lightning Components"}, user.debugModeActionLabel + " Debug Mode")
-                      )
-                    )
-                  )
-                )
-              ),
-            )
-        ),
-        this.doSupportLoginAs(user) ? h("div", {className: "user-buttons justify-center small-font slds-button-group top-space", role: "group"},
-          h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs"),
-          h("div", {ref: "buttonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
-            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleMenu(), title: "Show other LoginAs options"},
-              h("svg", {className: "slds-button__icon"},
-                h("use", {xlinkHref: "symbols.svg#down"})
-              ),
-              h("span", {className: "slds-assistive-text"}, "Show other LoginAs options")
-            ),
-            h("div", {className: "slds-dropdown slds-dropdown_left", onMouseLeave: () => this.toggleMenu()},
-              h("ul", {className: "slds-dropdown__list", role: "menu"},
-                h("li", {className: "slds-dropdown__item", role: "presentation"},
-                  h("a", {onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, tabIndex: "0"},
-                    h("span", {className: "slds-truncate", title: "Incognito"},
-                      h("span", {className: "slds-truncate", title: "Incognito"}, "Incognito")
-                    )
-                  ),
-                  this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, tabIndex: "1"},
-                    h("span", {className: "slds-truncate", title: "Portal"}, "Portal")
-                  ) : null
-                )
+            : h("div", { className: "slds-button-group slds-grid sfir-padding-horizontal_small slds-size_1-of-1 slds-m-bottom_xx-small", role: "group" },
+              h("a", { href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral slds-col", title: "Enable user debug log" }, "Enable Logs"),
+              h("a", { id: "enableDebugMode", className: "slds-button slds-button_neutral slds-col", onClick: () => this.enableDebugMode(user) },
+                h("span", { title: user.debugModeActionLabel + " Debug Mode for Lightning Components" }, user.debugModeActionLabel + " Debug Mode")
               )
+            ),
+        this.doSupportLoginAs(user) ? h("div", {className: "slds-size_1-of-1 slds-m-bottom_x-small"},
+          h("p", {className: "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small"}, h("strong", {}, "Login as User")),
+          h("div", {className: "slds-button-group slds-grid sfir-padding-horizontal_small slds-size_1-of-1 slds-m-bottom_xx-small", role: "group"},
+          h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral slds-col"}, "Login as"),
+          h("a", {onClick: () => this.loginAsInIncognito(user.Id), target: linkTarget, className: "slds-button slds-button_neutral slds-col"},
+            h("span", {className: "slds-truncate", title: "Incognito"},
+              h("span", {className: "slds-truncate", title: "Incognito"}, "Incognito")
             )
           ),
-        ) : null
+          this.canLoginAsPortal(user) ? h("a", {href: this.getLoginAsPortalLink(user), target: linkTarget, className: "slds-button slds-button_neutral slds-col"},
+            h("span", {className: "slds-truncate", title: "Portal"}, "Portal")
+          ) : null
+        )) : null
+      )
       )
     );
   }
@@ -1994,7 +1894,7 @@ class AllDataSelection extends React.PureComponent {
     return `https://${this.props.sfHost}/lightning/setup/${type}/page?address=%2F${durableId}%3Fsetupid%3D${type}`;
   }
   getObjectFieldsSetupLink(sobjectName, durableId, isCustomSetting) {
-    if (sobjectName.endsWith("__mdt") || sobjectName.endsWith("__e")) {
+    if (sobjectName.endsWith("__mdt")) {
       return this.getMetadataLink(durableId, "CustomMetadata");
     } else if (isCustomSetting) {
       return this.getMetadataLink(durableId, "CustomSettings");
@@ -2061,72 +1961,71 @@ class AllDataSelection extends React.PureComponent {
       buttons.push("noApi");
     }
     return (
-      h("div", {className: "all-data-box-inner"},
-        h("div", {className: "all-data-box-data slds-m-bottom_xx-small"},
-          h("table", {},
-            h("tbody", {},
-              h("tr", {},
-                h("th", {}, "Name:"),
-                h("td", {},
-                  h("a", {
-                    href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
-                    target: linkTarget,
-                    onClick: handleLightningLinkClick
-                  }, selectedValue.sobject.name)
-                )
-              ),
-              h("tr", {},
-                h("th", {}, "Links:"),
-                h("td", {},
-                  h("a", {
-                    href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
-                    target: linkTarget,
-                    onClick: handleLightningLinkClick
-                  }, "Fields"),
-                  selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 0 ? h("span", {},
-                    h("span", {}, " / "),
-                    h("a", {
-                    // TODO add check for record type support (such as custom metadata types and custom settings)
-                      href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId),
-                      target: linkTarget,
-                      onClick: handleLightningLinkClick
-                    }, "Record Types"),
-                  ) : null,
-                  selectedValue.sobject.name.endsWith("__e") ? null : h("span", {}, h("span", {}, " / "),
-                    h("a", {
-                      href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting),
-                      target: linkTarget,
-                      onClick: handleLightningLinkClick
-                    }, "List")
-                  ),
-                  selectedValue.sobject.name.endsWith("__e") || selectedValue.sobject.name.endsWith("__mdt") ? null : h("span", {}, h("span", {}, " / "),
-                    h("a", {href: this.getObjectListAccess(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Access")
-                  )
+      h("div", {className: "all-data-box-inner slds-p-bottom_x-small slds-border_bottom"},
+        h("div", {className: "slds-card"},
+          h("div", {className: "slds-card__body"},
+            h("article", {className: "slds-card slds-card_boundary slds-p-horizontal_small slds-p-vertical_xx-small sfir-background-grey"},
+              h("div", {className: "slds-card__body"},
+                selectedValue.sobject.isEverCreatable && displayButton("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e") ? h("button", {
+                  ref: "showNewBtn",
+                  "data-target-link": this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
+                  target: linkTarget,
+                  onClick: handleLightningLinkClick,
+                  className: "slds-button slds-button_neutral slds-float_right slds-m-top_xxx-small sfir-button-new"
+                }, h("span", {}, h("u", {}, "N"), "ew")) : null,
+                h("a", {
+                  href: this.getObjectSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
+                  target: linkTarget,
+                  onClick: handleLightningLinkClick
+                }, selectedValue.sobject.label),
+                h("p", {className: "slds-text-body_small"}, 
+                  h("i", {},selectedValue.sobject.name)
                 ),
-              ),
-              h("tr", {},
-                h("th", {}, "Label:"),
-                h("td", {}, selectedValue.sobject.label)
-              ),
-              h("tr", {},
-                h("th", {}, "Id:"),
-                h("td", {},
-                  h("span", {}, selectedValue.sobject.keyPrefix),
-                  h("span", {}, (selectedValue.recordId) ? " / " + selectedValue.recordId : ""),
-                )
-              ),
-              selectedValue.sobject.name.indexOf("__") == -1 && selectedValue.sobject.availableApis
-                ? h("tr", {},
-                  h("th", {}, "Doc:"),
-                  h("td", {},
+                h("hr", {className: "sfir-hr-small-margin"}),
+                h("div", {className: "slds-list_horizontal sfir-font-size_11px"},
+                  h("dt", {className: "slds-item_label slds-text-color_weak slds-truncate sfir-slds-item_label_small"}, "Links"),
+                  h("dd", {className: "slds-detail"},
+                    h("a", {
+                      href: this.getObjectFieldsSetupLink(selectedValue.sobject.name, selectedValue.sobject.durableId, selectedValue.sobject.isCustomSetting),
+                      target: linkTarget,
+                      onClick: handleLightningLinkClick
+                    }, "Fields"),
+                    selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 0 ? h("span", {},
+                      h("span", {}, " / "),
+                      h("a", {
+                      // TODO add check for record type support (such as custom metadata types and custom settings)
+                        href: this.getRecordTypesLink(sfHost, selectedValue.sobject.name, selectedValue.sobject.durableId),
+                        target: linkTarget,
+                        onClick: handleLightningLinkClick
+                      }, "Record Types"),
+                    ) : null,
+                    selectedValue.sobject.name.endsWith("__e") ? null : h("span", {}, h("span", {}, " / "),
+                      h("a", {
+                        href: this.getObjectListLink(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting),
+                        target: linkTarget,
+                        onClick: handleLightningLinkClick
+                      }, "List")
+                    ),
+                    selectedValue.sobject.name.endsWith("__e") || selectedValue.sobject.name.endsWith("__mdt") ? null : h("span", {}, h("span", {}, " / "),
+                      h("a", {href: this.getObjectListAccess(selectedValue.sobject.name, selectedValue.sobject.keyPrefix, selectedValue.sobject.isCustomSetting), target: linkTarget}, "Access")
+                    )
+                  ),
+
+                ),
+                h("div", {className: "slds-list_horizontal sfir-font-size_11px"},
+                  h("dt", {className: "slds-item_label slds-text-color_weak slds-truncate sfir-slds-item_label_small"}, "Docs"),
+                  h("dd", {className: "slds-detail"},
                     h("a", {href: this.getObjectDocLink(selectedValue.sobject, selectedValue.sobject.availableApis[1]), target: linkTarget}, "Standard"),
                     selectedValue.sobject.availableApis.length > 1
                       ? h("a", {href: this.getObjectDocLink(selectedValue.sobject, selectedValue.sobject.availableApis[0]), target: linkTarget, className: "left-space"}, "Tooling")
                       : null
                   ),
-                ) : null
-            )),
-
+                )
+             )
+          )
+          )
+        ),
+        h("div", {className: "all-data-box-data slds-m-bottom_xx-small slds-m-horizontal_xx-small"},
           h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
@@ -2134,32 +2033,26 @@ class AllDataSelection extends React.PureComponent {
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
           ? h("a", {href: this.getGeneratePackageUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Generate package.xml") : null,
         flowDefinitionId
-          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Flow Versions") : null,
-        flowDefinitionId
-          ? h("a", {href: this.getFlowScannerUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Flow Scanner") : null,
-        buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
-          {
-            key: button,
-            // If buttons for both APIs are shown, the keyboard shortcut should open the first button.
-            ref: index == 0 ? "showAllDataBtn" : null,
-            href: this.getAllDataUrl(button == "toolingApi"),
-            target: linkTarget,
-            className: "slds-m-top_xx-small page-button slds-button slds-button_neutral slds-m-top_xx-small"
-          },
-          index == 0 ? h("span", {}, "Show ", h("u", {}, "a"), "ll data") : "Show all data",
-          button == "regularApi" ? ""
-          : button == "toolingApi" ? " (Tooling API)"
-          : " (Not readable)"
-        ))),
-        isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
-        selectedValue.sobject.isEverCreatable && displayButton("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e") ? h("a", {
-          ref: "showNewBtn",
-          href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
-          target: linkTarget,
-          onClick: handleLightningLinkClick,
-          className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"
-        }, h("span", {}, h("u", {}, "N"), "ew " + selectedValue.sobject.label)) : null,
-        selectedValue.sobject.name.endsWith("__e") ? h("a", {href: this.getSubscribeUrl(selectedValue.sobject.name), target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}), "Subscribe to Event")) : null,
+          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
+          flowDefinitionId ? h("a", {href: this.getFlowScannerUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Scanner") : null,
+        h("div", {className: "slds-button-group slds-size_1-of-1"},
+          buttons.map((button, index) => h("a",
+            {
+              key: button,
+              // If buttons for both APIs are shown, the keyboard shortcut should open the first button.
+              ref: index == 0 ? "showAllDataBtn" : null,
+              href: this.getAllDataUrl(button == "toolingApi"),
+              target: linkTarget,
+              className: "slds-button slds-button_neutral slds-m-top_xx-small page-button slds-button slds-button_neutral slds-m-top_xx-small"
+            },
+            index == 0 ? h("span", {}, "Show ", h("u", {}, "a"), "ll data") : "Show all data",
+            button == "regularApi" ? ""
+            : button == "toolingApi" ? " (Tooling API)"
+            : " (Not readable)"
+          ))
+        ),
+        isFieldsPresent ? h("button", {ref: "showFieldApiNameBtn", onClick: showApiName, "data-target-link": linkTarget, className: "slds-button slds-button_neutral slds-m-top_xx-small page-button slds-button slds-button_neutral slds-m-top_xx-small"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
+        selectedValue.sobject.name.endsWith("__e") ? h("a", {href: this.getSubscribeUrl(selectedValue.sobject.name), target: linkTarget, className: "slds-button slds-button_neutral slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}), "Subscribe to Event")) : null,
       )
     );
   }
@@ -2186,8 +2079,15 @@ class AllDataRecordDetails extends React.PureComponent {
       return (
         h("table", {className},
           h("tbody", {},
+            h("tr", {},
+              h("th", {className: "sfir-vertical-align_top"}, "Id"),
+              h("td", {},
+                h("span", {}, selectedValue.sobject.keyPrefix),
+                h("span", {}, (selectedValue.recordId) ? " / " + selectedValue.recordId : ""),
+              )
+            ),
             recordIdDetails.recordName ? h("tr", {},
-              h("th", {}, "Name:"),
+              h("th", {className: "sfir-vertical-align_top"}, "Name"),
               h("td", {},
                 h("a", {
                   href: this.getRecordLink(sfHost, selectedValue.recordId),
@@ -2198,7 +2098,7 @@ class AllDataRecordDetails extends React.PureComponent {
               )
             ) : null,
             recordIdDetails.recordTypeName ? h("tr", {},
-              h("th", {}, "RecType:"),
+              h("th", {className: "sfir-vertical-align_top"}, "RecType"),
               h("td", {},
                 h("a", {
                   href: this.getRecordTypeLink(sfHost, selectedValue.sobject.name, recordIdDetails.recordTypeId),
@@ -2208,11 +2108,11 @@ class AllDataRecordDetails extends React.PureComponent {
               )
             ) : null,
             h("tr", {},
-              h("th", {}, "Created:"),
+              h("th", {className: "sfir-vertical-align_top"}, "Created"),
               h("td", {}, recordIdDetails.created + " (" + recordIdDetails.createdBy + ")")
             ),
             h("tr", {},
-              h("th", {}, "Edited:"),
+              h("th", {className: "sfir-vertical-align_top"}, "Modified"),
               h("td", {}, recordIdDetails.lastModified + " (" + recordIdDetails.lastModifiedBy + ")")
             )
           )));
@@ -2292,9 +2192,9 @@ class AllDataSearch extends React.PureComponent {
     let {queryString, matchingResults, recentItems} = this.state;
     let {placeholderText, resultRender, sfHost} = this.props;
     return (
-      h("div", {className: "input-with-dropdown"},
+      h("div", {className: "input-with-dropdown slds-form-element__control slds-grow slds-input-has-icon slds-input-has-icon_left-right"},
         h("input", {
-          className: "all-data-input",
+          className: "slds-input",
           ref: "showAllDataInp",
           placeholder: placeholderText,
           onInput: this.onAllDataInput,
@@ -2311,8 +2211,10 @@ class AllDataSearch extends React.PureComponent {
           queryString,
           sfHost
         }),
-        h("svg", {className: "button-icon", onClick: this.onAllDataArrowClick},
-          h("use", {xlinkHref: "symbols.svg#" + this.inputIcon})
+        h("svg", {className: "slds-input__icon slds-input__icon_left slds-icon-text-default",viewBox: "0 0 520 520", onClick: this.onAllDataArrowClick},
+          h("g", {},
+            h("path", {d: "M496 453L362 320a189 189 0 10-340-92 190 190 0 00298 135l133 133a14 14 0 0021 0l21-21a17 17 0 001-22zM210 338a129 129 0 11130-130 129 129 0 01-130 130z"})
+          )
         )
       )
     );
@@ -2359,10 +2261,10 @@ class Autocomplete extends React.PureComponent {
           recentItems.push({key: recentItem.Id,
             value: {recordId: recentItem.Id, isRecent: true, sobject: {keyPrefix: recentItem.Id.slice(0, 3), label: recentItem.Type, name: recentItem.Name}},
             element: [
-              h("div", {className: "autocomplete-item-main", key: "main"},
+              h("div", {className: "dropdown-item slds-wrap", key: "main"},
                 recentItem.Name,
               ),
-              h("div", {className: "autocomplete-item-sub", key: "sub"},
+              h("div", {className: "dropdown-item slds-wrap", key: "sub"},
                 h(MarkSubstring, {
                   text: recentItem.Type,
                   start: -1,
@@ -2508,20 +2410,19 @@ class Autocomplete extends React.PureComponent {
     let topSelected = (selectedIndex - firstIndex) * itemHeight;
 
     return (
-      h("div", {className: "autocomplete-container", style: {display: (showResults && (autocompleteResults.length > 0)) || resultsMouseIsDown ? "" : "none"}, onMouseDown: this.onResultsMouseDown, onMouseUp: this.onResultsMouseUp},
-        h("div", {className: "autocomplete", onScroll: this.onScroll, ref: "scrollBox"},
-          h("div", {ref: "selectedItem", style: {position: "absolute", top: topSelected + "px", height: itemHeight + "px"}}),
-          h("div", {style: {height: topSpace + "px"}}),
+      h("div", {className: "slds-dropdown slds-dropdown_fluid", style: {display: (showResults && (autocompleteResults.length > 0)) || resultsMouseIsDown ? "" : "none"}, onMouseDown: this.onResultsMouseDown, onMouseUp: this.onResultsMouseUp},
+        h("div", {className: "slds-dropdown__list", onScroll: this.onScroll, ref: "scrollBox"},
           autocompleteResults.slice(firstRenderedIndex, lastRenderedIndex + 1)
             .map(({key, value, element}, index) =>
-              h("a", {
+              h("div", {
                 key,
-                className: "autocomplete-item " + (selectedIndex == index + firstRenderedIndex ? "selected" : ""),
+                className: "slds-dropdown__item " + (selectedIndex == index + firstRenderedIndex ? "selected-old" : ""),
                 onClick: (e) => this.onResultClick(e, value),
                 onMouseEnter: () => this.onResultMouseEnter(index + firstRenderedIndex)
-              }, element)
+              }, 
+                h("a", {className: "slds-p-horizontal_small"}, element)
+              )
             ),
-          h("div", {style: {height: bottomSpace + "px"}})
         )
       )
     );

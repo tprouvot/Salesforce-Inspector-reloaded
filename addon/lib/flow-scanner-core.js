@@ -12,5 +12,5 @@ window.flowScannerLibraryName = "lightningflowscanner";
 
 // Version injection
 if (typeof window !== 'undefined' && window.lightningflowscanner) {
-  window.lightningflowscanner.version = "1.0.1";
+  window.lightningflowscanner.version = "1.1.0";
 }

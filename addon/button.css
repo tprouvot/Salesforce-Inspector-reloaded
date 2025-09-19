@@ -1,148 +1,163 @@
 #insext {
-    z-index: 1000;
-    display: block;
-    position: fixed;
-    vertical-align: middle;
+  z-index: 1000;
+  display: block;
+  position: fixed;
+  vertical-align: middle;
 }
 
 #insext .insext-popup {
-    box-sizing: border-box;
-    width: 280px;
-    height: 450px;
-    position:absolute;
-    background-color: #ffffff;
-    border-radius: 4px;
-    z-index: 1;
-    border: 1px solid #d8dde6;
-    display: none;
+  box-sizing: border-box;
+  width: 280px;
+  height: 450px;
+  position: absolute;
+  background-color: #ffffff;
+  border-radius: 4px;
+  z-index: 1;
+  border: 1px solid #d8dde6;
+  display: none;
 }
 
 #insext .insext-popup-vertical {
-    right: 0%;
-    border-top-right-radius: 0;
-    box-shadow: 0 -2px 2px 0 rgba(0,0,0,.16);
+  right: 0%;
+  border-top-right-radius: 0;
+  box-shadow: 0 -2px 2px 0 rgba(0, 0, 0, 0.16);
 }
 
 #insext .insext-popup-vertical-up {
-    bottom: 100%;
+  bottom: 100%;
 }
 
 #insext .insext-popup-horizontal {
-    bottom: 20px;
-    box-shadow: 2px 0 2px 0 rgba(0,0,0,.16);
+  bottom: 20px;
+  box-shadow: 2px 0 2px 0 rgba(0, 0, 0, 0.16);
 }
 
 #insext .insext-popup-horizontal-left {
-    right: 0%;
+  right: 0%;
 }
 
 #insext .insext-popup-horizontal-centered {
-    right: -380%;
+  right: -380%;
 }
 
 #insext .insext-popup-horizontal-right {
-    left: 0%;
+  left: 0%;
 }
 
 #insext.insext-active .insext-popup {
-    display: block;
+  display: block;
 }
 #insext .insext-btn {
-    box-sizing: border-box;
-    background-color: #226b86;
-    border-width: 4px;
-    border-style: solid;
-    border-color: #fff;
-    opacity: .4;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #c9c9c9;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 #insext .insext-btn-vertical {
-    width: 15px;
-    height: 33px;
-    padding: 3px 1px 2px 0;
-    border-right-style: none;
-    border-top-left-radius: 5px;
-    border-bottom-left-radius: 5px;
-    box-shadow: -2px 0 2px #a0a6ab;
+  width: 18px;
+  height: 36px;
+  padding: 6px 2px;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  box-shadow: -3px 0 8px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 #insext .insext-btn-horizontal {
-    height: 15px;
-    width: 33px;
-    padding: 0 2px 1px 3px;
-    border-bottom-style: none;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-    box-shadow: 0 -2px 2px #a0a6ab;
+  height: 18px;
+  width: 36px;
+  padding: 2px 6px;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 
 #insext .insext-btn-vertical:hover,
 #insext.insext-active .insext-btn-vertical {
-    opacity: 1;
-    width: 20px;
+  opacity: 1;
+  width: 22px;
+  background: rgba(255, 255, 255, 1);
+  border-color: #0176d3;
+  transform: translateX(-2px);
 }
 
 #insext .insext-btn-horizontal:hover,
 #insext.insext-active .insext-btn-horizontal {
-    opacity: 1;
-    height: 20px;
+  opacity: 1;
+  height: 22px;
+  background: rgba(255, 255, 255, 1);
+  border-color: #0176d3;
+  transform: translateY(-2px);
 }
 
 #insext .insext-btn img {
-    box-sizing: border-box;
+  box-sizing: border-box;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  transition: transform 0.2s ease-in-out;
 }
 
 #insext .insext-btn-vertical img {
-    width: 10px;
-    height: 15px;
-    margin: 2px;
+  width: 24px;
+  height: 24px;
+  margin: 0;
 }
 
 #insext .insext-btn-horizontal img {
-    width: 15px;
-    height: 10px;
-    margin: 2px;
+  width: 24px;
+  height: 16px;
+  margin: 0;
+}
+
+#insext .insext-btn:hover img {
+  transform: scale(1.1);
 }
 
 .checkboxScrollSandbox {
-    position: fixed;
-    top: 10px;
-    right: 78px;
-    z-index: 10000;
+  position: fixed;
+  top: 10px;
+  right: 78px;
+  z-index: 10000;
 }
-.checkboxScrollProd{
-    position: fixed;
-    top: 21px;
-    right: 78px;
-    z-index: 10000;
+.checkboxScrollProd {
+  position: fixed;
+  top: 21px;
+  right: 78px;
+  z-index: 10000;
 }
-.labelCheckboxScrollSandbox{
-    position: fixed;
-    top: 7px;
-    right: 100px;
-    color: white;
-    z-index: 10000;
+.labelCheckboxScrollSandbox {
+  position: fixed;
+  top: 7px;
+  right: 100px;
+  color: white;
+  z-index: 10000;
 }
-.labeCheckboxScrollProd{
-    position: fixed;
-    top: 15px;
-    right: 100px;
-    color: white;
-    z-index: 10000;
+.labeCheckboxScrollProd {
+  position: fixed;
+  top: 15px;
+  right: 100px;
+  color: white;
+  z-index: 10000;
 }
 .copiedText {
-    font-family: "Salesforce Sans", Arial, sans-serif;
-    color: #28a745; 
-    font-size: 0.875rem;
-    font-weight: 500;
-    line-height: 1;
-    margin-left: 4px;
-    padding: 0;
-    display: inline-block;
-    vertical-align: middle;
-    animation: fadeOut 2s forwards;
+  font-family: "Salesforce Sans", Arial, sans-serif;
+  color: #28a745;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  margin-left: 4px;
+  padding: 0;
+  display: inline-block;
+  vertical-align: middle;
+  animation: fadeOut 2s forwards;
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
   }
-  
-  @keyframes fadeOut {
-    to {
-      opacity: 0;
-    }
-  }   
+}

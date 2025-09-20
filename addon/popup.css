@@ -399,7 +399,8 @@ a.icon-url {
   padding-inline: 0.75rem;
   height: auto;
   border-bottom: none !important;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: var(--sfir-font-lg);
 }
 
 #mainTabs .slds-tabs_scoped__item.slds-is-active .slds-tabs_scoped__link {

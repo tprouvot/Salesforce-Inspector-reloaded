@@ -1,8 +1,23 @@
+:root {
+  /* Button-specific variables */
+  --sfir-btn-white: #ffffff;
+  --sfir-btn-border: #c9c9c9;
+  --sfir-btn-border-active: #0176d3;
+  --sfir-btn-shadow: rgba(0, 0, 0, 0.15);
+  --sfir-btn-shadow-inset: rgba(255, 255, 255, 0.1);
+  --sfir-btn-shadow-light: rgba(0, 0, 0, 0.16);
+  --sfir-btn-radius: 25px;
+  --sfir-btn-radius-sm: 4px;
+  --sfir-btn-z-base: 1000;
+  --sfir-btn-z-high: 9999;
+  --sfir-btn-z-fixed: 10000;
+  --sfir-btn-success: #28a745;
+}
+
 #insext {
-    z-index: 1000;
+    z-index: var(--sfir-btn-z-base);
     display: block;
     position: fixed;
-    vertical-align: middle;
   }
   
   #insext .insext-popup {
@@ -10,8 +25,8 @@
     width: 280px;
     height: 450px;
     position: absolute;
-    background-color: #ffffff;
-    border-radius: 4px;
+    background-color: var(--sfir-btn-white);
+    border-radius: var(--sfir-btn-radius-sm);
     z-index: 1;
     border: 1px solid #d8dde6;
     display: none;
@@ -20,11 +35,11 @@
   #insext .insext-popup-vertical {
     right: 0%;
     border-top-right-radius: 0;
-    box-shadow: 0 -2px 2px 0 rgba(0, 0, 0, 0.16);
+    box-shadow: 0 -2px 2px 0 var(--sfir-btn-shadow-light);
     position: absolute;
     top: 0;
-    border-top-left-radius: 25px;
-    border-bottom-left-radius: 25px;
+    border-top-left-radius: var(--sfir-btn-radius);
+    border-bottom-left-radius: var(--sfir-btn-radius);
   }
   
   #insext .insext-popup-vertical-up {
@@ -33,9 +48,9 @@
   
   #insext .insext-popup-horizontal {
     bottom: 0;
-    box-shadow: 2px 0 2px 0 rgba(0, 0, 0, 0.16);
-    border-top-left-radius: 25px;
-    border-top-right-radius: 25px;
+    box-shadow: 2px 0 2px 0 var(--sfir-btn-shadow-light);
+    border-top-left-radius: var(--sfir-btn-radius);
+    border-top-right-radius: var(--sfir-btn-radius);
   }
   
   #insext .insext-popup-horizontal-left {
@@ -52,9 +67,8 @@
   #insext .insext-btn {
     box-sizing: border-box;
     background: rgba(255, 255, 255, 0.9);
-    border: 1px solid #c9c9c9;
+    border: 1px solid var(--sfir-btn-border);
     cursor: pointer;
-    /*transition: all 0.2s ease-in-out;*/
     opacity: 0.85;
     display: flex;
     align-items: center;
@@ -65,10 +79,10 @@
     height: 38px;
     padding: 6px 2px;
     border-right: none;
-    border-top-left-radius: 25px;
-    border-bottom-left-radius: 25px;
-    box-shadow: -3px 0 8px rgba(0, 0, 0, 0.15),
-      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    border-top-left-radius: var(--sfir-btn-radius);
+    border-bottom-left-radius: var(--sfir-btn-radius);
+    box-shadow: -3px 0 8px var(--sfir-btn-shadow),
+      0 0 0 1px var(--sfir-btn-shadow-inset) inset;
     position: absolute;
     right: 0px;
   }
@@ -77,20 +91,19 @@
       width: 38px;
       padding: 2px 6px;
       border-bottom: none;
-      border-top-left-radius: 25px;
-      border-top-right-radius: 25px;
-      box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.15),
-      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+      border-top-left-radius: var(--sfir-btn-radius);
+      border-top-right-radius: var(--sfir-btn-radius);
+      box-shadow: 0 -3px 8px var(--sfir-btn-shadow),
+      0 0 0 1px var(--sfir-btn-shadow-inset) inset;
       position: relative;
-      z-index: 9999;
+      z-index: var(--sfir-btn-z-high);
     }
 
     #insext.insext-active .insext-btn {
-      z-index: 9999;
+      z-index: var(--sfir-btn-z-high);
       background: transparent !important;
       border: none;
       box-shadow: none;
-
     }
     #insext.insext-active .insext-btn-horizontal {
       left: 4px;
@@ -103,14 +116,13 @@
     opacity: 1;
     width: 22px;
     background: rgba(255, 255, 255, 1);
-    border-color: #0176d3;
+    border-color: var(--sfir-btn-border-active);
   }
 
   #insext.insext-active .insext-btn-vertical{
-    right: 280px !important;
+    right: 255px !important;
     position: absolute;
     border-bottom-left-radius: 0px;
-    right: 255px !important;
   }
   
   #insext .insext-btn-horizontal:hover,
@@ -118,14 +130,12 @@
     opacity: 1;
     height: 22px;
     background: rgba(255, 255, 255, 1);
-    border-color: #0176d3;
+    border-color: var(--sfir-btn-border-active);
     transform: translateY(-2px);
   }
   
   #insext .insext-btn img {
     box-sizing: border-box;
-    /*filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
-    transition: transform 0.2s ease-in-out;*/
   }
   
     #insext .insext-btn-vertical img {
@@ -173,31 +183,31 @@
     position: fixed;
     top: 10px;
     right: 78px;
-    z-index: 10000;
+    z-index: var(--sfir-btn-z-fixed);
   }
   .checkboxScrollProd {
     position: fixed;
     top: 21px;
     right: 78px;
-    z-index: 10000;
+    z-index: var(--sfir-btn-z-fixed);
   }
   .labelCheckboxScrollSandbox {
     position: fixed;
     top: 7px;
     right: 100px;
     color: white;
-    z-index: 10000;
+    z-index: var(--sfir-btn-z-fixed);
   }
   .labeCheckboxScrollProd {
     position: fixed;
     top: 15px;
     right: 100px;
     color: white;
-    z-index: 10000;
+    z-index: var(--sfir-btn-z-fixed);
   }
   .copiedText {
     font-family: "Salesforce Sans", Arial, sans-serif;
-    color: #28a745;
+    color: var(--sfir-btn-success);
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 1;

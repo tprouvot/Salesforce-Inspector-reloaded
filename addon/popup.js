@@ -1935,7 +1935,7 @@ class AllDataSelection extends React.PureComponent {
       buttons.push("noApi");
     }
     return (
-      h("div", {className: "all-data-box-inner slds-p-bottom_x-small slds-border_bottom"},
+      h("div", {className: "all-data-box-inner slds-p-bottom_x-small"},
         h("div", {className: "slds-card"},
           h("div", {className: "slds-card__body"},
             h("article", {className: "slds-card slds-card_boundary slds-p-horizontal_small slds-p-vertical_xx-small sfir-background-grey"},

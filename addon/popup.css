@@ -1,44 +1,46 @@
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-Light.woff2);
-  font-weight: 300;
-}
-
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-LightItalic.woff2);
-  font-style: italic;
-  font-weight: 300;
-}
-
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-Regular.woff2);
-  font-weight: 400;
-}
-
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-Italic.woff2);
-  font-style: italic;
-  font-weight: 400;
-}
-
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-Bold.woff2);
-  font-weight: 700;
-}
-
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-BoldItalic.woff2);
-  font-style: italic;
-  font-weight: 700;
-}
+/* Using SLDS fonts */
 
 :root {
   --sfir-blue-color: var(--slds-g-color-palette-electric-blue-50);
+  
+  /* Color palette */
+  --sfir-white: #ffffff;
+  --sfir-light-gray: #f3f3f3;
+  --sfir-dark-blue: #061c3f;
+  --sfir-text-primary: #16325c;
+  --sfir-text-secondary: #54698d;
+  --sfir-border-color: #d8dde6;
+  --sfir-focus-color: #1589ee;
+  --sfir-focus-shadow: #0070d2;
+  --sfir-success-color: #28a745;
+  --sfir-error-color: red;
+  --sfir-inactive-color: #c0c0c0;
+  --sfir-icon-color: #706e6b;
+  
+  /* Spacing */
+  --sfir-spacing-xs: 0.25rem;
+  --sfir-spacing-sm: 0.5rem;
+  --sfir-spacing-md: 1rem;
+  --sfir-spacing-lg: 1.1rem;
+  
+  /* Border radius */
+  --sfir-radius-sm: 0.25rem;
+  --sfir-radius-md: 4px;
+  --sfir-radius-lg: 25px;
+  
+  /* Font sizes */
+  --sfir-font-xs: 0.55rem;
+  --sfir-font-sm: 0.75rem;
+  --sfir-font-md: 11.7px;
+  --sfir-font-lg: 12px;
+  --sfir-font-xl: 0.9rem;
+  --sfir-font-button: 13px;
+  
+  /* Z-index scale */
+  --sfir-z-dropdown: 1;
+  --sfir-z-button: 1000;
+  --sfir-z-fixed: 10000;
+  --sfir-z-tabs: 999999;
 }
 
 * {
@@ -49,22 +51,18 @@ html,
 body {
   white-space: normal;
   font-family: "Salesforce Sans", Arial, Helvetica, sans-serif;
-  background-color: white;
+  background-color: var(--sfir-white);
   margin: 0;
-}
-
-body {
-  font-size: 0.8125rem;
-}
-
-html,
-body,
-#root,
-[data-reactroot] {
   height: 100%;
 }
 
+body {
+  font-size: var(--sfir-font-md);
+}
+
+#root,
 [data-reactroot] {
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -82,19 +80,19 @@ a > span {
 }
 
 .header-light {
-  background: #f3f3f3;
-  color: #061c3f;
+  background: var(--sfir-light-gray);
+  color: var(--sfir-dark-blue);
 }
 .header-light svg {
-  fill: #061c3f;
+  fill: var(--sfir-dark-blue);
 }
 
 .header-dark {
-  background: #061c3f;
-  color: #f3f3f3;
+  background: var(--sfir-dark-blue);
+  color: var(--sfir-light-gray);
 }
 .header-dark svg {
-  fill: #f3f3f3;
+  fill: var(--sfir-light-gray);
 }
 
 button,
@@ -114,16 +112,16 @@ input.api-input {
 }
 
 .all-data-input {
-  font-size: 0.9em;
+  font-size: var(--sfir-font-lg);
   font-family: inherit;
   width: 100%;
-  background-color: white;
-  color: #16325c;
-  border: 1px solid #d8dde6;
-  border-radius: 0 0.25rem 0.25rem 0.25rem;
+  background-color: var(--sfir-white);
+  color: var(--sfir-text-primary);
+  border: 1px solid var(--sfir-border-color);
+  border-radius: 0 var(--sfir-radius-sm) var(--sfir-radius-sm) var(--sfir-radius-sm);
   transition: border 0.1s linear, background-color 0.1s linear;
   display: inline-block;
-  padding: 0 2rem 0 0.25rem;
+  padding: 0 2rem 0 var(--sfir-spacing-xs);
   line-height: 1.875rem;
   vertical-align: middle;
   flex-grow: 1;
@@ -132,19 +130,18 @@ input.api-input {
 .all-data-input:active,
 .all-data-input:focus {
   outline: 0;
-  border-color: #1589ee;
-  background-color: #fff;
-  box-shadow: 0 0 3px #0070d2;
+  border-color: var(--sfir-focus-color);
+  background-color: var(--sfir-white);
+  box-shadow: 0 0 3px var(--sfir-focus-shadow);
 }
 
 .all-data-box-inner {
-  margin-top: 0.5rem;
+  margin-top: var(--sfir-spacing-sm);
   display: flex;
   flex-direction: column;
   min-height: 12em;
-  /* should be heigh enough so the buttons below don't jump around when the contents of this box loads */
-  color: #54698d;
-  line-height: 1.5;
+  color: var(--sfir-text-secondary);
+  line-height: var(--sfir-spacing-lg);
 }
 
 .all-data-box-inner.empty {
@@ -154,7 +151,7 @@ input.api-input {
 
 .all-data-box-data {
   flex: 1;
-  font-size: 0.9em;
+  font-size: var(--sfir-font-lg);
 }
 
 .input-with-dropdown {
@@ -163,13 +160,13 @@ input.api-input {
 }
 
 .input-with-dropdown svg {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: var(--sfir-font-sm);
+  height: var(--sfir-font-sm);
   position: absolute;
-  right: 1rem;
+  right: var(--sfir-spacing-md);
   top: 50%;
   margin-top: -0.375rem;
-  fill: #54698d;
+  fill: var(--sfir-text-secondary);
 }
 
 .autocomplete-container {
@@ -177,23 +174,23 @@ input.api-input {
 }
 
 .autocomplete {
-  border: 1px solid #d8dde6;
-  border-radius: 0.25rem;
-  padding: 0.25rem 0;
-  background-color: white;
+  border: 1px solid var(--sfir-border-color);
+  border-radius: var(--sfir-radius-sm);
+  padding: var(--sfir-spacing-xs) 0;
+  background-color: var(--sfir-white);
   max-height: 260px;
   position: absolute;
   width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  z-index: 1;
+  z-index: var(--sfir-z-dropdown);
 }
 
 .autocomplete-item {
   display: block;
-  padding: 0.25rem 0.5rem;
-  color: #16325c;
-  line-height: 1.5;
+  padding: var(--sfir-spacing-xs) var(--sfir-spacing-sm);
+  color: var(--sfir-text-primary);
+  line-height: var(--sfir-spacing-lg);
   cursor: pointer;
 }
 
@@ -206,9 +203,9 @@ input.api-input {
 }
 
 .autocomplete-item-sub {
-  font-size: 0.75rem;
-  color: #54698d;
-  margin-top: -0.25rem;
+  font-size: var(--sfir-font-sm);
+  color: var(--sfir-text-secondary);
+  margin-top: calc(-1 * var(--sfir-spacing-xs));
 }
 
 .autocomplete-item mark {
@@ -217,7 +214,7 @@ input.api-input {
 }
 
 .autocomplete-item.selected {
-  background-color: #f4f6f9;
+  background-color: var(--sfir-light-gray);
 }
 
 @keyframes bg-load {
@@ -234,7 +231,7 @@ input.api-input {
 }
 
 .footer-small-text {
-  font-size: 0.55rem;
+  font-size: var(--sfir-font-xs);
 }
 
 .all-data-box-data table {
@@ -256,11 +253,11 @@ input.api-input {
 }
 
 .top-space {
-  margin-top: 0.5em;
+  margin-top: var(--sfir-spacing-sm);
   margin-bottom: 0.2em;
 }
 .left-space {
-  margin-left: 0.5em;
+  margin-left: var(--sfir-spacing-sm);
 }
 
 .button-secondary {
@@ -279,11 +276,11 @@ input.api-input {
 
 
 .inactive {
-  color: #c0c0c0;
+  color: var(--sfir-inactive-color);
 }
 
 .small-font {
-  font-size: 0.9em;
+  font-size: var(--sfir-font-lg);
 }
 
 .small-font a {
@@ -296,13 +293,9 @@ input.api-input {
 }
 
 .oneliner {
-  /* Force text onto a single line */
   white-space: nowrap;
-  /* Hide the text that overflows the cell */
   overflow: hidden;
-  /* Add the ellipsis (...) */
   text-overflow: ellipsis;
-  /* Ensures the cell doesn't stretch unnecessarily */
   max-width: 0;
 }
 
@@ -322,30 +315,33 @@ input.api-input {
 a.icon {
   display: inline-block;
   -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 0.95rem;
-  background-color: #706e6b;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: var(--sfir-font-xl);
+  mask-size: var(--sfir-font-xl);
+  background-color: var(--sfir-icon-color);
   width: 16px;
   height: 16px;
 }
 
 a.icon-url {
   -webkit-mask-image: url(images/link.svg);
+  mask-image: url(images/link.svg);
 }
 .pointer {
   cursor: pointer;
 }
 
 .text-error {
-  color: red;
+  color: var(--sfir-error-color);
 }
 
 .popup-media__figure {
-  padding-top: 0.25rem;
+  padding-top: var(--sfir-spacing-xs);
   padding-left: 0.3rem;
 }
 .popup-header__name-title {
   min-width: 0;
-  font-size: 0.95rem;
+  font-size: var(--sfir-font-xl);
   padding-top: 0.4rem;
 }
 .popup-header__title {
@@ -354,7 +350,7 @@ a.icon-url {
   display: block;
 }
 .popup-title {
-  font-size: 0.9rem !important;
+  font-size: var(--sfir-font-xl) !important;
   padding-bottom: 0.6rem;
 }
 .popup-header {
@@ -365,9 +361,8 @@ a.icon-url {
   padding-inline: 0 !important;
   padding-block: 0 !important;
 }
-.popup-header__name-title,
 .popup-header__name-title {
-  margin-top: 0.25rem;
+  margin-top: var(--sfir-spacing-xs);
 }
 .popup-header__icon {
   width: 1.75rem;
@@ -384,22 +379,21 @@ a.icon-url {
   );
 }
 .progress-success {
-  border-color: green;
+  border-color: var(--sfir-success-color);
 }
 .progress-error {
-  border-color: red;
+  border-color: var(--sfir-error-color);
 }
 
 
 /* MAIN TABS*/
 #mainTabs .slds-tabs_scoped__nav {
   position: fixed !important;
-  z-index: 999999 !important;
+  z-index: var(--sfir-z-tabs) !important;
   width: 100%;
 }
 
 #mainTabs .slds-tabs_scoped__link {
-  /* Reduce size of Scoped Tabs */
   line-height: 2rem !important;
   padding-block: 0;
   padding-inline: 0.75rem;
@@ -410,9 +404,6 @@ a.icon-url {
 
 #mainTabs .slds-tabs_scoped__item.slds-is-active .slds-tabs_scoped__link {
   color: var(--sfir-blue-color) !important;
-}
-
-#mainTabs .slds-tabs_scoped__link.slds-is-active .slds-tabs_scoped__link {
   border-bottom: none !important;
 }
 /* end of MAIN TABS*/
@@ -429,14 +420,14 @@ a.icon-url {
 .slds-dropdown__item a,
 .slds-dropdown__item .dropdown-item{
   display: block !important;
-  overflow:hidden; 
-  white-space:nowrap; 
+  overflow: hidden; 
+  white-space: nowrap; 
   text-overflow: ellipsis;
 }
 
 /* OBJECTS INFO */
 .sfir-background-grey{
-  background-color: #f3f3f3;
+  background-color: var(--sfir-light-gray);
 }
 
 .all-data-box-inner .slds-card__body{
@@ -446,7 +437,7 @@ a.icon-url {
 
 .sfir-id-badge {
   padding: 0.1rem;
-  margin-right: 0.25rem;
+  margin-right: var(--sfir-spacing-xs);
 }
 
 .sfir-button-new{
@@ -458,6 +449,7 @@ a.icon-url {
   min-height: 30px;
   margin-left: 0 !important;
   font-weight: 500;
+  font-size: var(--sfir-font-button) !important;
 }
 
 .sfir-button-fit-content{
@@ -474,14 +466,14 @@ a.icon-url {
 
 .sfir-slds-item_label_small{
   width: 17% !important;
+  padding: 0 !important;
 }
 /* end of OBJECTS INFO */
 
 .slds-button-group.sfir-padding-horizontal_small .slds-button{
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  padding-left: var(--sfir-spacing-sm);
+  padding-right: var(--sfir-spacing-sm);
 }
-
 
 .sfir-vertical-align_top{
   vertical-align: top;

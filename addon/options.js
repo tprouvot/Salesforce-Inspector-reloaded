@@ -181,7 +181,7 @@ class OptionsTabSelector extends React.Component {
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
-          {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
+          {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImpoltrink", default: true}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
               key: "hideExportButtonsOption",
@@ -498,17 +498,19 @@ class ArrowButtonOption extends React.Component {
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_x-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, "Popup arrow button orientation and position")
       ),
-      h("div", {className: "slds-col slds-size_8-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("label", {className: "slds-col slds-size_2-of-12 slds-text-align_right"}, "Orientation:"),
-        h("select", {className: "slds-col slds-size_2-of-12 slds-combobox__form-element slds-input combobox-container", defaultValue: this.state.arrowButtonOrientation, name: "arrowPosition", id: "arrowPosition", onChange: this.onChangeArrowOrientation},
+      h("div", {className: "slds-col slds-size_9-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
+        h("label", {className: "slds-text-align_right slds-m-left_medium slds-m-right_small"}, "Orientation:"),
+        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
+        h("div", {className: "slds-select_container"},
+        h("select", {className: "slds-select", defaultValue: this.state.arrowButtonOrientation, name: "arrowPosition", id: "arrowPosition", onChange: this.onChangeArrowOrientation},
           h("option", {value: "horizontal"}, "Horizontal"),
           h("option", {value: "vertical"}, "Vertical")
-        ),
+        ))),
         h("label", {className: "slds-m-left_medium slds-col slds-size_2-of-12 slds-text-align_right", htmlFor: "arrowPositionSlider"}, "Position (%):"),
-        h("div", {className: "slds-form-element__control slider-container slds-col slds-size_4-of-12"},
+        h("div", {className: "slds-form-element__control slider-container slds-col slds-size_3-of-12"},
           h("div", {className: "slds-slider"},
             h("input", {type: "range", id: "arrowPositionSlider", className: "slds-slider__range", value: nullToEmptyString(this.state.arrowButtonPosition), min: "0", max: "100", step: "1", onChange: this.onChangeArrowPosition}),
             h("span", {className: "slds-slider__value", "aria-hidden": true}, this.state.arrowButtonPosition)
@@ -554,19 +556,18 @@ class APIVersionOption extends React.Component {
   }
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, "API Version",
           h(Tooltip, {tooltip: "Update api version", idKey: "APIVersion"})
         ),
       ),
-      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-col"},
+          h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
+        ),
         this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-form-element__control"},
           h("button", {className: "slds-button slds-button_brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
-        ) : null,
-        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
-        )
+        ) : null
       )
     );
   }
@@ -692,7 +693,7 @@ class Option extends React.Component {
 
     if (isToggle) {
       return isEnhanced ? null : (
-        h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
+        h("div", {dir: "ltr", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
           h("label", {className: "slds-checkbox_toggle slds-grid"},
             h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key || "checked"], onChange: this.onChangeToggle}),
             h("span", {id, className: "slds-checkbox_faux_container center-label"},
@@ -1042,7 +1043,7 @@ class FaviconOption extends React.Component {
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, "Custom favicon (org specific)",
           h(Tooltip, {tooltip: this.tooltip, idKey: this.key || "favicon_option"})
         )
@@ -1083,8 +1084,8 @@ class FaviconOption extends React.Component {
           ) : null
         )
       ),
-      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_6-of-12"},
+      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {dir: "ltr", className: "slds-form-element__control slds-col "},
           h("label", {className: "slds-checkbox_toggle slds-grid"},
             h("input", {type: "checkbox", required: true, className: "slds-input", checked: this.state.smartMode, onChange: this.onToogleSmartMode}),
             h("span", {className: "slds-checkbox_faux_container center-label"},
@@ -1144,11 +1145,10 @@ class MultiCheckboxButtonGroup extends React.Component {
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, this.title)
       ),
-      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small slds-m-left_xxx-small"},
         h("div", {className: "slds-form-element__control"},
           h("div", {className: "slds-checkbox_button-group"},
             this.state.checkboxes.map((checkbox, index) =>
@@ -1183,11 +1183,10 @@ class CSVSeparatorOption extends React.Component {
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, "CSV Separator")
       ),
-      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align_center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align_center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align_center slds-gutters_small slds-m-left_xxx-small"},
         h("input", {type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: nullToEmptyString(this.state.csvSeparator), onChange: this.onChangeCSVSeparator})
       )
     );

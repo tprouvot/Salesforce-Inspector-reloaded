@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo} from "./utils.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg} from "./utils.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
@@ -224,11 +224,20 @@ class App extends React.PureComponent {
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
     parent.postMessage({insextLoaded: true}, "*");
-    setOrgInfo(this.props.sfHost);
+    this.setOrgInfo(sfHost);
   }
   componentWillUnmount() {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
+  }
+  setOrgInfo(sfHost) {
+    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
+    if (orgInfo == null) {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType+FROM+Organization").then(res => {
+        orgInfo = res.records[0];
+        sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
+      });
+    }
   }
   isMac() {
     return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
@@ -261,23 +270,8 @@ class App extends React.PureComponent {
           h("div", {className: "slds-page-header__row"},
             h("div", {className: "slds-page-header__col-title"},
               h("div", {className: "slds-media"},
-                h("div", {className: "slds-media__figure popup-media__figure"},
-                  h("span", {className: "popup-icon_container", title: "Salesforce Inspector Reloaded"},
-                    h("svg", {className: "popup-header__icon", viewBox: "0 0 24 24"},
-                      h("path", {
-                        d: `
-                        M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
-                        m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
-                        M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
-                        m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
-                        M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
-                        `
-                      })
-                    )
-                  )
-                ),
                 h("div", {className: "slds-media__body"},
-                  h("div", {className: "popup-header__name-title"},
+                  h("div", {className: "popup-header__name-title slds-text-align_center slds-p-left_medium"},
                     h("h1", {},
                       h("span", {className: "popup-header__title popup-title slds-truncate", title: "Salesforce Inspector Reloaded"}, "Salesforce Inspector Reloaded")
                     )
@@ -647,8 +641,7 @@ class AllDataBox extends React.PureComponent {
           sobjectsLoading: false,
           sobjectsList: Array.from(entityMap.values())
         });
-        // Only call getMatchesDelayed if the showAllDataBoxSObject component is rendered (i.e., user is on Objects tab)
-        this.refs.showAllDataBoxSObject?.refs?.allDataSearch?.getMatchesDelayed("");
+        this.refs.showAllDataBoxSObject.refs.allDataSearch.getMatchesDelayed("");
       })
       .catch(e => {
         console.error(e);
@@ -832,7 +825,7 @@ class AllDataBoxUsers extends React.PureComponent {
 
     return (
       h("div", {ref: "usersBox", className: "users-box tab-container slds-p-horizontal_x-small"},
-        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: "Username, email, alias or name of user", resultRender: this.resultRender}),
+        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: "Name, username, email or alias", resultRender: this.resultRender}),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
             ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
@@ -1325,12 +1318,9 @@ class AllDataBoxOrg extends React.PureComponent {
     this.deleteApexLogs = this.deleteApexLogs.bind(this);
   }
 
-  async componentDidMount() {
+  componentDidMount() {
     let {sfHost} = this.props;
     let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
-    if (!orgInfo){
-      orgInfo = await setOrgInfo(sfHost);
-    }
     this.setInstanceStatus(orgInfo.InstanceName, sfHost);
   }
 
@@ -1435,15 +1425,15 @@ class AllDataBoxOrg extends React.PureComponent {
               h("tbody", {},
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget, onClick: handleLightningLinkClick}, "Org Id")),
-                  h("td", {}, orgInfo?.Id.substring(0, 15))
+                  h("td", {}, orgInfo.Id.substring(0, 15))
                 ),
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo?.InstanceName, title: "Instance status", target: linkTarget}, "Instance")),
-                  h("td", {}, orgInfo?.InstanceName)
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName, title: "Instance status", target: linkTarget}, "Instance")),
+                  h("td", {}, orgInfo.InstanceName)
                 ),
                 h("tr", {},
                   h("th", {}, "Type"),
-                  h("td", {}, orgInfo?.OrganizationType)
+                  h("td", {}, orgInfo.OrganizationType)
                 ),
                 h("tr", {},
                   h("th", {}, "Status"),
@@ -1462,7 +1452,7 @@ class AllDataBoxOrg extends React.PureComponent {
                   h("td", {}, this.getApiVersion(this.state.instanceStatus))
                 ),
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo?.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maint.")),
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maint.")),
                   h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
                 ),
               )
@@ -1692,18 +1682,6 @@ class UserDetails extends React.PureComponent {
     ).catch(err => console.log("Error during user debug mode activation", err));
   }
 
-  unfreezeUser(user){
-    sfConn.rest("/services/data/v" + apiVersion + "/sobjects/UserLogin/" + user.UserLogins?.records?.[0]?.Id, {
-      method: "PATCH",
-      body: {IsFrozen: false}
-    })
-      .then(() => {
-        this.showSuccessToast("User Unfreeze", `User ${user.Name} has been unfrozen successfully`);
-        browser.runtime.sendMessage({message: "reloadPage"});
-      })
-      .catch(err => this.showErrorToast("User Unfreeze", err));
-  }
-
   toggleMenu(){
     this.refs.buttonMenu.classList.toggle("slds-is-open");
   }
@@ -1789,17 +1767,13 @@ class UserDetails extends React.PureComponent {
           h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral slds-col", title: "Show / assign user's permission set groups"}, "PS Groups"),
         ),
         h("div", {}),
-          //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
-          user.UserLogins?.records?.[0]?.IsFrozen
-            ? h("a", { id: "unfreezeUser", className: "slds-button slds-button_neutral", onClick: () => this.unfreezeUser(user) },
-              h("span", { className: "slds-truncate", title: "Unfreeze User Login" }, "Unfreeze")
-            )
-            : h("div", { className: "slds-button-group slds-grid sfir-padding-horizontal_small slds-size_1-of-1 slds-m-bottom_xx-small", role: "group" },
-              h("a", { href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral slds-col", title: "Enable user debug log" }, "Enable Logs"),
-              h("a", { id: "enableDebugMode", className: "slds-button slds-button_neutral slds-col", onClick: () => this.enableDebugMode(user) },
-                h("span", { title: user.debugModeActionLabel + " Debug Mode for Lightning Components" }, user.debugModeActionLabel + " Debug Mode")
-              )
-            ),
+        //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
+        h("div", {className: "slds-button-group slds-grid sfir-padding-horizontal_small slds-size_1-of-1 slds-m-bottom_xx-small", role: "group"},
+          h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral slds-col", title: "Enable user debug log"}, "Enable Logs"),
+          h("a", {id: "enableDebugMode", className: "slds-button slds-button_neutral slds-col", onClick: () => this.enableDebugMode(user)},
+            h("span", {title: user.debugModeActionLabel + " Debug Mode for Lightning Components"}, user.debugModeActionLabel + " Debug Mode")
+          )
+        ),
         this.doSupportLoginAs(user) ? h("div", {className: "slds-size_1-of-1 slds-m-bottom_x-small"},
           h("p", {className: "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small"}, h("strong", {}, "Login as User")),
           h("div", {className: "slds-button-group slds-grid sfir-padding-horizontal_small slds-size_1-of-1 slds-m-bottom_xx-small", role: "group"},
@@ -2194,7 +2168,7 @@ class AllDataSearch extends React.PureComponent {
     return (
       h("div", {className: "input-with-dropdown slds-form-element__control slds-grow slds-input-has-icon slds-input-has-icon_left-right"},
         h("input", {
-          className: "slds-input",
+          className: "slds-input sfir-font-size_11px",
           ref: "showAllDataInp",
           placeholder: placeholderText,
           onInput: this.onAllDataInput,

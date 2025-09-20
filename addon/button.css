@@ -3,134 +3,201 @@
     display: block;
     position: fixed;
     vertical-align: middle;
-}
-
-#insext .insext-popup {
+  }
+  
+  #insext .insext-popup {
     box-sizing: border-box;
     width: 280px;
     height: 450px;
-    position:absolute;
+    position: absolute;
     background-color: #ffffff;
     border-radius: 4px;
     z-index: 1;
     border: 1px solid #d8dde6;
     display: none;
-}
-
-#insext .insext-popup-vertical {
+  }
+  
+  #insext .insext-popup-vertical {
     right: 0%;
     border-top-right-radius: 0;
-    box-shadow: 0 -2px 2px 0 rgba(0,0,0,.16);
-}
-
-#insext .insext-popup-vertical-up {
+    box-shadow: 0 -2px 2px 0 rgba(0, 0, 0, 0.16);
+    position: absolute;
+    top: 0;
+    border-top-left-radius: 25px;
+    border-bottom-left-radius: 25px;
+  }
+  
+  #insext .insext-popup-vertical-up {
     bottom: 100%;
-}
-
-#insext .insext-popup-horizontal {
-    bottom: 20px;
-    box-shadow: 2px 0 2px 0 rgba(0,0,0,.16);
-}
-
-#insext .insext-popup-horizontal-left {
-    right: 0%;
-}
-
-#insext .insext-popup-horizontal-centered {
-    right: -380%;
-}
-
-#insext .insext-popup-horizontal-right {
+  }
+  
+  #insext .insext-popup-horizontal {
+    bottom: 0;
+    box-shadow: 2px 0 2px 0 rgba(0, 0, 0, 0.16);
+    border-top-left-radius: 25px;
+    border-top-right-radius: 25px;
+  }
+  
+  #insext .insext-popup-horizontal-left {
     left: 0%;
-}
-
-#insext.insext-active .insext-popup {
+  }
+  
+  #insext .insext-popup-horizontal-right {
+    left: 0;
+  }
+  
+  #insext.insext-active .insext-popup {
     display: block;
-}
-#insext .insext-btn {
+  }
+  #insext .insext-btn {
     box-sizing: border-box;
-    background-color: #226b86;
-    border-width: 4px;
-    border-style: solid;
-    border-color: #fff;
-    opacity: .4;
-}
-#insext .insext-btn-vertical {
-    width: 15px;
-    height: 33px;
-    padding: 3px 1px 2px 0;
-    border-right-style: none;
-    border-top-left-radius: 5px;
-    border-bottom-left-radius: 5px;
-    box-shadow: -2px 0 2px #a0a6ab;
-}
-#insext .insext-btn-horizontal {
-    height: 15px;
-    width: 33px;
-    padding: 0 2px 1px 3px;
-    border-bottom-style: none;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-    box-shadow: 0 -2px 2px #a0a6ab;
-}
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #c9c9c9;
+    cursor: pointer;
+    /*transition: all 0.2s ease-in-out;*/
+    opacity: 0.85;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #insext .insext-btn-vertical {
+    width: 24px;
+    height: 38px;
+    padding: 6px 2px;
+    border-right: none;
+    border-top-left-radius: 25px;
+    border-bottom-left-radius: 25px;
+    box-shadow: -3px 0 8px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    position: absolute;
+    right: 0px;
+  }
+  #insext .insext-btn-horizontal {
+      height: 24px;
+      width: 38px;
+      padding: 2px 6px;
+      border-bottom: none;
+      border-top-left-radius: 25px;
+      border-top-right-radius: 25px;
+      box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.15),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+      position: relative;
+      z-index: 9999;
+    }
 
-#insext .insext-btn-vertical:hover,
-#insext.insext-active .insext-btn-vertical {
+    #insext.insext-active .insext-btn {
+      z-index: 9999;
+      background: transparent !important;
+      border: none;
+      box-shadow: none;
+
+    }
+    #insext.insext-active .insext-btn-horizontal {
+      left: 4px;
+      bottom: 416px;
+      border-top-right-radius: 0px;
+    }
+    
+  #insext .insext-btn-vertical:hover,
+  #insext.insext-active .insext-btn-vertical {
     opacity: 1;
-    width: 20px;
-}
+    width: 22px;
+    background: rgba(255, 255, 255, 1);
+    border-color: #0176d3;
+  }
 
-#insext .insext-btn-horizontal:hover,
-#insext.insext-active .insext-btn-horizontal {
+  #insext.insext-active .insext-btn-vertical{
+    right: 280px !important;
+    position: absolute;
+    border-bottom-left-radius: 0px;
+    right: 255px !important;
+  }
+  
+  #insext .insext-btn-horizontal:hover,
+  #insext.insext-active .insext-btn-horizontal {
     opacity: 1;
-    height: 20px;
-}
-
-#insext .insext-btn img {
+    height: 22px;
+    background: rgba(255, 255, 255, 1);
+    border-color: #0176d3;
+    transform: translateY(-2px);
+  }
+  
+  #insext .insext-btn img {
     box-sizing: border-box;
-}
-
-#insext .insext-btn-vertical img {
-    width: 10px;
-    height: 15px;
-    margin: 2px;
+    /*filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    transition: transform 0.2s ease-in-out;*/
+  }
+  
+    #insext .insext-btn-vertical img {
+      width: 24px;
+      height: 24px;
+      margin: 0 0 0 5px;
+    }
+    
+#insext.insext-active .insext-btn-vertical img {
+  margin-left: 15px;
+  margin-top: 5px;
+  transform: rotateY(0.5turn);
 }
 
 #insext .insext-btn-horizontal img {
-    width: 15px;
-    height: 10px;
-    margin: 2px;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  transform: rotateX(0.5turn);
+  transition: transform 0.2s ease-in-out;
+  filter: brightness(1.1);
 }
 
-.checkboxScrollSandbox {
+#insext.insext-active .insext-btn-horizontal img {
+  transform: rotateX(0turn);
+}
+  
+  #insext .insext-btn:hover img {
+    transform: scale(1.1);
+  }
+  
+  #insext.insext-active .insext-btn-vertical:hover img {
+    transform: rotateY(0.5turn) scale(1.1);
+  }
+  
+  #insext .insext-btn-horizontal:hover img {
+    transform: rotateX(0.5turn) scale(1.1);
+  }
+  
+  #insext.insext-active .insext-btn-horizontal:hover img {
+    transform: rotateX(0turn) scale(1.1);
+  }
+  
+  .checkboxScrollSandbox {
     position: fixed;
     top: 10px;
     right: 78px;
     z-index: 10000;
-}
-.checkboxScrollProd{
+  }
+  .checkboxScrollProd {
     position: fixed;
     top: 21px;
     right: 78px;
     z-index: 10000;
-}
-.labelCheckboxScrollSandbox{
+  }
+  .labelCheckboxScrollSandbox {
     position: fixed;
     top: 7px;
     right: 100px;
     color: white;
     z-index: 10000;
-}
-.labeCheckboxScrollProd{
+  }
+  .labeCheckboxScrollProd {
     position: fixed;
     top: 15px;
     right: 100px;
     color: white;
     z-index: 10000;
-}
-.copiedText {
+  }
+  .copiedText {
     font-family: "Salesforce Sans", Arial, sans-serif;
-    color: #28a745; 
+    color: #28a745;
     font-size: 0.875rem;
     font-weight: 500;
     line-height: 1;
@@ -145,4 +212,4 @@
     to {
       opacity: 0;
     }
-  }   
+  }

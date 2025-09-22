@@ -88,7 +88,7 @@ class Model {
     let parts;
     if (this.recordData) {
       if (!this.recordName){
-        let fieldName = this.recordData.Name ? "Name" : this.objectData?.fields.find(field => field.nameField).name;
+        let fieldName = this.recordData.Name ? "Name" : (this.objectData?.fields.find(field => field.nameField)?.name || "Id");
         this.recordName = this.recordData[fieldName];
       }
       parts = [this.recordName, this.recordData.Id];
@@ -522,6 +522,33 @@ class RowList {
     this.availableColumns = null;
     this.selectedColumnMap = null;
   }
+
+  getLocalStorageKey() {
+    if (this.listName === "fields") {
+      return "inspectFieldsToDisplay";
+    } else {
+      return "inspectRelationsToDisplay";
+    }
+  }
+
+  saveVisibleColumnsToStorage() {
+    const visibleColumns = Array.from(this.selectedColumnMap.keys());
+    localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(visibleColumns));
+  }
+
+  // Helper method to load visible columns from localStorage
+  loadVisibleColumnsFromStorage(defaultColumns) {
+    const saved = localStorage.getItem(this.getLocalStorageKey());
+    if (saved) {
+      const parsedColumns = JSON.parse(saved);
+      // Validate that saved columns is an array
+      if (Array.isArray(parsedColumns) && parsedColumns.length > 0) {
+        return parsedColumns;
+      }
+    }
+    return defaultColumns;
+  }
+
   getRow(name) {
     if (!name) { // related lists may not have a name
       let row = new this._rowConstructor(name, this._nextReactKey++, this);
@@ -600,6 +627,7 @@ class RowList {
     } else {
       this.selectedColumnMap.delete(col);
     }
+    this.saveVisibleColumnsToStorage();
   }
   toggleAvailableColumns() {
     if (this.availableColumns) {
@@ -630,10 +658,12 @@ class FieldRowList extends RowList {
     this.listName = "fields";
 
     // Only include usage column if objectType parameter is present
-    let columns = ["name", "label", "type"];
+    let defaultColumns = ["name", "label", "type"];
     if (!new URLSearchParams(location.search.slice(1)).get("recordId")) {
-      columns.push("usage");
+      defaultColumns.push("usage");
     }
+
+    let columns = this.loadVisibleColumnsFromStorage(defaultColumns);
 
     this.initColumns(columns);
     this.fetchFieldDescriptions = true;
@@ -699,14 +729,7 @@ class FieldRowList extends RowList {
       let compositeRequest = {
         compositeRequest: batch.map((fieldRow) => {
 
-          let query;
-          if (!fieldRow.fieldDescribe.groupable) {
-            // For non-groupable fields (date, lookup, formula, etc.), use simple COUNT with != null
-            query = `SELECT COUNT() FROM ${this.model.objectName()} WHERE ${fieldRow.fieldName} != null`;
-          } else {
-            // For groupable fields, use GROUP BY approach
-            query = `SELECT COUNT(Id) number, ${fieldRow.fieldName} FROM ${this.model.objectName()} GROUP BY ${fieldRow.fieldName} ORDER BY COUNT(Id) DESC`;
-          }
+          let query = `SELECT COUNT() FROM ${this.model.objectName()} WHERE ${fieldRow.fieldName} != null`;
 
           return {
             method: "GET",
@@ -759,8 +782,7 @@ class FieldRowList extends RowList {
       return;
     }
 
-    let isGroupable = fieldRow.fieldDescribe && fieldRow.fieldDescribe.groupable;
-    let nonNullRecords = this.calculateNonNullRecords(fieldRow, queryResult.body, isGroupable);
+    let nonNullRecords = this.calculateNonNullRecords(queryResult.body);
     let percentage = this.calculatePercentage(nonNullRecords, totalRecords);
 
     this.setFieldUsageSuccess(fieldRow, percentage, nonNullRecords, totalRecords);
@@ -772,22 +794,8 @@ class FieldRowList extends RowList {
   }
 
   // Helper method to calculate non-null records count
-  calculateNonNullRecords(fieldRow, queryBody, isGroupable) {
-    if (!isGroupable) {
-      // For non-groupable fields, the result is a simple count
-      return queryBody.totalSize || 0;
-    } else if (queryBody.records) {
-      // For groupable fields, process the GROUP BY results
-      let nonNullRecords = 0;
-      queryBody.records.forEach(record => {
-        // If the field value is not null, add to non-null count
-        if (record[fieldRow.fieldName] !== null && record[fieldRow.fieldName] !== undefined) {
-          nonNullRecords += record.number;
-        }
-      });
-      return nonNullRecords;
-    }
-    return 0;
+  calculateNonNullRecords(queryBody) {
+    return queryBody.totalSize || 0;
   }
 
   // Helper method to calculate percentage
@@ -925,7 +933,11 @@ class ChildRowList extends RowList {
   constructor(model) {
     super(ChildRow, model);
     this.listName = "childs";
-    this.initColumns(["name", "object", "field", "label"]);
+
+    let defaultColumns = ["name", "object", "field", "label"];
+    let columns = this.loadVisibleColumnsFromStorage(defaultColumns);
+
+    this.initColumns(columns);
   }
   createColumn(col) {
     return {
@@ -2019,13 +2031,72 @@ class FieldValueCell extends React.Component {
 }
 
 class FieldTypeCell extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {expanded: false};
+    this.toggleExpanded = this.toggleExpanded.bind(this);
+  }
+
+  toggleExpanded() {
+    this.setState(prev => ({expanded: !prev.expanded}));
+  }
+
   render() {
     let {row, col} = this.props;
+    const {expanded} = this.state;
+    let referenceTypes = row.referenceTypes?.() || [];
+    if (referenceTypes.length > 1 && row.dataTypedValue && row.rowList.model.globalDescribe){
+      // Get the first 3 characters of the ID (the keyPrefix)
+      const dataKeyPrefix = row.dataTypedValue.substring(0, 3);
+
+      // Find the matching object from globalDescribe
+      const matchingObject = row.rowList.model.globalDescribe?.sobjects?.find(
+        sobject => sobject.keyPrefix === dataKeyPrefix
+      );
+
+      // If we found a matching object, filter referenceTypes to only include it
+      if (matchingObject) {
+        referenceTypes = [matchingObject.name];
+      }
+    }
+
+    const maxToShow = 3;
+    const showAll = expanded || referenceTypes.length <= maxToShow;
+    const visible = showAll ? referenceTypes : referenceTypes.slice(0, maxToShow);
+    const remainingCount = referenceTypes.length - visible.length;
+
+    const links = visible.map((data) =>
+      h("span", {key: data},
+        h("a", {href: row.showReferenceUrl(data)}, data),
+        " "
+      )
+    );
+
+    // +X more link
+    if (!showAll && remainingCount > 0) {
+      links.push(
+        h("a", {
+          className: "text-muted",
+          onClick: this.toggleExpanded,
+          style: {cursor: "pointer", marginLeft: "5px"}
+        }, `+${remainingCount} more`)
+      );
+    }
+
+    // Show less link
+    if (expanded && referenceTypes.length > maxToShow) {
+      links.push(
+        h("a", {
+          className: "text-muted",
+          onClick: this.toggleExpanded,
+          style: {cursor: "pointer", marginLeft: "5px"}
+        }, "Show less")
+      );
+    }
+
     return h("td", {className: col.className + " quick-select"},
-      row.referenceTypes() ? row.referenceTypes().map(data =>
-        h("span", {key: data}, h("a", {href: row.showReferenceUrl(data)}, data), " ")
-      ) : null,
-      !row.referenceTypes() ? h(TypedValue, {value: row.sortKey(col.name)}) : null
+      links,
+      referenceTypes.length === 0 ? h(TypedValue, {value: row.sortKey(col.name)}) : null
     );
   }
 }

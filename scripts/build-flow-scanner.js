@@ -131,7 +131,7 @@ if (typeof window !== 'undefined' && window.${libraryName}) {
 }
 
 function main() {
-  log("🚀 Flow Linter Core Build Script", "green");
+  log("🚀 Lightning Flow Scanner Core Build Script", "green");
   log("============================================", "green");
 
   // Step 1: Read package.json to get version

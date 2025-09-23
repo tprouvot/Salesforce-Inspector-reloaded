@@ -78,6 +78,9 @@ class OptionsTabSelector extends React.Component {
       selectedTabId: initialTabId
     };
 
+    const flowScannerVersion = window.lightningflowscanner?.version || "";
+    const flowScannerTitle = flowScannerVersion ? `Enabled Rules (v${flowScannerVersion})` : "Enabled Rules";
+
     this.tabs = [
       {
         id: "user-experience",
@@ -234,7 +237,7 @@ class OptionsTabSelector extends React.Component {
       {
         id: "flow-scanner",
         tabTitle: "Flow Scanner",
-        title: "Enabled Rules (v4.49.0)",
+        title: flowScannerTitle,
         description: "Configure which Flow Scanner rules are enabled and their settings. Only enabled rules will be used when scanning flows.",
         descriptionTooltip: "Flow Scanner rules help identify potential issues, best practices violations, and improvements opportunities in your Salesforce Flows. Each rule can be individually enabled or disabled, and some rules have configurable parameters like thresholds or expressions.",
         actionButtons: [

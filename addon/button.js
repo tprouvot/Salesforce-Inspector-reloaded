@@ -177,20 +177,11 @@ function initButton(sfHost, inInspector) {
     } else {
       // add a new observer for the new devops_center sandbox banner
       observeElement("devops_center-base-component", (banner) => {
-        updateBanner(banner, faviconColor);
+        const navBar = banner.getElementsByClassName("navBar-container")[0];
+        if (navBar) navBar.style.backgroundColor = faviconColor;
       });
 
     }
-  }
-
-  function updateBanner(banner, faviconColor){
-    let newBanner = banner.firstChild?.firstChild?.classList.contains("navBar-container");
-    if (newBanner){
-      banner = banner.firstChild.firstChild;
-    } else {
-      [...banner.children].forEach(child => child.style.color = "white !important;");
-    }
-    banner.style.backgroundColor = faviconColor;
   }
 
   function addBorder(fav){

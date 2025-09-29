@@ -69,6 +69,10 @@ export let setupLinks = [
   //Platform Tools > Apps > Connected Apps
   {label: "Connected Apps OAuth Usage", link: "/lightning/setup/ConnectedAppsUsage/home", section: "Platform Tools > Apps > Connected Apps", prod: false},
   {label: "Manage Connected Apps", link: "/lightning/setup/ConnectedApplication/home", section: "Platform Tools > Apps > Connected Apps", prod: false},
+  //Platform Tools > Apps > External Client Apps
+  {label: "External Client App Manager", link: "/lightning/setup/ConnectedAppsUsage/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
+  {label: "External Client Apps OAuth Usage", link: "/lightning/setup/ExternalClientApplicationOauthUsage/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
+  {label: "External Client App Settings", link: "/lightning/setup/ExternalClientApplicationSettings/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
   //Platform Tools > Apps > Lightning Bolt
   {label: "Flow Category", link: "/lightning/setup/FlowCategory/home", section: "Platform Tools > Apps > Lightning Bolt", prod: false},
   {label: "Lightning Bolt Solutions", link: "/lightning/setup/LightningBolt/home", section: "Platform Tools > Apps > Lightning Bolt", prod: false},

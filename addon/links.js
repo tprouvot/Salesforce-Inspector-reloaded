@@ -186,6 +186,8 @@ export let setupLinks = [
   {label: "Schema Builder", link: "/lightning/setup/SchemaBuilder/home", section: "Platform Tools > Objects and Fields", prod: false},
   //Platform Tools > Events
   {label: "Event Manager", link: "/lightning/setup/EventManager/home", section: "Platform Tools > Events", prod: false},
+  {label: "Event Relays", link: "/lightning/setup/EventRelay/home", section: "Platform Tools > Events", prod: false},
+  {label: "Event Studio", link: "/lightning/setup/EventHome/home", section: "Platform Tools > Events", prod: false},
   //Platform Tools > Process Automation
   {label: "Approval Processes", link: "/lightning/setup/ApprovalProcesses/home", section: "Platform Tools > Process Automation", prod: false},
   {label: "Automation Home", link: "/lightning/setup/ProcessHome/home", section: "Platform Tools > Process Automation", prod: false},

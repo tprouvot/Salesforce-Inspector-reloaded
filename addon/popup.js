@@ -1617,15 +1617,10 @@ class UserDetails extends React.PureComponent {
     ).catch(err => console.log("Error during user debug mode activation", err));
   }
 
-  async unfreezeUser(user){
-    try {
-      await sfConn.rest("/services/data/v" + apiVersion + "/sobjects/UserLogin/" + user.UserLogins?.records?.[0].Id, {method: "PATCH",
+   unfreezeUser(user){
+       sfConn.rest("/services/data/v" + apiVersion + "/sobjects/UserLogin/" + user.UserLogins?.records?.[0]?.Id, {method: "PATCH",
         body: {IsFrozen: false} 
-      });
-    } catch (e) {
-      console.error(e);
-      return null;
-    }
+      }).catch(err => console.log("Error during user unfreeze", err));
   }
 
   toggleMenu(){
@@ -1636,7 +1631,11 @@ class UserDetails extends React.PureComponent {
     this.refs.logButtonMenu.classList.toggle("slds-is-open");
   }
 
-  toggleDetailsMenu(){
+  toggleLogMenu(){
+    this.refs.logButtonMenu.classList.toggle("slds-is-open");
+  }
+
+    toggleDetailsMenu(){
     this.refs.detailsButtonMenu.classList.toggle("slds-is-open");
   }
 

@@ -765,10 +765,10 @@ class AllDataBoxUsers extends React.PureComponent {
       return;
     }
     //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
-    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref";
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
     //TODO implement a try catch to remove non existing fields ProfileId or IsPortalEnabled (experience is not enabled)
-    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref";
-    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref";
+    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
     const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
     const compositeQuery = {
       "compositeRequest": [
@@ -1617,6 +1617,17 @@ class UserDetails extends React.PureComponent {
     ).catch(err => console.log("Error during user debug mode activation", err));
   }
 
+  async unfreezeUser(user){
+    try {
+      await sfConn.rest("/services/data/v" + apiVersion + "/sobjects/UserLogin/" + user.UserLogins?.records?.[0].Id, {method: "PATCH",
+        body: {IsFrozen: false} 
+      });
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }
+
   toggleMenu(){
     this.refs.buttonMenu.classList.toggle("slds-is-open");
   }
@@ -1625,8 +1636,8 @@ class UserDetails extends React.PureComponent {
     this.refs.logButtonMenu.classList.toggle("slds-is-open");
   }
 
-  toggleLogMenu(){
-    this.refs.logButtonMenu.classList.toggle("slds-is-open");
+  toggleDetailsMenu(){
+    this.refs.detailsButtonMenu.classList.toggle("slds-is-open");
   }
 
   render() {
@@ -1696,7 +1707,26 @@ class UserDetails extends React.PureComponent {
             )
           )),
         h("div", {ref: "userButtons", className: "user-buttons center small-font"},
-          h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral"}, "Details"),
+          h("div", {className: "slds-button-group", role: "group"},
+            h("a", {href: this.getUserDetailLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral"}, "Details"),
+            user.UserLogins?.records?.[0]?.IsFrozen ? h("div", {ref: "detailsButtonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleDetailsMenu(), title: "Show options"},
+                h("svg", {className: "slds-button__icon"},
+                  h("use", {xlinkHref: "symbols.svg#down"})
+                ),
+                h("span", {className: "slds-assistive-text"}, "Show options")
+              ),
+              h("div", {className: "slds-dropdown slds-dropdown_right", onMouseLeave: () => this.toggleDetailsMenu()},
+                h("ul", {className: "slds-dropdown__list", role: "menu"},
+                  h("li", {className: "slds-dropdown__item", role: "presentation"},
+                    h("a", {id: "unfreezeUser", onClick: () => this.unfreezeUser(user), tabIndex: "1"},
+                      h("span", {className: "slds-truncate", title: "Unfreeze User Login"}, "Unfreeze")
+                    )
+                  )
+                )
+              )
+            ) : null
+          ),
           h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
           h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
           //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group

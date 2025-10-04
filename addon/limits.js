@@ -115,7 +115,7 @@ class LimitData extends React.Component {
         ),
         h("figcaption", {}, this.props.label,
           h("div", {}, (this.props.max - this.props.remaining).toLocaleString() + " of " + (this.props.max).toLocaleString() + " consumed",
-            h("br", {}), "(" + (this.props.remaining).toLocaleString() + " left)"
+            h("br", {}), this.props.remaining >= 0 ? "(" + (this.props.remaining).toLocaleString() + " left)" : "(" + (0 - this.props.remaining).toLocaleString() + " overconsumed)"
           ),
         )
       )
@@ -126,7 +126,7 @@ class LimitData extends React.Component {
   }
   componentDidMount() {
     // Animate gauge to relevant value
-    let targetDegree = (this.props.max == 0) ? "180deg" : ((1 - this.divide(this.props.remaining, this.props.max)) * 180) + "deg"; //180deg = 100%, 0deg = 0%
+    let targetDegree = (this.props.max == 0 || this.props.remaining<0) ? "180deg" : ((1 - this.divide(this.props.remaining, this.props.max)) * 180) + "deg"; //180deg = 100%, 0deg = 0%
     this.refs.meter.animate([{
       transform: "rotate(0deg)"
     }, {

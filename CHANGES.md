@@ -3,6 +3,7 @@
 ## Version 1.27
 
 - Fix gauge display and text when limits are exceeded [issue #943](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/943) (contribution by [Sylvain Enguerand](https://github.com/Annubis45))
+- Open the Debug Logs from the Data Export page (contribution by [Marko Vuković](https://github.com/MarkoVukovic))
 - Fix sandbox banner colorization for Winter 26 changes
 - `Show All Data` Save fields selection [feature 914](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/914)
 - Fix 'unexpected query key(s): cache' error in REST Explore [issue 909](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/909) issued by [Martin Krchnak](https://github.com/mascot4m)

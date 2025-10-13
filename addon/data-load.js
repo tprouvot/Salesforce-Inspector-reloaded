@@ -217,8 +217,10 @@ function renderCell(rt, cell, td) {
         if (linkOptions.isViewInSalesforce && recordId && isRecordId(recordId) && !recordId.endsWith("0000000000AAA")) {
           let aView = document.createElement("a");
           aView.href = "https://" + rt.sfHost + "/" + recordId;
-		  if (recordId.startsWith('07L'))
-			aView.href = "https://" + rt.sfHost + "/p/setup/layout/ApexDebugLogDetailEdit/d?apex_log_id=" + recordId; // to open Apex Debug Log
+          //debug log specific link
+          if (recordId.startsWith("07L")) {
+            aView.href = "https://" + rt.sfHost + "/one/one.app#/alohaRedirect/p/setup/layout/ApexDebugLogDetailEdit/d?apex_log_id=" + recordId;
+          }
           aView.target = "_blank";
           aView.textContent = "View in Salesforce";
           aView.className = "view-salesforce";

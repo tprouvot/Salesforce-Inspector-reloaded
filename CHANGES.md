@@ -2,6 +2,7 @@
 
 ## Version 1.27
 
+- Fix gauge display and text when limits are exceeded [issue #943](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/943) (contribution by [Sylvain Enguerand](https://github.com/Annubis45))
 - Fix sandbox banner colorization for Winter 26 changes
 - `Show All Data` Save fields selection [feature 914](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/914)
 - Fix 'unexpected query key(s): cache' error in REST Explore [issue 909](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/909) issued by [Martin Krchnak](https://github.com/mascot4m)
@@ -34,7 +35,6 @@
 - Implement search on `Event Monitor` to filter on event details
 - Prevent selection of an API version higher than the latest available [feature 464](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/464) (contribution by [Salwa Hammou](https://github.com/SalwaHm))
 - Fix error propagation on rest 403 [issue 881](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/881) (contribution by [Sebastien Colladon](https://github.com/scolladon))
-- Fix gauge display and text when limits are exceeded [issue #943](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/943) (contribution by [Sylvain Enguerand](https://github.com/Annubis45))
 
 ## Version 1.26
 

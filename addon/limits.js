@@ -126,7 +126,7 @@ class LimitData extends React.Component {
   }
   componentDidMount() {
     // Animate gauge to relevant value
-    let targetDegree = (this.props.max == 0 || this.props.remaining<0) ? "180deg" : ((1 - this.divide(this.props.remaining, this.props.max)) * 180) + "deg"; //180deg = 100%, 0deg = 0%
+    let targetDegree = (this.props.max == 0 || this.props.remaining < 0) ? "180deg" : ((1 - this.divide(this.props.remaining, this.props.max)) * 180) + "deg"; //180deg = 100%, 0deg = 0%
     this.refs.meter.animate([{
       transform: "rotate(0deg)"
     }, {

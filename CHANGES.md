@@ -1,5 +1,7 @@
 # Release Notes
 
+## Version 1.28
+
 ## Version 1.27
 
 - Fix gauge display and text when limits are exceeded [issue #943](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/943) (contribution by [Sylvain Enguerand](https://github.com/Annubis45))

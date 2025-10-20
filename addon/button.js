@@ -175,34 +175,12 @@ function initButton(sfHost, inInspector) {
         });
       }
     } else {
-      //header selector depends on the env type (sandbox or trial)
-      const bannerSelector = isSandbox === "true" ? `${sandboxBannerSelector} > div.slds-notify_alert.system-message.level-info.slds-theme_info` : "div.slds-trial-header.slds-grid.oneTrialHeader.oneTrialExperience";
-
-      if (isSandbox){
-        // add a new observer for the new gradient sandbox banner
-        observeElement("devops_center-base-component > lightning-layout", (banner) => {
-          updateBanner(banner, faviconColor);
-        });
-      }
-
-      observeElement(bannerSelector, (banner) => {
-        updateBanner(banner, faviconColor);
+      // add a new observer for the new devops_center sandbox banner
+      observeElement("devops_center-base-component", (banner) => {
+        const navBar = banner.getElementsByClassName("navBar-container")[0];
+        if (navBar) navBar.style.backgroundColor = faviconColor;
       });
-    }
-  }
 
-  function updateBanner(banner, faviconColor){
-    let newBanner = banner.classList.contains("navBar-container");
-    if (newBanner){
-      //only way to render backgroundColor is to remove the standard gradient coming with the "navBar-container" class
-      banner.classList.remove("navBar-container");
-    }
-    banner.style.backgroundColor = faviconColor;
-    [...banner.children].forEach(child => child.style.color = "white !important;");
-    if (newBanner){
-      let devOpsInfo = banner.querySelector("devops_center-org-info");
-      //add white color to text in the banner
-      [...devOpsInfo.children].forEach(child => child.classList.add("slds-text-color--inverse"));
     }
   }
 

@@ -1,8 +1,8 @@
 {
   "name": "Salesforce Inspector Reloaded",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.27",
-  "version_name": "1.27",
+  "version": "1.28",
+  "version_name": "1.28",
   "icons": {
     "128": "icon128.png"
   },
@@ -120,6 +120,9 @@
     },
     "open-export-execute": {
       "description": "Run Query in Data Export"
+    },
+    "open-save-modifications": {
+      "description": "Save modifications in Show All Data"
     },
     "data-export": {
       "description": "Data Export"

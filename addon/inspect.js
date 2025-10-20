@@ -2327,6 +2327,16 @@ class DetailsBox extends React.Component {
     };
     ReactDOM.render(h(App, {model}), root);
 
+    // Listen for save-modifications command from background script
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.msg === "shortcut_pressed" && message.command === "open-save-modifications" && model.editMode !== null) {
+        model.doSave();
+        model.didUpdate();
+        sendResponse({success: true});
+      }
+      return false;
+    });
+
   });
 
 }

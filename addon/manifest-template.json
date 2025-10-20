@@ -120,6 +120,9 @@
     "open-export-execute": {
       "description": "Run Query in Data Export"
     },
+    "open-save-modifications": {
+      "description": "Save modifications in Show All Data"
+    },
     "data-export": {
       "description": "Data Export"
     },

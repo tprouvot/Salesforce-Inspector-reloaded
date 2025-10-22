@@ -2,7 +2,6 @@
 
 ## Version 1.28
 
-- Add new header for allowing users to defined upsert updateOnly parameter in Data Import [feature 955](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/955) request by [Alexandre Bousquet](https://github.com/aleb33)
 - `Data Export` Allow users to reorganize and edit query tabs names [feature 950](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/950) request by [Scott Shapiro](https://github.com/sshapiro-articulate)
 - `Show All Data` Support keyboard shortcut to save edited record values [feature 951](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/951) request by [Mohak Gaur](https://github.com/mohakgaurrr)
 

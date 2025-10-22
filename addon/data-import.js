@@ -23,8 +23,7 @@ const allActions = [
 const headersTemplates = [
   '{"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}',
   '{"AssignmentRuleHeader": {"useDefaultRule": true}}',
-  '{"DuplicateRuleHeader": {"allowSave": true}}',
-  '{"UpdateHeader": {"updateOnly": true}}'
+  '{"DuplicateRuleHeader": {"allowSave": true}}'
 ];
 
 class Model {

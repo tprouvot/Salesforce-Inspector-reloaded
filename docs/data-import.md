@@ -21,6 +21,11 @@ If true for a Case or Lead, uses the default (active) assignment rule for a Case
   '{"AssignmentRuleHeader": {"useDefaultRule": true}}',
 ```
 
+For the upsert method, you can define a particular header to prevent the creation of new records and only perform updates:
+``` json
+  '{"UpdateHeader": {"updateOnly": true}}'
+```
+
 <img width="503" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/e2d21970-ddc5-4c42-a54e-ffb7ffdcb278">
 
 ## Grey out skipped columns in data import

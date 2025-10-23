@@ -1,10 +1,13 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, sessionError, getLinkTarget} from "./inspector.js";
+import {sfConn, apiVersion, sessionError} from "./inspector.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg} from "./utils.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
 let p = parent;
+let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
+const isExtensionPage = document.location.ancestorOrigins?.[0].includes(chrome.i18n.getMessage("@@extension_id"));
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -39,6 +42,11 @@ if (typeof browser === "undefined") {
 }
 
 function getFilteredLocalStorage(){
+  const existingFilteredStorage = sessionStorage.getItem("filteredStorage");
+  if (existingFilteredStorage) {
+    return JSON.parse(existingFilteredStorage);
+  }
+
   let host = new URLSearchParams(window.location.search).get("host");
 
   let domainStart = host?.split(".")[0];
@@ -104,7 +112,6 @@ class App extends React.PureComponent {
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext,
-      hideButtonsOption: JSON.parse(localStorage.getItem("hideButtonsOption")),
       useLegacyDownloadMetadata: JSON.parse(localStorage.getItem("useLegacyDlMetadata"))
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
@@ -193,9 +200,24 @@ class App extends React.PureComponent {
       refs.showAllDataBox.refs[target].click();
     }
   }
-  onChangeApi(e) {
-    localStorage.setItem("apiVersion", e.target.value + ".0");
-    this.setState({apiVersionInput: e.target.value});
+  async onChangeApi(e) {
+    let {sfHost} = this.props;
+    const inputElt = e.target;
+    const newApiVersion = e.target.value;
+    if (apiVersion < newApiVersion) {
+      const latestApiVersion = await getLatestApiVersionFromOrg(sfHost);
+      if (latestApiVersion >= newApiVersion) {
+        localStorage.setItem("apiVersion", newApiVersion + ".0");
+        this.setState({apiVersionInput: newApiVersion + ".0"});
+      } else {
+        inputElt.setAttribute("max", latestApiVersion);
+        inputElt.setCustomValidity("Maximum version available: " + latestApiVersion);
+        inputElt.reportValidity();
+      }
+    } else {
+      localStorage.setItem("apiVersion", newApiVersion + ".0");
+      this.setState({apiVersionInput: newApiVersion + ".0"});
+    }
   }
   componentDidMount() {
     let {sfHost} = this.props;
@@ -211,7 +233,7 @@ class App extends React.PureComponent {
   setOrgInfo(sfHost) {
     let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
     if (orgInfo == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType,TimeZoneSidKey+FROM+Organization").then(res => {
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType+FROM+Organization").then(res => {
         orgInfo = res.records[0];
         sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
       });
@@ -223,14 +245,6 @@ class App extends React.PureComponent {
   getBannerUrlAction(sessionError = {}, sfHost, clientId, browser) {
     const url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${browser}-extension://${chrome.i18n.getMessage("@@extension_id")}/data-export.html`;
     return {...sessionError, url};
-  }
-  displayButton(name){
-    const button = this.state.hideButtonsOption?.find((element) => element.name == name);
-    if (button){
-      return button.checked;
-    }
-    //if no option was found, display the button
-    return true;
   }
   render() {
     let {
@@ -322,7 +336,7 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "dataImportBtn", href: importHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "I"), "mport"))
             ),
-            this.displayButton("org-limits") ? h("div", {className: "slds-m-bottom_xx-small"},
+            displayButton("org-limits", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ) : null,
             h("div", {},
@@ -333,7 +347,7 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "metaRetrieveBtn", href: `metadata-retrieve${useLegacyDownloadMetadata ? "-legacy" : ""}.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "D"), "ownload Metadata"))
             ),
-            this.displayButton("explore-api") ? h("div", {className: "slds-m-bottom_xx-small"},
+            displayButton("explore-api", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
             ) : null,
             h("div", {className: "slds-m-bottom_xx-small"},
@@ -342,7 +356,7 @@ class App extends React.PureComponent {
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "eventMonitorBtn", href: eventMonitorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Event ", h("u", {}, "M"), "onitor"))
             ),
-            this.displayButton("generate-token") ? h("div", {className: "slds-m-bottom_xx-small"},
+            displayButton("generate-token", hideButtonsOption) ? h("div", {className: "slds-m-bottom_xx-small"},
               h("a",
                 {
                   ref: "generateToken",
@@ -377,7 +391,7 @@ class App extends React.PureComponent {
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")),
             ),
           ),
-          this.displayButton("options") ? h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
+          displayButton("options", hideButtonsOption) ? h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small"},
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "optionsBtn", href: "options.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "O", h("u", {}, "p"), "tions"))
             ),
@@ -388,11 +402,12 @@ class App extends React.PureComponent {
             h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-" + addonVersion.replace(".", ""), title: "Release note", target: linkTarget}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
+              id: "idApiInput",
               className: "api-input",
               type: "number",
               title: "Update api version",
               onChange: this.onChangeApi,
-              value: apiVersionInput.split(".0")[0]
+              value: apiVersionInput.split(".0")[0],
             })
           ),
           h("div", {className: "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container", title: `Shortcut :${this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"}`},
@@ -430,13 +445,18 @@ class App extends React.PureComponent {
 }
 
 class AllDataBox extends React.PureComponent {
-
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"});
-
+    this.SearchAspectTypes = {
+      sobject: "sobject",
+      users: "users",
+      shortcuts: "shortcuts",
+      org: "org"
+    };
+    const defaultPopupTab = localStorage.getItem("defaultPopupTab");
+    const defaultTab = defaultPopupTab ? JSON.parse(defaultPopupTab).find(tab => tab.checked)?.name : "sobject";
     this.state = {
-      activeSearchAspect: this.SearchAspectTypes.sobject,
+      activeSearchAspect: this.SearchAspectTypes[defaultTab],
       sobjectsList: null,
       sobjectsLoading: true,
       usersBoxLoading: false,
@@ -1051,6 +1071,7 @@ class AllDataBoxShortcut extends React.PureComponent {
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
+    this.onAddShortcut = this.onAddShortcut.bind(this);
   }
 
   componentDidMount() {
@@ -1170,6 +1191,11 @@ class AllDataBoxShortcut extends React.PureComponent {
     window.open(link);
   }
 
+  onAddShortcut(){
+    let {sfHost} = this.props;
+    window.open("options.html?host=" + sfHost + "&selectedTab=8");
+  }
+
   resultRender(matches, shortcutQuery) {
     return matches.map(value => ({
       key: value.Id,
@@ -1205,7 +1231,9 @@ class AllDataBoxShortcut extends React.PureComponent {
           inputSearchDelay: 200,
           placeholderText: "Quick find links, shortcuts",
           resultRender: this.resultRender,
-          sfHost
+          sfHost,
+          icon: "add",
+          onIconClick: this.onAddShortcut
         }),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
@@ -1244,8 +1272,11 @@ class AllDataBoxOrg extends React.PureComponent {
   }
 
   getApiVersion(instanceStatus){
+    let {sfHost} = this.props;
     if (instanceStatus){
       let apiVersion = (instanceStatus.releaseNumber.substring(0, 3) / 2) - 64;
+      //store it for maximum version allowed
+      sessionStorage.setItem(sfHost + "_latestApiVersionFromOrg", apiVersion + ".0");
       return apiVersion;
     }
     return null;
@@ -1948,7 +1979,7 @@ class AllDataSelection extends React.PureComponent {
           : " (Not readable)"
         ))),
         isFieldsPresent ? h("a", {ref: "showFieldApiNameBtn", onClick: showApiName, target: linkTarget, className: "slds-m-top_xx-small page-button slds-button slds-button_neutral"}, h("span", {}, "Show ", h("u", {}, "f"), "ields API names")) : null,
-        selectedValue.sobject.isEverCreatable && !selectedValue.sobject.name.endsWith("__e") ? h("a", {
+        selectedValue.sobject.isEverCreatable && displayButton("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e") ? h("a", {
           ref: "showNewBtn",
           href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
           target: linkTarget,
@@ -1968,15 +1999,9 @@ class AllDataRecordDetails extends React.PureComponent {
   }
   openRecordLink(e) {
     e.preventDefault();
-    closePopup();
     const url = e.target.href;
-    const target = getLinkTarget(e);
     const recordId = e.target.dataset.recordId;
-    if (target === "_blank") {
-      window.open(url, target);
-    } else {
-      lightningNavigate({navigationType: "recordId", recordId}, url);
-    }
+    navigateWithExtensionCheck(e, url, {navigationType: "recordId", recordId});
   }
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
@@ -2026,6 +2051,7 @@ class AllDataRecordDetails extends React.PureComponent {
 class AllDataSearch extends React.PureComponent {
   constructor(props) {
     super(props);
+    this.inputIcon = props.icon ? props.icon : "down";
     this.state = {
       queryString: "",
       matchingResults: [],
@@ -2068,7 +2094,11 @@ class AllDataSearch extends React.PureComponent {
     this.getMatchesDelayed("");
   }
   onAllDataArrowClick() {
-    this.refs.showAllDataInp.focus();
+    if (this.inputIcon == "down"){
+      this.refs.showAllDataInp.focus();
+    } else {
+      this.props.onIconClick();
+    }
   }
   getMatchesDelayed(userQuery) {
     let {queryDelayTimer} = this.state;
@@ -2108,8 +2138,8 @@ class AllDataSearch extends React.PureComponent {
           queryString,
           sfHost
         }),
-        h("svg", {viewBox: "0 0 24 24", onClick: this.onAllDataArrowClick},
-          h("path", {d: "M3.8 6.5h16.4c.4 0 .8.6.4 1l-8 9.8c-.3.3-.9.3-1.2 0l-8-9.8c-.4-.4-.1-1 .4-1z"})
+        h("svg", {className: "button-icon", onClick: this.onAllDataArrowClick},
+          h("use", {xlinkHref: "symbols.svg#" + this.inputIcon})
         )
       )
     );
@@ -2252,14 +2282,7 @@ class Autocomplete extends React.PureComponent {
     }
   }
   handleNavigation(e, url, navigationParams) {
-    const linkTarget = getLinkTarget(e);
-    closePopup();
-
-    if (linkTarget === "_blank" || localStorage.getItem("lightningNavigation") == "false") {
-      window.open(url, linkTarget);
-    } else {
-      lightningNavigate(navigationParams, url);
-    }
+    navigateWithExtensionCheck(e, url, navigationParams);
   }
   onResultMouseEnter(index) {
     this.setState({selectedIndex: index, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
@@ -2413,14 +2436,19 @@ function lightningNavigate(details, fallbackURL) {
   p.postMessage({lightningNavigate: {...details, fallbackURL}}, "*");
 }
 
+function navigateWithExtensionCheck(e, url, navigationParams, target = null) {
+  const linkTarget = target || getLinkTarget(e);
+  closePopup();
+
+  if (linkTarget === "_blank" || localStorage.getItem("lightningNavigation") == "false" || (isExtensionPage === undefined || isExtensionPage)) {
+    window.open(url, linkTarget);
+  } else {
+    lightningNavigate(navigationParams, url);
+  }
+}
+
 function handleLightningLinkClick(e) {
   e.preventDefault(); // Prevent the default link behavior (href navigation)
-  closePopup();
   const url = e.currentTarget.href;
-  const target = getLinkTarget(e);
-  if (target === "_blank") {
-    window.open(url, target);
-  } else {
-    lightningNavigate({navigationType: "url", url}, url);
-  }
+  navigateWithExtensionCheck(e, url, {navigationType: "url", url});
 }

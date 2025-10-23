@@ -1,35 +1,35 @@
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-Light.woff2);
-  font-weight:300
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-Light.woff2);
+  font-weight: 300;
 }
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-LightItalic.woff2);
-  font-style:italic;
-  font-weight:300
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-LightItalic.woff2);
+  font-style: italic;
+  font-weight: 300;
 }
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-Regular.woff2);
-  font-weight:400
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-Regular.woff2);
+  font-weight: 400;
 }
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-Italic.woff2);
-  font-style:italic;
-  font-weight:400
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-Italic.woff2);
+  font-style: italic;
+  font-weight: 400;
 }
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-Bold.woff2);
-  font-weight:700
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-Bold.woff2);
+  font-weight: 700;
 }
 @font-face {
-  font-family:'Salesforce Sans';
-  src:url(fonts/SalesforceSans-BoldItalic.woff2);
-  font-style:italic;
-  font-weight:700
+  font-family: "Salesforce Sans";
+  src: url(fonts/SalesforceSans-BoldItalic.woff2);
+  font-style: italic;
+  font-weight: 700;
 }
 * {
   box-sizing: border-box;
@@ -40,12 +40,12 @@ html {
 }
 body {
   font-family: "Salesforce Sans", Arial, sans-serif;
-  font-size: .8125rem;
+  font-size: 0.8125rem;
   overflow: hidden;
   margin: 0;
   height: 100%;
   display: flex;
-  background-color: #B0C4DF !important;
+  background-color: #b0c4df !important;
   background-image: url(images/lightning_blue_background.png) !important;
   background-repeat: no-repeat !important;
   background-size: contain !important;
@@ -120,30 +120,30 @@ body {
 }
 
 .slider-container {
-    min-width: 220px;
+  min-width: 220px;
 }
 
 .combobox-container {
-    min-width: 80px;
+  min-width: 80px;
 }
 
 .options-tab {
-    min-width: 80px;
+  min-width: 80px;
 }
 
 .options-tab-container {
-    background-color: #f7f9fb;
+  background-color: #f7f9fb;
 }
 
 .main-container {
-    background-color: #F8F8F8;
-    padding: 8px 12px;
-    border-radius: 5px;
-    border: 1px solid #DDDBDA;
-    margin: 12px 12px 0 12px;
-    flex-grow: 1;
-    overflow: auto;
-    max-height: 100vh;
+  background-color: #f8f8f8;
+  padding: 8px 12px;
+  border-radius: 5px;
+  border: 1px solid #dddbda;
+  margin: 12px 12px 0 12px;
+  flex-grow: 1;
+  overflow: auto;
+  max-height: 100vh;
 }
 
 .prod {
@@ -155,16 +155,16 @@ body {
 }
 
 .center-label {
-    text-align: center;
+  text-align: center;
 }
 
-.icon{
+.icon {
   width: 24px;
   height: 24px;
 }
 button,
 .button {
-  border: 1px solid #DDDBDA;
+  border: 1px solid #dddbda;
   height: 32px;
   display: inline-block;
   text-decoration: none;
@@ -178,17 +178,6 @@ button,
   border-radius: 0.25rem;
   margin-right: 10px;
   white-space: nowrap;
-}
-
-button:hover,
-.button:hover {
-  background-color: #F4F6F9;
-  color: #005fb2;
-}
-.button-brand {
-  background-color: #0070d2;
-  border-color: #0070d2;
-  color: #fff;
 }
 
 .button-brand:focus:not([disabled]),

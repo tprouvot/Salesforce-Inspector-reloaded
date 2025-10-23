@@ -62,6 +62,11 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 - Control access to Salesforce Inspector reloaded with profiles / permissions (Implement OAuth2 flow to generate access token for connected App) [how to](https://github.com/tprouvot/Salesforce-Inspector-reloaded/wiki/How-to#use-sf-inspector-with-a-connected-app)
 - Update manifest version from [v2](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/) to v3 (extensions using manifest v2 will be removed from the store)
 - New UI for Export / Import
+- Enhanced Event Monitor:
+  - Support for Change Events to monitor data changes in Salesforce
+  - Manual channel configuration with custom channel path input
+  - Improved channel type selection with dedicated dropdown
+  - Streamlined UI with all inputs in a single row for better usability
 
 ## Security and Privacy
 
@@ -122,7 +127,7 @@ Thank you for shaping our extension's future! Your feedback makes it better.
 Contributions are welcome!
 
 Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
-You can check for the [open issues](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues) and [check if any help is wanted](https://github.com/tprouvot/Salesforce-Inspector-reloaded/labels/help%20wanted)
+You can check for the [open issues](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues) and [check if any help is wanted](https://github.com/tprouvot/Salesforce-Inspector-reloaded/labels/%22help%20wanted%22)
 
 Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
 To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
@@ -157,11 +162,10 @@ Linting : to assure indentation, formatting and best practices coherence, please
 ### Unit tests
 
 1. Set up an org (e.g. a Developer Edition) and apply the following customizations:
-   1. Everything described in metadata in `test/`. Push to org with `sf deploy metadata -d test/ -o [your-test-org-alias]` or legacy `sfdx force:source:deploy -p test/ -u [your-test-org-alias]`.
+   1. Everything described in metadata in `test/`. Push to org with `sf deploy metadata -d test/ -o [your-test-org-alias]`.
    2. Make sure your user language is set to English.
-   3. Ensure _Allow users to relate a contact to multiple accounts_ is enabled (Setup → Account Settings).
-   4. Ensure the org has no _namespace prefix_ (Setup → Package Manager).
-   5. Assign Permission Set `SfInspector` to your user.
+   3. Ensure the org has no _namespace prefix_ (Setup → Package Manager).
+   4. Assign Permission Set `SfInspector` to your user.
 2. Navigate to one of the extension pages and replace the file name with `test-framework.html`, for example `chrome-extension://example/test-framework.html?host=example.my.salesforce.com`.
 3. Wait until "Salesforce Inspector unit test finished successfully" is shown.
 4. If the test fails, open your browser's developer tools console to see error messages.

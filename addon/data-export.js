@@ -1,5 +1,6 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion, nullToEmptyString, getLinkTarget} from "./inspector.js";
+import {sfConn, apiVersion} from "./inspector.js";
+import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 
@@ -68,6 +69,7 @@ class Model {
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
     this.queryInput = null;
+    this.filterColumn = ""; // Default filter column
     this.initialQuery = "";
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
       this.queryAutocompleteHandler({newDescribe: true});
@@ -115,6 +117,8 @@ class Model {
       "SELECT Id FROM WHERE ORDER BY"
     ];
     this.separator = getSeparator();
+    this.soqlPrompt = "";
+    this.enableQueryTypoFix = localStorage.getItem("enableQueryTypoFix") == "true";
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
@@ -134,6 +138,10 @@ class Model {
     if (args.has("error")) {
       this.exportError = args.get("error") + " " + args.get("error_description");
     }
+
+    this.queryTabs = [];
+    this.activeTabIndex = 0;
+    this.loadQueryTabs();
   }
 
   updatedExportedData() {
@@ -189,6 +197,9 @@ class Model {
   }
   toggleHelp() {
     this.showHelp = !this.showHelp;
+  }
+  toggleAI() {
+    this.showAI = !this.showAI;
   }
   toggleExpand() {
     this.expandAutocomplete = !this.expandAutocomplete;
@@ -532,6 +543,7 @@ class Model {
         isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
       }
     }
+    vm.updateCurrentTabName(sobjectName);
     let {sobjectStatus, sobjectDescribe} = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
     if (!sobjectDescribe) {
       switch (sobjectStatus) {
@@ -581,6 +593,19 @@ class Model {
 
     // If we are on the right hand side of a comparison operator, autocomplete field values
     let isFieldValue = query.substring(0, selStart).match(/\s*[<>=!]+\s*('?[^'\s]*)$/);
+
+    // In clause on picklist field
+    let isInWithValues = query.substring(0, selStart).match(/\s*in\s*\(\s*(?:(?:'[^']*'\s*,\s*)+|')('?[^'\s]*)$/i);
+    let inValuesUtilized = "";
+    if (isInWithValues){
+      if (isInWithValues[0] && isInWithValues[0].match(/\s*in\s*\(\s*(?:')$/i)){ // extra single quote
+        selStart -= 1;
+        isInWithValues[0] = isInWithValues[0].substring(0, isInWithValues[0].length - 1);
+      }
+      isFieldValue = isInWithValues;
+      inValuesUtilized = isInWithValues[0].toLowerCase();
+    }
+
     let fieldName = null;
     if (isFieldValue) {
       let fieldEnd = selStart - isFieldValue[0].length;
@@ -735,7 +760,11 @@ class Model {
         return;
       }
       let ar = new Enumerable(contextValueFields).flatMap(function* ({field}) {
-        yield* field.picklistValues.map(pickVal => ({value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: ""}));
+        yield* field.picklistValues.filter(
+          pickVal => !inValuesUtilized.includes(pickVal.value.toLowerCase())
+        ).map(
+          pickVal => ({value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: ""})
+        );
         if (field.type == "boolean") {
           yield {value: "true", title: "true", suffix: " ", rank: 1};
           yield {value: "false", title: "false", suffix: " ", rank: 1};
@@ -772,7 +801,7 @@ class Model {
           yield {value: "LAST_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the last n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the next n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next week and continues for the next n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "N_DAYS_AGO:n", title: "Starts at 12:00:00 AM on the day n days before the current day and continues for 24 hours. (The range doesn’t include today.)", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_DAYS_AGO:n", title: "Starts at 12:00:00 AM on the day n days before the current day and continues for 24 hours. (The range doesn't include today.)", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "LAST_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous week and continues for the last n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "N_WEEKS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the month that started n months before the start of the current month and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_MONTHS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next month and continues for the next n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
@@ -845,7 +874,7 @@ class Model {
             }
           })
           .concat(
-            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "convertTimezone", "toLabel"])
+            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "toLabel", "convertTimezone", "convertCurrency", "FORMAT", "GROUPING"])
               .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
               .map(fn => {
                 if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
@@ -861,6 +890,18 @@ class Model {
       return;
     }
   }
+  removeTypo(query) {
+    // Remove double commas
+    query = query.replace(/,\s*,/g, ",");
+    // Remove comma before FROM
+    query = query.replace(/,\s+FROM\s+/gi, " FROM ");
+    // Remove trailing comma before FROM
+    query = query.replace(/,\s*FROM\s+/gi, " FROM ");
+    // Remove multiple spaces
+    query = query.replace(/\s+/g, " ");
+
+    return query.trim();
+  }
   doExport() {
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
@@ -868,7 +909,8 @@ class Model {
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
     vm.initPerf();
-    let query = vm.queryInput.value;
+    let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
+    vm.queryInput.value = query; // Update the input value with the cleaned query
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
@@ -925,6 +967,8 @@ class Model {
           vm.markPerf();
           vm.updatedExportedData();
           return null;
+        } else {
+          vm.updateCurrentTabName(exportedData.records[0].attributes.type);
         }
         vm.isWorking = false;
         vm.exportStatus = `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
@@ -932,6 +976,11 @@ class Model {
         vm.exportedData = exportedData;
         vm.markPerf();
         vm.updatedExportedData();
+        // Store the results in the current tab
+        if (vm.queryTabs[vm.activeTabIndex]) {
+          vm.queryTabs[vm.activeTabIndex].results = exportedData;
+          vm.saveQueryTabs();
+        }
         return null;
       }, err => {
         if (err.name != "SalesforceRestError") {
@@ -975,6 +1024,42 @@ class Model {
     vm.exportedData = exportedData;
     vm.updatedExportedData();
   }
+  async generateSoql() {
+    this.isWorking = true;
+    let promptTemplateName = localStorage.getItem(this.sfHost + "_exportAgentForcePrompt");
+    const promptTemplate = new PromptTemplate(promptTemplateName ? promptTemplateName : Constants.PromptTemplateSOQL);
+
+    this.spinFor(
+      promptTemplate.generate({
+        Description: this.soqlPrompt.value
+      }).then(result => {
+        if (result.result){
+          // Extract SOQL from the result
+          const soqlMatch = result.result.match(/<soql>(.*?)<\/soql>/);
+          const extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
+          //this.addQueryTab();
+          this.updateCurrentTabQuery(extractedSoql);
+          //to resolve sobject and rename current tab
+          this.queryAutocompleteHandler();
+          // Update the textarea to show the new query immediately
+          if (this.queryInput) {
+            this.queryInput.value = extractedSoql;
+          }
+          this.saveQueryTabs();
+          this.isWorking = false;
+          this.didUpdate();
+        } else {
+          throw new Error(result.error);
+        }
+      }).catch(error => {
+        console.error(error);
+        this.isWorking = false;
+        this.exportStatus = "Error";
+        this.exportError = "Failed to generate SOQL: " + error;
+        this.didUpdate();
+      })
+    );
+  }
   stopExport() {
     this.exportProgress.abort();
   }
@@ -999,6 +1084,99 @@ class Model {
         {value: "Get Feedback on Query Performance", title: "Get Feedback on Query Performance", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "", link: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_query_explain.htm"},
       ]
     };
+  }
+
+  loadQueryTabs() {
+    const savedTabs = localStorage.getItem(`${this.sfHost}_queryTabs`);
+    if (savedTabs) {
+      this.queryTabs = JSON.parse(savedTabs);
+    } else {
+      this.queryTabs = [{name: "Query 1", query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null}];
+    }
+    this.activeTabIndex = 0;
+  }
+
+  saveQueryTabs() {
+    // Create a copy of the tabs without the results property
+    const tabsToSave = this.queryTabs.map(tab => ({
+      name: tab.name,
+      query: tab.query,
+      queryTooling: tab.queryTooling,
+      queryAll: tab.queryAll
+    }));
+    localStorage.setItem(`${this.sfHost}_queryTabs`, JSON.stringify(tabsToSave));
+  }
+
+  addQueryTab() {
+    const newTabName = `Query ${this.queryTabs.length + 1}`;
+    this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null});
+    this.activeTabIndex = this.queryTabs.length - 1;
+    this.saveQueryTabs();
+    this.didUpdate();
+  }
+
+  removeQueryTab(index) {
+    if (this.queryTabs.length > 1) {
+      this.queryTabs.splice(index, 1);
+      if (this.activeTabIndex >= index) {
+        this.activeTabIndex = Math.max(0, this.activeTabIndex - 1);
+      }
+      this.setActiveTab(this.activeTabIndex);
+      this.saveQueryTabs();
+      this.didUpdate();
+    }
+  }
+
+  setActiveTab(index) {
+    this.activeTabIndex = index;
+    // Update the query input value to match the current tab's query
+    if (this.queryInput) {
+      this.queryInput.value = this.queryTabs[index].query;
+    }
+    this.queryTooling = this.queryTabs[index].queryTooling;
+    this.queryAll = this.queryTabs[index].queryAll;
+    // Update the exported data with the tab's results
+    this.exportedData = this.queryTabs[index].results;
+    // Update the UI with the new data
+    if (this.exportedData) {
+      this.exportStatus = `Loaded ${this.exportedData.records.length} record${s(this.exportedData.records.length)}`;
+    } else {
+      this.exportStatus = "";
+    }
+    this.updatedExportedData();
+    this.didUpdate();
+  }
+
+  updateCurrentTabQuery(query) {
+    if (this.queryTabs[this.activeTabIndex]) {
+      this.queryTabs[this.activeTabIndex].query = query;
+      this.saveQueryTabs();
+    }
+  }
+
+  updateCurrentTabProperty(propertyName, value) {
+    if (this.queryTabs[this.activeTabIndex]) {
+      this.queryTabs[this.activeTabIndex][propertyName] = value;
+      this.saveQueryTabs();
+    }
+  }
+
+  updateCurrentTabName(name) {
+    if (this.queryTabs[this.activeTabIndex] && !this.queryTabs[this.activeTabIndex].name.includes(name)) {
+      // Check if there are any other tabs with the same name
+      let count = 1;
+      let newName = name;
+      while (this.queryTabs.some(tab => tab.name === newName)) {
+        newName = `${name} (${count})`;
+        count++;
+      }
+      this.queryTabs[this.activeTabIndex].name = newName;
+      this.saveQueryTabs();
+    }
+  }
+
+  getCurrentTabQuery() {
+    return this.queryTabs[this.activeTabIndex]?.query || "";
   }
 }
 
@@ -1045,7 +1223,36 @@ function RecordTable(vm) {
       return "" + cell;
     }
   }
-  let isVisible = (row, filter) => !filter || row.some(cell => cellToString(cell).toLowerCase().includes(filter.toLowerCase()));
+
+  let isVisible = (row, filter) => {
+    // If no filter is applied, show all rows
+    if (!filter) {
+      return true;
+    }
+    // If no columns are selected, search all columns
+    if (!vm.filterColumns || vm.filterColumns.length === 0) {
+      return row.some(cell => {
+        if (cell == null) {
+          return false;
+        }
+        return cellToString(cell).toLowerCase().includes(filter.toLowerCase());
+      });
+    }
+
+    // Search in all selected columns
+    return vm.filterColumns.some(column => {
+      const columnIndex = header.findIndex(col => col === column);
+      if (columnIndex === -1) {
+        return false;
+      }
+
+      const cellValue = String(row[columnIndex]);
+      return cellValue
+        ? cellToString(cellValue).toLowerCase().includes(filter.toLowerCase())
+        : false;
+    });
+  };
+
   let rt = {
     records: [],
     table: [],
@@ -1124,9 +1331,11 @@ class App extends React.Component {
     this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
     this.onClearSavedHistory = this.onClearSavedHistory.bind(this);
     this.onToggleHelp = this.onToggleHelp.bind(this);
+    this.onToggleAI = this.onToggleAI.bind(this);
     this.onToggleExpand = this.onToggleExpand.bind(this);
     this.onToggleSavedOptions = this.onToggleSavedOptions.bind(this);
     this.onExport = this.onExport.bind(this);
+    this.onGenerateSoql = this.onGenerateSoql.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
     this.onQueryPlan = this.onQueryPlan.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
@@ -1137,16 +1346,23 @@ class App extends React.Component {
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
-    this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption"))};
+    this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption")), isDropdownOpen: false};// Tracks whether the dropdown is open
+    this.filterColumns = []; // Initialize as an empty array
+    this.onAddTab = this.onAddTab.bind(this);
+    this.onRemoveTab = this.onRemoveTab.bind(this);
+    this.onTabClick = this.onTabClick.bind(this);
+    this.onQueryInput = this.onQueryInput.bind(this);
   }
   onQueryAllChange(e) {
     let {model} = this.props;
     model.queryAll = e.target.checked;
+    model.updateCurrentTabProperty("queryAll", model.queryAll);
     model.didUpdate();
   }
   onQueryToolingChange(e) {
     let {model} = this.props;
     model.queryTooling = e.target.checked;
+    model.updateCurrentTabProperty("queryTooling", model.queryTooling);
     model.queryAutocompleteHandler();
     model.didUpdate();
   }
@@ -1214,6 +1430,12 @@ class App extends React.Component {
     model.toggleHelp();
     model.didUpdate();
   }
+  onToggleAI(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.toggleAI();
+    model.didUpdate();
+  }
   onToggleExpand(e) {
     e.preventDefault();
     let {model} = this.props;
@@ -1229,6 +1451,11 @@ class App extends React.Component {
   onExport() {
     let {model} = this.props;
     model.doExport();
+    model.didUpdate();
+  }
+  onGenerateSoql() {
+    let {model} = this.props;
+    model.generateSoql();
     model.didUpdate();
   }
   onCopyQuery() {
@@ -1274,6 +1501,9 @@ class App extends React.Component {
   onResultsFilterInput(e) {
     let {model} = this.props;
     model.setResultsFilter(e.target.value);
+    if (e.target.value.length == 0){
+      this.setState({isDropdownOpen: false});
+    }
     model.didUpdate();
   }
   onSetQueryName(e) {
@@ -1286,11 +1516,34 @@ class App extends React.Component {
     model.stopExport();
     model.didUpdate();
   }
+  onAddTab(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.addQueryTab();
+  }
+  onRemoveTab(e, index) {
+    e.preventDefault();
+    e.stopPropagation();
+    let {model} = this.props;
+    model.removeQueryTab(index);
+  }
+  onTabClick(e, index) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.setActiveTab(index);
+  }
+
+  onQueryInput(e) {
+    let {model} = this.props;
+    model.updateCurrentTabQuery(e.target.value);
+    model.queryAutocompleteHandler();
+    model.didUpdate();
+  }
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
-
     model.setQueryInput(queryInput);
+    model.soqlPrompt = this.refs.prompt;
     //Set the cursor focus on query text area
     if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
       queryInput.focus();
@@ -1302,6 +1555,7 @@ class App extends React.Component {
     }
     queryInput.addEventListener("input", queryAutocompleteEvent);
     queryInput.addEventListener("select", queryAutocompleteEvent);
+
     // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
     queryInput.addEventListener("keyup", queryAutocompleteEvent);
     queryInput.addEventListener("mouseup", queryAutocompleteEvent);
@@ -1324,6 +1578,7 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
+
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
@@ -1365,13 +1620,6 @@ class App extends React.Component {
   toggleQueryMoreMenu(){
     this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
   }
-  displayButton(name){
-    const button = this.state.hideButtonsOption?.find((element) => element.name == name);
-    if (button){
-      return button.checked;
-    }
-    return true;
-  }
 
   render() {
     let {model} = this.props;
@@ -1392,9 +1640,16 @@ class App extends React.Component {
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"}),
           ),
+          displayButton("export-agentforce", this.state.hideButtonsOption) ? h("a", {href: "#", id: "einstein-btn", title: "Agentforce help", onClick: this.onToggleAI},
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#einstein"})
+            )
+          ) : null,
           h("a", {href: "#", id: "help-btn", title: "Export Help", onClick: this.onToggleHelp},
-            h("div", {className: "icon"})
-          ),
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#question"})
+            )
+          )
         ),
       ),
       h("div", {className: "area"},
@@ -1441,14 +1696,39 @@ class App extends React.Component {
             ),
           ),
         ),
-        h("textarea", {id: "query", ref: "query", style: {maxHeight: (model.winInnerHeight - 200) + "px"}}),
+        h("div", {className: "query-tabs"},
+          model.queryTabs.map((tab, index) =>
+            h("div", {
+              key: index,
+              className: `query-tab ${index === model.activeTabIndex ? "active" : ""}`,
+              onClick: e => this.onTabClick(e, index)
+            },
+            h("span", {}, tab.name),
+            h("span", {
+              className: "query-tab-close",
+              onClick: e => this.onRemoveTab(e, index)
+            }, "×")
+            )
+          ),
+          h("div", {
+            className: "add-tab-button",
+            onClick: this.onAddTab,
+            title: "Add new query tab"
+          }, "+")
+        ),
+        h("textarea", {
+          id: "query",
+          ref: "query",
+          style: {maxHeight: (model.winInnerHeight - 200) + "px"},
+          onChange: this.onQueryInput
+        }),
         h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
           h("div", {className: "autocomplete-header"},
             h("span", {}, model.autocompleteResults.title),
             h("div", {className: "flex-right"},
-              h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted"}, "Run Export"),
-              this.displayButton("export-query") ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id"}, "Export Query") : null,
-              h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan"}, "Query Plan"),
+              h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "highlighted button-margin"}, "Run Export"),
+              displayButton("export-query", this.state.hideButtonsOption) ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "copy-id button-margin"}, "Export Query") : null,
+              h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan", className: "button-margin"}, "Query Plan"),
               h("a", {tabIndex: 4, className: "button", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info"),
               h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "toggle contract" : "toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
                 h("div", {className: "button-icon"}),
@@ -1473,6 +1753,14 @@ class App extends React.Component {
           h("p", {}, "Press Ctrl+Enter or F5 to execute the export."),
           h("p", {}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
           h("p", {}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
+        ),
+        h("div", {hidden: !model.showAI, className: "einstein-text"},
+          h("h3", {}, "Agentforce SOQL query builder"),
+          h("p", {}, "Enter a description of the SOQL you want to be generated"),
+          h("textarea", {id: "prompt", ref: "prompt"}),
+          h("div", {className: "flex-right marginTop"},
+            h("button", {tabIndex: 1, onClick: this.onGenerateSoql, title: "Generate SOQL", className: "highlighted button-margin"}, "Generate SOQL")
+          )
         )
       ),
       h("div", {className: "area", id: "result-area"},
@@ -1492,10 +1780,48 @@ class App extends React.Component {
                 h("use", {xlinkHref: "symbols.svg#hide"})
               )
             ),
-            this.displayButton("delete")
+            displayButton("delete", this.state.hideButtonsOption)
               ? h("button", {disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried", className: "delete-btn"}, "Delete Records") : null,
           ),
-          h("input", {placeholder: "Filter Results", type: "search", value: model.resultsFilter, onInput: this.onResultsFilterInput}),
+          h("div", {className: "filter-controls"},
+            h("div", {className: "unified-search-input"},
+              h("input", {
+                className: "filter-input",
+                placeholder: model.filterColumns?.length > 0
+                  ? `Filter by (${model.filterColumns.length})`
+                  : "Filter",
+                type: "search",
+                value: model.resultsFilter,
+                onInput: this.onResultsFilterInput
+              }),
+              h("button", {className: "toggle no-left-radius no-left-border" + (this.state.isDropdownOpen ? " contract" : " expand"), title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
+              this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
+                model.exportedData?.table[0]
+                  ?.filter(column => column !== "_")
+                  .map(column =>
+                    h("div", {
+                      key: column,
+                      className: `dropdown-item ${model.filterColumns?.includes(column) ? "selected" : ""}`,
+                      onClick: () => {
+                        if (model.filterColumns?.includes(column)) {
+                          model.filterColumns = model.filterColumns.filter(c => c !== column);
+                        } else {
+                          model.filterColumns = [...(model.filterColumns || []), column];
+                        }
+                        model.setResultsFilter(model.resultsFilter);
+                        this.setState({}); // Trigger re-render
+                      }
+                    },
+                    h("input", {
+                      type: "checkbox",
+                      checked: model.filterColumns?.includes(column) || false,
+                      readOnly: true
+                    }),
+                    column
+                    )
+                  )
+              )
+            )),
           h("span", {className: "result-status flex-right"},
             h("span", {}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),

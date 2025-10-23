@@ -27,11 +27,15 @@ When redirected to the "Data Export" tab at the end of the OAuth flow, check the
 
 ### Generate new token error
 
-If you did not enabled 'API Access Control' and continuously see the banner generate token
+If you did not enabled 'API Access Control' and continuously see the banner generate token.
 
 You may have seen this message because of an expired token, and since this was the only available option clicked on 'Generate new Token'.
 
-Try to run this code in chrome dev console, after inspecting the extension' popup code:
+Delete the generated token from the Option page
+
+<img width="938" alt="Delete Token" src="https://github.com/user-attachments/assets/f38ece82-a0db-44ab-98d7-bd856a2f2445" />
+
+Or try to run this code in chrome dev console, after inspecting the extension' popup code:
 
 ```js
 let tokens = Object.keys(localStorage).filter((localKey) =>

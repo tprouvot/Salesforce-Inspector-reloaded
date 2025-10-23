@@ -10,13 +10,13 @@ If you enabled "API client whitelisting" (a.k.a "API Access Control") in your or
 
 To secure the extension usage, you can use a OAuth 2.0 flow to get an access token, linked to a connected app installed in your org.
 
-1. Open the extension and scroll down to the “Generate Access Token” button.
-2. You should see the “OAUTH_APP_BLOCKED” error which is normal at this stage.
-3. Go to “Connected Apps OAuth Usage” in setup and search for “Salesforce Inspector reloaded”.
-4. Click “Install” and then confirm installation.
+1. Open the extension and scroll down to the "Generate Access Token" button.
+2. You should see the "OAUTH_APP_BLOCKED" error which is normal at this stage.
+3. Go to "Connected Apps OAuth Usage" in setup and search for "Salesforce Inspector reloaded".
+4. Click "Install" and then confirm installation.
 5. Now configure the profiles or permissions sets which will have the right to use the extension.
-6. Go back to “Connected Apps OAuth Usage” and click “Unblock” next to “Salesforce Inspector reloaded”
-7. Once again, open the extension and scroll down to the “Generate Access Token” button
+6. Go back to "Connected Apps OAuth Usage" and click "Unblock" next to "Salesforce Inspector reloaded"
+7. Once again, open the extension and scroll down to the "Generate Access Token" button
 
 ![2024-05-28_16-12-29 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/1cb41271-ea61-4e25-9c68-2a50764c4cec)
 
@@ -93,20 +93,6 @@ Add a new property `csvSeparator` containing the needed separator for CSV files
 
    <img alt="Update csv separator" src="../assets/images/how-to/csv-separator.png?raw=true" height="300">
 
-## Disable query input autofocus
-
-Option available in Data Export tab
-
-<img width="809" alt="Disable query input" src="https://github.com/user-attachments/assets/6f928f58-e437-47aa-b2d2-378f534e7a08">
-
-## Add custom query templates
-
-Enter value in "Query Templates" option with your custom queries separated by "//" character.
-Example:
-
-`SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE`
-
-<img width="895" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/16490965-ec4f-42d7-a534-8f24febe1ee3">
 
 ## Open links in a new tab
 
@@ -140,34 +126,47 @@ Go on a Salesforce flow and check / uncheck the checbox to update navigation scr
 
 ## Add custom links to "Shortcut" tab
 
-Because one of the main use case for custom links is to refer to a record in your org, those links are stored under a property prefixed by the org host url.
-You can find the value by checking the property `_isSandbox`
+<img width="1234" alt="Use custom shortcuts" src="https://github.com/user-attachments/assets/036045b8-133c-46c1-90d0-1db7aa81a190" />
 
-![image](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/319585eb-03a3-4c16-948f-fa721214ba14)
 
-Then copy the url and add `_orgLinks` for the property name.
-Now you can enter the custom links following this convention:
+You can add custom links to the "Shortcut" tab. These links will be stored in the `sfHost + "_orgLinks"` localStorage variable. The links are stored as a JSON array with the following properties:
+- `label`: The label of the link
+- `link`: The link to the page
+- `section`: The section where the link will be displayed
+- `isExternal`: A boolean indicating if the link is external (starts with 'http' or 'www')
 
-```json
-[
-  {
-    "label": "Test myLink",
-    "link": "/lightning/setup/SetupOneHome/home",
-    "section": "Custom",
-    "prod": false
-  },
-  {
-    "label": "EnhancedProfiles",
-    "section": "Custom",
-    "link": "/lightning/setup/EnhancedProfiles/home",
-    "prod": false
-  }
-]
-```
+The links are displayed in a table format with the following features:
+- Sortable columns (click on column headers to sort)
+- Search functionality to filter links by label, link, or section
+- Edit and delete buttons for each link
+- Add button to create new links
 
-ET VOILA !
+To add a new link:
+1. Click the "+" button at the bottom of the table
+2. Fill in the label, link, and section fields
+3. Click the check icon to save or the X icon to cancel
 
-<img width="271" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/02066229-3af1-435d-9370-1dab91760940">
+To edit a link:
+1. Click the edit icon (pencil) next to the link
+2. Modify the fields
+3. Click the check icon to save or the X icon to cancel
+
+To delete a link:
+1. Click the delete icon (trash) next to the link
+
+To search links:
+1. Use the search box at the top of the table
+2. Type any text to filter links by label, link, or section
+3. The table updates in real-time as you type
+
+To sort links:
+1. Click on any column header to sort by that column
+2. Click again to reverse the sort order
+3. The current sort column is indicated by an up/down arrow icon
+
+The links are stored in the browser's localStorage, so they will persist between sessions. The links are specific to each org, so you can have different links for different orgs.
+
+<img width="278" alt="Custom Link Search" src="https://github.com/user-attachments/assets/5ccd6778-4fb2-46d5-9b54-cd47cb03c7bb" />
 
 ## Enable summary view of PermissionSet / PermissionSetGroups from shortcut tab
 
@@ -200,12 +199,6 @@ Since the plugin's api version is only updated when all productions have been up
 
 ![2023-11-10_09-50-55 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6ae51a29-9887-41a6-8148-d9e12c2dc10d)
 
-## Download Event Log Files
-
-To make your life easier and avoid third party tools or login to ELF website, we implemented the download option from the data export page.
-When quering EventLogFile, add the "LogFile" field in the query and click on the value to download corresponding log.
-
-![2023-11-15_14-32-44 (1)](https://github.com/Annubis45/Salesforce-Inspector-reloaded/assets/35368290/ba1fcbed-8428-495e-b03b-7816320d95df)
 
 ## Delete All Apex Logs
 
@@ -238,26 +231,6 @@ Warning: Salesforce is slower for users who have debug mode enabled.
 
 <img width="278" alt="Enable Debug Mode" src="https://github.com/user-attachments/assets/f4dabb96-6b1d-48a1-828d-cc7d5da92e57" />
 
-## Display query performance in Data Export
-
-To enable performance metrics for queries on the data export page, open the Options screen and select the Data Export tab,
-then set "Display Query Execution Time" to enabled. Total time for the query to process and, when applicable, batch stats (Total Number of Batches, Min/Max/Avg Batch Time)
-are displayed.
-
-## Test GraphQL query
-
-> [!WARNING]
-> DEPRECATED : Since you can use Data Export to test GraphQL and also REST Explore to run the request, this should not be useful anymore.
-
-
-- Open popup and click on "Explore API" button.
-- Right click on the page and select "Inspect"
-- Execute the code in dev console:
-
-`var myQuery = { "query": "query accounts { uiapi { query { Account { edges { node { Id  Name { value } } } } } } }" };`
-`display(sfConn.rest("/services/data/v59.0/graphql", {method: "POST", body: myQuery}));`
-
-![2024-02-09_17-01-42 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6689fad3-9549-41b9-8371-55adae037793)
 
 ## Customize extension's favicon
 
@@ -286,33 +259,6 @@ From the option page, enable "Use favicon color on sandbox banner"
 <img width="1087" alt="image" src="https://github.com/user-attachments/assets/f90999c2-f93e-423a-bcb7-18a8aa717a17">
 
 
-
-## Select all fields in a query
-
-This functionality already exists in the legacy version but since many users don't know about it, I would like to document it.
-When on the export page, put the cursor between `SELECT` and `FROM` and press `Ctrl + space` for inserting all fields (if you don't have the rights for a particular field, it wont' be added).
-If you want to insert only custom fields, enter `__c` between `SELECT` and `FROM`.
-
-![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)
-
-## Customize Select all fields in a query shortcut
-
-If the default `Ctrl + space` shortcut is already used by another extension or app, you can customize it in `chrome://extensions/shortcuts` and choose the one you prefer.
-
-<img width="1133" alt="Customize Select all fields in a query shortcut" src="https://github.com/user-attachments/assets/f0bca12a-7c92-4fbe-9ca4-a8db51b050e9">
-
-## Exclude formula fields from data export autocomplete
-
-You can exclude formula fields to be included in the autocomplete by disable the toogle
-
-<img width="898" alt="Exclude formula fields from autocomplete" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/aa9db6c4-099d-49ea-a343-7c64e472450d">
-
-## Convert times from data export to local time
-
-You can configure Data Export to convert times to local time. Navigate to Options -> Data Export and enable "Show local time".
-
-<img width="898" alt="Show local time in data export checkbox option" src="../assets/images/how-to/show-local-time.png?raw=true">
-
 ## Customize extension's shortcuts
 
 Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.
@@ -329,36 +275,6 @@ Example:
 - Org <ins>L</ins>imits : l
 - <ins>D</ins>ownload Metadata : d
 - E<ins>x</ins>plore API : x
-
-## Hide additional columns in query results
-
-After running a query in the "Data Export" page, you can hide additional columns in the query results. These columns represent the name of the objects included in your query. They are useful to automatically map the fields to the correct object in the "Data Import" page. The columns are hidden in the exported files (CSV or Excel) as well. You can set a default value, using the 'Hide additionnal Object Name Columns by default on Data Export' option ("Options" -> "Data Export" tab).
-
-![2024-05-16_17-54-24 (1)](https://github.com/guillaumeSF/Salesforce-Inspector-reloaded/assets/166603639/45fda19b-b426-4b11-91cb-4f0fbc5c47d7)
-
-## Configure Import options in Data Import
-
-You can configure the [SOAP headers](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/soap_headers.htm) when importing records to specify Assignment Rule, Duplicate Rule or OwnerChangeOptions.
-Because custom headers can be hard to configure, you could iterate through suggestions by pressing down key.
-If you want to include new suggestions, feel free to open a new [feature request](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/new?assignees=tprouvot&labels=enhancement&projects=&template=feature_request.md).
-
-If true, the account team is kept with the account when the account owner is changed. If false, the account team is deleted:
-``` json
-{"OwnerChangeOptions": {"options": [{"type": "KeepAccountTeam", "execute": true}]}}
-```
-
-For a duplicate rule, when the Alert option is enabled, bypass alerts and save duplicate records by setting this property to true:
-``` json
-  '{"DuplicateRuleHeader": {"allowSave": true}}'
-```
-
-If true for a Case or Lead, uses the default (active) assignment rule for a Case or Lead. If specified, don’t specify an assignmentRuleId. If true for an Account, all territory assignment rules are applied. If false for an Account, no territory assignment rules are applied.
-``` json
-  '{"AssignmentRuleHeader": {"useDefaultRule": true}}',
-```
-
-<img width="503" alt="SOAP Custom Headers" src="https://github.com/user-attachments/assets/e2d21970-ddc5-4c42-a54e-ffb7ffdcb278">
-
 
 ## Highlight PROD with a top border
 
@@ -396,3 +312,54 @@ From a	DeployRequest record, click on the `Generate package.xml` button to downl
 > If you retrieve the related metadata it may have been modified since the deployment, so you are not sure to retrieve what was deployed.
 
 <img width="1143" alt="Generate package.xml from a deployment" src="https://github.com/user-attachments/assets/4acb7422-0547-409d-9e23-d8c3176f8055" />
+
+## Default Popup Tab
+You can configure which tab should be selected by default when opening the popup. To do this:
+1. Open the options page
+2. Go to the "User Experience" tab
+3. Find the "Default Popup Tab" option
+4. Select your preferred tab:
+   - Object: Shows the SObject search and details
+   - Users: Shows the user search and details
+   - Shortcuts: Shows your configured shortcuts
+   - Org: Shows organization information
+
+The selected tab will be remembered and used as the default when opening the popup.
+
+## Perform a field usage analysis for an SObject
+
+The field usage analysis feature helps you understand which fields in your Salesforce org are actually being used by calculating the percentage of records that have values for each field.
+
+### How to use
+
+1. **Navigate to an SObject**: Select an SObject from the popup or navigate to any SObject page in Salesforce
+2. **Open Show All Data**: Click the "Show all data" button to open the field inspection page
+3. **Calculate Field Usage**: You have two options:
+   - **Individual field**: Click on "Get field usage" link next to any field to calculate usage for that specific field only
+   - **All fields**: Click on the refresh icon (🔄) in the "Usage (%)" column header to calculate usage for all fields at once
+4. **View Results**:
+   - Hover over any percentage to see the detailed breakdown (e.g., "1,247 / 5,000 records (25%)")
+   - Required fields automatically show 100% usage
+   - Fields that can't be analyzed (like textarea or address fields) will be empty
+5. **Export Results**: Use the table settings menu (gear icon) to copy the table or download as CSV
+
+### Important Notes
+
+> **Warning**
+> Field usage analysis uses Salesforce API calls and counts against your API request limits. For large orgs, consider using this feature in a copy of production to avoid hitting API limits.
+
+- The feature uses Composite API to efficiently batch multiple field queries
+- Loading indicators show when calculations are in progress
+- Results are cached during your session for better performance
+- Required fields (nillable = false) automatically show 100% usage without making API calls
+
+### Use Cases
+
+This feature is particularly useful for:
+- Data cleanup projects
+- Field deprecation planning
+- Org optimization initiatives
+- Documentation and audit requirements
+- Understanding field adoption across your organization
+
+![Smart Field Usage demo](https://github.com/user-attachments/assets/ef93bf3c-8737-4a21-b38b-ce4822f8b573)

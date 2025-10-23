@@ -57,10 +57,17 @@ if (process.env.ENVIRONMENT_TYPE == "BETA") {
   });
 }
 
-zipdir(`target/${browserType}/dist`, {saveTo: process.env.ZIP_FILE_NAME || `target/${browserType}/${browserType}-release-build.zip`}, err => {
+// Read version from manifest.json to include in filename
+const manifestPath = `${target}/manifest.json`;
+const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+const version = manifest.version;
+
+const defaultZipName = `target/${browserType}/${browserType}-release-build-v${version}.zip`;
+
+zipdir(`target/${browserType}/dist`, {saveTo: process.env.ZIP_FILE_NAME || defaultZipName}, err => {
   if (err) {
     process.exitCode = 1;
     console.error(err);
   }
-  console.log(`Completed ${browserType} release build`);
+  console.log(`Completed ${browserType} release build v${version}`);
 });

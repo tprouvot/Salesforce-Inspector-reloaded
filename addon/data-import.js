@@ -1177,9 +1177,9 @@ class App extends React.Component {
       ),
       h("div", {className: "conf-section"},
         h("div", {className: "conf-subsection"},
-          h("div", {className: "area configure-import"},
+          h("div", {className: "area configure-import slds-card slds-p-around_small"},
             h("div", {className: "area-header"},
-              h("h1", {}, "Configure Import")
+              h("h3", {className: "slds-text-heading_small"}, "Configure Import")
             ),
             h("div", {className: "conf-line"},
               h("label", {className: "conf-input", title: "With the tooling API you can import more metadata, but you cannot import regular data. With the metadata API you can import custom metadata types."},
@@ -1262,9 +1262,9 @@ class App extends React.Component {
           ),
         ),
         h("div", {className: "conf-subsection columns-mapping"},
-          h("div", {className: "area"},
+          h("div", {className: "area slds-card slds-p-around_small"},
             h("div", {className: "area-header"},
-              h("h1", {}, "Field Mapping")
+              h("h3", {className: "slds-text-heading_small"}, "Field Mapping")
             ),
             /* h("div", {className: "columns-label"}, "Field mapping"), */
             model.getRequiredMissingFields().map((field, index) => h("div", {key: index, className: "conf-error confError"}, `Error: The field mapping has no '${field}' column`)),
@@ -1272,15 +1272,15 @@ class App extends React.Component {
           )
         )
       ),
-      h("div", {className: "area import-actions"},
+      h("div", {className: "area import-actions slds-card slds-p-around_small"},
         h("div", {className: "conf-line"},
           h("div", {className: "flex-wrapper"},
-            h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "highlighted"}, "Run " + model.importActionName),
-            h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "" : "cancel-btn"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
-            h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick}, "Retry Failed"),
-            h("div", {className: "button-group"},
-              h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
-              h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file"}, "Copy (CSV)"),
+            h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_brand"}, "Run " + model.importActionName),
+            h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "slds-button slds-button_neutral" : "slds-button slds-button_neutral"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
+            h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick, className: "slds-button slds-button_neutral"}, "Retry Failed"),
+            h("div", {className: "slds-button-group"},
+              h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar", className: "slds-button slds-button_neutral slds-m-horizontal_none"}, "Copy (Excel format)"),
+              h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file", className: "slds-button slds-button_neutral"}, "Copy (CSV)"),
             ),
           ),
           h("div", {className: "status-group"},
@@ -1294,16 +1294,16 @@ class App extends React.Component {
             ),
           ),
           h("div", {className: "flex-right"},
-            h("button", {onClick: this.onCopyOptionsClick, title: "Save these import options by pasting them into Excel in the top left cell, just above the header row"}, "Copy Options"),
-            h("button", {onClick: this.onSkipAllUnknownFieldsClick, disabled: !model.canSkipAllUnknownFields() || model.isWorking() || model.importCounts().Queued == 0}, "Skip all unknown fields")
+            h("button", {onClick: this.onCopyOptionsClick, title: "Save these import options by pasting them into Excel in the top left cell, just above the header row", className: "slds-button slds-button_neutral"}, "Copy Options"),
+            h("button", {onClick: this.onSkipAllUnknownFieldsClick, disabled: !model.canSkipAllUnknownFields() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_neutral"}, "Skip all unknown fields")
           ),
         ),
         h("div", {hidden: !model.showHelp, className: "help-text"},
-          h("h3", {}, "Import Help"),
+          h("h3", {className: "slds-text-heading_small"}, "Import Help"),
           h("p", {}, "Use for quick one-off data imports."),
-          h("ul", {},
+          h("ul", {className: "slds-list_dotted"},
             h("li", {}, "Enter your CSV or Excel data in the box above.",
-              h("ul", {},
+              h("ul", {className: "slds-list_dotted"},
                 h("li", {}, "The input must contain a header row with field API names."),
                 h("li", {}, "To use an external ID for a lookup field, the header row should contain the lookup relation name, the target sobject name and the external ID name separated by colons, e.g. \"MyLookupField__r:MyObject__c:MyExternalIdField__c\"."),
                 h("li", {}, "Empty cells insert null values."),

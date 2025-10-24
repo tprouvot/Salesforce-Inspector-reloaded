@@ -27,6 +27,7 @@ class Model {
     // Processed data and UI state
     this.sfHost = sfHost;
     this.sfLink = "https://" + this.sfHost;
+    this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
     this.spinnerCount = 0;
     this.errorMessages = [];
     this.rowsFilter = "";
@@ -1590,112 +1591,200 @@ class App extends React.Component {
     let linkTarget = linkInNewTab ? "_blank" : "_top";
     return (
       h("div", {onClick: this.handleClick},
-        h("div", {className: "object-bar"},
-          h("div", {className: "flex-right"},
-            h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_large", hidden: model.spinnerCount == 0},
-              h("span", {className: "slds-assistive-text"}),
-              h("div", {className: "slds-spinner__dot-a"}),
-              h("div", {className: "slds-spinner__dot-b"}),
+      h("div", {className: "slds-builder-header_container"},
+        h("header", {className: "slds-builder-header"},
+          h("div", {className: "slds-builder-header__item"},
+            h("div", {className: "slds-builder-header__item-label"},
+              h("div", {className: "slds-media__body"}, 
+                h("a", {href: model.sfLink},
+                  h("span", {className: "slds-badge slds-badge_lightest", },
+                    h("span", {className: "slds-badge__icon slds-badge__icon_left"},
+                      h("span", {className: "slds-icon_container slds-current-color", title: "Home"},
+                        h("svg", {className: "slds-icon slds-icon_xx-small", "aria-hidden": "true"},
+                          h("use", {xlinkHref: "symbols.svg#home"})
+                        )
+                      )
+                    ),
+                    model.orgName
+                  ),
+                ),
+              )
             )
           ),
-          h("div", {className: "sf-nav-group"},
-            h("a", {href: model.viewLink(), title: "Back to Record", className: "sf-back"},
-              h("svg", {className: "button-icon"},
-                h("use", {xlinkHref: "symbols.svg#back"})
+          h("div", {className: "slds-builder-header__item"},
+            h("div", {className: "slds-builder-header__item-label slds-media slds-media_center"},
+              h("div", {className: "slds-text-heading_small slds-media__body"}, "Inspect")
+            )
+          ),
+          h("nav", {className: "slds-builder-header__item slds-builder-header__nav"},
+            h("ul", {className: "slds-builder-header__nav-list"},
+              h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open"},
+                h("button", {
+                    className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
+                    "aria-haspopup": "true",
+                    "aria-expanded": "false",
+                    title: "Click to open menu",
+                    onClick: this.onUseAllTab
+                  },
+                  h("span", {className: "slds-media__body"},
+                    h("span", {className: "slds-truncate", title: "All"}, "All"),
+                  )
+                )
+              )
+            )
+          ),
+          h("nav", {className: "slds-builder-header__item slds-builder-header__nav"},
+            h("ul", {className: "slds-builder-header__nav-list"},
+              h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open"},
+                h("button", {
+                    className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
+                    "aria-haspopup": "true",
+                    "aria-expanded": "false",
+                    title: "Click to open menu"
+                  },
+                  h("span", {className: "slds-media__body"},
+                    h("span", {className: "slds-truncate", title: "Fields", onClick: this.onUseFieldsTab}, "Fields"),
+                    h(ColumnsVisibiltyBox, {
+                      rowList: model.fieldRows,
+                      label: "Field columns",
+                      content: () => [
+                        h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "name", name: "name", disabled: true}),
+                        h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "label", name: "label"}),
+                        h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "type", name: "type"}),
+                        model.sobjectName ? h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "usage", name: "usage"}) : null,
+                        h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "value", name: "value", disabled: !model.canView()}),
+                        h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "helptext", name: "helptext"}),
+                        h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "desc", name: "desc", disabled: !model.hasEntityParticles}),
+                        h("hr", {key: "---", className: "slds-m-vertical_small"}),
+                        model.fieldRows.availableColumns.map(col => h(ColumnVisibiltyToggle, {key: col, name: col, label: col, rowList: model.fieldRows}))
+                      ]
+                    })
+                  )
+                )
+              )
+            )
+          ),
+          h("nav", {className: "slds-builder-header__item slds-builder-header__nav"},
+            h("ul", {className: "slds-builder-header__nav-list"},
+              h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open"},
+                h("button", {
+                    className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
+                    "aria-haspopup": "true",
+                    "aria-expanded": "false",
+                    title: "Click to open menu"
+                  },
+                  h("span", {className: "slds-media__body"},
+                    h("span", {className: "slds-truncate", title: "Relationships", onClick: this.onUseChildsTab}, "Relationships"),
+                    /*h("span", {className: "slds-icon_container slds-icon-utility-chevrondown slds-current-color slds-m-left_small"},
+                      h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
+                        h("use", {xlinkHref: "symbols.svg#chevrondown"})
+                      )
+                    ),*/
+                    h(ColumnsVisibiltyBox, {
+                      rowList: model.childRows,
+                      label: "Relationship columns",
+                      content: () => [
+                        ["name", "object", "field", "label"].map(col => h(ColumnVisibiltyToggle, {key: col, rowList: model.childRows, name: col})),
+                        h("hr", {key: "---", className: "slds-m-vertical_small"}),
+                        model.childRows.availableColumns.map(col => h(ColumnVisibiltyToggle, {key: col, rowList: model.childRows, name: col}))
+                      ]
+                    })
+                  )
+                )
+              )
+            )
+          ),
+          h("div", {className: "slds-builder-header__item slds-has-flexi-truncate"},
+            h("h1", {className: "slds-builder-header__item-label"},
+              h("span", {className: "slds-truncate", title: "Inspect"}, model.objectName() + " " + model.recordHeading())
+            )
+          ),
+          h("div", {className: "slds-builder-header__item slds-builder-header__utilities"},
+            h("div", {className: "slds-builder-header__utilities-item"},
+              h("h1", {className: "slds-builder-header__item-label"},
+                h("span", {className: "slds-truncate", title: "User"}, model.userInfo)
               )
             ),
-            h("a", {href: model.sfLink, title: "Salesforce Home", target: linkTarget, className: "sf-link"},
-              h("svg", {viewBox: "0 0 24 24"},
-                h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
+            h("div", {className: "slds-builder-header__utilities-item slds-m-right_large"},
+              h("div", {className: "slds-is-relative"},
+                h("div", {role: "status", className: `slds-spinner slds-spinner_small slds-spinner_inverse slds-m-right_medium ${model.spinnerCount == 0 ? "sfir-hidden" : ""}`},
+                  h("span", {className: "slds-assistive-text"}, "Loading"),
+                  h("div", {className: "slds-spinner__dot-a"}),
+                  h("div", {className: "slds-spinner__dot-b"})
+                )
+              )
+            ),
+            h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small"},
+              model.useTab != "all" ? null : 
+              h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-right_x-small"},
+                h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", style: {top: "40%"}},
+                  h("use", {xlinkHref: "symbols.svg#search"})
+                ),
+                h("input", {className: "slds-input", placeholder: "Filter", value: model.rowsFilter, onChange: this.onRowsFilterInput, ref: "rowsFilter"}),
+                h("a", {href: "about:blank", className: "sfir-filter-clear", onClick: this.onClearAndFocusFilter},
+                  h("svg", {className: "sfir-filter-clear-icon"},
+                    h("use", {xlinkHref: "symbols.svg#clear"})
+                  )
+                )
               ),
-              " Salesforce Home"
-            )
-          ),
-          h("span", {className: "object-tab" + (model.useTab == "all" ? " active-tab" : "")},
-            h("a", {href: "about:blank", onClick: this.onUseAllTab}, "All")
-          ),
-          h("span", {className: "object-tab" + (model.useTab == "fields" ? " active-tab" : "")},
-            h("a", {href: "about:blank", className: "tab-with-icon", onClick: this.onUseFieldsTab}, "Fields"),
-            h(ColumnsVisibiltyBox, {
-              rowList: model.fieldRows,
-              label: "Field columns",
-              content: () => [
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "name", name: "name", disabled: true}),
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "label", name: "label"}),
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "type", name: "type"}),
-                model.sobjectName ? h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "usage", name: "usage"}) : null,
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "value", name: "value", disabled: !model.canView()}),
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "helptext", name: "helptext"}),
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "desc", name: "desc", disabled: !model.hasEntityParticles}),
-                h("hr", {key: "---"}),
-                model.fieldRows.availableColumns.map(col => h(ColumnVisibiltyToggle, {key: col, name: col, label: col, rowList: model.fieldRows}))
-              ]
-            })
-          ),
-          h("span", {className: "object-tab" + (model.useTab == "childs" ? " active-tab" : "")},
-            h("a", {href: "about:blank", className: "tab-with-icon", onClick: this.onUseChildsTab}, "Relations"),
-            h(ColumnsVisibiltyBox, {
-              rowList: model.childRows,
-              label: "Relationship columns",
-              content: () => [
-                ["name", "object", "field", "label"].map(col => h(ColumnVisibiltyToggle, {key: col, rowList: model.childRows, name: col})),
-                h("hr", {key: "---"}),
-                model.childRows.availableColumns.map(col => h(ColumnVisibiltyToggle, {key: col, rowList: model.childRows, name: col}))
-              ]
-            })
-          ),
-          h("div", {className: "object-name"},
-            h("span", {className: "quick-select"}, model.objectName()),
-            " ",
-            model.recordHeading()
-          ),
-          model.useTab != "all" ? null : h("div", {className: "filter-box"},
-            h("svg", {className: "filter-icon"},
-              h("use", {xlinkHref: "symbols.svg#search"})
             ),
-            h("input", {className: "filter-input", placeholder: "Filter", value: model.rowsFilter, onChange: this.onRowsFilterInput, ref: "rowsFilter"}),
-            h("a", {href: "about:blank", className: "filter-clear", onClick: this.onClearAndFocusFilter},
-              h("svg", {className: "filter-clear-icon"},
-                h("use", {xlinkHref: "symbols.svg#clear"})
+            h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-right_small"},
+                h("div", {className: "slds-media__body"}, 
+                  h("span", {className: "slds-button-group object-actions"},
+                    model.editMode == null && model.recordData && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
+                      title: "Inline edit the values of this record",
+                      className: "slds-button slds-button_neutral",
+                      disabled: !model.canUpdate(),
+                      onClick: this.onDoUpdate
+                    }, "Edit") : null,
+                    model.editMode == null && model.recordData && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
+                      title: "Delete this record",
+                      className: "slds-button slds-button_destructive",
+                      disabled: !model.canDelete(),
+                      onClick: this.onDoDelete
+                    }, "Delete") : null,
+                    model.editMode == null && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
+                      title: model.recordData ? "Inline edit the values of this record to be saved as a new cloned record" : "Inline create a new record",
+                      className: "slds-button slds-button_neutral",
+                      disabled: !model.canCreate(),
+                      onClick: this.onDoCreate
+                    }, model.recordData ? "Clone" : "New") : null,
+                    model.exportLink() ? h("a", {href: model.exportLink(), target: linkTarget, title: "Export data from this object", className: "slds-button slds-button_neutral"}, "Export") : null,
+                    model.objectName() ? h("a", {href: "about:blank", onClick: this.onShowObjectMetadata, className: "slds-button slds-button_neutral"}, "More") : null,
+                    h("div", {className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open slds-button_last"}, 
+                      h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: this.onToggleObjectActions},
+                        h("svg", {className: "slds-button__icon"},
+                          h("use", {xlinkHref: "symbols.svg#down"})
+                        )
+                      ),
+                      model.objectActionsOpen && h("div", {className: "slds-dropdown slds-dropdown_right slds-dropdown_actions"},
+                        h("ul", {className: "slds-dropdown__list"},
+                          model.viewLink() ? h("li", {className: "slds-dropdown__item"}, h("a", {href: model.viewLink()}, "View record in Salesforce")) : null,
+                          model.editLayoutLink() ? h("li", {className: "slds-dropdown__item"}, h("a", {href: model.editLayoutLink(), target: linkTarget}, "Edit page layout")) : null,
+                          model.objectSetupLinks ? h("li", {className: "slds-dropdown__item"}, h("a", {href: model.objectSetupLinks.lightningSetupLink, target: linkTarget}, "Object setup (Lightning)")) : null,
+                          model.objectSetupLinks ? h("li", {className: "slds-dropdown__item"}, h("a", {href: model.objectSetupLinks.classicSetupLink, target: linkTarget}, "Object setup (Classic)")) : null
+                        )
+                      )
+                  ))
+                )
               )
-            )
-          ),
-          h("span", {className: "object-actions"},
-            model.editMode == null && model.recordData && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
-              title: "Inline edit the values of this record",
-              className: "button",
-              disabled: !model.canUpdate(),
-              onClick: this.onDoUpdate
-            }, "Edit") : null,
-            model.editMode == null && model.recordData && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
-              title: "Delete this record",
-              className: "button",
-              disabled: !model.canDelete(),
-              onClick: this.onDoDelete
-            }, "Delete") : null,
-            model.editMode == null && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
-              title: model.recordData ? "Inline edit the values of this record to be saved as a new cloned record" : "Inline create a new record",
-              className: "button",
-              disabled: !model.canCreate(),
-              onClick: this.onDoCreate
-            }, model.recordData ? "Clone" : "New") : null,
-            model.exportLink() ? h("a", {href: model.exportLink(), target: linkTarget, title: "Export data from this object", className: "button"}, "Export") : null,
-            model.objectName() ? h("a", {href: "about:blank", onClick: this.onShowObjectMetadata, className: "button"}, "More") : null,
-            h("button", {className: "button", onClick: this.onToggleObjectActions},
-              h("svg", {className: "button-icon"},
-                h("use", {xlinkHref: "symbols.svg#down"})
-              )
-            ),
-            model.objectActionsOpen && h("div", {className: "pop-menu"},
-              model.viewLink() ? h("a", {href: model.viewLink()}, "View record in Salesforce") : null,
-              model.editLayoutLink() ? h("a", {href: model.editLayoutLink(), target: linkTarget}, "Edit page layout") : null,
-              model.objectSetupLinks && h("a", {href: model.objectSetupLinks.lightningSetupLink, target: linkTarget}, "Object setup (Lightning)"),
-              model.objectSetupLinks && h("a", {href: model.objectSetupLinks.classicSetupLink, target: linkTarget}, "Object setup (Classic)")
-            )
           )
-        ),
-        h("div", {className: "table-container " + (model.fieldRows.selectedColumnMap.size < 2 && model.childRows.selectedColumnMap.size < 2 ? "empty " : "")},
-          h("div", {hidden: model.errorMessages.length == 0, className: "error-message"}, model.errorMessages.map((data, index) => h("div", {key: index}, data))),
+        )
+      ),
+      h("div", {className: "slds-m-top_xx-large"},
+        h("div", {className: "slds-card slds-m-horizontal_small slds-m-top_medium " + (model.fieldRows.selectedColumnMap.size < 2 && model.childRows.selectedColumnMap.size < 2 ? "empty " : "")},
+          h("div", {hidden: model.errorMessages.length == 0, className: "slds-notify_container slds-is-relative"},
+            h("div", {className: "slds-notify slds-notify_alert slds-alert_error", role: "status"},
+              h("span", {className: "slds-icon_container slds-icon-utility-error slds-m-right_small slds-no-flex slds-align-top"},
+                h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#error"})
+                )
+              ),
+              h("div", {className: "slds-notify__content"},
+                model.errorMessages.map((data, index) => h("h2", {className: "slds-text-heading_small ", key: index}, data))
+              )
+            )
+          ),
           model.useTab == "all" || model.useTab == "fields" ? h(RowTable, {
             model,
             rowList: model.fieldRows,
@@ -1712,15 +1801,15 @@ class App extends React.Component {
             onUpdateTableBorderSettings: this.onUpdateTableBorderSettings,
             onOpenPopup: this.onOpenPopup,
           }) : null
-        ),
-        model.editMode != null && (model.useTab == "all" || model.useTab == "fields") ? h("div", {className: "footer-edit-bar"}, h("span", {className: "edit-bar"},
+        )),
+        model.editMode != null && (model.useTab == "all" || model.useTab == "fields") ? h("div", {className: "slds-docked-form-footer slds-p-vertical_small"}, 
           h("button", {
             title:
               model.editMode == "update" ? "Cancel editing this record"
               : model.editMode == "delete" ? "Cancel deleting this record"
               : model.editMode == "create" ? "Cancel creating this record"
               : null,
-            className: "button",
+            className: "slds-button slds-button_neutral",
             onClick: this.onCancelEdit
           }, "Cancel"),
           h("button", {
@@ -1730,14 +1819,14 @@ class App extends React.Component {
               : model.editMode == "delete" ? "Delete this record"
               : model.editMode == "create" ? "Save the values as a new record"
               : null,
-            className: "button " + (model.editMode == "delete" ? "button-destructive" : "button-brand"),
+            className: (model.editMode == "delete" ? "slds-button slds-button_destructive" : "slds-button slds-button_brand"),
             disabled: model.spinnerCount != 0 ? true : false,
             onClick: this.onDoSave
           }, model.editMode == "update" ? "Save"
           : model.editMode == "delete" ? "Confirm delete"
           : model.editMode == "create" ? "Save new"
           : "???")
-        )) : null,
+        ) : null,
         model.detailsBox ? h(DetailsBox, {model}) : null
       )
     );
@@ -1757,16 +1846,24 @@ class ColumnsVisibiltyBox extends React.Component {
   }
   render() {
     let {rowList, label, content} = this.props;
-    return h("span", {className: "column-button-outer"},
-      h("a", {href: "about:blank", onClick: this.onAvailableColumnsClick, className: "button-icon-link"},
-        h("svg", {className: "button-icon"},
-          h("use", {xlinkHref: "symbols.svg#chevrondown"})
-        )
+    return h("span", {className: "slds-icon_container slds-icon-utility-chevrondown slds-current-color slds-m-left_small", onClick: this.onAvailableColumnsClick},
+      h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
+        h("use", {xlinkHref: "symbols.svg#chevrondown"})
       ),
-      rowList.availableColumns ? h("div", {className: "column-popup"},
-        h("div", {className: "column-popup-inner"},
-          h("span", {className: "menu-item"}, label),
-          content()
+      rowList.availableColumns ? h("section", {
+        className: "slds-popover slds-dynamic-menu",
+        role: "dialog",
+        style: {position: "absolute", left: "-0.5rem", top: "48px", maxHeight: "80vh", overflow: "scroll"}
+      },
+        h("div", {className: "slds-popover__body slds-p-horizontal_none"},
+          h("div", {className: "slds-media"},
+            h("div", {className: "slds-media__body"},
+              h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_small slds-text-align_left"},
+                h("h3", {className: "slds-dynamic-menu__header slds-m-bottom_x-small", role: "presentation"}, label),
+                content()
+              )
+            )
+          )
         )
       ) : null
     );
@@ -1785,7 +1882,8 @@ class ColumnVisibiltyToggle extends React.Component {
   }
   render() {
     let {rowList, name, disabled} = this.props;
-    return h("label", {className: "menu-item"},
+    return h("li", {}, 
+    h("label", {className: "menu-item"},
       h("input", {
         type: "checkbox",
         checked: rowList.selectedColumnMap.has(name),
@@ -1793,7 +1891,7 @@ class ColumnVisibiltyToggle extends React.Component {
         disabled
       }),
       rowList.createColumn(name).label
-    );
+    ));
   }
 }
 
@@ -1850,7 +1948,7 @@ class RowTable extends React.Component {
   render() {
     let {rowList, actionsColumn, classNameForRow} = this.props;
     let selectedColumns = Array.from(rowList.selectedColumnMap.values());
-    return h("table", {},
+    return h("table", {className: "slds-table " + (this.props.model.showTableBorder ? "slds-table_bordered" : "")},
       h("thead", {},
         h("tr", {},
           selectedColumns.map(col => {
@@ -2272,7 +2370,7 @@ class DetailsBox extends React.Component {
     this.onDetailsFilterClick = this.onDetailsFilterClick.bind(this);
   }
   componentDidMount() {
-    this.refs.detailsFilter.focus();
+    //this.refs.detailsFilter.focus();
   }
   onCloseDetailsBox(e) {
     e.preventDefault();
@@ -2295,13 +2393,30 @@ class DetailsBox extends React.Component {
   render() {
     let {model} = this.props;
     return h("div", {},
-      h("div", {id: "fieldDetailsView"},
-        h("div", {className: "container"},
-          h("a", {href: "about:blank", className: "closeLnk", onClick: this.onCloseDetailsBox}, "X"),
-          h("div", {className: "mainContent"},
-            h("h3", {}, "All available metadata for \"" + model.detailsBox.name + "\""),
-            h("input", {placeholder: "Filter", value: model.detailsFilter, onChange: this.onDetailsFilterInput, ref: "detailsFilter"}),
-            h("table", {},
+    h("section", {
+        role: "dialog",
+        tabIndex: -1,
+        "aria-modal": "true",
+        "aria-labelledby": "modal-heading-01",
+        className: "slds-modal slds-fade-in-open slds-modal_large"
+      },
+        h("div", {className: "slds-modal__container"},
+          h("button", {className: "slds-button slds-button_icon slds-modal__close", onClick: this.onCloseDetailsBox},
+            h("svg", {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
+              h("use", {xlinkHref: "symbols.svg#close"})
+            ),
+            h("span", {className: "slds-assistive-text"}, "Cancel and close")
+          ),
+          h("div", {className: "slds-modal__header"},
+            h("h1", {
+              id: "modal-heading-01",
+              className: "slds-modal__title slds-hyphenate",
+              tabIndex: -1
+            }, "All available metadata for \"" + model.detailsBox.name + "\""),
+            h("input", {className: "slds-input slds-m-top_small", placeholder: "Filter", value: model.detailsFilter, onChange: this.onDetailsFilterInput, ref: "detailsFilter"}),
+          ),
+          h("div", {className: "slds-modal__content slds-p-around_medium", id: "modal-content-id-1"},
+            h("table", {className: "slds-table slds-table_cell-buffer"},
               h("thead", {}, h("tr", {}, h("th", {}, "Key"), h("th", {}, "Value"))),
               h("tbody", {}, model.detailsBox.rows.map(row =>
                 h("tr", {hidden: !row.visible(), key: row.key},
@@ -2316,7 +2431,8 @@ class DetailsBox extends React.Component {
             )
           )
         )
-      )
+      ),
+      h("div", {className: "slds-backdrop slds-backdrop_open", role: "presentation"})
     );
   }
 }
@@ -2411,12 +2527,12 @@ class HeaderCellWithAction extends React.Component {
       " ",
       h("button", {
         ref: "usageBtnRef",
-        className: "actions-button",
+        className: "slds-button slds-button_icon",
         onClick: this.onActionClick,
         title: actionTitle,
         disabled: this.state.clicked
       },
-      h("svg", {className: "button-icon"},
+      h("svg", {className: "slds-button__icon slds-button__icon_medium"},
         h("use", {xlinkHref: `symbols.svg#${actionIcon}`})
       )
       )

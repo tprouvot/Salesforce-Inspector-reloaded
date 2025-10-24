@@ -70,14 +70,7 @@ body {
 #user-info {
   background: #f7f9fb;
   height: 48px;
-  display: flex;
-  align-items: center;
   padding: 0 12px;
-  flex-wrap: wrap;
-}
-
-#user-info h1 {
-  padding: 0 6px 0 10px;
 }
 
 #user-info span {
@@ -177,18 +170,6 @@ textarea[hidden] {
   border-radius: 5px;
   border: 1px solid #dddbda;
   margin: 12px 12px 0 12px;
-}
-
-h1 {
-  font-size: 1rem;
-  display: inline;
-  color: #080707;
-  font-weight: 700;
-  line-height: 1.25;
-  margin: revert;
-}
-.user-info h1 {
-  padding: 0 6px 0 10px;
 }
 
 .query-controls {
@@ -346,21 +327,6 @@ textarea[readonly] {
   border-radius: 0;
   border: none;
   border-top: 1px solid #dddbda;
-}
-
-#help-btn {
-  margin-left: auto;
-  text-decoration: none;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #919191;
-  display: flex;
-  align-items: center;
-}
-
-#spinner {
-  left: -15px;
-  top: 9px;
 }
 
 .flex-right {
@@ -575,12 +541,12 @@ svg.button-icon {
 
 .autocomplete-icon {
   display: inline-block;
-  margin: -1px 2px 0 1px;
+  margin: 0px 2px -1px 1px;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: 0.95rem;
   background-color: #706e6b;
   width: 16px;
-  height: 16px;
+  height: 13px;
 }
 
 .relationshipName {
@@ -921,4 +887,8 @@ svg.icon:hover {
 
 .add-tab-button:hover {
   background: #f3f2f2;
+}
+
+.slds-spinner.sfir-hidden{
+  display: none;
 }

@@ -1,3 +1,15 @@
+.sfir-full-height {
+  height: 100%;
+}
+
+.slds-dropdown__item.sfir-justify-left > a{
+  justify-content: left;
+}
+
+#result-table {
+  height: 100%;
+}
+
 #result-table table {
   border: none;
 }
@@ -22,11 +34,12 @@
 
 .scrolltable-cell {
   border: 1px solid #DDDBDA;
-  overflow: hidden;
+  overflow: visible;
   padding: 0 4px;
   background-color: white;
   white-space: pre;
   box-sizing: border-box;
+  position: relative;
 }
 
 .scrolltable-cell.header {
@@ -66,15 +79,6 @@
 .scrolltable-scrolled table {
   border-collapse: collapse;
   position: absolute;
-}
-
-.scrolltable-cell {
-  border: 1px solid #DDDBDA;
-  overflow: hidden;
-  padding: 0 4px;
-  background-color: white;
-  white-space: pre;
-  box-sizing: border-box;
 }
 
 .scrolltable-cell.header {

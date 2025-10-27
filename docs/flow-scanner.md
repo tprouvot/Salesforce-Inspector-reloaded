@@ -92,6 +92,113 @@ Option page:
 
 ---
 
+## Technical Architecture
+
+### How the Flow Scanner Page Works
+
+The Flow Scanner follows a multi-step process to analyze your Salesforce Flows:
+
+```mermaid
+graph TD
+    U[👤 User] --> |1. Opens Flow Scanner| EXT[🔧 S.I.R Extension<br/>• UI Layer<br/>• Configuration<br/>• Flow Processing]
+
+    EXT --> |2. Metadata Request| REST[🌐 REST API<br/>/services/data/vXX.X/]
+    EXT --> |3. Flow Definition<br/>Query| TOOL[🔧 Tooling API<br/>/services/data/vXX.X/tooling/]
+
+    REST --> |API Call| SF[(🏢 Salesforce Org<br/>Flow Metadata<br/>XML Definitions)]
+    TOOL --> |API Call| SF
+
+    SF --> |4. XML Flow<br/>Metadata| EXT
+
+    EXT --> |5. Flow XML Data| CORE[📚 Lightning Flow Scanner embedded lib<br/>• XML Parser<br/>• Rule Engine 20+ rules<br/>• Flow Analysis]
+
+    CORE --> |6. Analysis Results| RES[📊 Scan Results<br/>• Error/Warning/Info<br/>• Rule Violations<br/>• CSV Export]
+
+    RES --> |7. Formatted Results<br/>& Export Options| EXT
+    EXT --> |8. Display Results| U
+
+    %% Dark mode friendly styling
+    classDef userClass fill:#4a90e2,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef extensionClass fill:#8e44ad,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef apiClass fill:#f39c12,stroke:#ffffff,stroke-width:2px,color:#000000
+    classDef salesforceClass fill:#e67e22,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef coreClass fill:#e74c3c,stroke:#ffffff,stroke-width:2px,color:#ffffff
+    classDef resultClass fill:#27ae60,stroke:#ffffff,stroke-width:2px,color:#ffffff
+
+    class U userClass
+    class EXT extensionClass
+    class REST,TOOL apiClass
+    class SF salesforceClass
+    class CORE coreClass
+    class RES resultClass
+```
+
+### Component Breakdown
+
+**1. Salesforce Inspector Reloaded (Extension)**
+- **Role**: Orchestrator and UI layer
+- **APIs Used**:
+  - Salesforce REST API (`/services/data/vXX.X/`)
+  - Salesforce Tooling API (`/services/data/vXX.X/tooling/`)
+- **Actions**:
+  - Fetches Flow metadata (XML definition)
+  - Manages user interface and interactions
+  - Handles configuration and rule preferences
+  - Processes and displays scan results
+
+**2. Lightning Flow Scanner Core Library**
+- **Role**: Analysis engine and rule processor
+- **Input**: Flow XML metadata from Salesforce
+- **Processing**:
+  - Parses XML into structured Flow object model
+  - Applies 20+ predefined rules (e.g., API version, naming conventions, complexity)
+  - Evaluates flow elements, variables, resources, and metadata
+- **Output**: Structured scan results with violations and recommendations
+
+**3. Rule Engine**
+- **Rule Types**:
+  - **Metadata Rules**: API version, flow description, naming conventions
+  - **Best Practice Rules**: Missing fault paths, hardcoded IDs, DML in loops
+  - **Performance Rules**: SOQL queries in loops, bulk operations
+  - **Security Rules**: Running context, unsafe configurations
+- **Configurable**: Users can enable/disable rules via Options page
+
+### Data Flow Process
+
+1. **Metadata Retrieval**
+   ```
+   GET /services/data/v58.0/tooling/sobjects/Flow/{FlowId}
+   → Returns Flow definition in XML format
+   ```
+
+2. **XML Processing**
+   ```javascript
+   // Lightning Flow Scanner Core processes the XML
+   const flowObject = new Flow(xmlData);
+   const scanResults = scanner.scan(flowObject, userConfig);
+   ```
+
+3. **Rule Execution**
+   - Each enabled rule runs against the parsed Flow object
+   - Rules check different aspects: elements, variables, metadata, connections
+   - Results categorized by severity: Error, Warning, Info
+
+4. **Result Presentation**
+   - Results aggregated and displayed in interactive UI
+   - Export functionality generates CSV reports
+   - Users can expand/collapse rule categories
+
+### API Integration Details
+
+**Salesforce REST API Endpoints Used:**
+- `/services/data/vXX.X/tooling/sobjects/Flow/` - Flow metadata retrieval
+- `/services/data/vXX.X/tooling/query/` - SOQL queries for Flow information
+- `/services/data/vXX.X/sobjects/` - Related object metadata when needed
+
+**Authentication**: Leverages existing Salesforce Inspector session (handled globally by extension)
+
+---
+
 ## Troubleshooting
 
 - **No Rules Enabled:** If you see a message about no rules being enabled, open the Options page and enable at least one rule.

@@ -28,8 +28,6 @@ fs.copySync("addon", target, {
       // Skip files in .gitignore
       && !file.endsWith(".zip")
       && !file.endsWith(".xpi")
-      // Skip the manifest source file
-      && file != "addon/manifest-template.json"
       // Skip files where the release version will use minified versions instead
       && file != "addon/react.js"
       && file != "addon/react-dom.js";

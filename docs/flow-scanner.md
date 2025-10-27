@@ -167,7 +167,7 @@ graph TD
 
 1. **Metadata Retrieval**
    ```
-   GET /services/data/v58.0/tooling/sobjects/Flow/{FlowId}
+   GET /services/data/vXX.0/tooling/sobjects/Flow/{FlowId}
    → Returns Flow definition in XML format
    ```
 
@@ -191,9 +191,9 @@ graph TD
 ### API Integration Details
 
 **Salesforce REST API Endpoints Used:**
-- `/services/data/vXX.X/tooling/sobjects/Flow/` - Flow metadata retrieval
-- `/services/data/vXX.X/tooling/query/` - SOQL queries for Flow information
-- `/services/data/vXX.X/sobjects/` - Related object metadata when needed
+- `/services/data/vXX.0/tooling/sobjects/Flow/` - Flow metadata retrieval
+- `/services/data/vXX.0/tooling/query/` - SOQL queries for Flow information
+- `/services/data/vXX.0/sobjects/` - Related object metadata when needed
 
 **Authentication**: Leverages existing Salesforce Inspector session (handled globally by extension)
 

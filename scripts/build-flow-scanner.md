@@ -1,24 +1,31 @@
 # How to Build flow-scanner-core.js for Salesforce Inspector
 
-**Run this script from the root of [`flow-linter-core`](https://github.com/corekraft/flow-linter-core) — not from the Chrome extension repo.**
+**Run this script from the root of the Chrome extension repo.**
 
 ## Quick Steps
 
-1. **Clone and enter the core repo:**
-   ```sh
-   git clone https://github.com/corekraft/flow-linter-core.git
-   cd flow-linter-core
-   ```
-2. **Build the core file:**
-   ```sh
-   node scripts/build-flow-scanner.js
-   ```
-   - This creates `flow-scanner-core.js` in the core repo root.
-3. **Move this file to the Salesforce Inspector Reloaded addon directory:**
-   ```sh
-   cp flow-scanner-core.js /path/to/Salesforce-Inspector-reloaded/addon/lib/flow-scanner-core.js
-   ```
+**Single command to build and install flow-scanner-core.js:**
+```sh
+npm run build-flow-scanner
+```
+
+This command will:
+1. **Automatically fetch** the latest lightning-flow-scanner-core repository files
+2. **Build** the flow-scanner-core.js in a temporary directory
+3. **Install** the compiled file directly to `addon/lib/flow-scanner-core.js`
+4. **Clean up** the temporary build directory
+
+No need to manually clone repositories or move files!
+
+### What the Script Does
+
+- Creates a temporary directory for the build
+- Clones the lightning-flow-scanner-core repository (shallow clone, no history)
+- Installs dependencies and builds the project using Vite
+- Injects version information from the core project's `package.json`
+- Places the final `flow-scanner-core.js` file in the correct location (`addon/lib/`)
+- Cleans up the temporary directory and cloned repository
 
 ### Version Injection
 
-- The build script reads the version from `package.json`
+- The build script reads the version from the core project's `package.json`

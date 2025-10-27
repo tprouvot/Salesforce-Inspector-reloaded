@@ -1472,9 +1472,9 @@ class App extends React.Component {
             h("small", {},
               "💡 Based on ",
               h("a", {
-                href: "https://github.com/corekraft/flow-linter-core",
+                href: "https://github.com/flow-scanner/lightning-flow-scanner-core",
                 target: getLinkTarget(),
-              }, "Flow Linter Core"),
+              }, "Lightning Flow Scanner Core"),
               `\u00A0 (core v${scannerVersion})`
             )
           ),

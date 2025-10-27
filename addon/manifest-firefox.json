@@ -81,7 +81,8 @@
     "inject.js",
     "field-creator.html",
     "options.html",
-    "event-monitor.html"
+    "event-monitor.html",
+    "flow-scanner.html"
   ],
   "incognito": "spanning",
   "manifest_version": 2

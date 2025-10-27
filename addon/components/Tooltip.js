@@ -1,3 +1,4 @@
+/* global React */
 let h = React.createElement;
 class Tooltip extends React.Component {
   constructor(props) {
@@ -18,17 +19,12 @@ class Tooltip extends React.Component {
   }
 
   setTooltipPosition() {
-    // At this point, display was visible but fully transparent in the top left corner of the screen
-    // If isVisible is false, getBoundingClientRect will return 0 for all values
-    const tabHeader = document.querySelectorAll('[id="main-container_header"]')[0];
-    const marginTop = parseInt(window.getComputedStyle(tabHeader).getPropertyValue("margin-top"));
-    const yOffset = tabHeader.getBoundingClientRect().top + marginTop + 2; // Add 2 extra pixels below nubbin
+    // With fixed positioning, calculate position relative to viewport
     const toolTip = document.querySelectorAll(`[id='${this.tipKey}']`)[0];
     const elRect = document.querySelectorAll(`[id='${this.iconKey}']`)[0].getBoundingClientRect();
     const toolTipRect = toolTip.getBoundingClientRect();
-    const x = `${elRect.left - 27}px`; // fixed x offset (distance from left edge of tooltip to nubbin point)
-    const y = `${elRect.top - toolTipRect.height - yOffset}px`;
-    // Finally, set opacity to 100% so the user can see it
+    const x = `${elRect.left - 14}px`;
+    const y = `${elRect.top - toolTipRect.height - 10}px`;
     this.setState({position: {x, y}, opacity: 1});
   }
 

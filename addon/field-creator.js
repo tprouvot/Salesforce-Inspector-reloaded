@@ -726,7 +726,7 @@ class FieldOptionModal extends React.Component {
 // Define the React components
 class FieldRow extends React.Component {
   render() {
-    document.title = "Field Creator (beta)";
+    document.title = "Field Creator";
 
     let deploymentStatus;
     switch (this.props.field.deploymentStatus) {
@@ -1553,7 +1553,7 @@ class App extends React.Component {
           ),
           " Salesforce Home"
         ),
-        h("h1", {}, "Field Creator (beta)"),
+        h("h1", {}, "Field Creator"),
         h("span", {}, " / " + userInfo),
         h("div", {className: "flex-right"},
           h("span", {className: "slds-assistive-text"}),

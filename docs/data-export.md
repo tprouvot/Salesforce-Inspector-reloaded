@@ -15,11 +15,22 @@ The search is made on the field label and name.
 
 The Data Export page now supports multiple query tabs, allowing you to work on several queries at once without losing context.
 
+### Tab Management Features
+
 - **Automatic Tab Naming**: When you write a SOQL query, the tab will be automatically renamed based on the SObject name detected in the `FROM` clause. For example, `SELECT Id FROM Account` will rename the tab to "Account".
-- **Handling Duplicate Names**: If you open a new tab for an SObject that already has a tab, a number will be appended to the name to keep them unique (e.g., "Account (1)", "Account (2)").
+- **Editable Tab Names**: **Double-click** on any tab name to edit it inline. Press **Enter** to save or **Escape** to cancel. This allows you to customize tab names for better organization.
+- **Drag & Drop Reordering**: Click and drag tabs to reorder them according to your preference. The tab positions are automatically saved.
+- **Handling Duplicate Names**: If you open a new tab for an SObject that already has a tab, or if you manually create tabs with duplicate names, a number will be appended to keep them unique (e.g., "Account (1)", "Account (2)").
 - **Preserved Context**: Each tab remembers its own query and the results from the last time it was run. When you switch between tabs, the query and its results are instantly restored.
 
-A new tab can be created by clicking the `+` button in the tab bar.
+### How to Use
+
+- **Create a new tab**: Click the `+` button in the tab bar
+- **Edit tab names**: Double-click on any tab name, type your custom name, and press Enter
+- **Reorder tabs**: Click and drag any tab to move it to your preferred position
+- **Close tabs**: Click the `×` button on any tab (except when only one tab remains)
+
+All tab names and positions are automatically saved and will persist between browser sessions.
 
 ## Disable query input autofocus
 

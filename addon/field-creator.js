@@ -692,7 +692,8 @@ class FieldOptionModal extends React.Component {
       h("div", {className: "modal-header flexSpaceBetween alignItemsCenter"},
         h("h1", {className: "modal-title"}, "Set Field Options"),
         h("button", {
-          type: "button","aria-label": "Close Set Field Options",
+          type: "button",
+          "aria-label": "Close Set Field Options",
           className: "close cursorPointer backgroundNone borderNone fontSize1_5 fontWeightBold",
           onClick: this.props.onClose
         },

@@ -3,6 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
+import {PageHeader} from "./components/PageHeader.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -80,7 +81,9 @@ class Model {
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
-    this.userInfo = "...";
+    this.userFullName = "";
+    this.userInitials = "";
+    this.userName = "";
     this.winInnerHeight = 0;
     this.queryAll = false;
     this.queryTooling = false;
@@ -123,7 +126,9 @@ class Model {
     this.enableQueryTypoFix = localStorage.getItem("enableQueryTypoFix") == "true";
 
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName;
+      this.userFullName = res.userFullName;
+      this.userInitials = this.userFullName.split(' ').map(n => n[0]).join('');
+      this.userName = res.userName;
     }));
 
     if (args.has("query")) {
@@ -1742,105 +1747,51 @@ class App extends React.Component {
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
-    return h("div", {},
-      h("div", {className: "slds-builder-header_container"},
-        h("header", {className: "slds-builder-header"},
-          h("div", {className: "slds-builder-header__item"},
-            h("div", {className: "slds-builder-header__item-label"},
-              h("div", {className: "slds-media__body"}, 
-                h("a", {href: model.sfLink},
-                  h("span", {className: "slds-badge slds-badge_lightest", },
-                    h("span", {className: "slds-badge__icon slds-badge__icon_left"},
-                      h("span", {className: "slds-icon_container slds-current-color", title: "Home"},
-                        h("svg", {className: "slds-icon slds-icon_xx-small", "aria-hidden": "true"},
-                          h("use", {xlinkHref: "symbols.svg#home"})
-                        )
-                      )
-                    ),
-                    model.orgName
-                  ),
-                ),
-              )
-            )
-          ),
-          /*h("nav", {className: "slds-builder-header__item slds-builder-header__nav"},
-            h("ul", {className: "slds-builder-header__nav-list"},
-              h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open"},
-                h("button", {
-                    className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
-                    "aria-haspopup": "true",
-                    "aria-expanded": "false",
-                    title: "Click to open menu"
-                  },
-                  h("span", {className: "slds-media__figure"},
-                    h("span", {className: "slds-icon_container slds-icon-utility-page slds-current-color"},
-                      h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-                        h("use", {xlinkHref: "/assets/icons/utility-sprite/svg/symbols.svg#page"})
-                      )
-                    )
-                  ),
-                  h("span", {className: "slds-media__body"},
-                    h("span", {className: "slds-truncate", title: "Dropdown"}, "Dropdown"),
-                    h("span", {className: "slds-icon_container slds-icon-utility-chevrondown slds-current-color slds-m-left_small"},
-                      h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-                        h("use", {xlinkHref: "/assets/icons/utility-sprite/svg/symbols.svg#chevrondown"})
-                      )
-                    )
-                  )
-                )
-              )
-            )
-          ),*/
-          h("div", {className: "slds-builder-header__item slds-has-flexi-truncate"},
-            h("h1", {className: "slds-builder-header__item-label"},
-              h("span", {className: "slds-text-heading_small slds-truncate", title: "Data Export"}, "Data Export")
-            )
-          ),
-          h("div", {className: "slds-builder-header__item slds-builder-header__utilities"},
-            h("div", {className: "slds-builder-header__utilities-item"},
-              h("h1", {className: "slds-builder-header__item-label"},
-                h("span", {className: "slds-truncate", title: "User"}, model.userInfo)
-              )
-            ),
-            h("div", {className: "slds-builder-header__utilities-item slds-m-right_large"},
-              h("div", {className: "slds-is-relative"},
-                h("div", {role: "status", className: `slds-spinner slds-spinner_small slds-spinner_inverse slds-m-right_medium ${model.spinnerCount == 0 ? "sfir-hidden" : ""}`},
-                  h("span", {className: "slds-assistive-text"}, "Loading"),
-                  h("div", {className: "slds-spinner__dot-a"}),
-                  h("div", {className: "slds-spinner__dot-b"})
+    
+    // Define utility items for this page (injected as "slots")
+    const utilityItems = [
+      // Agentforce button (conditional)
+      displayButton("export-agentforce", this.state.hideButtonsOption) ?
+        h("div", {className: "slds-builder-header__utilities-item"},
+          h("a", {href: "#", className: "slds-builder-header__item-action slds-media slds-media_center", onClick: this.onToggleAI},
+            h("span", {className: "slds-media__figure"},
+              h("span", {className: "slds-icon_container slds-icon-utility-settings slds-current-color"},
+                h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#einstein"})
                 )
               )
             ),
-            displayButton("export-agentforce", this.state.hideButtonsOption) ?
-              h("div", {className: "slds-builder-header__utilities-item"},
-                h("a", {href: "#", className: "slds-builder-header__item-action slds-media slds-media_center", onClick: this.onToggleAI},
-                  h("span", {className: "slds-media__figure"},
-                    h("span", {className: "slds-icon_container slds-icon-utility-settings slds-current-color"},
-                      h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-                        h("use", {xlinkHref: "symbols.svg#einstein"})
-                      )
-                    )
-                  ),
-                  h("span", {className: "slds-media__body"},
-                    h("span", {className: "slds-truncate", title: "Agentforce"}, "Agentforce")
-                  )
-                )
-              ) : null,
-            h("div", {className: "slds-builder-header__utilities-item"},
-              h("a", {href: "#", className: "slds-builder-header__item-action slds-media slds-media_center", onClick: this.onToggleHelp},
-                h("div", {className: "slds-media__figure"},
-                  h("span", {className: "slds-icon_container slds-icon-utility-help slds-current-color"},
-                    h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-                      h("use", {xlinkHref: "symbols.svg#help"})
-                    )
-                  )
-                ),
-                h("div", {className: "slds-media__body"}, "Help")
-              )
+            h("span", {className: "slds-media__body"},
+              h("span", {className: "slds-truncate", title: "Agentforce"}, "Agentforce")
             )
           )
+        ) : null,
+      // Help button
+      h("div", {className: "slds-builder-header__utilities-item"},
+        h("a", {href: "#", className: "slds-builder-header__item-action slds-media slds-media_center", onClick: this.onToggleHelp},
+          h("div", {className: "slds-media__figure"},
+            h("span", {className: "slds-icon_container slds-icon-utility-help slds-current-color"},
+              h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
+                h("use", {xlinkHref: "symbols.svg#help"})
+              )
+            )
+          ),
+          h("div", {className: "slds-media__body"}, "Help")
         )
-      ),
+      )
+    ].filter(Boolean); // Remove null items
+    
+    return h("div", {},
+      h(PageHeader, {
+        pageTitle: "Data Export",
+        orgName: model.orgName,
+        sfLink: model.sfLink,
+        spinnerCount: model.spinnerCount,
+        userInitials: model.userInitials,
+        userFullName: model.userFullName,
+        userName: model.userName,
+        utilityItems: utilityItems
+      }),
 
       h("div", {className: "slds-m-top_xx-large"},
       h("div", {className: "slds-card slds-m-around_medium"},

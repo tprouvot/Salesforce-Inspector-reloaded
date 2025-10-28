@@ -633,6 +633,7 @@ export function initScrollTable(scroller) {
       //scrolled.style.width = totalWidth + "px";
 
       let table = document.createElement("table");
+      table.className = "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered";
       let cellsVisible = false;
 
       // Ensure firstRowIdx never goes below headerRows
@@ -643,6 +644,7 @@ export function initScrollTable(scroller) {
         if (rowVisible[r] == 0) continue;
         let row = data.table[r];
         let tr = document.createElement("tr");
+        tr.className = "slds-line-height_reset";
         for (let c = firstColIdx; c < lastColIdx; c++) {
           if (colVisible[c] == 0) continue;
           let cell = row[c];
@@ -663,6 +665,7 @@ export function initScrollTable(scroller) {
         }
         let row = data.table[r];
         let tr = document.createElement("tr");
+        tr.className = "slds-line-height_reset";
         for (let c = firstColIdx; c < lastColIdx; c++) {
           if (colVisible[c] == 0) {
             continue;

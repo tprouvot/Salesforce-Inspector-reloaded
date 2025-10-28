@@ -7,6 +7,7 @@ import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
 import ColorPicker from "./components/ColorPicker.js";
+import {PageHeader} from "./components/PageHeader.js";
 
 class Model {
 
@@ -14,6 +15,13 @@ class Model {
     this.sfHost = sfHost;
     this.sfLink = "https://" + this.sfHost;
     this.userInfo = "...";
+    debugger
+    this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
+    this.userFullName = "";
+    this.userInitials = "";
+    this.userName = "";
+    this.spinnerCount = 0;
+    
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
@@ -23,6 +31,9 @@ class Model {
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { });
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
+      this.userFullName = res.userFullName;
+      this.userInitials = this.userFullName.split(' ').map(n => n[0]).join('');
+      this.userName = res.userName;
     }));
   }
 
@@ -1877,37 +1888,54 @@ class App extends React.Component {
   render() {
     const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
-    return h("div", {},
-      h("div", {id: "user-info", className: "slds-border_bottom"},
-        h("a", {href: model.sfLink, className: "sf-link"},
-          h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-          ),
-          " Salesforce Home"
-        ),
-        h("h1", {className: "slds-text-title_bold"}, "Options"),
-        h("span", {}, " / " + model.userInfo),
-        h("div", {className: "flex-right"},
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: () => this.exportOptions(), title: "Export Options"},
-            h("svg", {className: "slds-button__icon"},
-              h("use", {xlinkHref: "symbols.svg#download"})
-            )
-          ),
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Import Options"},
-            h("svg", {className: "slds-button__icon"},
-              h("use", {xlinkHref: "symbols.svg#upload"})
-            )
-          ),
-          // Hidden file input for importing options
-          h("input", {
-            type: "file",
-            style: {display: "none"},
-            ref: "fileInput",
-            onChange: this.importOptions,
-            accept: "application/json"
-          })
+    
+    // Define utility items for this page (injected as "slots")
+    const utilityItems = [
+      // Export Options button
+      h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small"},
+        h("button", {
+          className: "slds-button slds-button_icon slds-button_icon-border-filled",
+          onClick: this.exportOptions,
+          title: "Export Options"
+        },
+          h("svg", {className: "slds-button__icon"},
+            h("use", {xlinkHref: "symbols.svg#download"})
+          )
         )
       ),
+      // Import Options button
+      h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small"},
+        h("button", {
+          className: "slds-button slds-button_icon slds-button_icon-border-filled",
+          onClick: () => this.refs.fileInput.click(),
+          title: "Import Options"
+        },
+          h("svg", {className: "slds-button__icon"},
+            h("use", {xlinkHref: "symbols.svg#upload"})
+          )
+        ),
+        // Hidden file input for importing options
+        h("input", {
+          type: "file",
+          style: {display: "none"},
+          ref: "fileInput",
+          onChange: this.importOptions,
+          accept: "application/json"
+        })
+      )
+    ];
+    
+    return h("div", {},
+      h(PageHeader, {
+        pageTitle: "Options",
+        orgName: model.orgName,
+        sfLink: model.sfLink,
+        spinnerCount: model.spinnerCount,
+        userInitials: model.userInitials,
+        userFullName: model.userFullName,
+        userName: model.userName,
+        utilityItems: utilityItems
+      }),
       this.state.showToast
         && h(Toast, {
           variant: this.state.toastVariant,
@@ -1915,8 +1943,10 @@ class App extends React.Component {
           message: this.state.toastMessage,
           onClose: this.hideToast
         }),
-      h("div", {className: "main-container slds-card slds-m-around_small", id: "main-container_header"},
-        h(OptionsTabSelector, {model, appRef: this})
+      h("div", {className: "slds-m-top_xx-large"},
+        h("div", {className: "slds-card slds-m-around_medium main-container", id: "main-container_header"},
+          h(OptionsTabSelector, {model})
+        )
       )
     );
   }

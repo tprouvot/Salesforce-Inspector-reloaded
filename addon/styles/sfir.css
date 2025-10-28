@@ -1,0 +1,19 @@
+.slds-spinner.sfir-hidden {
+    display: none;
+}
+
+.slds-spinner.sfir-hidden {
+    display: none;
+}
+
+.sfir-display-popover-target {
+    visibility: hidden;
+}
+
+.sfir-display-popover-trigger {
+    cursor: pointer;
+}
+
+.sfir-display-popover-trigger:hover .sfir-display-popover-target {
+    visibility: visible;
+}

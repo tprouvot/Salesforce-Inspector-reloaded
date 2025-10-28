@@ -56,7 +56,8 @@ class ProfilesModal extends React.Component {
         [name]: {
           ...prevState.permissions[name],
           [type]: !prevState.permissions[name][type],
-          ...(type === "edit" ? {read: true} : {})
+          ...(type === "edit" && !prevState.permissions[name][type] === true ? {read: true} : {}),
+          ...(type === "read" && !prevState.permissions[name][type] === false ? {edit: false} : {})
         }
       }
     }), this.updateAllCheckboxes);
@@ -74,7 +75,8 @@ class ProfilesModal extends React.Component {
         updatedPermissions[name] = {
           ...updatedPermissions[name],
           [type]: allSelected,
-          ...(type === "edit" ? {read: true} : {})
+          ...(type === "edit" && allSelected === true ? {read: true} : {}),
+          ...(type === "read" && allSelected === false ? {edit: false} : {})
         };
       });
 

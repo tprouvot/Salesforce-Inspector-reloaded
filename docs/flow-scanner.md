@@ -7,6 +7,7 @@ The **Flow Scanner** is a powerful tool built into Salesforce Inspector Reloaded
 ## What is the Flow Scanner?
 
 The Flow Scanner automatically reviews your Salesforce Flows and checks them against a set of rules and best practices. It helps you:
+
 - Identify errors, warnings, and improvement opportunities in your flows
 - Understand where issues are located and what they mean
 - Export scan results for documentation or sharing
@@ -102,8 +103,8 @@ The Flow Scanner follows a multi-step process to analyze your Salesforce Flows:
 graph TD
     U[👤 User] --> |1. Opens Flow Scanner| EXT[🔧 S.I.R Extension<br/>• UI Layer<br/>• Configuration<br/>• Flow Processing]
 
-    EXT --> |2. Metadata Request| REST[🌐 REST API<br/>/services/data/vXX.X/]
-    EXT --> |3. Flow Definition<br/>Query| TOOL[🔧 Tooling API<br/>/services/data/vXX.X/tooling/]
+    EXT --> |2. Metadata Request| REST[🌐 REST API<br/>/services/data/vXX.0/]
+    EXT --> |3. Flow Definition<br/>Query| TOOL[🔧 Tooling API<br/>/services/data/vXX.0/tooling/]
 
     REST --> |API Call| SF[(🏢 Salesforce Org<br/>Flow Metadata<br/>XML Definitions)]
     TOOL --> |API Call| SF
@@ -133,45 +134,14 @@ graph TD
     class RES resultClass
 ```
 
-### Component Breakdown
-
-**1. Salesforce Inspector Reloaded (Extension)**
-- **Role**: Orchestrator and UI layer
-- **APIs Used**:
-  - Salesforce REST API (`/services/data/vXX.X/`)
-  - Salesforce Tooling API (`/services/data/vXX.X/tooling/`)
-- **Actions**:
-  - Fetches Flow metadata (XML definition)
-  - Manages user interface and interactions
-  - Handles configuration and rule preferences
-  - Processes and displays scan results
-
-**2. Lightning Flow Scanner Core Library**
-- **Role**: Analysis engine and rule processor
-- **Input**: Flow XML metadata from Salesforce
-- **Processing**:
-  - Parses XML into structured Flow object model
-  - Applies 20+ predefined rules (e.g., API version, naming conventions, complexity)
-  - Evaluates flow elements, variables, resources, and metadata
-- **Output**: Structured scan results with violations and recommendations
-
-**3. Rule Engine**
-- **Rule Types**:
-  - **Metadata Rules**: API version, flow description, naming conventions
-  - **Best Practice Rules**: Missing fault paths, hardcoded IDs, DML in loops
-  - **Performance Rules**: SOQL queries in loops, bulk operations
-  - **Security Rules**: Running context, unsafe configurations
-- **Configurable**: Users can enable/disable rules via Options page
-
 ### Data Flow Process
 
 1. **Metadata Retrieval**
-   ```
-   GET /services/data/vXX.0/tooling/sobjects/Flow/{FlowId}
-   → Returns Flow definition in XML format
-   ```
 
+   GET `/services/data/vXX.0/tooling/sobjects/Flow/{FlowId}`
+   → Returns Flow definition in XML format
 2. **XML Processing**
+
    ```javascript
    // Lightning Flow Scanner Core processes the XML
    const flowObject = new Flow(xmlData);
@@ -182,7 +152,6 @@ graph TD
    - Each enabled rule runs against the parsed Flow object
    - Rules check different aspects: elements, variables, metadata, connections
    - Results categorized by severity: Error, Warning, Info
-
 4. **Result Presentation**
    - Results aggregated and displayed in interactive UI
    - Export functionality generates CSV reports
@@ -191,6 +160,7 @@ graph TD
 ### API Integration Details
 
 **Salesforce REST API Endpoints Used:**
+
 - `/services/data/vXX.0/tooling/sobjects/Flow/` - Flow metadata retrieval
 - `/services/data/vXX.0/tooling/query/` - SOQL queries for Flow information
 - `/services/data/vXX.0/sobjects/` - Related object metadata when needed

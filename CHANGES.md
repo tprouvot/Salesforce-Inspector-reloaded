@@ -2,6 +2,7 @@
 
 ## Version 1.28
 
+- Fix Field Creation Permission Bugfix [feature 931](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/931) (contribution by [DivyanshuBist](https://github.com/DivyanshuBist))
 - Enable custom banner text on Sandbox banner
 - `Flow Scanner` Allow users to scan their flows based on default or customized rules (lib from Lightning Flow Scanner) contribution by [Camille Guillory](https://github.com/CamilleGuillory)
 - `Data Export` Allow users to reorganize and edit query tabs names [feature 950](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/950) request by [Scott Shapiro](https://github.com/sshapiro-articulate)

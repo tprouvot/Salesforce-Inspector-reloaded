@@ -1786,6 +1786,7 @@ class App extends React.Component {
         pageTitle: "Data Export",
         orgName: model.orgName,
         sfLink: model.sfLink,
+        sfHost: model.sfHost,
         spinnerCount: model.spinnerCount,
         userInitials: model.userInitials,
         userFullName: model.userFullName,
@@ -1826,17 +1827,40 @@ class App extends React.Component {
               h("button", {className: model.expandSavedOptions ? "slds-button slds-button_neutral toggle contract" : "slds-button slds-button_neutral toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"}))
             ),
           ),
-          h("div", {className: "query-options"},
-            h("label", {},
-              h("input", {type: "checkbox", checked: model.queryAll, onChange: this.onQueryAllChange, disabled: model.queryTooling}),
-              " ",
-              h("span", {}, "Deleted/Archived Records?")
+          h("div", {className: "slds-grid slds-grid_align-spread"},
+            h("div", {className: "slds-col slds-size_7-of-12"},
+              h("label", {className: "slds-checkbox_toggle slds-grid slds-m-right_x-large"},
+                h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Deleted/Archived Records"),
+                h("input", {
+                  type: "checkbox",
+                  name: "checkbox-toggle-queryAll",
+                  value: "checkbox-toggle-queryAll",
+                  role: "switch",
+                  checked: model.queryAll, onChange: this.onQueryAllChange, disabled: model.queryTooling
+                }),
+                h("span", {id: "checkbox-toggle-queryAll", className: "slds-checkbox_faux_container"},
+                  h("span", {className: "slds-checkbox_faux"}),
+                  h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                  h("span", {className: "slds-checkbox_off"}, "Disabled")
+                )
+              )
             ),
-            h("label", {title: "With the tooling API you can query more metadata, but you cannot query regular data"},
-              h("input", {type: "checkbox", checked: model.queryTooling, onChange: this.onQueryToolingChange, disabled: model.queryAll}),
-              " ",
-              h("span", {}, "Tooling API?")
-            ),
+            h("div", {className: "slds-col slds-col-size_5-of-12"},
+              h("label", {className: "slds-checkbox_toggle slds-grid slds-grid_align-end", title: "With the tooling API you can query more metadata, but you cannot query regular data"},
+              h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Tooling API"),
+              h("input", {
+                type: "checkbox",
+                name: "checkbox-toggle-tooling",
+                value: "checkbox-toggle-tooling",
+                role: "switch",
+                type: "checkbox", checked: model.queryTooling, onChange: this.onQueryToolingChange, disabled: model.queryAll
+              }),
+              h("span", {id: "checkbox-toggle-tooling", className: "slds-checkbox_faux_container"},
+                h("span", {className: "slds-checkbox_faux"}),
+                h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                h("span", {className: "slds-checkbox_off"}, "Disabled")
+              )
+            )),
           ),
         ),
         h("div", {
@@ -1928,10 +1952,16 @@ class App extends React.Component {
                 ))
             ),
           ),
-          h("div", {className: "autocomplete-results"},
-            model.autocompleteResults.results.map(r =>
-              h("div", {className: "autocomplete-result", key: r.value}, h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: r.autocompleteType + " " + r.dataType}, h("div", {className: "autocomplete-icon"}), r.value), " ")
-            )
+          h("div", {className: "autocomplete-results slds-m-top_small"},
+            model.autocompleteResults.results.map(r =>(
+            h("span", {className: "slds-pill slds-pill_link slds-m-vertical_xxx-small", key: r.value},
+              h("span", {className: "slds-pill__icon_container "  + r.autocompleteType + " " + r.dataType},
+                h("span", {className: "sfir-autocomplete-icon"})
+              ),
+              h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: "slds-pill__action slds-p-right_x-small"},
+                h("span", {className: "slds-pill__label"}, r.value)
+              )
+            )))
           ),
         ),
         h("div", {hidden: !model.showHelp, className: "slds-p-around_small"},

@@ -281,12 +281,6 @@ input:disabled {
   cursor: default;
 }
 
-button:disabled:hover,
-input:disabled:hover {
-  background-color: #fff;
-  color: #dddbda;
-}
-
 button:disabled > svg.button-icon {
   fill: #dddbda;
 }
@@ -298,12 +292,6 @@ button > svg.disabled {
 .highlighted {
   background-color: rgb(0, 112, 210);
   border-color: rgb(0, 112, 210);
-  color: #fff;
-}
-
-.highlighted:hover,
-.highlighted:active {
-  background-color: rgb(0, 95, 178);
   color: #fff;
 }
 
@@ -443,12 +431,6 @@ button,
   margin-right: 10px;
 }
 
-button:hover,
-.button:hover {
-  background-color: #f4f6f9;
-  color: #005fb2;
-}
-
 button.toggle {
   padding: 0 11px;
 }
@@ -461,11 +443,6 @@ button.toggle .button-icon {
   display: inline-block;
   width: 16px;
   height: 16px;
-}
-
-button.toggle:hover .button-icon,
-button.toggle:hover .button-toggle-icon {
-  background-color: #004487;
 }
 
 .flex-right button:last-child {
@@ -510,7 +487,6 @@ svg.button-icon {
 
 .autocomplete-results {
   overflow: hidden;
-  margin-top: 7px;
   display: flex;
   flex-wrap: nowrap;
 }
@@ -519,27 +495,13 @@ svg.button-icon {
   flex-wrap: wrap;
 }
 
-.autocomplete-results a {
-  border: 1px solid #dddbda;
-  border-radius: 0.25rem;
-  padding: 0px 4px;
-  text-decoration: none;
-  color: #006dcc;
-}
-
-.autocomplete-results a:hover,
-.autocomplete-results a:active {
-  background-color: #eff1f5;
-  color: #005fb2;
-}
-
 .autocomplete-result,
 .autocomplete-results span {
   margin: 0 4px 4px 0;
   white-space: nowrap;
 }
 
-.autocomplete-icon {
+.sfir-autocomplete-icon {
   display: inline-block;
   margin: 0px 2px -1px 1px;
   -webkit-mask-repeat: no-repeat;
@@ -553,112 +515,112 @@ svg.button-icon {
   font-style: italic;
 }
 
-.relationshipName .autocomplete-icon {
+.relationshipName .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/relate.svg);
   background-color: #0070d2;
 }
 
-.object .autocomplete-icon {
+.object .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/sobject.svg);
   background-color: #04844b;
 }
 
-.variable .autocomplete-icon {
+.variable .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/variable.svg);
 }
 
-.autocomplete-icon {
+.sfir-autocomplete-icon {
   -webkit-mask-image: url(images/quotation_marks.svg);
 }
 
-.null .autocomplete-icon {
+.null .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/steps.svg);
 }
 
-.fieldName .autocomplete-icon {
+.fieldName .sfir-autocomplete-icon {
   /* default icon */
   -webkit-mask-image: url(images/question_mark.svg);
 }
 
-.fieldName.reference .autocomplete-icon {
+.fieldName.reference .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/record_lookup.svg);
 }
 
-.fieldName.string .autocomplete-icon {
+.fieldName.string .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/string.svg);
 }
 
-.fieldName.id .autocomplete-icon {
+.fieldName.id .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/anchor.svg);
 }
 
-.fieldName.picklist .autocomplete-icon {
+.fieldName.picklist .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/picklist.svg);
 }
 
-.fieldName.multipicklist .autocomplete-icon {
+.fieldName.multipicklist .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/multi-picklist.svg);
 }
 
-.fieldName.boolean .autocomplete-icon {
+.fieldName.boolean .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/boolean.svg);
 }
 
-.fieldName.phone .autocomplete-icon {
+.fieldName.phone .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/call.svg);
 }
 
-.fieldName.textarea .autocomplete-icon {
+.fieldName.textarea .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/textarea.svg);
 }
 
-.fieldName.url .autocomplete-icon {
+.fieldName.url .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/link.svg);
 }
 
-.fieldName.int .autocomplete-icon,
-.fieldName.double .autocomplete-icon,
-.fieldName.long .autocomplete-icon {
+.fieldName.int .sfir-autocomplete-icon,
+.fieldName.double .sfir-autocomplete-icon,
+.fieldName.long .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/number.svg);
 }
 
-.fieldName.address .autocomplete-icon {
+.fieldName.address .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/home.svg);
 }
 
-.fieldName.datetime .autocomplete-icon {
+.fieldName.datetime .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/date-time.svg);
 }
 
-.fieldName.date .autocomplete-icon {
+.fieldName.date .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/date.svg);
 }
 
-.fieldName.currency .autocomplete-icon {
+.fieldName.currency .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/currency.svg);
 }
 
-.fieldName.email .autocomplete-icon {
+.fieldName.email .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/email.svg);
 }
 
-.fieldName.location .autocomplete-icon {
+.fieldName.location .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/checkin.svg);
 }
 
-.fieldName.percent .autocomplete-icon {
+.fieldName.percent .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/percent.svg);
 }
 
-.fieldName.encryptedstring .autocomplete-icon {
+.fieldName.encryptedstring .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/lock.svg);
 }
 
-.fieldName.time .autocomplete-icon {
+.fieldName.time .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/clock.svg);
 }
 
-.fieldName.complexvalue .autocomplete-icon {
+.fieldName.complexvalue .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/advanced_function.svg);
 }
 

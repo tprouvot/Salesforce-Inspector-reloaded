@@ -15,7 +15,6 @@ class Model {
     this.sfHost = sfHost;
     this.sfLink = "https://" + this.sfHost;
     this.userInfo = "...";
-    debugger
     this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
     this.userFullName = "";
     this.userInitials = "";
@@ -1930,6 +1929,7 @@ class App extends React.Component {
         pageTitle: "Options",
         orgName: model.orgName,
         sfLink: model.sfLink,
+        sfHost: model.sfHost,
         spinnerCount: model.spinnerCount,
         userInitials: model.userInitials,
         userFullName: model.userFullName,

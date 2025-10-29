@@ -166,7 +166,7 @@ function renderCell(rt, cell, td) {
     a.addEventListener("click", e => {
       e.preventDefault();
       let pop = document.createElement("div");
-      pop.className = "pop-menu slds-dropdown slds-dropdown_left slds-dropdown_actions";
+      pop.className = "slds-dropdown slds-dropdown_left slds-dropdown_actions";
       let ul = document.createElement("ul");
       ul.className = "slds-dropdown__list";
       pop.appendChild(ul);
@@ -633,7 +633,7 @@ export function initScrollTable(scroller) {
       //scrolled.style.width = totalWidth + "px";
 
       let table = document.createElement("table");
-      table.className = "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered";
+      table.className = "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-is-relative";
       let cellsVisible = false;
 
       // Ensure firstRowIdx never goes below headerRows
@@ -645,6 +645,9 @@ export function initScrollTable(scroller) {
         let row = data.table[r];
         let tr = document.createElement("tr");
         tr.className = "slds-line-height_reset";
+        tr.style.position = "sticky";
+        tr.style.top = "0";
+        tr.style.zIndex = "9";
         for (let c = firstColIdx; c < lastColIdx; c++) {
           if (colVisible[c] == 0) continue;
           let cell = row[c];

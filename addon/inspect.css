@@ -22,34 +22,6 @@ html {
   background-size: contain;
 }
 
-.sf-link,
-.sf-link:active,
-.sf-link:focus,
-.sf-link:hover {
-  margin-right: 1em;
-  background-color: rgb(6, 28, 63);
-  border-radius: 3px;
-  line-height: 1.8em;
-  text-decoration: none;
-  display: inline-block;
-  padding: 2px;
-  color: white;
-  padding-right: 1em;
-  margin-right: 4px;
-}
-
-.sf-link svg {
-  width: 1.8em;
-  height: 1.8em;
-  display: block;
-  margin-left: 1px;
-  margin-right: 1em;
-  float: left;
-  background-color: #ef7ead;
-  border-radius: 2px;
-  fill: white;
-}
-
 .value-text {
   word-wrap: break-word;
   white-space: pre-wrap;
@@ -96,95 +68,6 @@ tr.fieldHidden a[href] {
   /* To handle long words. This is not actually 200px but scales with the table. Table layout magic. */
 }
 
-.undo-button {
-  background-color: #eee;
-  border-radius: 3px;
-  width: 16px;
-  height: 16px;
-  display: inline-block;
-  box-shadow: 1px 1px 1px gray;
-  color: black;
-  text-decoration: none;
-  text-align: center;
-  vertical-align: top;
-  margin-top: 5px;
-}
-
-.undo-button[hidden] {
-  display: none;
-}
-
-.field-actions {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.actions-button {
-  width: 1.25rem;
-  height: 1.25rem;
-  line-height: 1;
-  background-color: #fff;
-  vertical-align: middle;
-  color: #706e6b;
-  border: 1px solid #dddbda;
-  transition: border 0.15s linear;
-  position: relative;
-  display: inline-block;
-  padding: 0;
-  border-radius: 0.25rem;
-  -webkit-appearance: none;
-  white-space: normal;
-  cursor: pointer;
-}
-
-.actions-button:hover,
-.actions-button:active,
-.actions-button:focus {
-  color: #005fb2;
-}
-
-.actions-button:focus {
-  outline: 0;
-  box-shadow: 0 0 3px #0070d2;
-}
-
-.actions-button[disabled] {
-  opacity: 0.5;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.actions-button[disabled]:hover,
-.actions-button[disabled]:active,
-.actions-button[disabled]:focus {
-  color: #706e6b;
-  border-color: #dddbda;
-  box-shadow: none;
-}
-
-.actions-icon {
-  width: 0.75rem;
-  height: 0.75rem;
-  overflow: hidden;
-  fill: #b0adab;
-}
-
-.table-settings-button {
-  border: 0px solid transparent;
-  padding: 0px 3px 0px 0px;
-}
-
-.table-settings-icon {
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 1rem;
-  background-color: #706e6b;
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  -webkit-mask-image: url(images/settings.svg);
-  margin: 3px 0px -3px 0px;
-}
-
 th[tabindex] {
   cursor: pointer;
 }
@@ -202,34 +85,4 @@ th[tabindex] {
   width: 0.875rem;
   height: 0.875rem;
   fill: currentColor;
-}
-
-.child-actions {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.pop-menu-container {
-  position: relative;
-}
-
-.pop-menu {
-  z-index: 10;
-  position: absolute;
-  border: 1px solid gray;
-  background-color: white;
-  padding: 5px 10px;
-  margin-left: 5px;
-  margin-top: -5px;
-}
-
-.pop-menu a {
-  display: block;
-}
-
-.object-actions .pop-menu,
-.field-actions .pop-menu,
-.child-actions .pop-menu {
-  right: 0;
-  text-align: right;
 }

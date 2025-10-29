@@ -12,6 +12,7 @@ let h = React.createElement;
  * @param {string} [props.subTitle] - Optional subtitle displayed in the center (flexi-truncate)
  * @param {string} props.orgName - The Salesforce org name
  * @param {string} props.sfLink - Link to the Salesforce org home
+ * @param {string} props.sfHost - The Salesforce host (used for localStorage keys)
  * @param {number} props.spinnerCount - Number of active loading operations
  * @param {string} props.userInitials - User's initials for avatar
  * @param {string} props.userFullName - User's full name
@@ -25,6 +26,7 @@ let h = React.createElement;
  *   pageTitle: "Data Export",
  *   orgName: model.orgName,
  *   sfLink: model.sfLink,
+ *   sfHost: model.sfHost,
  *   spinnerCount: model.spinnerCount,
  *   userInitials: model.userInitials,
  *   userFullName: model.userFullName,
@@ -48,6 +50,7 @@ export function PageHeader(props) {
     pageTitle,
     orgName,
     sfLink,
+    sfHost,
     spinnerCount = 0,
     userInitials,
     userFullName,
@@ -57,8 +60,26 @@ export function PageHeader(props) {
     subTitle
   } = props;
 
+  // Check if header color override is enabled and get custom color
+  let customHeaderStyle = {};
+  try {
+    const overrideColorsOption = JSON.parse(localStorage.getItem("overrideColorsOption") || "[]");
+    const shouldOverride = overrideColorsOption.find(item => item.name === 'header')?.checked;
+    if (shouldOverride && sfHost) {
+      const customColor = localStorage.getItem(sfHost + "_customFavicon");
+      if (customColor) {
+        customHeaderStyle = {
+          backgroundColor: customColor
+        };
+      }
+    }
+  } catch (e) {
+    // If parsing fails, just use default styles
+    console.error("Error reading color override settings:", e);
+  }
+
   return h("div", {className: "slds-builder-header_container"},
-    h("header", {className: "slds-builder-header"},
+    h("header", {className: "slds-builder-header sfir-header-override", style: customHeaderStyle},
       // Left side: Org Badge
       h("div", {className: "slds-builder-header__item"},
         h("div", {className: "slds-builder-header__item-label"},
@@ -105,11 +126,12 @@ export function PageHeader(props) {
       // Right side: Utilities
       h("div", {className: "slds-builder-header__item slds-builder-header__utilities"},
         // Spinner (always present)
-        h("div", {className: "slds-builder-header__utilities-item slds-m-right_large"},
+        spinnerCount == 0 ? null :
+        h("div", {className: "slds-builder-header__utilities-item slds-m-horizontal_small  slds-p-horizontal_x-small"},
           h("div", {className: "slds-is-relative"},
             h("div", {
               role: "status", 
-              className: `slds-spinner slds-spinner_small slds-spinner_inverse slds-m-right_medium ${spinnerCount == 0 ? "sfir-hidden" : ""}`
+              className: `slds-spinner slds-spinner_small slds-spinner_inverse`
             },
               h("span", {className: "slds-assistive-text"}, "Loading"),
               h("div", {className: "slds-spinner__dot-a"}),

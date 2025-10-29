@@ -52,7 +52,7 @@ class Model {
       //change background color for production
       document.body.classList.add("prod");
     }
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
+    this.spinFor("retrieving user info", sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userFullName = res.userFullName;
       this.userInitials = this.userFullName.split(' ').map(n => n[0]).join('');
       this.userName = res.userName;
@@ -1665,8 +1665,8 @@ class App extends React.Component {
     const utilityItems = [
       // Search filter (conditional)
       model.useTab != "all" ? null :
-        h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small"},
-          h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-right_x-small"},
+        h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"},
+          h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left"},
             h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", style: {top: "40%"}},
               h("use", {xlinkHref: "symbols.svg#search"})
             ),
@@ -1679,7 +1679,7 @@ class App extends React.Component {
           )
         ),
       // Action buttons
-      h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-right_small"},
+      h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"},
         h("div", {className: "slds-media__body"}, 
           h("span", {className: "slds-button-group object-actions"},
             model.editMode == null && model.recordData && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
@@ -1730,6 +1730,7 @@ class App extends React.Component {
           subTitle: model.objectName() + " " + model.recordHeading(),
           orgName: model.orgName,
           sfLink: model.sfLink,
+          sfHost: model.sfHost,
           spinnerCount: model.spinnerCount,
           userInitials: model.userInitials,
           userFullName: model.userFullName,
@@ -1847,16 +1848,20 @@ class ColumnVisibiltyToggle extends React.Component {
   }
   render() {
     let {rowList, name, disabled} = this.props;
-    return h("li", {}, 
-    h("label", {className: "menu-item"},
-      h("input", {
-        type: "checkbox",
-        checked: rowList.selectedColumnMap.has(name),
-        onChange: this.onShowColumnChange,
-        disabled
-      }),
-      rowList.createColumn(name).label
-    ));
+    return h("li", {},
+      h("div", {className: "slds-checkbox slds-p-bottom_xx-small"},
+        h("input", {
+          type: "checkbox",
+          checked: rowList.selectedColumnMap.has(name),
+          onChange: this.onShowColumnChange,
+          disabled
+        }),
+        h("label", {className: "slds-checkbox__label", htmlFor: "checkbox-unique-id-81"},
+          h("span", {className: "slds-checkbox_faux"}),
+          h("span", {className: "slds-form-element__label slds-p-left_x-small"}, rowList.createColumn(name).label)
+        )
+      )
+    );
   }
 }
 
@@ -1931,14 +1936,22 @@ class RowTable extends React.Component {
             }
           }),
           h("th", {className: actionsColumn.className, tabIndex: 0},
-            h("button", {className: "table-settings-button", onClick: this.onToggleTableSettings},
-              h("div", {className: "table-settings-icon"})
+            h("button", {className: "slds-button slds-button_icon", onClick: this.onToggleTableSettings},
+              h("svg", {className: "slds-button__icon"},
+                h("use", {xlinkHref: "symbols.svg#settings"})
+              )
             ),
-            this.tableSettingsOpen && h("div", {className: "pop-menu-container"},
-              h("div", {className: "pop-menu"},
-                h("a", {className: "table-settings-link", onClick: this.onCopyTable}, "Copy Table"),
-                h("a", {className: "table-settings-link", onClick: this.onDownloadExcel}, "Download CSV"),
-                h("a", {className: "table-settings-link", onClick: this.onClickTableBorderSettings}, this.state.showOrHideBorders),
+            this.tableSettingsOpen && h("div", {className: "slds-dropdown slds-dropdown_right"},
+              h("ul", {className: "slds-dropdown__list"},
+                h("li", {className: "slds-dropdown__item"},
+                  h("a", {className: "table-settings-link", onClick: this.onCopyTable}, "Copy Table")
+                ),
+                h("li", {className: "slds-dropdown__item"},
+                  h("a", {className: "table-settings-link", onClick: this.onDownloadExcel}, "Download CSV")
+                ),
+                h("li", {className: "slds-dropdown__item"},
+                  h("a", {className: "table-settings-link", onClick: this.onClickTableBorderSettings}, this.state.showOrHideBorders)
+                )
               )
             ),
           ),
@@ -2088,7 +2101,11 @@ class FieldValueCell extends React.Component {
     if (row.isEditing()) {
       return h("td", {className: col.className},
         h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
-        h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "undo-button"}, "\u21B6")
+        h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "slds-button slds-button_icon slds-align-top slds-button_icon-x-small"}, 
+          h("svg", {className: "slds-button__icon slds-button__icon_hint slds-button__icon_small"},
+            h("use", {xlinkHref: "symbols.svg#undo"})
+          )
+        )
       );
     } else if (row.isId()) {
       return h("td", {className: col.className, onDoubleClick: this.onTryEdit},
@@ -2230,7 +2247,7 @@ class ChildObjectCell extends React.Component {
 let TypedValue = props =>
   h("div", {
     className:
-      "value-text "
+      "slds-cell_action-mode value-text "
       + (typeof props.value == "string" ? "value-is-string " : "")
       + (typeof props.value == "number" ? "value-is-number " : "")
       + (typeof props.value == "boolean" ? "value-is-boolean " : "")
@@ -2270,18 +2287,26 @@ class FieldActionsCell extends React.Component {
   render() {
     let {row, className} = this.props;
     return h("td", {className},
-      h("div", {className: "pop-menu-container"},
-        h("button", {className: "actions-button", onClick: this.onToggleFieldActions},
-          h("svg", {className: "actions-icon"},
+      
+        h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-x-small", onClick: this.onToggleFieldActions},
+          h("svg", {className: "slds-button__icon slds-button__icon_hint slds-button__icon_small"},
             h("use", {xlinkHref: "symbols.svg#down"})
           ),
         ),
-        row.fieldActionsOpen && h("div", {className: "pop-menu"},
-          h("a", {href: "about:blank", onClick: this.onOpenDetails}, "All field metadata"),
-          row.fieldSetupLinks && h("a", {href: row.fieldSetupLinks.lightningSetupLink}, "Field setup (Lightning)"),
-          row.fieldSetupLinks && h("a", {href: row.fieldSetupLinks.classicSetupLink}, "Field setup (Classic)")
+        row.fieldActionsOpen && h("div", {className: "slds-dropdown slds-dropdown_right"},
+          h("ul", {className: "slds-dropdown__list"},
+            h("li", {className: "slds-dropdown__item"},
+              h("a", {href: "about:blank", onClick: this.onOpenDetails}, "All field metadata")
+            ),
+            row.fieldSetupLinks && h("li", {className: "slds-dropdown__item"},
+              h("a", {href: row.fieldSetupLinks.lightningSetupLink}, "Field setup (Lightning)")
+            ),
+            row.fieldSetupLinks && h("li", {className: "slds-dropdown__item"},
+              h("a", {href: row.fieldSetupLinks.classicSetupLink}, "Field setup (Classic)")
+            )
+          )
         )
-      )
+      
     );
   }
 }

@@ -340,7 +340,7 @@ class App extends React.PureComponent {
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ) : null,
             h("div", {className: "slds-m-bottom_xx-small"},
-              h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Field Crea", h("u", {}, "t"), "or (beta)"))
+              h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Field Crea", h("u", {}, "t"), "or"))
             ),
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "dependenciesExplorerBtn", href: "dependencies-explorer.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Dependencies Explorer"))

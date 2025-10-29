@@ -1175,6 +1175,41 @@ class Model {
     }
   }
 
+  updateTabName(index, newName) {
+    if (this.queryTabs[index] && newName.trim()) {
+      let trimmedName = newName.trim();
+      // Check if there are any other tabs with the same name
+      let count = 1;
+      let finalName = trimmedName;
+      while (this.queryTabs.some((tab, i) => i !== index && tab.name === finalName)) {
+        finalName = `${trimmedName} (${count})`;
+        count++;
+      }
+      this.queryTabs[index].name = finalName;
+      this.saveQueryTabs();
+      this.didUpdate();
+    }
+  }
+
+  reorderTabs(fromIndex, toIndex) {
+    if (fromIndex >= 0 && toIndex >= 0 && fromIndex < this.queryTabs.length && toIndex < this.queryTabs.length && fromIndex !== toIndex) {
+      const [movedTab] = this.queryTabs.splice(fromIndex, 1);
+      this.queryTabs.splice(toIndex, 0, movedTab);
+
+      // Update active tab index if the active tab was moved
+      if (this.activeTabIndex === fromIndex) {
+        this.activeTabIndex = toIndex;
+      } else if (this.activeTabIndex > fromIndex && this.activeTabIndex <= toIndex) {
+        this.activeTabIndex--;
+      } else if (this.activeTabIndex < fromIndex && this.activeTabIndex >= toIndex) {
+        this.activeTabIndex++;
+      }
+
+      this.saveQueryTabs();
+      this.didUpdate();
+    }
+  }
+
   getCurrentTabQuery() {
     return this.queryTabs[this.activeTabIndex]?.query || "";
   }
@@ -1352,6 +1387,19 @@ class App extends React.Component {
     this.onRemoveTab = this.onRemoveTab.bind(this);
     this.onTabClick = this.onTabClick.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
+    this.onTabNameEdit = this.onTabNameEdit.bind(this);
+    this.onTabNameSubmit = this.onTabNameSubmit.bind(this);
+    this.onTabDragStart = this.onTabDragStart.bind(this);
+    this.onTabDragOver = this.onTabDragOver.bind(this);
+    this.onTabDrop = this.onTabDrop.bind(this);
+
+    // Tab editing state
+    this.state = {
+      ...this.state,
+      editingTabIndex: -1,
+      editingTabName: "",
+      draggedTabIndex: -1
+    };
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1366,7 +1414,7 @@ class App extends React.Component {
     model.queryAutocompleteHandler();
     model.didUpdate();
   }
-  onPrefHideRelationsChange(e) {
+  onPrefHideRelationsChange() {
     let {model} = this.props;
     model.prefHideRelations = !model.prefHideRelations;
     this.onExport();
@@ -1539,6 +1587,49 @@ class App extends React.Component {
     model.queryAutocompleteHandler();
     model.didUpdate();
   }
+
+  onTabNameEdit(e, index) {
+    e.stopPropagation();
+    let {model} = this.props;
+    this.setState({
+      editingTabIndex: index,
+      editingTabName: model.queryTabs[index].name
+    });
+  }
+
+  onTabNameSubmit(e, index) {
+    e.preventDefault();
+    e.stopPropagation();
+    let {model} = this.props;
+    if (this.state.editingTabName.trim()) {
+      model.updateTabName(index, this.state.editingTabName);
+    }
+    this.setState({
+      editingTabIndex: -1,
+      editingTabName: ""
+    });
+  }
+
+  onTabDragStart(e, index) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", e.target);
+    this.setState({draggedTabIndex: index});
+  }
+
+  onTabDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
+
+  onTabDrop(e, index) {
+    e.preventDefault();
+    let {model} = this.props;
+    const fromIndex = this.state.draggedTabIndex;
+    if (fromIndex !== -1 && fromIndex !== index) {
+      model.reorderTabs(fromIndex, index);
+    }
+    this.setState({draggedTabIndex: -1});
+  }
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
@@ -1700,13 +1791,46 @@ class App extends React.Component {
           model.queryTabs.map((tab, index) =>
             h("div", {
               key: index,
-              className: `query-tab ${index === model.activeTabIndex ? "active" : ""}`,
-              onClick: e => this.onTabClick(e, index)
+              className: `query-tab ${index === model.activeTabIndex ? "active" : ""} ${this.state.draggedTabIndex === index ? "dragging" : ""}`,
+              onClick: e => this.onTabClick(e, index),
+              draggable: true,
+              onDragStart: e => this.onTabDragStart(e, index),
+              onDragOver: e => this.onTabDragOver(e),
+              onDrop: e => this.onTabDrop(e, index)
             },
-            h("span", {}, tab.name),
+            this.state.editingTabIndex === index
+              ? h("input", {
+                type: "text",
+                className: "query-tab-name-input",
+                value: this.state.editingTabName,
+                onChange: e => this.setState({editingTabName: e.target.value}),
+                onBlur: e => this.onTabNameSubmit(e, index),
+                onKeyPress: e => {
+                  if (e.key === "Enter") {
+                    this.onTabNameSubmit(e, index);
+                  }
+                },
+                onKeyDown: e => {
+                  if (e.key === "Escape") {
+                    this.setState({
+                      editingTabIndex: -1,
+                      editingTabName: ""
+                    });
+                  }
+                  e.stopPropagation();
+                },
+                autoFocus: true,
+                onClick: e => e.stopPropagation()
+              })
+              : h("span", {
+                className: "query-tab-name",
+                onDoubleClick: e => this.onTabNameEdit(e, index),
+                title: "Double-click to edit tab name"
+              }, tab.name),
             h("span", {
               className: "query-tab-close",
-              onClick: e => this.onRemoveTab(e, index)
+              onClick: e => this.onRemoveTab(e, index),
+              title: "Close tab"
             }, "×")
             )
           ),

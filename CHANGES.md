@@ -1,4 +1,4 @@
-#@ Release Notes
+# Release Notes
 
 ## Version 1.28
 
@@ -305,3 +305,4 @@
 - Remove extra comma when autocomplete query in data export, or select a field from suggested fields just before 'FROM' keyword.
 - Add "Copy Id" option when clicking on a SObject field or Id in data export page.
 - Integrate UI updates from [Garywoo's fork](https://github.com/Garywoo/Chrome-Salesforce-inspector)
+

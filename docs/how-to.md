@@ -31,32 +31,34 @@ From now when the token will be expired, this banner will show up and provide a 
 
 If you are a Firefox user, or if you want to have full control over the connected app settings, you can also use your own external client app by following these instructions:
 
-### For Firefox users
+### External Client App Creation
 
-_The creation of Connected Apps is soon to be deprecated, so we will cover the creation of the new standard using an external Client App._
+The creation of Connected Apps is soon to be deprecated (planned for Spring 26'), so we will cover the creation of the new standard using an external Client App.
 
 1. Navigate to Setup | External Client App > New External Client App.
 2. Fill in the required details:
     * External Client App Name
     * Contact Email
     * Check `Enable OAuth` under the API (Enable OAuth Settings) accordion.
-    * Set the Callback URL to `chrome-extension://[extension-id]/data-export.html`, replacing [extension-id] with the extension ID found in the URL of any configuration page of the extension (e.g., by clicking `See All Data`).
+    * Set the Callback URL to `[browser]-extension://[extension-id]/data-export.html`, replacing [browser] with `chrome` or `moz` and [extension-id] with the extension ID found in the URL of any configuration page of the extension (e.g., by clicking `See All Data`).
 3. Configure the OAuth Scopes:
     * Select `Manage user data via APIs (api)`.
     * Select `Manage user data via Web browsers (web)`.
-    <img alt="Connected App" src="../assets/images/how-to/external-client-app.png" height="200">
-    >**Known issue** 
-    >If you don't select the `web` scope, you might not be able to use the Incognito mode for login as. See the detail issue on [troubleshooting](https://tprouvot.github.io/Salesforce-Inspector-reloaded/troubleshooting/#logging-as-incognito-issue-with-connectedapp) page
+
+    <img alt="External Connected App" src="./assets/images/how-to/external-client-app.png" width="849">
+
+    >**Warning**
+    >If you don't select the `web` scope, you might not be able to use the Login As Incognito.
 4. Get Consumer Key and save it in the Options page
 
     <img alt="Option button" width="276" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/14cc8aac-5ffc-4747-9da1-ba892231ace1">
 
 5. Enter the consumer key
-    
+
     <img alt="Client Id" width="849" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/b1edfea1-5a56-4f42-8945-e452a7ab5cf5">
-    
+
 6. Refresh page and generate new token
-    
+
     <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
 
 ## Migrate saved queries from legacy extension to Salesforce Inspector Reloaded

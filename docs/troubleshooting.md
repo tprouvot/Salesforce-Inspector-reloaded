@@ -50,3 +50,15 @@ If the error disappeared, clear site data to solve the issue in normal navigatio
 ### Managed Application Installation Error
 
 When installing the default connected app when `API Access Control` is enabled, if you face the error `Managed Application Installation Error` you may have an existing connected app named `Salesforce Inspector reloaded`.
+
+### Logging as incognito issue with ConnectedApp
+
+When using the default Connected App and clicking the `Generate New Token` button, it is possible that the `LoginAs Incognito` mode will no longer function as expected, and you will be redirected to a login page instead of being automatically logged in.
+
+<img alt="Connected App" src="../assets/images/troubleshooting/login-as-incognito-issue.png" height="300">
+
+This issue stems from the standard Salesforce Inspector Reloaded Connected App, which does not utilize the correct OAuth scope. As a workaround, you can create a custom `External Client App` (since the creation of Connected Apps is soon to be deprecated).
+
+To create a custom `External Client App`, follow these [steps](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#for-firefox-users).
+
+ 

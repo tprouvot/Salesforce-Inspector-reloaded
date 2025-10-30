@@ -691,9 +691,17 @@ class AllDataBox extends React.PureComponent {
 class AllDataBoxUsers extends React.PureComponent {
   constructor(props) {
     super(props);
+    // Load user search preferences early so they are available in render and getMatches
+    const userSearchFields = this.getUserSearchFieldsFromLocalStorage();
+    const excludeInactiveUsersFromSearch = localStorage.getItem("excludeInactiveUsersFromSearch") == "true";
+    const excludePortalUsersFromSearch = localStorage.getItem("excludePortalUsersFromSearch") == "true";
+
     this.state = {
       selectedUser: null,
       selectedUserId: null,
+      userSearchFields,
+      excludeInactiveUsersFromSearch,
+      excludePortalUsersFromSearch,
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
@@ -711,17 +719,38 @@ class AllDataBoxUsers extends React.PureComponent {
     }
   }
 
+  getUserSearchFieldsFromLocalStorage() {
+    const defaultFields = ["Username", "Email", "Alias", "Name"].map(field => ({ name: field, label: field, checked: true }));
+    const userDefaultSearchFieldsOptions = localStorage.getItem("userDefaultSearchFieldsOptions");
+    console.log("userDefaultSearchFieldsOptions", userDefaultSearchFieldsOptions);
+    if (!userDefaultSearchFieldsOptions) {
+      return defaultFields;
+    }
+    try {
+      const parsed = JSON.parse(userDefaultSearchFieldsOptions);
+      console.log("parsed", parsed);
+      if (!Array.isArray(parsed)) {
+        return defaultFields;
+      }
+      const enabledSearchOptions= parsed.filter(field => field && field.name && field.checked===true);
+      console.log("enabledSearchOptions", enabledSearchOptions);
+      return enabledSearchOptions.length > 0 ? enabledSearchOptions: defaultFields;
+    } catch (e) {
+      return defaultFields;
+    }
+  }
+
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
     userQuery = userQuery.trim();
     if (!userQuery) {
       return [];
-    }
-
+    }    
     const escapedUserQuery = userQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
     const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const queryFrom = "from User where (username like '%" + escapedUserQuery + "%' or name like '%" + escapedUserQuery + "%' or Profile.Name like '%" + escapedUserQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
+    const userSearchWhereClause = this.getUserSearchWhereClause(escapedUserQuery);
+    const queryFrom = "from User where " + userSearchWhereClause + " order by IsActive DESC, LastLoginDate limit 100";
     const compositeQuery = {
       "compositeRequest": [
         {
@@ -748,6 +777,25 @@ class AllDataBoxUsers extends React.PureComponent {
       setIsLoading(false);
     }
 
+  }
+
+  getUserSearchWhereClause(escapedUserQuery) {
+    const {userSearchFields, excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.state;
+
+    let userSearchWhereClause = "(";
+    userSearchFields.forEach(field => {
+      userSearchWhereClause += field.name + " LIKE '%" + escapedUserQuery + "%' OR ";
+    });
+    userSearchWhereClause = userSearchWhereClause.slice(0, -4);
+    userSearchWhereClause += ")";
+    if (excludeInactiveUsersFromSearch) {
+      userSearchWhereClause += " AND IsActive = true";
+    }
+    if (excludePortalUsersFromSearch) {
+      userSearchWhereClause += " AND IsPortalEnabled = false";
+    }
+    console.log("userSearchWhereClause", userSearchWhereClause);
+    return userSearchWhereClause;
   }
 
   async onDataSelect(userRecord) {
@@ -835,10 +883,13 @@ class AllDataBoxUsers extends React.PureComponent {
   render() {
     let {selectedUser} = this.state;
     let {sfHost, linkTarget, contextOrgId, contextUserId, contextPath} = this.props;
+    const placeholderFields = (this.state.userSearchFields && this.state.userSearchFields.length)
+      ? (this.state.userSearchFields.map(field => field.label)).join(", ")
+      : "Username, Email, Alias, Name";
 
     return (
       h("div", {ref: "usersBox", className: "users-box"},
-        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: "Username, email, alias, name or profile name of user", resultRender: this.resultRender}),
+        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: placeholderFields + " of user", resultRender: this.resultRender}),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
             ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})

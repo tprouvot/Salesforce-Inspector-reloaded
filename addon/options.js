@@ -119,8 +119,14 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
           {option: Option, props: {type: "text", title: "Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
           {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
-          {option: Option, props: {type: "toggle", title: "Exclude portal users from search", key: "excludePortalUsersFromSearch", default: false, tooltip: "Exclude portal users from search"}},
-          {option: Option, props: {type: "toggle", title: "Exclude inactive users from search", key: "excludeInactiveUsersFromSearch", default: false, tooltip: "Exclude inactive users from search"}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Exclude users from search",
+              key: "userSearchExclusions",
+              checkboxes: [
+                {label: " Exclude Portal users", name: "portal", checked: false},
+                {label: " Exclude Inactive users", name: "inactive", checked: false}
+              ]}
+          },
           {option: MultiCheckboxButtonGroup,
             props: {title: "User Default Search Fields",
               key: "userDefaultSearchFieldsOptions",
@@ -1020,6 +1026,27 @@ class MultiCheckboxButtonGroup extends React.Component {
     this.title = props.title;
     this.key = props.storageKey;
     this.unique = props.unique || false;
+
+    // Migrate from old keys if migration map is provided and new key doesn't exist
+    if (props.migrateFromOldKeys && !localStorage.getItem(this.key)) {
+      const migratedCheckboxes = props.checkboxes.map((checkbox) => {
+        // Find if there's an old key that maps to this checkbox's name
+        const oldKey = Object.keys(props.migrateFromOldKeys).find(
+          oldKey => props.migrateFromOldKeys[oldKey] === checkbox.name
+        );
+        if (oldKey && localStorage.getItem(oldKey)) {
+          const oldValue = localStorage.getItem(oldKey) === "true";
+          // Delete old key after reading
+          localStorage.removeItem(oldKey);
+          return {...checkbox, checked: oldValue};
+        }
+        return checkbox;
+      });
+      // Save migrated data to new key
+      if (migratedCheckboxes.some(cb => cb.checked !== (props.checkboxes.find(pcb => pcb.name === cb.name)?.checked || false))) {
+        localStorage.setItem(this.key, JSON.stringify(migratedCheckboxes));
+      }
+    }
 
     // Load checkboxes from localStorage or default to props.checkboxes
     const storedCheckboxes = localStorage.getItem(this.key) ? JSON.parse(localStorage.getItem(this.key)) : [];

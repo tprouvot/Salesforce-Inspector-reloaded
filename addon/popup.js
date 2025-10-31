@@ -693,8 +693,7 @@ class AllDataBoxUsers extends React.PureComponent {
     super(props);
     // Load user search preferences early so they are available in render and getMatches
     const userSearchFields = this.getUserSearchFieldsFromLocalStorage();
-    const excludeInactiveUsersFromSearch = localStorage.getItem("excludeInactiveUsersFromSearch") == "true";
-    const excludePortalUsersFromSearch = localStorage.getItem("excludePortalUsersFromSearch") == "true";
+    const {excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.getUserSearchExclusionsFromLocalStorage();
 
     this.state = {
       selectedUser: null,
@@ -705,6 +704,27 @@ class AllDataBoxUsers extends React.PureComponent {
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
+  }
+
+  getUserSearchExclusionsFromLocalStorage() {
+    // Try to read from new MultiCheckboxButtonGroup format first
+    const userSearchExclusions = localStorage.getItem("userSearchExclusions");
+    const defaultExclusions = {
+      excludePortalUsersFromSearch: false,
+      excludeInactiveUsersFromSearch: false
+    };
+    if (!userSearchExclusions) {
+      return defaultExclusions;
+    }
+    try {
+      const parsed = JSON.parse(userSearchExclusions);
+      return {
+        excludePortalUsersFromSearch: parsed.find(cb => cb.name === "portal")?.checked || false,
+        excludeInactiveUsersFromSearch: parsed.find(cb => cb.name === "inactive")?.checked || false
+      };
+    } catch (e) {
+      return defaultExclusions;
+    }
   }
 
   componentDidMount() {
@@ -722,18 +742,15 @@ class AllDataBoxUsers extends React.PureComponent {
   getUserSearchFieldsFromLocalStorage() {
     const defaultFields = ["Username", "Email", "Alias", "Name"].map(field => ({ name: field, label: field, checked: true }));
     const userDefaultSearchFieldsOptions = localStorage.getItem("userDefaultSearchFieldsOptions");
-    console.log("userDefaultSearchFieldsOptions", userDefaultSearchFieldsOptions);
     if (!userDefaultSearchFieldsOptions) {
       return defaultFields;
     }
     try {
       const parsed = JSON.parse(userDefaultSearchFieldsOptions);
-      console.log("parsed", parsed);
       if (!Array.isArray(parsed)) {
         return defaultFields;
       }
       const enabledSearchOptions= parsed.filter(field => field && field.name && field.checked===true);
-      console.log("enabledSearchOptions", enabledSearchOptions);
       return enabledSearchOptions.length > 0 ? enabledSearchOptions: defaultFields;
     } catch (e) {
       return defaultFields;
@@ -794,7 +811,6 @@ class AllDataBoxUsers extends React.PureComponent {
     if (excludePortalUsersFromSearch) {
       userSearchWhereClause += " AND IsPortalEnabled = false";
     }
-    console.log("userSearchWhereClause", userSearchWhereClause);
     return userSearchWhereClause;
   }
 

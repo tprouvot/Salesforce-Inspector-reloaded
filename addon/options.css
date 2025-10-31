@@ -162,44 +162,154 @@ body {
   width: 24px;
   height: 24px;
 }
-button,
-.button {
+
+.beta-badge {
+  background-color: #ff6b35;
+  color: white;
+  font-size: 0.7em;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.severity-select {
+  min-width: 110px;
+  margin-left: 12px;
+  font-weight: bold;
+  border-radius: 4px;
   border: 1px solid #dddbda;
+  padding: 0 8px;
   height: 32px;
-  display: inline-block;
-  text-decoration: none;
-  background-color: white;
-  padding: 0 16px;
+}
+
+.severity-error {
+  color: #c23934;
+  background: #fdeaea;
+  border-color: #c23934;
+}
+.severity-warning {
+  color: #8a6d1b;
+  background: #fff8e1;
+  border-color: #ffb75d;
+}
+.severity-note {
   color: #0070d2;
-  cursor: pointer;
-  outline: none;
-  position: relative;
-  line-height: 32px;
-  border-radius: 0.25rem;
-  margin-right: 10px;
+  background: #e3f2fd;
+  border-color: #0070d2;
+}
+
+/* Enhanced Option Component Styles */
+.enhanced-option-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 6px 12px;
+  min-height: 40px;
+  background: #fff;
+  transition: background 0.12s;
+}
+
+.enhanced-option-row:hover {
+  background: #f7faff;
+}
+
+.enhanced-option-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.enhanced-option-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.enhanced-option-title-text {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.875rem;
+  margin: 0;
   white-space: nowrap;
 }
 
-button:hover,
-.button:hover {
-  background-color: #f4f6f9;
-  color: #005fb2;
-}
-.button-brand {
-  background-color: #0070d2;
-  border-color: #0070d2;
-  color: #fff;
+.enhanced-option-description-container {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
 }
 
-.button-brand:focus:not([disabled]),
-.button-brand:hover:not([disabled]) {
-  background-color: #005fb2;
-  border-color: #005fb2;
-  color: #fff;
+.enhanced-option-description {
+  font-size: 0.83rem;
+  color: #6c757d;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
 }
 
-.button-brand:active:not([disabled]) {
-  background-color: #005fb2;
-  border-color: #005fb2;
-  color: #fff;
+.enhanced-option-description.expanded {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: initial;
+  max-height: none;
+}
+
+.enhanced-option-expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.enhanced-option-expand-btn:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.expand-icon {
+  transition: transform 0.2s ease;
+  fill: #6c757d;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.enhanced-option-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.enhanced-option-input {
+  min-width: 120px;
+  max-width: 180px;
+}
+
+/* Tooltips use fixed positioning to escape container bounds */
+.slds-popover_tooltip {
+  position: fixed !important;
+  z-index: 10000;
 }

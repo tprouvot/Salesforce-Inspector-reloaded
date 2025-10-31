@@ -1,13 +1,14 @@
 # Event Monitor Page
 
 ## Overview
-The Event Monitor page allows users to subscribe to and display Salesforce Platform Events in real-time. It supports Custom Channel, Standard and Custom Platform Events. The page uses the CometD library to connect to Salesforce and stream events directly to the user's browser.
+The Event Monitor page allows users to subscribe to and display Salesforce Platform Events in real-time. It supports Change Events, Custom Channel, Standard and Custom Platform Events. The page uses the CometD library to connect to Salesforce and stream events directly to the user's browser.
 
 ![Event Monitor](https://github.com/user-attachments/assets/9cd65852-9171-4e5f-9964-fc09851ab37d)
 
 
 ## Key Features
-- **Subscribe to Platform Events:** Users can select a channel (Standard or Custom Platform Events) and subscribe to it to receive live updates.
+
+- **Subscribe to Platform Events:** Users can select or manually specify a channel and subscribe to it to receive live updates.
 - **View Events:** Events are displayed in a structured format, allowing users to monitor event data as it arrives.
 - **Filter Events:** Users can filter events to hide or show specific events based on certain criteria, and view the count of currently displayed events.
 - **Replay Events:** Users can specify a `Replay From` value to replay past events from a specific point in time.

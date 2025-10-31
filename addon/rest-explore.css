@@ -122,6 +122,20 @@ textarea[hidden] {
   display: none;
 }
 
+.help-text {
+  background: #fff;
+  border: 1px solid #dddbda;
+  padding: 0 15px;
+  border-radius: 0.25rem;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+#query {
+  height: 5em;
+  min-height: 7em;
+}
+
 #result-area {
   flex: 1 1 0;
   margin-bottom: 12px;

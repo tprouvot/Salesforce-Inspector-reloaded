@@ -1,7 +1,11 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
+import {copyToClipboard} from "./data-load.js";
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
+
+// Constants
+const GET_FIELD_USAGE_LABEL = "Get field usage";
 
 class Model {
   constructor(sfHost) {
@@ -84,7 +88,7 @@ class Model {
     let parts;
     if (this.recordData) {
       if (!this.recordName){
-        let fieldName = this.recordData.Name ? "Name" : this.objectData.fields.find(field => field.nameField).name;
+        let fieldName = this.recordData.Name ? "Name" : (this.objectData?.fields.find(field => field.nameField)?.name || "Id");
         this.recordName = this.recordData[fieldName];
       }
       parts = [this.recordName, this.recordData.Id];
@@ -404,6 +408,106 @@ class Model {
     this.childRows = new ChildRowList(this);
     this.startLoading();
   }
+
+  exportTable() {
+    // Get the current active tab to determine which table to export
+    let activeTab = this.useTab;
+    let rowList;
+
+    if (activeTab === "fields" || activeTab === "all") {
+      rowList = this.fieldRows;
+    } else if (activeTab === "childs") {
+      rowList = this.childRows;
+    } else {
+      // Default to fields if unknown tab
+      rowList = this.fieldRows;
+    }
+
+    // Get visible rows
+    let visibleRows = rowList.rows.filter(row => row.visible());
+
+    if (visibleRows.length === 0) {
+      return;
+    }
+
+    // Get column headers
+    let headers = [];
+    for (let [, col] of rowList.selectedColumnMap) {
+      headers.push(col.label);
+    }
+
+    // Get row data
+    let rows = [];
+    for (let row of visibleRows) {
+      let rowData = [];
+      for (let [colName] of rowList.selectedColumnMap) {
+        let value = row.sortKey(colName);
+        // Convert to string and handle null/undefined
+        rowData.push(value === null || value === undefined ? "" : String(value));
+      }
+      rows.push(rowData);
+    }
+
+    // Create CSV content
+    let csvContent = [headers.join("\t"), ...rows.map(row => row.join("\t"))].join("\n");
+
+    // Copy to clipboard
+    copyToClipboard(csvContent);
+  }
+
+  exportTableToExcel() {
+    // Get the current active tab to determine which table to export
+    let activeTab = this.useTab;
+    let rowList;
+
+    if (activeTab === "fields" || activeTab === "all") {
+      rowList = this.fieldRows;
+    } else if (activeTab === "childs") {
+      rowList = this.childRows;
+    } else {
+      // Default to fields if unknown tab
+      rowList = this.fieldRows;
+    }
+
+    // Get visible rows
+    let visibleRows = rowList.rows.filter(row => row.visible());
+
+    if (visibleRows.length === 0) {
+      return;
+    }
+
+    // Get column headers
+    let headers = [];
+    for (let [, col] of rowList.selectedColumnMap) {
+      headers.push(col.label);
+    }
+
+    // Get row data
+    let rows = [];
+    for (let row of visibleRows) {
+      let rowData = [];
+      for (let [colName] of rowList.selectedColumnMap) {
+        let value = row.sortKey(colName);
+        // Convert to string and handle null/undefined
+        rowData.push(value === null || value === undefined ? "" : String(value));
+      }
+      rows.push(rowData);
+    }
+
+    // Create Excel content (CSV format that Excel can open)
+    let csvContent = [headers.join(","), ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))].join("\n");
+
+    // Create and download file
+    let blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});
+    let link = document.createElement("a");
+    let url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${this.objectName()}_${activeTab}_${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 }
 
 class RowList {
@@ -418,6 +522,33 @@ class RowList {
     this.availableColumns = null;
     this.selectedColumnMap = null;
   }
+
+  getLocalStorageKey() {
+    if (this.listName === "fields") {
+      return "inspectFieldsToDisplay";
+    } else {
+      return "inspectRelationsToDisplay";
+    }
+  }
+
+  saveVisibleColumnsToStorage() {
+    const visibleColumns = Array.from(this.selectedColumnMap.keys());
+    localStorage.setItem(this.getLocalStorageKey(), JSON.stringify(visibleColumns));
+  }
+
+  // Helper method to load visible columns from localStorage
+  loadVisibleColumnsFromStorage(defaultColumns) {
+    const saved = localStorage.getItem(this.getLocalStorageKey());
+    if (saved) {
+      const parsedColumns = JSON.parse(saved);
+      // Validate that saved columns is an array
+      if (Array.isArray(parsedColumns) && parsedColumns.length > 0) {
+        return parsedColumns;
+      }
+    }
+    return defaultColumns;
+  }
+
   getRow(name) {
     if (!name) { // related lists may not have a name
       let row = new this._rowConstructor(name, this._nextReactKey++, this);
@@ -442,7 +573,44 @@ class RowList {
       v === undefined ? "\uFFFD"
       : v == null ? ""
       : String(v).trim();
-    this.rows.sort((a, b) => this._sortDir * s(a.sortKey(this._sortCol)).localeCompare(s(b.sortKey(this._sortCol))));
+
+    // Check if all non-empty values are numeric
+    let allNumeric = this.rows.every(row => {
+      let val = row.sortKey(this._sortCol);
+      return val === null || val === undefined || val === "" || val === "Error" || !isNaN(parseFloat(val));
+    });
+
+    // Also check if we have at least some numeric values
+    let hasNumericValues = this.rows.some(row => {
+      let val = row.sortKey(this._sortCol);
+      return val !== null && val !== undefined && val !== "" && !isNaN(parseFloat(val));
+    });
+
+    if (allNumeric && hasNumericValues) {
+      // Numeric sorting
+      this.rows.sort((a, b) => {
+        let aVal = a.sortKey(this._sortCol);
+        let bVal = b.sortKey(this._sortCol);
+
+        // Handle null/undefined/empty values
+        if (aVal === null || aVal === undefined || aVal === "") {
+          if (bVal === null || bVal === undefined || bVal === "") return 0;
+          return 1; // Put at the end
+        }
+        if (bVal === null || bVal === undefined || bVal === "") {
+          return -1; // Put at the end
+        }
+
+        // Convert to numbers for comparison
+        let aNum = parseFloat(aVal);
+        let bNum = parseFloat(bVal);
+
+        return this._sortDir * (aNum - bNum);
+      });
+    } else {
+      // String sorting (original logic)
+      this.rows.sort((a, b) => this._sortDir * s(a.sortKey(this._sortCol)).localeCompare(s(b.sortKey(this._sortCol))));
+    }
   }
   initColumns(cols) {
     this.selectedColumnMap = new Map();
@@ -459,6 +627,7 @@ class RowList {
     } else {
       this.selectedColumnMap.delete(col);
     }
+    this.saveVisibleColumnsToStorage();
   }
   toggleAvailableColumns() {
     if (this.availableColumns) {
@@ -487,15 +656,231 @@ class FieldRowList extends RowList {
   constructor(model) {
     super(FieldRow, model);
     this.listName = "fields";
-    this.initColumns(["name", "label", "type"]);
+
+    // Only include usage column if objectType parameter is present
+    let defaultColumns = ["name", "label", "type"];
+    if (!new URLSearchParams(location.search.slice(1)).get("recordId")) {
+      defaultColumns.push("usage");
+    }
+
+    let columns = this.loadVisibleColumnsFromStorage(defaultColumns);
+
+    this.initColumns(columns);
     this.fetchFieldDescriptions = true;
+    this.pendingFieldUsageRequests = [];
+    this.bulkUsageRequestInProgress = false;
+    this.totalRecordCount = null;
+    this.totalRecordCountRequested = false;
   }
+
+  // Add a field to the pending usage requests queue
+  addPendingUsageRequest(fieldRow) {
+    this.pendingFieldUsageRequests.push(fieldRow);
+
+    // If we have enough requests (25 or more), start processing immediately
+    if (this.pendingFieldUsageRequests.length >= 25) {
+      this.processBulkUsageRequests();
+    } else if (!this.bulkUsageRequestInProgress) {
+      // If this is the first request, wait a bit to see if more fields come in
+      // This prevents single-field composite calls
+      setTimeout(() => {
+        if (this.pendingFieldUsageRequests.length > 0 && !this.bulkUsageRequestInProgress) {
+          this.processBulkUsageRequests();
+        }
+      }, 100); // Wait 100ms for more fields to accumulate
+    }
+  }
+
+  // Fetch total record count if not already cached
+  fetchTotalRecordCount() {
+    if (this.totalRecordCount !== null || this.totalRecordCountRequested) {
+      return Promise.resolve(this.totalRecordCount);
+    }
+
+    this.totalRecordCountRequested = true;
+    let query = `SELECT COUNT() FROM ${this.model.objectName()}`;
+
+    return sfConn.rest("/services/data/v" + apiVersion + "/" + (this.model.useToolingApi ? "tooling/" : "") + "query/?q=" + encodeURIComponent(query))
+      .then(result => {
+        this.totalRecordCount = result.totalSize || 0;
+        return this.totalRecordCount;
+      })
+      .catch(error => {
+        console.error("Error fetching total record count:", error);
+        this.totalRecordCount = 0;
+        return 0;
+      });
+  }
+
+  // Process bulk usage requests in batches of 25
+  processBulkUsageRequests() {
+    if (this.bulkUsageRequestInProgress || this.pendingFieldUsageRequests.length === 0) {
+      return;
+    }
+
+    this.bulkUsageRequestInProgress = true;
+
+    // Take up to 5 requests from the queue
+    let batch = this.pendingFieldUsageRequests.splice(0, 5);
+
+    // First, ensure we have the total record count
+    this.fetchTotalRecordCount().then(totalRecords => {
+      // Create composite request with up to 5 queries
+      let compositeRequest = {
+        compositeRequest: batch.map((fieldRow) => {
+
+          let query = `SELECT COUNT() FROM ${this.model.objectName()} WHERE ${fieldRow.fieldName} != null`;
+
+          return {
+            method: "GET",
+            url: "/services/data/v" + apiVersion + "/" + (this.model.useToolingApi ? "tooling/" : "") + "query/?q=" + encodeURIComponent(query),
+            referenceId: `fieldUsage_${fieldRow.fieldName}`
+          };
+        })
+      };
+
+      // Use spinFor to show loading state
+      this.model.spinFor(
+        "calculating field usage",
+        sfConn.rest("/services/data/v" + apiVersion + "/" + (this.model.useToolingApi ? "tooling/" : "") + "composite", {
+          method: "POST",
+          body: compositeRequest
+        }).then(result => {
+          // Process each field's results
+          batch.forEach((fieldRow) => {
+            this.processFieldUsageResult(fieldRow, result, totalRecords);
+          });
+
+          // Process next batch if there are more pending requests
+          this.finishBatchProcessing();
+        }).catch(error => {
+          console.error("Error fetching bulk field usage:", error);
+          console.error("Composite request that failed:", compositeRequest);
+          console.error("Batch fields that failed:", batch.map(fieldRow => fieldRow.fieldName));
+
+          // Mark all fields in this batch as error
+          this.markBatchAsError(batch);
+          this.finishBatchProcessing();
+        })
+      );
+    }).catch(error => {
+      console.error("Error fetching total record count:", error);
+
+      // Mark all fields in this batch as error
+      this.markBatchAsError(batch);
+      this.finishBatchProcessing();
+    });
+  }
+
+  // Helper method to process individual field usage result
+  processFieldUsageResult(fieldRow, result, totalRecords) {
+    let queryResult = result.compositeResponse.find(response => response.referenceId === `fieldUsage_${fieldRow.fieldName}`);
+
+    if (!this.isValidQueryResult(queryResult)) {
+      this.logQueryError(fieldRow.fieldName, queryResult);
+      this.setFieldUsageError(fieldRow);
+      return;
+    }
+
+    let nonNullRecords = this.calculateNonNullRecords(queryResult.body);
+    let percentage = this.calculatePercentage(nonNullRecords, totalRecords);
+
+    this.setFieldUsageSuccess(fieldRow, percentage, nonNullRecords, totalRecords);
+  }
+
+  // Helper method to validate query result
+  isValidQueryResult(queryResult) {
+    return queryResult && queryResult.httpStatusCode === 200 && queryResult.body;
+  }
+
+  // Helper method to calculate non-null records count
+  calculateNonNullRecords(queryBody) {
+    return queryBody.totalSize || 0;
+  }
+
+  // Helper method to calculate percentage
+  calculatePercentage(nonNullRecords, totalRecords) {
+    return totalRecords > 0 ? Math.round((nonNullRecords / totalRecords) * 100) : 0;
+  }
+
+  // Helper method to set field usage success
+  setFieldUsageSuccess(fieldRow, percentage, nonNullRecords, totalRecords) {
+    fieldRow.fieldUsageData = percentage;
+    fieldRow.fieldUsageDetails = {
+      nonNullCount: nonNullRecords,
+      totalCount: totalRecords
+    };
+    fieldRow.fieldUsageLoading = false;
+  }
+
+  // Helper method to set field usage error
+  setFieldUsageError(fieldRow) {
+    fieldRow.fieldUsageData = "Error";
+    fieldRow.fieldUsageDetails = {
+      nonNullCount: 0,
+      totalCount: 0
+    };
+    fieldRow.fieldUsageLoading = false;
+  }
+
+  // Helper method to mark entire batch as error
+  markBatchAsError(batch) {
+    batch.forEach(fieldRow => {
+      this.setFieldUsageError(fieldRow);
+    });
+  }
+
+  // Helper method to log query errors
+  logQueryError(fieldName, queryResult) {
+    console.error(`Composite API error for field ${fieldName}:`, {
+      queryResult,
+      httpStatusCode: queryResult?.httpStatusCode,
+      body: queryResult?.body,
+      hasRecords: queryResult?.body?.records ? true : false
+    });
+  }
+
+  // Helper method to finish batch processing
+  finishBatchProcessing() {
+    this.bulkUsageRequestInProgress = false;
+    if (this.pendingFieldUsageRequests.length > 0) {
+      this.processBulkUsageRequests();
+    }
+  }
+
+  // Trigger usage calculation for all fields
+  triggerUsageCalculation(buttonRef) {
+    if (buttonRef) {
+      buttonRef.disabled = true;
+    }
+    // Clear any existing usage data and trigger calculation for all fields
+    this.rows.forEach(fieldRow => {
+      fieldRow.fieldUsageData = null;
+      fieldRow.fieldUsageLoading = false;
+    });
+
+    // Clear pending requests and start fresh
+    this.pendingFieldUsageRequests = [];
+    this.bulkUsageRequestInProgress = false;
+
+    // Trigger usage calculation for all fields
+    this.rows.forEach(fieldRow => {
+      if (fieldRow.fieldUsage() === GET_FIELD_USAGE_LABEL) {
+        fieldRow.fetchFieldUsage();
+      }
+    });
+
+    this.model.didUpdate();
+  }
+
   getColumnClassName(col) {
     let className = this.model.showTableBorder ? "border-cell " : "";
     if (col == "name") {
       className += "field-name";
     } else if (col == "label") {
       className += "field-label";
+    } else if (col == "usage") {
+      className += "field-usage";
     } else {
       className += "field-column";
     }
@@ -511,13 +896,20 @@ class FieldRowList extends RowList {
         : col == "value" ? "Value"
         : col == "helptext" ? "Help text"
         : col == "desc" ? "Description"
-        : col,
+        : col == "usage" ? "Usage (%)" : col,
       className: this.getColumnClassName(col),
       reactElement:
         col == "value" ? FieldValueCell
         : col == "type" ? FieldTypeCell
+        : col == "usage" ? FieldUsageCell
         : DefaultCell,
-      columnFilter: ""
+      columnFilter: "",
+      // Add action configuration for usage column
+      actionConfig: col == "usage" ? {
+        icon: "offline_cached",
+        title: "Calculate field usage percentages",
+        onAction: (buttonRef) => this.triggerUsageCalculation(buttonRef)
+      } : null
     };
   }
   showHideColumn(show, col) {
@@ -541,7 +933,11 @@ class ChildRowList extends RowList {
   constructor(model) {
     super(ChildRow, model);
     this.listName = "childs";
-    this.initColumns(["name", "object", "field", "label"]);
+
+    let defaultColumns = ["name", "object", "field", "label"];
+    let columns = this.loadVisibleColumnsFromStorage(defaultColumns);
+
+    this.initColumns(columns);
   }
   createColumn(col) {
     return {
@@ -596,6 +992,9 @@ class FieldRow extends TableRow {
     this.fieldActionsOpen = false;
     this.fieldSetupLinks = null;
     this.fieldSetupLinksRequested = false;
+    this.fieldUsageData = null;
+    this.fieldUsageLoading = false;
+    this.fieldUsageDetails = null;
   }
   rowProperties() {
     let props = {};
@@ -715,6 +1114,69 @@ class FieldRow extends TableRow {
   }
   fieldIsHidden() {
     return !this.fieldDescribe;
+  }
+  fieldUsage() {
+    // If we don't have field describe info, we can't calculate usage
+    if (!this.fieldDescribe || this.fieldDescribe.type === "textarea" || this.fieldDescribe.type === "address") {
+      return "";
+    }
+
+    // Required fields always have 100% usage
+    if (this.fieldDescribe && !this.fieldDescribe.nillable) {
+      return 100;
+    }
+
+    // If we're currently loading usage data, show loading indicator
+    if (this.fieldUsageLoading) {
+      return "Loading...";
+    }
+
+    // If we have cached usage data, return it
+    if (this.fieldUsageData !== null) {
+      return this.fieldUsageData;
+    }
+
+    // Don't automatically trigger calculation - wait for user to click refresh
+    return GET_FIELD_USAGE_LABEL;
+  }
+
+  fieldUsageTitle() {
+    // If we don't have field describe info, we can't calculate usage
+    if (!this.fieldDescribe || this.fieldDescribe.type === "textarea" || this.fieldDescribe.type === "address") {
+      return "";
+    }
+
+    // Required fields always have 100% usage
+    if (this.fieldDescribe && !this.fieldDescribe.nillable) {
+      return "Required field - always 100% usage";
+    }
+
+    // If we're currently loading usage data, show loading indicator
+    if (this.fieldUsageLoading) {
+      return "Loading field usage data...";
+    }
+
+    // If we have cached usage data, return the details
+    if (this.fieldUsageData !== null && this.fieldUsageDetails) {
+      return `${this.fieldUsageDetails.nonNullCount} / ${this.fieldUsageDetails.totalCount} records (${this.fieldUsageData}%)`;
+    }
+
+    // Don't automatically trigger calculation - wait for user to click refresh
+    return "Click to calculate field usage";
+  }
+
+  fetchFieldUsage() {
+    // Skip required fields since we already know they have 100% usage
+    if (this.fieldDescribe && !this.fieldDescribe.nillable) {
+      return;
+    }
+
+    // Set loading state
+    this.fieldUsageLoading = true;
+    this.rowList.model.didUpdate();
+
+    // Add this field to the bulk processing queue instead of making individual API calls
+    this.rowList.addPendingUsageRequest(this);
   }
   toggleFieldActions(elem) {
     this.fieldActionsOpen = !this.fieldActionsOpen;
@@ -839,6 +1301,7 @@ class FieldRow extends TableRow {
       case "desc": return this.fieldDesc();
       case "value": return this.dataTypedValue;
       case "type": return this.fieldTypeDesc();
+      case "usage": return this.fieldUsage();
       default: return this.rowProperties()[col];
     }
   }
@@ -1084,6 +1547,9 @@ class App extends React.Component {
     model.didUpdate();
     // Save to local storage
   }
+  onGoToSalesforceRecord(){
+    history.back();
+  }
   handleClick(e){
     const {model} = this.props;
     if (model.popupReactElement){ // There is a popup
@@ -1120,11 +1586,18 @@ class App extends React.Component {
               h("div", {className: "slds-spinner__dot-b"}),
             )
           ),
-          h("a", {href: model.sfLink, target: linkTarget, className: "sf-link"},
-            h("svg", {viewBox: "0 0 24 24"},
-              h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
+          h("div", {className: "sf-nav-group"},
+            h("a", {href: model.viewLink(), title: "Back to Record", className: "sf-back"},
+              h("svg", {className: "button-icon"},
+                h("use", {xlinkHref: "symbols.svg#back"})
+              )
             ),
-            " Salesforce Home"
+            h("a", {href: model.sfLink, title: "Salesforce Home", target: linkTarget, className: "sf-link"},
+              h("svg", {viewBox: "0 0 24 24"},
+                h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
+              ),
+              " Salesforce Home"
+            )
           ),
           h("span", {className: "object-tab" + (model.useTab == "all" ? " active-tab" : "")},
             h("a", {href: "about:blank", onClick: this.onUseAllTab}, "All")
@@ -1138,6 +1611,7 @@ class App extends React.Component {
                 h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "name", name: "name", disabled: true}),
                 h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "label", name: "label"}),
                 h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "type", name: "type"}),
+                model.sobjectName ? h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "usage", name: "usage"}) : null,
                 h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "value", name: "value", disabled: !model.canView()}),
                 h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "helptext", name: "helptext"}),
                 h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "desc", name: "desc", disabled: !model.hasEntityParticles}),
@@ -1316,6 +1790,8 @@ class RowTable extends React.Component {
     super(props);
     this.onToggleTableSettings = this.onToggleTableSettings.bind(this);
     this.onClickTableBorderSettings = this.onClickTableBorderSettings.bind(this);
+    this.onCopyTable = this.onCopyTable.bind(this);
+    this.onDownloadExcel = this.onDownloadExcel.bind(this);
     this.closePopMenu = this.closePopMenu.bind(this);
     this.onOpenPopup = this.onOpenPopup.bind(this);
     this.showTableBorder = this.props.model.showTableBorder;
@@ -1339,6 +1815,20 @@ class RowTable extends React.Component {
     this.tableSettingsOpen = false;
     this.props.model.didUpdate();
   }
+  onCopyTable(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.props.model.exportTable();
+    this.tableSettingsOpen = false;
+    this.props.model.didUpdate();
+  }
+  onDownloadExcel(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.props.model.exportTableToExcel();
+    this.tableSettingsOpen = false;
+    this.props.model.didUpdate();
+  }
   onOpenPopup(elem){
     this.props.onOpenPopup(elem);
   }
@@ -1351,15 +1841,28 @@ class RowTable extends React.Component {
     return h("table", {},
       h("thead", {},
         h("tr", {},
-          selectedColumns.map(col =>
-            h(HeaderCell, {key: col.name, col, rowList})
-          ),
+          selectedColumns.map(col => {
+            if (col.actionConfig) {
+              return h(HeaderCellWithAction, {
+                key: col.name,
+                col,
+                rowList,
+                actionIcon: col.actionConfig.icon,
+                actionTitle: col.actionConfig.title,
+                onAction: col.actionConfig.onAction
+              });
+            } else {
+              return h(HeaderCell, {key: col.name, col, rowList});
+            }
+          }),
           h("th", {className: actionsColumn.className, tabIndex: 0},
             h("button", {className: "table-settings-button", onClick: this.onToggleTableSettings},
               h("div", {className: "table-settings-icon"})
             ),
             this.tableSettingsOpen && h("div", {className: "pop-menu-container"},
               h("div", {className: "pop-menu"},
+                h("a", {className: "table-settings-link", onClick: this.onCopyTable}, "Copy Table"),
+                h("a", {className: "table-settings-link", onClick: this.onDownloadExcel}, "Download CSV"),
                 h("a", {className: "table-settings-link", onClick: this.onClickTableBorderSettings}, this.state.showOrHideBorders),
               )
             ),
@@ -1528,14 +2031,115 @@ class FieldValueCell extends React.Component {
 }
 
 class FieldTypeCell extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {expanded: false};
+    this.toggleExpanded = this.toggleExpanded.bind(this);
+  }
+
+  toggleExpanded() {
+    this.setState(prev => ({expanded: !prev.expanded}));
+  }
+
   render() {
     let {row, col} = this.props;
-    return h("td", {className: col.className + " quick-select"},
-      row.referenceTypes() ? row.referenceTypes().map(data =>
-        h("span", {key: data}, h("a", {href: row.showReferenceUrl(data)}, data), " ")
-      ) : null,
-      !row.referenceTypes() ? h(TypedValue, {value: row.sortKey(col.name)}) : null
+    const {expanded} = this.state;
+    let referenceTypes = row.referenceTypes?.() || [];
+    if (referenceTypes.length > 1 && row.dataTypedValue && row.rowList.model.globalDescribe){
+      // Get the first 3 characters of the ID (the keyPrefix)
+      const dataKeyPrefix = row.dataTypedValue.substring(0, 3);
+
+      // Find the matching object from globalDescribe
+      const matchingObject = row.rowList.model.globalDescribe?.sobjects?.find(
+        sobject => sobject.keyPrefix === dataKeyPrefix
+      );
+
+      // If we found a matching object, filter referenceTypes to only include it
+      if (matchingObject) {
+        referenceTypes = [matchingObject.name];
+      }
+    }
+
+    const maxToShow = 3;
+    const showAll = expanded || referenceTypes.length <= maxToShow;
+    const visible = showAll ? referenceTypes : referenceTypes.slice(0, maxToShow);
+    const remainingCount = referenceTypes.length - visible.length;
+
+    const links = visible.map((data) =>
+      h("span", {key: data},
+        h("a", {href: row.showReferenceUrl(data)}, data),
+        " "
+      )
     );
+
+    // +X more link
+    if (!showAll && remainingCount > 0) {
+      links.push(
+        h("a", {
+          className: "text-muted",
+          onClick: this.toggleExpanded,
+          style: {cursor: "pointer", marginLeft: "5px"}
+        }, `+${remainingCount} more`)
+      );
+    }
+
+    // Show less link
+    if (expanded && referenceTypes.length > maxToShow) {
+      links.push(
+        h("a", {
+          className: "text-muted",
+          onClick: this.toggleExpanded,
+          style: {cursor: "pointer", marginLeft: "5px"}
+        }, "Show less")
+      );
+    }
+
+    return h("td", {className: col.className + " quick-select"},
+      links,
+      referenceTypes.length === 0 ? h(TypedValue, {value: row.sortKey(col.name)}) : null
+    );
+  }
+}
+
+class FieldUsageCell extends React.Component {
+  constructor(props) {
+    super(props);
+    this.onUsageClick = this.onUsageClick.bind(this);
+  }
+
+  onUsageClick(e) {
+    e.preventDefault();
+    let {row} = this.props;
+    if (row.fieldUsage() === GET_FIELD_USAGE_LABEL) {
+      // Only calculate usage for this specific field
+      row.fetchFieldUsage();
+    }
+  }
+
+  render() {
+    let {row, col} = this.props;
+    let usageValue = row.fieldUsage();
+
+    if (usageValue === GET_FIELD_USAGE_LABEL) {
+      return h("td", {className: col.className + " clickable"},
+        h("a", {
+          href: "about:blank",
+          onClick: this.onUsageClick,
+          className: "usage-link",
+          title: row.fieldUsageTitle()
+        }, h(TypedValue, {value: usageValue}))
+      );
+    } else if (usageValue === "Loading...") {
+      return h("td", {className: col.className + " loading"},
+        h("div", {className: "loading-indicator"},
+          h("span", {className: "loading-text"}, "Loading...")
+        )
+      );
+    } else {
+      return h("td", {className: col.className, title: row.fieldUsageTitle()},
+        h(TypedValue, {value: usageValue})
+      );
+    }
   }
 }
 
@@ -1723,6 +2327,16 @@ class DetailsBox extends React.Component {
     };
     ReactDOM.render(h(App, {model}), root);
 
+    // Listen for save-modifications command from background script
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.msg === "shortcut_pressed" && message.command === "open-save-modifications" && model.editMode !== null) {
+        model.doSave();
+        model.didUpdate();
+        sendResponse({success: true});
+      }
+      return false;
+    });
+
   });
 
 }
@@ -1745,4 +2359,55 @@ class DetailsBox extends React.Component {
       }
     }
   };
+}
+
+class HeaderCellWithAction extends React.Component {
+  constructor(props) {
+    super(props);
+    this.onActionClick = this.onActionClick.bind(this);
+    this.onSortRowsBy = this.onSortRowsBy.bind(this);
+    this.state = {
+      clicked: false
+    };
+  }
+
+  onActionClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    let {onAction} = this.props;
+    if (onAction && !this.state.clicked) {
+      this.setState({clicked: true});
+      onAction(this.refs.usageBtnRef);
+    }
+  }
+
+  onSortRowsBy() {
+    let {rowList, col} = this.props;
+    rowList.sortRowsBy(col.name);
+    rowList.model.didUpdate();
+  }
+
+  render() {
+    let {col, actionIcon, actionTitle} = this.props;
+    return h("th",
+      {
+        className: col.className,
+        tabIndex: 0,
+        onClick: this.onSortRowsBy
+      },
+      col.label,
+      " ",
+      h("button", {
+        ref: "usageBtnRef",
+        className: "actions-button",
+        onClick: this.onActionClick,
+        title: actionTitle,
+        disabled: this.state.clicked
+      },
+      h("svg", {className: "button-icon"},
+        h("use", {xlinkHref: `symbols.svg#${actionIcon}`})
+      )
+      )
+    );
+  }
 }

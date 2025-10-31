@@ -56,7 +56,8 @@ class ProfilesModal extends React.Component {
         [name]: {
           ...prevState.permissions[name],
           [type]: !prevState.permissions[name][type],
-          ...(type === "edit" ? {read: true} : {})
+          ...(type === "edit" && !prevState.permissions[name][type] === true ? {read: true} : {}),
+          ...(type === "read" && !prevState.permissions[name][type] === false ? {edit: false} : {})
         }
       }
     }), this.updateAllCheckboxes);
@@ -74,7 +75,8 @@ class ProfilesModal extends React.Component {
         updatedPermissions[name] = {
           ...updatedPermissions[name],
           [type]: allSelected,
-          ...(type === "edit" ? {read: true} : {})
+          ...(type === "edit" && allSelected === true ? {read: true} : {}),
+          ...(type === "read" && allSelected === false ? {edit: false} : {})
         };
       });
 
@@ -481,7 +483,7 @@ class FieldOptionModal extends React.Component {
             })
           ),
           h("div", {className: "checkbox"},
-            h("label", null,
+            h("label", {className: "centerHorizontally"},
               h("input", {
                 type: "checkbox",
                 id: `${field.type.toLowerCase()}SortAlpha`,
@@ -493,7 +495,7 @@ class FieldOptionModal extends React.Component {
             )
           ),
           h("div", {className: "checkbox"},
-            h("label", null,
+            h("label", {className: "centerHorizontally"},
               h("input", {
                 type: "checkbox",
                 id: `${field.type.toLowerCase()}FirstValueDefault`,
@@ -555,7 +557,7 @@ class FieldOptionModal extends React.Component {
               type: "text",
               id: `${field.type.toLowerCase()}Length`,
               name: "length",
-              className: "form-control",
+              className: "form-control input-textBox",
               placeholder: "Max is 131,072 characters.",
               value: field.length,
               onChange: this.handleInputChange
@@ -567,7 +569,7 @@ class FieldOptionModal extends React.Component {
               type: "text",
               id: `${field.type.toLowerCase()}VisibleLines`,
               name: "vislines",
-              className: "form-control",
+              className: "form-control input-textBox",
               placeholder: "This field is required.",
               value: field.vislines,
               onChange: this.handleInputChange
@@ -628,7 +630,7 @@ class FieldOptionModal extends React.Component {
   renderRequiredCheckbox = () => {
     const {field} = this.state;
     return h("div", {className: "checkbox"},
-      h("label", null,
+      h("label", {className: "centerHorizontally"},
         h("input", {
           type: "checkbox",
           id: "required",
@@ -636,7 +638,7 @@ class FieldOptionModal extends React.Component {
           checked: field.required,
           onChange: this.handleInputChange
         }),
-        " Required"
+        "Required"
       )
     );
   };
@@ -644,7 +646,7 @@ class FieldOptionModal extends React.Component {
   renderUniqueCheckbox = () => {
     const {field} = this.state;
     return h("div", {className: "checkbox"},
-      h("label", null,
+      h("label", {className: "centerHorizontally"},
         h("input", {
           type: "checkbox",
           id: "unique",
@@ -652,7 +654,7 @@ class FieldOptionModal extends React.Component {
           checked: field.uniqueSetting,
           onChange: this.handleInputChange
         }),
-        " Unique"
+        "Unique"
       )
     );
   };
@@ -660,7 +662,7 @@ class FieldOptionModal extends React.Component {
   renderExternalIdCheckbox = () => {
     const {field} = this.state;
     return h("div", {className: "checkbox"},
-      h("label", null,
+      h("label", {className: "centerHorizontally"},
         h("input", {
           type: "checkbox",
           id: "externalId",
@@ -668,7 +670,7 @@ class FieldOptionModal extends React.Component {
           checked: field.external,
           onChange: this.handleInputChange
         }),
-        " External ID"
+        "External ID"
       )
     );
   };
@@ -686,13 +688,13 @@ class FieldOptionModal extends React.Component {
       className: "modal-dialog maxWidth500 maxHeight90vh overflowYAuto",
       onClick: (e) => e.stopPropagation()
     },
-    h("div", {className: "modal-content borderNone backgroundTransparent"},
-      h("div", {className: "modal-header borderBottomNone padding0_0_10_0 relativePosition"},
-        h("h4", {className: "modal-title textAlignCenter width100 margin0"}, "Set Field Options"),
+    h("div", {className: "modal-content relativePosition height100 flexColumn"},
+      h("div", {className: "modal-header flexSpaceBetween alignItemsCenter"},
+        h("h1", {className: "modal-title"}, "Set Field Options"),
         h("button", {
-          "aria-label": "Close Button",
           type: "button",
-          className: "close absoluteRightTop backgroundTransparent borderNone fontSize1_5 fontWeightBold cursorPointer",
+          "aria-label": "Close Set Field Options",
+          className: "close cursorPointer backgroundNone borderNone fontSize1_5 fontWeightBold",
           onClick: this.props.onClose
         },
         h("span", {"aria-hidden": "true"}, "×")
@@ -726,7 +728,7 @@ class FieldOptionModal extends React.Component {
 // Define the React components
 class FieldRow extends React.Component {
   render() {
-    document.title = "Field Creator (beta)";
+    document.title = "Field Creator";
 
     let deploymentStatus;
     switch (this.props.field.deploymentStatus) {
@@ -1005,10 +1007,6 @@ class App extends React.Component {
   }
 
   setFieldPermissions(field, fieldId, objectName) {
-    const accessToken = sfConn.sessionId;
-    const instanceUrl = `https://${sfConn.instanceHostname}`;
-    const fieldPermissionUrl = `${instanceUrl}/services/data/v${apiVersion}/sobjects/FieldPermissions/`;
-
     if (!field.profiles || !Array.isArray(field.profiles)) {
       return Promise.resolve([]);
     }
@@ -1022,26 +1020,16 @@ class App extends React.Component {
         PermissionsRead: profile.access === "edit" || profile.access === "read"
       };
 
-      return fetch(fieldPermissionUrl, {
+      return sfConn.rest(`/services/data/v${apiVersion}/sobjects/FieldPermissions/`, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(fieldPermissionBody)
-      })
-        .then(response => response.json());
+        body: fieldPermissionBody
+      });
     });
 
     return Promise.all(permissionPromises);
   }
 
   createField(field, objectName) {
-    const accessToken = sfConn.sessionId;
-    //TODO use sfConn.rest to deploy the fields
-    const instanceUrl = `https://${sfConn.instanceHostname}`;
-    const metadataUrl = `${instanceUrl}/services/data/v${apiVersion}/tooling/sobjects/CustomField`;
-
     const newField = {
       FullName: `${objectName}.${field.name}__c`,
       Metadata: {
@@ -1122,22 +1110,10 @@ class App extends React.Component {
         console.warn(`Unsupported field type: ${field.type}`);
     }
 
-    return fetch(metadataUrl, {
+    return sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/CustomField`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(newField)
+      body: newField
     })
-      .then(response => {
-        if (!response.ok) {
-          return response.json().then(errorData => {
-            throw new Error(JSON.stringify(errorData));
-          });
-        }
-        return response.json();
-      })
       .then(data => this.setFieldPermissions(field, data.id, objectName))
       .catch(error => {
         console.error("Error creating field:", error);
@@ -1266,18 +1242,7 @@ class App extends React.Component {
   };
 
   fetchPermissionSets = () => {
-    const accessToken = sfConn.sessionId;
-    const instanceUrl = `https://${sfConn.instanceHostname}`;
-    const permissionSetsUrl = `${instanceUrl}/services/data/v${apiVersion}/query/?q=SELECT+Id,Name,Profile.Name+FROM+PermissionSet`;
-
-    fetch(permissionSetsUrl, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json"
-      }
-    })
-      .then(response => response.json())
+    sfConn.rest(`/services/data/v${apiVersion}/query/?q=SELECT+Id,Name,Profile.Name+FROM+PermissionSet`)
       .then(data => {
         let permissionSets = {};
         let permissionSetMap = {};
@@ -1590,7 +1555,7 @@ class App extends React.Component {
           ),
           " Salesforce Home"
         ),
-        h("h1", {}, "Field Creator (beta)"),
+        h("h1", {}, "Field Creator"),
         h("span", {}, " / " + userInfo),
         h("div", {className: "flex-right"},
           h("span", {className: "slds-assistive-text"}),

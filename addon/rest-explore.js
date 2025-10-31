@@ -246,7 +246,7 @@ class Model {
     let api = this.request.endpoint.startsWith("/services/async/") ? "bulk" : "normal";
     let responseType = this.request.endpoint.startsWith("/services/async/") ? "xml" : "json";
     this.request.method = this.request.method.toUpperCase();
-    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress}, true)
+    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress, useCache: false}, true)
       .catch(err => {
         this.canSendRequest = true;
         this.totalTime = performance.now() - this.startTime;
@@ -898,9 +898,9 @@ class App extends React.Component {
             h("button", {disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy")
           ),
           h("span", {className: "result-status flex-right"},
-            model.apiResponse && h("div",
-              h("span", {}, model.totalTime.toFixed(1) + "ms"),
-              h("span", {className: "slds-m-left_medium status-code"}, "Status: " + model.apiResponse.code)
+            model.apiResponse && h("div", {},
+              h("span", {className: "perf"}, model.totalTime.toFixed(1) + "ms"),
+              h("span", {className: "slds-m-left_medium status-code"}, "Status: " + model.apiResponse?.code)
             ),
             h("div", {className: "slds-m-left_medium button-group"},
               h("button", {disabled: !model.apiResponse, onClick: this.onClearResponse, title: "Clear Response"}, "Clear")

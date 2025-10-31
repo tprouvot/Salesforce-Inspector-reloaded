@@ -8,6 +8,25 @@ class Toast extends React.Component {
     const themeClass = `slds-theme_${variant}`;
     const iconClass = `slds-icon-utility-${variant === "success" ? "success" : variant === "error" ? "error" : "info"}`;
 
+    // Helper function to render message content
+    const renderMessage = () => {
+      if (typeof message === "string") {
+        return h("p", {}, message);
+      }
+
+      // Handle message object with link
+      const {pre, linkText, linkTitle, link, post} = message;
+      return h("p", {},
+        pre && h("span", {}, pre),
+        linkText && h("a", {
+          href: link,
+          title: linkTitle,
+          className: "slds-text-link"
+        }, linkText),
+        post && h("span", {}, post)
+      );
+    };
+
     return h("div", {className: "slds-notify_container"},
       h("div", {
         className: `slds-notify slds-notify_toast ${themeClass}`,
@@ -24,7 +43,7 @@ class Toast extends React.Component {
       ),
       h("div", {className: "slds-notify__content"},
         h("h2", {className: "slds-text-heading_small"}, title),
-        h("p", {}, message)
+        renderMessage()
       ),
       h("div", {className: "slds-notify__close"},
         h("button", {

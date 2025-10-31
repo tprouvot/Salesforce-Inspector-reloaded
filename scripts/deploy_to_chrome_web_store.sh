@@ -1,5 +1,5 @@
-#!/bin/bash         
-     
+#!/bin/bash
+
 # Two command line params expected: "CHROME_APP_ID ENVIRONMENT_TYPE (PROD|BETA)"
 #
 # The script is designed to run in CI context in the directory of the Salesforce Inspector project.
@@ -37,7 +37,7 @@ then
      exit 1;
 fi
 
-SOURCE_VERSION_NUMBER=$(jq '.version' addon/manifest-template.json | tr -d '"');
+SOURCE_VERSION_NUMBER=$(jq '.version' addon/manifest.json | tr -d '"');
 
 log_message "1) Prepare application app package";
 

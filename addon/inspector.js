@@ -1,4 +1,4 @@
-export let defaultApiVersion = "63.0";
+export let defaultApiVersion = "65.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 
 export let sessionError;
@@ -41,13 +41,15 @@ export let sfConn = {
     return this.sessionId;
   },
 
-  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null} = {}, rawResponse) {
+  async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null, useCache = true} = {}, rawResponse) {
     if (!this.instanceHostname) {
       throw new Error("Instance Hostname not found");
     }
 
     let xhr = new XMLHttpRequest();
-    url += (url.includes("?") ? "&" : "?") + "cache=" + Math.random();
+    if (useCache) {
+      url += (url.includes("?") ? "&" : "?") + "cache=" + Math.random();
+    }
     const sfHost = "https://" + this.instanceHostname;
     const fullUrl = new URL(url, sfHost);
     xhr.open(method, fullUrl.toString(), true);
@@ -120,6 +122,10 @@ export let sfConn = {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "Error";
       sessionError = {text: error, type: "error", icon: "error"};
       showToastBanner();
+      let err = new Error();
+      err.name = "Forbidden";
+      err.message = error;
+      throw err;
     } else {
       if (!logErrors) { console.error("Received error response from Salesforce REST API", xhr); }
       let err = new Error();

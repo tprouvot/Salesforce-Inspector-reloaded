@@ -27,11 +27,15 @@ When redirected to the "Data Export" tab at the end of the OAuth flow, check the
 
 ### Generate new token error
 
-If you did not enabled 'API Access Control' and continuously see the banner generate token
+If you did not enabled 'API Access Control' and continuously see the banner generate token.
 
 You may have seen this message because of an expired token, and since this was the only available option clicked on 'Generate new Token'.
 
-Try to run this code in chrome dev console, after inspecting the extension' popup code:
+Delete the generated token from the Option page
+
+<img width="938" alt="Delete Token" src="https://github.com/user-attachments/assets/f38ece82-a0db-44ab-98d7-bd856a2f2445" />
+
+Or try to run this code in chrome dev console, after inspecting the extension' popup code:
 
 ```js
 let tokens = Object.keys(localStorage).filter((localKey) =>
@@ -46,3 +50,37 @@ If the error disappeared, clear site data to solve the issue in normal navigatio
 ### Managed Application Installation Error
 
 When installing the default connected app when `API Access Control` is enabled, if you face the error `Managed Application Installation Error` you may have an existing connected app named `Salesforce Inspector reloaded`.
+
+### Logging as incognito with ConnectedApp
+
+If you use the standard Salesforce Inspector Reloaded's Connected App and click `Generate New Token` the `LoginAs Incognito` feature might stop working correctly. Instead of automatically logging you in, you'll be sent to a regular login screen.
+
+This issue occurs because the default Salesforce Inspector Reloaded Connected App doesn't use the required scope for this feature.
+As a workaround, you can create a custom `External Client App` (since the creation of Connected Apps is soon to be deprecated) as described in this [article](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#external-client-app-creation).
+
+### Deployment error: No package.xml found
+
+This error occurs when attempting to deploy a zip file where the `package.xml` file is not located at the root level of the zip archive. This commonly happens when:
+
+1. **Retrieved metadata structure**: Zip files downloaded from Salesforce (via Retrieve operations) contains a parent folder (typically named "unpackaged") that wraps all the metadata files including `package.xml`.
+2. **Deploy requirement mismatch**: The Salesforce Deploy API expects `package.xml` to be at the root level of the zip file, not inside a subfolder.
+
+**How to solve it:**
+
+1. **Extract and re-zip**: Extract the downloaded zip file, locate the `package.xml` inside the parent folder, move all contents (including `package.xml`) to a new folder, and create a new zip file with `package.xml` at the root level.
+2. **Verify structure**: Before deploying, ensure your zip file structure looks like this:
+   ```
+   metadata.zip
+   ├── package.xml
+   ├── classes/
+   ├── objects/
+   └── [other metadata folders]
+   ```
+   **Not like this:**
+   ```
+   metadata.zip
+   └── unpackaged/
+       ├── package.xml
+       ├── classes/
+       └── [other folders]
+   ```

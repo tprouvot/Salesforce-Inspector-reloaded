@@ -7,6 +7,7 @@ import AlertBanner from "./components/AlertBanner.js";
 
 let p = parent;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
+const isExtensionPage = document.location.ancestorOrigins?.[0].includes(chrome.i18n.getMessage("@@extension_id"));
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -41,14 +42,13 @@ if (typeof browser === "undefined") {
 }
 
 function getFilteredLocalStorage(){
-  //for Salesforce pages
-  let host = parent[0].document.referrer;
-  if (host.length == 0){
-    //for extension pages
-    host = new URLSearchParams(parent.location.search).get("host");
-  } else {
-    host = host.split("https://")[1];
+  const existingFilteredStorage = sessionStorage.getItem("filteredStorage");
+  if (existingFilteredStorage) {
+    return JSON.parse(existingFilteredStorage);
   }
+
+  let host = new URLSearchParams(window.location.search).get("host");
+
   let domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
   const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition", "prodBannerText"];
@@ -340,7 +340,7 @@ class App extends React.PureComponent {
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ) : null,
             h("div", {},
-              h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Field Crea", h("u", {}, "t"), "or (beta)"))
+              h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Field Crea", h("u", {}, "t"), "or"))
             ),
           ),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
@@ -445,13 +445,18 @@ class App extends React.PureComponent {
 }
 
 class AllDataBox extends React.PureComponent {
-
   constructor(props) {
     super(props);
-    this.SearchAspectTypes = Object.freeze({sobject: "sobject", users: "users", shortcuts: "shortcuts", org: "org"});
-
+    this.SearchAspectTypes = {
+      sobject: "sobject",
+      users: "users",
+      shortcuts: "shortcuts",
+      org: "org"
+    };
+    const defaultPopupTab = localStorage.getItem("defaultPopupTab");
+    const defaultTab = defaultPopupTab ? JSON.parse(defaultPopupTab).find(tab => tab.checked)?.name : "sobject";
     this.state = {
-      activeSearchAspect: this.SearchAspectTypes.sobject,
+      activeSearchAspect: this.SearchAspectTypes[defaultTab],
       sobjectsList: null,
       sobjectsLoading: true,
       usersBoxLoading: false,
@@ -1188,7 +1193,7 @@ class AllDataBoxShortcut extends React.PureComponent {
 
   onAddShortcut(){
     let {sfHost} = this.props;
-    window.open("options.html?host=" + sfHost + "&selectedTab=8");
+    window.open("options.html?host=" + sfHost + "&selectedTab=custom-shortcuts");
   }
 
   resultRender(matches, shortcutQuery) {
@@ -1798,6 +1803,9 @@ class AllDataSelection extends React.PureComponent {
   redirectToFlowVersions(){
     return "https://" + this.props.sfHost + "/lightning/setup/Flows/page?address=%2F" + this.state.flowDefinitionId;
   }
+  getFlowScannerUrl(){
+    return `flow-scanner.html?host=${this.props.sfHost}&flowDefId=${this.state.flowDefinitionId}&flowId=${this.props.selectedValue.recordId}`;
+  }
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
    */
@@ -1954,11 +1962,13 @@ class AllDataSelection extends React.PureComponent {
           h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Check Deploy Status") : null,
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", {href: this.getGeneratePackageUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Generate package.xml") : null,
+          ? h("a", {href: this.getGeneratePackageUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Generate package.xml") : null,
         flowDefinitionId
-          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
+          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Flow Versions") : null,
+        flowDefinitionId
+          ? h("a", {href: this.getFlowScannerUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Flow Scanner") : null,
         buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
           {
             key: button,
@@ -1994,15 +2004,9 @@ class AllDataRecordDetails extends React.PureComponent {
   }
   openRecordLink(e) {
     e.preventDefault();
-    closePopup();
     const url = e.target.href;
-    const target = getLinkTarget(e);
     const recordId = e.target.dataset.recordId;
-    if (target === "_blank") {
-      window.open(url, target);
-    } else {
-      lightningNavigate({navigationType: "recordId", recordId}, url);
-    }
+    navigateWithExtensionCheck(e, url, {navigationType: "recordId", recordId});
   }
   getRecordTypeLink(sfHost, sobjectName, recordtypeId) {
     return "https://" + sfHost + "/lightning/setup/ObjectManager/" + sobjectName + "/RecordTypes/" + recordtypeId + "/view";
@@ -2283,14 +2287,7 @@ class Autocomplete extends React.PureComponent {
     }
   }
   handleNavigation(e, url, navigationParams) {
-    const linkTarget = getLinkTarget(e);
-    closePopup();
-
-    if (linkTarget === "_blank" || localStorage.getItem("lightningNavigation") == "false") {
-      window.open(url, linkTarget);
-    } else {
-      lightningNavigate(navigationParams, url);
-    }
+    navigateWithExtensionCheck(e, url, navigationParams);
   }
   onResultMouseEnter(index) {
     this.setState({selectedIndex: index, scrollToSelectedIndex: this.state.scrollToSelectedIndex + 1});
@@ -2365,6 +2362,16 @@ class Autocomplete extends React.PureComponent {
 
 function getRecordId(href) {
   let url = new URL(href);
+
+  // Special handling for Flow Builder URLs
+  // Flow Builder URLs have the Flow ID in the flowId query parameter
+  if (url.pathname.includes("/builder_platform_interaction/flowBuilder.app")) {
+    const flowId = url.searchParams.get("flowId");
+    if (flowId && flowId.startsWith("301")) {
+      return flowId;
+    }
+  }
+
   // Find record ID from URL
   // Salesforce and Console (+ Hyperforce China Lightning & Classic)
   if (url.hostname.endsWith(".salesforce.com") || url.hostname.endsWith(".salesforce.mil") || url.hostname.endsWith(".sfcrmapps.cn") || url.hostname.endsWith(".sfcrmproducts.cn")) {
@@ -2444,14 +2451,19 @@ function lightningNavigate(details, fallbackURL) {
   p.postMessage({lightningNavigate: {...details, fallbackURL}}, "*");
 }
 
+function navigateWithExtensionCheck(e, url, navigationParams, target = null) {
+  const linkTarget = target || getLinkTarget(e);
+  closePopup();
+
+  if (linkTarget === "_blank" || localStorage.getItem("lightningNavigation") == "false" || (isExtensionPage === undefined || isExtensionPage)) {
+    window.open(url, linkTarget);
+  } else {
+    lightningNavigate(navigationParams, url);
+  }
+}
+
 function handleLightningLinkClick(e) {
   e.preventDefault(); // Prevent the default link behavior (href navigation)
-  closePopup();
   const url = e.currentTarget.href;
-  const target = getLinkTarget(e);
-  if (target === "_blank") {
-    window.open(url, target);
-  } else {
-    lightningNavigate({navigationType: "url", url}, url);
-  }
+  navigateWithExtensionCheck(e, url, {navigationType: "url", url});
 }

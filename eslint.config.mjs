@@ -91,6 +91,20 @@ export default [
       "yield-star-spacing": "error"
     }
   },
+  // Node.js configuration for scripts directory
+  {
+    files: ["scripts/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "script",
+      globals: {
+        ...globals.node
+      }
+    },
+    rules: {
+      "strict": ["error", "safe"]
+    }
+  },
   pluginJs.configs.recommended,
   ...fixupConfigRules(pluginReactConfig),
 ];

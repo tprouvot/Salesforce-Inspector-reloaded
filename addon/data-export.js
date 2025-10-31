@@ -594,6 +594,19 @@ class Model {
 
     // If we are on the right hand side of a comparison operator, autocomplete field values
     let isFieldValue = query.substring(0, selStart).match(/\s*[<>=!]+\s*('?[^'\s]*)$/);
+
+    // In clause on picklist field
+    let isInWithValues = query.substring(0, selStart).match(/\s*in\s*\(\s*(?:(?:'[^']*'\s*,\s*)+|')('?[^'\s]*)$/i);
+    let inValuesUtilized = "";
+    if (isInWithValues){
+      if (isInWithValues[0] && isInWithValues[0].match(/\s*in\s*\(\s*(?:')$/i)){ // extra single quote
+        selStart -= 1;
+        isInWithValues[0] = isInWithValues[0].substring(0, isInWithValues[0].length - 1);
+      }
+      isFieldValue = isInWithValues;
+      inValuesUtilized = isInWithValues[0].toLowerCase();
+    }
+
     let fieldName = null;
     if (isFieldValue) {
       let fieldEnd = selStart - isFieldValue[0].length;
@@ -748,7 +761,11 @@ class Model {
         return;
       }
       let ar = new Enumerable(contextValueFields).flatMap(function* ({field}) {
-        yield* field.picklistValues.map(pickVal => ({value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: ""}));
+        yield* field.picklistValues.filter(
+          pickVal => !inValuesUtilized.includes(pickVal.value.toLowerCase())
+        ).map(
+          pickVal => ({value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: ""})
+        );
         if (field.type == "boolean") {
           yield {value: "true", title: "true", suffix: " ", rank: 1};
           yield {value: "false", title: "false", suffix: " ", rank: 1};
@@ -1021,6 +1038,7 @@ class Model {
           // Extract SOQL from the result
           const soqlMatch = result.result.match(/<soql>(.*?)<\/soql>/);
           const extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
+          //this.addQueryTab();
           this.updateCurrentTabQuery(extractedSoql);
           //to resolve sobject and rename current tab
           this.queryAutocompleteHandler();
@@ -1155,6 +1173,41 @@ class Model {
       }
       this.queryTabs[this.activeTabIndex].name = newName;
       this.saveQueryTabs();
+    }
+  }
+
+  updateTabName(index, newName) {
+    if (this.queryTabs[index] && newName.trim()) {
+      let trimmedName = newName.trim();
+      // Check if there are any other tabs with the same name
+      let count = 1;
+      let finalName = trimmedName;
+      while (this.queryTabs.some((tab, i) => i !== index && tab.name === finalName)) {
+        finalName = `${trimmedName} (${count})`;
+        count++;
+      }
+      this.queryTabs[index].name = finalName;
+      this.saveQueryTabs();
+      this.didUpdate();
+    }
+  }
+
+  reorderTabs(fromIndex, toIndex) {
+    if (fromIndex >= 0 && toIndex >= 0 && fromIndex < this.queryTabs.length && toIndex < this.queryTabs.length && fromIndex !== toIndex) {
+      const [movedTab] = this.queryTabs.splice(fromIndex, 1);
+      this.queryTabs.splice(toIndex, 0, movedTab);
+
+      // Update active tab index if the active tab was moved
+      if (this.activeTabIndex === fromIndex) {
+        this.activeTabIndex = toIndex;
+      } else if (this.activeTabIndex > fromIndex && this.activeTabIndex <= toIndex) {
+        this.activeTabIndex--;
+      } else if (this.activeTabIndex < fromIndex && this.activeTabIndex >= toIndex) {
+        this.activeTabIndex++;
+      }
+
+      this.saveQueryTabs();
+      this.didUpdate();
     }
   }
 
@@ -1335,7 +1388,19 @@ class App extends React.Component {
     this.onRemoveTab = this.onRemoveTab.bind(this);
     this.onTabClick = this.onTabClick.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
-    this.onItemSelection = this.onItemSelection.bind(this);
+    this.onTabNameEdit = this.onTabNameEdit.bind(this);
+    this.onTabNameSubmit = this.onTabNameSubmit.bind(this);
+    this.onTabDragStart = this.onTabDragStart.bind(this);
+    this.onTabDragOver = this.onTabDragOver.bind(this);
+    this.onTabDrop = this.onTabDrop.bind(this);
+
+    // Tab editing state
+    this.state = {
+      ...this.state,
+      editingTabIndex: -1,
+      editingTabName: "",
+      draggedTabIndex: -1
+    };
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1350,7 +1415,7 @@ class App extends React.Component {
     model.queryAutocompleteHandler();
     model.didUpdate();
   }
-  onPrefHideRelationsChange(e) {
+  onPrefHideRelationsChange() {
     let {model} = this.props;
     model.prefHideRelations = !model.prefHideRelations;
     this.onExport();
@@ -1524,40 +1589,51 @@ class App extends React.Component {
     model.didUpdate();
   }
 
-  onItemSelection(item, lookupOption) {
+  onTabNameEdit(e, index) {
+    e.stopPropagation();
     let {model} = this.props;
-
-    // Determine the actual selection type
-    let selectionType = lookupOption.key === "all" && item.list ? item.list.key : lookupOption.key;
-
-    // Selection handlers mapping
-    const selectionHandlers = {
-      history: () => {
-        model.selectedHistoryEntry = item;
-        model.selectHistoryEntry();
-      },
-      saved: () => {
-        model.selectedSavedEntry = item;
-        model.selectSavedEntry();
-      },
-      template: () => {
-        model.selectedQueryTemplate = item.query || item;
-        model.selectQueryTemplate();
-      }
-    };
-
-    // Execute the appropriate handler
-    if (selectionHandlers[selectionType]) {
-      selectionHandlers[selectionType]();
-    }
-
-    model.didUpdate();
+    this.setState({
+      editingTabIndex: index,
+      editingTabName: model.queryTabs[index].name
+    });
   }
 
+  onTabNameSubmit(e, index) {
+    e.preventDefault();
+    e.stopPropagation();
+    let {model} = this.props;
+    if (this.state.editingTabName.trim()) {
+      model.updateTabName(index, this.state.editingTabName);
+    }
+    this.setState({
+      editingTabIndex: -1,
+      editingTabName: ""
+    });
+  }
+
+  onTabDragStart(e, index) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", e.target);
+    this.setState({draggedTabIndex: index});
+  }
+
+  onTabDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
+
+  onTabDrop(e, index) {
+    e.preventDefault();
+    let {model} = this.props;
+    const fromIndex = this.state.draggedTabIndex;
+    if (fromIndex !== -1 && fromIndex !== index) {
+      model.reorderTabs(fromIndex, index);
+    }
+    this.setState({draggedTabIndex: -1});
+  }
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
-
     model.setQueryInput(queryInput);
     model.soqlPrompt = this.refs.prompt;
     //Set the cursor focus on query text area
@@ -1571,6 +1647,7 @@ class App extends React.Component {
     }
     queryInput.addEventListener("input", queryAutocompleteEvent);
     queryInput.addEventListener("select", queryAutocompleteEvent);
+
     // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
     queryInput.addEventListener("keyup", queryAutocompleteEvent);
     queryInput.addEventListener("mouseup", queryAutocompleteEvent);
@@ -1593,6 +1670,7 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
+
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
@@ -1718,13 +1796,46 @@ class App extends React.Component {
           model.queryTabs.map((tab, index) =>
             h("div", {
               key: index,
-              className: `query-tab ${index === model.activeTabIndex ? "active" : ""}`,
-              onClick: e => this.onTabClick(e, index)
+              className: `query-tab ${index === model.activeTabIndex ? "active" : ""} ${this.state.draggedTabIndex === index ? "dragging" : ""}`,
+              onClick: e => this.onTabClick(e, index),
+              draggable: true,
+              onDragStart: e => this.onTabDragStart(e, index),
+              onDragOver: e => this.onTabDragOver(e),
+              onDrop: e => this.onTabDrop(e, index)
             },
-            h("span", {}, tab.name),
+            this.state.editingTabIndex === index
+              ? h("input", {
+                type: "text",
+                className: "query-tab-name-input",
+                value: this.state.editingTabName,
+                onChange: e => this.setState({editingTabName: e.target.value}),
+                onBlur: e => this.onTabNameSubmit(e, index),
+                onKeyPress: e => {
+                  if (e.key === "Enter") {
+                    this.onTabNameSubmit(e, index);
+                  }
+                },
+                onKeyDown: e => {
+                  if (e.key === "Escape") {
+                    this.setState({
+                      editingTabIndex: -1,
+                      editingTabName: ""
+                    });
+                  }
+                  e.stopPropagation();
+                },
+                autoFocus: true,
+                onClick: e => e.stopPropagation()
+              })
+              : h("span", {
+                className: "query-tab-name",
+                onDoubleClick: e => this.onTabNameEdit(e, index),
+                title: "Double-click to edit tab name"
+              }, tab.name),
             h("span", {
               className: "query-tab-close",
-              onClick: e => this.onRemoveTab(e, index)
+              onClick: e => this.onRemoveTab(e, index),
+              title: "Close tab"
             }, "×")
             )
           ),

@@ -69,6 +69,10 @@ export let setupLinks = [
   //Platform Tools > Apps > Connected Apps
   {label: "Connected Apps OAuth Usage", link: "/lightning/setup/ConnectedAppsUsage/home", section: "Platform Tools > Apps > Connected Apps", prod: false},
   {label: "Manage Connected Apps", link: "/lightning/setup/ConnectedApplication/home", section: "Platform Tools > Apps > Connected Apps", prod: false},
+  //Platform Tools > Apps > External Client Apps
+  {label: "External Client App Manager", link: "/lightning/setup/ConnectedAppsUsage/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
+  {label: "External Client Apps OAuth Usage", link: "/lightning/setup/ExternalClientApplicationOauthUsage/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
+  {label: "External Client App Settings", link: "/lightning/setup/ExternalClientApplicationSettings/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
   //Platform Tools > Apps > Lightning Bolt
   {label: "Flow Category", link: "/lightning/setup/FlowCategory/home", section: "Platform Tools > Apps > Lightning Bolt", prod: false},
   {label: "Lightning Bolt Solutions", link: "/lightning/setup/LightningBolt/home", section: "Platform Tools > Apps > Lightning Bolt", prod: false},
@@ -84,6 +88,11 @@ export let setupLinks = [
   {label: "Package Manager", link: "/lightning/setup/Package/home", section: "Platform Tools > Apps > Packaging", prod: false},
   {label: "Package Usage", link: "/lightning/setup/PackageUsageSummary/home", section: "Platform Tools > Apps > Packaging", prod: false},
 
+  //Platform Tools > Feature Settings > Analytics > Reports & Dashboards
+  {label: "Report Types", link: "/lightning/setup/CustomReportTypeLightning/home", section: "Platform Tools > Feature Settings > Analytics > Reports & Dashboards", prod: false},
+  {label: "Reporting Snapshot", link: "/lightning/setup/AnalyticSnapshots/home", section: "Platform Tools > Feature Settings > Analytics > Reports & Dashboards", prod: false},
+  {label: "Reports and Dashboards Settings", link: "/lightning/setup/ReportUI/home", section: "Platform Tools > Feature Settings > Analytics > Reports & Dashboards", prod: false},
+
   //Platform Tools > Feature Settings > Digital Experiences
   {label: "All Sites", link: "/lightning/setup/SetupNetworks/home", section: "Platform Tools > Feature Settings > Digital Experiences", prod: false},
   {label: "Pages", link: "/lightning/setup/CommunityFlexiPageList/home", section: "Platform Tools > Feature Settings > Digital Experiences", prod: false},
@@ -92,6 +101,7 @@ export let setupLinks = [
   {label: "Themes", link: "/lightning/setup/CommunityThemeDefinitionList/home", section: "Platform Tools > Feature Settings > Digital Experiences", prod: false},
 
   //Platform Tools > Feature Settings
+  {label: "Field History Tracking", link: "/lightning/setup/FieldHistoryTracking/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Field History Tracking", link: "/lightning/setup/FieldHistoryTracking/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Functions", link: "/lightning/setup/Functions/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Home", link: "/lightning/setup/Home/home", section: "Platform Tools > Feature Settings", prod: false},
@@ -180,6 +190,8 @@ export let setupLinks = [
   {label: "Schema Builder", link: "/lightning/setup/SchemaBuilder/home", section: "Platform Tools > Objects and Fields", prod: false},
   //Platform Tools > Events
   {label: "Event Manager", link: "/lightning/setup/EventManager/home", section: "Platform Tools > Events", prod: false},
+  {label: "Event Relays", link: "/lightning/setup/EventRelay/home", section: "Platform Tools > Events", prod: false},
+  {label: "Event Studio", link: "/lightning/setup/EventHome/home", section: "Platform Tools > Events", prod: false},
   //Platform Tools > Process Automation
   {label: "Approval Processes", link: "/lightning/setup/ApprovalProcesses/home", section: "Platform Tools > Process Automation", prod: false},
   {label: "Automation Home", link: "/lightning/setup/ProcessHome/home", section: "Platform Tools > Process Automation", prod: false},
@@ -392,6 +404,7 @@ export let setupLinks = [
   {label: "Create New Permission Set", link: "/lightning/setup/PermSets/page?address=/udd/PermissionSet/newPermissionSet.apexp", section: "Administration > Users > Permission Set", prod: false},
   {label: "Create New Custom Permission", link: "/lightning/setup/CustomPermissions/page?address=/0CP/e", section: "Platform Tools > Custom Code > Custom Permission", prod: false},
   {label: "Recycle Bin", link: "/lightning/o/DeleteEvent/home", section: "App Launcher > Custom Link", prod: false},
+  {label: "Automation Lightning App", link: "/lightning/page/home", section: "Platform Tools > Process Automation", prod: false},
 
   //ConnectApi namespace classes doc links
   {label: "Class ActionLinks", link: "https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_ConnectAPI_ActionLinks_static_methods.htm", section: "Documentation Apex> ConnectApi > ActionLinks", prod: false, isExternal: true},

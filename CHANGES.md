@@ -1,9 +1,38 @@
 # Release Notes
 
+## Version 1.28
+
+- Rework REST Explore and Data Export header
+- `Field Creator` UI improvement of the Options modal (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
+- `Field Creator` Permission dependency improvement [feature 931](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/931) (contribution by [DivyanshuBist](https://github.com/DivyanshuBist))
+- Enable custom banner text on Sandbox banner
+- `Flow Scanner` Allow users to scan their flows based on default or customized rules (lib from Lightning Flow Scanner) contribution by [Camille Guillory](https://github.com/CamilleGuillory)
+- `Data Export` Allow users to reorganize and edit query tabs names [feature 950](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/950) request by [Scott Shapiro](https://github.com/sshapiro-articulate)
+- `Show All Data` Support keyboard shortcut to save edited record values [feature 951](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/951) request by [Mohak Gaur](https://github.com/mohakgaurrr)
+- `Documentation` Revised instructions for creating an External Client App, reflecting the deprecation of Connected Apps and added detailed steps for OAuth configuration and known issues related to Incognito mode [bug 962](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/962) (contribution by [Thomas Malidin Delabriere](https://github.com/tmalidin33))
+
 ## Version 1.27
 
-- Add automatic SOQL query typo removal in Data Export [feature 844](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/844)
-- Rework REST Explore header
+- Fix gauge display and text when limits are exceeded [issue #943](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/943) (contribution by [Sylvain Enguerand](https://github.com/Annubis45))
+- Open the Debug Logs from the Data Export page (contribution by [Marko Vuković](https://github.com/MarkoVukovic))
+- Fix sandbox banner colorization for Winter 26 changes
+- `Show All Data` Save fields selection [feature 914](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/914)
+- Fix 'unexpected query key(s): cache' error in REST Explore [issue 909](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/909) issued by [Martin Krchnak](https://github.com/mascot4m)
+- `Show All Data` Limit polymorphic reference types shown to 5 with "Show more" / "Show less" toggle in the field details tooltip [feature 865](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/865) (contribution by [Tushar Dangayach](https://github.com/rockstartushar))
+- Fix: Enable popup actions for records identified only by DurableId (e.g., FlowDefinitionView) [issue 441](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/441) (contribution by [Tushar Dangayach](https://github.com/rockstartushar))
+- `Show All Data` Analyze field usage by showing the percentage of records that have a value for each field.
+- `Show All Data` Add 'back to record' button [feature 884](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/884) (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
+- `Data Export` Suggestions added for queries using IN clause on picklist fields [feature 892](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/892) (contribution by [Luca Bassani](https://github.com/baslu93))
+- Support for multiple SOQL/SOSL tabs in `Data Export` [feature 132](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/132) (requested Erlend Hansen)
+- Add button in Option page to delete generated access token (cf [troubleshooting](https://tprouvot.github.io/Salesforce-Inspector-reloaded/troubleshooting/#generate-new-token-error))
+- Add option to configure default popup tab [feature 877](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/877) (requested by William Salomon)
+- Support Manual channel configuration and Change Data Capture Events on `Event Monitor` [feature 859](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/859) (idea by [David Moruzzi](https://github.com/dmoruzzi)) and [feature 867](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/867) (idea by Ammon Ho)
+- `Metadata` Handle SpecifiedTest + Start zip download when ready [feature 319](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/319) request by [Alfredo Chissotti](https://github.com/Astisme)
+- Add Metadata Deploy feature
+- Fix issue with the sorting of child components in Download Metadata
+- Add Agentforce integration to generate SOQL queries in Data Export [feature 850](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/850)
+- Add option for SOQL query typo removal in Data Export [feature 844](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/844) and [feature 849](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/849)
+- Remove the exclusion of InstalledPackage in Download Metadata page [feature 641](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/641) request by [yuandake](https://github.com/yuandake)
 - Create, Edit and Delete custom shortcuts links in Options page [feature 102](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/102)
 - Fix empty lines in picklist values causing deployment errors in Field Creator [issue 787](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/787) (contribution by [Vivek Sharma](https://github.com/vicky773h))
 - `Data Import` Automatically detect the SObject based on Id field [feature 483](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/483) request by [Tom Bassett](https://github.com/CRMTom92) and fix [issue 829](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/829) & [issue 832](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/832)
@@ -13,13 +42,15 @@
 - Filter result by column in `Data Export`[feature 685](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/685) (contribution by [Brahim LAISSAOUI](https://github.com/laissaouibrahim))
 - Grey out columns that were not imported in `Data Import` [feature 507](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/507) request by [Wintermute1974](https://github.com/Wintermute1974) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
 - `Show All Data`: Iterate through boolean values with up & down key [feature 794](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/794) request by [mplaaguilera](https://github.com/mplaaguilera)
-- Fix 'Query Record' not persiting the state of the 'Tooling Api' settting [issue 268](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/268) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
+- Fix 'Query Record' not persisting the state of the 'Tooling Api' setting [issue 268](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/268) (contribution by [Kaustubh Dapurkar](https://github.com/kaustubhdapurkar))
 - `Show All Data` Use alternative field Name in the header (ie CaseNumber) [feature 806](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/806) request by [Mart](https://github.com/Mart-User)
 - Implement search on `Event Monitor` to filter on event details
-- Prevent selection of an API version higher than the latest available [issue 464](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/464) (contribution by [Salwa Hammou](https://github.com/SalwaHm))
+- Prevent selection of an API version higher than the latest available [feature 464](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/464) (contribution by [Salwa Hammou](https://github.com/SalwaHm))
+- Fix error propagation on rest 403 [issue 881](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/881) (contribution by [Sebastien Colladon](https://github.com/scolladon))
 
 ## Version 1.26
 
+- Refactor field-creator api calls to match with extension standards
 - Fix ' character search in the popup Users tab [issue 799](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/799) by [Josue Ramirez](https://github.com/jramirez6964)
 - Support Custom Channels in Event Monitor [feature 797](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/797) (idea by [Mehdi Cherfaoui](https://github.com/mehdicherf))
 - `Event Monitor` : fix text selection in PlatformEvent payload, persist replayId in url and deduplicate events received

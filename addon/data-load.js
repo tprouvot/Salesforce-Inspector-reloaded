@@ -170,102 +170,131 @@ function renderCell(rt, cell, td) {
       td.appendChild(pop);
       let {objectTypes, recordId} = recordInfo();
       let objectType = undefined;
-      function setLinks(){
-        let aShow = document.createElement("a");
-        let args = new URLSearchParams();
-        args.set("host", rt.sfHost);
-        args.set("objectType", objectType);
-        if (rt.isTooling) {
-          args.set("useToolingApi", "1");
+      function setLinks(linkOptions = {isCopy: true, isQueryRecord: true, isShowAllData: true, isViewInSalesforce: true}) {
+        // Show All Data link
+        if (linkOptions.isShowAllData) {
+          let aShow = document.createElement("a");
+          let args = new URLSearchParams();
+          args.set("host", rt.sfHost);
+          args.set("objectType", objectType);
+          if (rt.isTooling) {
+            args.set("useToolingApi", "1");
+          }
+          if (recordId) {
+            args.set("recordId", recordId);
+          }
+          aShow.href = "inspect.html?" + args;
+          aShow.target = "_blank";
+          aShow.textContent = "Show all data";
+          aShow.className = "view-inspector";
+          let aShowIcon = document.createElement("div");
+          aShowIcon.className = "icon";
+          pop.appendChild(aShow);
+          aShow.prepend(aShowIcon);
         }
-        if (recordId) {
-          args.set("recordId", recordId);
-        }
-        aShow.href = "inspect.html?" + args;
-        aShow.target = "_blank";
-        aShow.textContent = "Show all data";
-        aShow.className = "view-inspector";
-        let aShowIcon = document.createElement("div");
-        aShowIcon.className = "icon";
-        pop.appendChild(aShow);
-        aShow.prepend(aShowIcon);
 
-        //Query Record
-        let aQuery = document.createElement("a");
-        let query = "SELECT Id FROM " + objectType + " WHERE Id = '" + recordId + "'";
-        let queryArgs = new URLSearchParams();
-        if (rt.isTooling) {
-          queryArgs.set("useToolingApi", "1");
+        // Query Record link
+        if (linkOptions.isQueryRecord) {
+          let aQuery = document.createElement("a");
+          let query = "SELECT Id FROM " + objectType + " WHERE Id = '" + recordId + "'";
+          let queryArgs = new URLSearchParams();
+          if (rt.isTooling) {
+            queryArgs.set("useToolingApi", "1");
+          }
+          queryArgs.set("host", rt.sfHost);
+          queryArgs.set("query", query);
+          aQuery.href = "data-export.html?" + queryArgs;
+          aQuery.target = "_blank";
+          aQuery.textContent = "Query Record";
+          aQuery.className = "query-record";
+          let aQueryIcon = document.createElement("div");
+          aQueryIcon.className = "icon";
+          pop.appendChild(aQuery);
+          aQuery.prepend(aQueryIcon);
         }
-        queryArgs.set("host", rt.sfHost);
-        queryArgs.set("query", query);
-        aQuery.href = "data-export.html?" + queryArgs;
-        aQuery.target = "_blank";
-        aQuery.textContent = "Query Record";
-        aQuery.className = "query-record";
-        let aqueryIcon = document.createElement("div");
-        aqueryIcon.className = "icon";
-        pop.appendChild(aQuery);
-        aQuery.prepend(aqueryIcon);
 
-        // If the recordId ends with 0000000000AAA it is a dummy ID such as the ID for the master record type 012000000000000AAA
-        if (recordId && isRecordId(recordId) && !recordId.endsWith("0000000000AAA")) {
+        // View in Salesforce link
+        if (linkOptions.isViewInSalesforce && recordId && isRecordId(recordId) && !recordId.endsWith("0000000000AAA")) {
           let aView = document.createElement("a");
           aView.href = "https://" + rt.sfHost + "/" + recordId;
+          //debug log specific link
+          if (recordId.startsWith("07L")) {
+            aView.href = "https://" + rt.sfHost + "/one/one.app#/alohaRedirect/p/setup/layout/ApexDebugLogDetailEdit/d?apex_log_id=" + recordId;
+          }
           aView.target = "_blank";
           aView.textContent = "View in Salesforce";
           aView.className = "view-salesforce";
-          let aviewIcon = document.createElement("div");
-          aviewIcon.className = "icon";
+          let aViewIcon = document.createElement("div");
+          aViewIcon.className = "icon";
           pop.appendChild(aView);
-          aView.prepend(aviewIcon);
+          aView.prepend(aViewIcon);
         }
 
-        //Download event logFile
-        if (isEventLogFile(recordId)) {
-          let aDownload = document.createElement("a");
-          aDownload.id = recordId;
-          aDownload.target = "_blank";
-          aDownload.textContent = "Download File";
-          aDownload.className = "download-salesforce";
-          let aDownloadIcon = document.createElement("div");
-          aDownloadIcon.className = "icon";
-          pop.appendChild(aDownload);
-          aDownload.prepend(aDownloadIcon);
-          aDownload.addEventListener("click", e => {
-            sfConn.rest(e.target.id, {responseType: "text/csv"}).then(data => {
-              let downloadLink = document.createElement("a");
-              downloadLink.download = recordId.split("/")[6];
-              downloadLink.href = "data:text/csv;charset=utf-8," + data;
-              downloadLink.click();
+        // Download Event Log or Copy Id
+        if (linkOptions.isCopy) {
+          if (isEventLogFile(recordId)) {
+            let aDownload = document.createElement("a");
+            aDownload.id = recordId;
+            aDownload.target = "_blank";
+            aDownload.textContent = "Download File";
+            aDownload.className = "download-salesforce";
+            let aDownloadIcon = document.createElement("div");
+            aDownloadIcon.className = "icon";
+            pop.appendChild(aDownload);
+            aDownload.prepend(aDownloadIcon);
+            aDownload.addEventListener("click", e => {
+              sfConn.rest(e.target.id, {responseType: "text/csv"}).then(data => {
+                let downloadLink = document.createElement("a");
+                downloadLink.download = recordId.split("/")[6];
+                downloadLink.href = "data:text/csv;charset=utf-8," + data;
+                downloadLink.click();
+              });
+              td.removeChild(pop);
             });
-            td.removeChild(pop);
-          });
-        } else {
-          //copy to clipboard
-          let aCopy = document.createElement("a");
-          aCopy.className = "copy-id";
-          aCopy.textContent = "Copy Id";
-          aCopy.id = recordId;
-          let acopyIcon = document.createElement("div");
-          acopyIcon.className = "icon";
-          pop.appendChild(aCopy);
-          aCopy.prepend(acopyIcon);
-          aCopy.addEventListener("click", e => {
-            navigator.clipboard.writeText(e.target.id);
-            td.removeChild(pop);
-          });
+          } else {
+            let aCopy = document.createElement("a");
+            aCopy.className = "copy-id";
+            aCopy.textContent = "Copy Id";
+            aCopy.id = recordId;
+            let aCopyIcon = document.createElement("div");
+            aCopyIcon.className = "icon";
+            pop.appendChild(aCopy);
+            aCopy.prepend(aCopyIcon);
+            aCopy.addEventListener("click", e => {
+              navigator.clipboard.writeText(e.target.id);
+              td.removeChild(pop);
+            });
+          }
         }
       }
-      if (objectTypes.length === 1){
+      const defaultOptions = {
+        isCopy: true,
+        isQueryRecord: true,
+        isShowAllData: true,
+        isViewInSalesforce: true
+      };
+
+      if (objectTypes.length === 1 && objectTypes[0] !== "Unknown") {
         objectType = objectTypes[0];
-        setLinks();
-      } else {
+        setLinks(defaultOptions);
+      } else if (recordId && isRecordId(recordId)) {
         sfConn.rest(`/services/data/v${apiVersion}/ui-api/records/${recordId}?layoutTypes=Compact`).then(res => {
           objectType = res.apiName;
-          setLinks();
+          setLinks(defaultOptions);
+        }).catch(() => {
+          objectType = null;
+          defaultOptions.isQueryRecord = false;
+          defaultOptions.isShowAllData = false;
+          setLinks(defaultOptions);
         });
+      } else {
+        defaultOptions.isQueryRecord = false;
+        defaultOptions.isShowAllData = false;
+        objectType = null;
+        setLinks(defaultOptions);
       }
+
+
       function closer(ev) {
         if (ev != e && ev.target.closest(".pop-menu") != pop) {
           removeEventListener("click", closer);
@@ -278,11 +307,12 @@ function renderCell(rt, cell, td) {
     td.appendChild(a);
   }
   function isRecordId(recordId) {
-    // We assume a string is a Salesforce ID if it is 18 characters,
-    // contains only alphanumeric characters,
-    // the record part (after the 3 character object key prefix and 2 character instance id) starts with at least four zeroes,
-    // and the 3 character object key prefix is not all zeroes.
-    return /^[a-z0-9]{5}0000[a-z0-9]{9}$/i.exec(recordId) && !recordId.startsWith("000");
+    return typeof recordId === "string"
+         && /^[a-zA-Z0-9]{15,18}$/.test(recordId)
+         && /^[0-9a-zA-Z]{3}/.test(recordId)
+         && !recordId.startsWith("000")
+         && !/[^a-zA-Z0-9]/.test(recordId)
+         && /[0-9]/.test(recordId.slice(0, 5));
   }
   function isEventLogFile(text) {
     // test the text to identify if this is a path to an eventLogFile

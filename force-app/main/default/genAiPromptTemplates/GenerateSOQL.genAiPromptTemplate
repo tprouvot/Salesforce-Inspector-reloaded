@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>anEjRSM7QudV59rn+lQuKa5VlLkCpKFNWwKc0odntGw=_1</activeVersionIdentifier>
+    <description>Prompt used to generate a SOQL query based on a description.</description>
+    <developerName>GenerateSOQL</developerName>
+    <masterLabel>Generate SOQL</masterLabel>
+    <templateVersions>
+        <content>As a Salesforce expert in SOQL, return a SOQL query based on this description : {!$Input:Description}.
+
+Instructions:** 
+1. Based on the description, construct a Salesforce SOQL that adheres to the specified SObject and make sure this object exists and is queryable. 
+2. Ensure the SOQL is syntactically correct, keep in mind the query plan statement and use a maximum of indexed fields for the filters if needed.
+3. Output the generated Salesforce SOQL query clearly enclosed within `&lt;soql&gt;` tags.
+4. Output if the tooling api needs to be used for this query  `&lt;toolingApi&gt;true&lt;/toolingApi&gt;` 
+</content>
+        <inputs>
+            <apiName>Description</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Description</masterLabel>
+            <referenceName>Input:Description</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>anEjRSM7QudV59rn+lQuKa5VlLkCpKFNWwKc0odntGw=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

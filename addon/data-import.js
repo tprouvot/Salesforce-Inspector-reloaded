@@ -1365,7 +1365,7 @@ class App extends React.Component {
             h("p", {}, "Bulk API is not supported. Large data volumes may freeze or crash your browser.")
           ),
         ),
-        h("div", { className: "slds-card sfir-full-height slds-m-horizontal_medium slds-m-bottom_medium slds-p-horizontal_medium" },
+        h("div", { className: "slds-card sfir-full-height slds-m-horizontal_medium slds-m-bottom_medium slds-p-horizontal_medium sfir-results-section" },
           h("div", { id: "result-table", ref: "scroller" }),
           model.confirmPopup ? h("div", {},
             h("section",

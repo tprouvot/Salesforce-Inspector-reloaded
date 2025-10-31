@@ -176,7 +176,10 @@ h1 {
   line-height: 1.25;
 }
 .sfir-conf-section {
-  max-height: calc(50vh - 70px);
+  max-height:calc(40vh - 170px);
+}
+.sfir-results-section {
+  height: 60vh;
 }
 
 @media (max-width: 670px) {

@@ -17,3 +17,7 @@
 .slds-builder-header.sfir-header-override {
     background-color: var(--sfir-custom-color);
 }
+
+.sfir-full-height{
+    height: 100%;
+}

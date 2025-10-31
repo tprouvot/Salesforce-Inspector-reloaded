@@ -57,3 +57,30 @@ If you use the standard Salesforce Inspector Reloaded's Connected App and click 
 
 This issue occurs because the default Salesforce Inspector Reloaded Connected App doesn't use the required scope for this feature.
 As a workaround, you can create a custom `External Client App` (since the creation of Connected Apps is soon to be deprecated) as described in this [article](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#external-client-app-creation).
+
+### Deployment error: No package.xml found
+
+This error occurs when attempting to deploy a zip file where the `package.xml` file is not located at the root level of the zip archive. This commonly happens when:
+
+1. **Retrieved metadata structure**: Zip files downloaded from Salesforce (via Retrieve operations) contains a parent folder (typically named "unpackaged") that wraps all the metadata files including `package.xml`.
+2. **Deploy requirement mismatch**: The Salesforce Deploy API expects `package.xml` to be at the root level of the zip file, not inside a subfolder.
+
+**How to solve it:**
+
+1. **Extract and re-zip**: Extract the downloaded zip file, locate the `package.xml` inside the parent folder, move all contents (including `package.xml`) to a new folder, and create a new zip file with `package.xml` at the root level.
+2. **Verify structure**: Before deploying, ensure your zip file structure looks like this:
+   ```
+   metadata.zip
+   ├── package.xml
+   ├── classes/
+   ├── objects/
+   └── [other metadata folders]
+   ```
+   **Not like this:**
+   ```
+   metadata.zip
+   └── unpackaged/
+       ├── package.xml
+       ├── classes/
+       └── [other folders]
+   ```

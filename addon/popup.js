@@ -1621,7 +1621,8 @@ class UserDetails extends React.PureComponent {
    unfreezeUser(user){
        sfConn.rest("/services/data/v" + apiVersion + "/sobjects/UserLogin/" + user.UserLogins?.records?.[0]?.Id, {method: "PATCH",
         body: {IsFrozen: false} 
-      }).catch(err => console.log("Error during user unfreeze", err));
+      }).then(() => browser.runtime.sendMessage({message: "reloadPage"}))
+      .catch(err => console.log("Error during user unfreeze", err));
   }
 
   toggleMenu(){

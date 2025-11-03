@@ -3,7 +3,8 @@
 **********/
 figure {
   display: table;
-  float: left;
+  margin: 0 auto 1rem auto;
+  width: 100%;
 }
 figcaption {
   text-align: center;
@@ -19,11 +20,12 @@ figcaption > div {
   margin-top: 2px;
 }
 .gauge {
-  display: inline-block;
+  display: block;
   position: relative;
   width: 10rem;
   height: 5rem;
   overflow: hidden;
+  margin: 0 auto;
 }
 .gauge:before,
 .gauge:after,

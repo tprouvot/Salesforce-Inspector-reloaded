@@ -1,15 +1,20 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 import {copyToClipboard} from "./data-load.js";
+import {PageHeader} from "./components/PageHeader.js";
 /* global initButton */
 
 class Model {
   constructor(sfHost) {
     this.reactCallback = null;
+    this.sfHost = sfHost;
     this.sfLink = "https://" + sfHost;
+    this.orgName = sfHost.split(".")[0]?.toUpperCase() || "";
     this.spinnerCount = 0;
     this.title = "Org Limits";
-    this.userInfo = "...";
+    this.userFullName = "";
+    this.userInitials = "";
+    this.userName = "";
     this.allLimitData = [];
     this.errorMessages = [];
     this.sortOptions = [{label: "Consumption", value: "consumption"}, {label: "A-Z %", value: "asc"}];
@@ -20,7 +25,9 @@ class Model {
 
     let userInfoPromise = sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {});
     this.spinFor("userInfo", userInfoPromise, (res) => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
+      this.userFullName = res.userFullName;
+      this.userInitials = this.userFullName.split(' ').map(n => n[0]).join('');
+      this.userName = res.userName;
     });
   }
 
@@ -95,6 +102,7 @@ let h = React.createElement;
 class LimitData extends React.Component {
   render() {
     return (
+      h("div", {className: "slds-col slds-size_1-of-5 slds-p-top_xx-large"},
       h("figure", {},
         h("div", {
           className: "gauge"
@@ -116,7 +124,8 @@ class LimitData extends React.Component {
         h("figcaption", {}, this.props.label,
           h("div", {}, (this.props.max - this.props.remaining).toLocaleString() + " of " + (this.props.max).toLocaleString() + " consumed",
             h("br", {}), this.props.remaining >= 0 ? "(" + (this.props.remaining).toLocaleString() + " left)" : "(" + (0 - this.props.remaining).toLocaleString() + " overconsumed)"
-          ),
+            ),
+          )
         )
       )
     );
@@ -169,56 +178,51 @@ class App extends React.Component {
     let model = this.props.vm;
     document.title = model.title;
     return h("div", {},
-      h("div", {id: "user-info"},
-        h("a", {href: `https://${sfConn.instanceHostname}`, className: "sf-link"},
-          h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-          ),
-          " Salesforce Home"
-        ),
-        h("h1", {}, model.title),
-        h("span", {}, " / " + model.userInfo),
-        h("div", {className: "flex-right"},
-          h("a", {href: "#", id: "refresh", title: "Refresh Limits", onClick: this.onRefreshLimits},
-            h("svg", {className: "icon"},
-              h("use", {xlinkHref: "symbols.svg#refresh"})
-            )
-          ),
-          h("a", {href: "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_limits.htm", target: "_blank", title: "Org Limits Help", onClick: null},
-            h("svg", {className: "icon"},
-              h("use", {xlinkHref: "symbols.svg#help"})
-            )
-          ),
-          h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
-            h("span", {className: "slds-assistive-text"}),
-            h("div", {className: "slds-spinner__dot-a"}),
-            h("div", {className: "slds-spinner__dot-b"}),
-          ),
-        ),
-      ),
-      h("div", {className: "area", id: "result-area"},
-        h("div", {className: "result-bar"},
-          h("h1", {}, "Limits"),
-          h("div", {className: "button-group"},
-            h("button", {disabled: model.allLimitData.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
-          ),
-          h("div", {className: "flex-right"},
-            h("select", {value: model.sortBy.value, onChange: this.onSortBy, className: ""},
-              h("option", {value: "none", disabled: true, defaultValue: true, hidden: true}, "Sort By"),
-              model.sortOptions.map(opt => h("option", {key: opt.value, value: opt.value}, opt.label))
+      h(PageHeader, {
+        pageTitle: "Org Limits",
+        orgName: model.orgName,
+        sfLink: model.sfLink,
+        sfHost: model.sfHost,
+        spinnerCount: model.spinnerCount,
+        userInitials: model.userInitials,
+        userFullName: model.userFullName,
+        userName: model.userName
+      }),
+      h("div", { className: "slds-m-top_xx-large", style: {height: "calc(100vh - 50px)", display: "flex", flexDirection: "column"} },
+        h("div", { className: "slds-card slds-m-around_medium", style: {flex: "1", display: "flex", flexDirection: "column", minHeight: 0} },
+          h("div", { className: "slds-card__header slds-grid slds-grid_vertical-align-center" },
+            h("header", { className: "slds-media slds-media_center slds-has-flexi-truncate" },
+              h("div", { className: "slds-media__body slds-grid slds-grid_vertical-align-center" },
+                h("div", { className: "slds-col slds-size_2-of-12" },
+                  h("h3", { className: "slds-card__header-title" },
+                    h("span", {}, "Limits snapshot")
+                  ),
+                ),
+                h("div", { className: "slds-col slds-size_8-of-12" },
+                  h("button", { className: "slds-button slds-button_neutral", disabled: model.allLimitData.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard" }, "Copy")
+                ),
+                h("div", { className: "slds-col slds-size_2-of-12 slds-text-align_right" },
+                  h("div", {className: "slds-form-element"},
+                    h("div", {className: "slds-form-element__control"},
+                      h("div", {className: "slds-select_container"},
+                        h("select", {className: "slds-select", id: "select-01", value: model.sortBy.value, onChange: this.onSortBy},
+                          h("option", { value: "none", disabled: true, defaultValue: true, hidden: true }, "Sort By"),
+                    model.sortOptions.map(opt => h("option", { key: opt.value, value: opt.value }, opt.label))
+                        )
+                      )
+                    )
+                  )
+                )
+              )
             ),
           ),
-        ),
-        h("div", {id: "result-table", ref: "scroller"},
-          h("div", {},
-            h("div", {
-              className: "body"
-            },
-            model.allLimitData.map(limitData =>
-              h(LimitData, limitData)
+          h("div", {className: "slds-card__body slds-card__body_inner", style: {flex: "1", overflowY: "auto", minHeight: 0}},
+            h("div", {className: "slds-grid slds-gutters slds-wrap"},
+              model.allLimitData.map(limitData =>
+                h(LimitData, limitData)
+              )
             )
-            )
-          )
+          ),
         )
       )
     );

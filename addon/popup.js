@@ -740,7 +740,7 @@ class AllDataBoxUsers extends React.PureComponent {
   }
 
   getUserSearchFieldsFromLocalStorage() {
-    const defaultFields = ["Username", "Email", "Alias", "Name"].map(field => ({ name: field, label: field, checked: true }));
+    const defaultFields = ["Username", "Email", "Alias", "Name"].map(field => ({name: field, label: field, checked: true}));
     const userDefaultSearchFieldsOptions = localStorage.getItem("userDefaultSearchFieldsOptions");
     if (!userDefaultSearchFieldsOptions) {
       return defaultFields;
@@ -750,8 +750,8 @@ class AllDataBoxUsers extends React.PureComponent {
       if (!Array.isArray(parsed)) {
         return defaultFields;
       }
-      const enabledSearchOptions= parsed.filter(field => field && field.name && field.checked===true);
-      return enabledSearchOptions.length > 0 ? enabledSearchOptions: defaultFields;
+      const enabledSearchOptions = parsed.filter(field => field && field.name && field.checked === true);
+      return enabledSearchOptions.length > 0 ? enabledSearchOptions : defaultFields;
     } catch (e) {
       return defaultFields;
     }
@@ -762,12 +762,12 @@ class AllDataBoxUsers extends React.PureComponent {
     userQuery = userQuery.trim();
     if (!userQuery) {
       return [];
-    }    
+    }
     const escapedUserQuery = userQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-    const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
-    const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
     const userSearchWhereClause = this.getUserSearchWhereClause(escapedUserQuery);
-    const queryFrom = "from User where " + userSearchWhereClause + " order by IsActive DESC, LastLoginDate limit 100";
+    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
     const compositeQuery = {
       "compositeRequest": [
         {

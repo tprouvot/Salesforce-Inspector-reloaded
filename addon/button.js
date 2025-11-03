@@ -83,23 +83,15 @@ function initButton(sfHost, inInspector) {
   }
 
   // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
+  // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
   function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos}) {
     o = o || "vertical"; // Default to vertical
     const isVertical = o === "vertical";
-    const popupWidth = 278;
-    const popupHeight = 450;
-    pos = pos ? Math.min(100, pos) + "%" : "122px";
-    if(isVertical) {
-      pos = 'max(0px, calc(' + pos + ' - ' + popupHeight + 'px))';
-    }else{
-      pos = 'max(0px, calc(' + pos + ' - ' + popupWidth + 'px))';
-    }
+    pos = pos ? Math.min(95, pos) + "%" : "122px";
     const [posStyle, oStyle] = isVertical ? ["top", "right"] : ["left", "bottom"];
-
-    // SLDS dropdown arrow icons
     const imgSrc = isVertical
-      ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M14 7l-5 5 5 5' stroke='%230176d3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
-      : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M7 10l5 5 5-5' stroke='%230176d3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
+    ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M14 7l-5 5 5 5' stroke='%230176d3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
+    : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M7 10l5 5 5-5' stroke='%230176d3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
     const btnClass = `insext-btn-${o}`;
     return {pos, posStyle, oStyle, imgSrc, btnClass};
   }

@@ -43,7 +43,8 @@
   }
   
   #insext .insext-popup-vertical-up {
-    bottom: 100%;
+    /*bottom: 100%;*/
+    top: calc(100% - 400px) !important;
   }
   
   #insext .insext-popup-horizontal {
@@ -58,7 +59,7 @@
   }
   
   #insext .insext-popup-horizontal-right {
-    left: 0;
+    left: -200px;
   }
   
   #insext.insext-active .insext-popup {

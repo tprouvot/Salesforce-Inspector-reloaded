@@ -2,6 +2,7 @@
 
 ## Version 1.28
 
+- `Users search`  now supports exclusion of inactive and portal users, supports customizable searchable fields and can be searched by profile name [feature 965](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/965) (contribution by [Thomas Malidin Delabriere](https://github.com/tmalidin33))
 - `Field Creator` UI improvement of the Options modal (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))
 - `Field Creator` Permission dependency improvement [feature 931](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/931) (contribution by [DivyanshuBist](https://github.com/DivyanshuBist))
 - Enable custom banner text on Sandbox banner
@@ -304,3 +305,4 @@
 - Remove extra comma when autocomplete query in data export, or select a field from suggested fields just before 'FROM' keyword.
 - Add "Copy Id" option when clicking on a SObject field or Id in data export page.
 - Integrate UI updates from [Garywoo's fork](https://github.com/Garywoo/Chrome-Salesforce-inspector)
+

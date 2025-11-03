@@ -120,6 +120,25 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "text", title: "Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
           {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
           {option: MultiCheckboxButtonGroup,
+            props: {title: "Exclude users from search",
+              key: "userSearchExclusions",
+              checkboxes: [
+                {label: " Exclude Portal users", name: "portal", checked: false},
+                {label: " Exclude Inactive users", name: "inactive", checked: false}
+              ]}
+          },
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "User Default Search Fields",
+              key: "userDefaultSearchFieldsOptions",
+              checkboxes: [
+                {label: "Username", name: "username", checked: true},
+                {label: "Email", name: "email", checked: true},
+                {label: "Alias", name: "alias", checked: true},
+                {label: "Name", name: "name", checked: true},
+                {label: "Profile Name", name: "profile.name"}
+              ]}
+          },
+          {option: MultiCheckboxButtonGroup,
             props: {title: "Default Popup Tab",
               key: "defaultPopupTab",
               unique: true,

@@ -800,7 +800,19 @@ class FieldRowList extends RowList {
 
   // Helper method to calculate percentage
   calculatePercentage(nonNullRecords, totalRecords) {
-    return totalRecords > 0 ? Math.round((nonNullRecords / totalRecords) * 100) : 0;
+    if (totalRecords <= 0) {
+      return 0;
+    }
+
+    let percentage = (nonNullRecords / totalRecords) * 100;
+    let roundedPercentage = Math.round(percentage);
+
+    // If rounded percentage is 0 but there are actually some records, show with 3 decimal places
+    if (roundedPercentage === 0 && nonNullRecords > 0) {
+      return Math.round(percentage * 1000) / 1000; // Round to 3 decimal places
+    }
+
+    return roundedPercentage;
   }
 
   // Helper method to set field usage success

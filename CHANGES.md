@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.28
+## Version 2.0
 
 - `Users search`  now supports exclusion of inactive and portal users, supports customizable searchable fields and can be searched by profile name [feature 965](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/965) (contribution by [Thomas Malidin Delabriere](https://github.com/tmalidin33))
 - `Field Creator` UI improvement of the Options modal (contribution by [Kamil Gadawski](https://github.com/KamilGadawski))

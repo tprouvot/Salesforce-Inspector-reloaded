@@ -822,6 +822,12 @@ svg.icon:hover {
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.query-tab:hover {
+  background-color: #f4f6f9;
 }
 
 .query-tab.active {
@@ -829,6 +835,42 @@ svg.icon:hover {
   border-color: #dddbda;
   border-bottom-color: #fff;
   margin-bottom: -1px;
+}
+
+.query-tab.active:hover {
+  background: #fff;
+}
+
+.query-tab.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+}
+
+.query-tab-name {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 2px;
+  transition: background-color 0.1s;
+}
+
+.query-tab-name:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.query-tab-name-input {
+  border: 1px solid #1589ee;
+  border-radius: 2px;
+  padding: 2px 4px;
+  font-size: inherit;
+  font-family: inherit;
+  background: #fff;
+  min-width: 60px;
+  max-width: 120px;
+}
+
+.query-tab-name-input:focus {
+  outline: none;
+  box-shadow: 0 0 3px rgba(21, 137, 238, 0.3);
 }
 
 .query-tab-close {
@@ -840,10 +882,12 @@ svg.icon:hover {
   border-radius: 50%;
   font-size: 12px;
   color: #706e6b;
+  transition: background-color 0.1s;
 }
 
 .query-tab-close:hover {
   background: #f3f2f2;
+  color: #c23934;
 }
 
 .add-tab-button {
@@ -854,6 +898,7 @@ svg.icon:hover {
   align-items: center;
   justify-content: center;
   border-radius: 4px;
+  transition: background-color 0.1s;
 }
 
 .add-tab-button:hover {

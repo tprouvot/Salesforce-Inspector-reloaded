@@ -156,15 +156,9 @@ function initButton(sfHost, inInspector) {
   function colorizeBanner(faviconColor, isSandbox, bannerText){
     const sandboxBannerSelector = "div.slds-color__background_gray-1.slds-text-align_center.slds-size_full.slds-text-body_regular.oneSystemMessage";
     if (isSandbox === "false"){
+      let envNameBanner = addBannerText(isSandbox, faviconColor, bannerText, sandboxBannerSelector);
       const bannerContainer = document.querySelector(sandboxBannerSelector);
-      const envNameBanner = document.createElement("div");
-      envNameBanner.className = "slds-notify_alert";
-      envNameBanner.style.backgroundColor = faviconColor;
-      envNameBanner.style.color = "white";
-      const envNameSpan = document.createElement("span");
-      envNameSpan.textContent = bannerText ? bannerText : "WARNING: THIS IS PRODUCTION";
-      envNameBanner.appendChild(envNameSpan);
-
+      addBannerText(isSandbox, faviconColor, bannerText, bannerContainer);
       if (bannerContainer) {
         //most of the time
         bannerContainer.appendChild(envNameBanner);
@@ -178,10 +172,28 @@ function initButton(sfHost, inInspector) {
       // add a new observer for the new devops_center sandbox banner
       observeElement("devops_center-base-component", (banner) => {
         const navBar = banner.getElementsByClassName("navBar-container")[0];
+        if (bannerText){
+          addBannerText(true, faviconColor, bannerText, navBar.firstChild);
+        }
         if (navBar) navBar.style.backgroundColor = faviconColor;
       });
 
     }
+  }
+
+  function addBannerText(isSandbox, faviconColor, bannerText, bannerContainer) {
+    const envNameBanner = document.createElement("div");
+    envNameBanner.style.backgroundColor = faviconColor;
+    envNameBanner.style.color = "white";
+    const envNameSpan = document.createElement("span");
+    envNameSpan.textContent = bannerText ? bannerText : "WARNING: THIS IS PRODUCTION";
+    envNameBanner.appendChild(envNameSpan);
+    if (isSandbox === "false"){
+      envNameBanner.className = "slds-notify_alert";
+    } else {
+      bannerContainer.firstChild.after(envNameBanner);
+    }
+    return envNameBanner;
   }
 
   function addBorder(fav){

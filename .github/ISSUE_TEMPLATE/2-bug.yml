@@ -52,8 +52,8 @@ body:
     attributes:
       label: What browser are you using?
       options:
-        - Firefox
         - Chrome
         - Microsoft Edge
+        - Firefox
     validations:
       required: true

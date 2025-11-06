@@ -1,8 +1,8 @@
 {
   "name": "Salesforce Inspector Reloaded BETA",
   "description": "Productivity tools for Salesforce administrators and developers to inspect data and metadata directly from the Salesforce UI.",
-  "version": "1.274",
-  "version_name": "1.27",
+  "version": "2.0.0",
+  "version_name": "2.0",
   "icons": {
     "128": "icon128.png"
   },
@@ -82,7 +82,8 @@
         "inject.js",
         "field-creator.html",
         "options.html",
-        "event-monitor.html"
+        "event-monitor.html",
+        "flow-scanner.html"
       ],
       "matches": [
         "https://*.salesforce.com/*",
@@ -120,6 +121,9 @@
     "open-export-execute": {
       "description": "Run Query in Data Export"
     },
+    "open-save-modifications": {
+      "description": "Save modifications in Show All Data"
+    },
     "link-setup": {
       "description": "Open Setup"
     },
@@ -155,6 +159,9 @@
     },
     "event-monitor": {
       "description": "Event Monitor"
+    },
+    "flow-scanner": {
+      "description": "Flow Scanner"
     }
   }
 }

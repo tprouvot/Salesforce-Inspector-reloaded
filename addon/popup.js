@@ -340,7 +340,7 @@ class App extends React.PureComponent {
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ) : null,
             h("div", {},
-              h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Field Crea", h("u", {}, "t"), "or (beta)"))
+              h("a", {ref: "fieldCreatorBtn", href: fieldCreatorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Field Crea", h("u", {}, "t"), "or"))
             ),
           ),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
@@ -691,12 +691,40 @@ class AllDataBox extends React.PureComponent {
 class AllDataBoxUsers extends React.PureComponent {
   constructor(props) {
     super(props);
+    // Load user search preferences early so they are available in render and getMatches
+    const userSearchFields = this.getUserSearchFieldsFromLocalStorage();
+    const {excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.getUserSearchExclusionsFromLocalStorage();
+
     this.state = {
       selectedUser: null,
       selectedUserId: null,
+      userSearchFields,
+      excludeInactiveUsersFromSearch,
+      excludePortalUsersFromSearch,
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
+  }
+
+  getUserSearchExclusionsFromLocalStorage() {
+    // Try to read from new MultiCheckboxButtonGroup format first
+    const userSearchExclusions = localStorage.getItem("userSearchExclusions");
+    const defaultExclusions = {
+      excludePortalUsersFromSearch: false,
+      excludeInactiveUsersFromSearch: false
+    };
+    if (!userSearchExclusions) {
+      return defaultExclusions;
+    }
+    try {
+      const parsed = JSON.parse(userSearchExclusions);
+      return {
+        excludePortalUsersFromSearch: parsed.find(cb => cb.name === "portal")?.checked || false,
+        excludeInactiveUsersFromSearch: parsed.find(cb => cb.name === "inactive")?.checked || false
+      };
+    } catch (e) {
+      return defaultExclusions;
+    }
   }
 
   componentDidMount() {
@@ -711,17 +739,35 @@ class AllDataBoxUsers extends React.PureComponent {
     }
   }
 
+  getUserSearchFieldsFromLocalStorage() {
+    const defaultFields = ["Username", "Email", "Alias", "Name"].map(field => ({name: field, label: field, checked: true}));
+    const userDefaultSearchFieldsOptions = localStorage.getItem("userDefaultSearchFieldsOptions");
+    if (!userDefaultSearchFieldsOptions) {
+      return defaultFields;
+    }
+    try {
+      const parsed = JSON.parse(userDefaultSearchFieldsOptions);
+      if (!Array.isArray(parsed)) {
+        return defaultFields;
+      }
+      const enabledSearchOptions = parsed.filter(field => field && field.name && field.checked === true);
+      return enabledSearchOptions.length > 0 ? enabledSearchOptions : defaultFields;
+    } catch (e) {
+      return defaultFields;
+    }
+  }
+
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
     userQuery = userQuery.trim();
     if (!userQuery) {
       return [];
     }
-
     const escapedUserQuery = userQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-    const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
-    const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const queryFrom = "from User where (username like '%" + escapedUserQuery + "%' or name like '%" + escapedUserQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
+    const userSearchWhereClause = this.getUserSearchWhereClause(escapedUserQuery);
+    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
     const compositeQuery = {
       "compositeRequest": [
         {
@@ -748,6 +794,24 @@ class AllDataBoxUsers extends React.PureComponent {
       setIsLoading(false);
     }
 
+  }
+
+  getUserSearchWhereClause(escapedUserQuery) {
+    const {userSearchFields, excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.state;
+
+    let userSearchWhereClause = "(";
+    userSearchFields.forEach(field => {
+      userSearchWhereClause += field.name + " LIKE '%" + escapedUserQuery + "%' OR ";
+    });
+    userSearchWhereClause = userSearchWhereClause.slice(0, -4);
+    userSearchWhereClause += ")";
+    if (excludeInactiveUsersFromSearch) {
+      userSearchWhereClause += " AND IsActive = true";
+    }
+    if (excludePortalUsersFromSearch) {
+      userSearchWhereClause += " AND IsPortalEnabled = false";
+    }
+    return userSearchWhereClause;
   }
 
   async onDataSelect(userRecord) {
@@ -835,10 +899,13 @@ class AllDataBoxUsers extends React.PureComponent {
   render() {
     let {selectedUser} = this.state;
     let {sfHost, linkTarget, contextOrgId, contextUserId, contextPath} = this.props;
+    const placeholderFields = (this.state.userSearchFields && this.state.userSearchFields.length)
+      ? (this.state.userSearchFields.map(field => field.label)).join(", ")
+      : "Username, Email, Alias, Name";
 
     return (
       h("div", {ref: "usersBox", className: "users-box"},
-        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: "Username, email, alias or name of user", resultRender: this.resultRender}),
+        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: placeholderFields + " of user", resultRender: this.resultRender}),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
             ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
@@ -1193,7 +1260,7 @@ class AllDataBoxShortcut extends React.PureComponent {
 
   onAddShortcut(){
     let {sfHost} = this.props;
-    window.open("options.html?host=" + sfHost + "&selectedTab=8");
+    window.open("options.html?host=" + sfHost + "&selectedTab=custom-shortcuts");
   }
 
   resultRender(matches, shortcutQuery) {
@@ -1803,6 +1870,9 @@ class AllDataSelection extends React.PureComponent {
   redirectToFlowVersions(){
     return "https://" + this.props.sfHost + "/lightning/setup/Flows/page?address=%2F" + this.state.flowDefinitionId;
   }
+  getFlowScannerUrl(){
+    return `flow-scanner.html?host=${this.props.sfHost}&flowDefId=${this.state.flowDefinitionId}&flowId=${this.props.selectedValue.recordId}`;
+  }
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
    */
@@ -1959,11 +2029,13 @@ class AllDataSelection extends React.PureComponent {
           h(AllDataRecordDetails, {sfHost, selectedValue, recordIdDetails, className: "top-space", linkTarget}),
         ),
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Check Deploy Status") : null,
+          ? h("a", {href: this.getDeployStatusUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Check Deploy Status") : null,
         selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-          ? h("a", {href: this.getGeneratePackageUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Generate package.xml") : null,
+          ? h("a", {href: this.getGeneratePackageUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Generate package.xml") : null,
         flowDefinitionId
-          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small"}, "Flow Versions") : null,
+          ? h("a", {href: this.redirectToFlowVersions(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Flow Versions") : null,
+        flowDefinitionId
+          ? h("a", {href: this.getFlowScannerUrl(), target: linkTarget, className: "button page-button slds-button slds-button_neutral slds-m-top_xx-small"}, "Flow Scanner") : null,
         buttons.map((button, index) => h("div", {key: button + "Div"}, h("a",
           {
             key: button,
@@ -2357,6 +2429,16 @@ class Autocomplete extends React.PureComponent {
 
 function getRecordId(href) {
   let url = new URL(href);
+
+  // Special handling for Flow Builder URLs
+  // Flow Builder URLs have the Flow ID in the flowId query parameter
+  if (url.pathname.includes("/builder_platform_interaction/flowBuilder.app")) {
+    const flowId = url.searchParams.get("flowId");
+    if (flowId && flowId.startsWith("301")) {
+      return flowId;
+    }
+  }
+
   // Find record ID from URL
   // Salesforce and Console (+ Hyperforce China Lightning & Classic)
   if (url.hostname.endsWith(".salesforce.com") || url.hostname.endsWith(".salesforce.mil") || url.hostname.endsWith(".sfcrmapps.cn") || url.hostname.endsWith(".sfcrmproducts.cn")) {

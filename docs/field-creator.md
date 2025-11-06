@@ -46,7 +46,7 @@ The Field Creator feature supports the following field types:
 
 
 
-## Bulk Import (beta)
+## Bulk Import
 
 <img width="450" src="https://github.com/user-attachments/assets/e4582af0-c6b9-4d6c-bae2-b97a5dfe85d3">
 

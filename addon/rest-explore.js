@@ -616,9 +616,9 @@ class App extends React.Component {
             h("button", {disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy")
           ),
           h("span", {className: "result-status flex-right"},
-            model.apiResponse && h("div",
-              h("span", {}, model.totalTime.toFixed(1) + "ms"),
-              h("span", {className: "slds-m-left_medium status-code"}, "Status: " + model.apiResponse.code)
+            model.apiResponse && h("div", {},
+              h("span", {className: "perf"}, model.totalTime.toFixed(1) + "ms"),
+              h("span", {className: "slds-m-left_medium status-code"}, "Status: " + model.apiResponse?.code)
             ),
             h("div", {className: "slds-m-left_medium button-group"},
               h("button", {disabled: !model.apiResponse, onClick: this.onClearResponse, title: "Clear Response"}, "Clear")

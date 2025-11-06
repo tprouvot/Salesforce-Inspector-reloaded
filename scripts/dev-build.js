@@ -5,27 +5,17 @@
 "use strict";
 const fs = require("fs-extra");
 
-let manifest = fs.readJsonSync("addon/manifest-template.json");
+let browserType = process.argv[2];
 
-let browser = process.argv[2];
-if (browser == "firefox") {
+if (browserType == "firefox") {
+  // For Firefox builds, copy the Firefox-specific manifest
+  fs.copySync("addon/manifest-firefox.json", "addon/manifest.json");
+  console.log("Using manifest-firefox.json for Firefox build");
 
-  // Firefox needs to run in spanning mode, since it does not support split mode.
-  manifest.incognito = "spanning";
-
-  // Remove unused property, for consistency with the Chrome version.
-  delete manifest.minimum_chrome_version;
-
-} else if (browser == "chrome") {
-
-  // Chrome needs to run in split mode, since it does not support opening private extension tabs in spanning mode.
-  manifest.incognito = "split";
-
-  // Remove irrelevant but annoying warning message "Unrecognized manifest key 'applications'.".
-  delete manifest.applications;
+} else if (browserType == "chrome") {
+  // For Chrome builds, manifest.json is already correct - no changes needed
+  console.log("Using existing manifest.json for Chrome build");
 
 } else {
-  throw new Error("Unknown browser: " + browser);
+  throw new Error("Unknown browser: " + browserType);
 }
-
-fs.writeJsonSync("addon/manifest.json", manifest, {spaces: 2});

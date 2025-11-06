@@ -56,7 +56,8 @@ class ProfilesModal extends React.Component {
         [name]: {
           ...prevState.permissions[name],
           [type]: !prevState.permissions[name][type],
-          ...(type === "edit" ? {read: true} : {})
+          ...(type === "edit" && !prevState.permissions[name][type] === true ? {read: true} : {}),
+          ...(type === "read" && !prevState.permissions[name][type] === false ? {edit: false} : {})
         }
       }
     }), this.updateAllCheckboxes);
@@ -74,7 +75,8 @@ class ProfilesModal extends React.Component {
         updatedPermissions[name] = {
           ...updatedPermissions[name],
           [type]: allSelected,
-          ...(type === "edit" ? {read: true} : {})
+          ...(type === "edit" && allSelected === true ? {read: true} : {}),
+          ...(type === "read" && allSelected === false ? {edit: false} : {})
         };
       });
 
@@ -481,7 +483,7 @@ class FieldOptionModal extends React.Component {
             })
           ),
           h("div", {className: "checkbox"},
-            h("label", null,
+            h("label", {className: "centerHorizontally"},
               h("input", {
                 type: "checkbox",
                 id: `${field.type.toLowerCase()}SortAlpha`,
@@ -493,7 +495,7 @@ class FieldOptionModal extends React.Component {
             )
           ),
           h("div", {className: "checkbox"},
-            h("label", null,
+            h("label", {className: "centerHorizontally"},
               h("input", {
                 type: "checkbox",
                 id: `${field.type.toLowerCase()}FirstValueDefault`,
@@ -555,7 +557,7 @@ class FieldOptionModal extends React.Component {
               type: "text",
               id: `${field.type.toLowerCase()}Length`,
               name: "length",
-              className: "form-control",
+              className: "form-control input-textBox",
               placeholder: "Max is 131,072 characters.",
               value: field.length,
               onChange: this.handleInputChange
@@ -567,7 +569,7 @@ class FieldOptionModal extends React.Component {
               type: "text",
               id: `${field.type.toLowerCase()}VisibleLines`,
               name: "vislines",
-              className: "form-control",
+              className: "form-control input-textBox",
               placeholder: "This field is required.",
               value: field.vislines,
               onChange: this.handleInputChange
@@ -628,7 +630,7 @@ class FieldOptionModal extends React.Component {
   renderRequiredCheckbox = () => {
     const {field} = this.state;
     return h("div", {className: "checkbox"},
-      h("label", null,
+      h("label", {className: "centerHorizontally"},
         h("input", {
           type: "checkbox",
           id: "required",
@@ -636,7 +638,7 @@ class FieldOptionModal extends React.Component {
           checked: field.required,
           onChange: this.handleInputChange
         }),
-        " Required"
+        "Required"
       )
     );
   };
@@ -644,7 +646,7 @@ class FieldOptionModal extends React.Component {
   renderUniqueCheckbox = () => {
     const {field} = this.state;
     return h("div", {className: "checkbox"},
-      h("label", null,
+      h("label", {className: "centerHorizontally"},
         h("input", {
           type: "checkbox",
           id: "unique",
@@ -652,7 +654,7 @@ class FieldOptionModal extends React.Component {
           checked: field.uniqueSetting,
           onChange: this.handleInputChange
         }),
-        " Unique"
+        "Unique"
       )
     );
   };
@@ -660,7 +662,7 @@ class FieldOptionModal extends React.Component {
   renderExternalIdCheckbox = () => {
     const {field} = this.state;
     return h("div", {className: "checkbox"},
-      h("label", null,
+      h("label", {className: "centerHorizontally"},
         h("input", {
           type: "checkbox",
           id: "externalId",
@@ -668,7 +670,7 @@ class FieldOptionModal extends React.Component {
           checked: field.external,
           onChange: this.handleInputChange
         }),
-        " External ID"
+        "External ID"
       )
     );
   };
@@ -686,13 +688,13 @@ class FieldOptionModal extends React.Component {
       className: "modal-dialog maxWidth500 maxHeight90vh overflowYAuto",
       onClick: (e) => e.stopPropagation()
     },
-    h("div", {className: "modal-content borderNone backgroundTransparent"},
-      h("div", {className: "modal-header borderBottomNone padding0_0_10_0 relativePosition"},
-        h("h4", {className: "modal-title textAlignCenter width100 margin0"}, "Set Field Options"),
+    h("div", {className: "modal-content relativePosition height100 flexColumn"},
+      h("div", {className: "modal-header flexSpaceBetween alignItemsCenter"},
+        h("h1", {className: "modal-title"}, "Set Field Options"),
         h("button", {
-          "aria-label": "Close Button",
           type: "button",
-          className: "close absoluteRightTop backgroundTransparent borderNone fontSize1_5 fontWeightBold cursorPointer",
+          "aria-label": "Close Set Field Options",
+          className: "close cursorPointer backgroundNone borderNone fontSize1_5 fontWeightBold",
           onClick: this.props.onClose
         },
         h("span", {"aria-hidden": "true"}, "×")
@@ -726,7 +728,7 @@ class FieldOptionModal extends React.Component {
 // Define the React components
 class FieldRow extends React.Component {
   render() {
-    document.title = "Field Creator (beta)";
+    document.title = "Field Creator";
 
     let deploymentStatus;
     switch (this.props.field.deploymentStatus) {
@@ -1553,7 +1555,7 @@ class App extends React.Component {
           ),
           " Salesforce Home"
         ),
-        h("h1", {}, "Field Creator (beta)"),
+        h("h1", {}, "Field Creator"),
         h("span", {}, " / " + userInfo),
         h("div", {className: "flex-right"},
           h("span", {className: "slds-assistive-text"}),

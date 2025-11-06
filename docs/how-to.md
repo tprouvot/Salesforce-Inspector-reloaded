@@ -29,28 +29,37 @@ From now when the token will be expired, this banner will show up and provide a 
 > **Warning**
 > Don't forget to grant access to the users by selecting the related profile(s) or permission set(s).
 
-If you are a Firefox user, or if you want to have full control over the connected app settings, you can also use your own connected app by following these instructions:
+If you are a Firefox user, or if you want to have full control over the connected app settings, you can also use your own external client app by following these instructions:
 
-### For Firefox users
+### External Client App Creation
 
-1. Create a connected app under Setup | App Manager > New Connected App.
-2. Set callback url to `chrome-extension://chromeExtensionId/data-export.html` (replace `chromeExtensionId` by the actual ID of the extension in your web browser). Make sure the "Manage user data via APIs (api)" scope is selected. You can leave other settings to their default values.
+The creation of Connected Apps is soon to be deprecated (planned for Spring 26'), so we will cover the creation of the new standard using an external Client App.
 
-   > **Warning**
-   > Don't forget to replace "chromeExtensionId" with your current extension Id
-   > <img alt="Connected App" src="https://github.com/tprouvot/Chrome-Salesforce-inspector/blob/master/docs/screenshots/connectedApp.png?raw=true" height="300">
+1. Navigate to Setup | External Client App > New External Client App.
+2. Fill in the required details:
+    * External Client App Name
+    * Contact Email
+    * Check `Enable OAuth` under the API (Enable OAuth Settings) accordion.
+    * Set the Callback URL to `[browser]-extension://[extension-id]/data-export.html`, replacing [browser] with `chrome` or `moz` and [extension-id] with the extension ID found in the URL of any configuration page of the extension (e.g., by clicking `See All Data`).
+3. Configure the OAuth Scopes:
+    * Select `Manage user data via APIs (api)`.
+    * Select `Manage user data via Web browsers (web)`.
 
-3. Get Consumer Key and save it in the Options page
+    <img alt="External Connected App" src="./assets/images/how-to/external-client-app.png" width="849">
 
-   <img alt="Option button" width="276" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/14cc8aac-5ffc-4747-9da1-ba892231ace1">
+    >**Warning**
+    >If you don't select the `web` scope, you might not be able to use the Login As Incognito.
+4. Get Consumer Key and save it in the Options page
 
-4. Enter the consumer key
+    <img alt="Option button" width="276" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/14cc8aac-5ffc-4747-9da1-ba892231ace1">
 
-   <img alt="Client Id" width="849" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/b1edfea1-5a56-4f42-8945-e452a7ab5cf5">
+5. Enter the consumer key
 
-5. Refresh page and generate new token
+    <img alt="Client Id" width="849" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/b1edfea1-5a56-4f42-8945-e452a7ab5cf5">
 
-   <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
+6. Refresh page and generate new token
+
+    <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
 
 ## Migrate saved queries from legacy extension to Salesforce Inspector Reloaded
 
@@ -305,14 +314,6 @@ From the User tab in the popup, click on the user language flag to display the a
 
 ![2024-12-04_16-07-35 (1)](https://github.com/user-attachments/assets/d07da946-dba0-4bb4-8f3b-313392bbf557)
 
-## Generate a package.xml from a deployment
-
-From a	DeployRequest record, click on the `Generate package.xml` button to download the package.xml for this deployment.
-> [!NOTE]
-> If you retrieve the related metadata it may have been modified since the deployment, so you are not sure to retrieve what was deployed.
-
-<img width="1143" alt="Generate package.xml from a deployment" src="https://github.com/user-attachments/assets/4acb7422-0547-409d-9e23-d8c3176f8055" />
-
 ## Default Popup Tab
 You can configure which tab should be selected by default when opening the popup. To do this:
 1. Open the options page
@@ -325,6 +326,46 @@ You can configure which tab should be selected by default when opening the popup
    - Org: Shows organization information
 
 The selected tab will be remembered and used as the default when opening the popup.
+
+## Customize User Tab Search Filters and Fields
+
+The User tab in the popup allows you to search for users across your Salesforce org. You can customize both the search fields used and apply filters to exclude certain types of users from the search results.
+
+<img width="1386" alt="User Search Customization" src="https://github.com/user-attachments/assets/f325e7b8-5b2f-4ad2-80b4-63089c770eda" />
+
+### Configuring Search Fields
+
+By default, user searches look through Username, Email, Alias, and Name fields. You can customize which fields are searched by:
+
+1. Open the extension and click the "Options" button
+2. Navigate to the "User Experience" tab
+3. Find the "User Default Search Fields" section
+4. Check/uncheck the fields you want to include in searches:
+   - **Username** - The user's unique username (default: enabled)
+   - **Email** - The user's email address (default: enabled)
+   - **Alias** - The user's alias (default: enabled)
+   - **Name** - The user's full name (default: enabled)
+   - **Profile Name** - Search by the user's profile name (default: disabled)
+
+The search placeholder text in the User tab will automatically update to reflect which fields are currently enabled for searching.
+
+### Applying Search Filters
+
+You can exclude certain types of users from appearing in search results:
+
+1. In the same "User Experience" tab in Options
+2. Find the "Exclude users from search" section
+3. Enable the filters you want to apply:
+   - **Exclude Portal users** - Hides users who have portal access enabled
+   - **Exclude Inactive users** - Hides users who are marked as inactive
+
+## Generate a package.xml from a deployment
+
+From a	DeployRequest record, click on the `Generate package.xml` button to download the package.xml for this deployment.
+> [!NOTE]
+> If you retrieve the related metadata it may have been modified since the deployment, so you are not sure to retrieve what was deployed.
+
+<img width="1143" alt="Generate package.xml from a deployment" src="https://github.com/user-attachments/assets/4acb7422-0547-409d-9e23-d8c3176f8055" />
 
 ## Perform a field usage analysis for an SObject
 

@@ -109,6 +109,7 @@ class OptionsTabSelector extends React.Component {
               checkboxes: [
                 {label: "New", name: "new", checked: true},
                 {label: "Explore API", name: "explore-api", checked: true},
+                {label: "Dependencies Explorer", name: "dependencies-explorer", checked: true},
                 {label: "Org Limits", name: "org-limits", checked: true},
                 {label: "Options", name: "options", checked: true},
                 {label: "Generate Access Token", name: "generate-token", checked: true}

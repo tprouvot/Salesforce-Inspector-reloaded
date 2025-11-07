@@ -1,13 +1,13 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg} from "./utils.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
 let p = parent;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
-const isExtensionPage = document.location.ancestorOrigins?.[0].includes(chrome.i18n.getMessage("@@extension_id"));
+const isExtensionPage = document.location.ancestorOrigins?.[0].includes(getExtensionId());
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -268,9 +268,32 @@ class App extends React.PureComponent {
   isMac() {
     return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
   }
+  async handleGenerateTokenClick(e, sfHost, clientId, browser) {
+    e.preventDefault();
+    try {
+      // Fetch PKCE parameters from Salesforce
+      const pkceParams = await getPKCEParameters(sfHost);
+      
+      // Store code_verifier in localStorage for later use during token exchange
+      localStorage.setItem(sfHost + "_code_verifier", pkceParams.code_verifier);
+      
+      // Build authorization URL with PKCE
+      // Include sfHost in the state parameter so we can retrieve it after callback
+      const redirectUri = getRedirectUri("data-export.html");
+      const state = encodeURIComponent(JSON.stringify({sfHost}));
+      const authUrl = `https://${sfHost}/services/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge=${pkceParams.code_challenge}&state=${state}`;
+      
+      // Redirect to authorization URL - always open in new tab for OAuth
+      window.open(authUrl, "_blank");
+    } catch (error) {
+      console.error("Error generating authorization URL with PKCE:", error);
+      alert("Failed to generate authorization URL. Please try again.");
+    }
+  }
   getBannerUrlAction(sessionError = {}, sfHost, clientId, browser) {
-    const url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${browser}-extension://${chrome.i18n.getMessage("@@extension_id")}/data-export.html`;
-    return {...sessionError, url};
+    // Return a placeholder URL with onclick handler
+    const url = "#";
+    return {...sessionError, url, sfHost, clientId, browser};
   }
   render() {
     let {
@@ -285,9 +308,8 @@ class App extends React.PureComponent {
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
-    const browser = navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";
-    const DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
-    const clientId = localStorage.getItem(sfHost + "_clientId") ? localStorage.getItem(sfHost + "_clientId") : DEFAULT_CLIENT_ID;
+    const browser = getBrowserType();
+    const clientId = getClientId(sfHost);
     const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
     const popupTheme = localStorage.getItem("popupDarkTheme") == "true" ? " header-dark" : " header-light";
     return (
@@ -348,7 +370,8 @@ class App extends React.PureComponent {
               text: bannerUrlAction.title,
               props: {
                 href: bannerUrlAction.url,
-                target: linkTarget
+                target: linkTarget,
+                onClick: (e) => this.handleGenerateTokenClick(e, bannerUrlAction.sfHost, clientId, browser)
               }
             }
           })

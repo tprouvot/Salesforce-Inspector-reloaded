@@ -14,7 +14,8 @@ class QueryHistory {
   _get() {
     let history;
     try {
-      history = JSON.parse(localStorage[this.storageKey]);
+      const storedValue = localStorage.getItem(this.storageKey);
+      history = storedValue ? JSON.parse(storedValue) : null;
     } catch (e) {
       console.error(e);
     }
@@ -2005,6 +2006,13 @@ class App extends React.Component {
     model.reactCallback = cb => {
       ReactDOM.render(h(App, {model}), root, cb);
     };
+    
+    // Update host and sfLink after session is established (for OAuth redirect case)
+    if (sfConn.instanceHostname && model.sfHost !== sfConn.instanceHostname) {
+      model.sfHost = sfConn.instanceHostname;
+      model.sfLink = "https://" + sfConn.instanceHostname;
+    }
+    
     ReactDOM.render(h(App, {model}), root);
 
     if (parent && parent.isUnitTest) { // for unit tests

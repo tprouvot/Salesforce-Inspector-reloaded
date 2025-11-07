@@ -428,7 +428,8 @@ class App extends React.PureComponent {
                   ref: "generateToken",
                   href: bannerUrlAction.url,
                   target: linkTarget,
-                  className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral"
+                  className: !clientId ? "button hide" : "page-button slds-button slds-button_neutral",
+                  onClick: (e) => this.handleGenerateTokenClick(e, sfHost, clientId, browser)
                 },
                 h("span", {}, h("u", {}, "G"), "enerate Access Token"))
             ) : null,

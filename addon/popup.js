@@ -1527,7 +1527,7 @@ class UserDetails extends React.PureComponent {
     if (showToast) {
       showToast({
         type: "success",
-        bannerText: `${operation} Successful`,
+        bannerText: operation,
         iconName: "success",
         assistiveTest: `${operation} completed successfully`,
         link: {
@@ -1601,8 +1601,8 @@ class UserDetails extends React.PureComponent {
 
       // Show success message
       this.showSuccessToast(
-        "Enable Debug Log",
-        `Debug logging enabled for ${user.Name}`
+        "Success",
+        "Logs enabled"
       );
 
     } catch (err) {

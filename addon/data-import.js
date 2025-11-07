@@ -1165,16 +1165,18 @@ class App extends React.Component {
     
     // Build utility items for PageHeader
     let utilityItems = [
-      h("div", {className: "slds-builder-header__utilities-item"},
-        h("a", {href: "#", className: "slds-builder-header__item-action slds-media slds-media_center", onClick: this.onToggleHelpClick},
-          h("div", {className: "slds-media__figure"},
-            h("span", {className: "slds-icon_container slds-icon-utility-help slds-current-color"},
-              h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-                h("use", {xlinkHref: "symbols.svg#help"})
-              )
-            )
-          ),
-          h("div", {className: "slds-media__body"}, "Help")
+      h("div", {
+        key: "help-btn",
+        className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"
+      },
+        h("button", {
+          className: "slds-button slds-button_icon slds-button_icon-border-filled",
+          title: "Data Import Help",
+          onClick: this.onToggleHelpClick
+        },
+          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#question"})
+          )
         )
       )
     ];
@@ -1342,16 +1344,17 @@ class App extends React.Component {
               h("button", { onClick: this.onSkipAllUnknownFieldsClick, disabled: !model.canSkipAllUnknownFields() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_neutral" }, "Skip all unknown fields")
             ),
           ),
-          h("div", { hidden: !model.showHelp, className: "help-text" },
-            h("h3", { className: "slds-text-heading_small" }, "Import Help"),
-            h("p", {}, "Use for quick one-off data imports."),
-            h("ul", { className: "slds-list_dotted" },
+          !model.showHelp ? null : h("div", {className: "slds-box slds-theme_info slds-m-top_medium"},
+            h("h3", {className: "slds-text-heading_small slds-m-bottom_small"}, "Import Help"),
+            h("p", {className: "slds-m-bottom_x-small"}, "Use for quick one-off data imports."),
+            h("ul", { className: "slds-list_dotted slds-m-bottom_x-small" },
               h("li", {}, "Enter your CSV or Excel data in the box above.",
                 h("ul", { className: "slds-list_dotted" },
                   h("li", {}, "The input must contain a header row with field API names."),
                   h("li", {}, "To use an external ID for a lookup field, the header row should contain the lookup relation name, the target sobject name and the external ID name separated by colons, e.g. \"MyLookupField__r:MyObject__c:MyExternalIdField__c\"."),
                   h("li", {}, "Empty cells insert null values."),
-                  h("li", {}, "Number, date, time and checkbox values must conform to the relevant ", h("a", { href: "http://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes", target: "_blank" }, "XSD datatypes"), "."),
+                  h("li", {}, "Number, date, time and checkbox values must conform to the relevant ",
+                    h("a", { href: "http://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes", target: "_blank" }, "XSD datatypes"), "."),
                   h("li", {}, "Columns starting with an underscore are ignored."),
                   h("li", {}, "You can resume a previous import by including the \"__Status\" column in your input."),
                   h("li", {}, "You can supply the other import options by clicking \"Copy options\" and pasting the options into Excel in the top left cell, just above the header row.")
@@ -1362,8 +1365,8 @@ class App extends React.Component {
               h("li", {}, "Enter the API name of the object to import"),
               h("li", {}, "Press the Run button")
             ),
-            h("p", {}, "Bulk API is not supported. Large data volumes may freeze or crash your browser.")
-          ),
+            h("p", {className: "slds-m-bottom_x-small"}, "Bulk API is not supported. Large data volumes may freeze or crash your browser.")
+          )
         ),
         h("div", { className: "slds-card sfir-full-height slds-m-horizontal_medium slds-m-bottom_medium slds-p-horizontal_medium sfir-results-section" },
           h("div", { id: "result-table", ref: "scroller" }),

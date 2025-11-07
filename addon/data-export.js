@@ -1751,32 +1751,33 @@ class App extends React.Component {
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
       // Agentforce button (conditional)
-      displayButton("export-agentforce", this.state.hideButtonsOption) ?
-        h("div", {className: "slds-builder-header__utilities-item"},
-          h("a", {href: "#", className: "slds-builder-header__item-action slds-media slds-media_center", onClick: this.onToggleAI},
-            h("span", {className: "slds-media__figure"},
-              h("span", {className: "slds-icon_container slds-icon-utility-settings slds-current-color"},
-                h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-                  h("use", {xlinkHref: "symbols.svg#einstein"})
-                )
-              )
-            ),
-            h("span", {className: "slds-media__body"},
-              h("span", {className: "slds-truncate", title: "Agentforce"}, "Agentforce")
-            )
+      displayButton("export-agentforce", this.state.hideButtonsOption) && h("div", {
+        key: "agentforce-btn",
+        className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"
+      },
+        h("button", {
+          className: "slds-button slds-button_icon slds-button_icon-border-filled",
+          title: "Agentforce",
+          onClick: this.onToggleAI
+        },
+          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#einstein"})
           )
-        ) : null,
+        )
+      ),
       // Help button
-      h("div", {className: "slds-builder-header__utilities-item"},
-        h("a", {href: "#", className: "slds-builder-header__item-action slds-media slds-media_center", onClick: this.onToggleHelp},
-          h("div", {className: "slds-media__figure"},
-            h("span", {className: "slds-icon_container slds-icon-utility-help slds-current-color"},
-              h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-                h("use", {xlinkHref: "symbols.svg#help"})
-              )
-            )
-          ),
-          h("div", {className: "slds-media__body"}, "Help")
+      h("div", {
+        key: "help-btn",
+        className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"
+      },
+        h("button", {
+          className: "slds-button slds-button_icon slds-button_icon-border-filled",
+          title: "Export Help",
+          onClick: this.onToggleHelp
+        },
+          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#help"})
+          )
         )
       )
     ].filter(Boolean); // Remove null items
@@ -1964,20 +1965,21 @@ class App extends React.Component {
             )))
           ),
         ),
-        h("div", {hidden: !model.showHelp, className: "slds-p-around_small"},
-          h("h3", {className: "slds-text-heading_small"}, "Export Help"),
-          h("p", {}, "Use for quick one-off data exports. Enter a ",
+        !model.showHelp ? null : h("div", {className: "slds-box slds-theme_info slds-m-top_medium"},
+          h("h3", {className: "slds-text-heading_small slds-m-bottom_small"}, "Export Help"),
+          h("p", {className: "slds-m-bottom_x-small"}, "Use for quick one-off data exports. Enter a ",
             h("a", {href: "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql.htm", target: "_blank"}, "SOQL"),
             h("a", {href: "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_sosl.htm", target: "_blank"}, ", SOSL "),
             h("a", {href: "https://developer.salesforce.com/docs/platform/graphql/guide/query-record-examples.html", target: "_blank"}, ", GraphQL"),
-            " query in the box above and press Export."),
-          h("p", {}, "Press Ctrl+Space to insert all field name autosuggestions or to load suggestions for field values."),
-          h("p", {}, "Press Ctrl+Enter or F5 to execute the export."),
-          h("p", {}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
+            " query in the box above and press Export."
+          ),
+          h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Space to insert all field name autosuggestions or to load suggestions for field values."),
+          h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Enter or F5 to execute the export."),
+          h("p", {className: "slds-m-bottom_x-small"}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
           h("p", {}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
         ),
         h("div", {hidden: !model.showAI},
-          h("h3", {className: "slds-text-heading_small slds-m-left_xxx-small"}, "Agentforce SOQL query builder"),
+          h("h3", {className: "slds-text-heading_small slds-m-top_medium slds-m-left_xxx-small"}, "Agentforce SOQL query builder"),
           h("p", {className:"slds-m-bottom_xx-small slds-m-left_xxx-small"}, "Enter a description of the SOQL you want to be generated"),
           h("textarea", {id: "prompt", ref: "prompt"}),
           h("div", {className: "slds-text-align_right slds-m-top_small"},

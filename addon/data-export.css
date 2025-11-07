@@ -810,6 +810,7 @@ svg.icon:hover {
 .query-tabs {
   display: flex;
   padding: 0;
+  position: relative;
 }
 
 .query-tab {
@@ -844,6 +845,23 @@ svg.icon:hover {
 .query-tab.dragging {
   opacity: 0.5;
   transform: rotate(5deg);
+}
+
+.query-tab.drop-target {
+  position: relative;
+}
+
+.query-tab.drop-target::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #706e6b;
+  border-radius: 1px;
+  z-index: 10;
+  box-shadow: 0 0 2px rgba(112, 110, 107, 0.3);
 }
 
 .query-tab-name {

@@ -335,10 +335,10 @@ class App extends React.PureComponent {
               h("a", {ref: "limitsBtn", href: limitsHref, target: linkTarget, className: "slds-col page-button slds-button slds-button_neutral"}, h("span", {}, "Org ", h("u", {}, "L"), "imits"))
             ) : null,
             displayButton("explore-api", hideButtonsOption) ? h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small"},
-              h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "E", h("u", {}, "x"), "plore API"))
+              h("a", {ref: "apiExploreBtn", href: "explore-api.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "API E", h("u", {}, "x"), "plorer"))
             ) : null,
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small"},
-              h("a", {ref: "restExploreBtn", href: "rest-explore.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "R"), "EST Explore"))
+              h("a", {ref: "restExploreBtn", href: "rest-explore.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, h("u", {}, "R"), "EST Explorer"))
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small"},
               h("a", {ref: "eventMonitorBtn", href: eventMonitorHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Event ", h("u", {}, "M"), "onitor"))

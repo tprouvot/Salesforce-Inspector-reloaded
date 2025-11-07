@@ -191,13 +191,11 @@ class App extends React.Component {
       h("div", { className: "slds-m-top_xx-large sfir-page-container" },
         h("div", { className: "slds-card slds-m-around_medium", style: {flex: "1 1 0", display: "flex", flexDirection: "column", minHeight: 0} },
           h("div", { className: "slds-card__header slds-grid slds-grid_vertical-align-center" },
-            h("header", { className: "slds-media slds-media_center slds-has-flexi-truncate" },
-              h("div", { className: "slds-media__body slds-grid slds-grid_vertical-align-center" },
-                h("div", { className: "slds-col slds-size_2-of-12" },
-                  h("h3", { className: "slds-card__header-title" },
-                    h("span", {}, "Limits snapshot")
-                  ),
-                ),
+            h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate slds-p-top_small slds-p-horizontal_small"},
+              h("div", {className: "slds-media__body"},
+                h("h2", {className: "slds-card__header-title"}, "Limits snapshot")
+              ),
+            
                 h("div", { className: "slds-col slds-size_8-of-12" },
                   h("button", { className: "slds-button slds-button_neutral", disabled: model.allLimitData.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard" }, "Copy")
                 ),
@@ -215,7 +213,6 @@ class App extends React.Component {
                 )
               )
             ),
-          ),
           h("div", {className: "slds-card__body slds-card__body_inner", style: {flex: "1", overflowY: "auto", minHeight: 0}},
             h("div", {className: "slds-grid slds-gutters slds-wrap"},
               model.allLimitData.map(limitData =>

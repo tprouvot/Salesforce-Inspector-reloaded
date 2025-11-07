@@ -1193,15 +1193,15 @@ class App extends React.Component {
         userName: model.userName,
         utilityItems: utilityItems
       }),
-      h("div", { className: "slds-m-top_xx-large" },
+      h("div", { className: "slds-m-top_xx-large sfir-page-container" },
         h("div", { className: "slds-m-around_medium" },
-          h("div", { className: "slds-grid slds-gutters sfir-conf-section" },
+          h("div", { className: "slds-grid slds-gutters" },
             h("div", { className: "slds-col slds-size_1-of-2" },
-              h("div", { className: "slds-card sfir-full-height" },
+              h("div", { className: "slds-card" },
                 h("div", { className: "slds-card__header" },
                   h("h3", { className: "slds-text-heading_small" }, "Configure Import")
                 ),
-                h("div", { className: "slds-card__body slds-scrollable_y slds-card__body_inner", style: {maxHeight: "85%"} },
+                h("div", { className: "slds-card__body slds-card__body_inner" },
                   h("fieldset", { className: "slds-form-element slds-form-element_compound slds-p-horizontal_xx-small" },
                     h("div", { className: "slds-form-element__control" },
                       h("div", { className: "slds-form-element__row" },
@@ -1242,7 +1242,9 @@ class App extends React.Component {
                               ),
                               h("div", {className: "slds-size_1-of-12 slds-text-align_right"}, 
                                 h("a", { className: "slds-button slds-button_icon slds-button_icon-border-filled", href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the selected object" },
-                                  h("div", { className: "sfir-button-inspector" }),
+                                  h("svg", { className: "slds-button__icon", "aria-hidden": "true" },
+                                    h("use", { xlinkHref: "symbols.svg#search" })
+                                  ),
                                 )
                               ),
                             )
@@ -1307,11 +1309,11 @@ class App extends React.Component {
                 )),
             ),
             h("div", { className: "slds-col slds-size_1-of-2" },
-              h("div", { className: "slds-card sfir-full-height" },
+              h("div", { className: "slds-card" },
                 h("div", { className: "slds-card__header" },
                   h("h3", { className: "slds-text-heading_small" }, "Field Mapping")
                 ),
-                h("div", { className: "slds-card__body slds-scrollable_y", style: {maxHeight: "85%"} },
+                h("div", { className: "slds-card__body slds-card__body_inner", style: { maxHeight: "325px", overflowY: "auto" } },
                   h("div", { className: "slds-p-horizontal_medium" }, 
                     model.getRequiredMissingFields().map((field, index) => h("div", { key: index, className: "slds-text-color_error" }, `The field mapping has no '${field}' column`)),
                     model.columns().map((column, index) => h(ColumnMapper, { key: index, model, column }))
@@ -1320,7 +1322,7 @@ class App extends React.Component {
               )
             )
           )),
-        h("div", { className: "slds-card slds-m-horizontal_medium slds-m-bottom_medium slds-p-around_small" },
+        h("div", { className: "slds-card slds-m-horizontal_medium slds-p-around_small" },
           h("div", { className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center" },
             h("div", { className: "slds-col" },
               h("button", { onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_brand" }, "Run " + model.importActionName),
@@ -1368,8 +1370,29 @@ class App extends React.Component {
             h("p", {className: "slds-m-bottom_x-small"}, "Bulk API is not supported. Large data volumes may freeze or crash your browser.")
           )
         ),
-        h("div", { className: "slds-card sfir-full-height slds-m-horizontal_medium slds-m-bottom_medium slds-p-horizontal_medium sfir-results-section" },
-          h("div", { id: "result-table", ref: "scroller" }),
+        h(
+          "div",
+          {
+            className: "slds-card slds-m-horizontal_medium slds-m-bottom_medium",
+            style: {
+              flex: "1 1 0",
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column"
+            }
+          },
+          h(
+            "div",
+            {
+              ref: "scroller",
+              style: {
+                flex: "1 1 0",
+                minHeight: 0,
+                maxHeight: "100%",
+                overflowY: "auto"
+              }
+            }
+          ),
           model.confirmPopup ? h("div", {},
             h("section",
               {

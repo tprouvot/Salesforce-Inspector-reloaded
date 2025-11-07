@@ -1795,8 +1795,8 @@ class App extends React.Component {
         utilityItems: utilityItems
       }),
 
-      h("div", {className: "slds-m-top_xx-large"},
-      h("div", {className: "slds-card slds-m-around_medium"},
+      h("div", {className: "slds-m-top_xx-large sfir-page-container"},
+        h("div", {className: "slds-card slds-m-around_medium"},
         h("div", {className: "slds-card__body slds-card__body_inner"},
         h("div", {},
         ),
@@ -1986,9 +1986,20 @@ class App extends React.Component {
             h("button", {tabIndex: 1, onClick: this.onGenerateSoql, title: "Generate SOQL", className: "slds-button slds-button_brand"}, "Generate SOQL")
           )
         )
-      ))),
-      h("div", {className: "slds-card slds-m-horizontal_medium slds-m-vertical_none", id: "result-area"},
-        h("div", {className: "slds-card__body slds-card__body_inner sfir-full-height"},
+      )),
+        h(
+          "div",
+          {
+            className: "slds-card slds-m-horizontal_medium slds-m-bottom_medium",
+            id: "result-area",
+          style: {
+            flex: "1 1 0",
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column"
+          }
+        },
+        h("div", {className: "slds-card__body slds-card__body_inner", style: {flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column"}},
         h("div", {className: "result-bar"},
           h("h3", {className: "slds-text-heading_small"}, "Export Result"),
           h("div", {className: "slds-button-group slds-m-left_small"},
@@ -2049,16 +2060,27 @@ class App extends React.Component {
               )
             ) : null,
           h("span", {className: "result-status flex-right"},
-            h("span", {}, model.exportStatus),
+            h("span", {className: `slds-badge slds-theme_${model.exportError ? "error" : "success"}`}, model.exportStatus),
             perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
             h("button", {className: "slds-button slds-button_destructive slds-m-left_small", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop")
           ),
         ),
-        h("textarea", {id: "result-text", readOnly: true, value: nullToEmptyString(model.exportError), hidden: model.exportError == null}),
-        h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null}
+        h("textarea", {
+          className: "slds-box slds-theme_error",
+          readOnly: true,
+          value: nullToEmptyString(model.exportError),
+          hidden: model.exportError == null,
+          style: {flex: "1 1 0", minHeight: 0, resize: "none"}
+        }),
+        h("div", {
+          ref: "scroller",
+          hidden: model.exportError != null,
+          style: {flex: "1 1 0", minHeight: 0, maxHeight: "100%", overflowY: "auto"}
+        }
           /* the scroll table goes here */
         )
       ))
+      )
     );
   }
 }

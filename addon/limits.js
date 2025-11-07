@@ -188,8 +188,8 @@ class App extends React.Component {
         userFullName: model.userFullName,
         userName: model.userName
       }),
-      h("div", { className: "slds-m-top_xx-large", style: {height: "calc(100vh - 50px)", display: "flex", flexDirection: "column"} },
-        h("div", { className: "slds-card slds-m-around_medium", style: {flex: "1", display: "flex", flexDirection: "column", minHeight: 0} },
+      h("div", { className: "slds-m-top_xx-large sfir-page-container" },
+        h("div", { className: "slds-card slds-m-around_medium", style: {flex: "1 1 0", display: "flex", flexDirection: "column", minHeight: 0} },
           h("div", { className: "slds-card__header slds-grid slds-grid_vertical-align-center" },
             h("header", { className: "slds-media slds-media_center slds-has-flexi-truncate" },
               h("div", { className: "slds-media__body slds-grid slds-grid_vertical-align-center" },

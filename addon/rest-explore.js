@@ -537,12 +537,7 @@ class App extends React.Component {
       h(
         "div",
         {
-          className: "slds-m-top_xx-large",
-          style: {
-            display: "flex",
-            flexDirection: "column",
-            height: "calc(100vh - 4rem)" // or adjust as needed for header/footer
-          }
+          className: "slds-m-top_xx-large sfir-page-container"
         },
         // Request card (not flexible)
         h("div", { className: "slds-card slds-m-around_medium" },

@@ -1092,7 +1092,7 @@ class Model {
     if (savedTabs) {
       this.queryTabs = JSON.parse(savedTabs);
     } else {
-      this.queryTabs = [{name: "Query 1", query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null}];
+      this.queryTabs = [{name: "Query 1", query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
     }
     this.activeTabIndex = 0;
   }
@@ -1103,14 +1103,15 @@ class Model {
       name: tab.name,
       query: tab.query,
       queryTooling: tab.queryTooling,
-      queryAll: tab.queryAll
+      queryAll: tab.queryAll,
+      isManuallyRenamed: tab.isManuallyRenamed || false
     }));
     localStorage.setItem(`${this.sfHost}_queryTabs`, JSON.stringify(tabsToSave));
   }
 
   addQueryTab() {
     const newTabName = `Query ${this.queryTabs.length + 1}`;
-    this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null});
+    this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
     this.activeTabIndex = this.queryTabs.length - 1;
     this.saveQueryTabs();
     this.didUpdate();
@@ -1163,7 +1164,9 @@ class Model {
   }
 
   updateCurrentTabName(name) {
-    if (this.queryTabs[this.activeTabIndex] && !this.queryTabs[this.activeTabIndex].name.includes(name)) {
+    if (this.queryTabs[this.activeTabIndex]
+        && !this.queryTabs[this.activeTabIndex].name.includes(name)
+        && !this.queryTabs[this.activeTabIndex].isManuallyRenamed) {
       // Check if there are any other tabs with the same name
       let count = 1;
       let newName = name;
@@ -1187,6 +1190,7 @@ class Model {
         count++;
       }
       this.queryTabs[index].name = finalName;
+      this.queryTabs[index].isManuallyRenamed = true;
       this.saveQueryTabs();
       this.didUpdate();
     }
@@ -1393,13 +1397,16 @@ class App extends React.Component {
     this.onTabDragStart = this.onTabDragStart.bind(this);
     this.onTabDragOver = this.onTabDragOver.bind(this);
     this.onTabDrop = this.onTabDrop.bind(this);
+    this.onTabDragLeave = this.onTabDragLeave.bind(this);
+    this.onTabDragEnd = this.onTabDragEnd.bind(this);
 
     // Tab editing state
     this.state = {
       ...this.state,
       editingTabIndex: -1,
       editingTabName: "",
-      draggedTabIndex: -1
+      draggedTabIndex: -1,
+      dropTargetIndex: -1
     };
   }
   onQueryAllChange(e) {
@@ -1614,12 +1621,23 @@ class App extends React.Component {
   onTabDragStart(e, index) {
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/html", e.target);
-    this.setState({draggedTabIndex: index});
+    this.setState({draggedTabIndex: index, dropTargetIndex: -1});
   }
 
-  onTabDragOver(e) {
+  onTabDragOver(e, index) {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    // Update drop target index if different from current
+    if (this.state.dropTargetIndex !== index && this.state.draggedTabIndex !== index) {
+      this.setState({dropTargetIndex: index});
+    }
+  }
+
+  onTabDragLeave(e) {
+    // Only clear if we're leaving the tabs container entirely
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      this.setState({dropTargetIndex: -1});
+    }
   }
 
   onTabDrop(e, index) {
@@ -1629,7 +1647,12 @@ class App extends React.Component {
     if (fromIndex !== -1 && fromIndex !== index) {
       model.reorderTabs(fromIndex, index);
     }
-    this.setState({draggedTabIndex: -1});
+    this.setState({draggedTabIndex: -1, dropTargetIndex: -1});
+  }
+
+  onTabDragEnd() {
+    // Reset drag state when drag operation ends
+    this.setState({draggedTabIndex: -1, dropTargetIndex: -1});
   }
   componentDidMount() {
     let {model} = this.props;
@@ -1792,58 +1815,63 @@ class App extends React.Component {
             ),
           ),
         ),
-        h("div", {className: "query-tabs"},
-          model.queryTabs.map((tab, index) =>
-            h("div", {
-              key: index,
-              className: `query-tab ${index === model.activeTabIndex ? "active" : ""} ${this.state.draggedTabIndex === index ? "dragging" : ""}`,
-              onClick: e => this.onTabClick(e, index),
-              draggable: true,
-              onDragStart: e => this.onTabDragStart(e, index),
-              onDragOver: e => this.onTabDragOver(e),
-              onDrop: e => this.onTabDrop(e, index)
-            },
-            this.state.editingTabIndex === index
-              ? h("input", {
-                type: "text",
-                className: "query-tab-name-input",
-                value: this.state.editingTabName,
-                onChange: e => this.setState({editingTabName: e.target.value}),
-                onBlur: e => this.onTabNameSubmit(e, index),
-                onKeyPress: e => {
-                  if (e.key === "Enter") {
-                    this.onTabNameSubmit(e, index);
-                  }
-                },
-                onKeyDown: e => {
-                  if (e.key === "Escape") {
-                    this.setState({
-                      editingTabIndex: -1,
-                      editingTabName: ""
-                    });
-                  }
-                  e.stopPropagation();
-                },
-                autoFocus: true,
-                onClick: e => e.stopPropagation()
-              })
-              : h("span", {
-                className: "query-tab-name",
-                onDoubleClick: e => this.onTabNameEdit(e, index),
-                title: "Double-click to edit tab name"
-              }, tab.name),
-            h("span", {
-              className: "query-tab-close",
-              onClick: e => this.onRemoveTab(e, index),
-              title: "Close tab"
-            }, "×")
-            )
-          ),
+        h("div", {
+          className: "query-tabs",
+          onDragLeave: this.onTabDragLeave
+        },
+        model.queryTabs.map((tab, index) =>
           h("div", {
-            className: "add-tab-button",
-            onClick: this.onAddTab,
-            title: "Add new query tab"
-          }, "+")
+            key: index,
+            className: `query-tab ${index === model.activeTabIndex ? "active" : ""} ${this.state.draggedTabIndex === index ? "dragging" : ""} ${this.state.dropTargetIndex === index ? "drop-target" : ""}`,
+            onClick: e => this.onTabClick(e, index),
+            draggable: true,
+            onDragStart: e => this.onTabDragStart(e, index),
+            onDragOver: e => this.onTabDragOver(e, index),
+            onDragLeave: e => this.onTabDragLeave(e),
+            onDrop: e => this.onTabDrop(e, index),
+            onDragEnd: e => this.onTabDragEnd(e)
+          },
+          this.state.editingTabIndex === index
+            ? h("input", {
+              type: "text",
+              className: "query-tab-name-input",
+              value: this.state.editingTabName,
+              onChange: e => this.setState({editingTabName: e.target.value}),
+              onBlur: e => this.onTabNameSubmit(e, index),
+              onKeyPress: e => {
+                if (e.key === "Enter") {
+                  this.onTabNameSubmit(e, index);
+                }
+              },
+              onKeyDown: e => {
+                if (e.key === "Escape") {
+                  this.setState({
+                    editingTabIndex: -1,
+                    editingTabName: ""
+                  });
+                }
+                e.stopPropagation();
+              },
+              autoFocus: true,
+              onClick: e => e.stopPropagation()
+            })
+            : h("span", {
+              className: "query-tab-name",
+              onDoubleClick: e => this.onTabNameEdit(e, index),
+              title: "Double-click to edit tab name"
+            }, tab.name),
+          h("span", {
+            className: "query-tab-close",
+            onClick: e => this.onRemoveTab(e, index),
+            title: "Close tab"
+          }, "×")
+          )
+        ),
+        h("div", {
+          className: "add-tab-button",
+          onClick: this.onAddTab,
+          title: "Add new query tab"
+        }, "+")
         ),
         h("textarea", {
           id: "query",

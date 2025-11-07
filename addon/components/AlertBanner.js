@@ -15,7 +15,7 @@ class AlertBanner extends React.PureComponent {
         ),
         h("h2", {}, bannerText,
           h("p", {}, ""),
-          link.text && h("a", link.props, link.text)
+          link.props ? h("a", link.props, link.text) : link.text
         ),
         onClose && h("div", {className: "slds-notify__close"},
           h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},

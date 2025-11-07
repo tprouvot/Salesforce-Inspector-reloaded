@@ -112,13 +112,17 @@ class App extends React.PureComponent {
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
       latestNotesViewed: localStorage.getItem("latestReleaseNotesVersionViewed") === this.props.addonVersion || browser.extension.inIncognitoContext,
-      useLegacyDownloadMetadata: JSON.parse(localStorage.getItem("useLegacyDlMetadata"))
+      useLegacyDownloadMetadata: JSON.parse(localStorage.getItem("useLegacyDlMetadata")),
+      toastConfig: null, // Will hold the complete toast configuration
+      showToast: false
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
     this.updateReleaseNotesViewed = this.updateReleaseNotesViewed.bind(this);
+    this.showToast = this.showToast.bind(this);
+    this.hideToast = this.hideToast.bind(this);
   }
   onContextRecordChange(e) {
     let {sfHost} = this.props;
@@ -159,6 +163,28 @@ class App extends React.PureComponent {
     localStorage.setItem("latestReleaseNotesVersionViewed", version);
     this.setState({
       latestNotesViewed: true
+    });
+  }
+
+  showToast(config) {
+    this.setState({
+      toastConfig: {
+        type: config.type || "info",
+        bannerText: config.bannerText || "Action completed",
+        iconName: config.iconName || "info",
+        assistiveTest: config.assistiveTest || config.bannerText || "Notification",
+        link: config.link || null,
+        onClose: config.onClose || this.hideToast,
+        ...config // Allow any additional AlertBanner props
+      },
+      showToast: true
+    });
+  }
+
+  hideToast() {
+    this.setState({
+      showToast: false,
+      toastConfig: null
     });
   }
   onShortcutKey(e) {
@@ -327,8 +353,25 @@ class App extends React.PureComponent {
             }
           })
         ),
+        this.state.showToast && this.state.toastConfig && h("div", {id: "toastBanner"},
+          h(AlertBanner, {
+            type: this.state.toastConfig.type,
+            bannerText: this.state.toastConfig.bannerText,
+            iconName: this.state.toastConfig.iconName,
+            assistiveTest: this.state.toastConfig.assistiveTest,
+            onClose: this.state.toastConfig.onClose,
+            link: this.state.toastConfig.link,
+            // Spread any additional props
+            ...Object.keys(this.state.toastConfig)
+              .filter(key => !["type", "bannerText", "iconName", "assistiveTest", "onClose", "link"].includes(key))
+              .reduce((obj, key) => {
+                obj[key] = this.state.toastConfig[key];
+                return obj;
+              }, {})
+          })
+        ),
         h("div", {className: "main", id: "mainTabs"},
-          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, onContextRecordChange: this.onContextRecordChange, isFieldsPresent, eventMonitorHref}),
+          h(AllDataBox, {ref: "showAllDataBox", sfHost, showDetailsSupported: !inLightning && !inInspector, linkTarget, contextUrl, onContextRecordChange: this.onContextRecordChange, isFieldsPresent, eventMonitorHref, showToast: this.showToast}),
           h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_x-small slds-border_bottom"},
             h("div", {className: "slds-m-bottom_xx-small"},
               h("a", {ref: "dataExportBtn", href: exportHref, target: linkTarget, className: "page-button slds-button slds-button_neutral"}, h("span", {}, "Data ", h("u", {}, "E"), "xport"))
@@ -677,9 +720,9 @@ class AllDataBox extends React.PureComponent {
         (activeSearchAspect == this.SearchAspectTypes.sobject)
           ? h(AllDataBoxSObject, {ref: "showAllDataBoxSObject", sfHost, showDetailsSupported, sobjectsList, sobjectsLoading, contextRecordId, contextSobject, linkTarget, onContextRecordChange, isFieldsPresent, eventMonitorHref})
           : (activeSearchAspect == this.SearchAspectTypes.users)
-            ? h(AllDataBoxUsers, {ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); }}, "Users")
+            ? h(AllDataBoxUsers, {ref: "showAllDataBoxUsers", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("usersBox", value); }, showToast: this.props.showToast}, "Users")
             : (activeSearchAspect == this.SearchAspectTypes.shortcuts)
-              ? h(AllDataBoxShortcut, {ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); }}, "Users")
+              ? h(AllDataBoxShortcut, {ref: "showAllDataBoxShortcuts", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("shortcutsBox", value); }, showToast: this.props.showToast}, "Users")
               : (activeSearchAspect == this.SearchAspectTypes.org)
                 ? h(AllDataBoxOrg, {ref: "showAllDataBoxOrg", sfHost, linkTarget, contextUserId, contextOrgId, contextPath, setIsLoading: (value) => { this.setIsLoading("orgBox", value); }}, "Users")
                 : "AllData aspect " + activeSearchAspect + " not implemented"
@@ -691,12 +734,40 @@ class AllDataBox extends React.PureComponent {
 class AllDataBoxUsers extends React.PureComponent {
   constructor(props) {
     super(props);
+    // Load user search preferences early so they are available in render and getMatches
+    const userSearchFields = this.getUserSearchFieldsFromLocalStorage();
+    const {excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.getUserSearchExclusionsFromLocalStorage();
+
     this.state = {
       selectedUser: null,
       selectedUserId: null,
+      userSearchFields,
+      excludeInactiveUsersFromSearch,
+      excludePortalUsersFromSearch,
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
+  }
+
+  getUserSearchExclusionsFromLocalStorage() {
+    // Try to read from new MultiCheckboxButtonGroup format first
+    const userSearchExclusions = localStorage.getItem("userSearchExclusions");
+    const defaultExclusions = {
+      excludePortalUsersFromSearch: false,
+      excludeInactiveUsersFromSearch: false
+    };
+    if (!userSearchExclusions) {
+      return defaultExclusions;
+    }
+    try {
+      const parsed = JSON.parse(userSearchExclusions);
+      return {
+        excludePortalUsersFromSearch: parsed.find(cb => cb.name === "portal")?.checked || false,
+        excludeInactiveUsersFromSearch: parsed.find(cb => cb.name === "inactive")?.checked || false
+      };
+    } catch (e) {
+      return defaultExclusions;
+    }
   }
 
   componentDidMount() {
@@ -711,17 +782,35 @@ class AllDataBoxUsers extends React.PureComponent {
     }
   }
 
+  getUserSearchFieldsFromLocalStorage() {
+    const defaultFields = ["Username", "Email", "Alias", "Name"].map(field => ({name: field, label: field, checked: true}));
+    const userDefaultSearchFieldsOptions = localStorage.getItem("userDefaultSearchFieldsOptions");
+    if (!userDefaultSearchFieldsOptions) {
+      return defaultFields;
+    }
+    try {
+      const parsed = JSON.parse(userDefaultSearchFieldsOptions);
+      if (!Array.isArray(parsed)) {
+        return defaultFields;
+      }
+      const enabledSearchOptions = parsed.filter(field => field && field.name && field.checked === true);
+      return enabledSearchOptions.length > 0 ? enabledSearchOptions : defaultFields;
+    } catch (e) {
+      return defaultFields;
+    }
+  }
+
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
     userQuery = userQuery.trim();
     if (!userQuery) {
       return [];
     }
-
     const escapedUserQuery = userQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-    const fullQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
-    const minimalQuerySelect = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const queryFrom = "from User where (username like '%" + escapedUserQuery + "%' or name like '%" + escapedUserQuery + "%') order by IsActive DESC, LastLoginDate limit 100";
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
+    const userSearchWhereClause = this.getUserSearchWhereClause(escapedUserQuery);
+    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
     const compositeQuery = {
       "compositeRequest": [
         {
@@ -750,6 +839,24 @@ class AllDataBoxUsers extends React.PureComponent {
 
   }
 
+  getUserSearchWhereClause(escapedUserQuery) {
+    const {userSearchFields, excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.state;
+
+    let userSearchWhereClause = "(";
+    userSearchFields.forEach(field => {
+      userSearchWhereClause += field.name + " LIKE '%" + escapedUserQuery + "%' OR ";
+    });
+    userSearchWhereClause = userSearchWhereClause.slice(0, -4);
+    userSearchWhereClause += ")";
+    if (excludeInactiveUsersFromSearch) {
+      userSearchWhereClause += " AND IsActive = true";
+    }
+    if (excludePortalUsersFromSearch) {
+      userSearchWhereClause += " AND IsPortalEnabled = false";
+    }
+    return userSearchWhereClause;
+  }
+
   async onDataSelect(userRecord) {
     if (userRecord && userRecord.Id) {
       await this.setState({selectedUserId: userRecord.Id, selectedUser: null});
@@ -765,10 +872,10 @@ class AllDataBoxUsers extends React.PureComponent {
       return;
     }
     //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
-    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref";
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
     //TODO implement a try catch to remove non existing fields ProfileId or IsPortalEnabled (experience is not enabled)
-    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref";
-    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref";
+    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
     const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
     const compositeQuery = {
       "compositeRequest": [
@@ -835,13 +942,16 @@ class AllDataBoxUsers extends React.PureComponent {
   render() {
     let {selectedUser} = this.state;
     let {sfHost, linkTarget, contextOrgId, contextUserId, contextPath} = this.props;
+    const placeholderFields = (this.state.userSearchFields && this.state.userSearchFields.length)
+      ? (this.state.userSearchFields.map(field => field.label)).join(", ")
+      : "Username, Email, Alias, Name";
 
     return (
       h("div", {ref: "usersBox", className: "users-box"},
-        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: "Username, email, alias or name of user", resultRender: this.resultRender}),
+        h(AllDataSearch, {ref: "allDataSearch", getMatches: this.getMatches, onDataSelect: this.onDataSelect, inputSearchDelay: 400, placeholderText: placeholderFields + " of user", resultRender: this.resultRender}),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
-            ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
+            ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath, showToast: this.props.showToast})
             : h("div", {className: "center"}, "No user details available")
         ))
     );
@@ -1237,7 +1347,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         }),
         h("div", {className: "all-data-box-inner" + (!selectedUser ? " empty" : "")},
           selectedUser
-            ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath})
+            ? h(UserDetails, {user: selectedUser, sfHost, contextOrgId, currentUserId: contextUserId, linkTarget, contextPath, showToast: this.props.showToast})
             : h("div", {className: "center"}, "No shortcut found")
         ))
     );
@@ -1412,6 +1522,36 @@ class UserDetails extends React.PureComponent {
     this.state = {};
   }
 
+  showSuccessToast(operation, message) {
+    const {showToast} = this.props;
+    if (showToast) {
+      showToast({
+        type: "success",
+        bannerText: operation,
+        iconName: "success",
+        assistiveTest: `${operation} completed successfully`,
+        link: {
+          text: message || `${operation} completed successfully`
+        }
+      });
+    }
+  }
+
+  showErrorToast(operation) {
+
+    const {showToast} = this.props;
+    if (showToast) {
+      showToast({
+        type: "error",
+        bannerText: `${operation} Failed`,
+        iconName: "error",
+        link: {
+          text: null
+        }
+      });
+    }
+  }
+
   openUrlInIncognito(targetUrl) {
     browser.runtime.sendMessage({
       message: "createWindow",
@@ -1421,42 +1561,53 @@ class UserDetails extends React.PureComponent {
   }
 
   async enableDebugLog() {
+    try {
+      let {user} = this.props;
+      const DTnow = new Date(Date.now());
 
-    let {user} = this.props;
-    const DTnow = new Date(Date.now());
-
-    //Enable debug level and expiration time (minutes) as default parameters.
-    let debugLogDebugLevel = localStorage.getItem(this.sfHost + "_debugLogDebugLevel");
-    if (debugLogDebugLevel == null) {
-      localStorage.setItem(this.sfHost + "_debugLogDebugLevel", "SFDC_DevConsole");
-    }
-
-    let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");
-    if (debugLogTimeMinutes == null) {
-      localStorage.setItem("debugLogTimeMinutes", 15);
-    }
-    let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
-
-    let traceFlags = await this.getTraceFlags(user.Id, DTnow, debugLogDebugLevel, debugTimeInMs);
-    /*If an old trace flag is found on the user and with this debug level
-     *Update the trace flag extending the experiation date.
-     */
-    if (traceFlags.size > 0){
-      this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
-    //Else create new trace flag
-    } else {
-      let debugLog = await this.getDebugLog(debugLogDebugLevel);
-
-      if (debugLog && debugLog.size > 0){
-        this.insertTraceFlag(user.Id, debugLog.records[0].Id, DTnow, debugTimeInMs);
-      } else {
-        throw new Error('Debug Level with developerName = "' + debugLogDebugLevel + '" not found');
+      //Enable debug level and expiration time (minutes) as default parameters.
+      let debugLogDebugLevel = localStorage.getItem(this.sfHost + "_debugLogDebugLevel");
+      if (debugLogDebugLevel == null) {
+        localStorage.setItem(this.sfHost + "_debugLogDebugLevel", "SFDC_DevConsole");
       }
+
+      let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");
+      if (debugLogTimeMinutes == null) {
+        localStorage.setItem("debugLogTimeMinutes", 15);
+      }
+      let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
+
+      let traceFlags = await this.getTraceFlags(user.Id, DTnow, debugLogDebugLevel, debugTimeInMs);
+      /*If an old trace flag is found on the user and with this debug level
+       *Update the trace flag extending the experiation date.
+       */
+      if (traceFlags.size > 0){
+        this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
+      //Else create new trace flag
+      } else {
+        let debugLog = await this.getDebugLog(debugLogDebugLevel);
+
+        if (debugLog && debugLog.size > 0){
+          this.insertTraceFlag(user.Id, debugLog.records[0].Id, DTnow, debugTimeInMs);
+        } else {
+          throw new Error('Debug Level with developerName = "' + debugLogDebugLevel + '" not found');
+        }
+      }
+
+      // Disable button after executing
+      const element = document.querySelector("#enableDebugLog");
+      element.setAttribute("disabled", true);
+      element.text = "Logs Enabled";
+
+      // Show success message
+      this.showSuccessToast(
+        "Success",
+        "Logs enabled"
+      );
+
+    } catch (err) {
+      this.showErrorToast("Enable Debug Log", err);
     }
-    //Disable button after executing.
-    const element = document.querySelector("#enableDebugLog");
-    element.setAttribute("disabled", true);
-    element.text = "Logs Enabled";
   }
 
   toggleDisplay(event, refKey) {
@@ -1548,7 +1699,8 @@ class UserDetails extends React.PureComponent {
     let {currentUserId} = this.props;
     //Optimistically show login unless it's logged in user's userid or user is inactive.
     //No API to determine if user is allowed to login as given user. See https://salesforce.stackexchange.com/questions/224342/query-can-i-login-as-for-users
-    if (!user || user.Id == currentUserId || !user.IsActive) {
+    const isFrozen = !!user?.UserLogins?.records?.[0]?.IsFrozen;
+    if (!user || user.Id == currentUserId || !user.IsActive || isFrozen) {
       return false;
     }
     return true;
@@ -1611,18 +1763,36 @@ class UserDetails extends React.PureComponent {
   }
 
   enableDebugMode(user){
-    sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + user.Id, {method: "PATCH",
-      body: {UserPreferencesUserDebugModePref: !user.UserPreferencesUserDebugModePref
-      }}).then(() => browser.runtime.sendMessage({message: "reloadPage"})
-    ).catch(err => console.log("Error during user debug mode activation", err));
+    const action = user.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
+
+    sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + user.Id, {
+      method: "PATCH",
+      body: {UserPreferencesUserDebugModePref: !user.UserPreferencesUserDebugModePref}
+    })
+      .then(() => {
+        this.showSuccessToast(
+          `${action} Debug Mode`,
+          `Debug mode has been ${action.toLowerCase()}d for ${user.Name}`
+        );
+        browser.runtime.sendMessage({message: "reloadPage"});
+      })
+      .catch(err => this.showErrorToast(`${action} Debug Mode`, err));
+  }
+
+  unfreezeUser(user){
+    sfConn.rest("/services/data/v" + apiVersion + "/sobjects/UserLogin/" + user.UserLogins?.records?.[0]?.Id, {
+      method: "PATCH",
+      body: {IsFrozen: false}
+    })
+      .then(() => {
+        this.showSuccessToast("User Unfreeze", `User ${user.Name} has been unfrozen successfully`);
+        browser.runtime.sendMessage({message: "reloadPage"});
+      })
+      .catch(err => this.showErrorToast("User Unfreeze", err));
   }
 
   toggleMenu(){
     this.refs.buttonMenu.classList.toggle("slds-is-open");
-  }
-
-  toggleLogMenu(){
-    this.refs.logButtonMenu.classList.toggle("slds-is-open");
   }
 
   toggleLogMenu(){
@@ -1700,26 +1870,30 @@ class UserDetails extends React.PureComponent {
           h("a", {href: this.getUserPsetLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral", title: "Show / assign user's permission sets"}, "PSet"),
           h("a", {href: this.getUserPsetGroupLink(user.Id), target: linkTarget, onClick: handleLightningLinkClick, className: "slds-button slds-button_neutral", title: "Show / assign user's permission set groups"}, "PSetG"),
           //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
-          h("div", {className: "user-buttons justify-center slds-button-group top-space", role: "group"},
-            h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs"),
-            h("div", {ref: "logButtonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
-              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleLogMenu(), title: "Show options"},
-                h("svg", {className: "slds-button__icon"},
-                  h("use", {xlinkHref: "symbols.svg#down"})
+          user.UserLogins?.records?.[0]?.IsFrozen
+            ? h("a", {id: "unfreezeUser", className: "slds-button slds-button_neutral", onClick: () => this.unfreezeUser(user)},
+              h("span", {className: "slds-truncate", title: "Unfreeze User Login"}, "Unfreeze")
+            )
+            : h("div", {className: "user-buttons justify-center slds-button-group top-space", role: "group"},
+              h("a", {href: "#", id: "enableDebugLog", disabled: false, onClick: this.enableDebugLog, className: "slds-button slds-button_neutral", title: "Enable user debug log"}, "Enable Logs"),
+              h("div", {ref: "logButtonMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
+                h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleLogMenu(), title: "Show options"},
+                  h("svg", {className: "slds-button__icon"},
+                    h("use", {xlinkHref: "symbols.svg#down"})
+                  ),
+                  h("span", {className: "slds-assistive-text"}, "Show options")
                 ),
-                h("span", {className: "slds-assistive-text"}, "Show options")
-              ),
-              h("div", {className: "slds-dropdown slds-dropdown_right", onMouseLeave: () => this.toggleLogMenu()},
-                h("ul", {className: "slds-dropdown__list", role: "menu"},
-                  h("li", {className: "slds-dropdown__item", role: "presentation"},
-                    h("a", {id: "enableDebugMode", onClick: () => this.enableDebugMode(user), tabIndex: "1"},
-                      h("span", {className: "slds-truncate", title: user.debugModeActionLabel + " Debug Mode for Lightning Components"}, user.debugModeActionLabel + " Debug Mode")
+                h("div", {className: "slds-dropdown slds-dropdown_right", onMouseLeave: () => this.toggleLogMenu()},
+                  h("ul", {className: "slds-dropdown__list", role: "menu"},
+                    h("li", {className: "slds-dropdown__item", role: "presentation"},
+                      h("a", {id: "enableDebugMode", onClick: () => this.enableDebugMode(user), tabIndex: "1"},
+                        h("span", {className: "slds-truncate", title: user.debugModeActionLabel + " Debug Mode for Lightning Components"}, user.debugModeActionLabel + " Debug Mode")
+                      )
                     )
                   )
                 )
-              )
-            ),
-          )
+              ),
+            )
         ),
         this.doSupportLoginAs(user) ? h("div", {className: "user-buttons justify-center small-font slds-button-group top-space", role: "group"},
           h("a", {href: this.getLoginAsLink(user.Id), target: linkTarget, className: "slds-button slds-button_neutral"}, "LoginAs"),

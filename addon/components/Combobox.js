@@ -33,7 +33,8 @@ class Combobox extends React.Component {
     this.state = {
       isQueryMenuOpen: false,
       isSuggestionsOpen: false,
-      currentSearchTerm: ""
+      currentSearchTerm: "",
+      hasSelection: false
     };
   }
 
@@ -64,6 +65,22 @@ class Combobox extends React.Component {
     if (this.refs.lookupSearch) {
       this.refs.lookupSearch.value = "";
     }
+    if (this.refs.itemName) {
+      this.refs.itemName.value = "";
+    }
+    this.setState({hasSelection: false, currentSearchTerm: ""});
+  };
+
+  handleClearClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    this.clearSelection();
+    this.closeAllMenus();
+    // Focus back to the input after clearing
+    if (this.refs.lookupSearch) {
+      this.refs.lookupSearch.focus();
+    }
+    this.model.didUpdate();
   };
 
   handleLookupSelection(target) {
@@ -89,8 +106,12 @@ class Combobox extends React.Component {
     this.item = target;
 
     target.label = target.label ? target.label : "";
+    if (this.refs.lookupSearch) {
+      this.refs.lookupSearch.value = target.label || target.query || target.value || "";
+    }
     this.refs.itemName.value = target.label;
 
+    this.setState({hasSelection: true});
     this.closeAllMenus();
     this.model.didUpdate();
   }
@@ -162,6 +183,12 @@ class Combobox extends React.Component {
   searchItem() {
     const searchTerm = this.refs.lookupSearch.value.toLowerCase();
     const searchedList = this.getSearchedList();
+
+    // If user is typing and we have a selected item, clear it to start fresh search
+    if (this.item && searchTerm !== (this.item.label || this.item.query || this.item.value || "").toLowerCase()) {
+      this.item = null;
+      this.setState({hasSelection: false});
+    }
 
     this.suggestedQueries = searchedList.filter(item =>
       // Search through all configured properties
@@ -279,14 +306,14 @@ class Combobox extends React.Component {
                               h("span", {className: "slds-media__body"}, [
                                 h("span", {className: "slds-truncate", title: option.label}, option.label)
                               ]),
-                              h("button", {className: `slds-icon_container slds-button slds-button_icon slds-input__icon slds-input__icon_right ${option.class}`,
+                              h("button", {className: `slds-icon_container slds-button slds-button_icon slds-input__icon slds-input__icon_right pin-on-hover ${option.class}`,
                                 title: "Set as default",
                                 onClick: (event) => {
                                   event.stopPropagation(); //prevent triggering handleItemSelection
                                   this.onSetAsDefault(option);
                                 }},
                               h("svg", {className: "slds-button__icon slds-icon_x-small", "aria-hidden": "true"},
-                                h("use", {xlinkHref: "symbols.svg#heart"})
+                                h("use", {xlinkHref: "symbols.svg#pin"})
                               )
                               )
                             ])
@@ -312,26 +339,39 @@ class Combobox extends React.Component {
             h("div", {className: "slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right", role: "none"},
               h("input", {
                 type: "text",
-                className: "slds-input slds-combobox__input",
+                className: `slds-input slds-combobox__input${this.state.hasSelection ? " slds-has-selection" : ""}`,
                 ref: "lookupSearch",
                 id: "combobox-id-1",
                 "aria-autocomplete": "list",
                 "aria-controls": "listbox-id-1",
-                "aria-expanded": "false",
+                "aria-expanded": this.state.isSuggestionsOpen ? "true" : "false",
                 "aria-haspopup": "listbox",
                 autoComplete: "off",
                 role: "combobox",
-                placeholder: "Search query...",
+                placeholder: this.state.hasSelection ? "" : "Search query...",
                 onClick: () => this.toggleSuggestions(),
                 onFocus: () => this.toggleSuggestions(true),
                 onKeyUp: () => this.searchItem(),
                 onBlur: () => this.handleItemSelectionBlur()
               }),
-              h("span", {className: "slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right", title: "Search icon"},
-                h("svg", {className: "slds-icon slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
-                  h("use", {xlinkHref: "symbols.svg#search"})
+              // Show clear button when there's text or selection, otherwise show search icon
+              (this.state.hasSelection || this.state.currentSearchTerm)
+                ? h("button", {
+                  className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right",
+                  title: "Clear the text input",
+                  onClick: this.handleClearClick,
+                  onMouseDown: (e) => e.preventDefault() // Prevent blur from firing before click
+                },
+                h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#close"})
+                ),
+                h("span", {className: "slds-assistive-text"}, "Clear the text input")
                 )
-              )
+                : h("span", {className: "slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right", title: "Search icon"},
+                  h("svg", {className: "slds-icon slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
+                    h("use", {xlinkHref: "symbols.svg#search"})
+                  )
+                )
             ),
             h("div", {
               id: "listbox-id-1",

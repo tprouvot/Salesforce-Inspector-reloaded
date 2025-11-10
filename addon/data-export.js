@@ -24,13 +24,31 @@ class QueryHistory {
     }
     // A previous version stored just strings. Skip entries from that to avoid errors.
     history = history.filter(e => typeof e == "object");
+
+    // Handle backward compatibility for entries with name embedded in query
+    if (this.storageKey === "insextSavedQueryHistory") {
+      history = history.map(entry => {
+        // If entry doesn't have a separate name property and query contains delimiter ":"
+        if (!entry.name && entry.query && entry.query.includes(":") && entry.query.toLowerCase().indexOf(":select") >= 0) {
+          let delimiter = ":";
+          let query = entry.query.split(delimiter);
+          return {
+            ...entry,
+            name: query[0],
+            query: entry.query.substring(entry.query.indexOf(delimiter) + 1)
+          };
+        }
+        return entry;
+      });
+    }
+
     this.sort(this.storageKey, history);
     return history;
   }
 
   add(entry) {
     let history = this._get();
-    let historyIndex = history.findIndex(e => e.query == entry.query && e.useToolingApi == entry.useToolingApi);
+    let historyIndex = history.findIndex(e => e.query == entry.query && e.useToolingApi == entry.useToolingApi && (e.name || "") == (entry.name || ""));
     if (historyIndex > -1) {
       history.splice(historyIndex, 1);
     }
@@ -44,7 +62,7 @@ class QueryHistory {
 
   remove(entry) {
     let history = this._get();
-    let historyIndex = history.findIndex(e => e.query == entry.query && e.useToolingApi == entry.useToolingApi);
+    let historyIndex = history.findIndex(e => e.query == entry.query && e.useToolingApi == entry.useToolingApi && (e.name || "") == (entry.name || ""));
     if (historyIndex > -1) {
       history.splice(historyIndex, 1);
     }
@@ -60,7 +78,12 @@ class QueryHistory {
   sort(storageKey, history) {
     //sort only saved query not history
     if (storageKey === "insextSavedQueryHistory") {
-      history.sort((a, b) => (a.query > b.query) ? 1 : ((b.query > a.query) ? -1 : 0));
+      history.sort((a, b) => {
+        // Sort by name first if both have names, otherwise by query
+        let aKey = a.name || a.query;
+        let bKey = b.name || b.query;
+        return (aKey > bKey) ? 1 : ((bKey > aKey) ? -1 : 0);
+      });
     }
     this.list = history;
   }
@@ -274,17 +297,9 @@ class Model {
     this.queryHistory.clear();
   }
   selectSavedEntry() {
-    let delimiter = ":";
     if (this.selectedSavedEntry != null) {
-      let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(delimiter) && this.selectedSavedEntry.query.toLowerCase().indexOf(":select") >= 0) {
-        let query = this.selectedSavedEntry.query.split(delimiter);
-        this.queryName = query[0];
-        queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
-      } else {
-        queryStr = this.selectedSavedEntry.query;
-      }
-      this.queryInput.value = queryStr;
+      this.queryName = this.selectedSavedEntry.name || "";
+      this.queryInput.value = this.selectedSavedEntry.query;
       this.queryTooling = this.selectedSavedEntry.useToolingApi;
       this.queryAutocompleteHandler();
       this.selectedSavedEntry = null;
@@ -294,13 +309,13 @@ class Model {
     this.savedHistory.clear();
   }
   addToHistory() {
-    this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling, name: this.queryName});
   }
   removeFromHistory() {
-    this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling, name: this.queryName});
   }
   getQueryToSave() {
-    return this.queryName != "" ? this.queryName + ":" + this.queryInput.value.trim() : this.queryInput.value.trim();
+    return this.queryInput.value.trim();
   }
   autocompleteReload() {
     this.describeInfo.reloadAll();
@@ -1796,7 +1811,21 @@ class App extends React.Component {
               secondary: "label",
               tertiary: "useToolingApi"
             },
-            onItemSelection: this.onItemSelection,
+            onItemSelection: (target) => {
+              // Handle the selected item from the combobox
+              if (target.query) {
+                // Update the current tab with the selected query
+                this.props.model.updateCurrentTabQuery(target.query);
+                if (this.props.model.queryInput) {
+                  this.props.model.queryInput.value = target.query;
+                }
+                // Set the API type based on the selected item
+                this.props.model.queryTooling = target.useToolingApi === "Tooling API";
+                this.props.model.updateCurrentTabProperty("queryTooling", this.props.model.queryTooling);
+                this.props.model.queryAutocompleteHandler();
+                this.props.model.didUpdate();
+              }
+            },
             onSaveItemExternal: this.onSaveQuery
           })
         ),

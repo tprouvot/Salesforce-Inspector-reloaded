@@ -924,3 +924,18 @@ svg.icon:hover {
 .add-tab-button:hover {
   background: #f3f2f2;
 }
+
+/* Pin on hover functionality for Combobox */
+.pin-on-hover {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.slds-listbox__item:hover .pin-on-hover {
+  opacity: 1;
+}
+
+/* Always show pin icon for pinned/favorite items */
+.pin-on-hover.icon-favorite {
+  opacity: 1;
+}

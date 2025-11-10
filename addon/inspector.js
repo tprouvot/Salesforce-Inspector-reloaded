@@ -77,6 +77,11 @@ export let sfConn = {
     const redirectUri = getRedirectUri("data-export.html");
     const clientId = getClientId(sfHost);
     
+    // Validate redirect URI was successfully generated
+    if (!redirectUri || !redirectUri.includes("-extension://")) {
+      throw new Error("Failed to generate redirect URI. Extension context may be invalidated. Please reload this page and try again.");
+    }
+    
     const tokenUrl = `https://${sfHost}/services/oauth2/token`;
     const params = new URLSearchParams({
       grant_type: "authorization_code",

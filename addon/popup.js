@@ -280,6 +280,12 @@ class App extends React.PureComponent {
       // Build authorization URL with PKCE
       // Include sfHost in the state parameter so we can retrieve it after callback
       const redirectUri = getRedirectUri("data-export.html");
+      
+      // Validate redirect URI was successfully generated
+      if (!redirectUri || redirectUri === "://undefined/" || redirectUri === ":///" || !redirectUri.includes("-extension://")) {
+        throw new Error("Failed to generate redirect URI. Extension context may be invalidated. Please reload this page and try again.");
+      }
+      
       const state = encodeURIComponent(JSON.stringify({sfHost}));
       const authUrl = `https://${sfHost}/services/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge=${pkceParams.code_challenge}&state=${state}`;
       
@@ -287,7 +293,10 @@ class App extends React.PureComponent {
       window.open(authUrl, "_blank");
     } catch (error) {
       console.error("Error generating authorization URL with PKCE:", error);
-      alert("Failed to generate authorization URL. Please try again.");
+      const errorMessage = error.message && error.message.includes("Extension context") 
+        ? error.message 
+        : "Failed to generate authorization URL. Please try again.";
+      alert(errorMessage);
     }
   }
   getBannerUrlAction(sessionError = {}, sfHost, clientId, browser) {

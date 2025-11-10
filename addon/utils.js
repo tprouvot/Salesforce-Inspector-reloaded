@@ -99,14 +99,37 @@ export function getBrowserType() {
   return navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";
 }
 
+// Cache for extension ID to handle invalidated extension context
+let cachedExtensionId = null;
+
 export function getExtensionId() {
-  // Safely get extension ID with fallback chain
-  if (typeof chrome !== "undefined" && chrome.i18n) {
-    return chrome.i18n.getMessage("@@extension_id");
+  // Return cached value if available
+  if (cachedExtensionId !== null) {
+    return cachedExtensionId;
   }
-  if (typeof window.browser !== "undefined" && window.browser.i18n) {
-    return window.browser.i18n.getMessage("@@extension_id");
+  
+  // Try to get extension ID from browser APIs
+  try {
+    if (typeof chrome !== "undefined" && chrome.i18n) {
+      cachedExtensionId = chrome.i18n.getMessage("@@extension_id");
+      return cachedExtensionId;
+    }
+    if (typeof window.browser !== "undefined" && window.browser.i18n) {
+      cachedExtensionId = window.browser.i18n.getMessage("@@extension_id");
+      return cachedExtensionId;
+    }
+  } catch (error) {
+    // Extension context invalidated - try to extract from current URL
+    if (window.location.href.includes("-extension://")) {
+      const match = window.location.href.match(/([a-z]+-extension:\/\/)([a-z0-9]+)\//);
+      if (match && match[2]) {
+        cachedExtensionId = match[2];
+        return cachedExtensionId;
+      }
+    }
+    console.error("Failed to get extension ID:", error);
   }
+  
   return "";
 }
 

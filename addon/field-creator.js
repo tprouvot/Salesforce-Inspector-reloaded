@@ -1068,10 +1068,7 @@ class App extends React.Component {
   onUpdateManagedPackageSelection = (e) => {
     const includeManagedPackage = e.target.checked;
     localStorage.setItem("fieldCreatorIncludeManaged", includeManagedPackage);
-    this.setState({includeManagedPackage}, () => {
-      // Trigger re-filtering with current search term
-      this.handleObjectSearch({target: {value: this.state.objectSearch}});
-    });
+    this.setState({includeManagedPackage});
   };
 
 

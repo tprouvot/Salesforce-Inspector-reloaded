@@ -107,7 +107,7 @@ export function getExtensionId() {
   if (cachedExtensionId !== null) {
     return cachedExtensionId;
   }
-  
+
   // Try to get extension ID from browser APIs
   try {
     if (typeof chrome !== "undefined" && chrome.i18n) {
@@ -129,7 +129,7 @@ export function getExtensionId() {
     }
     console.error("Failed to get extension ID:", error);
   }
-  
+
   return "";
 }
 

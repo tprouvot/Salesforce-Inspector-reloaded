@@ -14,7 +14,7 @@ export let sfConn = {
     const searchParams = new URLSearchParams(url.search);
     const authorizationCode = searchParams.get("code");
     const state = searchParams.get("state");
-    
+
     // If we have an authorization code, extract sfHost from state parameter
     if (authorizationCode && state) {
       try {
@@ -24,11 +24,11 @@ export let sfConn = {
         console.error("Error parsing state parameter:", error);
       }
     }
-    
+
     sfHost = getMyDomain(sfHost);
     const oldToken = localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
     this.instanceHostname = sfHost;
-    
+
     // Check if this is an OAuth callback with authorization code (PKCE flow)
     if (authorizationCode) {
       try {
@@ -36,15 +36,15 @@ export let sfConn = {
         if (!codeVerifier) {
           throw new Error("Code verifier not found. Please restart the authorization flow.");
         }
-        
+
         // Exchange authorization code for access token
         const accessToken = await this.exchangeCodeForToken(sfHost, authorizationCode, codeVerifier);
         this.sessionId = accessToken;
         localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
-        
+
         // Clean up code verifier
         localStorage.removeItem(sfHost + "_code_verifier");
-        
+
         // Clean up the URL by removing the code and state parameters
         const cleanUrl = url.origin + url.pathname + "?host=" + sfHost + url.hash;
         window.history.replaceState({}, document.title, cleanUrl);
@@ -72,16 +72,16 @@ export let sfConn = {
     }
     return this.sessionId;
   },
-  
+
   async exchangeCodeForToken(sfHost, authorizationCode, codeVerifier) {
     const redirectUri = getRedirectUri("data-export.html");
     const clientId = getClientId(sfHost);
-    
+
     // Validate redirect URI was successfully generated
     if (!redirectUri || !redirectUri.includes("-extension://")) {
       throw new Error("Failed to generate redirect URI. Extension context may be invalidated. Please reload this page and try again.");
     }
-    
+
     const tokenUrl = `https://${sfHost}/services/oauth2/token`;
     const params = new URLSearchParams({
       grant_type: "authorization_code",
@@ -90,7 +90,7 @@ export let sfConn = {
       redirect_uri: redirectUri,
       code_verifier: codeVerifier
     });
-    
+
     const response = await fetch(tokenUrl, {
       method: "POST",
       headers: {
@@ -98,12 +98,12 @@ export let sfConn = {
       },
       body: params.toString()
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error_description || "Failed to exchange code for token");
     }
-    
+
     const tokenData = await response.json();
     return tokenData.access_token;
   },

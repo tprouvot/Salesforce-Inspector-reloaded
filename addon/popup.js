@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri} from "./utils.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
@@ -273,28 +273,28 @@ class App extends React.PureComponent {
     try {
       // Fetch PKCE parameters from Salesforce
       const pkceParams = await getPKCEParameters(sfHost);
-      
+
       // Store code_verifier in localStorage for later use during token exchange
       localStorage.setItem(sfHost + "_code_verifier", pkceParams.code_verifier);
-      
+
       // Build authorization URL with PKCE
       // Include sfHost in the state parameter so we can retrieve it after callback
       const redirectUri = getRedirectUri("data-export.html");
-      
+
       // Validate redirect URI was successfully generated
       if (!redirectUri || redirectUri === "://undefined/" || redirectUri === ":///" || !redirectUri.includes("-extension://")) {
         throw new Error("Failed to generate redirect URI. Extension context may be invalidated. Please reload this page and try again.");
       }
-      
+
       const state = encodeURIComponent(JSON.stringify({sfHost}));
       const authUrl = `https://${sfHost}/services/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge=${pkceParams.code_challenge}&state=${state}`;
-      
+
       // Redirect to authorization URL - always open in new tab for OAuth
       window.open(authUrl, "_blank");
     } catch (error) {
       console.error("Error generating authorization URL with PKCE:", error);
-      const errorMessage = error.message && error.message.includes("Extension context") 
-        ? error.message 
+      const errorMessage = error.message && error.message.includes("Extension context")
+        ? error.message
         : "Failed to generate authorization URL. Please try again.";
       alert(errorMessage);
     }

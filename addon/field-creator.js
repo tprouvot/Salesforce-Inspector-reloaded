@@ -168,11 +168,11 @@ class ProfilesModal extends React.Component {
         },
         `${title} ${this.state[`is${title.replace(" ", "")}Expanded`] ? "▼" : "▶"}`
         ),
-        this.state[`is${title.replace(" ", "")}Expanded`] && h("table", {className: "fullWidth borderCollapse marginBottom20"},
+        this.state[`is${title.replace(" ", "")}Expanded`] && h("table", {className: "slds-table slds-table_bordered slds-m-bottom_medium"},
           h("thead", null,
             h("tr", null,
-              h("th", {className: "tableCell textAlignLeft"}, "Name"),
-              h("th", {className: "tableCell textAlignCenter"},
+              h("th", {className: "slds-text-align_left"}, "Name"),
+              h("th", {className: "slds-text-align_center"},
                 h("div", {className: "flexCenter"},
                   h("span", {className: "marginRight5"}, "Edit"),
                   h("input", {
@@ -182,7 +182,7 @@ class ProfilesModal extends React.Component {
                   })
                 )
               ),
-              h("th", {className: "tableCell textAlignCenter"},
+              h("th", {className: "slds-text-align_center"},
                 h("div", {className: "flexCenter"},
                   h("span", {className: "marginRight5"}, "Read"),
                   h("input", {
@@ -197,15 +197,15 @@ class ProfilesModal extends React.Component {
           h("tbody", null,
             items.map(([name, profile]) =>
               h("tr", {key: name},
-                h("td", {className: "tableCell"}, profile || name),
-                h("td", {className: "tableCell textAlignCenter"},
+                h("td", null, profile || name),
+                h("td", {className: "slds-text-align_center"},
                   h("input", {
                     type: "checkbox",
                     checked: permissions[name].edit,
                     onChange: () => this.handlePermissionChange(name, "edit")
                   })
                 ),
-                h("td", {className: "tableCell textAlignCenter"},
+                h("td", {className: "slds-text-align_center"},
                   h("input", {
                     type: "checkbox",
                     checked: permissions[name].read,
@@ -802,8 +802,8 @@ class FieldRow extends React.Component {
 
     return (
       h("tr", null,
-        h("td", {className: "text-center verticalAlignMiddle"},
-          h("div", {className: "text-center verticalAlignMiddle"},
+        h("td", {className: "slds-text-align_center slds-align-middle"},
+          h("div", {className: "slds-text-align_center slds-align-middle"},
             h("svg", {
               className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small cursorPointer width20px",
               viewBox: "0 0 52 52",
@@ -813,8 +813,8 @@ class FieldRow extends React.Component {
             )
           )
         ),
-        h("td", {className: "text-center verticalAlignMiddle"},
-          h("div", {className: "text-center verticalAlignMiddle"},
+        h("td", {className: "slds-text-align_center slds-align-middle"},
+          h("div", {className: "slds-text-align_center slds-align-middle"},
             h("svg", {
               className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small cursorPointer width20px",
               viewBox: "0 0 52 52",
@@ -824,7 +824,7 @@ class FieldRow extends React.Component {
             )
           )
         ),
-        h("td", {className: "form-control-cell verticalAlignMiddle"},
+        h("td", {className: "slds-align-middle"},
           h("div", {className: "flexCenter"},
             h("input", {
               type: "text",
@@ -835,7 +835,7 @@ class FieldRow extends React.Component {
             })
           )
         ),
-        h("td", {className: "form-control-cell verticalAlignMiddle"},
+        h("td", {className: "slds-align-middle"},
           h("div", {className: "flexCenter"},
             h("input", {
               type: "text",
@@ -846,7 +846,7 @@ class FieldRow extends React.Component {
             })
           )
         ),
-        h("td", {className: "form-control-cell verticalAlignMiddle"},
+        h("td", {className: "slds-align-middle"},
           h("div", {className: "flexCenter"},
             h("select", {
               className: "form-control",
@@ -873,9 +873,9 @@ class FieldRow extends React.Component {
             onClick: () => this.props.onEditProfiles(this.props.index)
           }, "Permissions")
         ),
-        h("td", {className: "text-center verticalAlignMiddle"},
+        h("td", {className: "slds-text-align_center slds-align-middle"},
           h("div", {
-            className: "text-center verticalAlignMiddle fontSize20 cursorPointer",
+            className: "slds-text-align_center slds-align-middle fontSize20 cursorPointer",
             onClick: () => this.props.onShowDeploymentStatus(this.props.index)
           },
           deploymentStatus
@@ -889,26 +889,21 @@ class FieldRow extends React.Component {
 class FieldsTable extends React.Component {
   render() {
     return (
-      h("div", {className: "table-responsive", style: {overflowX: "auto", maxWidth: "100%"}},
+      h("div", {className: "slds-scrollable_x tab"},
         h("table", {
-          className: "table table-hover",
-          id: "fields_table",
-          style: {
-            width: "100%",
-            maxWidth: "1000px", // Adjust this value as needed
-            margin: "0 auto", // This centers the table
-          }
+          className: "slds-table slds-table_bordered slds-table_striped",
+          id: "fields_table"
         },
         h("thead", null,
           h("tr", null,
-            h("th", {style: {width: "5%"}}),
-            h("th", {style: {width: "5%"}}),
-            h("th", {style: {width: "20%"}}, "Label"),
-            h("th", {style: {width: "20%"}}, "API Name (__c)"),
-            h("th", {style: {width: "20%"}}, "Type"),
-            h("th", {style: {width: "10%"}}, "Options"),
-            h("th", {style: {width: "10%"}}, "Permissions"),
-            h("th", {style: {width: "10%"}})
+            h("th", null),
+            h("th", null),
+            h("th", null, "Label"),
+            h("th", null, "API Name (__c)"),
+            h("th", null, "Type"),
+            h("th", null, "Options"),
+            h("th", null, "Permissions"),
+            h("th", null)
           )
         ),
         h("tbody", null,
@@ -1721,7 +1716,7 @@ class App extends React.Component {
           )
         )
       ),
-      h("div", {className: "area"},
+      h("div", {className: "area table"},
         h(FieldsTable, {
           fields,
           selectedObject,
@@ -1736,7 +1731,9 @@ class App extends React.Component {
           onEditProfiles: this.onEditProfiles,
           onShowDeploymentStatus: this.onShowDeploymentStatus
         }),
-        h("button", {"aria-label": "Add Row/New field to table", className: "btn btn-sm highlighted maxWidth18", id: "add_row", onClick: this.addRow}, "Add Row")
+        h("div", {className: "slds-text-align_right slds-m-top_medium"},
+          h("button", {"aria-label": "Add Row/New field to table", className: "btn btn-sm highlighted maxWidth18", id: "add_row", onClick: this.addRow}, "Add Row")
+        )
       ),
       showProfilesModal && h(ProfilesModal, {
         field: fields[currentFieldIndex],

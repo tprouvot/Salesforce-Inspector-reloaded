@@ -32,7 +32,7 @@ class Model {
       checkOnly: false,
       ignoreWarnings: false,
       purgeOnDelete: false,
-      singlePackage: true,
+      singlePackage: false,
       performRetrieve: true,
       rollbackOnError: true,
       testLevel: "NoTestRun",

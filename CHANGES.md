@@ -11,6 +11,12 @@
 - `Data Export` Allow users to reorganize and edit query tabs names [feature 950](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/950) request by [Scott Shapiro](https://github.com/sshapiro-articulate)
 - `Show All Data` Support keyboard shortcut to save edited record values [feature 951](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/951) request by [Mohak Gaur](https://github.com/mohakgaurrr)
 - `Documentation` Revised instructions for creating an External Client App, reflecting the deprecation of Connected Apps and added detailed steps for OAuth configuration and known issues related to Incognito mode [bug 962](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/962) (contribution by [Thomas Malidin Delabriere](https://github.com/tmalidin33))
+- `Authentication` Implement OAuth 2.0 Web Server Flow with [Proof Key for Code Exchange (PKCE)](https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_pkce.htm&type=5) for orgs with API Access Control enabled - [feature 873](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/873) (contribution by [Mehdi Cherfaoui](https://github.com/mehdicherf))
+
+
+## Version 1.27
+
+- `Data Export` Query tab loses changes after using field autocomplete and switching tabs (issue by [Henri Vilminko](https://github.com/hvilminko))
 - Fix gauge display and text when limits are exceeded [issue #943](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/943) (contribution by [Sylvain Enguerand](https://github.com/Annubis45))
 - Open the Debug Logs from the Data Export page (contribution by [Marko Vuković](https://github.com/MarkoVukovic))
 - Fix sandbox banner colorization for Winter 26 changes
@@ -30,6 +36,7 @@
 - Fix issue with the sorting of child components in Download Metadata
 - Add Agentforce integration to generate SOQL queries in Data Export [feature 850](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/850)
 - Add option for SOQL query typo removal in Data Export [feature 844](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/844) and [feature 849](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/849)
+- Refactor field-creator api calls to match with extension standards
 - Remove the exclusion of InstalledPackage in Download Metadata page [feature 641](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/641) request by [yuandake](https://github.com/yuandake)
 - Create, Edit and Delete custom shortcuts links in Options page [feature 102](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/102)
 - Fix empty lines in picklist values causing deployment errors in Field Creator [issue 787](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/787) (contribution by [Vivek Sharma](https://github.com/vicky773h))
@@ -45,11 +52,11 @@
 - Implement search on `Event Monitor` to filter on event details
 - Prevent selection of an API version higher than the latest available [feature 464](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/464) (contribution by [Salwa Hammou](https://github.com/SalwaHm))
 - Fix error propagation on rest 403 [issue 881](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/881) (contribution by [Sebastien Colladon](https://github.com/scolladon))
-- Implement OAuth 2.0 Web Server Flow with [Proof Key for Code Exchange (PKCE)](https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_pkce.htm&type=5) for orgs with API Access Control enabled - [feature 873](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/873) (contribution by [Mehdi Cherfaoui](https://github.com/mehdicherf))
 
 ## Version 1.26
 
-- Refactor field-creator api calls to match with extension standards
+- Fix popup button is not displayed after chrome update [issue 855](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/855)
+- Fix issue with the sorting of child components in Download Metadata
 - Fix ' character search in the popup Users tab [issue 799](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/799) by [Josue Ramirez](https://github.com/jramirez6964)
 - Support Custom Channels in Event Monitor [feature 797](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/797) (idea by [Mehdi Cherfaoui](https://github.com/mehdicherf))
 - `Event Monitor` : fix text selection in PlatformEvent payload, persist replayId in url and deduplicate events received

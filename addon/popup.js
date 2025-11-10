@@ -2000,7 +2000,7 @@ class AllDataSelection extends React.PureComponent {
     return `https://${this.props.sfHost}/lightning/setup/${type}/page?address=%2F${durableId}%3Fsetupid%3D${type}`;
   }
   getObjectFieldsSetupLink(sobjectName, durableId, isCustomSetting) {
-    if (sobjectName.endsWith("__mdt")) {
+    if (sobjectName.endsWith("__mdt") || sobjectName.endsWith("__e")) {
       return this.getMetadataLink(durableId, "CustomMetadata");
     } else if (isCustomSetting) {
       return this.getMetadataLink(durableId, "CustomSettings");

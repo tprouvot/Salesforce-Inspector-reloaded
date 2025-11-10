@@ -224,7 +224,8 @@ class OptionsTabSelector extends React.Component {
                 {label: "PascalCase", value: "pascal"},
                 {label: "Underscores", value: "underscore"}
               ]
-            }}
+            }},
+          {option: Option, props: {type: "toggle", title: "Include managed packages objects", key: "fieldCreatorIncludeManaged", default: false, tooltip: "Show objects from managed packages in the object selector"}}
         ]
       },
       {

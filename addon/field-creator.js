@@ -315,6 +315,9 @@ class FieldOptionModal extends React.Component {
 
   renderFieldOptions = () => {
     const {field} = this.state;
+    const {selectedObject, isPlatformEvent} = this.props;
+    const isForPlatformEvent = isPlatformEvent(selectedObject);
+
     switch (field.type) {
       case "Checkbox":
         return h("div", {className: "field_options Checkbox_options"},
@@ -386,8 +389,8 @@ class FieldOptionModal extends React.Component {
         return h("div", {className: `field_options ${field.type}_options`},
           this.renderDescriptionAndHelpText(),
           this.renderRequiredCheckbox(),
-          field.type === "Email" && this.renderUniqueCheckbox(),
-          field.type === "Email" && this.renderExternalIdCheckbox()
+          field.type === "Email" && !isForPlatformEvent && this.renderUniqueCheckbox(),
+          field.type === "Email" && !isForPlatformEvent && this.renderExternalIdCheckbox()
         );
 
       case "Location":
@@ -463,8 +466,8 @@ class FieldOptionModal extends React.Component {
           ),
           this.renderDescriptionAndHelpText(),
           this.renderRequiredCheckbox(),
-          field.type === "Number" && this.renderUniqueCheckbox(),
-          field.type === "Number" && this.renderExternalIdCheckbox()
+          field.type === "Number" && !isForPlatformEvent && this.renderUniqueCheckbox(),
+          field.type === "Number" && !isForPlatformEvent && this.renderExternalIdCheckbox()
         );
 
       case "Picklist":
@@ -538,8 +541,8 @@ class FieldOptionModal extends React.Component {
           ),
           this.renderDescriptionAndHelpText(),
           this.renderRequiredCheckbox(),
-          this.renderUniqueCheckbox(),
-          this.renderExternalIdCheckbox()
+          !isForPlatformEvent && this.renderUniqueCheckbox(),
+          !isForPlatformEvent && this.renderExternalIdCheckbox()
         );
 
       case "TextArea":
@@ -585,6 +588,9 @@ class FieldOptionModal extends React.Component {
 
   renderDescriptionAndHelpText = () => {
     const {field} = this.state;
+    const {selectedObject, isPlatformEvent} = this.props;
+    const isForPlatformEvent = isPlatformEvent(selectedObject);
+
     return h("div", null,
       h("div", {className: "form-group"},
         h("label", {htmlFor: "description"}, "Description"),
@@ -597,7 +603,7 @@ class FieldOptionModal extends React.Component {
           onChange: this.handleInputChange
         })
       ),
-      h("div", {className: "form-group"},
+      !isForPlatformEvent && h("div", {className: "form-group"},
         h("label", {htmlFor: "helpText"}, "Help Text"),
         h("textarea", {
           id: "helpText",
@@ -727,6 +733,40 @@ class FieldOptionModal extends React.Component {
 
 // Define the React components
 class FieldRow extends React.Component {
+
+  getAvailableFieldTypes() {
+    const {selectedObject} = this.props;
+
+    // All available field types
+    const allFieldTypes = [
+      {value: "Checkbox", label: "Checkbox"},
+      {value: "Currency", label: "Currency"},
+      {value: "Date", label: "Date"},
+      {value: "DateTime", label: "Date / Time"},
+      {value: "Email", label: "Email"},
+      {value: "Location", label: "Geolocation"},
+      {value: "Number", label: "Number"},
+      {value: "Percent", label: "Percent"},
+      {value: "Phone", label: "Phone"},
+      {value: "Picklist", label: "Picklist"},
+      {value: "MultiselectPicklist", label: "Picklist (Multi-Select)"},
+      {value: "Text", label: "Text"},
+      {value: "TextArea", label: "Text Area"},
+      {value: "LongTextArea", label: "Text Area (Long)"},
+      {value: "Html", label: "Text Area (Rich)"},
+      {value: "Url", label: "URL"}
+    ];
+
+    // Platform events have limited field types
+    if (this.props.isPlatformEvent(selectedObject)) {
+      const allowedForPlatformEvents = this.props.getAllowedPlatformEventFieldTypes();
+      return allFieldTypes.filter(fieldType => allowedForPlatformEvents.includes(fieldType.value));
+    }
+
+    // Standard objects and custom objects have all field types
+    return allFieldTypes;
+  }
+
   render() {
     document.title = "Field Creator";
 
@@ -813,22 +853,9 @@ class FieldRow extends React.Component {
               value: this.props.field.type,
               onChange: (e) => this.props.onTypeChange(this.props.index, e.target.value)
             },
-            h("option", {value: "Checkbox"}, "Checkbox"),
-            h("option", {value: "Currency"}, "Currency"),
-            h("option", {value: "Date"}, "Date"),
-            h("option", {value: "DateTime"}, "Date / Time"),
-            h("option", {value: "Email"}, "Email"),
-            h("option", {value: "Location"}, "Geolocation"),
-            h("option", {value: "Number"}, "Number"),
-            h("option", {value: "Percent"}, "Percent"),
-            h("option", {value: "Phone"}, "Phone"),
-            h("option", {value: "Picklist"}, "Picklist"),
-            h("option", {value: "MultiselectPicklist"}, "Picklist (Multi-Select)"),
-            h("option", {value: "Text"}, "Text"),
-            h("option", {value: "TextArea"}, "Text Area"),
-            h("option", {value: "LongTextArea"}, "Text Area (Long)"),
-            h("option", {value: "Html"}, "Text Area (Rich)"),
-            h("option", {value: "Url"}, "URL")
+            this.getAvailableFieldTypes().map(fieldType =>
+              h("option", {key: fieldType.value, value: fieldType.value}, fieldType.label)
+            )
             )
           )
         ),
@@ -890,6 +917,9 @@ class FieldsTable extends React.Component {
               key: index,
               index,
               field,
+              selectedObject: this.props.selectedObject,
+              isPlatformEvent: this.props.isPlatformEvent,
+              getAllowedPlatformEventFieldTypes: this.props.getAllowedPlatformEventFieldTypes,
               onDelete: this.props.onDelete,
               onClone: this.props.onClone,
               onLabelChange: this.props.onLabelChange,
@@ -912,7 +942,7 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      objects: [],
+      objects: [], // Store all objects fetched from API
       profiles: [],
       permissionSets: {},
       fields: [{label: "", name: "", type: "Text"}],
@@ -927,7 +957,8 @@ class App extends React.Component {
       fieldErrorMessage: "",
       errorMessageClickable: false,
       userInfo: "...",
-      filteredObjects: []
+      filteredObjects: [],
+      includeManagedPackage: localStorage.getItem("fieldCreatorIncludeManaged") === "true"
     };
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
@@ -935,6 +966,23 @@ class App extends React.Component {
       document.body.classList.add("prod");
     }
   }
+
+  // Utility method to check if an object is a platform event
+  isPlatformEvent = (obj) => obj && obj.keyPrefix && obj.keyPrefix.startsWith("e");
+
+  // Utility method to get allowed field types for platform events
+  getAllowedPlatformEventFieldTypes = () => ["Checkbox", "Date", "DateTime", "Number", "Text", "LongTextArea"];
+
+  // Generate the appropriate Fields setup link for different object types
+  getObjectFieldsLink = (selectedObject) => {
+    if (selectedObject.name.endsWith("__mdt")) {
+      return `https://${sfConn.instanceHostname}/lightning/setup/CustomMetadata/page?address=%2F${selectedObject.durableId}%3Fsetupid%3DCustomMetadata`;
+    } else if (selectedObject.name.endsWith("__e")) {
+      return `https://${sfConn.instanceHostname}/lightning/setup/PlatformEvents/page?address=%2F${selectedObject.durableId}%3Fsetupid%3DPlatformEvents`;
+    } else {
+      return `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject.name}/FieldsAndRelationships/view`;
+    }
+  };
 
   componentDidMount() {
     this.fetchObjects();
@@ -947,10 +995,19 @@ class App extends React.Component {
 
     // Sort the filtered objects based on relevance
     const sortedFilteredObjects = this.state.objects
-      .filter(obj =>
-        obj.name.toLowerCase().includes(searchTerm)
-        || obj.label.toLowerCase().includes(searchTerm)
-      )
+      .filter(obj => {
+        // First filter by managed package setting
+        if (!this.state.includeManagedPackage) {
+          // Hide managed package objects (those with NamespacePrefix)
+          if (obj.namespacePrefix && obj.namespacePrefix !== "") {
+            return false;
+          }
+        }
+
+        // Then filter by search term
+        return obj.name.toLowerCase().includes(searchTerm)
+          || obj.label.toLowerCase().includes(searchTerm);
+      })
       .sort((a, b) => {
         const aName = a.name.toLowerCase();
         const bName = b.name.toLowerCase();
@@ -987,12 +1044,36 @@ class App extends React.Component {
 
   handleObjectSelect = (obj) => {
     let objectName = obj.name;
+
+    // If switching to a platform event, validate and reset field types that aren't allowed
+    let updatedFields = this.state.fields;
+    if (this.isPlatformEvent(obj)) {
+      const allowedTypesForPE = this.getAllowedPlatformEventFieldTypes();
+      updatedFields = this.state.fields.map(field => {
+        if (!allowedTypesForPE.includes(field.type)) {
+          return {...field, type: "Text"}; // Default to Text for invalid types
+        }
+        return field;
+      });
+    }
+
     this.setState({
       selectedObject: obj,
       objectSearch: objectName,
       filteredObjects: [],
+      fields: updatedFields
     });
   };
+
+  onUpdateManagedPackageSelection = (e) => {
+    const includeManagedPackage = e.target.checked;
+    localStorage.setItem("fieldCreatorIncludeManaged", includeManagedPackage);
+    this.setState({includeManagedPackage}, () => {
+      // Trigger re-filtering with current search term
+      this.handleObjectSearch({target: {value: this.state.objectSearch}});
+    });
+  };
+
 
   fetchUserInfo() {
     const wsdl = sfConn.wsdl(apiVersion, "Partner");
@@ -1030,21 +1111,30 @@ class App extends React.Component {
   }
 
   createField(field, objectName) {
+    const {selectedObject} = this.state;
+    const isForPlatformEvent = this.isPlatformEvent(selectedObject);
+
     const newField = {
       FullName: `${objectName}.${field.name}__c`,
       Metadata: {
         label: field.label,
         type: this.mapFieldType(field.type),
-        description: field.description,
-        inlineHelpText: field.helptext,
         required: field.required || false,
-        unique: field.uniqueSetting || false,
-        externalId: field.external || false,
         trackFeedHistory: false,
         trackHistory: false,
         trackTrending: false
       }
     };
+
+    // Description is always supported
+    newField.Metadata.description = field.description;
+
+    // Only add these properties for non-platform events
+    if (!isForPlatformEvent) {
+      newField.Metadata.inlineHelpText = field.helptext;
+      newField.Metadata.unique = field.uniqueSetting || false;
+      newField.Metadata.externalId = field.external || false;
+    }
 
     // Add specific options based on field type
     switch (field.type) {
@@ -1198,7 +1288,7 @@ class App extends React.Component {
 
         for (let bucket = 0; bucket < batches; bucket++) {
           let offset = bucket > 0 ? " OFFSET " + (bucket * batchSize) : "";
-          let query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT ${batchSize}${offset}`;
+          let query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable, NamespacePrefix FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT ${batchSize}${offset}`;
 
           let batchPromise = sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
             .then(respEntity => {
@@ -1212,6 +1302,7 @@ class App extends React.Component {
                   recordTypesSupported: record.RecordTypesSupported,
                   newUrl: record.NewUrl,
                   isEverCreatable: record.IsEverCreatable,
+                  namespacePrefix: record.NamespacePrefix,
                   // Don't set layoutable here, as it should come from describe calls
                 }, "EntityDef");
               }
@@ -1233,7 +1324,10 @@ class App extends React.Component {
       ]);
 
       const sObjectsList = Array.from(entityMap.values());
-      const layoutableObjects = sObjectsList.filter(obj => obj.layoutable === true);
+      const layoutableObjects = sObjectsList.filter(obj =>
+        obj.layoutable === true || (obj.keyPrefix && obj.keyPrefix.startsWith("e")) //add layoutable objects and PE objects
+      );
+
       this.setState({objects: layoutableObjects});
     } catch (error) {
       console.error("Error fetching objects:", error);
@@ -1329,9 +1423,19 @@ class App extends React.Component {
   };
 
   onTypeChange = (index, type) => {
+    // Validate field type for platform events
+    const {selectedObject} = this.state;
+
+    // If it's a platform event and the type isn't allowed, default to "Text"
+    let validatedType = type;
+    if (this.isPlatformEvent(selectedObject)) {
+      const allowedTypesForPE = this.getAllowedPlatformEventFieldTypes();
+      validatedType = allowedTypesForPE.includes(type) ? type : "Text";
+    }
+
     this.setState((prevState) => ({
       fields: prevState.fields.map((field, i) =>
-        i === index ? {...field, type} : field
+        i === index ? {...field, type: validatedType} : field
       ),
     }));
   };
@@ -1545,7 +1649,7 @@ class App extends React.Component {
     const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject} = this.state;
 
     return (
-      h("div", {onClick: (e) => this.setState({
+      h("div", {onClick: () => this.setState({
         filteredObjects: []
       })},
       h("div", {id: "user-info"},
@@ -1571,9 +1675,7 @@ class App extends React.Component {
           h("div", {className: "form-group"},
             h("label", {htmlFor: "object_select"}, "Select Object"),
             selectedObject && h("a", {
-              href: selectedObject.name.endsWith("__mdt")
-                ? `https://${sfConn.instanceHostname}/lightning/setup/CustomMetadata/page?address=%2F${selectedObject.durableId}%3Fsetupid%3DCustomMetadata`
-                : `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject.name}/FieldsAndRelationships/view`,
+              href: this.getObjectFieldsLink(selectedObject),
               target: "_blank",
               className: "fieldsLink marginLeft10",
               rel: "noopener noreferrer"
@@ -1604,17 +1706,30 @@ class App extends React.Component {
             )
           ),
           h("br", null),
+          h("div", {className: "flexSpaceBetween alignItemsCenter marginBottom15"},
+            h("label", {className: "slds-checkbox_toggle max-width-small"},
+              h("input", {type: "checkbox", checked: this.state.includeManagedPackage, onChange: this.onUpdateManagedPackageSelection}),
+              h("span", {className: "slds-checkbox_faux_container center-label"},
+                h("span", {className: "slds-checkbox_faux"}),
+                h("span", {className: "slds-checkbox_on"}, "Managed packages included"),
+                h("span", {className: "slds-checkbox_off"}, "Managed packages excluded"),
+              )
+            )
+          ),
           h("div", {className: "col-xs-12 text-center", id: "deploy"},
             h("button", {"aria-label": "Clear Button", className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
             h("button", {"aria-label": "Open Import modal button", className: "btn btn-large", onClick: this.openImportModal}, "Import"),
             h("button", {"disabled": !this.state.selectedObject, "aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
-            !this.state.allFieldsHavePermissions && h("p", {className: "errorText"}, "Some fields are missing permissions."),
+            !this.state.allFieldsHavePermissions && !this.isPlatformEvent(selectedObject) && h("p", {className: "errorText"}, "Some fields are missing permissions."),
           )
         )
       ),
       h("div", {className: "area"},
         h(FieldsTable, {
           fields,
+          selectedObject,
+          isPlatformEvent: this.isPlatformEvent,
+          getAllowedPlatformEventFieldTypes: this.getAllowedPlatformEventFieldTypes,
           onDelete: this.removeRow,
           onClone: this.cloneRow,
           onLabelChange: this.onLabelChange,
@@ -1635,6 +1750,8 @@ class App extends React.Component {
       }),
       showModal && h(FieldOptionModal, {
         field: fields[currentFieldIndex],
+        selectedObject,
+        isPlatformEvent: this.isPlatformEvent,
         onSave: this.onSaveFieldOptions,
         onClose: this.onCloseModal
       }),

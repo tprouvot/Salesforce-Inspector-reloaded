@@ -421,6 +421,8 @@ class Model {
         if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
           vm.queryInput.value += " LIMIT 200";
         }
+        // Persist the updated query to the current tab
+        vm.updateCurrentTabQuery(vm.queryInput.value);
         vm.queryAutocompleteHandler();
       }
     };

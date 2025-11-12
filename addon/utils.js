@@ -4,6 +4,9 @@ export class Constants {
   static PromptTemplateSOQL = "GenerateSOQL";
   // Consumer Key of default connected app
   static DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs";
+  static ACCESS_TOKEN = "_access_token";
+  static CODE_VERIFIER = "_code_verifier";
+  static CLIENT_ID = "_clientId";
 }
 
 export function getLinkTarget(e = {}) {
@@ -134,7 +137,7 @@ export function getExtensionId() {
 }
 
 export function getClientId(sfHost) {
-  const storedClientId = localStorage.getItem(sfHost + "_clientId");
+  const storedClientId = localStorage.getItem(sfHost + Constants.CLIENT_ID);
   return storedClientId || Constants.DEFAULT_CLIENT_ID;
 }
 

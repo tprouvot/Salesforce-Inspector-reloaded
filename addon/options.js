@@ -160,13 +160,14 @@ class OptionsTabSelector extends React.Component {
             props: {type: "text",
               title: "API Consumer Key",
               placeholder: "Consumer Key",
-              key: this.sfHost + "_clientId",
+              key: this.sfHost + Constants.CLIENT_ID,
               inputSize: "5",
               actionButton: {
                 label: "Delete Token",
                 title: "Delete the connected app generated token",
+                disabled: localStorage.getItem(this.sfHost + Constants.ACCESS_TOKEN) == null,
                 onClick: (e, model) => {
-                  localStorage.removeItem(model.sfHost + "_clientId");
+                  localStorage.removeItem(model.sfHost + Constants.ACCESS_TOKEN);
                   e.target.disabled = true;
                 }
               }}},
@@ -418,7 +419,8 @@ class OptionsContainer extends React.Component {
                   key: index,
                   className: `slds-button slds-button_icon slds-button_icon-border-filled${index > 0 ? " slds-m-left_x-small" : ""}`,
                   onClick: button.method,
-                  title: button.title
+                  title: button.title,
+                  disabled: button.disabled,
                 }, h("svg", {className: "slds-button__icon"},
                   h("use", {xlinkHref: `symbols.svg#${button.icon}`})
                 ));
@@ -855,6 +857,7 @@ class Option extends React.Component {
             h("button", {
               className: "slds-button slds-button_brand",
               onClick: (e) => this.actionButton.onClick(e, this.props.model),
+              disabled: this.actionButton.disabled,
               title: this.actionButton.title || "Action"
             }, this.actionButton.label || "Action")
           )

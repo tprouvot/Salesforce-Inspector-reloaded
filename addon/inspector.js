@@ -1,4 +1,4 @@
-import {getRedirectUri, getClientId} from "./utils.js";
+import {getRedirectUri, getClientId, Constants} from "./utils.js";
 
 export let defaultApiVersion = "65.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
@@ -9,7 +9,6 @@ const clientId = "Salesforce Inspector Reloaded";
 export let sfConn = {
 
   async getSession(sfHost) {
-    const ACCESS_TOKEN = "access_token";
     const url = new URL(window.location.href);
     const searchParams = new URLSearchParams(url.search);
     const authorizationCode = searchParams.get("code");
@@ -26,13 +25,13 @@ export let sfConn = {
     }
 
     sfHost = getMyDomain(sfHost);
-    const oldToken = localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
+    const oldToken = localStorage.getItem(sfHost + Constants.ACCESS_TOKEN);
     this.instanceHostname = sfHost;
 
     // Check if this is an OAuth callback with authorization code (PKCE flow)
     if (authorizationCode) {
       try {
-        const codeVerifier = localStorage.getItem(sfHost + "_code_verifier");
+        const codeVerifier = localStorage.getItem(sfHost + Constants.CODE_VERIFIER);
         if (!codeVerifier) {
           throw new Error("Code verifier not found. Please restart the authorization flow.");
         }
@@ -40,10 +39,10 @@ export let sfConn = {
         // Exchange authorization code for access token
         const accessToken = await this.exchangeCodeForToken(sfHost, authorizationCode, codeVerifier);
         this.sessionId = accessToken;
-        localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
+        localStorage.setItem(sfHost + Constants.ACCESS_TOKEN, accessToken);
 
         // Clean up code verifier
-        localStorage.removeItem(sfHost + "_code_verifier");
+        localStorage.removeItem(sfHost + Constants.CODE_VERIFIER);
 
         // Clean up the URL by removing the code and state parameters
         const cleanUrl = url.origin + url.pathname + "?host=" + sfHost + url.hash;
@@ -177,7 +176,7 @@ export let sfConn = {
     } else if (xhr.status == 401) {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
       //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
-      if (localStorage.getItem(this.instanceHostname + "_access_token")){
+      if (localStorage.getItem(this.instanceHostname + Constants.ACCESS_TOKEN)){
         sessionError = {text: "Access Token Expired", title: "Generate New Token", type: "warning", icon: "warning"};
         showToastBanner();
       }

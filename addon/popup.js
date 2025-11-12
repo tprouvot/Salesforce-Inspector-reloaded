@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri} from "./utils.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
@@ -53,7 +53,7 @@ function getFilteredLocalStorage(){
   const storedData = {...localStorage};
   const keysToSend = ["scrollOnFlowBuilder", "colorizeProdBanner", "colorizeSandboxBanner", "popupArrowOrientation", "popupArrowPosition", "prodBannerText"];
   const filteredStorage = Object.fromEntries(
-    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith("access_token"))
+    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
   );
   sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
   return filteredStorage;
@@ -275,7 +275,7 @@ class App extends React.PureComponent {
       const pkceParams = await getPKCEParameters(sfHost);
 
       // Store code_verifier in localStorage for later use during token exchange
-      localStorage.setItem(sfHost + "_code_verifier", pkceParams.code_verifier);
+      localStorage.setItem(sfHost + Constants.CODE_VERIFIER, pkceParams.code_verifier);
 
       // Build authorization URL with PKCE
       // Include sfHost in the state parameter so we can retrieve it after callback

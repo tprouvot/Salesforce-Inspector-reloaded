@@ -1805,7 +1805,7 @@ class App extends React.Component {
         h("h1", {className: "slds-text-title_bold"}, "Options"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: this.exportOptions, title: "Export Options"},
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: () => this.exportOptions(), title: "Export Options"},
             h("svg", {className: "slds-button__icon"},
               h("use", {xlinkHref: "symbols.svg#download"})
             )

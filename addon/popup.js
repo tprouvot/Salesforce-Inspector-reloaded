@@ -268,7 +268,7 @@ class App extends React.PureComponent {
   isMac() {
     return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
   }
-  async handleGenerateTokenClick(e, sfHost, clientId, browser) {
+  async handleGenerateTokenClick(e, sfHost, clientId) {
     e.preventDefault();
     try {
       // Fetch PKCE parameters from Salesforce

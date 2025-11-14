@@ -127,7 +127,7 @@ Thank you for shaping our extension's future! Your feedback makes it better.
 Contributions are welcome!
 
 Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
-You can check for the [open issues](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues) and [check if any help is wanted](https://github.com/tprouvot/Salesforce-Inspector-reloaded/labels/%22help%20wanted%22)
+You can check for the [open issues](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues) and [check if any help is wanted](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues?q=state%3Aopen%20label%3A%22help%20wanted%22)
 
 Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
 To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.

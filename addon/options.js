@@ -114,7 +114,7 @@ class OptionsTabSelector extends React.Component {
                 {label: "Generate Access Token", name: "generate-token", checked: true}
               ]}
           },
-          {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
+          {option: FaviconOption, props: {key: this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
           {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
           {option: Option, props: {type: "text", title: "Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
@@ -870,6 +870,8 @@ class Option extends React.Component {
 
 class FaviconOption extends React.Component {
 
+  static CUSTOM_FAVICON_KEY = "_customFavicon";
+
   constructor(props) {
     super(props);
     this.sfHost = props.model.sfHost;
@@ -879,7 +881,7 @@ class FaviconOption extends React.Component {
     this.onColorPickerClick = this.onColorPickerClick.bind(this);
     this.pickerInstance = null;
 
-    let favicon = localStorage.getItem(this.sfHost + "_customFavicon") ? localStorage.getItem(this.sfHost + "_customFavicon") : "";
+    let favicon = localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) ? localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
     let smartMode = true;
     this.tooltip = props.tooltip;
@@ -917,12 +919,10 @@ class FaviconOption extends React.Component {
     let favicon = e.target.value;
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
     this.setState({favicon});
-    localStorage.setItem(this.sfHost + "_customFavicon", favicon);
+    localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, favicon);
   }
 
   onColorPickerClick(e) {
-    const button = e.target.closest("button");
-
     // Clean up existing picker if any
     if (this.pickerInstance) {
       this.pickerInstance.destroy();
@@ -930,14 +930,14 @@ class FaviconOption extends React.Component {
 
     // Create new picker instance
     this.pickerInstance = new Picker({
-      parent: button,
+      parent: e.target,
       popup: "top",
       alpha: false,
       color: this.state.favicon || "#000000",
       onChange: (color) => {
         const hexColor = color.hex;
         this.setState({favicon: hexColor, isInternal: true});
-        localStorage.setItem(this.sfHost + "_customFavicon", hexColor);
+        localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, hexColor);
       }
     });
 
@@ -957,13 +957,13 @@ class FaviconOption extends React.Component {
 
     orgs.forEach((org) => {
       let sfHost = org.substring(0, org.indexOf("_isSandbox"));
-      let existingColor = localStorage.getItem(sfHost + "_customFavicon");
+      let existingColor = localStorage.getItem(sfHost + FaviconOption.CUSTOM_FAVICON_KEY);
 
       if (!existingColor) { // Only assign a color if none is set
         const chosenColor = this.getColorForHost(sfHost, this.state.smartMode);
         if (chosenColor) {
-          console.info(sfHost + "_customFavicon", chosenColor);
-          localStorage.setItem(sfHost + "_customFavicon", chosenColor);
+          console.info(sfHost + FaviconOption.CUSTOM_FAVICON_KEY, chosenColor);
+          localStorage.setItem(sfHost + FaviconOption.CUSTOM_FAVICON_KEY, chosenColor);
           if (sfHost === this.sfHost) {
             this.setState({favicon: chosenColor});
           }

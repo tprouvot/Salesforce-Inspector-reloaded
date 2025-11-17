@@ -198,6 +198,7 @@ This extension uses the following third-party libraries:
 
 - [Lightning Flow Scanner Core](https://github.com/Flow-Scanner/lightning-flow-scanner-core) - A lightweight engine for Flow metadata analysis in Node.js and browser environments (MIT License)
 - [vanilla-picker](https://github.com/Sphinxxxx/vanilla-picker) - A simple, easy-to-use vanilla JS color picker (ISC License)
+- [PrismJS](https://prismjs.com/) - Lightweight, extensible syntax highlighter (MIT License)
 
 For full license details, see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)
 

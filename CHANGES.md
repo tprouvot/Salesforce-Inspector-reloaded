@@ -2,6 +2,7 @@
 
 ## Version 2.0
 
+- `Options` Add color picker for favicon color by [Camille Guillory](https://github.com/CamilleGuillory)
 - `Options` Fix export configuration file [issue #982](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/982) (issue by [Syamkumar Kanjiravelil Sasidharan](https://github.com/syamkumar-ks))
 - `Field Creator` Enable field creation for platform event objects [feature 954](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/954) (idea by [simagdo](https://github.com/simagdo))
 - Unfreeze User from User tab [feature #945](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/945) (contribution by [b-r-j](https://github.com/b-r-j))

@@ -879,7 +879,9 @@ class FaviconOption extends React.Component {
     this.populateFaviconColors = this.populateFaviconColors.bind(this);
     this.onToogleSmartMode = this.onToogleSmartMode.bind(this);
     this.onColorPickerClick = this.onColorPickerClick.bind(this);
+    this.setColorButtonRef = this.setColorButtonRef.bind(this);
     this.pickerInstance = null;
+    this.colorButtonEl = null;
 
     let favicon = localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) ? localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
@@ -915,31 +917,46 @@ class FaviconOption extends React.Component {
     };
   }
 
+  componentWillUnmount() {
+    if (this.pickerInstance) {
+      this.pickerInstance.destroy();
+      this.pickerInstance = null;
+    }
+  }
+
+  setColorButtonRef(element) {
+    this.colorButtonEl = element;
+  }
+
   onChangeFavicon(e) {
-    let favicon = e.target.value;
-    let isInternal = favicon.length > 0 && !favicon.startsWith("http");
-    this.setState({favicon});
+    const favicon = e.target.value;
+    const isInternal = favicon.length > 0 && !favicon.startsWith("http");
+    this.setState({favicon, isInternal});
     localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, favicon);
   }
 
   onColorPickerClick(e) {
-    // Clean up existing picker if any
-    if (this.pickerInstance) {
-      this.pickerInstance.destroy();
-    }
+    const parentButton = this.colorButtonEl || e.currentTarget || e.target;
+    const desiredColor = this.state.favicon || "#000000";
 
-    // Create new picker instance
-    this.pickerInstance = new Picker({
-      parent: e.target,
-      popup: "top",
-      alpha: false,
-      color: this.state.favicon || "#000000",
-      onChange: (color) => {
-        const hexColor = color.hex;
-        this.setState({favicon: hexColor, isInternal: true});
-        localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, hexColor);
+    if (!this.pickerInstance) {
+      this.pickerInstance = new Picker({
+        parent: parentButton,
+        popup: "top",
+        alpha: false,
+        color: desiredColor,
+        onChange: (color) => {
+          const hexColor = color.hex;
+          this.setState({favicon: hexColor, isInternal: true});
+          localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, hexColor);
+        }
+      });
+    } else {
+      if (parentButton && this.pickerInstance.settings.parent !== parentButton) {
+        this.pickerInstance.movePopup({parent: parentButton}, false);
       }
-    });
+      this.pickerInstance.setColor(desiredColor, true);
+    }
 
     this.pickerInstance.show();
   }
@@ -1027,7 +1044,8 @@ class FaviconOption extends React.Component {
             style: {backgroundColor: this.state.isInternal ? this.state.favicon : "#cccccc"},
             onClick: this.onColorPickerClick,
             title: "Pick a color",
-            type: "button"
+            type: "button",
+            ref: this.setColorButtonRef
           })
         )
       ),

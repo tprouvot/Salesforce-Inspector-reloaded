@@ -880,8 +880,10 @@ class FaviconOption extends React.Component {
     this.onToogleSmartMode = this.onToogleSmartMode.bind(this);
     this.onColorPickerClick = this.onColorPickerClick.bind(this);
     this.setColorButtonRef = this.setColorButtonRef.bind(this);
+    this.handlePickerClose = this.handlePickerClose.bind(this);
     this.pickerInstance = null;
     this.colorButtonEl = null;
+    this.isPickerOpen = false;
 
     let favicon = localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) ? localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
@@ -922,6 +924,11 @@ class FaviconOption extends React.Component {
       this.pickerInstance.destroy();
       this.pickerInstance = null;
     }
+    this.isPickerOpen = false;
+  }
+
+  shouldComponentUpdate() {
+    return !this.isPickerOpen;
   }
 
   setColorButtonRef(element) {
@@ -933,6 +940,11 @@ class FaviconOption extends React.Component {
     const isInternal = favicon.length > 0 && !favicon.startsWith("http");
     this.setState({favicon, isInternal});
     localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, favicon);
+  }
+
+  handlePickerClose() {
+    this.isPickerOpen = false;
+    this.forceUpdate();
   }
 
   onColorPickerClick(e) {
@@ -949,7 +961,8 @@ class FaviconOption extends React.Component {
           const hexColor = color.hex;
           this.setState({favicon: hexColor, isInternal: true});
           localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, hexColor);
-        }
+        },
+        onClose: this.handlePickerClose
       });
     } else {
       if (parentButton && this.pickerInstance.settings.parent !== parentButton) {
@@ -959,6 +972,7 @@ class FaviconOption extends React.Component {
     }
 
     this.pickerInstance.show();
+    this.isPickerOpen = true;
   }
 
 

@@ -6,6 +6,7 @@ import {getFlowScannerRules} from "./flow-scanner.js";
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
+import ColorPicker from "./components/ColorPicker.js";
 
 class Model {
 
@@ -876,12 +877,21 @@ class FaviconOption extends React.Component {
     this.onChangeFavicon = this.onChangeFavicon.bind(this);
     this.populateFaviconColors = this.populateFaviconColors.bind(this);
     this.onToogleSmartMode = this.onToogleSmartMode.bind(this);
+    this.toggleColorPicker = this.toggleColorPicker.bind(this);
+    this.handleColorSelect = this.handleColorSelect.bind(this);
+    this.colorIconRef = null;
 
     let favicon = localStorage.getItem(this.sfHost + "_customFavicon") ? localStorage.getItem(this.sfHost + "_customFavicon") : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
     let smartMode = true;
     this.tooltip = props.tooltip;
-    this.state = {favicon, isInternal, smartMode};
+    this.state = {
+      favicon,
+      isInternal,
+      smartMode,
+      showColorPicker: false,
+      colorPickerPosition: {top: 0, left: 0}
+    };
     this.colorShades = {
       dev: [
         "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue", "CornflowerBlue",
@@ -913,13 +923,42 @@ class FaviconOption extends React.Component {
 
   onChangeFavicon(e) {
     let favicon = e.target.value;
-    this.setState({favicon});
+    let isInternal = favicon.length > 0 && !favicon.startsWith("http");
+    this.setState({favicon, isInternal});
     localStorage.setItem(this.sfHost + "_customFavicon", favicon);
   }
 
   onToogleSmartMode(e) {
     let smartMode = e.target.checked;
     this.setState({smartMode});
+  }
+
+  toggleColorPicker() {
+    if (this.state.showColorPicker) {
+      this.setState({showColorPicker: false});
+    } else {
+      // Calculate position relative to the icon
+      const iconElement = this.colorIconRef;
+      if (iconElement) {
+        const rect = iconElement.getBoundingClientRect();
+        this.setState({
+          showColorPicker: true,
+          colorPickerPosition: {
+            top: rect.bottom + 8 + "px",
+            left: rect.left + "px"
+          }
+        });
+      }
+    }
+  }
+
+  handleColorSelect(color) {
+    this.setState({
+      favicon: color,
+      isInternal: true,
+      showColorPicker: false
+    });
+    localStorage.setItem(this.sfHost + "_customFavicon", color);
   }
 
   populateFaviconColors(){
@@ -993,10 +1032,26 @@ class FaviconOption extends React.Component {
         h("div", {className: "slds-form-element__control slds-col slds-size_10-of-12"},
           h("input", {type: "text", className: "slds-input", placeholder: "All HTML Color Names, Hex code or external URL", value: nullToEmptyString(this.state.favicon), onChange: this.onChangeFavicon}),
         ),
-        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          this.state.isInternal ? h("svg", {className: "icon"},
-            h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
-          ) : null
+        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12", style: {position: "relative"}},
+          this.state.isInternal ? h("svg", {
+            ref: (el) => { this.colorIconRef = el; },
+            className: "icon",
+            style: {cursor: "pointer"},
+            onClick: (e) => {
+              e.stopPropagation();
+              this.toggleColorPicker();
+            },
+            title: "Click to open color picker"
+          },
+          h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
+          ) : null,
+          this.state.showColorPicker && h(ColorPicker, {
+            value: this.state.favicon,
+            position: this.state.colorPickerPosition,
+            triggerRef: this.colorIconRef,
+            onChange: this.handleColorSelect,
+            onClose: () => this.setState({showColorPicker: false})
+          })
         )
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},

@@ -1,0 +1,84 @@
+/* ColorPicker Component Styles */
+
+/* Main popover container */
+.color-picker-popover {
+  position: fixed;
+  z-index: 7000;
+  width: 280px;
+}
+
+/* Hue bar (rainbow gradient at top) */
+.color-picker-hue-bar {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  border-radius: 0.25rem;
+  background: linear-gradient(
+    to right,
+    #ff0000 0%,
+    #ffff00 17%,
+    #00ff00 33%,
+    #00ffff 50%,
+    #0000ff 67%,
+    #ff00ff 83%,
+    #ff0000 100%
+  );
+  cursor: pointer;
+  margin-bottom: 12px;
+  border: 1px solid #e5e5e5;
+}
+
+/* Hue cursor (vertical white line) */
+.color-picker-hue-cursor {
+  position: absolute;
+  top: 50%;
+  width: 4px;
+  height: 100%;
+  background: white;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+/* Gradient area (saturation/brightness) */
+.color-picker-gradient {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border-radius: 0.25rem;
+  cursor: crosshair;
+  margin-bottom: 12px;
+  border: 1px solid #e5e5e5;
+}
+
+/* Gradient cursor (circular) */
+.color-picker-gradient-cursor {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+/* Hex input field */
+.color-picker-hex-input {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Color preview box */
+.color-picker-preview {
+  width: 50px;
+  height: 32px;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.25rem;
+}
+
+/* Preview container alignment */
+.color-picker-preview-container {
+  padding-top: 1.5rem;
+}

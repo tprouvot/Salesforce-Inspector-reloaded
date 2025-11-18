@@ -1,5 +1,3 @@
-/* global React */
-
 /**
  * ColorPicker Component
  * A gradient-based color picker following SLDS design patterns
@@ -98,11 +96,11 @@ class ColorPicker extends React.Component {
 
     if (diff !== 0) {
       if (max === r) {
-        h = ((g - b) / diff + (g < b ? 6 : 0)) / 6;
+        h = (((g - b) / diff) + (g < b ? 6 : 0)) / 6;
       } else if (max === g) {
-        h = ((b - r) / diff + 2) / 6;
+        h = (((b - r) / diff) + 2) / 6;
       } else {
-        h = ((r - g) / diff + 4) / 6;
+        h = (((r - g) / diff) + 4) / 6;
       }
     }
 
@@ -111,7 +109,7 @@ class ColorPicker extends React.Component {
 
   hsvToHex(h, s, v) {
     const c = v * s;
-    const x = c * (1 - Math.abs((h * 6) % 2 - 1));
+    const x = c * (1 - Math.abs(((h * 6) % 2) - 1));
     const m = v - c;
 
     let r = 0,
@@ -227,14 +225,9 @@ class ColorPicker extends React.Component {
 
     return h("div", {
       ref: (el) => { this.popoverRef = el; },
-      className: "slds-popover slds-popover_medium slds-nubbin_bottom-left",
+      className: "slds-popover slds-popover_medium slds-nubbin_bottom-left color-picker-popover",
       role: "dialog",
-      style: {
-        position: "fixed",
-        ...adjustedPosition,
-        zIndex: 7000,
-        width: "280px"
-      }
+      style: adjustedPosition
     },
 
     // Body
@@ -243,63 +236,31 @@ class ColorPicker extends React.Component {
       // Hue bar (rainbow on top)
       h("div", {
         ref: (el) => { this.hueBarRef = el; },
-        onMouseDown: this.handleHueMouseDown,
-        style: {
-          position: "relative",
-          width: "100%",
-          height: "20px",
-          borderRadius: "0.25rem",
-          background: "linear-gradient(to right, #FF0000 0%, #FFFF00 17%, #00FF00 33%, #00FFFF 50%, #0000FF 67%, #FF00FF 83%, #FF0000 100%)",
-          cursor: "pointer",
-          marginBottom: "12px",
-          border: "1px solid #e5e5e5"
-        }
+        className: "color-picker-hue-bar",
+        onMouseDown: this.handleHueMouseDown
       },
       // Hue cursor
       h("div", {
-        style: {
-          position: "absolute",
-          left: `${hueCursorLeft}%`,
-          top: "50%",
-          width: "4px",
-          height: "100%",
-          background: "white",
-          transform: "translate(-50%, -50%)",
-          boxShadow: "0 0 2px rgba(0,0,0,0.5)",
-          pointerEvents: "none",
-          borderRadius: "2px"
-        }
+        className: "color-picker-hue-cursor",
+        style: {left: `${hueCursorLeft}%`}
       })
       ),
 
       // Gradient area (saturation/brightness shades below)
       h("div", {
         ref: (el) => { this.gradientRef = el; },
-        onMouseDown: this.handleGradientMouseDown,
+        className: "color-picker-gradient",
         style: {
-          position: "relative",
-          width: "100%",
-          height: "200px",
-          borderRadius: "0.25rem",
-          background: `linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, ${hueColor})`,
-          cursor: "crosshair",
-          marginBottom: "12px",
-          border: "1px solid #e5e5e5"
-        }
+          background: `linear-gradient(to bottom, transparent, black), linear-gradient(to right, white, ${hueColor})`
+        },
+        onMouseDown: this.handleGradientMouseDown
       },
       // Gradient cursor
       h("div", {
+        className: "color-picker-gradient-cursor",
         style: {
-          position: "absolute",
           left: `${gradientCursorLeft}%`,
-          top: `${gradientCursorTop}%`,
-          width: "16px",
-          height: "16px",
-          border: "2px solid white",
-          borderRadius: "50%",
-          transform: "translate(-50%, -50%)",
-          boxShadow: "0 0 0 1px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(0,0,0,0.3)",
-          pointerEvents: "none"
+          top: `${gradientCursorTop}%`
         }
       })
       ),
@@ -310,23 +271,17 @@ class ColorPicker extends React.Component {
           h("label", {className: "slds-form-element__label slds-text-body_small"}, "Hex"),
           h("input", {
             type: "text",
-            className: "slds-input",
+            className: "slds-input color-picker-hex-input",
             value: hexInput,
             onChange: this.handleHexInput,
             placeholder: "#000000",
-            maxLength: 7,
-            style: {fontSize: "0.875rem", padding: "0.25rem 0.5rem"}
+            maxLength: 7
           })
         ),
-        h("div", {className: "slds-col slds-shrink-none", style: {paddingTop: "1.5rem"}},
+        h("div", {className: "slds-col slds-shrink-none color-picker-preview-container"},
           h("div", {
-            style: {
-              width: "50px",
-              height: "32px",
-              backgroundColor: hexInput,
-              border: "1px solid #e5e5e5",
-              borderRadius: "0.25rem"
-            }
+            className: "color-picker-preview",
+            style: {backgroundColor: hexInput}
           })
         )
       )

@@ -313,3 +313,9 @@ body {
   position: fixed !important;
   z-index: 10000;
 }
+
+/* ColorPicker nubbin color override to match SLDS footer */
+.slds-popover.slds-popover_medium.slds-nubbin_bottom-left:before,
+.slds-popover.slds-popover_medium.slds-nubbin_bottom-left:after {
+  background: var(--slds-g-color-neutral-base-95, #f3f3f3);
+}

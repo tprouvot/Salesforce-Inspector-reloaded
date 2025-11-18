@@ -32,6 +32,7 @@ class ColorPicker extends React.Component {
     this.handleMouseUp = this.handleMouseUp.bind(this);
     this.handleHexInput = this.handleHexInput.bind(this);
     this.handleApplyColor = this.handleApplyColor.bind(this);
+    this.adjustPosition = this.adjustPosition.bind(this);
     this.isDragging = null; // null, 'hue', or 'gradient'
   }
 
@@ -40,6 +41,7 @@ class ColorPicker extends React.Component {
       document.addEventListener("mousedown", this.handleClickOutside);
       document.addEventListener("mousemove", this.handleMouseMove);
       document.addEventListener("mouseup", this.handleMouseUp);
+      document.addEventListener("scroll", this.adjustPosition, true); // true = capture phase to catch all scrolls
 
       // Adjust position after render to place picker above the icon
       this.adjustPosition();
@@ -51,9 +53,11 @@ class ColorPicker extends React.Component {
       const pickerRect = this.popoverRef.getBoundingClientRect();
       const iconRect = this.props.triggerRef.getBoundingClientRect();
 
-      // Position above the icon
-      const top = iconRect.top - pickerRect.height - 8 + "px";
-      const left = iconRect.left + "px";
+      // Position above the icon with nubbin aligned to icon center
+      // The nubbin_bottom-left positions the arrow ~1rem from the left edge
+      // Offset by ~14px to align nubbin with icon center
+      const top = iconRect.top - pickerRect.height - 12 + "px";
+      const left = iconRect.left - 14 + "px";
 
       this.setState({adjustedPosition: {top, left}});
     }
@@ -63,6 +67,7 @@ class ColorPicker extends React.Component {
     document.removeEventListener("mousedown", this.handleClickOutside);
     document.removeEventListener("mousemove", this.handleMouseMove);
     document.removeEventListener("mouseup", this.handleMouseUp);
+    document.removeEventListener("scroll", this.adjustPosition, true);
   }
 
   handleClickOutside(event) {
@@ -222,7 +227,7 @@ class ColorPicker extends React.Component {
 
     return h("div", {
       ref: (el) => { this.popoverRef = el; },
-      className: "slds-popover slds-popover_medium slds-nubbin_bottom",
+      className: "slds-popover slds-popover_medium slds-nubbin_bottom-left",
       role: "dialog",
       style: {
         position: "fixed",
@@ -331,7 +336,7 @@ class ColorPicker extends React.Component {
     h("div", {className: "slds-popover__footer slds-p-around_small"},
       h("div", {className: "slds-grid slds-grid_align-end slds-gutters_x-small"},
         h("button", {
-          className: "slds-button slds-button_neutral",
+          className: "slds-button slds-button_neutral slds-m-right_small",
           onClick: this.props.onClose
         }, "Cancel"),
         h("button", {

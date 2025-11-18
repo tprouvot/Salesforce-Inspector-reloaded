@@ -8750,3 +8750,7 @@ a.slds-button--inverse:focus {
   -ms-flex-item-align: end;
   align-self: flex-end;
 }
+.slds-grid_align-end,
+.slds-grid--align-end {
+  justify-content: flex-end;
+}

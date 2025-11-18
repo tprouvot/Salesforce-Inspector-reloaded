@@ -113,6 +113,12 @@ export let setupLinks = [
   {label: "Revenue Intelligence Assessor", link: "/lightning/setup/EinsteinRevIntlReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   {label: "Sales Cloud Einstein Assessor", link: "/lightning/setup/SalesCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   {label: "Service Cloud Einstein Assessor", link: "lightning/setup/ServiceCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
+  //Platform Tools > Einstein > Einstein Generative AI
+  {label: "Einstein Audit, Analytics, and Monitoring Setup", link: "/lightning/setup/EinsteinFeedbackSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
+  {label: "Einstein Setup", link: "/lightning/setup/EinsteinGPTSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
+  {label: "Einstein Trust Layer", link: "/lightning/setup/EinsteinTrustLayerSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
+  {label: "Flow Creation with Einstein", link: "/lightning/setup/EinsteinForFlow/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
+  {label: "Prompt Builder", link: "/lightning/setup/EinsteinPromptStudio/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
   //Platform Tools > Einstein > Einstein Platform
   {label: "Einstein Prediction Builder", link: "/lightning/setup/EinsteinBuilder/home", section: "Platform Tools > Einstein > Einstein Platform", prod: false},
   {label: "Einstein Recommendation Builder", link: "/lightning/setup/EinsteinRecommendation/home", section: "Platform Tools > Einstein > Einstein Platform", prod: false},

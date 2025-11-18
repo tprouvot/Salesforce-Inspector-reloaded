@@ -58,7 +58,7 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 
 6. Enter the consumer key
 
-    <img alt="Client Id" width="849" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/b1edfea1-5a56-4f42-8945-e452a7ab5cf5">
+    <img alt="Client Id" width="849" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/b1edfea1-5a56-4f42-8945-e452a7ab5cf5">
 
 7. Refresh page and generate new token
 

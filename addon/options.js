@@ -225,7 +225,8 @@ class OptionsTabSelector extends React.Component {
                 {label: "PascalCase", value: "pascal"},
                 {label: "Underscores", value: "underscore"}
               ]
-            }}
+            }},
+          {option: Option, props: {type: "toggle", title: "Include managed packages objects", key: "fieldCreatorIncludeManaged", default: false, tooltip: "Show objects from managed packages in the object selector"}}
         ]
       },
       {
@@ -419,8 +420,7 @@ class OptionsContainer extends React.Component {
                   key: index,
                   className: `slds-button slds-button_icon slds-button_icon-border-filled${index > 0 ? " slds-m-left_x-small" : ""}`,
                   onClick: button.method,
-                  title: button.title,
-                  disabled: button.disabled,
+                  title: button.title
                 }, h("svg", {className: "slds-button__icon"},
                   h("use", {xlinkHref: `symbols.svg#${button.icon}`})
                 ));
@@ -857,7 +857,6 @@ class Option extends React.Component {
             h("button", {
               className: "slds-button slds-button_brand",
               onClick: (e) => this.actionButton.onClick(e, this.props.model),
-              disabled: this.actionButton.disabled,
               title: this.actionButton.title || "Action"
             }, this.actionButton.label || "Action")
           )
@@ -1807,7 +1806,7 @@ class App extends React.Component {
         h("h1", {className: "slds-text-title_bold"}, "Options"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: this.exportOptions, title: "Export Options"},
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: () => this.exportOptions(), title: "Export Options"},
             h("svg", {className: "slds-button__icon"},
               h("use", {xlinkHref: "symbols.svg#download"})
             )

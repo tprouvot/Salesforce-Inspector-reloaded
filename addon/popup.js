@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
 import {getAllFieldSetupLinks} from "./setup-links.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
@@ -246,24 +246,14 @@ class App extends React.PureComponent {
     }
   }
   componentDidMount() {
-    let {sfHost} = this.props;
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
     parent.postMessage({insextLoaded: true}, "*");
-    this.setOrgInfo(sfHost);
+    setOrgInfo(this.props.sfHost);
   }
   componentWillUnmount() {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
-  }
-  setOrgInfo(sfHost) {
-    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
-    if (orgInfo == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType+FROM+Organization").then(res => {
-        orgInfo = res.records[0];
-        sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
-      });
-    }
   }
   isMac() {
     return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
@@ -730,7 +720,8 @@ class AllDataBox extends React.PureComponent {
           sobjectsLoading: false,
           sobjectsList: Array.from(entityMap.values())
         });
-        this.refs.showAllDataBoxSObject.refs.allDataSearch.getMatchesDelayed("");
+        // Only call getMatchesDelayed if the showAllDataBoxSObject component is rendered (i.e., user is on Objects tab)
+        this.refs.showAllDataBoxSObject?.refs?.allDataSearch?.getMatchesDelayed("");
       })
       .catch(e => {
         console.error(e);
@@ -1396,9 +1387,12 @@ class AllDataBoxOrg extends React.PureComponent {
     this.deleteApexLogs = this.deleteApexLogs.bind(this);
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     let {sfHost} = this.props;
     let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
+    if (!orgInfo){
+      orgInfo = await setOrgInfo(sfHost);
+    }
     this.setInstanceStatus(orgInfo.InstanceName, sfHost);
   }
 
@@ -1503,15 +1497,15 @@ class AllDataBoxOrg extends React.PureComponent {
               h("tbody", {},
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget, onClick: handleLightningLinkClick}, "Org Id:")),
-                  h("td", {}, orgInfo.Id.substring(0, 15))
+                  h("td", {}, orgInfo?.Id.substring(0, 15))
                 ),
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName, title: "Instance status", target: linkTarget}, "Instance:")),
-                  h("td", {}, orgInfo.InstanceName)
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo?.InstanceName, title: "Instance status", target: linkTarget}, "Instance:")),
+                  h("td", {}, orgInfo?.InstanceName)
                 ),
                 h("tr", {},
                   h("th", {}, "Type:"),
-                  h("td", {}, orgInfo.OrganizationType)
+                  h("td", {}, orgInfo?.OrganizationType)
                 ),
                 h("tr", {},
                   h("th", {}, "Status:"),
@@ -1530,7 +1524,7 @@ class AllDataBoxOrg extends React.PureComponent {
                   h("td", {}, this.getApiVersion(this.state.instanceStatus))
                 ),
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo?.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maintenance:")),
                   h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
                 ),
               )
@@ -2033,7 +2027,7 @@ class AllDataSelection extends React.PureComponent {
     return `https://${this.props.sfHost}/lightning/setup/${type}/page?address=%2F${durableId}%3Fsetupid%3D${type}`;
   }
   getObjectFieldsSetupLink(sobjectName, durableId, isCustomSetting) {
-    if (sobjectName.endsWith("__mdt")) {
+    if (sobjectName.endsWith("__mdt") || sobjectName.endsWith("__e")) {
       return this.getMetadataLink(durableId, "CustomMetadata");
     } else if (isCustomSetting) {
       return this.getMetadataLink(durableId, "CustomSettings");

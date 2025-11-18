@@ -1054,7 +1054,7 @@ class FaviconOption extends React.Component {
           this.state.isInternal ? h("svg", {
             ref: (el) => { this.colorIconRef = el; },
             className: "icon",
-            style: {cursor: "pointer"},
+            style: {cursor: "crosshair"},
             onClick: (e) => {
               e.stopPropagation();
               this.toggleColorPicker();

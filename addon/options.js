@@ -883,7 +883,7 @@ class FaviconOption extends React.Component {
     this.handleColorSelect = this.handleColorSelect.bind(this);
     this.colorIconRef = null;
 
-    let favicon = localStorage.getItem(this.sfHost + "_customFavicon") ? localStorage.getItem(this.sfHost + "_customFavicon") : "";
+    let favicon = localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) ? localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
     let smartMode = true;
     this.tooltip = props.tooltip;
@@ -943,7 +943,7 @@ class FaviconOption extends React.Component {
     let favicon = e.target.value;
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
     this.setState({favicon, isInternal});
-    localStorage.setItem(this.sfHost + "_customFavicon", favicon);
+    localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, favicon);
   }
 
   onToogleSmartMode(e) {
@@ -976,7 +976,7 @@ class FaviconOption extends React.Component {
       isInternal: true,
       showColorPicker: false
     });
-    localStorage.setItem(this.sfHost + "_customFavicon", color);
+    localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, color);
   }
 
   populateFaviconColors(){

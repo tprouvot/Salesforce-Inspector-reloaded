@@ -1057,7 +1057,7 @@ class FaviconOption extends React.Component {
             value: nullToEmptyString(this.state.favicon),
             onChange: this.onChangeFavicon
           }),
-          this.state.isInternal ? h("img", {
+          h("img", {
             ref: (el) => { this.colorIconRef = el; },
             src: "images/color-wheel.png",
             className: "color-picker-icon",
@@ -1066,7 +1066,7 @@ class FaviconOption extends React.Component {
               this.toggleColorPicker();
             },
             title: "Click to open color picker"
-          }) : null,
+          }),
           this.state.showColorPicker && h(ColorPicker, {
             value: this.state.favicon,
             position: this.state.colorPickerPosition,

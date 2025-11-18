@@ -436,7 +436,8 @@ class OptionsContainer extends React.Component {
         )
       ),
       description && h("div", {className: "slds-m-bottom_xx-small"},
-        h("p", {className: "slds-text-body_regular slds-text-color_weak"}, description,
+        h("div", {className: "slds-text-body_regular slds-text-color_weak"},
+          h("span", {}, description),
           descriptionTooltip && h(Tooltip, {tooltip: descriptionTooltip, idKey: `${this.props.id}_description`})
         )
       )

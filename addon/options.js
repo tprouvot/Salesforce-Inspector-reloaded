@@ -2,10 +2,11 @@
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
 import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.js";
 import {getFlowScannerRules} from "./flow-scanner.js";
-/* global initButton, lightningflowscanner */
+/* global initButton, lightningflowscanner, Picker */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
+import ColorPicker from "./components/ColorPicker.js";
 
 class Model {
 
@@ -114,7 +115,7 @@ class OptionsTabSelector extends React.Component {
                 {label: "Generate Access Token", name: "generate-token", checked: true}
               ]}
           },
-          {option: FaviconOption, props: {key: this.sfHost + "_customFavicon", tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
+          {option: FaviconOption, props: {key: this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
           {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
           {option: Option, props: {type: "text", title: "Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
@@ -435,7 +436,8 @@ class OptionsContainer extends React.Component {
         )
       ),
       description && h("div", {className: "slds-m-bottom_xx-small"},
-        h("p", {className: "slds-text-body_regular slds-text-color_weak"}, description,
+        h("div", {className: "slds-text-body_regular slds-text-color_weak"},
+          h("span", {}, description),
           descriptionTooltip && h(Tooltip, {tooltip: descriptionTooltip, idKey: `${this.props.id}_description`})
         )
       )
@@ -870,18 +872,29 @@ class Option extends React.Component {
 
 class FaviconOption extends React.Component {
 
+  static CUSTOM_FAVICON_KEY = "_customFavicon";
+
   constructor(props) {
     super(props);
     this.sfHost = props.model.sfHost;
     this.onChangeFavicon = this.onChangeFavicon.bind(this);
     this.populateFaviconColors = this.populateFaviconColors.bind(this);
     this.onToogleSmartMode = this.onToogleSmartMode.bind(this);
+    this.toggleColorPicker = this.toggleColorPicker.bind(this);
+    this.handleColorSelect = this.handleColorSelect.bind(this);
+    this.colorIconRef = null;
 
-    let favicon = localStorage.getItem(this.sfHost + "_customFavicon") ? localStorage.getItem(this.sfHost + "_customFavicon") : "";
+    let favicon = localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) ? localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
     let smartMode = true;
     this.tooltip = props.tooltip;
-    this.state = {favicon, isInternal, smartMode};
+    this.state = {
+      favicon,
+      isInternal,
+      smartMode,
+      showColorPicker: false,
+      colorPickerPosition: {top: 0, left: 0}
+    };
     this.colorShades = {
       dev: [
         "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue", "CornflowerBlue",
@@ -911,15 +924,60 @@ class FaviconOption extends React.Component {
     };
   }
 
+  componentWillUnmount() {
+    if (this.pickerInstance) {
+      this.pickerInstance.destroy();
+      this.pickerInstance = null;
+    }
+    this.isPickerOpen = false;
+  }
+
+  shouldComponentUpdate() {
+    return !this.isPickerOpen;
+  }
+
+  setColorButtonRef(element) {
+    this.colorButtonEl = element;
+  }
+
   onChangeFavicon(e) {
     let favicon = e.target.value;
-    this.setState({favicon});
-    localStorage.setItem(this.sfHost + "_customFavicon", favicon);
+    let isInternal = favicon.length > 0 && !favicon.startsWith("http");
+    this.setState({favicon, isInternal});
+    localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, favicon);
   }
 
   onToogleSmartMode(e) {
     let smartMode = e.target.checked;
     this.setState({smartMode});
+  }
+
+  toggleColorPicker() {
+    if (this.state.showColorPicker) {
+      this.setState({showColorPicker: false});
+    } else {
+      // Calculate position relative to the icon
+      const iconElement = this.colorIconRef;
+      if (iconElement) {
+        const rect = iconElement.getBoundingClientRect();
+        this.setState({
+          showColorPicker: true,
+          colorPickerPosition: {
+            top: rect.bottom + 8 + "px",
+            left: rect.left + "px"
+          }
+        });
+      }
+    }
+  }
+
+  handleColorSelect(color) {
+    this.setState({
+      favicon: color,
+      isInternal: true,
+      showColorPicker: false
+    });
+    localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, color);
   }
 
   populateFaviconColors(){
@@ -929,13 +987,13 @@ class FaviconOption extends React.Component {
 
     orgs.forEach((org) => {
       let sfHost = org.substring(0, org.indexOf("_isSandbox"));
-      let existingColor = localStorage.getItem(sfHost + "_customFavicon");
+      let existingColor = localStorage.getItem(sfHost + FaviconOption.CUSTOM_FAVICON_KEY);
 
       if (!existingColor) { // Only assign a color if none is set
         const chosenColor = this.getColorForHost(sfHost, this.state.smartMode);
         if (chosenColor) {
-          console.info(sfHost + "_customFavicon", chosenColor);
-          localStorage.setItem(sfHost + "_customFavicon", chosenColor);
+          console.info(sfHost + FaviconOption.CUSTOM_FAVICON_KEY, chosenColor);
+          localStorage.setItem(sfHost + FaviconOption.CUSTOM_FAVICON_KEY, chosenColor);
           if (sfHost === this.sfHost) {
             this.setState({favicon: chosenColor});
           }
@@ -990,12 +1048,38 @@ class FaviconOption extends React.Component {
         )
       ),
       h("div", {className: "slds-col slds-size_4-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_10-of-12"},
-          h("input", {type: "text", className: "slds-input", placeholder: "All HTML Color Names, Hex code or external URL", value: nullToEmptyString(this.state.favicon), onChange: this.onChangeFavicon}),
+        h("div", {className: "slds-form-element__control slds-col slds-size_10-of-12", style: {position: "relative"}},
+          h("input", {
+            type: "text",
+            className: "slds-input",
+            style: this.state.isInternal ? {paddingRight: "2.5rem"} : {},
+            placeholder: "All HTML Color Names, Hex code or external URL",
+            value: nullToEmptyString(this.state.favicon),
+            onChange: this.onChangeFavicon
+          }),
+          h("img", {
+            ref: (el) => { this.colorIconRef = el; },
+            src: "images/color-wheel.png",
+            className: "color-picker-icon",
+            onClick: (e) => {
+              e.stopPropagation();
+              this.toggleColorPicker();
+            },
+            title: "Click to open color picker"
+          }),
+          this.state.showColorPicker && h(ColorPicker, {
+            value: this.state.favicon,
+            position: this.state.colorPickerPosition,
+            triggerRef: this.colorIconRef,
+            onChange: this.handleColorSelect,
+            onClose: () => this.setState({showColorPicker: false})
+          })
         ),
-        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          this.state.isInternal ? h("svg", {className: "icon"},
-            h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
+        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12", style: {position: "relative"}},
+          this.state.isInternal ? h("svg", {
+            className: "icon"
+          },
+          h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
           ) : null
         )
       ),

@@ -73,7 +73,7 @@
 /* Color preview box */
 .color-picker-preview {
   width: 50px;
-  height: 32px;
+  height: 100%;
   border: 1px solid #e5e5e5;
   border-radius: 0.25rem;
 }
@@ -81,4 +81,6 @@
 /* Preview container alignment */
 .color-picker-preview-container {
   padding-top: 1.5rem;
+  display: flex;
+  align-items: stretch;
 }

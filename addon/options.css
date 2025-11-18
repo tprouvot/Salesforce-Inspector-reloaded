@@ -319,3 +319,14 @@ body {
 .slds-popover.slds-popover_medium.slds-nubbin_bottom-left:after {
   background: var(--slds-g-color-neutral-base-95, #f3f3f3);
 }
+
+/* Color picker icon inside input */
+.color-picker-icon {
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}

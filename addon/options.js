@@ -1047,22 +1047,25 @@ class FaviconOption extends React.Component {
         )
       ),
       h("div", {className: "slds-col slds-size_4-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_10-of-12"},
-          h("input", {type: "text", className: "slds-input", placeholder: "All HTML Color Names, Hex code or external URL", value: nullToEmptyString(this.state.favicon), onChange: this.onChangeFavicon}),
-        ),
-        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12", style: {position: "relative"}},
-          this.state.isInternal ? h("svg", {
+        h("div", {className: "slds-form-element__control slds-col slds-size_10-of-12", style: {position: "relative"}},
+          h("input", {
+            type: "text",
+            className: "slds-input",
+            style: this.state.isInternal ? {paddingRight: "2.5rem"} : {},
+            placeholder: "All HTML Color Names, Hex code or external URL",
+            value: nullToEmptyString(this.state.favicon),
+            onChange: this.onChangeFavicon
+          }),
+          this.state.isInternal ? h("img", {
             ref: (el) => { this.colorIconRef = el; },
-            className: "icon",
-            style: {cursor: "crosshair"},
+            src: "images/color-wheel.png",
+            className: "color-picker-icon",
             onClick: (e) => {
               e.stopPropagation();
               this.toggleColorPicker();
             },
             title: "Click to open color picker"
-          },
-          h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
-          ) : null,
+          }) : null,
           this.state.showColorPicker && h(ColorPicker, {
             value: this.state.favicon,
             position: this.state.colorPickerPosition,
@@ -1070,6 +1073,13 @@ class FaviconOption extends React.Component {
             onChange: this.handleColorSelect,
             onClose: () => this.setState({showColorPicker: false})
           })
+        ),
+        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12", style: {position: "relative"}},
+          this.state.isInternal ? h("svg", {
+            className: "icon"
+          },
+          h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
+          ) : null
         )
       ),
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},

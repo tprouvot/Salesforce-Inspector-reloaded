@@ -1,54 +1,30 @@
-html,
-body,
-#root,
-[data-reactroot] {
-  height: 100%;
-}
-
-.prod {
-  background-color: #e0a4b5;
-  background-image: url(images/lightning_red_background.png);
-}
-
-[data-reactroot] {
-  display: flex;
-  flex-direction: column;
-}
-
-html {
-  background-color: #b0c4df;
-  background-image: url(images/lightning_blue_background.png);
-  background-repeat: no-repeat;
-  background-size: contain;
-}
-
-.value-text {
+.sfir-inspect-table-text {
   word-wrap: break-word;
   white-space: pre-wrap;
 }
 
-.value-text.value-is-object {
+.sfir-inspect-table-text.value-is-object {
   color: #990;
 }
 
-.value-text.value-is-number {
+.sfir-inspect-table-text.value-is-number {
   color: #909;
 }
 
-.value-text.value-is-boolean {
+.sfir-inspect-table-text.value-is-boolean {
   color: #900;
 }
 
-.value-text.value-is-boolean-true {
+.sfir-inspect-table-text.value-is-boolean-true {
   color: #099;
 }
 
-.value-text.value-is-blank {
+.sfir-inspect-table-text.value-is-blank {
   color: #aaa;
   font-style: italic;
 }
 
-.value-text.value-is-unknown {
+.sfir-inspect-table-text.value-is-unknown {
   color: #aaa;
   font-style: italic;
 }
@@ -62,14 +38,9 @@ tr.fieldHidden a[href] {
   color: #777;
 }
 
-
-.field-column {
+.sfir-field-column {
   max-width: 200px;
   /* To handle long words. This is not actually 200px but scales with the table. Table layout magic. */
-}
-
-th[tabindex] {
-  cursor: pointer;
 }
 
 .sfir-filter-clear {

@@ -898,7 +898,7 @@ class FieldRowList extends RowList {
     } else if (col == "usage") {
       className += "field-usage";
     } else {
-      className += "field-column";
+      className += "sfir-field-column";
     }
     return className;
   }
@@ -1737,7 +1737,7 @@ class App extends React.Component {
           userName: model.userName,
           utilityItems: utilityItems
         }),
-      h("div", {className: "slds-m-top_xx-large"},
+      h("div", {className: "slds-m-top_xx-large sfir-page-container"},
         h("div", {className: "slds-card slds-m-horizontal_small slds-m-top_medium " + (model.fieldRows.selectedColumnMap.size < 2 && model.childRows.selectedColumnMap.size < 2 ? "empty " : "")},
           h("div", {hidden: model.errorMessages.length == 0, className: "slds-notify_container slds-is-relative"},
             h("div", {className: "slds-notify slds-notify_alert slds-alert_error", role: "status"},
@@ -2110,7 +2110,7 @@ class FieldValueCell extends React.Component {
     } else if (row.isId()) {
       return h("td", {className: col.className, onDoubleClick: this.onTryEdit},
         h("div", {className: "pop-menu-container"},
-          h("div", {className: "value-text quick-select"}, h("a", {href: row.idLink() /*used to show visited color*/, onClick: this.onRecordIdClick}, row.dataStringValue())),
+          h("div", {className: "sfir-inspect-table-text quick-select"}, h("a", {href: row.idLink() /*used to show visited color*/, onClick: this.onRecordIdClick}, row.dataStringValue())),
           row.recordIdPop == null ? null : h("div", {className: "pop-menu"}, row.recordIdPop.map(link => h("a", {key: link.href, href: link.href, className: link.className, id: link.id, onClick: this.onLinkClick}, link.text)))
         )
       );
@@ -2247,7 +2247,7 @@ class ChildObjectCell extends React.Component {
 let TypedValue = props =>
   h("div", {
     className:
-      "slds-cell_action-mode value-text "
+      "slds-cell_action-mode sfir-inspect-table-text "
       + (typeof props.value == "string" ? "value-is-string " : "")
       + (typeof props.value == "number" ? "value-is-number " : "")
       + (typeof props.value == "boolean" ? "value-is-boolean " : "")
@@ -2335,17 +2335,28 @@ class ChildActionsCell extends React.Component {
   render() {
     let {row, className} = this.props;
     return h("td", {className},
-      h("div", {className: "pop-menu-container"},
-        h("button", {className: "actions-button", onClick: this.onToggleChildActions},
-          h("svg", {className: "actions-icon"},
-            h("use", {xlinkHref: "symbols.svg#down"})
-          ),
+      h("button", {
+        className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-x-small",
+        onClick: this.onToggleChildActions
+      },
+        h("svg", {className: "slds-button__icon slds-button__icon_hint slds-button__icon_small"},
+          h("use", {xlinkHref: "symbols.svg#down"})
         ),
-        row.childActionsOpen && h("div", {className: "pop-menu"},
-          h("a", {href: "about:blank", onClick: this.onOpenDetails}, "All relationship metadata"),
-          row.queryListUrl() ? h("a", {href: row.queryListUrl(), title: "Export records in this related list"}, "Export related records") : null,
-          row.childSetupLinks && h("a", {href: row.childSetupLinks.lightningSetupLink}, "Setup (Lightning)"),
-          row.childSetupLinks && h("a", {href: row.childSetupLinks.classicSetupLink}, "Setup (Classic)")
+      ),
+      row.childActionsOpen && h("div", {className: "slds-dropdown slds-dropdown_right"},
+        h("ul", {className: "slds-dropdown__list"},
+          h("li", {className: "slds-dropdown__item"},
+            h("a", {href: "about:blank", onClick: this.onOpenDetails}, "All relationship metadata")
+          ),
+          row.queryListUrl() ? h("li", {className: "slds-dropdown__item"},
+            h("a", {href: row.queryListUrl(), title: "Export records in this related list"}, "Export related records")
+          ) : null,
+          row.childSetupLinks && h("li", {className: "slds-dropdown__item"},
+            h("a", {href: row.childSetupLinks.lightningSetupLink}, "Setup (Lightning)")
+          ),
+          row.childSetupLinks && h("li", {className: "slds-dropdown__item"},
+            h("a", {href: row.childSetupLinks.classicSetupLink}, "Setup (Classic)")
+          )
         )
       )
     );

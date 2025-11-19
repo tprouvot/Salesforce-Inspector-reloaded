@@ -1,7 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg} from "./utils.js";
-import {getAllFieldSetupLinks} from "./setup-links.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -224,20 +223,11 @@ class App extends React.PureComponent {
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
     parent.postMessage({insextLoaded: true}, "*");
-    this.setOrgInfo(sfHost);
+    setOrgInfo(this.props.sfHost);
   }
   componentWillUnmount() {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
-  }
-  setOrgInfo(sfHost) {
-    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
-    if (orgInfo == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+Id,InstanceName,OrganizationType+FROM+Organization").then(res => {
-        orgInfo = res.records[0];
-        sessionStorage.setItem(sfHost + "_orgInfo", JSON.stringify(orgInfo));
-      });
-    }
   }
   isMac() {
     return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
@@ -641,7 +631,8 @@ class AllDataBox extends React.PureComponent {
           sobjectsLoading: false,
           sobjectsList: Array.from(entityMap.values())
         });
-        this.refs.showAllDataBoxSObject.refs.allDataSearch.getMatchesDelayed("");
+        // Only call getMatchesDelayed if the showAllDataBoxSObject component is rendered (i.e., user is on Objects tab)
+        this.refs.showAllDataBoxSObject?.refs?.allDataSearch?.getMatchesDelayed("");
       })
       .catch(e => {
         console.error(e);
@@ -1318,9 +1309,12 @@ class AllDataBoxOrg extends React.PureComponent {
     this.deleteApexLogs = this.deleteApexLogs.bind(this);
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     let {sfHost} = this.props;
     let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
+    if (!orgInfo){
+      orgInfo = await setOrgInfo(sfHost);
+    }
     this.setInstanceStatus(orgInfo.InstanceName, sfHost);
   }
 
@@ -1425,15 +1419,15 @@ class AllDataBoxOrg extends React.PureComponent {
               h("tbody", {},
                 h("tr", {},
                   h("th", {}, h("a", {href: "https://" + sfHost + "/lightning/setup/CompanyProfileInfo/home", title: "Company Information", target: linkTarget, onClick: handleLightningLinkClick}, "Org Id")),
-                  h("td", {}, orgInfo.Id.substring(0, 15))
+                  h("td", {}, orgInfo?.Id.substring(0, 15))
                 ),
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName, title: "Instance status", target: linkTarget}, "Instance")),
-                  h("td", {}, orgInfo.InstanceName)
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo?.InstanceName, title: "Instance status", target: linkTarget}, "Instance")),
+                  h("td", {}, orgInfo?.InstanceName)
                 ),
                 h("tr", {},
                   h("th", {}, "Type"),
-                  h("td", {}, orgInfo.OrganizationType)
+                  h("td", {}, orgInfo?.OrganizationType)
                 ),
                 h("tr", {},
                   h("th", {}, "Status"),
@@ -1452,7 +1446,7 @@ class AllDataBoxOrg extends React.PureComponent {
                   h("td", {}, this.getApiVersion(this.state.instanceStatus))
                 ),
                 h("tr", {},
-                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maint.")),
+                  h("th", {}, h("a", {href: "https://status.salesforce.com/instances/" + orgInfo?.InstanceName + "/maintenances", title: "Maintenance List", target: linkTarget}, "Maint.")),
                   h("td", {}, this.getNextMajorRelease(this.state.instanceStatus?.Maintenances))
                 ),
               )

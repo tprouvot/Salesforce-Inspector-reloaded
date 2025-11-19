@@ -732,7 +732,7 @@ class Option extends React.Component {
         onChange: this.onChange
       })
       : isSelect ? h("select", {
-        className: isEnhanced ? "slds-input enhanced-option-input" : "slds-input slds-m-right_small",
+        className: isEnhanced ? "slds-select enhanced-option-input" : "slds-select slds-m-right_small",
         value: this.state[this.key],
         onChange: this.onChange
       },
@@ -745,7 +745,7 @@ class Option extends React.Component {
       return inputElement;
     } else {
       // Standard layout wrapping
-      return h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      return h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
           inputElement
         )
@@ -864,7 +864,7 @@ class Option extends React.Component {
             h(Tooltip, {tooltip: this.tooltip, idKey: this.key || `option_${this.title || "unnamed"}`})
           )
         ),
-        this.actionButton && h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+        this.actionButton && h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-m-left_xxx-small slds-grid_vertical-align-center slds-gutters_small"},
           h("div", {className: "slds-form-element__control"},
             h("button", {
               className: "slds-button slds-button_brand",
@@ -1943,7 +1943,7 @@ class App extends React.Component {
           message: this.state.toastMessage,
           onClose: this.hideToast
         }),
-      h("div", {className: "slds-m-top_xx-large"},
+      h("div", {className: "slds-m-top_xx-large sfir-page-container"},
         h("div", {className: "slds-card slds-m-around_medium main-container", id: "main-container_header"},
           h(OptionsTabSelector, {model})
         )

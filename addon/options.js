@@ -967,6 +967,9 @@ class FaviconOption extends React.Component {
     if (this.state.showColorPicker) {
       this.setState({showColorPicker: false});
     } else {
+      if (!this.state.favicon.startsWith("#")){
+        this.setState({favicon: null});
+      }
       // Calculate position relative to the icon
       const iconElement = this.colorIconRef;
       if (iconElement) {

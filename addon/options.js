@@ -1895,11 +1895,7 @@ class App extends React.Component {
     const utilityItems = [
       // Export Options button
       h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"},
-        h("button", {
-          className: "slds-button slds-button_icon slds-button_icon-border-filled",
-          onClick: this.exportOptions,
-          title: "Export Options"
-        },
+        h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: () => this.exportOptions(), title: "Export Options"},
           h("svg", {className: "slds-button__icon"},
             h("use", {xlinkHref: "symbols.svg#download"})
           )

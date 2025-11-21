@@ -1848,7 +1848,7 @@ class App extends React.Component {
         const importedData = JSON.parse(event.target.result);
 
         for (const [key, value] of Object.entries(importedData)) {
-          if (filterKeys) {
+          if (filterKeys && Array.isArray(filterKeys)) {
             // Only import keys that match the filter
             if (filterKeys.some(filter => key.startsWith(filter))) {
               localStorage.setItem(key, value);

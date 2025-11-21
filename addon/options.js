@@ -1874,7 +1874,7 @@ class App extends React.Component {
 
         this.setState({
           showToast: true,
-          toastMessage: filterKeys ? "Flow Scanner rules imported successfully!" : "Options Imported Successfully!",
+          toastMessage: Array.isArray(filterKeys) ? "Flow Scanner rules imported successfully!" : "Options Imported Successfully!",
           toastVariant: "success",
           toastTitle: "Success"
         });
@@ -1955,7 +1955,7 @@ class App extends React.Component {
         }),
       h("div", {className: "slds-m-top_xx-large sfir-page-container"},
         h("div", {className: "slds-card slds-m-around_medium main-container", id: "main-container_header"},
-          h(OptionsTabSelector, {model})
+          h(OptionsTabSelector, {model, appRef: this})
         )
       )
     );

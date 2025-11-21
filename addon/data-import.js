@@ -1167,7 +1167,7 @@ class App extends React.Component {
     let utilityItems = [
       h("div", {
         key: "help-btn",
-        className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"
+        className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
       },
       h("button", {
         className: "slds-button slds-button_icon slds-button_icon-border-filled",

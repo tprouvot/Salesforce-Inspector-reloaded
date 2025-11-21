@@ -101,7 +101,7 @@ export function PageHeader(props) {
       ),
 
       // Left: Page Title
-      h("div", {className: "slds-builder-header__item"},
+      h("div", {className: "slds-builder-header__item sfir-border-none"},
         h("div", {className: "slds-builder-header__item-label slds-media slds-media_center"},
           h("div", {className: "slds-text-heading_small slds-media__body"}, pageTitle)
         )
@@ -123,10 +123,10 @@ export function PageHeader(props) {
       ) : null,
 
       // Right side: Utilities
-      h("div", {className: "slds-builder-header__item slds-builder-header__utilities"},
+      h("div", {className: "slds-builder-header__item slds-builder-header__utilities sfir-border-none"},
         // Spinner (always present)
         spinnerCount == 0 ? null
-        : h("div", {className: "slds-builder-header__utilities-item slds-m-horizontal_small  slds-p-horizontal_x-small"},
+        : h("div", {className: "slds-builder-header__utilities-item slds-m-horizontal_small  slds-p-horizontal_x-small sfir-border-none"},
           h("div", {className: "slds-is-relative"},
             h("div", {
               role: "status",
@@ -143,7 +143,7 @@ export function PageHeader(props) {
         ...utilityItems,
 
         // User avatar (always present at the end)
-        h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_small"},
+        h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_small sfir-border-none"},
           h("div", {className: "slds-media__body sfir-display-popover-trigger"},
             h("span", {className: "slds-avatar slds-avatar_circle"},
               h("abbr", {className: "slds-avatar__initials slds-avatar__initials_inverse"}, userInitials)

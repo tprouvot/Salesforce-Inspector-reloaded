@@ -43,3 +43,7 @@ html:has(body.sfir-prod),
 body{
     margin: 0px;
 }
+
+.sfir-border-none{
+    border: none !important;
+}

@@ -907,7 +907,7 @@ class FaviconOption extends React.Component {
 
     let favicon = localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) ? localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
-    let smartMode = true;
+    let smartMode = localStorage.getItem("faviconSmartMode") !== null ? JSON.parse(localStorage.getItem("faviconSmartMode")) : true;
     this.tooltip = props.tooltip;
     this.state = {
       favicon,
@@ -971,6 +971,7 @@ class FaviconOption extends React.Component {
   onToogleSmartMode(e) {
     let smartMode = e.target.checked;
     this.setState({smartMode});
+    localStorage.setItem("faviconSmartMode", smartMode);
   }
 
   toggleColorPicker() {

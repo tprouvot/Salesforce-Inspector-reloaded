@@ -171,13 +171,14 @@ class OptionsTabSelector extends React.Component {
             props: {type: "text",
               title: "API Consumer Key",
               placeholder: "Consumer Key",
-              key: this.sfHost + "_clientId",
-              inputSize: "6",
+              key: this.sfHost + Constants.CLIENT_ID,
+              inputSize: "5",
               actionButton: {
                 label: "Delete Token",
                 title: "Delete the connected app generated token",
+                disabled: localStorage.getItem(this.sfHost + Constants.ACCESS_TOKEN) == null,
                 onClick: (e, model) => {
-                  localStorage.removeItem(model.sfHost + "_clientId");
+                  localStorage.removeItem(model.sfHost + Constants.ACCESS_TOKEN);
                   e.target.disabled = true;
                 }
               }}},

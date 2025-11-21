@@ -1,3 +1,5 @@
+import {getRedirectUri, getClientId, Constants} from "./utils.js";
+
 export let defaultApiVersion = "65.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 
@@ -7,19 +9,48 @@ const clientId = "Salesforce Inspector Reloaded";
 export let sfConn = {
 
   async getSession(sfHost) {
+    const url = new URL(window.location.href);
+    const searchParams = new URLSearchParams(url.search);
+    const authorizationCode = searchParams.get("code");
+    const state = searchParams.get("state");
+
+    // If we have an authorization code, extract sfHost from state parameter
+    if (authorizationCode && state) {
+      try {
+        const stateData = JSON.parse(decodeURIComponent(state));
+        sfHost = stateData.sfHost;
+      } catch (error) {
+        console.error("Error parsing state parameter:", error);
+      }
+    }
+
     sfHost = getMyDomain(sfHost);
-    const ACCESS_TOKEN = "access_token";
-    const currentUrlIncludesToken = window.location.href.includes(ACCESS_TOKEN);
-    const oldToken = localStorage.getItem(sfHost + "_" + ACCESS_TOKEN);
+    const oldToken = localStorage.getItem(sfHost + Constants.ACCESS_TOKEN);
     this.instanceHostname = sfHost;
-    if (currentUrlIncludesToken){ //meaning OAuth flow just completed
-      if (window.location.href.includes(ACCESS_TOKEN)) {
-        const url = new URL(window.location.href);
-        const hashParams = new URLSearchParams(url.hash.substring(1)); //hash (#) used in user-agent flow
-        const accessToken = decodeURI(hashParams.get(ACCESS_TOKEN));
-        sfHost = decodeURI(hashParams.get("instance_url")).replace(/^https?:\/\//i, "");
+
+    // Check if this is an OAuth callback with authorization code (PKCE flow)
+    if (authorizationCode) {
+      try {
+        const codeVerifier = localStorage.getItem(sfHost + Constants.CODE_VERIFIER);
+        if (!codeVerifier) {
+          throw new Error("Code verifier not found. Please restart the authorization flow.");
+        }
+
+        // Exchange authorization code for access token
+        const accessToken = await this.exchangeCodeForToken(sfHost, authorizationCode, codeVerifier);
         this.sessionId = accessToken;
-        localStorage.setItem(sfHost + "_" + ACCESS_TOKEN, accessToken);
+        localStorage.setItem(sfHost + Constants.ACCESS_TOKEN, accessToken);
+
+        // Clean up code verifier
+        localStorage.removeItem(sfHost + Constants.CODE_VERIFIER);
+
+        // Clean up the URL by removing the code and state parameters
+        const cleanUrl = url.origin + url.pathname + "?host=" + sfHost + url.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+      } catch (error) {
+        console.error("Error exchanging authorization code for token:", error);
+        sessionError = {text: error.message, type: "error", icon: "error"};
+        showToastBanner();
       }
     } else if (oldToken) {
       this.sessionId = oldToken;
@@ -39,6 +70,41 @@ export let sfConn = {
       });
     }
     return this.sessionId;
+  },
+
+  async exchangeCodeForToken(sfHost, authorizationCode, codeVerifier) {
+    const redirectUri = getRedirectUri("data-export.html");
+    const clientId = getClientId(sfHost);
+
+    // Validate redirect URI was successfully generated
+    if (!redirectUri || !redirectUri.includes("-extension://")) {
+      throw new Error("Failed to generate redirect URI. Extension context may be invalidated. Please reload this page and try again.");
+    }
+
+    const tokenUrl = `https://${sfHost}/services/oauth2/token`;
+    const params = new URLSearchParams({
+      grant_type: "authorization_code",
+      code: authorizationCode,
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      code_verifier: codeVerifier
+    });
+
+    const response = await fetch(tokenUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: params.toString()
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error_description || "Failed to exchange code for token");
+    }
+
+    const tokenData = await response.json();
+    return tokenData.access_token;
   },
 
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null, useCache = true} = {}, rawResponse) {
@@ -110,7 +176,7 @@ export let sfConn = {
     } else if (xhr.status == 401) {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
       //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
-      if (localStorage.getItem(this.instanceHostname + "_access_token")){
+      if (localStorage.getItem(this.instanceHostname + Constants.ACCESS_TOKEN)){
         sessionError = {text: "Access Token Expired", title: "Generate New Token", type: "warning", icon: "warning"};
         showToastBanner();
       }

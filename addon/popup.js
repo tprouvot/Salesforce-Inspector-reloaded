@@ -1,19 +1,12 @@
 /* global React ReactDOM */
 import { sfConn, apiVersion, sessionError } from "./inspector.js";
-import {
-  getLinkTarget,
-  displayButton,
-  getLatestApiVersionFromOrg,
-  setOrgInfo,
-} from "./utils.js";
+import { getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
 import { setupLinks } from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
 let p = parent;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
-const isExtensionPage = document.location.ancestorOrigins?.[0].includes(
-  chrome.i18n.getMessage("@@extension_id")
-);
+const isExtensionPage = document.location.ancestorOrigins?.[0].includes(getExtensionId());
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -68,11 +61,7 @@ function getFilteredLocalStorage() {
     "prodBannerText",
   ];
   const filteredStorage = Object.fromEntries(
-    Object.entries(storedData).filter(
-      ([key]) =>
-        (key.startsWith(domainStart) || keysToSend.includes(key)) &&
-        !key.endsWith("access_token")
-    )
+    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
   );
   sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
   return filteredStorage;
@@ -293,16 +282,74 @@ class App extends React.PureComponent {
     removeEventListener("keydown", this.onShortcutKey);
   }
   isMac() {
-    return (
-      navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 ||
-      navigator.userAgent.toLowerCase().indexOf("mac") > -1
-    );
+    return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;
+  }
+  async handleGenerateTokenClick(e, sfHost, clientId) {
+    e.preventDefault();
+    try {
+      // Fetch PKCE parameters from Salesforce
+      const pkceParams = await getPKCEParameters(sfHost);
+
+      // Store code_verifier in localStorage for later use during token exchange
+      localStorage.setItem(sfHost + Constants.CODE_VERIFIER, pkceParams.code_verifier);
+
+      // Build authorization URL with PKCE
+      // Include sfHost in the state parameter so we can retrieve it after callback
+      const redirectUri = getRedirectUri("data-export.html");
+
+      // Validate redirect URI was successfully generated
+      if (!redirectUri || redirectUri === "://undefined/" || redirectUri === ":///" || !redirectUri.includes("-extension://")) {
+        throw new Error("Failed to generate redirect URI. Extension context may be invalidated. Please reload this page and try again.");
+      }
+
+      const state = encodeURIComponent(JSON.stringify({sfHost}));
+      const authUrl = `https://${sfHost}/services/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge=${pkceParams.code_challenge}&state=${state}`;
+
+      // Redirect to authorization URL - always open in new tab for OAuth
+      window.open(authUrl, "_blank");
+    } catch (error) {
+      console.error("Error generating authorization URL with PKCE:", error);
+      const errorMessage = error.message && error.message.includes("Extension context")
+        ? error.message
+        : "Failed to generate authorization URL. Please try again.";
+      alert(errorMessage);
+    }
+  }
+  async handleGenerateTokenClick(e, sfHost, clientId) {
+    e.preventDefault();
+    try {
+      // Fetch PKCE parameters from Salesforce
+      const pkceParams = await getPKCEParameters(sfHost);
+
+      // Store code_verifier in localStorage for later use during token exchange
+      localStorage.setItem(sfHost + Constants.CODE_VERIFIER, pkceParams.code_verifier);
+
+      // Build authorization URL with PKCE
+      // Include sfHost in the state parameter so we can retrieve it after callback
+      const redirectUri = getRedirectUri("data-export.html");
+
+      // Validate redirect URI was successfully generated
+      if (!redirectUri || redirectUri === "://undefined/" || redirectUri === ":///" || !redirectUri.includes("-extension://")) {
+        throw new Error("Failed to generate redirect URI. Extension context may be invalidated. Please reload this page and try again.");
+      }
+
+      const state = encodeURIComponent(JSON.stringify({sfHost}));
+      const authUrl = `https://${sfHost}/services/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&code_challenge=${pkceParams.code_challenge}&state=${state}`;
+
+      // Redirect to authorization URL - always open in new tab for OAuth
+      window.open(authUrl, "_blank");
+    } catch (error) {
+      console.error("Error generating authorization URL with PKCE:", error);
+      const errorMessage = error.message && error.message.includes("Extension context")
+        ? error.message
+        : "Failed to generate authorization URL. Please try again.";
+      alert(errorMessage);
+    }
   }
   getBannerUrlAction(sessionError = {}, sfHost, clientId, browser) {
-    const url = `https://${sfHost}/services/oauth2/authorize?response_type=token&client_id=${clientId}&redirect_uri=${browser}-extension://${chrome.i18n.getMessage(
-      "@@extension_id"
-    )}/data-export.html`;
-    return { ...sessionError, url };
+    // Return a placeholder URL with onclick handler
+    const url = "#";
+    return {...sessionError, url, sfHost, clientId, browser};
   }
   render() {
     let { sfHost, inDevConsole, inLightning, inInspector, addonVersion } =
@@ -324,68 +371,42 @@ class App extends React.PureComponent {
     hostArg.set("host", sfHost);
     let linkInNewTab = JSON.parse(localStorage.getItem("openLinksInNewTab"));
     let linkTarget = inDevConsole || linkInNewTab ? "_blank" : "_top";
-    const browser = navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";
-    const DEFAULT_CLIENT_ID =
-      "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs"; //Consumer Key of  default connected app
-    const clientId = localStorage.getItem(sfHost + "_clientId")
-      ? localStorage.getItem(sfHost + "_clientId")
-      : DEFAULT_CLIENT_ID;
-    const bannerUrlAction = this.getBannerUrlAction(
-      sessionError,
-      sfHost,
-      clientId,
-      browser
-    );
-    const popupTheme =
-      localStorage.getItem("popupDarkTheme") == "true"
-        ? " header-dark"
-        : " header-light";
-    return h(
-      "div",
-      {},
-      h(
-        "div",
-        {
-          className:
-            "slds-page-header slds-theme_shade popup-header" + popupTheme,
-        },
-        h(
-          "div",
-          { className: "slds-page-header__row" },
-          h(
-            "div",
-            { className: "slds-page-header__col-title" },
-            h(
-              "div",
-              { className: "slds-media" },
-              h(
-                "div",
-                { className: "slds-media__body" },
-                h(
-                  "div",
-                  {
-                    className:
-                      "popup-header__name-title slds-text-align_center slds-p-left_medium",
-                  },
-                  h(
-                    "h1",
-                    {},
-                    h(
-                      "span",
-                      {
-                        className:
-                          "popup-header__title popup-title slds-truncate",
-                        title: "Salesforce Inspector Reloaded",
-                      },
-                      "Salesforce Inspector Reloaded"
+    const browser = getBrowserType();
+    const clientId = getClientId(sfHost);
+    const bannerUrlAction = this.getBannerUrlAction(sessionError, sfHost, clientId, browser);
+    const popupTheme = localStorage.getItem("popupDarkTheme") == "true" ? " header-dark" : " header-light";
+    return (
+      h("div", {},
+        h("div", {className: "slds-page-header slds-theme_shade popup-header" + popupTheme},
+          h("div", {className: "slds-page-header__row"},
+            h("div", {className: "slds-page-header__col-title"},
+              h("div", {className: "slds-media"},
+                h("div", {className: "slds-media__figure popup-media__figure"},
+                  h("span", {className: "popup-icon_container", title: "Salesforce Inspector Reloaded"},
+                    h("svg", {className: "popup-header__icon", viewBox: "0 0 24 24"},
+                      h("path", {
+                        d: `
+                        M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
+                        m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
+                        M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
+                        m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
+                        M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
+                        `
+                      })
+                    )
+                  )
+                ),
+                h("div", {className: "slds-media__body"},
+                  h("div", {className: "popup-header__name-title"},
+                    h("h1", {},
+                      h("span", {className: "popup-header__title popup-title slds-truncate", title: "Salesforce Inspector Reloaded"}, "Salesforce Inspector Reloaded")
                     )
                   )
                 )
               )
             )
           )
-        )
-      ),
+        ),
 
       !latestNotesViewed &&
         h(AlertBanner, {
@@ -406,29 +427,23 @@ class App extends React.PureComponent {
             },
           },
         }),
-      h(
-        "div",
-        { id: "toastBanner", className: "hide" },
-        h(AlertBanner, {
-          type: bannerUrlAction.type,
-          bannerText: bannerUrlAction.text,
-          iconName: bannerUrlAction.icon,
-          assistiveTest: bannerUrlAction.text,
-          onClose: null,
-          link: {
-            text: bannerUrlAction.title,
-            props: {
-              href: bannerUrlAction.url,
-              target: linkTarget,
-            },
-          },
-        })
-      ),
-      this.state.showToast &&
-        this.state.toastConfig &&
-        h(
-          "div",
-          { id: "toastBanner" },
+        h("div", {id: "toastBanner", className: "hide"},
+          h(AlertBanner, {type: bannerUrlAction.type,
+            bannerText: bannerUrlAction.text,
+            iconName: bannerUrlAction.icon,
+            assistiveTest: bannerUrlAction.text,
+            onClose: null,
+            link: {
+              text: bannerUrlAction.title,
+              props: {
+                href: bannerUrlAction.url,
+                target: linkTarget,
+                onClick: (e) => this.handleGenerateTokenClick(e, bannerUrlAction.sfHost, clientId, browser)
+              }
+            }
+          })
+        ),
+        this.state.showToast && this.state.toastConfig && h("div", {id: "toastBanner"},
           h(AlertBanner, {
             type: this.state.toastConfig.type,
             bannerText: this.state.toastConfig.bannerText,
@@ -672,6 +687,7 @@ class App extends React.PureComponent {
                     className: !clientId
                       ? "button hide"
                       : "page-button slds-button slds-button_neutral",
+                  onClick: (e) => this.handleGenerateTokenClick(e, sfHost, clientId, browser),
                   },
                   h("span", {}, h("u", {}, "G"), "enerate Access Token")
                 )

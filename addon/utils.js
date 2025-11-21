@@ -2,6 +2,11 @@ import {sfConn, apiVersion} from "./inspector.js";
 
 export class Constants {
   static PromptTemplateSOQL = "GenerateSOQL";
+  // Consumer Key of default connected app
+  static DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs";
+  static ACCESS_TOKEN = "_access_token";
+  static CODE_VERIFIER = "_code_verifier";
+  static CLIENT_ID = "_clientId";
 }
 
 export function getLinkTarget(e = {}) {
@@ -99,5 +104,46 @@ export class PromptTemplate {
         error: error.message || "Failed to generate result"
       };
     }
+  }
+}
+
+// OAuth utilities
+export function getBrowserType() {
+  return navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";
+}
+
+export function getExtensionId() {
+  const extensionId = (typeof browser !== "undefined" ? browser : chrome).runtime.id;
+  return extensionId;
+}
+
+export function getClientId(sfHost) {
+  const storedClientId = localStorage.getItem(sfHost + Constants.CLIENT_ID);
+  return storedClientId || Constants.DEFAULT_CLIENT_ID;
+}
+
+export function getRedirectUri(page = "data-export.html") {
+  const browser = getBrowserType();
+  const extensionId = getExtensionId();
+  return `${browser}-extension://${extensionId}/${page}`;
+}
+
+// PKCE (Proof Key for Code Exchange) utilities
+export async function getPKCEParameters(sfHost) {
+  try {
+    const response = await fetch(`https://${sfHost}/services/oauth2/pkce/generator`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PKCE parameters: ${response.status}`);
+    }
+    const data = await response.json();
+    return {
+      // eslint-disable-next-line camelcase
+      code_verifier: data.code_verifier,
+      // eslint-disable-next-line camelcase
+      code_challenge: data.code_challenge
+    };
+  } catch (error) {
+    console.error("Error fetching PKCE parameters:", error);
+    throw error;
   }
 }

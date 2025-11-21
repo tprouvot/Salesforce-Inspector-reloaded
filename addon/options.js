@@ -2,7 +2,7 @@
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
 import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.js";
 import {getFlowScannerRules} from "./flow-scanner.js";
-/* global initButton, lightningflowscanner, Picker */
+/* global initButton, lightningflowscanner, ColorPicker */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
@@ -20,18 +20,18 @@ class Model {
     this.userInitials = "";
     this.userName = "";
     this.spinnerCount = 0;
-    
+
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
-      document.body.classList.add("prod");
+      document.body.classList.add("sfir-prod");
     }
 
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { });
     this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
       this.userFullName = res.userFullName;
-      this.userInitials = this.userFullName.split(' ').map(n => n[0]).join('');
+      this.userInitials = this.userFullName.split(" ").map(n => n[0]).join("");
       this.userName = res.userName;
     }));
   }
@@ -128,7 +128,7 @@ class OptionsTabSelector extends React.Component {
           {option: FaviconOption, props: {key: this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
           {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
-          {option: Option, props: {type: "text", title: "Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
+          {option: Option, props: {type: "text", title: "Banner text", inputSize: "6", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
           {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Exclude users from search",
@@ -172,7 +172,7 @@ class OptionsTabSelector extends React.Component {
               title: "API Consumer Key",
               placeholder: "Consumer Key",
               key: this.sfHost + "_clientId",
-              inputSize: "5",
+              inputSize: "6",
               actionButton: {
                 label: "Delete Token",
                 title: "Delete the connected app generated token",
@@ -181,7 +181,7 @@ class OptionsTabSelector extends React.Component {
                   e.target.disabled = true;
                 }
               }}},
-          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders"}}
+          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders", inputSize: "6"}}
         ]
       },
       {
@@ -204,9 +204,9 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
           {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
-          {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100}},
-          {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50}},
-          {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}},
+          {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100, inputSize: "1"}},
+          {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50, inputSize: "1"}},
+          {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", inputSize: "6", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}},
           {option: Option, props: {type: "toggle", title: "Enable Query Typo Fix", key: "enableQueryTypoFix", default: false, tooltip: "Enable automation that removes typos from query input"}},
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}}
         ]
@@ -215,8 +215,8 @@ class OptionsTabSelector extends React.Component {
         id: "data-import",
         tabTitle: "Data Import",
         content: [
-          {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200"}},
-          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6"}},
+          {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200", inputSize: "1"}},
+          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6", inputSize: "1"}},
           {option: Option, props: {type: "toggle", title: "Grey Out Skipped Columns in Data Import", key: "greyOutSkippedColumns", tooltip: "Control if skipped columns are greyed out or not in data import"}}
         ]
       },
@@ -514,11 +514,11 @@ class ArrowButtonOption extends React.Component {
       h("div", {className: "slds-col slds-size_9-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
         h("label", {className: "slds-text-align_right slds-m-left_medium slds-m-right_small"}, "Orientation:"),
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-        h("div", {className: "slds-select_container"},
-        h("select", {className: "slds-select", defaultValue: this.state.arrowButtonOrientation, name: "arrowPosition", id: "arrowPosition", onChange: this.onChangeArrowOrientation},
-          h("option", {value: "horizontal"}, "Horizontal"),
-          h("option", {value: "vertical"}, "Vertical")
-        ))),
+          h("div", {className: "slds-select_container"},
+            h("select", {className: "slds-select", defaultValue: this.state.arrowButtonOrientation, name: "arrowPosition", id: "arrowPosition", onChange: this.onChangeArrowOrientation},
+              h("option", {value: "horizontal"}, "Horizontal"),
+              h("option", {value: "vertical"}, "Vertical")
+            ))),
         h("label", {className: "slds-m-left_medium slds-col slds-size_2-of-12 slds-text-align_right", htmlFor: "arrowPositionSlider"}, "Position (%):"),
         h("div", {className: "slds-form-element__control slider-container slds-col slds-size_3-of-12"},
           h("div", {className: "slds-slider"},
@@ -571,13 +571,17 @@ class APIVersionOption extends React.Component {
           h(Tooltip, {tooltip: "Update api version", idKey: "APIVersion"})
         ),
       ),
-      h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col"},
-          h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
-        ),
-        this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-form-element__control"},
-          h("button", {className: "slds-button slds-button_brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
-        ) : null
+      h("div", {className: "slds-col slds-size_10-of-12 slds-form-element"},
+        h("div", {className: "slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
+          h("div", {className: "slds-col slds-size_1-of-12"},
+            h("div", {className: "slds-form-element__control"},
+              h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
+            )
+          ),
+          this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-col"},
+            h("button", {className: "slds-button slds-button_brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
+          ) : null
+        )
       )
     );
   }
@@ -744,11 +748,9 @@ class Option extends React.Component {
     if (isEnhanced) {
       return inputElement;
     } else {
-      // Standard layout wrapping
-      return h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-          inputElement
-        )
+      // Standard layout wrapping - returns just the input wrapper
+      return h("div", {className: "slds-form-element__control"},
+        inputElement
       );
     }
   }
@@ -857,25 +859,33 @@ class Option extends React.Component {
         )
       );
     } else {
-      // Standard layout
+      // Standard layout with responsive grid
       return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
         h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
           h("span", {}, this.title,
             h(Tooltip, {tooltip: this.tooltip, idKey: this.key || `option_${this.title || "unnamed"}`})
           )
         ),
-        this.actionButton && h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-m-left_xxx-small slds-grid_vertical-align-center slds-gutters_small"},
-          h("div", {className: "slds-form-element__control"},
-            h("button", {
-              className: "slds-button slds-button_brand",
-              onClick: (e) => this.actionButton.onClick(e, this.props.model),
-              title: this.actionButton.title || "Action"
-            }, this.actionButton.label || "Action")
+        h("div", {className: "slds-col slds-size_9-of-12"},
+          h("div", {className: "slds-grid slds-grid_vertical-align-center slds-gutters_small"},
+            // Input field container with configurable size
+            !isToggle && h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12"},
+              this.renderInputControl(id, false)
+            ),
+            // Action button (if present)
+            this.actionButton && h("div", {className: "slds-col"},
+              h("button", {
+                className: "slds-button slds-button_brand",
+                onClick: (e) => this.actionButton.onClick(e, this.props.model),
+                title: this.actionButton.title || "Action"
+              }, this.actionButton.label || "Action")
+            ),
+            // Toggle control aligned to the right
+            isToggle && h("div", {className: "slds-col slds-grid slds-grid_align-end"},
+              this.renderInputControl(id, false)
+            )
           )
-        ),
-        !isToggle ? this.renderInputControl(id, false)
-        : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-        this.renderInputControl(id, false))
+        )
       );
     }
   }
@@ -1108,7 +1118,7 @@ class FaviconOption extends React.Component {
             )
           )
         ),
-        h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
+        h("div", {className: "slds-form-element__control slds-col"},
           h("button", {className: "slds-button slds-button_brand", onClick: this.populateFaviconColors, title: "Use favicon for all orgs I've visited"}, "Populate All")
         )
       )
@@ -1890,7 +1900,7 @@ class App extends React.Component {
   render() {
     const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
-    
+
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
       // Export Options button
@@ -1908,9 +1918,9 @@ class App extends React.Component {
           onClick: () => this.refs.fileInput.click(),
           title: "Import Options"
         },
-          h("svg", {className: "slds-button__icon"},
-            h("use", {xlinkHref: "symbols.svg#upload"})
-          )
+        h("svg", {className: "slds-button__icon"},
+          h("use", {xlinkHref: "symbols.svg#upload"})
+        )
         ),
         // Hidden file input for importing options
         h("input", {
@@ -1922,7 +1932,7 @@ class App extends React.Component {
         })
       )
     ];
-    
+
     return h("div", {},
       h(PageHeader, {
         pageTitle: "Options",
@@ -1933,7 +1943,7 @@ class App extends React.Component {
         userInitials: model.userInitials,
         userFullName: model.userFullName,
         userName: model.userName,
-        utilityItems: utilityItems
+        utilityItems
       }),
       this.state.showToast
         && h(Toast, {

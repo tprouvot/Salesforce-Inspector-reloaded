@@ -31,3 +31,15 @@
 .sfir-full-width{
     width: 100%;
 }
+
+html:has(body.sfir-prod),
+.sfir-prod {
+    background-color: #e0a4b5 !important;
+    background-repeat: no-repeat !important;
+    background-size: contain !important;
+    background-attachment: fixed !important;
+}
+
+body{
+    margin: 0px;
+}

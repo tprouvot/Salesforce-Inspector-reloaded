@@ -50,11 +50,11 @@ class Model {
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
-      document.body.classList.add("prod");
+      document.body.classList.add("sfir-prod");
     }
     this.spinFor("retrieving user info", sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
       this.userFullName = res.userFullName;
-      this.userInitials = this.userFullName.split(' ').map(n => n[0]).join('');
+      this.userInitials = this.userFullName.split(" ").map(n => n[0]).join("");
       this.userName = res.userName;
     }));
   }
@@ -1592,7 +1592,7 @@ class App extends React.Component {
     document.title = model.title();
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
     let linkTarget = linkInNewTab ? "_blank" : "_top";
-    
+
     // Define navigation items for this page (injected as "slots")
     const navItems = [
       // All tab
@@ -1604,9 +1604,9 @@ class App extends React.Component {
           title: "Click to open menu",
           onClick: this.onUseAllTab
         },
-          h("span", {className: "slds-media__body"},
-            h("span", {className: "slds-truncate", title: "All"}, "All")
-          )
+        h("span", {className: "slds-media__body"},
+          h("span", {className: "slds-truncate", title: "All"}, "All")
+        )
         )
       ),
       // Fields tab
@@ -1617,24 +1617,24 @@ class App extends React.Component {
           "aria-expanded": "false",
           title: "Click to open menu"
         },
-          h("span", {className: "slds-media__body"},
-            h("span", {className: "slds-truncate", title: "Fields", onClick: this.onUseFieldsTab}, "Fields"),
-            h(ColumnsVisibiltyBox, {
-              rowList: model.fieldRows,
-              label: "Field columns",
-              content: () => [
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "name", name: "name", disabled: true}),
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "label", name: "label"}),
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "type", name: "type"}),
-                model.sobjectName ? h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "usage", name: "usage"}) : null,
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "value", name: "value", disabled: !model.canView()}),
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "helptext", name: "helptext"}),
-                h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "desc", name: "desc", disabled: !model.hasEntityParticles}),
-                h("hr", {key: "---", className: "slds-m-vertical_small"}),
-                model.fieldRows.availableColumns.map(col => h(ColumnVisibiltyToggle, {key: col, name: col, label: col, rowList: model.fieldRows}))
-              ]
-            })
-          )
+        h("span", {className: "slds-media__body"},
+          h("span", {className: "slds-truncate", title: "Fields", onClick: this.onUseFieldsTab}, "Fields"),
+          h(ColumnsVisibiltyBox, {
+            rowList: model.fieldRows,
+            label: "Field columns",
+            content: () => [
+              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "name", name: "name", disabled: true}),
+              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "label", name: "label"}),
+              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "type", name: "type"}),
+              model.sobjectName ? h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "usage", name: "usage"}) : null,
+              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "value", name: "value", disabled: !model.canView()}),
+              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "helptext", name: "helptext"}),
+              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "desc", name: "desc", disabled: !model.hasEntityParticles}),
+              h("hr", {key: "---", className: "slds-m-vertical_small"}),
+              model.fieldRows.availableColumns.map(col => h(ColumnVisibiltyToggle, {key: col, name: col, label: col, rowList: model.fieldRows}))
+            ]
+          })
+        )
         )
       ),
       // Relationships tab
@@ -1645,42 +1645,42 @@ class App extends React.Component {
           "aria-expanded": "false",
           title: "Click to open menu"
         },
-          h("span", {className: "slds-media__body"},
-            h("span", {className: "slds-truncate", title: "Relationships", onClick: this.onUseChildsTab}, "Relationships"),
-            h(ColumnsVisibiltyBox, {
-              rowList: model.childRows,
-              label: "Relationship columns",
-              content: () => [
-                ["name", "object", "field", "label"].map(col => h(ColumnVisibiltyToggle, {key: col, rowList: model.childRows, name: col})),
-                h("hr", {key: "---", className: "slds-m-vertical_small"}),
-                model.childRows.availableColumns.map(col => h(ColumnVisibiltyToggle, {key: col, rowList: model.childRows, name: col}))
-              ]
-            })
-          )
+        h("span", {className: "slds-media__body"},
+          h("span", {className: "slds-truncate", title: "Relationships", onClick: this.onUseChildsTab}, "Relationships"),
+          h(ColumnsVisibiltyBox, {
+            rowList: model.childRows,
+            label: "Relationship columns",
+            content: () => [
+              ["name", "object", "field", "label"].map(col => h(ColumnVisibiltyToggle, {key: col, rowList: model.childRows, name: col})),
+              h("hr", {key: "---", className: "slds-m-vertical_small"}),
+              model.childRows.availableColumns.map(col => h(ColumnVisibiltyToggle, {key: col, rowList: model.childRows, name: col}))
+            ]
+          })
+        )
         )
       )
     ];
-    
+
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
       // Search filter (conditional)
-      model.useTab != "all" ? null :
-        h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"},
-          h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left"},
-            h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", style: {top: "40%"}},
-              h("use", {xlinkHref: "symbols.svg#search"})
-            ),
-            h("input", {className: "slds-input", placeholder: "Filter", value: model.rowsFilter, onChange: this.onRowsFilterInput, ref: "rowsFilter"}),
-            h("a", {href: "about:blank", className: "sfir-filter-clear", onClick: this.onClearAndFocusFilter},
-              h("svg", {className: "sfir-filter-clear-icon"},
-                h("use", {xlinkHref: "symbols.svg#clear"})
-              )
+      model.useTab != "all" ? null
+      : h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"},
+        h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left"},
+          h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", style: {top: "40%"}},
+            h("use", {xlinkHref: "symbols.svg#search"})
+          ),
+          h("input", {className: "slds-input", placeholder: "Filter", value: model.rowsFilter, onChange: this.onRowsFilterInput, ref: "rowsFilter"}),
+          h("a", {href: "about:blank", className: "sfir-filter-clear", onClick: this.onClearAndFocusFilter},
+            h("svg", {className: "sfir-filter-clear-icon"},
+              h("use", {xlinkHref: "symbols.svg#clear"})
             )
           )
-        ),
+        )
+      ),
       // Action buttons
       h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"},
-        h("div", {className: "slds-media__body"}, 
+        h("div", {className: "slds-media__body"},
           h("span", {className: "slds-button-group object-actions"},
             model.editMode == null && model.recordData && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
               title: "Inline edit the values of this record",
@@ -1702,7 +1702,7 @@ class App extends React.Component {
             }, model.recordData ? "Clone" : "New") : null,
             model.exportLink() ? h("a", {href: model.exportLink(), target: linkTarget, title: "Export data from this object", className: "slds-button slds-button_neutral"}, "Export") : null,
             model.objectName() ? h("a", {href: "about:blank", onClick: this.onShowObjectMetadata, className: "slds-button slds-button_neutral"}, "More") : null,
-            h("div", {className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open slds-button_last"}, 
+            h("div", {className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open slds-button_last"},
               h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: this.onToggleObjectActions},
                 h("svg", {className: "slds-button__icon"},
                   h("use", {xlinkHref: "symbols.svg#down"})
@@ -1721,12 +1721,12 @@ class App extends React.Component {
         )
       )
     ].filter(Boolean); // Remove null items
-    
+
     return (
       h("div", {onClick: this.handleClick},
         h(PageHeader, {
           pageTitle: "Inspect",
-          navItems: navItems,
+          navItems,
           subTitle: model.objectName() + " " + model.recordHeading(),
           orgName: model.orgName,
           sfLink: model.sfLink,
@@ -1735,40 +1735,40 @@ class App extends React.Component {
           userInitials: model.userInitials,
           userFullName: model.userFullName,
           userName: model.userName,
-          utilityItems: utilityItems
+          utilityItems
         }),
-      h("div", {className: "slds-m-top_xx-large sfir-page-container"},
-        h("div", {className: "slds-card slds-m-horizontal_small slds-m-top_medium " + (model.fieldRows.selectedColumnMap.size < 2 && model.childRows.selectedColumnMap.size < 2 ? "empty " : "")},
-          h("div", {hidden: model.errorMessages.length == 0, className: "slds-notify_container slds-is-relative"},
-            h("div", {className: "slds-notify slds-notify_alert slds-alert_error", role: "status"},
-              h("span", {className: "slds-icon_container slds-icon-utility-error slds-m-right_small slds-no-flex slds-align-top"},
-                h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
-                  h("use", {xlinkHref: "symbols.svg#error"})
+        h("div", {className: "slds-m-top_xx-large sfir-page-container"},
+          h("div", {className: "slds-card slds-m-horizontal_small slds-m-top_medium " + (model.fieldRows.selectedColumnMap.size < 2 && model.childRows.selectedColumnMap.size < 2 ? "empty " : "")},
+            h("div", {hidden: model.errorMessages.length == 0, className: "slds-notify_container slds-is-relative"},
+              h("div", {className: "slds-notify slds-notify_alert slds-alert_error", role: "status"},
+                h("span", {className: "slds-icon_container slds-icon-utility-error slds-m-right_small slds-no-flex slds-align-top"},
+                  h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
+                    h("use", {xlinkHref: "symbols.svg#error"})
+                  )
+                ),
+                h("div", {className: "slds-notify__content"},
+                  model.errorMessages.map((data, index) => h("h2", {className: "slds-text-heading_small ", key: index}, data))
                 )
-              ),
-              h("div", {className: "slds-notify__content"},
-                model.errorMessages.map((data, index) => h("h2", {className: "slds-text-heading_small ", key: index}, data))
               )
-            )
-          ),
-          model.useTab == "all" || model.useTab == "fields" ? h(RowTable, {
-            model,
-            rowList: model.fieldRows,
-            actionsColumn: {className: "field-actions" + (model.showTableBorder ? " border-cell" : ""), reactElement: FieldActionsCell},
-            classNameForRow: row => (row.fieldIsCalculated() ? "fieldCalculated " : "") + (row.fieldIsHidden() ? "fieldHidden " : ""),
-            onUpdateTableBorderSettings: this.onUpdateTableBorderSettings,
-            onOpenPopup: this.onOpenPopup,
-          }) : null,
-          model.useTab == "all" || model.useTab == "childs" ? h(RowTable, {
-            model,
-            rowList: model.childRows,
-            actionsColumn: {className: "child-actions" + (model.showTableBorder ? " border-cell" : ""), reactElement: ChildActionsCell},
-            classNameForRow: () => "",
-            onUpdateTableBorderSettings: this.onUpdateTableBorderSettings,
-            onOpenPopup: this.onOpenPopup,
-          }) : null
-        )),
-        model.editMode != null && (model.useTab == "all" || model.useTab == "fields") ? h("div", {className: "slds-docked-form-footer slds-p-vertical_small"}, 
+            ),
+            model.useTab == "all" || model.useTab == "fields" ? h(RowTable, {
+              model,
+              rowList: model.fieldRows,
+              actionsColumn: {className: "field-actions" + (model.showTableBorder ? " border-cell" : ""), reactElement: FieldActionsCell},
+              classNameForRow: row => (row.fieldIsCalculated() ? "fieldCalculated " : "") + (row.fieldIsHidden() ? "fieldHidden " : ""),
+              onUpdateTableBorderSettings: this.onUpdateTableBorderSettings,
+              onOpenPopup: this.onOpenPopup,
+            }) : null,
+            model.useTab == "all" || model.useTab == "childs" ? h(RowTable, {
+              model,
+              rowList: model.childRows,
+              actionsColumn: {className: "child-actions" + (model.showTableBorder ? " border-cell" : ""), reactElement: ChildActionsCell},
+              classNameForRow: () => "",
+              onUpdateTableBorderSettings: this.onUpdateTableBorderSettings,
+              onOpenPopup: this.onOpenPopup,
+            }) : null
+          )),
+        model.editMode != null && (model.useTab == "all" || model.useTab == "fields") ? h("div", {className: "slds-docked-form-footer slds-p-vertical_small"},
           h("button", {
             title:
               model.editMode == "update" ? "Cancel editing this record"
@@ -1821,16 +1821,16 @@ class ColumnsVisibiltyBox extends React.Component {
         role: "dialog",
         style: {position: "absolute", left: "-0.5rem", top: "48px", maxHeight: "80vh", overflow: "scroll"}
       },
-        h("div", {className: "slds-popover__body slds-p-horizontal_none"},
-          h("div", {className: "slds-media"},
-            h("div", {className: "slds-media__body"},
-              h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_small slds-text-align_left"},
-                h("h3", {className: "slds-dynamic-menu__header slds-m-bottom_x-small", role: "presentation"}, label),
-                content()
-              )
+      h("div", {className: "slds-popover__body slds-p-horizontal_none"},
+        h("div", {className: "slds-media"},
+          h("div", {className: "slds-media__body"},
+            h("div", {className: "slds-p-vertical_x-small slds-p-horizontal_small slds-text-align_left"},
+              h("h3", {className: "slds-dynamic-menu__header slds-m-bottom_x-small", role: "presentation"}, label),
+              content()
             )
           )
         )
+      )
       ) : null
     );
   }
@@ -2101,7 +2101,7 @@ class FieldValueCell extends React.Component {
     if (row.isEditing()) {
       return h("td", {className: col.className},
         h("textarea", {value: row.dataEditValue, onChange: this.onDataEditValueInput, onKeyDown: this.onKeyDown}),
-        h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "slds-button slds-button_icon slds-align-top slds-button_icon-x-small"}, 
+        h("a", {href: "about:blank", onClick: this.onCancelEdit, className: "slds-button slds-button_icon slds-align-top slds-button_icon-x-small"},
           h("svg", {className: "slds-button__icon slds-button__icon_hint slds-button__icon_small"},
             h("use", {xlinkHref: "symbols.svg#undo"})
           )
@@ -2287,26 +2287,26 @@ class FieldActionsCell extends React.Component {
   render() {
     let {row, className} = this.props;
     return h("td", {className},
-      
-        h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-x-small", onClick: this.onToggleFieldActions},
-          h("svg", {className: "slds-button__icon slds-button__icon_hint slds-button__icon_small"},
-            h("use", {xlinkHref: "symbols.svg#down"})
-          ),
+
+      h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-x-small", onClick: this.onToggleFieldActions},
+        h("svg", {className: "slds-button__icon slds-button__icon_hint slds-button__icon_small"},
+          h("use", {xlinkHref: "symbols.svg#down"})
         ),
-        row.fieldActionsOpen && h("div", {className: "slds-dropdown slds-dropdown_right"},
-          h("ul", {className: "slds-dropdown__list"},
-            h("li", {className: "slds-dropdown__item"},
-              h("a", {href: "about:blank", onClick: this.onOpenDetails}, "All field metadata")
-            ),
-            row.fieldSetupLinks && h("li", {className: "slds-dropdown__item"},
-              h("a", {href: row.fieldSetupLinks.lightningSetupLink}, "Field setup (Lightning)")
-            ),
-            row.fieldSetupLinks && h("li", {className: "slds-dropdown__item"},
-              h("a", {href: row.fieldSetupLinks.classicSetupLink}, "Field setup (Classic)")
-            )
+      ),
+      row.fieldActionsOpen && h("div", {className: "slds-dropdown slds-dropdown_right"},
+        h("ul", {className: "slds-dropdown__list"},
+          h("li", {className: "slds-dropdown__item"},
+            h("a", {href: "about:blank", onClick: this.onOpenDetails}, "All field metadata")
+          ),
+          row.fieldSetupLinks && h("li", {className: "slds-dropdown__item"},
+            h("a", {href: row.fieldSetupLinks.lightningSetupLink}, "Field setup (Lightning)")
+          ),
+          row.fieldSetupLinks && h("li", {className: "slds-dropdown__item"},
+            h("a", {href: row.fieldSetupLinks.classicSetupLink}, "Field setup (Classic)")
           )
         )
-      
+      )
+
     );
   }
 }
@@ -2339,9 +2339,9 @@ class ChildActionsCell extends React.Component {
         className: "slds-button slds-button_icon slds-button_icon-border-filled slds-button_icon-x-small",
         onClick: this.onToggleChildActions
       },
-        h("svg", {className: "slds-button__icon slds-button__icon_hint slds-button__icon_small"},
-          h("use", {xlinkHref: "symbols.svg#down"})
-        ),
+      h("svg", {className: "slds-button__icon slds-button__icon_hint slds-button__icon_small"},
+        h("use", {xlinkHref: "symbols.svg#down"})
+      ),
       ),
       row.childActionsOpen && h("div", {className: "slds-dropdown slds-dropdown_right"},
         h("ul", {className: "slds-dropdown__list"},
@@ -2394,44 +2394,44 @@ class DetailsBox extends React.Component {
   render() {
     let {model} = this.props;
     return h("div", {},
-    h("section", {
+      h("section", {
         role: "dialog",
         tabIndex: -1,
         "aria-modal": "true",
         "aria-labelledby": "modal-heading-01",
         className: "slds-modal slds-fade-in-open slds-modal_large"
       },
-        h("div", {className: "slds-modal__container"},
-          h("button", {className: "slds-button slds-button_icon slds-modal__close", onClick: this.onCloseDetailsBox},
-            h("svg", {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
-              h("use", {xlinkHref: "symbols.svg#close"})
-            ),
-            h("span", {className: "slds-assistive-text"}, "Cancel and close")
+      h("div", {className: "slds-modal__container"},
+        h("button", {className: "slds-button slds-button_icon slds-modal__close", onClick: this.onCloseDetailsBox},
+          h("svg", {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#close"})
           ),
-          h("div", {className: "slds-modal__header"},
-            h("h1", {
-              id: "modal-heading-01",
-              className: "slds-modal__title slds-hyphenate",
-              tabIndex: -1
-            }, "All available metadata for \"" + model.detailsBox.name + "\""),
-            h("input", {className: "slds-input slds-m-top_small", placeholder: "Filter", value: model.detailsFilter, onChange: this.onDetailsFilterInput, ref: "detailsFilter"}),
-          ),
-          h("div", {className: "slds-modal__content slds-p-around_medium", id: "modal-content-id-1"},
-            h("table", {className: "slds-table slds-table_cell-buffer"},
-              h("thead", {}, h("tr", {}, h("th", {}, "Key"), h("th", {}, "Value"))),
-              h("tbody", {}, model.detailsBox.rows.map(row =>
-                h("tr", {hidden: !row.visible(), key: row.key},
-                  h("td", {},
-                    h("a", {href: "about:blank", onClick: e => this.onDetailsFilterClick(e, row, model.detailsBox.detailsFilterList), hidden: !model.detailsBox.detailsFilterList, title: "Show fields with this property"}, "🔍"),
-                    " ",
-                    h("span", {className: "quick-select"}, row.key)
-                  ),
-                  h("td", {}, h(TypedValue, {value: row.value}))
-                )
-              ))
-            )
+          h("span", {className: "slds-assistive-text"}, "Cancel and close")
+        ),
+        h("div", {className: "slds-modal__header"},
+          h("h1", {
+            id: "modal-heading-01",
+            className: "slds-modal__title slds-hyphenate",
+            tabIndex: -1
+          }, "All available metadata for \"" + model.detailsBox.name + "\""),
+          h("input", {className: "slds-input slds-m-top_small", placeholder: "Filter", value: model.detailsFilter, onChange: this.onDetailsFilterInput, ref: "detailsFilter"}),
+        ),
+        h("div", {className: "slds-modal__content slds-p-around_medium", id: "modal-content-id-1"},
+          h("table", {className: "slds-table slds-table_cell-buffer"},
+            h("thead", {}, h("tr", {}, h("th", {}, "Key"), h("th", {}, "Value"))),
+            h("tbody", {}, model.detailsBox.rows.map(row =>
+              h("tr", {hidden: !row.visible(), key: row.key},
+                h("td", {},
+                  h("a", {href: "about:blank", onClick: e => this.onDetailsFilterClick(e, row, model.detailsBox.detailsFilterList), hidden: !model.detailsBox.detailsFilterList, title: "Show fields with this property"}, "🔍"),
+                  " ",
+                  h("span", {className: "quick-select"}, row.key)
+                ),
+                h("td", {}, h(TypedValue, {value: row.value}))
+              )
+            ))
           )
         )
+      )
       ),
       h("div", {className: "slds-backdrop slds-backdrop_open", role: "presentation"})
     );

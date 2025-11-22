@@ -10,6 +10,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 import {getLinkTarget} from "./utils.js";
+import ConfirmModal from "./components/ConfirmModal.js";
 
 // Flow Scanner Rules Configuration
 export const flowScannerKnownConfigurableRules = {
@@ -248,13 +249,15 @@ class FlowScanner {
     try {
 
       // Query both Flow and FlowDefinitionView objects to get complete metadata
-      const [flowRes, fdvRes] = await Promise.all([
+      const [flowRes, fdvRes, versionsRes] = await Promise.all([
         sfConn.rest(`/services/data/v${apiVersion}/tooling/query?q=SELECT+Id,Metadata+FROM+Flow+WHERE+Id='${this.flowId}'`),
-        sfConn.rest(`/services/data/v${apiVersion}/query/?q=SELECT+Label,ApiName,ProcessType,TriggerType,TriggerObjectOrEventLabel+FROM+FlowDefinitionView+WHERE+DurableId='${this.flowDefId}'`)
+        sfConn.rest(`/services/data/v${apiVersion}/query/?q=SELECT+Label,ApiName,ProcessType,TriggerType,TriggerObjectOrEventLabel+FROM+FlowDefinitionView+WHERE+DurableId='${this.flowDefId}'`),
+        sfConn.rest(`/services/data/v${apiVersion}/tooling/query?q=SELECT+Id,VersionNumber,Status+FROM+Flow+WHERE+DefinitionId='${this.flowDefId}'+ORDER+BY+VersionNumber+DESC`)
       ]);
 
       const flowRecord = flowRes.records?.[0];
       const flowDefView = fdvRes.records?.[0];
+      const versions = versionsRes.records || [];
 
       if (!flowRecord || !flowDefView) {
         throw new Error("Flow or FlowDefinitionView not found");
@@ -296,13 +299,232 @@ class FlowScanner {
         triggerObjectLabel,
         triggerType,
         processType,
-        showProcessType
+        showProcessType,
+        versions
       };
 
       return result;
     } catch (error) {
       throw new Error("Failed to fetch flow metadata: " + error.message);
     }
+  }
+
+  /**
+   * Purges old versions of the flow, keeping the specified number of recent versions + active version.
+   * Uses the Composite API to delete flow interviews first, then flow versions.
+   * @param {number} historySize - Number of old versions to keep.
+   * @returns {Promise<{success: boolean, count: number, message: string, details: Array}>} Result summary.
+   */
+  async purgeOldVersions(historySize) {
+    if (!this.currentFlow || !this.currentFlow.versions) {
+      throw new Error("Flow versions not loaded.");
+    }
+
+    const versions = this.currentFlow.versions;
+    // Sort versions by VersionNumber DESC
+    versions.sort((a, b) => b.VersionNumber - a.VersionNumber);
+
+    // Identify the active version ID
+    const activeVersion = versions.find(v => v.Status === "Active");
+    const activeVersionId = activeVersion ? activeVersion.Id : null;
+
+    // Versions we want to KEEP based on recency (Latest N + 1)
+    const keepCount = historySize + 1;
+    const recentVersions = versions.slice(0, keepCount);
+    const recentVersionIds = new Set(recentVersions.map(v => v.Id));
+
+    // Identify versions to DELETE
+    // Delete if NOT in recent list AND NOT active
+    const versionsToDelete = versions.filter(v => !recentVersionIds.has(v.Id) && v.Id !== activeVersionId);
+
+    if (versionsToDelete.length === 0) {
+      return {success: true, count: 0, message: "No versions to purge.", details: []};
+    }
+
+    // Initialize stats map
+    // Map: versionId -> { versionId, versionNumber, interviewsFound: 0, interviewsDeleted: 0, flowDeleted: false, error: null }
+    const stats = {};
+    const versionIdsToDelete = [];
+
+    versionsToDelete.forEach(v => {
+      stats[v.Id] = {
+        versionId: v.Id,
+        versionNumber: v.VersionNumber,
+        interviewsFound: 0,
+        interviewsDeleted: 0,
+        flowDeleted: false,
+        error: null
+      };
+      versionIdsToDelete.push(v.Id);
+    });
+
+    try {
+      // 1. Fetch Flow Interviews associated with these versions
+      // Fetch Interviews
+      let interviewIdsToDelete = [];
+      // Map interviewId -> versionId
+      const interviewToVersion = {};
+
+      const versionIdChunks = this._chunk(versionIdsToDelete, 200);
+      for (const chunkIds of versionIdChunks) {
+        const idsStr = chunkIds.map(id => `'${id}'`).join(",");
+        const query = `SELECT Id, FlowVersionViewId FROM FlowInterview WHERE FlowVersionViewId IN (${idsStr})`;
+        const res = await sfConn.rest(`/services/data/v${apiVersion}/query/?q=${encodeURIComponent(query)}`);
+        if (res.records) {
+          res.records.forEach(r => {
+            interviewIdsToDelete.push(r.Id);
+            interviewToVersion[r.Id] = r.FlowVersionViewId;
+            if (stats[r.FlowVersionViewId]) {
+              stats[r.FlowVersionViewId].interviewsFound++;
+            }
+          });
+        }
+      }
+
+      // 2. Construct Composite Requests
+      const interviewOperations = interviewIdsToDelete.map(id => ({
+        method: "DELETE",
+        url: `/services/data/v${apiVersion}/sobjects/FlowInterview/${id}`,
+        referenceId: `FlowInterview_${id}`
+      }));
+
+      const versionOperations = versionIdsToDelete.map(id => ({
+        method: "DELETE",
+        url: `/services/data/v${apiVersion}/tooling/sobjects/Flow/${id}`,
+        referenceId: `Flow_${id}`
+      }));
+
+      // Execute FlowInterview deletions (Data API)
+      const interviewResults = await this._executeCompositeBatch(interviewOperations, false);
+
+      // Process interview results
+      interviewResults.forEach(res => {
+        if (res.referenceId.startsWith("FlowInterview_")) {
+          const interviewId = res.referenceId.substring("FlowInterview_".length);
+          const versionId = interviewToVersion[interviewId];
+          if (stats[versionId] && res.success) {
+            stats[versionId].interviewsDeleted++;
+          }
+        }
+      });
+
+      // Execute Flow Version deletions (Tooling API)
+      const versionResults = await this._executeCompositeBatch(versionOperations, true);
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Process version results
+      versionResults.forEach(res => {
+        if (res.referenceId.startsWith("Flow_")) {
+          const versionId = res.referenceId.substring("Flow_".length);
+          if (stats[versionId]) {
+            stats[versionId].flowDeleted = res.success;
+            stats[versionId].error = res.errorMessage;
+          }
+          if (res.success) {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        }
+      });
+
+      // Count interview failures as errors too if needed, but for now we focus on version deletion status
+      // If an interview deletion fails, it usually prevents version deletion, so it will be captured there.
+
+      const details = Object.values(stats).sort((a, b) => b.versionNumber - a.versionNumber);
+
+      if (errorCount > 0) {
+        return {
+          success: successCount > 0,
+          count: successCount,
+          message: `Deleted ${successCount} versions. Failed to delete ${errorCount} items.`,
+          details
+        };
+      }
+
+      return {
+        success: true,
+        count: successCount,
+        message: `Successfully deleted ${successCount} old versions and ${interviewIdsToDelete.length} associated flow interviews.`,
+        details
+      };
+
+    } catch (error) {
+      throw new Error("Failed to purge versions: " + error.message);
+    }
+  }
+
+  /**
+   * Helper to chunk array
+   * @private
+   */
+  _chunk(arr, size) {
+    return Array.from({length: Math.ceil(arr.length / size)}, (v, i) => arr.slice(i * size, (i * size) + size));
+  }
+
+  /**
+   * Helper to execute composite batches and return results
+   * @private
+   */
+  async _executeCompositeBatch(operations, isTooling) {
+    if (operations.length === 0) return [];
+
+    const batches = this._chunk(operations, 25);
+    const baseUrl = isTooling
+      ? `/services/data/v${apiVersion}/tooling/composite`
+      : `/services/data/v${apiVersion}/composite`;
+
+    const allResults = [];
+
+    for (const batch of batches) {
+      const compositeBody = {
+        allOrNone: false,
+        compositeRequest: batch
+      };
+
+      try {
+        const response = await sfConn.rest(baseUrl, {
+          method: "POST",
+          body: compositeBody
+        });
+
+        if (response && response.compositeResponse) {
+          response.compositeResponse.forEach(subRes => {
+            const isSuccess = (subRes.httpStatusCode >= 200 && subRes.httpStatusCode < 300);
+            const errorMsg = subRes.body?.[0]?.message;
+
+            const isAlreadyDeleted = !isSuccess
+              && subRes.httpStatusCode === 404
+              && errorMsg
+              && (errorMsg.includes("Unable to load specified entity") || errorMsg.includes("The requested resource does not exist"));
+
+            const finalSuccess = isSuccess || isAlreadyDeleted;
+            const errorMessage = finalSuccess
+              ? (isAlreadyDeleted ? "Already deleted" : null)
+              : (errorMsg || "Unknown error");
+
+            allResults.push({
+              referenceId: subRes.referenceId,
+              success: finalSuccess,
+              errorMessage
+            });
+          });
+        }
+      } catch (e) {
+        console.error("Composite request failed", e);
+        // Mark all in batch as failed
+        batch.forEach(op => {
+          allResults.push({
+            referenceId: op.referenceId,
+            success: false,
+            errorMessage: "Batch request failed: " + e.message
+          });
+        });
+      }
+    }
+    return allResults;
   }
 
   /**
@@ -769,6 +991,11 @@ class App extends React.Component {
     this.onSeverityToggle = this.onSeverityToggle.bind(this);
     this.onRuleToggle = this.onRuleToggle.bind(this);
     this.onStatItemClick = this.onStatItemClick.bind(this);
+    this.onPurgeVersions = this.onPurgeVersions.bind(this);
+    this.onPurgeHistorySizeChange = this.onPurgeHistorySizeChange.bind(this);
+    this.confirmPurge = this.confirmPurge.bind(this);
+    this.cancelPurge = this.cancelPurge.bind(this);
+    this.closePurgeResult = this.closePurgeResult.bind(this);
   }
 
   componentDidMount() {
@@ -1018,6 +1245,150 @@ class App extends React.Component {
     return false;
   }
 
+  onPurgeHistorySizeChange(e) {
+    let newSize = parseInt(e.target.value, 10);
+    if (isNaN(newSize) || newSize < 0) return;
+
+    const flow = this.flowScanner.currentFlow;
+    const totalVersions = flow.versions ? flow.versions.length : 0;
+    const maxHistory = Math.max(0, totalVersions - 1);
+
+    if (newSize > maxHistory) {
+      newSize = maxHistory;
+    }
+
+    // Exact calculation logic
+    const keepCount = newSize + 1;
+    // Sort versions DESC (newest first)
+    const sortedVersions = [...(flow.versions || [])].sort((a, b) => b.VersionNumber - a.VersionNumber);
+    // Identify active version ID
+    const activeVersion = sortedVersions.find(v => v.Status === "Active");
+    const activeVersionId = activeVersion ? activeVersion.Id : null;
+    // Identify versions to keep (latest N+1)
+    const recentVersions = sortedVersions.slice(0, keepCount);
+    const recentVersionIds = new Set(recentVersions.map(v => v.Id));
+    // Versions to delete = All versions NOT in keep list AND NOT active
+    const versionsToDelete = sortedVersions.filter(v => !recentVersionIds.has(v.Id) && v.Id !== activeVersionId);
+    const toDeleteCount = versionsToDelete.length;
+
+    this.setState({
+      purgeHistorySize: newSize,
+      purgeDetails: {
+        keepCount,
+        toDeleteCount
+      }
+    });
+  }
+
+  async onPurgeVersions() {
+    let historySize = parseInt(localStorage.getItem("flowScannerHistorySize") || "5", 10);
+    const flow = this.flowScanner.currentFlow;
+    const totalVersions = flow.versions ? flow.versions.length : 0;
+    // Cap the history size if it exceeds available versions (total - 1)
+    const maxHistory = Math.max(0, totalVersions - 1);
+    if (historySize > maxHistory) {
+      historySize = maxHistory;
+    }
+
+    // Exact calculation logic
+    const keepCount = historySize + 1;
+    // Sort versions DESC (newest first)
+    const sortedVersions = [...(flow.versions || [])].sort((a, b) => b.VersionNumber - a.VersionNumber);
+    // Identify active version ID
+    const activeVersion = sortedVersions.find(v => v.Status === "Active");
+    const activeVersionId = activeVersion ? activeVersion.Id : null;
+    // Identify versions to keep (latest N+1)
+    const recentVersions = sortedVersions.slice(0, keepCount);
+    const recentVersionIds = new Set(recentVersions.map(v => v.Id));
+    // Versions to delete = All versions NOT in keep list AND NOT active
+    const versionsToDelete = sortedVersions.filter(v => !recentVersionIds.has(v.Id) && v.Id !== activeVersionId);
+    const toDeleteCount = versionsToDelete.length;
+
+    this.setState({
+      showPurgeModal: true,
+      purgeHistorySize: historySize,
+      purgeDetails: {
+        keepCount,
+        toDeleteCount
+      }
+    });
+  }
+
+  async confirmPurge() {
+    this.setState({showPurgeModal: false, isLoading: true, loadingMessage: "Purging old versions..."});
+    const historySize = this.state.purgeHistorySize;
+
+    try {
+      const result = await this.flowScanner.purgeOldVersions(historySize);
+      this.setState({
+        isLoading: false,
+        showPurgeResultModal: true,
+        purgeResult: result
+      });
+    } catch (error) {
+      this.setState({
+        isLoading: false,
+        error: "Purge failed: " + error.message
+      });
+    }
+  }
+
+  async closePurgeResult() {
+    this.setState({showPurgeResultModal: false, purgeResult: null, isLoading: true, loadingMessage: "Refreshing flow data..."});
+    await this.initializeFlowScanner();
+  }
+
+  cancelPurge() {
+    this.setState({showPurgeModal: false});
+  }
+
+  renderPurgeResultModal() {
+    if (!this.state.showPurgeResultModal || !this.state.purgeResult) return null;
+
+    const {details} = this.state.purgeResult;
+
+    return h(ConfirmModal, {
+      isOpen: true,
+      title: "Purge Results",
+      onConfirm: this.closePurgeResult,
+      confirmLabel: "Close",
+      confirmVariant: this.state.purgeResult.success ? "brand" : "destructive-text",
+      confirmIconName: this.state.purgeResult.success ? "symbols.svg#success" : "symbols.svg#error",
+      confirmIconPosition: "left",
+      confirmType: "button"
+    },
+    h("div", {className: "purge-results-container", style: {maxHeight: "400px", overflowY: "auto"}},
+      h("p", {className: this.state.purgeResult.success ? "slds-text-color_success" : "slds-text-color_error"},
+        this.state.purgeResult.message
+      ),
+      details && details.length > 0 && h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-m-top_small"},
+        h("thead", {},
+          h("tr", {className: "slds-line-height_reset"},
+            h("th", {scope: "col"}, h("div", {className: "slds-truncate", title: "Version"}, "Version")),
+            h("th", {scope: "col"}, h("div", {className: "slds-truncate", title: "Flow Status"}, "Flow Status")),
+            h("th", {scope: "col"}, h("div", {className: "slds-truncate", title: "Interviews Deleted"}, "Interviews Deleted")),
+            h("th", {scope: "col"}, h("div", {className: "slds-truncate", title: "Error"}, "Error"))
+          )
+        ),
+        h("tbody", {},
+          details.map(d => {
+            const failedInterviews = d.interviewsFound - d.interviewsDeleted;
+            return h("tr", {key: d.versionId},
+              h("td", {}, h("div", {className: "slds-truncate", title: d.versionNumber}, d.versionNumber)),
+              h("td", {}, h("div", {className: "slds-truncate"}, d.flowDeleted
+                ? h("span", {className: "slds-text-color_success"}, "Deleted")
+                : h("span", {className: "slds-text-color_error"}, "Failed")
+              )),
+              h("td", {}, h("div", {className: "slds-truncate"}, `${d.interviewsDeleted} / ${d.interviewsFound}` + (failedInterviews > 0 ? ` (${failedInterviews} failed)` : ""))),
+              h("td", {}, h("div", {className: "slds-truncate", title: d.error || "—"}, d.error || "—"))
+            );
+          })
+        )
+      )
+    )
+    );
+  }
+
   renderFlowInfo() {
     if (!this.flowScanner?.currentFlow) {
       return h("div", {className: "area"},
@@ -1073,6 +1444,41 @@ class App extends React.Component {
               h("div", {className: "flow-detail-item flow-elements-item"},
                 h("span", {className: "detail-label"}, "Elements"),
                 h("span", {className: "detail-value", id: "flow-elements-count"}, elements.length)
+              ),
+              h("div", {className: "flow-detail-item flow-versions-item"},
+                h("div", {style: {display: "flex", alignItems: "center", marginBottom: "2px"}},
+                  h("span", {className: "detail-label", style: {marginBottom: "0", marginRight: "4px"}}, "Versions"),
+                  h("div", {className: "tooltip-container"},
+                    h("svg", {className: "info-icon", "aria-hidden": "true"},
+                      h("use", {xlinkHref: "symbols.svg#info"})
+                    ),
+                    h("div", {className: "tooltip-content"}, "Total number of versions stored in Salesforce for this flow, including active, draft, and obsolete versions.")
+                  )
+                ),
+                h("div", {className: "detail-value"},
+                  h("span", {id: "flow-versions-count"}, flow.versions ? flow.versions.length : "Unknown"),
+                  (flow.versions && flow.versions.length > 0) && h("button", {
+                    style: {
+                      background: "transparent",
+                      border: "1px solid #dddbda",
+                      borderRadius: "4px",
+                      padding: "2px 4px",
+                      marginLeft: "6px",
+                      cursor: "pointer",
+                      lineHeight: "1",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      verticalAlign: "middle"
+                    },
+                    onClick: this.onPurgeVersions,
+                    title: "Purge old versions"
+                  },
+                  h("svg", {viewBox: "0 0 52 52", width: "14", height: "14", style: {fill: "#0070d2", display: "block"}},
+                    h("use", {xlinkHref: "symbols.svg#delete"})
+                  )
+                  )
+                )
               ),
               h("div", {className: "flow-detail-item"},
                 h("span", {className: "detail-label"}, "Triggering Object/Event"),
@@ -1490,6 +1896,60 @@ class App extends React.Component {
         this.state.error ? this.renderError() : this.renderScanResults()
       ),
       this.renderLoadingOverlay(),
+      this.renderPurgeResultModal(),
+      h(ConfirmModal, {
+        isOpen: this.state.showPurgeModal,
+        title: "Purge Old Versions",
+        onConfirm: this.confirmPurge,
+        onCancel: this.cancelPurge,
+        confirmLabel: "Purge",
+        cancelLabel: "Cancel",
+        confirmVariant: "destructive",
+        cancelVariant: "neutral",
+        confirmIconName: "symbols.svg#delete",
+        confirmIconPosition: "left",
+        confirmDisabled: !this.state.purgeDetails || this.state.purgeDetails.toDeleteCount === 0,
+        confirmType: "button",
+        cancelType: "button"
+      },
+      h("div", {style: {display: "flex", alignItems: "center", gap: "1rem"}},
+        h("label", {className: "slds-form-element__label", style: {marginBottom: "0"}}, "Number of previous versions to keep (in addition to the current version):"),
+        h("div", {className: "slds-form-element__control"},
+          h("input", {
+            type: "number",
+            className: "slds-input",
+            style: {width: "80px"},
+            value: this.state.purgeHistorySize,
+            onChange: this.onPurgeHistorySizeChange,
+            min: "0",
+            max: this.flowScanner?.currentFlow?.versions?.length ? Math.max(0, this.flowScanner.currentFlow.versions.length - 1) : 0
+          })
+        )
+      ),
+      h("div", {style: {minHeight: "1.2em", paddingTop: "0.25rem"}},
+        this.state.purgeDetails && (
+          this.state.purgeDetails.toDeleteCount === 0
+            ? h("div", {className: "slds-form-element__help"},
+              "With this setting, no older versions will be deleted."
+            )
+            : h("div", {className: "slds-form-element__help"},
+              `You will keep the current version and ${this.state.purgeDetails.keepCount - 1} previous version${(this.state.purgeDetails.keepCount - 1) === 1 ? "" : "s"}, and delete ${this.state.purgeDetails.toDeleteCount} older version${this.state.purgeDetails.toDeleteCount === 1 ? "" : "s"}.`
+            )
+        )
+      ),
+      this.state.purgeDetails
+        ? (this.state.purgeDetails.toDeleteCount === 0
+          ? h("div", {className: "slds-text-color_weak slds-m-vertical_small"},
+            h("p", {}, "There are no older versions to purge with this setting."),
+            h("p", {}, "To delete old versions, lower the number of previous versions to keep above.")
+          )
+          : [
+            h("p", {key: "p1", className: "slds-m-bottom_small"}, `When you confirm, Salesforce will permanently delete ${this.state.purgeDetails.toDeleteCount} older version${this.state.purgeDetails.toDeleteCount === 1 ? "" : "s"} of this flow.`),
+            h("p", {key: "p2", className: "slds-text-color_error"}, "This will also delete any related Flow Interviews (in-progress flow runs) for those versions, and it cannot be undone.")
+          ]
+        )
+        : null
+      ),
       h("div", {className: "sr-only", "aria-live": "polite", "aria-atomic": "true", id: "sr-announcements"})
     );
   }

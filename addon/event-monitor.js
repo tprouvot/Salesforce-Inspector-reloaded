@@ -4,6 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
 import {copyToClipboard} from "./data-load.js";
+import ConfirmModal from "./components/ConfirmModal.js";
 
 const channelTypes = [
   {value: "standardPlatformEvent", label: "Standard Platform Event", prefix: "/event/"},
@@ -690,20 +691,19 @@ class App extends React.Component {
             )
           )
         ),
-        model.confirmPopup ? h("div", {},
-          h("div", {id: "confirm-replayId"},
-            h("div", {id: "confirm-dialog"},
-              h("h1", {}, "Important"),
+        h(ConfirmModal, {
+          isOpen: model.confirmPopup,
+          title: "Important",
+          onConfirm: this.confirmPopupYes,
+          onCancel: this.confirmPopupNo,
+          confirmLabel: "Subscribe",
+          cancelLabel: "Cancel",
+          confirmVariant: model.isProd ? "destructive" : "brand"
+        },
               model.isProd ? h("p", {}, "WARNING : You are on a PRODUCTION.") : null,
               h("p", {}, "Use this option sparingly. Subscribing with the -2 option when a large number of event messages are stored can slow performance."),
-              h("p", {}, "Hitting the daily limit can break existing integration!"),
-              h("div", {className: "dialog-buttons"},
-                h("button", {onClick: this.confirmPopupYes}, "Subscribe"),
-                h("button", {onClick: this.confirmPopupNo, className: "cancel-btn"}, "Cancel")
-              )
-            )
+        h("p", {}, "Hitting the daily limit can break existing integration!")
           )
-        ) : null
       )
     );
   }

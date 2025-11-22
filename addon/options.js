@@ -295,6 +295,7 @@ class OptionsTabSelector extends React.Component {
           }
         ],
         content: [
+          {option: Option, props: {type: "number", title: "Flow History Size", key: "flowScannerHistorySize", default: 5, tooltip: "Number of old flow versions to keep when purging (in addition to the latest version)."}},
           {option: FlowScannerRules, props: {model: this.model}}
         ]
       },
@@ -1612,10 +1613,10 @@ class FlowScannerRules extends React.Component {
   // Methods for external control by action buttons
   setAllRulesChecked(checked) {
     const updatedRules = this.state.rules.map(rule => ({...rule, checked}));
-    this.setState({
+    this.setState(prevState => ({
       rules: updatedRules,
-      resetCounter: this.state.resetCounter + 1
-    });
+      resetCounter: prevState.resetCounter + 1
+    }));
     localStorage.setItem("flowScannerRules", JSON.stringify(updatedRules));
   }
 
@@ -1659,25 +1660,27 @@ class FlowScannerRules extends React.Component {
   }
 
   onRuleChange(ruleName, field, value) {
-    const updatedRules = this.state.rules.map(rule => {
-      if (rule.name === ruleName) {
-        if (field === "checked") {
-          return {...rule, checked: value};
-        } else if (field === "severity") {
-          return {...rule, severity: value};
-        } else if (field === "config") {
-          // Update the main config object for the scanner, and configValue for the UI
-          const newConfig = rule.configType ? {[rule.configType]: value} : {};
-          return {...rule, config: newConfig, configValue: value};
+    this.setState(prevState => {
+      const updatedRules = prevState.rules.map(rule => {
+        if (rule.name === ruleName) {
+          if (field === "checked") {
+            return {...rule, checked: value};
+          } else if (field === "severity") {
+            return {...rule, severity: value};
+          } else if (field === "config") {
+            // Update the main config object for the scanner, and configValue for the UI
+            const newConfig = rule.configType ? {[rule.configType]: value} : {};
+            return {...rule, config: newConfig, configValue: value};
+          }
         }
-      }
-      return rule;
+        return rule;
+      });
+
+      // Save to localStorage
+      localStorage.setItem("flowScannerRules", JSON.stringify(updatedRules));
+
+      return {rules: updatedRules};
     });
-
-    this.setState({rules: updatedRules});
-
-    // Save to localStorage
-    localStorage.setItem("flowScannerRules", JSON.stringify(updatedRules));
   }
 
   render() {
@@ -1699,9 +1702,10 @@ class FlowScannerRules extends React.Component {
       );
     }
 
+    const sortedRules = [...rules].sort((a, b) => a.label.localeCompare(b.label));
+
     return h("div", {className: "flow-scanner-rules-container"},
-      rules
-        .sort((a, b) => a.label.localeCompare(b.label))
+      sortedRules
         .map(rule => {
         // Determine badge
           let badge = null;

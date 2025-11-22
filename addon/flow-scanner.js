@@ -216,6 +216,18 @@ class FlowScanner {
   }
 
   /**
+   * Fetches flow versions for the current flow definition.
+   * @private
+   * @returns {Promise<Array>} Array of flow version records.
+   */
+  async _fetchFlowVersions() {
+    const versionsRes = await sfConn.rest(
+      this._buildApiUrl(`/query?q=SELECT+Id,VersionNumber,Status+FROM+Flow+WHERE+DefinitionId='${this.flowDefId}'+ORDER+BY+VersionNumber+DESC`, true)
+    );
+    return versionsRes.records || [];
+  }
+
+  /**
    * Initializes the scanner by loading flow data and running the analysis.
    */
   async init() {
@@ -330,10 +342,7 @@ class FlowScanner {
    */
   async refreshFlowVersions() {
     try {
-      const versionsRes = await sfConn.rest(
-        this._buildApiUrl(`/query?q=SELECT+Id,VersionNumber,Status+FROM+Flow+WHERE+DefinitionId='${this.flowDefId}'+ORDER+BY+VersionNumber+DESC`, true)
-      );
-      const versions = versionsRes.records || [];
+      const versions = await this._fetchFlowVersions();
 
       // Update current flow with new versions
       if (this.currentFlow) {
@@ -357,15 +366,14 @@ class FlowScanner {
   async getFlowMetadata() {
     try {
       // Query both Flow and FlowDefinitionView objects to get complete metadata
-      const [flowRes, fdvRes, versionsRes] = await Promise.all([
+      const [flowRes, fdvRes, versions] = await Promise.all([
         sfConn.rest(this._buildApiUrl(`/query?q=SELECT+Id,Metadata+FROM+Flow+WHERE+Id='${this.flowId}'`, true)),
         sfConn.rest(this._buildApiUrl(`/query/?q=SELECT+Label,ApiName,ProcessType,TriggerType,TriggerObjectOrEventLabel+FROM+FlowDefinitionView+WHERE+DurableId='${this.flowDefId}'`)),
-        sfConn.rest(this._buildApiUrl(`/query?q=SELECT+Id,VersionNumber,Status+FROM+Flow+WHERE+DefinitionId='${this.flowDefId}'+ORDER+BY+VersionNumber+DESC`, true))
+        this._fetchFlowVersions()
       ]);
 
       const flowRecord = flowRes.records?.[0];
       const flowDefView = fdvRes.records?.[0];
-      const versions = versionsRes.records || [];
 
       if (!flowRecord || !flowDefView) {
         throw new Error("Flow or FlowDefinitionView not found");

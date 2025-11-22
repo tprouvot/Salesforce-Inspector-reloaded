@@ -25,7 +25,15 @@ function getSldsButtonClass(variant) {
   }
 }
 
-function buildButtonContent(label, iconName, iconPosition) {
+function getButtonClassName(customClassName, variant, stretch) {
+  let className = customClassName || getSldsButtonClass(variant);
+  if (stretch) {
+    className += " slds-button_stretch";
+  }
+  return className;
+}
+
+function buildButtonChildren(label, iconName, iconPosition) {
   const children = [];
   const hasLabel = label !== undefined && label !== null;
   const hasIcon = !!iconName;
@@ -112,23 +120,16 @@ export default class ConfirmModal extends React.Component {
     const confirmLabel = this.props.confirmLabel == null ? "Confirm" : this.props.confirmLabel;
     const cancelLabel = this.props.cancelLabel == null ? "Cancel" : this.props.cancelLabel;
 
-    let confirmClassName = this.props.confirmButtonClass || getSldsButtonClass(confirmVariant);
-    let cancelClassName = this.props.cancelButtonClass || getSldsButtonClass(cancelVariant);
+    const confirmClassName = getButtonClassName(this.props.confirmButtonClass, confirmVariant, this.props.confirmStretch);
+    const cancelClassName = getButtonClassName(this.props.cancelButtonClass, cancelVariant, this.props.cancelStretch);
 
-    if (this.props.confirmStretch) {
-      confirmClassName += " slds-button_stretch";
-    }
-    if (this.props.cancelStretch) {
-      cancelClassName += " slds-button_stretch";
-    }
-
-    const confirmChildren = buildButtonContent(
+    const confirmChildren = buildButtonChildren(
       confirmLabel,
       this.props.confirmIconName,
       this.props.confirmIconPosition
     );
 
-    const cancelChildren = buildButtonContent(
+    const cancelChildren = buildButtonChildren(
       cancelLabel,
       this.props.cancelIconName,
       this.props.cancelIconPosition

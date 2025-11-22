@@ -1295,33 +1295,6 @@ svg.icon:hover {
   border: none;
   background-color: transparent;
 }
-
-.flow-status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: #e8f5e8;
-  color: #2d5a2d;
-  border: 1px solid #c3e6c3;
-}
-
-.flow-description {
-  font-size: 0.85rem;
-  color: #495057;
-  background: #f8f9fa;
-  border-radius: 4px;
-  border-left: 3px solid #0070d2;
-  padding: 4px 8px;
-  margin: 0;
-  min-width: 120px;
-  word-break: break-word;
-}
-
 @media (max-width: 768px) {
   .flow-detail-item {
     flex-direction: row;
@@ -1416,19 +1389,6 @@ svg.icon:hover {
   gap: 16px;
   min-height: 0;
 }
-
-.flow-description {
-  font-size: 0.85rem;
-  color: #495057;
-  background: #f8f9fa;
-  border-radius: 4px;
-  border-left: 3px solid #0070d2;
-  padding: 4px 8px;
-  margin: 0;
-  min-width: 120px;
-  word-break: break-word;
-}
-
 @media (max-width: 900px) {
   .flow-desc-row {
     flex-direction: column;
@@ -1497,14 +1457,12 @@ svg.icon:hover {
   transform: translateX(-50%);
   background-color: #24292e;
   color: #ffffff;
-  padding: 6px 10px;
+  padding: 8px 12px;
   border-radius: 6px;
   z-index: 10000 !important;
-  width: 240px;
-  max-height: 180px;
-  overflow-y: auto;
-  font-size: 0.78rem;
-  line-height: 1.35;
+  width: 300px;
+  font-size: 0.8rem;
+  line-height: 1.4;
   text-align: left;
   pointer-events: none;
   transition: opacity 0.2s, visibility 0.2s;

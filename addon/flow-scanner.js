@@ -111,6 +111,25 @@ const normalizeSeverity = (sev, direction = "ui") => {
   return sev;
 };
 
+function getPrimaryAffectedElement(result) {
+  return (result.affectedElements && result.affectedElements.length > 0) ? result.affectedElements[0] : {};
+}
+
+function getFlowVersionPurgePlan(versions, historySize) {
+  const keepCount = historySize + 1;
+  const sortedVersions = versions.sort((a, b) => b.VersionNumber - a.VersionNumber);
+  const activeVersion = sortedVersions.find(v => v.Status === "Active");
+  const activeVersionId = activeVersion ? activeVersion.Id : null;
+  const recentVersions = sortedVersions.slice(0, keepCount);
+  const recentVersionIds = new Set(recentVersions.map(v => v.Id));
+  const versionsToDelete = sortedVersions.filter(v => !recentVersionIds.has(v.Id) && v.Id !== activeVersionId);
+
+  return {
+    keepCount,
+    versionsToDelete
+  };
+}
+
 /**
  * Manages the analysis of Salesforce Flows, including data fetching,
  * scanning, and results processing.
@@ -190,7 +209,7 @@ class FlowScanner {
 
     // Convert each scan result into a CSV row.
     this.scanResults.forEach(result => {
-      const affected = (result.affectedElements && result.affectedElements.length > 0) ? result.affectedElements[0] : {};
+      const affected = getPrimaryAffectedElement(result);
       const rowData = {
         ruleDescription: result.description,
         ruleLabel: result.rule,
@@ -322,20 +341,13 @@ class FlowScanner {
 
     const versions = this.currentFlow.versions;
     // Sort versions by VersionNumber DESC
-    versions.sort((a, b) => b.VersionNumber - a.VersionNumber);
-
     // Identify the active version ID
-    const activeVersion = versions.find(v => v.Status === "Active");
-    const activeVersionId = activeVersion ? activeVersion.Id : null;
-
     // Versions we want to KEEP based on recency (Latest N + 1)
-    const keepCount = historySize + 1;
-    const recentVersions = versions.slice(0, keepCount);
-    const recentVersionIds = new Set(recentVersions.map(v => v.Id));
+    const purgePlan = getFlowVersionPurgePlan(versions, historySize);
 
     // Identify versions to DELETE
     // Delete if NOT in recent list AND NOT active
-    const versionsToDelete = versions.filter(v => !recentVersionIds.has(v.Id) && v.Id !== activeVersionId);
+    const versionsToDelete = purgePlan.versionsToDelete;
 
     if (versionsToDelete.length === 0) {
       return {success: true, count: 0, message: "No versions to purge.", details: []};
@@ -556,6 +568,17 @@ class FlowScanner {
     ];
   }
 
+  _forEachFlowXmlElement(xmlData, callback) {
+    this._getFlowElementTypes().forEach(elementType => {
+      const elements = xmlData[elementType];
+      if (!elements) return;
+      const elementArray = Array.isArray(elements) ? elements : [elements];
+      elementArray.forEach(element => {
+        callback(element, elementType);
+      });
+    });
+  }
+
   /**
    * Builds a map of flow element API names to their labels for easy lookup.
    * @private
@@ -569,17 +592,12 @@ class FlowScanner {
     const xmlData = this.currentFlow.xmlData;
 
     // Use element types from core library
-    this._getFlowElementTypes().forEach(elementType => {
-      const elements = xmlData[elementType];
-      if (!elements) return;
+    this._forEachFlowXmlElement(xmlData, element => {
 
       // Handle both single elements and arrays efficiently
-      const elementArray = Array.isArray(elements) ? elements : [elements];
-      elementArray.forEach(element => {
-        if (element?.name) {
-          this._elementMap.set(element.name, element.label);
-        }
-      });
+      if (element?.name) {
+        this._elementMap.set(element.name, element.label);
+      }
     });
   }
 
@@ -663,12 +681,7 @@ class FlowScanner {
 
       // Check if the flow type is explicitly unsupported (O(1) lookup)
       if (unsupportedFlowTypesSet.has(currentFlowType)) {
-        this.scanResults = [{
-          isUnsupportedFlow: true,
-          displayType: currentFlowType,
-          supportedFlowTypes,
-          reason: "explicitly_unsupported"
-        }];
+        this._setUnsupportedFlowTypeResult(currentFlowType, supportedFlowTypes, "explicitly_unsupported");
         return;
       }
 
@@ -678,12 +691,7 @@ class FlowScanner {
       // If the flow type is not supported, return a special marker object.
       if (!isFlowTypeSupported) {
         const displayType = isScreenFlow ? "Screen Flow" : currentFlowType;
-        this.scanResults = [{
-          isUnsupportedFlow: true,
-          displayType,
-          supportedFlowTypes,
-          reason: "not_in_supported_list"
-        }];
+        this._setUnsupportedFlowTypeResult(displayType, supportedFlowTypes, "not_in_supported_list");
         return;
       }
 
@@ -804,6 +812,15 @@ class FlowScanner {
     } finally {
       this.isScanning = false;
     }
+  }
+
+  _setUnsupportedFlowTypeResult(displayType, supportedFlowTypes, reason) {
+    this.scanResults = [{
+      isUnsupportedFlow: true,
+      displayType,
+      supportedFlowTypes,
+      reason
+    }];
   }
 
   /**
@@ -946,18 +963,13 @@ class FlowScanner {
     const xmlData = this.currentFlow.xmlData;
 
     // Use element types from core library
-    this._getFlowElementTypes().forEach(elementType => {
-      const elementData = xmlData[elementType];
-      if (!elementData) return;
+    this._forEachFlowXmlElement(xmlData, (element, elementType) => {
 
       // Handle both single elements and arrays efficiently
-      const elementArray = Array.isArray(elementData) ? elementData : [elementData];
-      elementArray.forEach(element => {
-        elements.push({
-          name: element?.name || element?.label || element?.apiName || "Unknown",
-          type: elementType,
-          element
-        });
+      elements.push({
+        name: element?.name || element?.label || element?.apiName || "Unknown",
+        type: elementType,
+        element
       });
     });
 
@@ -974,6 +986,283 @@ class FlowScanner {
 }
 
 let h = React.createElement;
+
+function FlowInfoSection(props) {
+  const {flow, elements, onPurgeVersions, onToggleDescription, handleMouseDown, shouldIgnoreClick} = props;
+
+  if (!flow) {
+    return h("div", {className: "area"},
+      h("div", {className: "flow-info-section"},
+        h("h2", {className: "flow-info-title"},
+          h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
+          h("span", {className: "flow-info-title-text"}, "Flow Information")
+        ),
+        h("div", {className: "flow-info-card compact"},
+          h("div", {}, "Loading flow information...")
+        )
+      )
+    );
+  }
+
+  const totalVersions = flow.versions ? flow.versions.length : 0;
+  let versionCountStyle = {};
+  if (totalVersions > 0 && typeof totalVersions === "number") {
+    const clamped = Math.max(1, Math.min(50, totalVersions));
+    const ratio = (clamped - 1) / 49;
+    const startColor = {r: 46, g: 204, b: 113};
+    const endColor = {r: 231, g: 76, b: 60};
+    const r = Math.round(startColor.r + ((endColor.r - startColor.r) * ratio));
+    const g = Math.round(startColor.g + ((endColor.g - startColor.g) * ratio));
+    const b = Math.round(startColor.b + ((endColor.b - startColor.b) * ratio));
+    versionCountStyle = {
+      backgroundColor: `rgb(${r}, ${g}, ${b})`,
+      color: "#ffffff",
+      padding: "0 0.4rem",
+      borderRadius: "999px",
+      minWidth: "2.25rem",
+      textAlign: "center",
+      display: "inline-block"
+    };
+  }
+
+  return h("div", {className: "area"},
+    h("div", {className: "flow-info-section", role: "region", "aria-labelledby": "flow-info-title-text"},
+      h("h2", {className: "flow-info-title"},
+        h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
+        h("span", {className: "flow-info-title-text", id: "flow-info-title-text"}, "Flow Information")
+      ),
+      h("div", {className: "flow-info-card compact"},
+        h("div", {className: "flow-header-row"},
+          h("div", {className: "flow-details-grid"},
+            h("div", {className: "flow-detail-item flow-label-item"},
+              h("span", {className: "detail-label"}, "Flow Label"),
+              h("span", {className: "detail-value"}, flow.label || "Unknown Label")
+            ),
+            h("div", {className: "flow-detail-item flow-apiname-item"},
+              h("span", {className: "detail-label"}, "Flow API Name"),
+              h("span", {className: "detail-value"}, flow.apiName || "Unknown API Name")
+            ),
+            h("div", {className: "flow-detail-item flow-status-item"},
+              h("span", {className: "detail-label"}, "Status"),
+              h("span", {
+                className: `flow-status-badge ${flow.status?.toLowerCase()}`,
+                role: "status",
+                "aria-live": "polite",
+                id: "flow-status-badge"
+              }, flow.displayStatus)
+            ),
+            h("div", {className: "flow-detail-item flow-type-item"},
+              h("span", {className: "detail-label"}, "Type"),
+              h("span", {className: "detail-value", id: "flow-type"}, flow.type)
+            ),
+            h("div", {className: "flow-detail-item flow-apiversion-item"},
+              h("span", {className: "detail-label"}, "API Version"),
+              h("span", {className: "detail-value", id: "flow-api-version"}, flow.xmlData?.apiVersion || "Unknown")
+            ),
+            h("div", {className: "flow-detail-item flow-elements-item"},
+              h("span", {className: "detail-label"}, "Elements"),
+              h("span", {className: "detail-value", id: "flow-elements-count"}, elements.length)
+            ),
+            h("div", {className: "flow-detail-item flow-versions-item"},
+              h("div", {style: {display: "flex", alignItems: "center", marginBottom: "2px"}},
+                h("span", {className: "detail-label", style: {marginBottom: "0", marginRight: "4px"}}, "Versions"),
+                h("div", {className: "tooltip-container"},
+                  h("svg", {className: "info-icon", "aria-hidden": "true"},
+                    h("use", {xlinkHref: "symbols.svg#info"})
+                  ),
+                  h("div", {className: "tooltip-content"}, "Total stored versions for this flow. Salesforce allows up to 50 versions per flow; the badge color shows how close you are to this limit (green = low, red = high).")
+                )
+              ),
+              h("div", {className: "detail-value"},
+                h("span", {id: "flow-versions-count", style: versionCountStyle}, flow.versions ? flow.versions.length : "Unknown"),
+                (flow.versions && flow.versions.length > 1) && h("button", {
+                  style: {
+                    background: "transparent",
+                    border: "1px solid #dddbda",
+                    borderRadius: "4px",
+                    padding: "2px 4px",
+                    marginLeft: "6px",
+                    cursor: "pointer",
+                    lineHeight: "1",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    verticalAlign: "middle"
+                  },
+                  onClick: onPurgeVersions,
+                  title: "Purge old versions"
+                },
+                h("svg", {viewBox: "0 0 52 52", width: "14", height: "14", style: {fill: "#0070d2", display: "block"}},
+                  h("use", {xlinkHref: "symbols.svg#delete"})
+                )
+                )
+              )
+            ),
+            h("div", {className: "flow-detail-item"},
+              h("span", {className: "detail-label"}, "Triggering Object/Event"),
+              h("span", {className: "detail-value", id: "flow-trigger-object"}, flow.triggerObjectLabel || "—")
+            ),
+            h("div", {className: "flow-detail-item"},
+              h("span", {className: "detail-label"}, "Trigger"),
+              h("span", {className: "detail-value", id: "flow-trigger-type"}, flow.triggerType || "—")
+            )
+          )
+        ),
+        h("div", {className: "flow-desc-row"},
+          h("div", {className: "flow-description-container collapsed"},
+            h("div", {className: "flow-desc-header"},
+              h("button", {
+                className: "description-toggle-btn",
+                type: "button",
+                "aria-expanded": "false",
+                onMouseDown: handleMouseDown,
+                onClick: e => { if (shouldIgnoreClick(e)) return; onToggleDescription(e); }
+              },
+              h("span", {className: "toggle-icon"}, "▼"),
+              h("span", {id: "toggle-label"}, "Show description")
+              )
+            ),
+            h("div", {
+              className: "flow-description clickable",
+              role: "button",
+              tabIndex: "0",
+              "aria-label": "Click to toggle description visibility",
+              dangerouslySetInnerHTML: {
+                __html: (flow.xmlData?.description || "No description provided").replace(/\n/g, "<br>")
+              }
+            })
+          )
+        )
+      )
+    )
+  );
+}
+
+function ScanSummary(props) {
+  const {totalIssues, errorCount, warningCount, infoCount, onExportResults, onExpandAll, onCollapseAll, isStatItemClickable, onStatItemClick} = props;
+  return h("div", {className: "summary-body", role: "status", "aria-live": "polite"},
+    h("h3", {className: "summary-title"},
+      h("span", {className: "results-icon"}, "📊"),
+      "Scan Results"
+    ),
+    h("div", {className: "summary-right-panel"},
+      h("div", {className: "summary-stats", role: "group", "aria-label": "Scan results summary"},
+        h("div", {className: "stat-item total", role: "group", "aria-label": "Total issues"},
+          h("span", {className: "stat-number", id: "total-issues-count"}, totalIssues),
+          h("span", {className: "stat-label"}, "Total")
+        ),
+        h("div", {
+          className: `stat-item error${isStatItemClickable("error", errorCount) ? " clickable" : ""}`,
+          role: "group",
+          "aria-label": "Error issues",
+          onClick: isStatItemClickable("error", errorCount) ? () => onStatItemClick("error", errorCount) : undefined
+        },
+        h("span", {className: "stat-number", id: "error-issues-count"}, errorCount),
+        h("span", {className: "stat-label"}, "Errors")
+        ),
+        h("div", {
+          className: `stat-item warning${isStatItemClickable("warning", warningCount) ? " clickable" : ""}`,
+          role: "group",
+          "aria-label": "Warning issues",
+          onClick: isStatItemClickable("warning", warningCount) ? () => onStatItemClick("warning", warningCount) : undefined
+        },
+        h("span", {className: "stat-number", id: "warning-issues-count"}, warningCount),
+        h("span", {className: "stat-label"}, "Warnings")
+        ),
+        h("div", {
+          className: `stat-item info${isStatItemClickable("info", infoCount) ? " clickable" : ""}`,
+          role: "group",
+          "aria-label": "Information issues",
+          onClick: isStatItemClickable("info", infoCount) ? () => onStatItemClick("info", infoCount) : undefined
+        },
+        h("span", {className: "stat-number", id: "info-issues-count"}, infoCount),
+        h("span", {className: "stat-label"}, "Info")
+        )
+      ),
+      h("div", {className: "summary-actions"},
+        h("button", {
+          className: "highlighted button-margin",
+          title: "Export Results",
+          onClick: onExportResults,
+          disabled: totalIssues === 0
+        }, "Export",
+        ),
+        h("button", {className: "button-margin", id: "expand-all-btn", onClick: onExpandAll}, "Expand All"),
+        h("button", {className: "button-margin", id: "collapse-all-btn", onClick: onCollapseAll}, "Collapse All")
+      )
+    )
+  );
+}
+
+function PurgeModal(props) {
+  const {
+    isOpen,
+    purgeHistorySize,
+    purgeDetails,
+    purgeWarning,
+    maxHistory,
+    onConfirm,
+    onCancel,
+    onHistorySizeChange
+  } = props;
+
+  return h(ConfirmModal, {
+    isOpen,
+    title: "Purge Old Versions",
+    onConfirm,
+    onCancel,
+    confirmLabel: "Purge",
+    cancelLabel: "Cancel",
+    confirmVariant: "destructive",
+    cancelVariant: "neutral",
+    confirmIconName: "symbols.svg#delete",
+    confirmIconPosition: "left",
+    confirmDisabled: !purgeDetails || purgeDetails.toDeleteCount === 0,
+    confirmType: "button",
+    cancelType: "button"
+  },
+  h("div", {style: {display: "flex", alignItems: "center", gap: "1rem"}},
+    h("label", {className: "slds-form-element__label", style: {marginBottom: "0"}}, "Number of previous versions to keep (in addition to the current version):"),
+    h("div", {className: "slds-form-element__control"},
+      h("input", {
+        type: "number",
+        className: "slds-input",
+        style: {width: "80px"},
+        value: purgeHistorySize,
+        onChange: onHistorySizeChange,
+        min: "0",
+        max: maxHistory
+      })
+    )
+  ),
+  h("div", {style: {minHeight: "1.2em", paddingTop: "0.25rem"}},
+    purgeDetails && (
+      purgeDetails.toDeleteCount === 0
+        ? h("div", {className: "slds-form-element__help"},
+          "With this setting, no older versions will be deleted."
+        )
+        : h("div", {className: "slds-form-element__help"},
+          `You will keep the current version and ${purgeDetails.keepCount - 1} previous version${(purgeDetails.keepCount - 1) === 1 ? "" : "s"}, and delete ${purgeDetails.toDeleteCount} older version${purgeDetails.toDeleteCount === 1 ? "" : "s"}.`
+        )
+    )
+  ),
+  purgeWarning && h("div", {className: "slds-text-color_error", style: {marginTop: "0.25rem"}},
+    purgeWarning
+  ),
+  purgeDetails
+    ? (purgeDetails.toDeleteCount === 0
+      ? h("div", {className: "slds-text-color_weak slds-m-vertical_small"},
+        h("p", {}, "There are no older versions to purge with this setting."),
+        h("p", {}, "To delete old versions, lower the number of previous versions to keep above.")
+      )
+      : [
+        h("p", {key: "p1", className: "slds-m-bottom_small"}, `When you confirm, Salesforce will permanently delete ${purgeDetails.toDeleteCount} older version${purgeDetails.toDeleteCount === 1 ? "" : "s"} of this flow.`),
+        h("p", {key: "p2", className: "slds-text-color_error"}, "This will also delete any related Flow Interviews (in-progress flow runs) for those versions, and it cannot be undone.")
+      ]
+    )
+    : null
+  );
+}
 
 /**
  * The main React component for the Flow Scanner application.
@@ -1043,13 +1332,9 @@ class App extends React.Component {
       historySize = maxHistory;
     }
 
-    const keepCount = historySize + 1;
-    const sortedVersions = [...versions].sort((a, b) => b.VersionNumber - a.VersionNumber);
-    const activeVersion = sortedVersions.find(v => v.Status === "Active");
-    const activeVersionId = activeVersion ? activeVersion.Id : null;
-    const recentVersions = sortedVersions.slice(0, keepCount);
-    const recentVersionIds = new Set(recentVersions.map(v => v.Id));
-    const versionsToDelete = sortedVersions.filter(v => !recentVersionIds.has(v.Id) && v.Id !== activeVersionId);
+    const purgePlan = getFlowVersionPurgePlan([...versions], historySize);
+    const keepCount = purgePlan.keepCount;
+    const versionsToDelete = purgePlan.versionsToDelete;
 
     return {
       historySize,
@@ -1070,7 +1355,7 @@ class App extends React.Component {
     if (!scanResults || scanResults.length === 0) {
       return {error: {results: [], rules: {}}, warning: {results: [], rules: {}}, info: {results: [], rules: {}}};
     }
-    const severityOrder = ["error", "warning", "info"];
+    const severityOrder = ISSUE_SEVERITY_ORDER;
     const grouped = {};
     severityOrder.forEach(severity => {
       grouped[severity] = {results: [], rules: {}};
@@ -1191,7 +1476,7 @@ class App extends React.Component {
   onExpandAll() {
     this.setState(state => {
       const accordion = {...state.accordion};
-      ["error", "warning", "info"].forEach(sev => {
+      ISSUE_SEVERITY_ORDER.forEach(sev => {
         accordion[sev].expanded = true;
         const rules = accordion[sev].rules;
         Object.keys(rules).forEach(rule => { rules[rule] = true; });
@@ -1203,18 +1488,18 @@ class App extends React.Component {
   onCollapseAll() {
     this.setState(state => {
       const accordion = {...state.accordion};
-      const anyRuleExpanded = ["error", "warning", "info"].some(sev =>
+      const anyRuleExpanded = ISSUE_SEVERITY_ORDER.some(sev =>
         Object.values(accordion[sev].rules).some(isExpanded => isExpanded)
       );
       if (anyRuleExpanded) {
         // If any rules are expanded, collapse all rules but keep severity groups open.
-        ["error", "warning", "info"].forEach(sev => {
+        ISSUE_SEVERITY_ORDER.forEach(sev => {
           const rules = accordion[sev].rules;
           Object.keys(rules).forEach(rule => { rules[rule] = false; });
         });
       } else {
         // If all rules are collapsed, collapse the severity groups themselves.
-        ["error", "warning", "info"].forEach(sev => {
+        ISSUE_SEVERITY_ORDER.forEach(sev => {
           accordion[sev].expanded = false;
         });
       }
@@ -1417,154 +1702,17 @@ class App extends React.Component {
   }
 
   renderFlowInfo() {
-    if (!this.flowScanner?.currentFlow) {
-      return h("div", {className: "area"},
-        h("div", {className: "flow-info-section"},
-          h("h2", {className: "flow-info-title"},
-            h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
-            h("span", {className: "flow-info-title-text"}, "Flow Information")
-          ),
-          h("div", {className: "flow-info-card compact"},
-            h("div", {}, "Loading flow information...")
-          )
-        )
-      );
-    }
+    const flow = this.flowScanner?.currentFlow;
+    const elements = this.flowScanner?.extractFlowElements() || [];
 
-    const flow = this.flowScanner.currentFlow;
-    const elements = this.flowScanner.extractFlowElements();
-    const totalVersions = flow.versions ? flow.versions.length : 0;
-    let versionCountStyle = {};
-    if (totalVersions > 0 && typeof totalVersions === "number") {
-      const clamped = Math.max(1, Math.min(50, totalVersions));
-      const ratio = (clamped - 1) / 49;
-      const startColor = {r: 46, g: 204, b: 113};
-      const endColor = {r: 231, g: 76, b: 60};
-      const r = Math.round(startColor.r + ((endColor.r - startColor.r) * ratio));
-      const g = Math.round(startColor.g + ((endColor.g - startColor.g) * ratio));
-      const b = Math.round(startColor.b + ((endColor.b - startColor.b) * ratio));
-      versionCountStyle = {
-        backgroundColor: `rgb(${r}, ${g}, ${b})`,
-        color: "#ffffff",
-        padding: "0 0.4rem",
-        borderRadius: "999px",
-        minWidth: "2.25rem",
-        textAlign: "center",
-        display: "inline-block"
-      };
-    }
-
-    return h("div", {className: "area"},
-      h("div", {className: "flow-info-section", role: "region", "aria-labelledby": "flow-info-title-text"},
-        h("h2", {className: "flow-info-title"},
-          h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
-          h("span", {className: "flow-info-title-text", id: "flow-info-title-text"}, "Flow Information")
-        ),
-        h("div", {className: "flow-info-card compact"},
-          h("div", {className: "flow-header-row"},
-            h("div", {className: "flow-details-grid"},
-              h("div", {className: "flow-detail-item flow-label-item"},
-                h("span", {className: "detail-label"}, "Flow Label"),
-                h("span", {className: "detail-value"}, flow.label || "Unknown Label")
-              ),
-              h("div", {className: "flow-detail-item flow-apiname-item"},
-                h("span", {className: "detail-label"}, "Flow API Name"),
-                h("span", {className: "detail-value"}, flow.apiName || "Unknown API Name")
-              ),
-              h("div", {className: "flow-detail-item flow-status-item"},
-                h("span", {className: "detail-label"}, "Status"),
-                h("span", {
-                  className: `flow-status-badge ${flow.status?.toLowerCase()}`,
-                  role: "status",
-                  "aria-live": "polite",
-                  id: "flow-status-badge"
-                }, flow.displayStatus)
-              ),
-              h("div", {className: "flow-detail-item flow-type-item"},
-                h("span", {className: "detail-label"}, "Type"),
-                h("span", {className: "detail-value", id: "flow-type"}, flow.type)
-              ),
-              h("div", {className: "flow-detail-item flow-apiversion-item"},
-                h("span", {className: "detail-label"}, "API Version"),
-                h("span", {className: "detail-value", id: "flow-api-version"}, flow.xmlData?.apiVersion || "Unknown")
-              ),
-              h("div", {className: "flow-detail-item flow-elements-item"},
-                h("span", {className: "detail-label"}, "Elements"),
-                h("span", {className: "detail-value", id: "flow-elements-count"}, elements.length)
-              ),
-              h("div", {className: "flow-detail-item flow-versions-item"},
-                h("div", {style: {display: "flex", alignItems: "center", marginBottom: "2px"}},
-                  h("span", {className: "detail-label", style: {marginBottom: "0", marginRight: "4px"}}, "Versions"),
-                  h("div", {className: "tooltip-container"},
-                    h("svg", {className: "info-icon", "aria-hidden": "true"},
-                      h("use", {xlinkHref: "symbols.svg#info"})
-                    ),
-                    h("div", {className: "tooltip-content"}, "Total stored versions for this flow. Salesforce allows up to 50 versions per flow; the badge color shows how close you are to this limit (green = low, red = high).")
-                  )
-                ),
-                h("div", {className: "detail-value"},
-                  h("span", {id: "flow-versions-count", style: versionCountStyle}, flow.versions ? flow.versions.length : "Unknown"),
-                  (flow.versions && flow.versions.length > 1) && h("button", {
-                    style: {
-                      background: "transparent",
-                      border: "1px solid #dddbda",
-                      borderRadius: "4px",
-                      padding: "2px 4px",
-                      marginLeft: "6px",
-                      cursor: "pointer",
-                      lineHeight: "1",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      verticalAlign: "middle"
-                    },
-                    onClick: this.onPurgeVersions,
-                    title: "Purge old versions"
-                  },
-                  h("svg", {viewBox: "0 0 52 52", width: "14", height: "14", style: {fill: "#0070d2", display: "block"}},
-                    h("use", {xlinkHref: "symbols.svg#delete"})
-                  )
-                  )
-                )
-              ),
-              h("div", {className: "flow-detail-item"},
-                h("span", {className: "detail-label"}, "Triggering Object/Event"),
-                h("span", {className: "detail-value", id: "flow-trigger-object"}, flow.triggerObjectLabel || "—")
-              ),
-              h("div", {className: "flow-detail-item"},
-                h("span", {className: "detail-label"}, "Trigger"),
-                h("span", {className: "detail-value", id: "flow-trigger-type"}, flow.triggerType || "—")
-              )
-            )
-          ),
-          h("div", {className: "flow-desc-row"},
-            h("div", {className: "flow-description-container collapsed"},
-              h("div", {className: "flow-desc-header"},
-                h("button", {
-                  className: "description-toggle-btn",
-                  type: "button",
-                  "aria-expanded": "false",
-                  onMouseDown: e => this.handleMouseDown(e),
-                  onClick: e => { if (this.shouldIgnoreClick(e)) return; this.onToggleDescription(e); }
-                },
-                h("span", {className: "toggle-icon"}, "▼"),
-                h("span", {id: "toggle-label"}, "Show description")
-                )
-              ),
-              h("div", {
-                className: "flow-description clickable",
-                role: "button",
-                tabIndex: "0",
-                "aria-label": "Click to toggle description visibility",
-                dangerouslySetInnerHTML: {
-                  __html: (flow.xmlData?.description || "No description provided").replace(/\n/g, "<br>")
-                }
-              })
-            )
-          )
-        )
-      )
-    );
+    return h(FlowInfoSection, {
+      flow,
+      elements,
+      onPurgeVersions: this.onPurgeVersions,
+      onToggleDescription: this.onToggleDescription,
+      handleMouseDown: e => this.handleMouseDown(e),
+      shouldIgnoreClick: e => this.shouldIgnoreClick(e)
+    });
   }
 
   renderScanResults() {
@@ -1620,7 +1768,7 @@ class App extends React.Component {
     }
 
     const totalIssues = results.length;
-    const severityOrder = ["error", "warning", "info"];
+    const severityOrder = ISSUE_SEVERITY_ORDER;
     const severityLabels = {error: "Errors", warning: "Warnings", info: "Info"};
     const severityIcons = {
       error: h("span", {className: "sev-ico error", "aria-label": "Error"}, "❗"),
@@ -1665,58 +1813,17 @@ class App extends React.Component {
     }
     // Summary panel for when issues are found.
     return h("div", {className: "area scan-results-area", "aria-labelledby": "results-title", "aria-live": "polite"},
-      h("div", {className: "summary-body", role: "status", "aria-live": "polite"},
-        h("h3", {className: "summary-title"},
-          h("span", {className: "results-icon"}, "📊"),
-          "Scan Results"
-        ),
-        h("div", {className: "summary-right-panel"},
-          h("div", {className: "summary-stats", role: "group", "aria-label": "Scan results summary"},
-            h("div", {className: "stat-item total", role: "group", "aria-label": "Total issues"},
-              h("span", {className: "stat-number", id: "total-issues-count"}, totalIssues),
-              h("span", {className: "stat-label"}, "Total")
-            ),
-            h("div", {
-              className: `stat-item error${this.isStatItemClickable("error", errorCount) ? " clickable" : ""}`,
-              role: "group",
-              "aria-label": "Error issues",
-              onClick: this.isStatItemClickable("error", errorCount) ? () => this.onStatItemClick("error", errorCount) : undefined
-            },
-            h("span", {className: "stat-number", id: "error-issues-count"}, errorCount),
-            h("span", {className: "stat-label"}, "Errors")
-            ),
-            h("div", {
-              className: `stat-item warning${this.isStatItemClickable("warning", warningCount) ? " clickable" : ""}`,
-              role: "group",
-              "aria-label": "Warning issues",
-              onClick: this.isStatItemClickable("warning", warningCount) ? () => this.onStatItemClick("warning", warningCount) : undefined
-            },
-            h("span", {className: "stat-number", id: "warning-issues-count"}, warningCount),
-            h("span", {className: "stat-label"}, "Warnings")
-            ),
-            h("div", {
-              className: `stat-item info${this.isStatItemClickable("info", infoCount) ? " clickable" : ""}`,
-              role: "group",
-              "aria-label": "Information issues",
-              onClick: this.isStatItemClickable("info", infoCount) ? () => this.onStatItemClick("info", infoCount) : undefined
-            },
-            h("span", {className: "stat-number", id: "info-issues-count"}, infoCount),
-            h("span", {className: "stat-label"}, "Info")
-            )
-          ),
-          h("div", {className: "summary-actions"},
-            h("button", {
-              className: "highlighted button-margin",
-              title: "Export Results",
-              onClick: this.onExportResults,
-              disabled: totalIssues === 0
-            }, "Export",
-            ),
-            h("button", {className: "button-margin", id: "expand-all-btn", onClick: this.onExpandAll}, "Expand All"),
-            h("button", {className: "button-margin", id: "collapse-all-btn", onClick: this.onCollapseAll}, "Collapse All")
-          )
-        )
-      ),
+      h(ScanSummary, {
+        totalIssues,
+        errorCount,
+        warningCount,
+        infoCount,
+        onExportResults: this.onExportResults,
+        onExpandAll: this.onExpandAll,
+        onCollapseAll: this.onCollapseAll,
+        isStatItemClickable: this.isStatItemClickable.bind(this),
+        onStatItemClick: this.onStatItemClick
+      }),
       h("div", {className: "results-container", role: "region", "aria-labelledby": "results-title"},
         severityOrder.map(severity => {
           const group = groupedResults[severity].results;
@@ -1820,7 +1927,7 @@ class App extends React.Component {
   renderRuleTable(ruleResults) {
     const headers = ["Name", "Element Label", "Type", "Meta", "Connects to", "Location", "Expression"];
     const rows = ruleResults.map(result => {
-      const affected = (result.affectedElements && result.affectedElements.length > 0) ? result.affectedElements[0] : {};
+      const affected = getPrimaryAffectedElement(result);
       return {
         "Name": affected.apiName || affected.elementName || "",
         "Element Label": affected.elementLabel || "",
@@ -1907,6 +2014,9 @@ class App extends React.Component {
     const sfHost = this.flowScanner?.sfHost || "";
     const sfLink = "https://" + sfHost;
     const scannerVersion = this.flowScanner?.flowScannerCore?.version || "";
+    const flow = this.flowScanner?.currentFlow;
+    const versionsLength = flow?.versions?.length || 0;
+    const maxHistory = versionsLength ? Math.max(0, versionsLength - 1) : 0;
 
     return h("div", {},
       h("div", {id: "user-info", className: "slds-border_bottom"},
@@ -1950,68 +2060,23 @@ class App extends React.Component {
       ),
       this.renderLoadingOverlay(),
       this.renderPurgeResultModal(),
-      h(ConfirmModal, {
+      h(PurgeModal, {
         isOpen: this.state.showPurgeModal,
-        title: "Purge Old Versions",
+        purgeHistorySize: this.state.purgeHistorySize,
+        purgeDetails: this.state.purgeDetails,
+        purgeWarning: this.state.purgeWarning,
+        maxHistory,
         onConfirm: this.confirmPurge,
         onCancel: this.cancelPurge,
-        confirmLabel: "Purge",
-        cancelLabel: "Cancel",
-        confirmVariant: "destructive",
-        cancelVariant: "neutral",
-        confirmIconName: "symbols.svg#delete",
-        confirmIconPosition: "left",
-        confirmDisabled: !this.state.purgeDetails || this.state.purgeDetails.toDeleteCount === 0,
-        confirmType: "button",
-        cancelType: "button"
-      },
-      h("div", {style: {display: "flex", alignItems: "center", gap: "1rem"}},
-        h("label", {className: "slds-form-element__label", style: {marginBottom: "0"}}, "Number of previous versions to keep (in addition to the current version):"),
-        h("div", {className: "slds-form-element__control"},
-          h("input", {
-            type: "number",
-            className: "slds-input",
-            style: {width: "80px"},
-            value: this.state.purgeHistorySize,
-            onChange: this.onPurgeHistorySizeChange,
-            min: "0",
-            max: this.flowScanner?.currentFlow?.versions?.length ? Math.max(0, this.flowScanner.currentFlow.versions.length - 1) : 0
-          })
-        )
-      ),
-      h("div", {style: {minHeight: "1.2em", paddingTop: "0.25rem"}},
-        this.state.purgeDetails && (
-          this.state.purgeDetails.toDeleteCount === 0
-            ? h("div", {className: "slds-form-element__help"},
-              "With this setting, no older versions will be deleted."
-            )
-            : h("div", {className: "slds-form-element__help"},
-              `You will keep the current version and ${this.state.purgeDetails.keepCount - 1} previous version${(this.state.purgeDetails.keepCount - 1) === 1 ? "" : "s"}, and delete ${this.state.purgeDetails.toDeleteCount} older version${this.state.purgeDetails.toDeleteCount === 1 ? "" : "s"}.`
-            )
-        )
-      ),
-      this.state.purgeWarning && h("div", {className: "slds-text-color_error", style: {marginTop: "0.25rem"}},
-        this.state.purgeWarning
-      ),
-      this.state.purgeDetails
-        ? (this.state.purgeDetails.toDeleteCount === 0
-          ? h("div", {className: "slds-text-color_weak slds-m-vertical_small"},
-            h("p", {}, "There are no older versions to purge with this setting."),
-            h("p", {}, "To delete old versions, lower the number of previous versions to keep above.")
-          )
-          : [
-            h("p", {key: "p1", className: "slds-m-bottom_small"}, `When you confirm, Salesforce will permanently delete ${this.state.purgeDetails.toDeleteCount} older version${this.state.purgeDetails.toDeleteCount === 1 ? "" : "s"} of this flow.`),
-            h("p", {key: "p2", className: "slds-text-color_error"}, "This will also delete any related Flow Interviews (in-progress flow runs) for those versions, and it cannot be undone.")
-          ]
-        )
-        : null
-      ),
+        onHistorySizeChange: this.onPurgeHistorySizeChange
+      }),
       h("div", {className: "sr-only", "aria-live": "polite", "aria-atomic": "true", id: "sr-announcements"})
     );
   }
 }
 
 const MONO_HEADERS = new Set(["Name", "Connects to", "Expression", "Location"]);
+const ISSUE_SEVERITY_ORDER = ["error", "warning", "info"];
 
 // Initialize the application
 {

@@ -27,27 +27,82 @@ function getSldsButtonClass(variant) {
 
 function buildButtonContent(label, iconName, iconPosition) {
   const children = [];
-  if (iconName && iconPosition !== "right") {
+  const hasLabel = label !== undefined && label !== null;
+  const hasIcon = !!iconName;
+
+  if (hasIcon && iconPosition !== "right") {
+    const leftIconProps = {
+      key: "icon-left",
+      className: "slds-button__icon slds-button__icon_left",
+      "aria-hidden": "true"
+    };
+    if (hasLabel) {
+      leftIconProps.style = {paddingRight: "0.25rem"};
+    }
     children.push(
-      h("svg", {key: "icon-left", className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+      h("svg", leftIconProps,
         h("use", {xlinkHref: iconName})
       )
     );
   }
-  if (label !== undefined && label !== null) {
+
+  if (hasLabel) {
     children.push(label);
   }
-  if (iconName && iconPosition === "right") {
+
+  if (hasIcon && iconPosition === "right") {
+    const rightIconProps = {
+      key: "icon-right",
+      className: "slds-button__icon slds-button__icon_right",
+      "aria-hidden": "true"
+    };
+    if (hasLabel) {
+      rightIconProps.style = {paddingLeft: "0.25rem"};
+    }
     children.push(
-      h("svg", {key: "icon-right", className: "slds-button__icon slds-button__icon_right", "aria-hidden": "true"},
+      h("svg", rightIconProps,
         h("use", {xlinkHref: iconName})
       )
     );
   }
+
   return children;
 }
 
 export default class ConfirmModal extends React.Component {
+  componentDidMount() {
+    if (this.props.isOpen) {
+      window.addEventListener("keydown", this.handleKeyDown, true);
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    if (!prevProps.isOpen && this.props.isOpen) {
+      window.addEventListener("keydown", this.handleKeyDown, true);
+    } else if (prevProps.isOpen && !this.props.isOpen) {
+      window.removeEventListener("keydown", this.handleKeyDown, true);
+    }
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("keydown", this.handleKeyDown, true);
+  }
+
+  handleKeyDown = (e) => {
+    if (e.key === "Escape" || e.key === "Esc") {
+      // Prevent the escape from bubbling to parent handlers when the modal is open.
+      e.stopPropagation();
+      if (!this.props.isOpen) {
+        return;
+      }
+      if (typeof this.props.onCancel === "function") {
+        this.props.onCancel(e);
+      } else if (typeof this.props.onConfirm === "function") {
+        this.props.onConfirm(e);
+      }
+    }
+  };
+
   render() {
     if (!this.props.isOpen) return null;
 

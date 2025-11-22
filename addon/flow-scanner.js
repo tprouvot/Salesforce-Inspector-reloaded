@@ -345,17 +345,24 @@ class FlowScanner {
     // Map: versionId -> { versionId, versionNumber, interviewsFound: 0, interviewsDeleted: 0, flowDeleted: false, error: null }
     const stats = {};
     const versionIdsToDelete = [];
+    // Map short (15-char) version Id -> full version Id for FlowInterview lookups
+    const flowVersionIdMap = {};
 
     versionsToDelete.forEach(v => {
-      stats[v.Id] = {
-        versionId: v.Id,
+      const fullId = v.Id;
+      const shortId = fullId && fullId.substring(0, 15);
+      stats[fullId] = {
+        versionId: fullId,
         versionNumber: v.VersionNumber,
         interviewsFound: 0,
         interviewsDeleted: 0,
         flowDeleted: false,
         error: null
       };
-      versionIdsToDelete.push(v.Id);
+      if (shortId) {
+        flowVersionIdMap[shortId] = fullId;
+      }
+      versionIdsToDelete.push(fullId);
     });
 
     try {
@@ -367,15 +374,17 @@ class FlowScanner {
 
       const versionIdChunks = this._chunk(versionIdsToDelete, 200);
       for (const chunkIds of versionIdChunks) {
-        const idsStr = chunkIds.map(id => `'${id}'`).join(",");
+        const idsStr = chunkIds.map(id => `'${id.substring(0, 15)}'`).join(",");
         const query = `SELECT Id, FlowVersionViewId FROM FlowInterview WHERE FlowVersionViewId IN (${idsStr})`;
         const res = await sfConn.rest(`/services/data/v${apiVersion}/query/?q=${encodeURIComponent(query)}`);
         if (res.records) {
           res.records.forEach(r => {
             interviewIdsToDelete.push(r.Id);
-            interviewToVersion[r.Id] = r.FlowVersionViewId;
-            if (stats[r.FlowVersionViewId]) {
-              stats[r.FlowVersionViewId].interviewsFound++;
+            const versionShortId = r.FlowVersionViewId && r.FlowVersionViewId.substring(0, 15);
+            interviewToVersion[r.Id] = versionShortId;
+            const versionFullId = versionShortId && flowVersionIdMap[versionShortId] ? flowVersionIdMap[versionShortId] : versionShortId;
+            if (versionFullId && stats[versionFullId]) {
+              stats[versionFullId].interviewsFound++;
             }
           });
         }
@@ -401,9 +410,10 @@ class FlowScanner {
       interviewResults.forEach(res => {
         if (res.referenceId.startsWith("FlowInterview_")) {
           const interviewId = res.referenceId.substring("FlowInterview_".length);
-          const versionId = interviewToVersion[interviewId];
-          if (stats[versionId] && res.success) {
-            stats[versionId].interviewsDeleted++;
+          const versionShortId = interviewToVersion[interviewId];
+          const versionFullId = versionShortId && flowVersionIdMap[versionShortId] ? flowVersionIdMap[versionShortId] : versionShortId;
+          if (versionFullId && stats[versionFullId] && res.success) {
+            stats[versionFullId].interviewsDeleted++;
           }
         }
       });
@@ -1361,7 +1371,7 @@ class App extends React.Component {
       h("p", {className: this.state.purgeResult.success ? "slds-text-color_success" : "slds-text-color_error"},
         this.state.purgeResult.message
       ),
-      details && details.length > 0 && h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-m-top_small"},
+      details && details.length > 0 && h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-m-top_small slds-text-align_center"},
         h("thead", {},
           h("tr", {className: "slds-line-height_reset"},
             h("th", {scope: "col"}, h("div", {className: "slds-truncate", title: "Version"}, "Version")),
@@ -1373,13 +1383,22 @@ class App extends React.Component {
         h("tbody", {},
           details.map(d => {
             const failedInterviews = d.interviewsFound - d.interviewsDeleted;
+            let interviewsLabel;
+            if (!d.interviewsFound) {
+              interviewsLabel = "No interviews";
+            } else {
+              interviewsLabel = `${d.interviewsDeleted} / ${d.interviewsFound}`;
+              if (failedInterviews > 0) {
+                interviewsLabel += ` (${failedInterviews} failed)`;
+              }
+            }
             return h("tr", {key: d.versionId},
               h("td", {}, h("div", {className: "slds-truncate", title: d.versionNumber}, d.versionNumber)),
               h("td", {}, h("div", {className: "slds-truncate"}, d.flowDeleted
                 ? h("span", {className: "slds-text-color_success"}, "Deleted")
                 : h("span", {className: "slds-text-color_error"}, "Failed")
               )),
-              h("td", {}, h("div", {className: "slds-truncate"}, `${d.interviewsDeleted} / ${d.interviewsFound}` + (failedInterviews > 0 ? ` (${failedInterviews} failed)` : ""))),
+              h("td", {}, h("div", {className: "slds-truncate"}, interviewsLabel)),
               h("td", {}, h("div", {className: "slds-truncate", title: d.error || "—"}, d.error || "—"))
             );
           })
@@ -1406,6 +1425,26 @@ class App extends React.Component {
 
     const flow = this.flowScanner.currentFlow;
     const elements = this.flowScanner.extractFlowElements();
+    const totalVersions = flow.versions ? flow.versions.length : 0;
+    let versionCountStyle = {};
+    if (totalVersions > 0 && typeof totalVersions === "number") {
+      const clamped = Math.max(1, Math.min(50, totalVersions));
+      const ratio = (clamped - 1) / 49;
+      const startColor = {r: 46, g: 204, b: 113};
+      const endColor = {r: 231, g: 76, b: 60};
+      const r = Math.round(startColor.r + ((endColor.r - startColor.r) * ratio));
+      const g = Math.round(startColor.g + ((endColor.g - startColor.g) * ratio));
+      const b = Math.round(startColor.b + ((endColor.b - startColor.b) * ratio));
+      versionCountStyle = {
+        backgroundColor: `rgb(${r}, ${g}, ${b})`,
+        color: "#ffffff",
+        padding: "0 0.4rem",
+        borderRadius: "999px",
+        minWidth: "2.25rem",
+        textAlign: "center",
+        display: "inline-block"
+      };
+    }
 
     return h("div", {className: "area"},
       h("div", {className: "flow-info-section", role: "region", "aria-labelledby": "flow-info-title-text"},
@@ -1452,12 +1491,12 @@ class App extends React.Component {
                     h("svg", {className: "info-icon", "aria-hidden": "true"},
                       h("use", {xlinkHref: "symbols.svg#info"})
                     ),
-                    h("div", {className: "tooltip-content"}, "Total number of versions stored in Salesforce for this flow, including active, draft, and obsolete versions.")
+                    h("div", {className: "tooltip-content"}, "Total stored versions for this flow. Salesforce allows up to 50 versions per flow; the badge color shows how close you are to this limit (green = low, red = high).")
                   )
                 ),
                 h("div", {className: "detail-value"},
-                  h("span", {id: "flow-versions-count"}, flow.versions ? flow.versions.length : "Unknown"),
-                  (flow.versions && flow.versions.length > 0) && h("button", {
+                  h("span", {id: "flow-versions-count", style: versionCountStyle}, flow.versions ? flow.versions.length : "Unknown"),
+                  (flow.versions && flow.versions.length > 1) && h("button", {
                     style: {
                       background: "transparent",
                       border: "1px solid #dddbda",

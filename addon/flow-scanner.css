@@ -1497,12 +1497,14 @@ svg.icon:hover {
   transform: translateX(-50%);
   background-color: #24292e;
   color: #ffffff;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 6px;
   z-index: 10000 !important;
-  width: 300px;
-  font-size: 0.8rem;
-  line-height: 1.4;
+  width: 240px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 0.78rem;
+  line-height: 1.35;
   text-align: left;
   pointer-events: none;
   transition: opacity 0.2s, visibility 0.2s;

@@ -1006,10 +1006,59 @@ class App extends React.Component {
     this.confirmPurge = this.confirmPurge.bind(this);
     this.cancelPurge = this.cancelPurge.bind(this);
     this.closePurgeResult = this.closePurgeResult.bind(this);
+    this.retryAfterError = this.retryAfterError.bind(this);
+    this.computePurgeState = this.computePurgeState.bind(this);
   }
 
   componentDidMount() {
     this.initializeFlowScanner();
+  }
+
+  retryAfterError() {
+    this.setState({
+      error: null,
+      isLoading: true,
+      loadingMessage: "Reloading flow data...",
+      loadingDescription: "Please wait while we retry loading the flow."
+    }, () => {
+      this.initializeFlowScanner();
+    });
+  }
+
+  computePurgeState(rawHistorySize) {
+    const flow = this.flowScanner?.currentFlow;
+    const versions = flow?.versions || [];
+    const totalVersions = versions.length;
+    const maxHistory = Math.max(0, totalVersions - 1);
+
+    const historySizeInvalid = isNaN(rawHistorySize) || rawHistorySize < 0;
+    let historySize = rawHistorySize;
+    let purgeWarning = null;
+
+    if (historySizeInvalid) {
+      // If stored value is corrupted, keep everything (delete nothing)
+      historySize = maxHistory;
+      purgeWarning = "Stored Flow History Size value is invalid. No versions will be deleted. Update the setting on the Options page.";
+    } else if (historySize > maxHistory) {
+      historySize = maxHistory;
+    }
+
+    const keepCount = historySize + 1;
+    const sortedVersions = [...versions].sort((a, b) => b.VersionNumber - a.VersionNumber);
+    const activeVersion = sortedVersions.find(v => v.Status === "Active");
+    const activeVersionId = activeVersion ? activeVersion.Id : null;
+    const recentVersions = sortedVersions.slice(0, keepCount);
+    const recentVersionIds = new Set(recentVersions.map(v => v.Id));
+    const versionsToDelete = sortedVersions.filter(v => !recentVersionIds.has(v.Id) && v.Id !== activeVersionId);
+
+    return {
+      historySize,
+      purgeWarning,
+      purgeDetails: {
+        keepCount,
+        toDeleteCount: versionsToDelete.length
+      }
+    };
   }
 
   /**
@@ -1072,6 +1121,8 @@ class App extends React.Component {
 
   async initializeFlowScanner() {
     try {
+      // Clear any previous error state before starting a new initialization
+      this.setState({error: null});
       const params = new URLSearchParams(window.location.search);
       const sfHost = params.get("host");
       const flowDefId = params.get("flowDefId");
@@ -1101,7 +1152,7 @@ class App extends React.Component {
       this.flowScanner = new FlowScanner(sfHost, flowDefId, flowId);
       await this.flowScanner.init();
 
-      this.setState({isLoading: false});
+      this.setState({isLoading: false, error: null});
     } catch (error) {
       this.setState({
         isLoading: false,
@@ -1259,68 +1310,25 @@ class App extends React.Component {
     let newSize = parseInt(e.target.value, 10);
     if (isNaN(newSize) || newSize < 0) return;
 
-    const flow = this.flowScanner.currentFlow;
-    const totalVersions = flow.versions ? flow.versions.length : 0;
-    const maxHistory = Math.max(0, totalVersions - 1);
-
-    if (newSize > maxHistory) {
-      newSize = maxHistory;
-    }
-
-    // Exact calculation logic
-    const keepCount = newSize + 1;
-    // Sort versions DESC (newest first)
-    const sortedVersions = [...(flow.versions || [])].sort((a, b) => b.VersionNumber - a.VersionNumber);
-    // Identify active version ID
-    const activeVersion = sortedVersions.find(v => v.Status === "Active");
-    const activeVersionId = activeVersion ? activeVersion.Id : null;
-    // Identify versions to keep (latest N+1)
-    const recentVersions = sortedVersions.slice(0, keepCount);
-    const recentVersionIds = new Set(recentVersions.map(v => v.Id));
-    // Versions to delete = All versions NOT in keep list AND NOT active
-    const versionsToDelete = sortedVersions.filter(v => !recentVersionIds.has(v.Id) && v.Id !== activeVersionId);
-    const toDeleteCount = versionsToDelete.length;
+    const {historySize, purgeDetails} = this.computePurgeState(newSize);
 
     this.setState({
-      purgeHistorySize: newSize,
-      purgeDetails: {
-        keepCount,
-        toDeleteCount
-      }
+      purgeHistorySize: historySize,
+      purgeDetails,
+      purgeWarning: null
     });
   }
 
   async onPurgeVersions() {
-    let historySize = parseInt(localStorage.getItem("flowScannerHistorySize") || "5", 10);
-    const flow = this.flowScanner.currentFlow;
-    const totalVersions = flow.versions ? flow.versions.length : 0;
-    // Cap the history size if it exceeds available versions (total - 1)
-    const maxHistory = Math.max(0, totalVersions - 1);
-    if (historySize > maxHistory) {
-      historySize = maxHistory;
-    }
-
-    // Exact calculation logic
-    const keepCount = historySize + 1;
-    // Sort versions DESC (newest first)
-    const sortedVersions = [...(flow.versions || [])].sort((a, b) => b.VersionNumber - a.VersionNumber);
-    // Identify active version ID
-    const activeVersion = sortedVersions.find(v => v.Status === "Active");
-    const activeVersionId = activeVersion ? activeVersion.Id : null;
-    // Identify versions to keep (latest N+1)
-    const recentVersions = sortedVersions.slice(0, keepCount);
-    const recentVersionIds = new Set(recentVersions.map(v => v.Id));
-    // Versions to delete = All versions NOT in keep list AND NOT active
-    const versionsToDelete = sortedVersions.filter(v => !recentVersionIds.has(v.Id) && v.Id !== activeVersionId);
-    const toDeleteCount = versionsToDelete.length;
+    const defaultHistorySize = 5;
+    const rawHistorySize = parseInt(localStorage.getItem("flowScannerHistorySize") || String(defaultHistorySize), 10);
+    const {historySize, purgeDetails, purgeWarning} = this.computePurgeState(rawHistorySize);
 
     this.setState({
       showPurgeModal: true,
       purgeHistorySize: historySize,
-      purgeDetails: {
-        keepCount,
-        toDeleteCount
-      }
+      purgeWarning,
+      purgeDetails
     });
   }
 
@@ -1884,7 +1892,13 @@ class App extends React.Component {
       h("div", {className: "empty-state"},
         h("div", {className: "empty-icon"}, "❌"),
         h("h3", {}, "Error Occurred"),
-        h("p", {}, this.state.error)
+        h("p", {}, this.state.error),
+        h("div", {className: "slds-m-top_small"},
+          h("button", {
+            className: "slds-button slds-button_brand",
+            onClick: this.retryAfterError
+          }, "Retry")
+        )
       )
     );
   }
@@ -1975,6 +1989,9 @@ class App extends React.Component {
               `You will keep the current version and ${this.state.purgeDetails.keepCount - 1} previous version${(this.state.purgeDetails.keepCount - 1) === 1 ? "" : "s"}, and delete ${this.state.purgeDetails.toDeleteCount} older version${this.state.purgeDetails.toDeleteCount === 1 ? "" : "s"}.`
             )
         )
+      ),
+      this.state.purgeWarning && h("div", {className: "slds-text-color_error", style: {marginTop: "0.25rem"}},
+        this.state.purgeWarning
       ),
       this.state.purgeDetails
         ? (this.state.purgeDetails.toDeleteCount === 0

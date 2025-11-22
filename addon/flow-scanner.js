@@ -12,12 +12,51 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {getLinkTarget} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 
+// Constants
+const DEFAULT_HISTORY_SIZE = 5;
+const MAX_COMPOSITE_BATCH_SIZE = 25;
+const MAX_QUERY_CHUNK_SIZE = 200;
+const FLOW_SCANNER_RULES_STORAGE_KEY = "flowScannerRules";
+const FLOW_SCANNER_HISTORY_SIZE_KEY = "flowScannerHistorySize";
+
+// Severity level mappings
+const SEVERITY_MAPPING = {
+  ui: {
+    note: "info"
+  },
+  storage: {
+    info: "note"
+  }
+};
+
+const CORE_SEVERITY_TO_UI = {
+  error: "error",
+  critical: "error",
+  warning: "warning",
+  info: "info",
+  information: "info"
+};
+
 // Flow Scanner Rules Configuration
 export const flowScannerKnownConfigurableRules = {
   APIVersion: {configType: "threshold", defaultValue: 50},
   FlowName: {configType: "expression", defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+"},
   CyclomaticComplexity: {configType: "threshold", defaultValue: 25},
 };
+
+/**
+ * Checks if a configuration object has any valid (non-empty, non-null) values.
+ * @param {Object} config - The configuration object to validate.
+ * @returns {boolean} True if at least one valid value exists.
+ */
+function hasValidConfig(config) {
+  if (!config) {
+    return false;
+  }
+  return Object.values(config).some(value =>
+    value !== "" && value !== null && value !== undefined && value !== false
+  );
+}
 
 export function getFlowScannerRules(flowScannerCore) {
   // Retrieve core and beta rules from the scanner library
@@ -54,7 +93,7 @@ export function getFlowScannerRules(flowScannerCore) {
   });
 
   // Stored overrides from Options page
-  const storedRules = JSON.parse(localStorage.getItem("flowScannerRules") || "[]");
+  const storedRules = JSON.parse(localStorage.getItem(FLOW_SCANNER_RULES_STORAGE_KEY) || "[]");
 
   // Merge defaults with stored overrides
   const merged = [];
@@ -67,8 +106,7 @@ export function getFlowScannerRules(flowScannerCore) {
     let configurable = def.configurable;
 
     // Apply stored override config
-    const hasValidStoredConfig = stored && stored.config && Object.values(stored.config).some(v => v !== "" && v !== null && v !== undefined && v !== false);
-    if (hasValidStoredConfig) {
+    if (stored && hasValidConfig(stored.config)) {
       config = stored.config;
     } else if (known) {
       config = {[known.configType]: known.defaultValue};
@@ -85,12 +123,12 @@ export function getFlowScannerRules(flowScannerCore) {
 
     merged.push({
       ...def,
-      checked: stored ? stored.checked : def.checked,
+      checked: stored?.checked ?? def.checked,
       config,
       configType,
       configurable,
-      configValue: stored ? stored.configValue : undefined,
-      severity: stored ? stored.severity || def.severity : def.severity
+      configValue: stored?.configValue,
+      severity: stored?.severity || def.severity
     });
   }
 
@@ -106,15 +144,25 @@ export function getFlowScannerRules(flowScannerCore) {
  * @returns {string} The normalized severity level.
  */
 const normalizeSeverity = (sev, direction = "ui") => {
-  if (direction === "ui") return sev === "note" ? "info" : sev;
-  if (direction === "storage") return sev === "info" ? "note" : sev;
-  return sev;
+  const mapping = SEVERITY_MAPPING[direction];
+  return mapping?.[sev] || sev;
 };
 
+/**
+ * Extracts the primary affected element from a scan result.
+ * @param {Object} result - The scan result object.
+ * @returns {Object} The first affected element or an empty object.
+ */
 function getPrimaryAffectedElement(result) {
-  return (result.affectedElements && result.affectedElements.length > 0) ? result.affectedElements[0] : {};
+  return result.affectedElements?.[0] || {};
 }
 
+/**
+ * Generates a plan for purging old flow versions, determining which versions to keep and delete.
+ * @param {Array} versions - Array of flow version objects.
+ * @param {number} historySize - Number of old versions to keep (in addition to active version).
+ * @returns {Object} An object with keepCount and versionsToDelete.
+ */
 function getFlowVersionPurgePlan(versions, historySize) {
   const keepCount = historySize + 1;
   const sortedVersions = versions.sort((a, b) => b.VersionNumber - a.VersionNumber);
@@ -149,6 +197,22 @@ class FlowScanner {
     this.flowScannerCore = null;
     this.isScanning = false;
     this._elementMap = new Map();
+    // Performance optimization: cache expensive computations
+    this._cachedFlowElementTypes = null;
+    this._cachedExtractedElements = null;
+  }
+
+  /**
+   * Constructs a Salesforce API URL.
+   * @private
+   * @param {string} endpoint - The API endpoint path (without /services/data/vXX).
+   * @param {boolean} [isTooling=false] - Whether to use Tooling API.
+   * @returns {string} The complete API URL.
+   */
+  _buildApiUrl(endpoint, isTooling = false) {
+    const base = isTooling ? "tooling" : "";
+    const prefix = base ? `/services/data/v${apiVersion}/${base}` : `/services/data/v${apiVersion}`;
+    return `${prefix}${endpoint}`;
   }
 
   /**
@@ -260,18 +324,43 @@ class FlowScanner {
   }
 
   /**
+   * Refreshes only the flow versions list without reloading all metadata.
+   * Used after purge operations for performance.
+   * @returns {Promise<Array>} Updated array of flow versions.
+   */
+  async refreshFlowVersions() {
+    try {
+      const versionsRes = await sfConn.rest(
+        this._buildApiUrl(`/query?q=SELECT+Id,VersionNumber,Status+FROM+Flow+WHERE+DefinitionId='${this.flowDefId}'+ORDER+BY+VersionNumber+DESC`, true)
+      );
+      const versions = versionsRes.records || [];
+
+      // Update current flow with new versions
+      if (this.currentFlow) {
+        this.currentFlow.versions = versions;
+      }
+
+      return versions;
+    } catch (error) {
+      const enhancedError = new Error(`Failed to refresh flow versions: ${error.message}`);
+      enhancedError.cause = error;
+      enhancedError.stack = error.stack;
+      throw enhancedError;
+    }
+  }
+
+  /**
    * Retrieves metadata for the current flow from the Salesforce API.
    * @returns {Object} An object containing the flow's metadata.
    * @throws {Error} If the API call fails or the flow is not found.
    */
   async getFlowMetadata() {
     try {
-
       // Query both Flow and FlowDefinitionView objects to get complete metadata
       const [flowRes, fdvRes, versionsRes] = await Promise.all([
-        sfConn.rest(`/services/data/v${apiVersion}/tooling/query?q=SELECT+Id,Metadata+FROM+Flow+WHERE+Id='${this.flowId}'`),
-        sfConn.rest(`/services/data/v${apiVersion}/query/?q=SELECT+Label,ApiName,ProcessType,TriggerType,TriggerObjectOrEventLabel+FROM+FlowDefinitionView+WHERE+DurableId='${this.flowDefId}'`),
-        sfConn.rest(`/services/data/v${apiVersion}/tooling/query?q=SELECT+Id,VersionNumber,Status+FROM+Flow+WHERE+DefinitionId='${this.flowDefId}'+ORDER+BY+VersionNumber+DESC`)
+        sfConn.rest(this._buildApiUrl(`/query?q=SELECT+Id,Metadata+FROM+Flow+WHERE+Id='${this.flowId}'`, true)),
+        sfConn.rest(this._buildApiUrl(`/query/?q=SELECT+Label,ApiName,ProcessType,TriggerType,TriggerObjectOrEventLabel+FROM+FlowDefinitionView+WHERE+DurableId='${this.flowDefId}'`)),
+        sfConn.rest(this._buildApiUrl(`/query?q=SELECT+Id,VersionNumber,Status+FROM+Flow+WHERE+DefinitionId='${this.flowDefId}'+ORDER+BY+VersionNumber+DESC`, true))
       ]);
 
       const flowRecord = flowRes.records?.[0];
@@ -324,7 +413,11 @@ class FlowScanner {
 
       return result;
     } catch (error) {
-      throw new Error("Failed to fetch flow metadata: " + error.message);
+      // Preserve original error stack while adding context
+      const enhancedError = new Error(`Failed to fetch flow metadata: ${error.message}`);
+      enhancedError.cause = error;
+      enhancedError.stack = error.stack;
+      throw enhancedError;
     }
   }
 
@@ -384,11 +477,11 @@ class FlowScanner {
       // Map interviewId -> versionId
       const interviewToVersion = {};
 
-      const versionIdChunks = this._chunk(versionIdsToDelete, 200);
+      const versionIdChunks = this._chunk(versionIdsToDelete, MAX_QUERY_CHUNK_SIZE);
       for (const chunkIds of versionIdChunks) {
         const idsStr = chunkIds.map(id => `'${id.substring(0, 15)}'`).join(",");
         const query = `SELECT Id, FlowVersionViewId FROM FlowInterview WHERE FlowVersionViewId IN (${idsStr})`;
-        const res = await sfConn.rest(`/services/data/v${apiVersion}/query/?q=${encodeURIComponent(query)}`);
+        const res = await sfConn.rest(this._buildApiUrl(`/query/?q=${encodeURIComponent(query)}`));
         if (res.records) {
           res.records.forEach(r => {
             interviewIdsToDelete.push(r.Id);
@@ -405,13 +498,13 @@ class FlowScanner {
       // 2. Construct Composite Requests
       const interviewOperations = interviewIdsToDelete.map(id => ({
         method: "DELETE",
-        url: `/services/data/v${apiVersion}/sobjects/FlowInterview/${id}`,
+        url: this._buildApiUrl(`/sobjects/FlowInterview/${id}`),
         referenceId: `FlowInterview_${id}`
       }));
 
       const versionOperations = versionIdsToDelete.map(id => ({
         method: "DELETE",
-        url: `/services/data/v${apiVersion}/tooling/sobjects/Flow/${id}`,
+        url: this._buildApiUrl(`/sobjects/Flow/${id}`, true),
         referenceId: `Flow_${id}`
       }));
 
@@ -474,29 +567,39 @@ class FlowScanner {
       };
 
     } catch (error) {
-      throw new Error("Failed to purge versions: " + error.message);
+      // Preserve original error for debugging
+      const enhancedError = new Error(`Failed to purge versions: ${error.message}`);
+      enhancedError.cause = error;
+      enhancedError.stack = error.stack;
+      throw enhancedError;
     }
   }
 
   /**
-   * Helper to chunk array
+   * Splits an array into smaller chunks of a specified size.
    * @private
+   * @param {Array} arr - The array to chunk.
+   * @param {number} size - The size of each chunk.
+   * @returns {Array} An array of chunks.
    */
   _chunk(arr, size) {
     return Array.from({length: Math.ceil(arr.length / size)}, (v, i) => arr.slice(i * size, (i * size) + size));
   }
 
   /**
-   * Helper to execute composite batches and return results
+   * Executes Salesforce Composite API requests in batches.
    * @private
+   * @param {Array} operations - Array of composite request operations.
+   * @param {boolean} isTooling - Whether to use Tooling API or standard API.
+   * @returns {Promise<Array>} Array of result objects with success status and error messages.
    */
   async _executeCompositeBatch(operations, isTooling) {
-    if (operations.length === 0) return [];
+    if (operations.length === 0) {
+      return [];
+    }
 
-    const batches = this._chunk(operations, 25);
-    const baseUrl = isTooling
-      ? `/services/data/v${apiVersion}/tooling/composite`
-      : `/services/data/v${apiVersion}/composite`;
+    const batches = this._chunk(operations, MAX_COMPOSITE_BATCH_SIZE);
+    const baseUrl = this._buildApiUrl("/composite", isTooling);
 
     const allResults = [];
 
@@ -534,14 +637,14 @@ class FlowScanner {
             });
           });
         }
-      } catch (e) {
-        console.error("Composite request failed", e);
+      } catch (batchError) {
+        console.error("Composite request failed:", batchError);
         // Mark all in batch as failed
         batch.forEach(op => {
           allResults.push({
             referenceId: op.referenceId,
             success: false,
-            errorMessage: "Batch request failed: " + e.message
+            errorMessage: `Batch request failed: ${batchError.message}`
           });
         });
       }
@@ -551,23 +654,34 @@ class FlowScanner {
 
   /**
    * Gets all flow element types from the core scanner library.
+   * Results are cached since element types don't change during the session.
    * @private
-   * @returns {Array} Array of all flow element types
+   * @returns {Array} Array of all flow element types (nodes, resources, variables).
    */
   _getFlowElementTypes() {
     if (!this.flowScannerCore) {
       return [];
     }
 
-    // Create a temporary flow instance to access the element type definitions
-    const tempFlow = new this.flowScannerCore.Flow("temp", {});
-    return [
-      ...tempFlow.flowNodes,
-      ...tempFlow.flowResources,
-      ...tempFlow.flowVariables
-    ];
+    // Cache result - creating temp Flow is expensive and result never changes
+    if (!this._cachedFlowElementTypes) {
+      const tempFlow = new this.flowScannerCore.Flow("temp", {});
+      this._cachedFlowElementTypes = [
+        ...tempFlow.flowNodes,
+        ...tempFlow.flowResources,
+        ...tempFlow.flowVariables
+      ];
+    }
+
+    return this._cachedFlowElementTypes;
   }
 
+  /**
+   * Iterates over all flow elements in the XML data and calls a callback for each.
+   * @private
+   * @param {Object} xmlData - The flow's XML metadata.
+   * @param {Function} callback - Function to call for each element (receives element and elementType).
+   */
   _forEachFlowXmlElement(xmlData, callback) {
     this._getFlowElementTypes().forEach(elementType => {
       const elements = xmlData[elementType];
@@ -603,16 +717,20 @@ class FlowScanner {
 
   /**
    * Recursively removes keys with `null` values from an object.
-   * @param {object} obj The object to clean.
+   * Modifies the object in place.
+   * @private
+   * @param {Object|Array} obj - The object to clean.
    */
   _removeNullAttributes(obj) {
     if (!obj || typeof obj !== "object") {
       return;
     }
+
     if (Array.isArray(obj)) {
       obj.forEach(item => this._removeNullAttributes(item));
       return;
     }
+
     Object.keys(obj).forEach(key => {
       if (obj[key] === null) {
         delete obj[key];
@@ -814,6 +932,13 @@ class FlowScanner {
     }
   }
 
+  /**
+   * Sets scan results to indicate an unsupported flow type.
+   * @private
+   * @param {string} displayType - The display name of the unsupported flow type.
+   * @param {Array<string>} supportedFlowTypes - List of supported flow types.
+   * @param {string} reason - The reason why it's unsupported ('explicitly_unsupported' or 'not_in_supported_list').
+   */
   _setUnsupportedFlowTypeResult(displayType, supportedFlowTypes, reason) {
     this.scanResults = [{
       isUnsupportedFlow: true,
@@ -936,22 +1061,13 @@ class FlowScanner {
    * @returns {string} The corresponding UI severity level.
    */
   mapSeverity(coreSeverity) {
-    switch (coreSeverity?.toLowerCase()) {
-      case "error":
-      case "critical":
-        return "error";
-      case "warning":
-        return "warning";
-      case "info":
-      case "information":
-        return "info";
-      default:
-        return "info";
-    }
+    const normalized = coreSeverity?.toLowerCase();
+    return CORE_SEVERITY_TO_UI[normalized] || "info";
   }
 
   /**
    * Extracts all elements from the current flow's metadata.
+   * Results are cached since flow data doesn't change after loading.
    * @returns {Array} A list of all flow element objects.
    */
   extractFlowElements() {
@@ -959,13 +1075,16 @@ class FlowScanner {
       return [];
     }
 
+    // Cache result - flow data doesn't change during session
+    if (this._cachedExtractedElements) {
+      return this._cachedExtractedElements;
+    }
+
     const elements = [];
     const xmlData = this.currentFlow.xmlData;
 
     // Use element types from core library
     this._forEachFlowXmlElement(xmlData, (element, elementType) => {
-
-      // Handle both single elements and arrays efficiently
       elements.push({
         name: element?.name || element?.label || element?.apiName || "Unknown",
         type: elementType,
@@ -973,11 +1092,13 @@ class FlowScanner {
       });
     });
 
+    this._cachedExtractedElements = elements;
     return elements;
   }
 
   /**
-   * Sets a message to be displayed when no rules are enabled.
+   * Sets a message to be displayed when no rules are enabled or an error occurs.
+   * This message is used in the UI to provide user feedback.
    * @param {string} message - The message to display.
    */
   setNoRulesEnabledMessage(message) {
@@ -986,6 +1107,40 @@ class FlowScanner {
 }
 
 let h = React.createElement;
+
+// Cache for color calculations to avoid recomputing
+const versionColorCache = new Map();
+
+function calculateVersionCountStyle(totalVersions) {
+  if (totalVersions <= 0 || typeof totalVersions !== "number") {
+    return {};
+  }
+
+  // Check cache first
+  if (versionColorCache.has(totalVersions)) {
+    return versionColorCache.get(totalVersions);
+  }
+
+  const clamped = Math.max(1, Math.min(50, totalVersions));
+  const ratio = (clamped - 1) / 49;
+  const startColor = {r: 46, g: 204, b: 113};
+  const endColor = {r: 231, g: 76, b: 60};
+  const r = Math.round(startColor.r + ((endColor.r - startColor.r) * ratio));
+  const g = Math.round(startColor.g + ((endColor.g - startColor.g) * ratio));
+  const b = Math.round(startColor.b + ((endColor.b - startColor.b) * ratio));
+  const style = {
+    backgroundColor: `rgb(${r}, ${g}, ${b})`,
+    color: "#ffffff",
+    padding: "0 0.4rem",
+    borderRadius: "999px",
+    minWidth: "2.25rem",
+    textAlign: "center",
+    display: "inline-block"
+  };
+
+  versionColorCache.set(totalVersions, style);
+  return style;
+}
 
 function FlowInfoSection(props) {
   const {flow, elements, onPurgeVersions, onToggleDescription, handleMouseDown, shouldIgnoreClick} = props;
@@ -1005,25 +1160,7 @@ function FlowInfoSection(props) {
   }
 
   const totalVersions = flow.versions ? flow.versions.length : 0;
-  let versionCountStyle = {};
-  if (totalVersions > 0 && typeof totalVersions === "number") {
-    const clamped = Math.max(1, Math.min(50, totalVersions));
-    const ratio = (clamped - 1) / 49;
-    const startColor = {r: 46, g: 204, b: 113};
-    const endColor = {r: 231, g: 76, b: 60};
-    const r = Math.round(startColor.r + ((endColor.r - startColor.r) * ratio));
-    const g = Math.round(startColor.g + ((endColor.g - startColor.g) * ratio));
-    const b = Math.round(startColor.b + ((endColor.b - startColor.b) * ratio));
-    versionCountStyle = {
-      backgroundColor: `rgb(${r}, ${g}, ${b})`,
-      color: "#ffffff",
-      padding: "0 0.4rem",
-      borderRadius: "999px",
-      minWidth: "2.25rem",
-      textAlign: "center",
-      display: "inline-block"
-    };
-  }
+  const versionCountStyle = calculateVersionCountStyle(totalVersions);
 
   return h("div", {className: "area"},
     h("div", {className: "flow-info-section", role: "region", "aria-labelledby": "flow-info-title-text"},
@@ -1140,6 +1277,12 @@ function FlowInfoSection(props) {
 
 function ScanSummary(props) {
   const {totalIssues, errorCount, warningCount, infoCount, onExportResults, onExpandAll, onCollapseAll, isStatItemClickable, onStatItemClick} = props;
+
+  // Pre-calculate clickable states to avoid repeated function calls
+  const errorClickable = isStatItemClickable("error", errorCount);
+  const warningClickable = isStatItemClickable("warning", warningCount);
+  const infoClickable = isStatItemClickable("info", infoCount);
+
   return h("div", {className: "summary-body", role: "status", "aria-live": "polite"},
     h("h3", {className: "summary-title"},
       h("span", {className: "results-icon"}, "📊"),
@@ -1152,28 +1295,28 @@ function ScanSummary(props) {
           h("span", {className: "stat-label"}, "Total")
         ),
         h("div", {
-          className: `stat-item error${isStatItemClickable("error", errorCount) ? " clickable" : ""}`,
+          className: `stat-item error${errorClickable ? " clickable" : ""}`,
           role: "group",
           "aria-label": "Error issues",
-          onClick: isStatItemClickable("error", errorCount) ? () => onStatItemClick("error", errorCount) : undefined
+          onClick: errorClickable ? () => onStatItemClick("error", errorCount) : undefined
         },
         h("span", {className: "stat-number", id: "error-issues-count"}, errorCount),
         h("span", {className: "stat-label"}, "Errors")
         ),
         h("div", {
-          className: `stat-item warning${isStatItemClickable("warning", warningCount) ? " clickable" : ""}`,
+          className: `stat-item warning${warningClickable ? " clickable" : ""}`,
           role: "group",
           "aria-label": "Warning issues",
-          onClick: isStatItemClickable("warning", warningCount) ? () => onStatItemClick("warning", warningCount) : undefined
+          onClick: warningClickable ? () => onStatItemClick("warning", warningCount) : undefined
         },
         h("span", {className: "stat-number", id: "warning-issues-count"}, warningCount),
         h("span", {className: "stat-label"}, "Warnings")
         ),
         h("div", {
-          className: `stat-item info${isStatItemClickable("info", infoCount) ? " clickable" : ""}`,
+          className: `stat-item info${infoClickable ? " clickable" : ""}`,
           role: "group",
           "aria-label": "Information issues",
-          onClick: isStatItemClickable("info", infoCount) ? () => onStatItemClick("info", infoCount) : undefined
+          onClick: infoClickable ? () => onStatItemClick("info", infoCount) : undefined
         },
         h("span", {className: "stat-number", id: "info-issues-count"}, infoCount),
         h("span", {className: "stat-label"}, "Info")
@@ -1605,8 +1748,7 @@ class App extends React.Component {
   }
 
   async onPurgeVersions() {
-    const defaultHistorySize = 5;
-    const rawHistorySize = parseInt(localStorage.getItem("flowScannerHistorySize") || String(defaultHistorySize), 10);
+    const rawHistorySize = parseInt(localStorage.getItem(FLOW_SCANNER_HISTORY_SIZE_KEY) || String(DEFAULT_HISTORY_SIZE), 10);
     const {historySize, purgeDetails, purgeWarning} = this.computePurgeState(rawHistorySize);
 
     this.setState({
@@ -1637,8 +1779,19 @@ class App extends React.Component {
   }
 
   async closePurgeResult() {
-    this.setState({showPurgeResultModal: false, purgeResult: null, isLoading: true, loadingMessage: "Refreshing flow data..."});
-    await this.initializeFlowScanner();
+    this.setState({showPurgeResultModal: false, purgeResult: null, isLoading: true, loadingMessage: "Refreshing version count..."});
+
+    try {
+      // Only refresh versions, not the entire flow data
+      await this.flowScanner.refreshFlowVersions();
+
+      // Force React to re-render with updated version data
+      this.setState({isLoading: false});
+    } catch (error) {
+      console.error("Failed to refresh versions:", error);
+      // Fall back to full reload if version refresh fails
+      await this.initializeFlowScanner();
+    }
   }
 
   cancelPurge() {
@@ -1717,7 +1870,7 @@ class App extends React.Component {
 
   renderScanResults() {
     if (!this.flowScanner?.scanResults) {
-      return h("div", {className: "area scan-results-area", style: {display: "none"}});
+      return h("div", {className: RESULTS_AREA_CLASS, style: {display: "none"}});
     }
     const results = this.flowScanner.scanResults;
 
@@ -1736,7 +1889,7 @@ class App extends React.Component {
         introMessage = "Flow Scanner works with specific flow types to ensure accurate analysis.";
       }
 
-      return h("div", {className: "area scan-results-area"},
+      return h("div", {className: RESULTS_AREA_CLASS},
         h("div", {className: "unsupported-flow-state"},
           // Header section using empty-state pattern
           h("div", {className: "unsupported-flow-header"},
@@ -1770,11 +1923,6 @@ class App extends React.Component {
     const totalIssues = results.length;
     const severityOrder = ISSUE_SEVERITY_ORDER;
     const severityLabels = {error: "Errors", warning: "Warnings", info: "Info"};
-    const severityIcons = {
-      error: h("span", {className: "sev-ico error", "aria-label": "Error"}, "❗"),
-      warning: h("span", {className: "sev-ico warning", "aria-label": "Warning"}, "⚠️"),
-      info: h("span", {className: "sev-ico info", "aria-label": "Info"}, "ℹ️")
-    };
     const accordion = this.state.accordion;
     const groupedResults = this.getGroupedResults();
     const errorCount = groupedResults.error.results.length;
@@ -1783,7 +1931,7 @@ class App extends React.Component {
     if (totalIssues === 0) {
       // If no rules are enabled, show a warning and prompt to configure them.
       if (this.flowScanner.noRulesEnabledMessage) {
-        return h("div", {className: "area scan-results-area"},
+        return h("div", {className: RESULTS_AREA_CLASS},
           h("div", {className: "empty-state"},
             h("div", {className: "empty-icon"}, "⚠️"),
             h("h3", {}, "No Rules Enabled"),
@@ -1793,7 +1941,7 @@ class App extends React.Component {
         );
       }
       // Default "no issues found" state.
-      return h("div", {className: "area scan-results-area"},
+      return h("div", {className: RESULTS_AREA_CLASS},
         h("div", {className: "success-state"},
           h("div", {className: "success-icon"}, "✅"),
           h("h3", {}, "No Issues Found"),
@@ -1812,7 +1960,7 @@ class App extends React.Component {
       );
     }
     // Summary panel for when issues are found.
-    return h("div", {className: "area scan-results-area", "aria-labelledby": "results-title", "aria-live": "polite"},
+    return h("div", {className: RESULTS_AREA_CLASS, "aria-labelledby": "results-title", "aria-live": "polite"},
       h(ScanSummary, {
         totalIssues,
         errorCount,
@@ -1865,7 +2013,7 @@ class App extends React.Component {
               h("use", {xlinkHref: "symbols.svg#accordion-chevron"})
               ),
               h("span", {className: "severity-label-group"},
-                severityIcons[severity],
+                SEVERITY_ICONS[severity],
                 h("span", {}, severityLabels[severity])
               )
             )
@@ -1995,7 +2143,7 @@ class App extends React.Component {
       return null;
     }
 
-    return h("div", {className: "area scan-results-area"},
+    return h("div", {className: RESULTS_AREA_CLASS},
       h("div", {className: "empty-state"},
         h("div", {className: "empty-icon"}, "❌"),
         h("h3", {}, "Error Occurred"),
@@ -2077,6 +2225,12 @@ class App extends React.Component {
 
 const MONO_HEADERS = new Set(["Name", "Connects to", "Expression", "Location"]);
 const ISSUE_SEVERITY_ORDER = ["error", "warning", "info"];
+const RESULTS_AREA_CLASS = "area scan-results-area";
+const SEVERITY_ICONS = {
+  error: h("span", {className: "sev-ico error", "aria-label": "Error"}, "❗"),
+  warning: h("span", {className: "sev-ico warning", "aria-label": "Warning"}, "⚠️"),
+  info: h("span", {className: "sev-ico info", "aria-label": "Info"}, "ℹ️")
+};
 
 // Initialize the application
 {

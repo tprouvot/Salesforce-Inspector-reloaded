@@ -1,28 +1,20 @@
 /* global React */
 const h = React.createElement;
 
+const BUTTON_VARIANT_CLASSES = {
+  base: "slds-button",
+  neutral: "slds-button slds-button_neutral",
+  brand: "slds-button slds-button_brand",
+  "brand-outline": "slds-button slds-button_outline-brand",
+  "outline-brand": "slds-button slds-button_outline-brand",
+  destructive: "slds-button slds-button_destructive",
+  "destructive-text": "slds-button slds-button_destructive-text",
+  success: "slds-button slds-button_success",
+  inverse: "slds-button slds-button_inverse"
+};
+
 function getSldsButtonClass(variant) {
-  switch (variant) {
-    case "base":
-      return "slds-button";
-    case "neutral":
-      return "slds-button slds-button_neutral";
-    case "brand":
-      return "slds-button slds-button_brand";
-    case "brand-outline":
-    case "outline-brand":
-      return "slds-button slds-button_outline-brand";
-    case "destructive":
-      return "slds-button slds-button_destructive";
-    case "destructive-text":
-      return "slds-button slds-button_destructive-text";
-    case "success":
-      return "slds-button slds-button_success";
-    case "inverse":
-      return "slds-button slds-button_inverse";
-    default:
-      return "slds-button slds-button_brand";
-  }
+  return BUTTON_VARIANT_CLASSES[variant] || "slds-button slds-button_brand";
 }
 
 function getButtonClassName(customClassName, variant, stretch) {
@@ -97,77 +89,100 @@ export default class ConfirmModal extends React.Component {
   }
 
   handleKeyDown = (e) => {
-    if (e.key === "Escape" || e.key === "Esc") {
-      // Prevent the escape from bubbling to parent handlers when the modal is open.
-      e.stopPropagation();
-      if (!this.props.isOpen) {
-        return;
-      }
-      if (typeof this.props.onCancel === "function") {
-        this.props.onCancel(e);
-      } else if (typeof this.props.onConfirm === "function") {
-        this.props.onConfirm(e);
-      }
+    const isEscapeKey = e.key === "Escape" || e.key === "Esc";
+    if (!isEscapeKey) {
+      return;
+    }
+
+    // Prevent the escape from bubbling to parent handlers when the modal is open.
+    e.stopPropagation();
+
+    if (!this.props.isOpen) {
+      return;
+    }
+
+    // Call onCancel first, fall back to onConfirm if onCancel is not available
+    if (typeof this.props.onCancel === "function") {
+      this.props.onCancel(e);
+    } else if (typeof this.props.onConfirm === "function") {
+      this.props.onConfirm(e);
     }
   };
 
   render() {
-    if (!this.props.isOpen) return null;
+    const {
+      isOpen,
+      title,
+      message,
+      children,
+      onCancel,
+      onConfirm,
+      confirmVariant = "brand",
+      cancelVariant = "neutral",
+      confirmLabel = "Confirm",
+      cancelLabel = "Cancel",
+      confirmButtonClass,
+      cancelButtonClass,
+      confirmStretch,
+      cancelStretch,
+      confirmIconName,
+      confirmIconPosition,
+      cancelIconName,
+      cancelIconPosition,
+      confirmType = "button",
+      cancelType = "button",
+      confirmDisabled,
+      cancelDisabled,
+      confirmTitle,
+      cancelTitle,
+      confirmName,
+      cancelName,
+      confirmValue,
+      cancelValue,
+      confirmTabIndex,
+      cancelTabIndex
+    } = this.props;
 
-    const confirmVariant = this.props.confirmVariant || "brand";
-    const cancelVariant = this.props.cancelVariant || "neutral";
+    if (!isOpen) {
+      return null;
+    }
 
-    const confirmLabel = this.props.confirmLabel == null ? "Confirm" : this.props.confirmLabel;
-    const cancelLabel = this.props.cancelLabel == null ? "Cancel" : this.props.cancelLabel;
+    const confirmClassName = getButtonClassName(confirmButtonClass, confirmVariant, confirmStretch);
+    const cancelClassName = getButtonClassName(cancelButtonClass, cancelVariant, cancelStretch);
 
-    const confirmClassName = getButtonClassName(this.props.confirmButtonClass, confirmVariant, this.props.confirmStretch);
-    const cancelClassName = getButtonClassName(this.props.cancelButtonClass, cancelVariant, this.props.cancelStretch);
-
-    const confirmChildren = buildButtonChildren(
-      confirmLabel,
-      this.props.confirmIconName,
-      this.props.confirmIconPosition
-    );
-
-    const cancelChildren = buildButtonChildren(
-      cancelLabel,
-      this.props.cancelIconName,
-      this.props.cancelIconPosition
-    );
-
-    const confirmType = this.props.confirmType || "button";
-    const cancelType = this.props.cancelType || "button";
+    const confirmChildren = buildButtonChildren(confirmLabel, confirmIconName, confirmIconPosition);
+    const cancelChildren = buildButtonChildren(cancelLabel, cancelIconName, cancelIconPosition);
 
     return h("div", {},
       h("div", {className: "slds-modal slds-fade-in-open", role: "dialog", "aria-modal": "true", "aria-labelledby": "modal-heading-01"},
         h("div", {className: "slds-modal__container"},
           h("div", {className: "slds-modal__header"},
-            h("h2", {id: "modal-heading-01", className: "slds-modal__title slds-text-heading_medium slds-hyphenate"}, this.props.title || "Important")
+            h("h2", {id: "modal-heading-01", className: "slds-modal__title slds-text-heading_medium slds-hyphenate"}, title || "Important")
           ),
           h("div", {className: "slds-modal__content slds-p-around_medium"},
-            this.props.message && h("p", {}, this.props.message),
-            this.props.children
+            message && h("p", {}, message),
+            children
           ),
           h("div", {className: "slds-modal__footer"},
-            this.props.onCancel && h("button", {
-              onClick: this.props.onCancel,
+            onCancel && h("button", {
+              onClick: onCancel,
               className: cancelClassName,
-              disabled: this.props.cancelDisabled,
+              disabled: cancelDisabled,
               type: cancelType,
-              title: this.props.cancelTitle,
-              name: this.props.cancelName,
-              value: this.props.cancelValue,
-              tabIndex: this.props.cancelTabIndex
+              title: cancelTitle,
+              name: cancelName,
+              value: cancelValue,
+              tabIndex: cancelTabIndex
             }, ...cancelChildren),
-            this.props.onConfirm && h("button", {
-              onClick: this.props.onConfirm,
-              disabled: this.props.confirmDisabled,
+            onConfirm && h("button", {
+              onClick: onConfirm,
+              disabled: confirmDisabled,
               className: confirmClassName,
               type: confirmType,
-              title: this.props.confirmTitle,
-              name: this.props.confirmName,
-              value: this.props.confirmValue,
-              tabIndex: this.props.confirmTabIndex
+              title: confirmTitle,
+              name: confirmName,
+              value: confirmValue,
+              tabIndex: confirmTabIndex
             }, ...confirmChildren)
           )
         )

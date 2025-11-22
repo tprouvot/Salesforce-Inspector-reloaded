@@ -320,23 +320,27 @@ button,
   background-color: rgb(0, 112, 210);
   border-color: rgb(0, 112, 210);
   color: #fff;
+  cursor: pointer;
 }
 
 .highlighted:hover,
 .highlighted:active {
   background-color: rgb(0, 95, 178);
   color: #fff;
+  cursor: pointer;
 }
 
 .highlighted:disabled {
   background-color: #c9c7c5;
   border-color: #c9c7c5;
   color: #fff;
+  cursor: not-allowed;
 }
 
 .highlighted:disabled:hover {
   background-color: #c9c7c5;
   color: #fff;
+  cursor: not-allowed;
 }
 
 button:hover,

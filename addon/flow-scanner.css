@@ -1716,6 +1716,11 @@ h1 {
   position: relative;
 }
 
+.purge-results-container .slds-table th,
+.purge-results-container .slds-table td {
+  text-align: center;
+}
+
 .slds-table_bordered tbody td,
 .slds-table_bordered tbody th {
   border-top: 1px solid #dddbda;

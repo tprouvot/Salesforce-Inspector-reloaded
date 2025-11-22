@@ -1371,13 +1371,13 @@ class App extends React.Component {
       h("p", {className: this.state.purgeResult.success ? "slds-text-color_success" : "slds-text-color_error"},
         this.state.purgeResult.message
       ),
-      details && details.length > 0 && h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-m-top_small slds-text-align_center"},
+      details && details.length > 0 && h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-m-top_small"},
         h("thead", {},
           h("tr", {className: "slds-line-height_reset"},
-            h("th", {scope: "col"}, h("div", {className: "slds-truncate", title: "Version"}, "Version")),
-            h("th", {scope: "col"}, h("div", {className: "slds-truncate", title: "Flow Status"}, "Flow Status")),
-            h("th", {scope: "col"}, h("div", {className: "slds-truncate", title: "Interviews Deleted"}, "Interviews Deleted")),
-            h("th", {scope: "col"}, h("div", {className: "slds-truncate", title: "Error"}, "Error"))
+            h("th", {scope: "col"}, h("div", {className: "slds-truncate slds-text-align_center", title: "Version"}, "Version")),
+            h("th", {scope: "col"}, h("div", {className: "slds-truncate slds-text-align_center", title: "Flow Status"}, "Flow Status")),
+            h("th", {scope: "col"}, h("div", {className: "slds-truncate slds-text-align_center", title: "Interviews Deleted"}, "Interviews Deleted")),
+            h("th", {scope: "col"}, h("div", {className: "slds-truncate slds-text-align_center", title: "Error"}, "Error"))
           )
         ),
         h("tbody", {},
@@ -1393,13 +1393,13 @@ class App extends React.Component {
               }
             }
             return h("tr", {key: d.versionId},
-              h("td", {}, h("div", {className: "slds-truncate", title: d.versionNumber}, d.versionNumber)),
-              h("td", {}, h("div", {className: "slds-truncate"}, d.flowDeleted
+              h("td", {}, h("div", {className: "slds-truncate slds-text-align_center", title: d.versionNumber}, d.versionNumber)),
+              h("td", {}, h("div", {className: "slds-truncate slds-text-align_center"}, d.flowDeleted
                 ? h("span", {className: "slds-text-color_success"}, "Deleted")
                 : h("span", {className: "slds-text-color_error"}, "Failed")
               )),
-              h("td", {}, h("div", {className: "slds-truncate"}, interviewsLabel)),
-              h("td", {}, h("div", {className: "slds-truncate", title: d.error || "—"}, d.error || "—"))
+              h("td", {}, h("div", {className: "slds-truncate slds-text-align_center"}, interviewsLabel)),
+              h("td", {}, h("div", {className: "slds-truncate slds-text-align_center", title: d.error || "—"}, d.error || "—"))
             );
           })
         )

@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {getLinkTarget, UserInfoModel} from "./utils.js";
+import {getLinkTarget, UserInfoModel, getBrowserType} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
@@ -289,12 +289,15 @@ class App extends React.Component {
 
     // Create the CometD object.
     const cometd = new CometD();
+    // Detect Firefox to disable worker scheduler due to MV3 CSP restrictions with blob: URLs
+    const isFirefox = getBrowserType() === "moz";
     cometd.configure({
       url: model.sfLink + "/cometd/" + apiVersion,
       requestHeaders: {
         Authorization: "Bearer" + model.sessionId
       },
-      appendMessageTypeToURL: false
+      appendMessageTypeToURL: false,
+      ...(isFirefox && {useWorkerScheduler: false}) // Disable blob: workers for Firefox MV3 compatibility
     });
     cometd.websocketEnabled = false;
 

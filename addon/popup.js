@@ -2506,7 +2506,13 @@ class AllDataBoxShortcut extends React.PureComponent {
             contextPath,
             showToast: this.props.showToast,
           })
-          : h("div", {className: "center"}, "No shortcut found")
+          : h("div", {className: "center"},
+            h("a", {
+              href: `options.html?host=${sfHost}&selectedTab=custom-shortcuts`,
+              target: linkTarget,
+              className: "slds-button slds-button_neutral"
+            }, "Add Custom Shortcut")
+          )
       )
     );
   }

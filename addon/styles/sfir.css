@@ -12,6 +12,7 @@
 
 .sfir-display-popover-trigger:hover .sfir-display-popover-target {
     visibility: visible;
+    z-index: 1002;
 }
 
 .slds-builder-header.sfir-header-override {

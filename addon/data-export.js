@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants, UserInfoModel} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -82,9 +82,6 @@ class Model {
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
-    this.userFullName = "";
-    this.userInitials = "";
-    this.userName = "";
     this.winInnerHeight = 0;
     this.queryAll = false;
     this.queryTooling = false;
@@ -126,11 +123,8 @@ class Model {
     this.soqlPrompt = "";
     this.enableQueryTypoFix = localStorage.getItem("enableQueryTypoFix") == "true";
 
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userFullName = res.userFullName;
-      this.userInitials = this.userFullName.split(" ").map(n => n[0]).join("");
-      this.userName = res.userName;
-    }));
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
 
     if (args.has("query")) {
       this.initialQuery = args.get("query");
@@ -1790,9 +1784,7 @@ class App extends React.Component {
         sfLink: model.sfLink,
         sfHost: model.sfHost,
         spinnerCount: model.spinnerCount,
-        userInitials: model.userInitials,
-        userFullName: model.userFullName,
-        userName: model.userName,
+        ...model.userInfoModel.getProps(),
         utilityItems
       }),
 

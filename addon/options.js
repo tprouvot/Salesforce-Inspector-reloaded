@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
-import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.js";
+import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel} from "./utils.js";
 import {getFlowScannerRules} from "./flow-scanner.js";
 /* global initButton, lightningflowscanner, ColorPicker */
 import {DescribeInfo} from "./data-load.js";
@@ -14,11 +14,7 @@ class Model {
   constructor(sfHost) {
     this.sfHost = sfHost;
     this.sfLink = "https://" + this.sfHost;
-    this.userInfo = "...";
     this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
-    this.userFullName = "";
-    this.userInitials = "";
-    this.userName = "";
     this.spinnerCount = 0;
 
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
@@ -28,12 +24,9 @@ class Model {
     }
 
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { });
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-      this.userFullName = res.userFullName;
-      this.userInitials = this.userFullName.split(" ").map(n => n[0]).join("");
-      this.userName = res.userName;
-    }));
+
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
   }
 
   /**
@@ -1942,9 +1935,7 @@ class App extends React.Component {
         sfLink: model.sfLink,
         sfHost: model.sfHost,
         spinnerCount: model.spinnerCount,
-        userInitials: model.userInitials,
-        userFullName: model.userFullName,
-        userName: model.userName,
+        ...model.userInfoModel.getProps(),
         utilityItems
       }),
       this.state.showToast

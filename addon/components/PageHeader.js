@@ -17,6 +17,10 @@ let h = React.createElement;
  * @param {string} props.userInitials - User's initials for avatar
  * @param {string} props.userFullName - User's full name
  * @param {string} props.userName - User's username
+ * @param {string} [props.userError] - Optional error message to display instead of username (shows warning icon)
+ * @param {string} [props.userInfo] - User's full information
+ * @param {string} [props.userError] - Optional error message to display in the popover
+ * @param {string} [props.userErrorDescription] - Optional error description to display in the popover
  * @param {Array} [props.navItems] - Optional array of navigation items (slot)
  * @param {Array} [props.utilityItems] - Optional array of utility items (slot)
  *
@@ -55,6 +59,8 @@ export function PageHeader(props) {
     userInitials,
     userFullName,
     userName,
+    userError = null,
+    userErrorDescription = null,
     navItems = [],
     utilityItems = [],
     subTitle
@@ -146,7 +152,15 @@ export function PageHeader(props) {
         h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_small sfir-border-none"},
           h("div", {className: "slds-media__body sfir-display-popover-trigger"},
             h("span", {className: "slds-avatar slds-avatar_circle"},
-              h("abbr", {className: "slds-avatar__initials slds-avatar__initials_inverse"}, userInitials)
+              userError
+                ? h("span", {className: "slds-avatar__initials slds-avatar__initials_inverse", title: "User Error"},
+                  h("span", {className: "slds-icon_container"},
+                    h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true", style: {fill: "var(--slds-g-color-error-1)"}},
+                      h("use", {xlinkHref: "symbols.svg#warning"})
+                    )
+                  )
+                )
+                : h("abbr", {className: "slds-avatar__initials slds-avatar__initials_inverse"}, userInitials)
             ),
             h("section", {
               className: "sfir-display-popover-target slds-popover slds-nubbin_top-right",
@@ -154,9 +168,9 @@ export function PageHeader(props) {
             },
             h("div", {id: "popover-body-id", className: "slds-popover__body"},
               h("p", {},
-                h("strong", {className: "slds-truncate"}, userFullName),
+                h("strong", {className: "slds-truncate"}, userError || userFullName),
               ),
-              h("p", {className: "slds-truncate"}, userName)
+              h("p", {className: "slds-truncate"}, userErrorDescription || userName)
             )
             )
           )

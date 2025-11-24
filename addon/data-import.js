@@ -4,6 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {UserInfoModel} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -37,10 +38,6 @@ class Model {
     this.sfLink = "https://" + this.sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
-    this.userInfo = "...";
-    this.userFullName = "";
-    this.userInitials = "";
-    this.userName = "";
     this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
     this.dataError = "";
     this.apiType = "Enterprise";
@@ -74,12 +71,9 @@ class Model {
     this.updateResult(null);
 
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { this.refreshColumn(); });
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-      this.userFullName = res.userFullName;
-      this.userInitials = this.userFullName.split(" ").map(n => n[0]).join("");
-      this.userName = res.userName;
-    }));
+
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
 
     let apiTypeParam = args.get("apitype");
     this.apiType = this.importType.endsWith("__mdt") ? "Metadata" : apiTypeParam ? apiTypeParam : "Enterprise";
@@ -1188,9 +1182,7 @@ class App extends React.Component {
         sfLink: model.sfLink,
         sfHost: model.sfHost,
         spinnerCount: model.spinnerCount,
-        userInitials: model.userInitials,
-        userFullName: model.userFullName,
-        userName: model.userName,
+        ...model.userInfoModel.getProps(),
         utilityItems
       }),
       h("div", {className: "slds-m-top_xx-large sfir-page-container"},

@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {getLinkTarget} from "./utils.js";
+import {getLinkTarget, UserInfoModel} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
@@ -24,11 +24,7 @@ class Model {
     this.spinnerCount = 0;
     this.showHelp = false;
     this.showMetrics = false;
-    this.userInfo = "...";
-    this.userFullName = "";
-    this.userName = "";
     this.orgName = "";
-    this.userInitials = "";
     this.events = [];
     this.selectedChannelType = "";
     this.channels = [];
@@ -51,19 +47,11 @@ class Model {
     this.isProd = false;
     this.eventFilter = "";
 
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-      this.userFullName = res.userFullName;
-      this.userName = res.userName;
-      this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
-      // Generate initials from full name
-      this.userInitials = res.userFullName
-        .split(" ")
-        .map(name => name.charAt(0))
-        .join("")
-        .substring(0, 2)
-        .toUpperCase();
-    }));
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
+
+    // Set orgName from sfHost
+    this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
 
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
@@ -529,9 +517,7 @@ class App extends React.Component {
         sfLink: model.sfLink,
         sfHost: model.sfHost,
         spinnerCount: model.spinnerCount,
-        userInitials: model.userInitials,
-        userFullName: model.userFullName,
-        userName: model.userName,
+        ...model.userInfoModel.getProps(),
         utilityItems: [
           h("div", {
             key: "metrics-btn",

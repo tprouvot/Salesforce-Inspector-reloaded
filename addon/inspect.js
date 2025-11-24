@@ -4,6 +4,7 @@ import {copyToClipboard} from "./data-load.js";
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {UserInfoModel} from "./utils.js";
 
 // Constants
 const GET_FIELD_USAGE_LABEL = "Get field usage";
@@ -52,11 +53,10 @@ class Model {
       //change background color for production
       document.body.classList.add("sfir-prod");
     }
-    this.spinFor("retrieving user info", sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userFullName = res.userFullName;
-      this.userInitials = this.userFullName.split(" ").map(n => n[0]).join("");
-      this.userName = res.userName;
-    }));
+
+    // Initialize user info model - handles all user-related properties
+    // Wrap spinFor to match the expected signature (spinFor in inspect.js takes actionName as first param)
+    this.userInfoModel = new UserInfoModel((promise) => this.spinFor("retrieving user info", promise));
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -1732,9 +1732,7 @@ class App extends React.Component {
           sfLink: model.sfLink,
           sfHost: model.sfHost,
           spinnerCount: model.spinnerCount,
-          userInitials: model.userInitials,
-          userFullName: model.userFullName,
-          userName: model.userName,
+          ...model.userInfoModel.getProps(),
           utilityItems
         }),
         h("div", {className: "slds-m-top_xx-large sfir-page-container"},

@@ -1748,7 +1748,7 @@ class App extends React.Component {
       // Agentforce button (conditional)
       displayButton("export-agentforce", this.state.hideButtonsOption) && h("div", {
         key: "agentforce-btn",
-        className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"
+        className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
       },
       h("button", {
         className: "slds-button slds-button_icon slds-button_icon-border-filled",

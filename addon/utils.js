@@ -203,8 +203,7 @@ export function getBrowserType() {
 }
 
 export function getExtensionId() {
-  const extensionId = (typeof browser !== "undefined" ? browser : chrome).runtime.id;
-  return extensionId;
+  return chrome.i18n.getMessage("@@extension_id");
 }
 
 export function getClientId(sfHost) {

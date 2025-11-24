@@ -38,6 +38,13 @@ if (typeof browser === "undefined") {
       } else {
         parent.postMessage({command: request.command}, "*");
       }
+    } else if (request.message === "tokenUpdated" && request.sfHost) {
+      // Re-read the session from localStorage
+      const newToken = localStorage.getItem(request.sfHost + Constants.ACCESS_TOKEN);
+      if (newToken) {
+        sfConn.sessionId = newToken;
+        sfConn.instanceHostname = request.sfHost;
+      }
     }
   });
 }

@@ -477,3 +477,6 @@ a.icon-url {
 .sfir-vertical-align_top {
   vertical-align: top;
 }
+.sfir-no-border-right{
+  border-right: none;
+}

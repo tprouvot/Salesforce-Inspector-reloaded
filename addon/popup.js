@@ -3443,7 +3443,7 @@ class UserDetails extends React.PureComponent {
                 id: "enableDebugLog",
                 disabled: false,
                 onClick: this.enableDebugLog,
-                className: "slds-button slds-button_neutral",
+                className: "slds-button slds-button_neutral sfir-no-border-right",
                 title: "Enable user debug log",
               },
               "Enable Logs"
@@ -3526,7 +3526,7 @@ class UserDetails extends React.PureComponent {
             {
               href: this.getLoginAsLink(user.Id),
               target: linkTarget,
-              className: "slds-button slds-button_neutral",
+              className: "slds-button slds-button_neutral sfir-no-border-right",
             },
             "LoginAs"
           ),

@@ -3,20 +3,30 @@
  * A gradient-based color picker following SLDS design patterns
  */
 
+/* global React */
+/* eslint-disable react/prop-types */
+import {colorNameToHex} from "../utils/colorUtils.js";
+
 let h = React.createElement;
+
+// Default fallback color if input is invalid
+const DEFAULT_COLOR = "#FF0000";
 
 class ColorPicker extends React.Component {
   constructor(props) {
     super(props);
 
+    // Validate and normalize the initial value
+    const hexValue = colorNameToHex(props.value) || DEFAULT_COLOR;
+
     // Convert initial color to HSV
-    const initialHsv = this.hexToHsv(props.value || "#FF0000");
+    const initialHsv = this.hexToHsv(hexValue);
 
     this.state = {
       hue: initialHsv.h,
       saturation: initialHsv.s,
       brightness: initialHsv.v,
-      hexInput: props.value || "#FF0000",
+      hexInput: props.value || DEFAULT_COLOR,
       adjustedPosition: props.position // Will be updated after mount
     };
 
@@ -44,6 +54,20 @@ class ColorPicker extends React.Component {
       // Adjust position after render to place picker above the icon
       this.adjustPosition();
     }, 0);
+  }
+
+  componentDidUpdate(prevProps) {
+    // Update state if prop value changes externally
+    if (prevProps.value !== this.props.value) {
+      const hexValue = colorNameToHex(this.props.value) || DEFAULT_COLOR;
+      const hsv = this.hexToHsv(hexValue);
+      this.setState({
+        hue: hsv.h,
+        saturation: hsv.s,
+        brightness: hsv.v,
+        hexInput: this.props.value
+      });
+    }
   }
 
   adjustPosition() {
@@ -81,10 +105,13 @@ class ColorPicker extends React.Component {
 
   // Color conversion utilities
   hexToHsv(hex) {
-    hex = hex.replace("#", "");
-    const r = parseInt(hex.substring(0, 2), 16) / 255;
-    const g = parseInt(hex.substring(2, 4), 16) / 255;
-    const b = parseInt(hex.substring(4, 6), 16) / 255;
+    // Ensure we have a valid hex color
+    const normalizedHex = colorNameToHex(hex) || DEFAULT_COLOR;
+    const cleanHex = normalizedHex.replace("#", "");
+
+    const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
+    const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
+    const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
 
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
@@ -188,13 +215,15 @@ class ColorPicker extends React.Component {
   }
 
   handleHexInput(e) {
-    const hex = e.target.value.toUpperCase();
-    this.setState({hexInput: hex});
+    const input = e.target.value;
+    this.setState({hexInput: input});
 
-    const hexRegex = /^#?([0-9A-Fa-f]{6})$/;
-    if (hexRegex.test(hex)) {
-      const formattedHex = hex.startsWith("#") ? hex : `#${hex}`;
-      const hsv = this.hexToHsv(formattedHex);
+    // Try to convert color name to hex (also handles hex codes)
+    const convertedHex = colorNameToHex(input);
+
+    if (convertedHex) {
+      // Valid color name or hex - update the color picker visual state
+      const hsv = this.hexToHsv(convertedHex);
       this.setState({
         hue: hsv.h,
         saturation: hsv.s,
@@ -205,6 +234,7 @@ class ColorPicker extends React.Component {
 
   handleApplyColor() {
     if (this.props.onChange) {
+      // Return the original input (color name or hex) as entered by user
       this.props.onChange(this.state.hexInput);
     }
     if (this.props.onClose) {
@@ -217,6 +247,9 @@ class ColorPicker extends React.Component {
 
     // Calculate the background color for the selected hue
     const hueColor = this.hsvToHex(hue, 1, 1);
+
+    // Calculate the actual hex color for preview (convert color name if needed)
+    const displayColor = colorNameToHex(hexInput) || hexInput;
 
     // Calculate cursor positions
     const hueCursorLeft = hue * 100;
@@ -274,14 +307,14 @@ class ColorPicker extends React.Component {
             className: "slds-input color-picker-hex-input",
             value: hexInput,
             onChange: this.handleHexInput,
-            placeholder: "#000000",
-            maxLength: 7
+            placeholder: DEFAULT_COLOR,
+            maxLength: 20 // Increased to allow for color names
           })
         ),
         h("div", {className: "slds-col slds-shrink-none color-picker-preview-container"},
           h("div", {
             className: "color-picker-preview",
-            style: {backgroundColor: hexInput}
+            style: {backgroundColor: displayColor}
           })
         )
       )

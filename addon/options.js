@@ -2,7 +2,7 @@
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
 import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod} from "./utils.js";
 import {getFlowScannerRules} from "./flow-scanner.js";
-/* global initButton, lightningflowscanner, ColorPicker */
+/* global initButton, lightningflowscanner */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
@@ -1739,7 +1739,7 @@ class FlowScannerRules extends React.Component {
             type: "toggle",
             enhancedTitle: rule.label,
             badge,
-            severity: rule.severity || "info",
+            severity: (rule.severity === "note" ? "info" : rule.severity) || "info",
             description: rule.description,
             // No storageKey - managed by FlowScannerRules component
             key: `flowScannerRule_${rule.name}_${this.state.resetCounter}`,

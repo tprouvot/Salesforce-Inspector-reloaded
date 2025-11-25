@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {getLinkTarget, UserInfoModel, getBrowserType} from "./utils.js";
+import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
@@ -46,6 +46,9 @@ class Model {
     this.popConfirmed = false;
     this.isProd = false;
     this.eventFilter = "";
+
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
 
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
@@ -103,24 +106,6 @@ class Model {
   }
 
 
-  /**
-   * Show the spinner while waiting for a promise.
-   * didUpdate() must be called after calling spinFor.
-   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
-   * @param promise The promise to wait for.
-   */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
-  }
 
   toggleHelp() {
     this.showHelp = !this.showHelp;

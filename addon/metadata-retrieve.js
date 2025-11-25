@@ -1,6 +1,8 @@
 import {sfConn, apiVersion} from "./inspector.js";
 import Toast from "./components/Toast.js";
 import {copyToClipboard} from "./data-load.js";
+import {PageHeader} from "./components/PageHeader.js";
+import {UserInfoModel, createSpinForMethod} from "./utils.js";
 
 class Model {
   constructor(sfHost) {
@@ -15,17 +17,17 @@ class Model {
 
     this.sfHost = sfHost;
     this.sfLink = "https://" + sfHost;
-    this.userInfo = "...";
     this.logMessages = [];
     this.progress = "ready";
     this.statusLink = null;
     this.metadataObjects = [];
     this.includeManagedPackage = localStorage.getItem("includeManagedMetadata") === "true";
-    this.sortMetadataBy = JSON.parse(localStorage.getItem("sortMetadataBy")) || "fullName";
+    this.sortMetadataBy = JSON.parse(localStorage.getItem("sortMevetadataBy")) || "fullName";
     this.packageXml;
     this.metadataFilter = "";
     this.deployRequestId;
     this.allSelected = false;
+    this.orgName = "";
     let deployOptions = localStorage.getItem("deployOptions");
     this.deployOptions = deployOptions ? JSON.parse(deployOptions) : {
       allowMissingFiles: false,
@@ -38,32 +40,24 @@ class Model {
       testLevel: "NoTestRun",
       runTests: null
     };
-    this.spinFor(
-      "getting user info",
-      sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-        this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-      })
-    );
+
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
+
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
+
+    // Set orgName from sfHost
+    this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
   }
 
   didUpdate(cb) {
     if (this.reactCallback) {
       this.reactCallback(cb);
     }
-  }
-
-  spinFor(actionName, promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error(err);
-        this.errorMessages.push("Error " + actionName + ": " + err.message);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
+    if (this.testCallback) {
+      this.testCallback();
+    }
   }
 
   title() {
@@ -638,30 +632,27 @@ class App extends React.Component {
           message: this.state.toastMessage,
           onClose: this.hideToast
         }),
-        h("div", {id: "user-info", className: "slds-border_bottom"},
-          h("a", {href: model.sfLink, className: "sf-link"},
-            h("svg", {viewBox: "0 0 24 24"},
-              h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-            ),
-            " Salesforce Home"
-          ),
-          h("h1", {className: "slds-text-title_bold"}, model.title()),
-          h("span", {}, " / " + model.userInfo),
-          h("div", {className: "flex-right"},
-            h("div", {role: "status", className: "slds-spinner slds-spinner_large", hidden: model.spinnerCount == 0},
-              h("span", {className: "slds-assistive-text"}),
-              h("div", {className: "slds-spinner__dot-a"}),
-              h("div", {className: "slds-spinner__dot-b"}),
-            )
-          ),
-          h("span", {className: "progress progress-" + model.progress},
-            model.progress == "ready" ? "Ready"
-            : model.progress == "working" ? "Retrieving metadata..."
-            : model.progress == "deploying" ? "Deploying metadata..."
-            : model.progress == "done" ? "Finished"
-            : "Error!"
-          ),
-        ),
+        h(PageHeader, {
+          pageTitle: model.title(),
+          subTitle: model.progress == "ready" ? "Ready"
+          : model.progress == "working" ? "Retrieving metadata..."
+          : model.progress == "deploying" ? "Deploying metadata..."
+          : model.progress == "done" ? "Finished"
+          : "Error!",
+          orgName: model.orgName,
+          sfLink: model.sfLink,
+          sfHost: model.sfHost,
+          spinnerCount: model.spinnerCount,
+          ...model.userInfoModel.getProps()
+        }),
+        h("div", {
+          className: "slds-m-top_xx-large",
+          style: {
+            display: "flex",
+            flexDirection: "column",
+            height: "calc(100vh - 4rem)"
+          }
+        },
         h("div", {className: "area", id: "result-area"},
           h("div", {className: "result-bar"},
             h("h1", {className: "slds-text-title_bold"}, "Metadata"),
@@ -812,6 +803,7 @@ class App extends React.Component {
               : h("div", {}, model.logMessages.map(({level, text}, index) => h("div", {key: index, className: "log-" + level}, text)))
           )
         )
+        )
       )
     );
   }
@@ -878,7 +870,6 @@ class ObjectSelector extends React.Component {
 
       let metaFolderProof = this.getMetaFolderProof(meta);
       model.spinFor(
-        "getting child metadata " + meta.xmlName,
         sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metaFolderProof.xmlName, folder: metaFolderProof.directoryName}}).then(res => {
 
           if (res){

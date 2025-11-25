@@ -3,7 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {copyToClipboard, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel} from "./utils.js";
+import {UserInfoModel, createSpinForMethod} from "./utils.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -106,6 +106,9 @@ class Model {
       {key: "deleteccount", endpoint: `/services/data/v${apiVersion}/sobjects/Account/001XXXXXXX`, method: "DELETE", body: ""}
     ];
     this.selectedTemplate = "";
+
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
 
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
@@ -212,24 +215,6 @@ class Model {
     if (this.testCallback) {
       this.testCallback();
     }
-  }
-  /**
-   * Show the spinner while waiting for a promise.
-   * didUpdate() must be called after calling spinFor.
-   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
-   * @param promise The promise to wait for.
-   */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
   }
 
   doSend() {

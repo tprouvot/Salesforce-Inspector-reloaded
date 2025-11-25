@@ -3,6 +3,8 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
+import {PageHeader} from "./components/PageHeader.js";
+import {UserInfoModel, createSpinForMethod} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -36,7 +38,7 @@ class Model {
     this.sfLink = "https://" + this.sfHost;
     this.spinnerCount = 0;
     this.showHelp = false;
-    this.userInfo = "...";
+    this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
     this.dataError = "";
     this.apiType = "Enterprise";
     this.dataFormat = "excel";
@@ -63,15 +65,18 @@ class Model {
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
-      document.body.classList.add("prod");
+      document.body.classList.add("sfir-prod");
     }
     this.importTableResult = null;
     this.updateResult(null);
 
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
+
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { this.refreshColumn(); });
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-    }));
+
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
 
     let apiTypeParam = args.get("apitype");
     this.apiType = this.importType.endsWith("__mdt") ? "Metadata" : apiTypeParam ? apiTypeParam : "Enterprise";
@@ -112,24 +117,6 @@ class Model {
     }
   }
 
-  /**
-   * Show the spinner while waiting for a promise.
-   * didUpdate() must be called after calling spinFor.
-   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
-   * @param promise The promise to wait for.
-   */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
-  }
 
   getFormat(text) {
     const trimmedText = text.trim();
@@ -169,7 +156,7 @@ class Model {
     try {
       data = csvParse(text, separator);
     } catch (e) {
-      this.dataError = "Error: " + e.message;
+      this.dataError = "" + e.message;
       this.updateResult(null);
       return;
     }
@@ -191,7 +178,7 @@ class Model {
     }
 
     if (data.length < 2) {
-      this.dataError = "Error: No records to import";
+      this.dataError = "No records to import";
       this.updateResult(null);
       return;
     }
@@ -377,7 +364,7 @@ class Model {
   importTypeError() {
     let importType = this.importType;
     if (!this.sobjectList().some(s => s.name.toLowerCase() == importType.toLowerCase())) {
-      return "Error: Unknown object";
+      return "Unknown object";
     }
     return "";
   }
@@ -385,7 +372,7 @@ class Model {
   externalIdError() {
     let externalId = this.externalId;
     if (!this.idLookupList().some(s => s.toLowerCase() == externalId.toLowerCase())) {
-      return "Error: Unknown field or not an external ID";
+      return "Unknown field or not an external ID";
     }
     return "";
   }
@@ -413,14 +400,14 @@ class Model {
 
   batchSizeError() {
     if (!(+this.batchSize > 0)) { // This also handles NaN
-      return "Error: Must be a positive number";
+      return "Must be a positive number";
     }
     return "";
   }
 
   batchConcurrencyError() {
     if (!(+this.batchConcurrency > 0)) { // This also handles NaN
-      return "Error: Must be a positive number";
+      return "Must be a positive number";
     }
     if (+this.batchConcurrency > 6) {
       return "Note: More than 6 threads will not help since Salesforce does not support HTTP2";
@@ -713,16 +700,16 @@ class Model {
           return "";
         }
         if (!columnVm.columnValid()) {
-          return "Error: Invalid field name";
+          return "Invalid field name";
         }
         let value = columnVm.columnValue;
         if (!self.columnList().some(s => s.toLowerCase() == value.toLowerCase())) {
-          return "Error: Unknown field";
+          return "Unknown field";
         }
         return "";
       },
       columnUnknownField() {
-        return columnVm.columnError() === "Error: Unknown field";
+        return columnVm.columnError() === "Unknown field";
 
       },
       isColumnSkipped() {
@@ -1154,190 +1141,292 @@ class App extends React.Component {
   }
   render() {
     let {model} = this.props;
+
+    // Build utility items for PageHeader
+    let utilityItems = [
+      h("div", {
+        key: "help-btn",
+        className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
+      },
+      h("button", {
+        className: "slds-button slds-button_icon slds-button_icon-border-filled",
+        title: "Data Import Help",
+        onClick: this.onToggleHelpClick
+      },
+      h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+        h("use", {xlinkHref: "symbols.svg#question"})
+      )
+      )
+      )
+    ];
+
     return h("div", {},
-      h("div", {id: "user-info"},
-        h("a", {href: model.sfLink, className: "sf-link"},
-          h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-          ),
-          " Salesforce Home"
-        ),
-        h("h1", {}, "Data Import"),
-        h("span", {}, " / " + model.userInfo),
-        h("div", {className: "flex-right"},
-          h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
-            h("span", {className: "slds-assistive-text"}),
-            h("div", {className: "slds-spinner__dot-a"}),
-            h("div", {className: "slds-spinner__dot-b"}),
-          ),
-          h("a", {href: "#", id: "help-btn", title: "Import Help", onClick: this.onToggleHelpClick},
-            h("div", {className: "icon"})
-          ),
-        ),
-      ),
-      h("div", {className: "conf-section"},
-        h("div", {className: "conf-subsection"},
-          h("div", {className: "area configure-import"},
-            h("div", {className: "area-header"},
-              h("h1", {}, "Configure Import")
+      h(PageHeader, {
+        pageTitle: "Data Import",
+        orgName: model.orgName,
+        sfLink: model.sfLink,
+        sfHost: model.sfHost,
+        spinnerCount: model.spinnerCount,
+        ...model.userInfoModel.getProps(),
+        utilityItems
+      }),
+      h("div", {className: "slds-m-top_xx-large sfir-page-container"},
+        h("div", {className: "slds-m-around_medium"},
+          h("div", {className: "slds-grid slds-gutters"},
+            h("div", {className: "slds-col slds-size_1-of-2"},
+              h("div", {className: "slds-card"},
+                h("div", {className: "slds-card__header"},
+                  h("h3", {className: "slds-text-heading_small"}, "Configure Import")
+                ),
+                h("div", {className: "slds-card__body slds-card__body_inner"},
+                  h("fieldset", {className: "slds-form-element slds-form-element_compound slds-p-horizontal_xx-small"},
+                    h("div", {className: "slds-form-element__control"},
+                      h("div", {className: "slds-form-element__row"},
+                        h("div", {className: "slds-size_3-of-6 slds-p-horizontal_x-small"},
+                          h("div", {className: "slds-form-element "},
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-api-type", title: "With the tooling API you can import more metadata, but you cannot import regular data. With the metadata API you can import custom metadata types."}, "API Type"),
+                            h("div", {className: "slds-form-element__control"},
+                              h("div", {className: "slds-select_container"},
+                                h("select", {className: "slds-select", id: "form-api-type", value: model.apiType, onChange: this.onApiTypeChange, disabled: model.isWorking()},
+                                  ...allApis.map((api, index) => h("option", {key: index, value: api.value}, api.label))
+                                )
+                              )
+                            )
+                          )
+                        ),
+                        h("div", {className: "slds-size_3-of-6 slds-p-horizontal_x-small"},
+                          h("div", {className: "slds-form-element "},
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-import-action"}, "Action"),
+                            h("div", {className: "slds-form-element__control"},
+                              h("div", {className: "slds-select_container"},
+                                h("select", {className: "slds-select", id: "form-import-action", value: model.importAction, onChange: this.onImportActionChange, disabled: model.isWorking()},
+                                  ...model.availableActions.map((action, index) => h("option", {key: index, value: action.value}, action.label))
+                                )
+                              )
+                            )
+                          )
+                        ),
+                      ),
+                      h("div", {className: "slds-form-element__row"},
+                        h("div", {className: "slds-size_2-of-4 slds-p-horizontal_x-small"},
+                          h("div", {className: "slds-form-element "},
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-search-object"}, "Object"),
+                            h("div", {className: "slds-form-element__control"},
+                              h("div", {className: "slds-grid slds-grid_align-spread"},
+                                h("div", {className: "slds-size_11-of-12 slds-p-right_xx-small"},
+                                  h("input", {id: "form-search-object", className: model.importTypeError() ? "slds-input slds-has-error" : "slds-input", type: "search", value: model.importType, onChange: this.onImportTypeChange, disabled: model.isWorking(), list: "sobjectlist"}),
+                                  h("div", {id: "error-search-object", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.importTypeError()}, model.importTypeError())
+                                ),
+                                h("div", {className: "slds-size_1-of-12 slds-text-align_right"},
+                                  h("a", {className: "slds-button slds-button_icon slds-button_icon-border-filled", href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the selected object"},
+                                    h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                                      h("use", {xlinkHref: "symbols.svg#search"})
+                                    ),
+                                  )
+                                ),
+                              )
+                            ),
+                          )
+                        ),
+                        h("div", {className: "slds-size_3-of-6 slds-p-horizontal_x-small", hidden: model.importAction != "upsert"},
+                          h("div", {className: "slds-form-element"},
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-external-id", title: "Used in upserts to determine if an existing record should be updated or a new record should be created"}, "External ID"),
+                            h("div", {className: "slds-form-element__control"},
+                              h("input", {id: "form-external-id", className: model.externalIdError() ? "slds-input slds-has-error" : "slds-input", type: "text", value: model.externalId, onChange: this.onExternalIdChange, disabled: model.isWorking(), list: "idlookuplist"}),
+                              h("div", {id: "error-external-id", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.externalIdError()}, model.externalIdError())
+                            )
+                          )
+                        ),
+                      ),
+                      h("div", {className: "slds-form-element__row"},
+                        h("div", {className: "slds-size_2-of-4 slds-p-horizontal_x-small"},
+                          h("div", {className: "slds-form-element"},
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-import-data"}, "Data"),
+                            h("div", {className: "slds-form-element__control"},
+                              h("textarea", {id: "data-paste", ariaDescribedby: "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
+                              h("div", {id: "error-data-paste", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.dataError}, model.dataError)
+                            )
+                          )
+                        ),
+                        h("div", {className: "slds-size_1-of-4 slds-p-horizontal_x-small"},
+                          h("div", {className: "slds-form-element"},
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-batch-size"}, "Batch size"),
+                            h("div", {className: "slds-form-element__control"},
+                              h("input", {id: "form-batch-size", className: model.batchSizeError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, disabled: model.isWorking()}),
+                              h("div", {id: "error-batch-size", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchSizeError()}, model.batchSizeError())
+                            )
+                          )
+                        ),
+                        h("div", {className: "slds-size_1-of-4 slds-p-horizontal_x-small"},
+                          h("div", {className: "slds-form-element"},
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-threads"}, "Threads"),
+                            h("div", {className: "slds-form-element__control"},
+                              h("input", {id: "form-threads", className: model.batchConcurrencyError() ? "slds-input slds-has-error" : "slds-input", type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, disabled: model.isWorking()}),
+                              h("div", {id: "error-threads", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
+                            )
+                          )
+                        ),
+                      ),
+                      h("div", {className: "slds-form-element__row"},
+                        h("div", {className: "slds-size_6-of-6 slds-p-horizontal_x-small"},
+                          h("div", {className: "slds-form-element"},
+                            h("span", {className: "slds-form-element__label", htmlFor: "form-custom-headers"}, "Custom Headers"),
+                            h("div", {className: "slds-form-element__control"},
+                              h("textarea", {id: "form-custom-headers", className: "slds-textarea", type: "textarea", rows: 1, placeholder: "Press ↓ for suggestions", value: model.customHeaders, onKeyDown: this.onCustomHeadersKeyPress, onChange: this.onCustomHeadersChange}),
+                            )
+                          )
+                        ),
+                      )
+
+                    )
+                  ),
+                  h("datalist", {id: "sobjectlist"}, model.sobjectList().map(data => h("option", {key: data.name, value: data.name}))),
+                  h("datalist", {id: "idlookuplist"}, model.idLookupList().map(data => h("option", {key: data, value: data}))),
+                  h("datalist", {id: "columnlist"}, model.columnList().map(data => h("option", {key: data, value: data})))
+                )),
             ),
-            h("div", {className: "conf-line"},
-              h("label", {className: "conf-input", title: "With the tooling API you can import more metadata, but you cannot import regular data. With the metadata API you can import custom metadata types."},
-                h("span", {className: "conf-label"}, "API Type"),
-                h("span", {className: "conf-value"},
-                  h("select", {value: model.apiType, onChange: this.onApiTypeChange, disabled: model.isWorking()},
-                    ...allApis.map((api, index) => h("option", {key: index, value: api.value}, api.label))
+            h("div", {className: "slds-col slds-size_1-of-2"},
+              h("div", {className: "slds-card"},
+                h("div", {className: "slds-card__header"},
+                  h("h3", {className: "slds-text-heading_small"}, "Field Mapping")
+                ),
+                h("div", {className: "slds-card__body slds-card__body_inner", style: {maxHeight: "325px", overflowY: "auto"}},
+                  h("div", {className: "slds-p-horizontal_medium"},
+                    model.getRequiredMissingFields().map((field, index) => h("div", {key: index, className: "slds-text-color_error"}, `The field mapping has no '${field}' column`)),
+                    model.columns().map((column, index) => h(ColumnMapper, {key: index, model, column}))
                   )
                 )
-              )
-            ),
-            h("div", {className: "conf-line"},
-              h("label", {className: "conf-input"},
-                h("span", {className: "conf-label"}, "Action"),
-                h("span", {className: "conf-value"},
-                  h("select", {value: model.importAction, onChange: this.onImportActionChange, disabled: model.isWorking()},
-                    ...model.availableActions.map((action, index) => h("option", {key: index, value: action.value}, action.label))
-                  )
-                )
-              )
-            ),
-            h("div", {className: "conf-line"},
-              h("label", {className: "conf-input"},
-                h("span", {className: "conf-label"}, "Object"),
-                h("span", {className: "conf-value"},
-                  h("input", {type: "search", value: model.importType, onChange: this.onImportTypeChange, className: model.importTypeError() ? "object-list confError" : "object-list", disabled: model.isWorking(), list: "sobjectlist"}),
-                  h("div", {className: "conf-error", hidden: !model.importTypeError()}, model.importTypeError())
-                )
-              ),
-              h("a", {className: "button field-info", href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the selected object"},
-                h("div", {className: "button-icon"}),
-              )
-            ),
-            h("div", {className: "conf-line"},
-              h("label", {className: "conf-input"},
-                h("span", {className: "conf-label"}, "Data"),
-                h("span", {className: "conf-value"},
-                  h("textarea", {id: "data", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "confError" : "", disabled: model.isWorking(), readOnly: true, rows: 1}),
-                  h("div", {className: "conf-error", hidden: !model.dataError}, model.dataError)
-                )
-              )
-            ),
-            h("div", {className: "conf-line", hidden: model.importAction != "upsert"},
-              h("label", {className: "conf-input", title: "Used in upserts to determine if an existing record should be updated or a new record should be created"},
-                h("span", {className: "conf-label"}, "External ID:"),
-                h("span", {className: "conf-value"},
-                  h("input", {type: "text", value: model.externalId, onChange: this.onExternalIdChange, className: model.externalIdError() ? "confError" : "", disabled: model.isWorking(), list: "idlookuplist"}),
-                  h("div", {className: "conf-error", hidden: !model.externalIdError()}, model.externalIdError())
-                )
-              )
-            ),
-            h("div", {className: "conf-line"},
-              h("label", {className: "conf-input", title: "The number of records per batch. A higher value is faster but increases the risk of errors due to governor limits."},
-                h("span", {className: "conf-label"}, "Batch size"),
-                h("span", {className: "conf-value button-space"},
-                  h("input", {type: "number", value: model.batchSize, onChange: this.onBatchSizeChange, className: (model.batchSizeError() ? "confError" : "") + " batch-size"}),
-                  h("div", {className: "conf-error", hidden: !model.batchSizeError()}, model.batchSizeError())
-                )
-              ),
-              h("label", {className: "conf-input", title: "The number of batches to execute concurrently. A higher number is faster but increases the risk of errors due to lock congestion."},
-                h("span", {className: "conf-label"}, "Threads"),
-                h("span", {className: "conf-value"},
-                  h("input", {type: "number", value: model.batchConcurrency, onChange: this.onBatchConcurrencyChange, className: (model.batchConcurrencyError() ? "confError" : "") + " batch-size"}),
-                  h("span", {hidden: !model.isWorking()}, model.activeBatches),
-                  h("div", {className: "conf-error", hidden: !model.batchConcurrencyError()}, model.batchConcurrencyError())
-                )
-              )
-            ),
-            h("div", {className: "conf-line"},
-              h("label", {className: "conf-input", title: "JSON Header (AllOrNoneHeader, AssignmentRuleHeader, OwnerChangeOptions ...)"},
-                h("span", {className: "conf-label"}, "Custom Headers"),
-                h("span", {className: "conf-value"},
-                  h("input", {type: "text", placeholder: "Press ↓ for suggestions", value: model.customHeaders, onKeyDown: this.onCustomHeadersKeyPress, onChange: this.onCustomHeadersChange, className: " batch-size"}),
-                )
-              )
-            ),
-            h("datalist", {id: "sobjectlist"}, model.sobjectList().map(data => h("option", {key: data.name, value: data.name}))),
-            h("datalist", {id: "idlookuplist"}, model.idLookupList().map(data => h("option", {key: data, value: data}))),
-            h("datalist", {id: "columnlist"}, model.columnList().map(data => h("option", {key: data, value: data})))
-          ),
-        ),
-        h("div", {className: "conf-subsection columns-mapping"},
-          h("div", {className: "area"},
-            h("div", {className: "area-header"},
-              h("h1", {}, "Field Mapping")
-            ),
-            /* h("div", {className: "columns-label"}, "Field mapping"), */
-            model.getRequiredMissingFields().map((field, index) => h("div", {key: index, className: "conf-error confError"}, `Error: The field mapping has no '${field}' column`)),
-            h("div", {className: "conf-value"}, model.columns().map((column, index) => h(ColumnMapper, {key: index, model, column})))
-          )
-        )
-      ),
-      h("div", {className: "area import-actions"},
-        h("div", {className: "conf-line"},
-          h("div", {className: "flex-wrapper"},
-            h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "highlighted"}, "Run " + model.importActionName),
-            h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "" : "cancel-btn"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
-            h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick}, "Retry Failed"),
-            h("div", {className: "button-group"},
-              h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar"}, "Copy (Excel format)"),
-              h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file"}, "Copy (CSV)"),
-            ),
-          ),
-          h("div", {className: "status-group"},
-            h("div", {},
-              h(StatusBox, {model, name: "Queued"}),
-              h(StatusBox, {model, name: "Processing"})
-            ),
-            h("div", {},
-              h(StatusBox, {model, name: "Succeeded"}),
-              h(StatusBox, {model, name: "Failed"})
-            ),
-          ),
-          h("div", {className: "flex-right"},
-            h("button", {onClick: this.onCopyOptionsClick, title: "Save these import options by pasting them into Excel in the top left cell, just above the header row"}, "Copy Options"),
-            h("button", {onClick: this.onSkipAllUnknownFieldsClick, disabled: !model.canSkipAllUnknownFields() || model.isWorking() || model.importCounts().Queued == 0}, "Skip all unknown fields")
-          ),
-        ),
-        h("div", {hidden: !model.showHelp, className: "help-text"},
-          h("h3", {}, "Import Help"),
-          h("p", {}, "Use for quick one-off data imports."),
-          h("ul", {},
-            h("li", {}, "Enter your CSV or Excel data in the box above.",
-              h("ul", {},
-                h("li", {}, "The input must contain a header row with field API names."),
-                h("li", {}, "To use an external ID for a lookup field, the header row should contain the lookup relation name, the target sobject name and the external ID name separated by colons, e.g. \"MyLookupField__r:MyObject__c:MyExternalIdField__c\"."),
-                h("li", {}, "Empty cells insert null values."),
-                h("li", {}, "Number, date, time and checkbox values must conform to the relevant ", h("a", {href: "http://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes", target: "_blank"}, "XSD datatypes"), "."),
-                h("li", {}, "Columns starting with an underscore are ignored."),
-                h("li", {}, "You can resume a previous import by including the \"__Status\" column in your input."),
-                h("li", {}, "You can supply the other import options by clicking \"Copy options\" and pasting the options into Excel in the top left cell, just above the header row.")
-              )
-            ),
-            h("li", {}, "Select your input format"),
-            h("li", {}, "Select an action (insert, update, upsert or delete)"),
-            h("li", {}, "Enter the API name of the object to import"),
-            h("li", {}, "Press the Run button")
-          ),
-          h("p", {}, "Bulk API is not supported. Large data volumes may freeze or crash your browser.")
-        ),
-      ),
-      h("div", {className: "area result-area"},
-        h("div", {id: "result-table", ref: "scroller"}),
-        model.confirmPopup ? h("div", {},
-          h("div", {id: "confirm-background"},
-            h("div", {id: "confirm-dialog"},
-              h("h1", {}, "Import"),
-              h("p", {}, "You are about to modify your data in Salesforce. This action cannot be undone."),
-              h("p", {}, model.confirmPopup.text),
-              h("div", {className: "dialog-buttons"},
-                h("button", {onClick: this.onConfirmPopupYesClick}, model.importActionName),
-                h("button", {onClick: this.onConfirmPopupNoClick, className: "cancel-btn"}, "Cancel")
               )
             )
+          )),
+        h("div", {className: "slds-card slds-m-horizontal_medium slds-p-around_small"},
+          h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
+            h("div", {className: "slds-col"},
+              h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_brand"}, "Run " + model.importActionName),
+              h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "slds-button slds-button_neutral" : "slds-button slds-button_neutral"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
+              h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick, className: "slds-button slds-button_neutral"}, "Retry Failed"),
+              h("div", {className: "slds-button-group"},
+                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar", className: "slds-button slds-button_neutral slds-m-horizontal_none"}, "Copy (Excel format)"),
+                h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file", className: "slds-button slds-button_neutral"}, "Copy (CSV)"),
+              ),
+            ),
+            h("div", {className: "slds-col"},
+              h("div", {className: "slds-grid slds-grid_align-spread"},
+                h(StatusBox, {model, name: "Queued"}),
+                h(StatusBox, {model, name: "Processing"}),
+                h(StatusBox, {model, name: "Succeeded"}),
+                h(StatusBox, {model, name: "Failed"})
+              ),
+            ),
+            h("div", {className: "slds-col slds-text-align_right"},
+              h("button", {onClick: this.onCopyOptionsClick, title: "Save these import options by pasting them into Excel in the top left cell, just above the header row", className: "slds-button slds-button_neutral"}, "Copy Options"),
+              h("button", {onClick: this.onSkipAllUnknownFieldsClick, disabled: !model.canSkipAllUnknownFields() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_neutral"}, "Skip all unknown fields")
+            ),
+          ),
+          !model.showHelp ? null : h("div", {className: "slds-box slds-theme_info slds-m-top_medium"},
+            h("h3", {className: "slds-text-heading_small slds-m-bottom_small"}, "Import Help"),
+            h("p", {className: "slds-m-bottom_x-small"}, "Use for quick one-off data imports."),
+            h("ul", {className: "slds-list_dotted slds-m-bottom_x-small"},
+              h("li", {}, "Enter your CSV or Excel data in the box above.",
+                h("ul", {className: "slds-list_dotted"},
+                  h("li", {}, "The input must contain a header row with field API names."),
+                  h("li", {}, "To use an external ID for a lookup field, the header row should contain the lookup relation name, the target sobject name and the external ID name separated by colons, e.g. \"MyLookupField__r:MyObject__c:MyExternalIdField__c\"."),
+                  h("li", {}, "Empty cells insert null values."),
+                  h("li", {}, "Number, date, time and checkbox values must conform to the relevant ",
+                    h("a", {href: "http://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes", target: "_blank"}, "XSD datatypes"), "."),
+                  h("li", {}, "Columns starting with an underscore are ignored."),
+                  h("li", {}, "You can resume a previous import by including the \"__Status\" column in your input."),
+                  h("li", {}, "You can supply the other import options by clicking \"Copy options\" and pasting the options into Excel in the top left cell, just above the header row.")
+                )
+              ),
+              h("li", {}, "Select your input format"),
+              h("li", {}, "Select an action (insert, update, upsert or delete)"),
+              h("li", {}, "Enter the API name of the object to import"),
+              h("li", {}, "Press the Run button")
+            ),
+            h("p", {className: "slds-m-bottom_x-small"}, "Bulk API is not supported. Large data volumes may freeze or crash your browser.")
           )
-        ) : null
-      )
-    );
+        ),
+        h(
+          "div",
+          {
+            className: "slds-card slds-m-horizontal_medium slds-m-bottom_medium",
+            style: {
+              flex: "1 1 0",
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column"
+            }
+          },
+          h(
+            "div",
+            {
+              ref: "scroller",
+              style: {
+                flex: "1 1 0",
+                minHeight: 0,
+                maxHeight: "100%",
+                overflowY: "auto"
+              }
+            }
+          ),
+          model.confirmPopup ? h("div", {},
+            h("section",
+              {
+                role: "dialog",
+                tabIndex: -1,
+                className: "slds-modal slds-fade-in-open slds-modal_small"
+              },
+              h("div", {className: "slds-modal__container"},
+                h(
+                  "button",
+                  {className: "slds-button slds-button_icon slds-modal__close", onClick: this.onConfirmPopupNoClick},
+                  h(
+                    "svg",
+                    {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
+                    h("use", {xlinkHref: "symbols.svg#close"})
+                  ),
+                  h("span", {className: "slds-assistive-text"}, "Cancel and close")
+                ),
+                h(
+                  "div",
+                  {className: "slds-modal__content slds-p-around_medium slds-modal__content_headless slds-text-align_center", id: "modal-content-id-1"},
+                  h("div", {className: "slds-notify_container slds-is-relative"},
+                    h("div", {className: "slds-notify slds-notify_toast slds-theme_warning", role: "status"},
+                      h("span", {className: "slds-assistive-text"}, "warning"),
+                      h("span", {className: "slds-icon_container slds-icon-utility-warning slds-m-right_small slds-no-flex slds-align-top"},
+                        h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
+                          h("use", {xlinkHref: "/symbols.svg#warning"})
+                        )
+                      ),
+                      h("div", {className: "slds-notify__content slds-text-align_center"},
+                        h("h2", {className: "slds-text-heading_small"}, "You are about to modify your data in Salesforce. This action cannot be undone.")
+                      )
+                    )
+                  ),
+                  h("br", {}),
+                  h("p", {className: "slds-text-heading_medium"}, model.confirmPopup.text),
+                ),
+                h(
+                  "div",
+                  {className: "slds-modal__footer"},
+                  h(
+                    "button",
+                    {className: "slds-button slds-button_neutral", "aria-label": "Cancel and close", onClick: this.onConfirmPopupNoClick},
+                    "Cancel"
+                  ),
+                  h(
+                    "button",
+                    {className: "slds-button slds-button_brand", onClick: this.onConfirmPopupYesClick},
+                    model.importActionName
+                  )
+                )
+              ),
+            ),
+            h("div", {className: "slds-backdrop slds-backdrop_open", role: "presentation"}))
+          : null
+        )
+      ));
   }
 }
 
@@ -1360,12 +1449,17 @@ class ColumnMapper extends React.Component {
   }
   render() {
     let {model, column} = this.props;
-    let inputClassName = column.columnError() ? "confError" : ((column.isColumnSkipped() && model.greyOutSkippedColumns) ? "conf-skipped" : "");
-    return h("div", {className: "conf-line"},
-      h("label", {htmlFor: "col-" + column.columnIndex}, column.columnOriginalValue),
-      h("div", {className: "flex-wrapper"},
-        h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: inputClassName, disabled: model.isWorking(), id: "col-" + column.columnIndex}),
-        h("div", {className: "conf-error", hidden: !column.columnError()}, h("span", {}, column.columnError()), " ", h("button", {onClick: this.onColumnSkipClick, hidden: model.isWorking(), title: "Don't import this column"}, "Skip"))
+    let inputClassName = column.columnError() ? "slds-input slds-has-error slds-size_8-of-12" : ((column.isColumnSkipped() && model.greyOutSkippedColumns) ? "slds-input slds-disabled slds-input slds-size_12-of-12" : "slds-input slds-size_12-of-12");
+    return h("div", {className: "slds-form-element__row"},
+      h("div", {className: "slds-form-element"},
+        h("span", {className: "slds-form-element__label", htmlFor: "col-" + column.columnIndex}, column.columnOriginalValue),
+        h("div", {className: "slds-form-element__control slds-grid"},
+          h("input", {type: "search", list: "columnlist", value: column.columnValue, onChange: this.onColumnValueChange, className: inputClassName, disabled: model.isWorking(), id: "col-" + column.columnIndex}),
+          h("div", {className: "slds-size_4-of-12 slds-text-align_right", hidden: !column.columnError()},
+            h("span", {className: "slds-text-color_error"}, column.columnError()), " ",
+            h("button", {className: "slds-button slds-button_neutral", onClick: this.onColumnSkipClick, hidden: model.isWorking(), title: "Don't import this column"}, "Skip")
+          )
+        )
       )
     );
   }
@@ -1384,7 +1478,13 @@ class StatusBox extends React.Component {
   }
   render() {
     let {model, name} = this.props;
-    return h("label", {className: model.importCounts()[name] == 0 ? "statusGroupEmpty" : ""}, h("input", {type: "checkbox", checked: model.showStatus[name], onChange: this.onShowStatusChange}), " " + model.importCounts()[name] + " " + name);
+    return h("div", {className: "slds-checkbox slds-m-right_x-small"},
+      h("input", {id: `status-${name}`, type: "checkbox", checked: model.showStatus[name], onChange: this.onShowStatusChange}),
+      h("label", {className: "slds-checkbox__label", htmlFor: `status-${name}`},
+        h("span", {className: "slds-checkbox_faux slds-m-right_xx-small"}, ""),
+        h("span", {className: model.importCounts()[name] == 0 ? "slds-form-element__label sfir-lightgray-color" : "slds-form-element__label"}, model.importCounts()[name] + " " + name)
+      )
+    );
   }
 }
 

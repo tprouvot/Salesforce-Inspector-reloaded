@@ -1,10 +1,11 @@
 /* global React ReactDOM */
-import {getLinkTarget} from "./utils.js";
+import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
 import {copyToClipboard} from "./data-load.js";
 import ConfirmModal from "./components/ConfirmModal.js";
+import {PageHeader} from "./components/PageHeader.js";
 
 const channelTypes = [
   {value: "standardPlatformEvent", label: "Standard Platform Event", prefix: "/event/"},
@@ -24,8 +25,7 @@ class Model {
     this.spinnerCount = 0;
     this.showHelp = false;
     this.showMetrics = false;
-    this.showMetrics = false;
-    this.userInfo = "...";
+    this.orgName = "";
     this.events = [];
     this.selectedChannelType = "";
     this.channels = [];
@@ -48,14 +48,19 @@ class Model {
     this.isProd = false;
     this.eventFilter = "";
 
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-    }));
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
+
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
+
+    // Set orgName from sfHost
+    this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
 
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
-      document.body.classList.add("prod");
+      document.body.classList.add("sfir-prod");
       this.isProd = true;
     }
 
@@ -102,24 +107,6 @@ class Model {
   }
 
 
-  /**
-   * Show the spinner while waiting for a promise.
-   * didUpdate() must be called after calling spinFor.
-   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
-   * @param promise The promise to wait for.
-   */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
-  }
 
   toggleHelp() {
     this.showHelp = !this.showHelp;
@@ -288,12 +275,15 @@ class App extends React.Component {
 
     // Create the CometD object.
     const cometd = new CometD();
+    // Detect Firefox to disable worker scheduler due to MV3 CSP restrictions with blob: URLs
+    const isFirefox = getBrowserType() === "moz";
     cometd.configure({
       url: model.sfLink + "/cometd/" + apiVersion,
       requestHeaders: {
         Authorization: "Bearer" + model.sessionId
       },
-      appendMessageTypeToURL: false
+      appendMessageTypeToURL: false,
+      ...(isFirefox && {useWorkerScheduler: false}) // Disable blob: workers for Firefox MV3 compatibility
     });
     cometd.websocketEnabled = false;
 
@@ -510,185 +500,231 @@ class App extends React.Component {
     let filteredEvents = model.events.filter(event => !event.hidden);
 
     return h("div", {},
-      h("div", {id: "user-info"},
-        h("a", {href: model.sfLink, className: "sf-link"},
-          h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-          ),
-          " Salesforce Home"
-        ),
-        h("h1", {}, "Event Monitor"),
-        h("span", {}, " / " + model.userInfo),
-        h("div", {className: "flex-right"},
-
-          h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
-            h("span", {className: "slds-assistive-text"}),
-            h("div", {className: "slds-spinner__dot-a"}),
-            h("div", {className: "slds-spinner__dot-b"}),
-          ),
-          h("a", {href: "#", id: "metrics-btn", title: "Show Metrics", onClick: this.onToggleMetrics},
-            h("svg", {className: "icon"},
-              h("use", {xlinkHref: "symbols.svg#metrics"})
-            )
-          ),
-          h("a", {href: "#", id: "help-btn", title: "Import Help", onClick: this.onToggleHelp},
-            h("svg", {className: "icon"},
-              h("use", {xlinkHref: "symbols.svg#question"})
-            )
+      h(PageHeader, {
+        pageTitle: "Event Monitor",
+        orgName: model.orgName,
+        sfLink: model.sfLink,
+        sfHost: model.sfHost,
+        spinnerCount: model.spinnerCount,
+        ...model.userInfoModel.getProps(),
+        utilityItems: [
+          h("div", {
+            key: "metrics-btn",
+            className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"
+          },
+          h("button", {
+            className: "slds-button slds-button_icon slds-button_icon-border-filled",
+            title: "Show Metrics",
+            onClick: this.onToggleMetrics
+          },
+          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#metrics"})
           )
-        ),
-      ),
-      h("div", {className: "area"},
-        h("div", {className: "area-header"},
-          h("h1", {}, "Subscribe to a channel")
-        ),
-        h("div", {className: "slds-form"},
-          h("div", {className: "slds-form-element"},
-            h("div", {className: "slds-form-element__control slds-grid slds-gutters_small"},
-              h("div", {className: "slds-col"},
-                h("span", {className: "slds-form-element__label"}, "Channel"),
-                h("input", {
-                  type: "text",
-                  className: "slds-input",
-                  value: model.customChannelPath,
-                  onChange: this.onCustomChannelInput,
-                  disabled: model.isListenning,
-                  placeholder: "/event/LoginAsEventStream"
-                })
-              ),
-              h("div", {className: "slds-col"},
-                h("span", {className: "slds-form-element__label"}, "Channel Type"),
-                h("select", {
-                  className: "slds-select",
-                  value: model.selectedChannelType,
-                  onChange: this.onChannelTypeChange,
-                  disabled: model.isListenning
-                },
-                ...channelTypes.map((type) => h("option", {key: type.value, value: type.value}, type.label))
+          )
+          ),
+          h("div", {
+            key: "help-btn",
+            className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
+          },
+          h("button", {
+            className: "slds-button slds-button_icon slds-button_icon-border-filled",
+            title: "Event Monitor Help",
+            onClick: this.onToggleHelp
+          },
+          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#question"})
+          )
+          )
+          )
+        ]
+      }),
+      h("div", {
+        className: "slds-m-top_xx-large",
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          height: "calc(100vh - 4rem)"
+        }
+      },
+      // Subscribe to Channel Card
+      h("div", {className: "slds-card slds-m-around_medium"},
+        h("div", {className: "slds-card__body slds-card__body_inner"},
+          h("div", {className: "slds-card__header"},
+            h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
+              h("div", {className: "slds-media__body"},
+                h("h2", {className: "slds-card__header-title"}, "Subscribe to a Channel")
+              )
+            )
+          ),
+          h("div", {className: "slds-card__body slds-card__body_inner slds-m-top_small"},
+            h("div", {className: "slds-form"},
+              h("div", {className: "slds-form-element"},
+                h("div", {className: "slds-form-element__control slds-grid slds-gutters_small slds-wrap"},
+                  h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-6"},
+                    h("label", {className: "slds-form-element__label"}, "Custom Channel Path"),
+                    h("input", {
+                      type: "text",
+                      className: "slds-input",
+                      value: model.customChannelPath,
+                      onChange: this.onCustomChannelInput,
+                      disabled: model.isListenning,
+                      placeholder: "/event/LoginAsEventStream"
+                    })
+                  ),
+                  h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-6"},
+                    h("label", {className: "slds-form-element__label"}, "Channel Type"),
+                    h("div", {className: "slds-select_container"},
+                      h("select", {
+                        className: "slds-select",
+                        value: model.selectedChannelType,
+                        onChange: this.onChannelTypeChange,
+                        disabled: model.isListenning
+                      },
+                      ...channelTypes.map((type) => h("option", {key: type.value, value: type.value}, type.label))
+                      )
+                    )
+                  ),
+                  h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-6"},
+                    h("label", {className: "slds-form-element__label"}, "Channel"),
+                    h("div", {className: "slds-select_container"},
+                      h("select", {
+                        className: "slds-select",
+                        value: model.selectedChannel,
+                        onChange: this.onChannelSelection,
+                        disabled: model.isListenning
+                      },
+                      ...model.channels.map((entity) => {
+                        let channelName = entity.name;
+                        return h("option", {key: entity.name, value: channelName}, entity.label);
+                      })
+                      )
+                    )
+                  ),
+                  h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-6"},
+                    h("label", {className: "slds-form-element__label"}, "Replay From"),
+                    h("input", {
+                      type: "number",
+                      className: "slds-input",
+                      value: model.replayId,
+                      onChange: this.onReplayIdChange,
+                      disabled: model.isListenning
+                    })
+                  ),
+                  h("div", {className: "slds-col slds-align-bottom"},
+                    h("button", {
+                      className: "slds-button slds-button_brand",
+                      onClick: this.onSuscribeToChannel,
+                      title: "Subscribe to channel",
+                      disabled: this.disableSubscribe()
+                    }, "Subscribe"),
+                    h("button", {
+                      className: "slds-button slds-button_neutral",
+                      onClick: this.onUnsuscribeToChannel,
+                      title: "Unsubscribe to channel",
+                      disabled: !model.isListenning
+                    }, "Unsubscribe")
+                  )
+                )
+              )
+            ),
+            // Help section
+            !model.showHelp ? null : h("div", {className: "slds-box slds-theme_info slds-m-top_medium"},
+              h("h3", {className: "slds-text-heading_small slds-m-bottom_small"}, "Event Monitor Help"),
+              h("p", {className: "slds-m-bottom_x-small"}, "Use for monitor Platform Event queue."),
+              h("p", {className: "slds-m-bottom_x-small"}, "Subscribe to a channel to see events in the result area. Use 'Replay From' to define the scope."),
+              h("p", {}, "Supports Standard and Custom Platform Events")
+            ),
+            // Metrics section
+            !model.showMetrics ? null : h("div", {className: "slds-box slds-theme_default slds-m-top_medium"},
+              h("h3", {className: "slds-text-heading_small slds-m-bottom_small"}, "Platform Events Limits"),
+              h("div", {className: "slds-m-bottom_small"},
+                peLimits.map(limit =>
+                  h("p", {key: limit.key, className: "slds-m-bottom_x-small"},
+                    `${limit.label}: Remaining ${limit.remaining} out of ${limit.max} (${(limit.consumption * 100).toFixed(2)}% consumed)`)
                 )
               ),
-              h("div", {className: "slds-col"},
-                h("span", {className: "slds-form-element__label"}, "Channel"),
-                h("select", {
-                  className: "slds-select",
-                  value: model.selectedChannel,
-                  onChange: this.onChannelSelection,
-                  disabled: model.isListenning
-                },
-                ...model.channels.map((entity) => {
-                  let channelName = entity.name;
-                  return h("option", {key: entity.name, value: channelName}, entity.label);
-                })
+              h("div", {className: "slds-m-bottom_small"},
+                h("p", {className: "slds-text-body_regular slds-m-bottom_x-small"}, "Query PlatformEventUsageMetric:"),
+                h("div", {className: "slds-button-group"},
+                  h("button", {className: "slds-button slds-button_neutral", onClick: (e) => { this.onMetricsClick(e); }}, "Daily"),
+                  h("button", {className: "slds-button slds-button_neutral", onClick: (e) => { this.onMetricsClick(e); }}, "Hourly"),
+                  h("button", {className: "slds-button slds-button_neutral", onClick: (e) => { this.onMetricsClick(e); }}, "FifteenMinutes")
                 )
               ),
-              h("div", {className: "slds-col"},
-                h("span", {className: "slds-form-element__label"}, "Replay From"),
-                h("input", {
-                  type: "number",
-                  className: "slds-input",
-                  value: model.replayId,
-                  onChange: this.onReplayIdChange,
-                  disabled: model.isListenning
-                })
-              ),
-              h("div", {className: "slds-col slds-align-bottom"},
-                h("button", {
-                  className: "slds-button slds-button_neutral",
-                  onClick: this.onSuscribeToChannel,
-                  title: "Subscribe to channel",
-                  disabled: this.disableSubscribe()
-                }, "Subscribe")
-              ),
-              h("div", {className: "slds-col slds-align-bottom"},
-                h("button", {
-                  className: "slds-button slds-button_neutral",
-                  onClick: this.onUnsuscribeToChannel,
-                  title: "Unsubscribe to channel",
-                  disabled: !model.isListenning
-                }, "Unsubscribe")
+              h("div", {className: "slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info", style: {display: "flex", alignItems: "center"}},
+                h("span", {className: "slds-icon_container slds-icon-utility-info slds-m-right_x-small"},
+                  h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
+                    h("use", {xlinkHref: "symbols.svg#info_alt"})
+                  )
+                ),
+                h("div", {},
+                  "If you are facing the error: No such column 'EventName' on entity 'PlatformEventUsageMetric', please check related ",
+                  h("a", {
+                    href: "https://developer.salesforce.com/docs/atlas.en-us.244.0.api_meta.meta/api_meta/meta_platformeventsettings.htm",
+                    target: getLinkTarget(),
+                    className: "slds-text-link"
+                  }, "documentation"), " to enable it."
+                )
               )
             )
           )
-        ),
-        h("div", {hidden: !model.showHelp, className: "help-text"},
-          h("h3", {}, "Event Monitor Help"),
-          h("p", {}, "Use for monitor Platform Event queue."),
-          h("p", {}, "Subscribe to a channel to see events in the result area. Use 'Replay From' to define the scope."),
-          h("p", {}, "Supports Standard and Custom Platform Events")
-        ),
-        h("div", {hidden: !model.showMetrics, className: "help-text"},
-          h("h3", {}, "Platform Events Limits"),
-          h("div", {},
-            peLimits.map(limit =>
-              h("p", {key: limit.key}, `${limit.label}: Remaining ${limit.remaining} out of ${limit.max} (${(limit.consumption * 100).toFixed(2)}% consumed)`)
-            )
-          ),
-          h("p", {}, "Query PlatformEventUsageMetric:"),
-          h("a", {href: "#", className: "button-space", onClick: (e) => { this.onMetricsClick(e); }}, "Daily"),
-          h("a", {href: "#", className: "button-space", onClick: (e) => { this.onMetricsClick(e); }}, "Hourly"),
-          h("a", {href: "#", onClick: (e) => { this.onMetricsClick(e); }}, "FifteenMinutes"),
-          h("div", {style: {display: "flex", alignItems: "center", gap: "8px"}}, [
-            h("svg", {key: "info-icon", className: "icon", viewBox: "0 0 52 52"},
-              h("use", {xlinkHref: "symbols.svg#info_alt", style: {fill: "#9c9c9c"}})
-            ),
-            h("p", {key: "info-p"}, [
-              "If you are facing the error: No such column 'EventName' on entity 'PlatformEventUsageMetric', please check related ", //TODO enable PlatformEventSettings.enableEnhancedUsageMetrics from extension
-              h("a", {
-                key: "info-link",
-                href: "https://developer.salesforce.com/docs/atlas.en-us.244.0.api_meta.meta/api_meta/meta_platformeventsettings.htm",
-                target: getLinkTarget(),
-              }, "documentation"), " to enable it."
-            ])
-          ])
         )
       ),
-      h("div", {className: "area", id: "result-area"},
-        h("div", {className: "result-bar"},
-          h("h1", {}, "Event Result"),
-          h("div", {className: "button-group"},
-            h("button", {disabled: filteredEvents.length == 0, onClick: this.onCopyAsJson, title: "Copy raw JSON to clipboard"}, "Copy")
+      // Event Result Card
+      h("div", {
+        className: "slds-card slds-m-around_medium",
+        style: {
+          flex: "1 1 0",
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column"
+        }
+      },
+      h("div", {className: "slds-card__header"},
+        h("div", {className: "slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-p-around_small"},
+          h("div", {className: "slds-size_6-of-12"},
+            h("span", {className: "slds-text-heading_small slds-m-right_small"}, "Event Results"),
+            h("button", {
+              className: "slds-button slds-button_neutral",
+              disabled: filteredEvents.length == 0,
+              onClick: this.onCopyAsJson,
+              title: "Copy raw JSON to clipboard"
+            }, "Copy"),
+            h("button", {
+              className: "slds-button slds-button_neutral slds-m-left_x-small",
+              disabled: model.events.length == 0,
+              onClick: this.onClearEvents,
+              title: "Clear Events"
+            }, "Clear")
           ),
-          h("div", {className: "filter-box"},
-            h("svg", {className: "filter-icon"},
-              h("use", {xlinkHref: "symbols.svg#search"})
-            ),
-            h("input", {className: "filter-input", disabled: model.events?.length == 0, placeholder: "Filter", value: model.eventFilter, onChange: this.onEventFilterInput, ref: "eventFilter"}),
-            h("a", {href: "about:blank", className: "filter-clear", title: "Clear filter", onClick: this.onClearAndFocusFilter},
-              h("svg", {className: "filter-clear-icon"},
-                h("use", {xlinkHref: "symbols.svg#clear"})
-              )
-            )
-          ),
-          h("span", {className: "channel-listening"}, model.channelListening),
-          h("span", {className: "channel-error"}, model.channelError),
-          h("span", {className: "result-status flex-right"},
-            h("span", {className: "conf-value"}, filteredEvents.length + " event" + (filteredEvents.length > 1 ? "s" : "")),
-            h("div", {className: "button-group"},
-              h("button", {disabled: model.events.length == 0, onClick: this.onClearEvents, title: "Clear Events"}, "Clear")
-            )
-          ),
-        ),
-        h("div", {id: "result-table"},
-          h("div", {},
-            h("pre", {className: "language-json reset-margin"}, // Set the language class to JSON for Prism to highlight
-              filteredEvents.map((event, index) => {
-                // Create a copy of the event object without the 'hidden' property
-                const {hidden, ...eventWithoutHidden} = event;
-                return h("code", {
-                  onClick: this.onSelectEvent,
-                  id: index,
-                  key: event.event.replayId,
-                  value: eventWithoutHidden, // Use the event without the 'hidden' property
-                  className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`
+          h("div", {className: "slds-size_6-of-12 slds-text-align_right"},
+            h("div", {className: "slds-form-element slds-float_right", style: {display: "inline-block", maxWidth: "300px"}},
+              h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left-right"},
+                h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#search"})
+                ),
+                h("input", {
+                  className: "slds-input",
+                  disabled: model.events?.length == 0,
+                  placeholder: "Filter events...",
+                  value: model.eventFilter,
+                  onChange: this.onEventFilterInput,
+                  ref: "eventFilter"
+                }),
+                model.eventFilter ? h("button", {
+                  className: "slds-button slds-button_icon slds-input__icon slds-input__icon_right",
+                  title: "Clear filter",
+                  onClick: this.onClearAndFocusFilter
                 },
-                JSON.stringify(eventWithoutHidden, null, 4)
-                );
-              },
-              setTimeout(() => {
-                window.Prism.highlightAll();
-              }, 0) // add the timeout to make sure Prism has finished highlighting the code
+                h("svg", {className: "slds-button__icon slds-icon-text-light", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#clear"})
+                )
+                ) : null
               )
-            )
+            ),
+            model.channelListening ? h("span", {className: "slds-badge slds-badge slds-m-right_small slds-m-top_xx-small slds-theme_success"}, model.channelListening) : null,
+            model.channelError ? h("span", {className: "slds-badge slds-badge slds-m-right_small slds-m-top_xx-small slds-theme_error"}, model.channelError) : null,
+            h("span", {className: "slds-badge slds-badge slds-m-right_small slds-m-top_xx-small"}, filteredEvents.length + " event" + (filteredEvents.length != 1 ? "s" : ""))
           )
         ),
         h(ConfirmModal, {
@@ -705,6 +741,8 @@ class App extends React.Component {
         h("p", {}, "Hitting the daily limit can break existing integration!")
           )
       )
+      ) : null,
+      model.confirmPopup ? h("div", {className: "slds-backdrop slds-backdrop_open"}) : null
     );
   }
 }

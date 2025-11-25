@@ -41,6 +41,9 @@ export let sfConn = {
         this.sessionId = accessToken;
         localStorage.setItem(sfHost + Constants.ACCESS_TOKEN, accessToken);
 
+        //send message to popup so that it can update the token
+        chrome.runtime.sendMessage({message: "tokenUpdated", sfHost});
+
         // Clean up code verifier
         localStorage.removeItem(sfHost + Constants.CODE_VERIFIER);
 

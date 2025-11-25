@@ -53,6 +53,96 @@ export async function setOrgInfo(sfHost) {
   return orgInfo;
 }
 
+export async function getUserInfo() {
+  try {
+    const res = await sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {});
+    return {
+      success: true,
+      userInfo: res.userFullName + " / " + res.userName + " / " + res.organizationName,
+      userFullName: res.userFullName,
+      userInitials: res.userFullName.split(" ").map(n => n[0]).join(""),
+      userName: res.userName,
+      userError: null,
+      userErrorDescription: null
+    };
+  } catch (error) {
+    console.error("Error fetching user info:", error);
+    return {
+      success: false,
+      userInfo: "Error loading user info",
+      userFullName: "Unknown User",
+      userInitials: "?",
+      userName: "Unknown",
+      userError: "Error fetching user info",
+      userErrorDescription: "Session is probably expired or invalid"
+    };
+  }
+}
+
+/**
+ * UserInfoModel - Centralized user information management
+ * This class handles fetching and storing user information for any page.
+ *
+ * Usage:
+ * ```
+ * class Model {
+ *   constructor(sfHost) {
+ *     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
+ *   }
+ * }
+ *
+ * // In render:
+ * h(PageHeader, {
+ *   ...this.userInfoModel.getProps(),
+ *   // other props
+ * })
+ * ```
+ */
+export class UserInfoModel {
+  constructor(spinForCallback) {
+    // Initialize with loading state
+    this.userInfo = "...";
+    this.userFullName = "";
+    this.userInitials = "";
+    this.userName = "";
+    this.userError = null;
+    this.userErrorDescription = null;
+
+    // Fetch user info
+    if (spinForCallback) {
+      spinForCallback(this.fetchUserInfo());
+    } else {
+      this.fetchUserInfo();
+    }
+  }
+
+  async fetchUserInfo() {
+    const result = await getUserInfo();
+
+    // Update all properties from result
+    this.userInfo = result.userInfo;
+    this.userFullName = result.userFullName;
+    this.userInitials = result.userInitials;
+    this.userName = result.userName;
+    this.userError = result.userError;
+    this.userErrorDescription = result.userErrorDescription;
+  }
+
+  /**
+   * Get props object for PageHeader component
+   * @returns {Object} Props containing userInitials, userFullName, userName, userError, userErrorDescription
+   */
+  getProps() {
+    return {
+      userInitials: this.userInitials,
+      userFullName: this.userFullName,
+      userName: this.userName,
+      userError: this.userError,
+      userErrorDescription: this.userErrorDescription
+    };
+  }
+}
+
 export class PromptTemplate {
   constructor(promptName) {
     this.promptName = promptName;
@@ -107,14 +197,34 @@ export class PromptTemplate {
   }
 }
 
+/**
+ * Creates a spinFor method for a model context
+ * This method shows a spinner while waiting for a promise.
+ * @param {Object} context - The model context (must have spinnerCount and didUpdate properties)
+ * @returns {Function} A bound spinFor method
+ */
+export function createSpinForMethod(context) {
+  return function(promise) {
+    context.spinnerCount++;
+    promise
+      .catch(err => {
+        console.error("spinFor", err);
+      })
+      .then(() => {
+        context.spinnerCount--;
+        context.didUpdate();
+      })
+      .catch(err => console.log("error handling failed", err));
+  };
+}
+
 // OAuth utilities
 export function getBrowserType() {
   return navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";
 }
 
 export function getExtensionId() {
-  const extensionId = (typeof browser !== "undefined" ? browser : chrome).runtime.id;
-  return extensionId;
+  return chrome.i18n.getMessage("@@extension_id");
 }
 
 export function getClientId(sfHost) {

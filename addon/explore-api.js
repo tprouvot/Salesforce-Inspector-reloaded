@@ -1,5 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
+import {createSpinForMethod} from "./utils.js";
 /* global initButton */
 
 class Model {
@@ -12,6 +13,9 @@ class Model {
 
     this.apiResponse = null;
     this.selectedTextView = null;
+
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
 
     if (args.has("apiUrls")) {
       let apiUrls = args.getAll("apiUrls");
@@ -54,18 +58,6 @@ class Model {
    * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
    * @param promise The promise to wait for.
    */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
-  }
   openSubUrl(subUrl) {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);

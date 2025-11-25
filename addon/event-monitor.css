@@ -45,20 +45,16 @@ body {
   margin: 0;
   height: 100%;
   display: flex;
-  background-color: #b0c4df;
-  background-image: url(images/lightning_blue_background.png);
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: 0px 48px;
+
 }
 .prod {
   background-color: #e0a4b5;
-  background-image: url(images/lightning_red_background.png);
 }
 #root {
   display: flex;
   flex-grow: 1;
   width: 100%;
+  background-color: #f3f2f2;
 }
 [data-reactroot] {
   display: flex;
@@ -522,6 +518,16 @@ code {
   width: -moz-available;
   width: -webkit-fill-available;
   width: fill-available;
+}
+
+/* SLDS overrides for better integration */
+.slds-card {
+  background-color: #fff;
+}
+
+.sfir-full-width {
+  width: 100% !important;
+  flex: 1 1 auto !important;
 }
 .help-text a:visited {
   color: #0176d3;

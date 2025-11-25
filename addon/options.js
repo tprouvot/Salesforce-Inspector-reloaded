@@ -1,29 +1,35 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
-import {nullToEmptyString, getLatestApiVersionFromOrg, Constants} from "./utils.js";
+import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod} from "./utils.js";
 import {getFlowScannerRules} from "./flow-scanner.js";
-/* global initButton, lightningflowscanner, Picker */
+/* global initButton, lightningflowscanner, ColorPicker */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
 import ColorPicker from "./components/ColorPicker.js";
+import {PageHeader} from "./components/PageHeader.js";
 
 class Model {
 
   constructor(sfHost) {
     this.sfHost = sfHost;
     this.sfLink = "https://" + this.sfHost;
-    this.userInfo = "...";
+    this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
+    this.spinnerCount = 0;
+
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
-      document.body.classList.add("prod");
+      document.body.classList.add("sfir-prod");
     }
 
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
+
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { });
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-    }));
+
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
   }
 
   /**
@@ -43,24 +49,6 @@ class Model {
     }
   }
 
-  /**
-   * Show the spinner while waiting for a promise.
-   * didUpdate() must be called after calling spinFor.
-   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
-   * @param promise The promise to wait for.
-   */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
-  }
 
 }
 
@@ -118,7 +106,7 @@ class OptionsTabSelector extends React.Component {
           {option: FaviconOption, props: {key: this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
           {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
           {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
-          {option: Option, props: {type: "text", title: "Banner text", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
+          {option: Option, props: {type: "text", title: "Banner text", inputSize: "6", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
           {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Exclude users from search",
@@ -172,7 +160,7 @@ class OptionsTabSelector extends React.Component {
                   e.target.disabled = true;
                 }
               }}},
-          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders"}}
+          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders", inputSize: "6"}}
         ]
       },
       {
@@ -182,7 +170,7 @@ class OptionsTabSelector extends React.Component {
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
-          {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImportLink", default: true}},
+          {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImpoltrink", default: true}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
               key: "hideExportButtonsOption",
@@ -195,9 +183,9 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
           {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
-          {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100}},
-          {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50}},
-          {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}},
+          {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100, inputSize: "1"}},
+          {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50, inputSize: "1"}},
+          {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", inputSize: "6", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}},
           {option: Option, props: {type: "toggle", title: "Enable Query Typo Fix", key: "enableQueryTypoFix", default: false, tooltip: "Enable automation that removes typos from query input"}},
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}}
         ]
@@ -206,8 +194,8 @@ class OptionsTabSelector extends React.Component {
         id: "data-import",
         tabTitle: "Data Import",
         content: [
-          {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200"}},
-          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6"}},
+          {option: Option, props: {type: "text", title: "Default batch size", key: "defaultBatchSize", placeholder: "200", inputSize: "1"}},
+          {option: Option, props: {type: "text", title: "Default thread size", key: "defaultThreadSize", placeholder: "6", inputSize: "1"}},
           {option: Option, props: {type: "toggle", title: "Grey Out Skipped Columns in Data Import", key: "greyOutSkippedColumns", tooltip: "Control if skipped columns are greyed out or not in data import"}}
         ]
       },
@@ -500,17 +488,19 @@ class ArrowButtonOption extends React.Component {
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_x-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, "Popup arrow button orientation and position")
       ),
-      h("div", {className: "slds-col slds-size_8-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("label", {className: "slds-col slds-size_2-of-12 slds-text-align_right"}, "Orientation:"),
-        h("select", {className: "slds-col slds-size_2-of-12 slds-combobox__form-element slds-input combobox-container", defaultValue: this.state.arrowButtonOrientation, name: "arrowPosition", id: "arrowPosition", onChange: this.onChangeArrowOrientation},
-          h("option", {value: "horizontal"}, "Horizontal"),
-          h("option", {value: "vertical"}, "Vertical")
-        ),
+      h("div", {className: "slds-col slds-size_9-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
+        h("label", {className: "slds-text-align_right slds-m-left_medium slds-m-right_small"}, "Orientation:"),
+        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
+          h("div", {className: "slds-select_container"},
+            h("select", {className: "slds-select", defaultValue: this.state.arrowButtonOrientation, name: "arrowPosition", id: "arrowPosition", onChange: this.onChangeArrowOrientation},
+              h("option", {value: "horizontal"}, "Horizontal"),
+              h("option", {value: "vertical"}, "Vertical")
+            ))),
         h("label", {className: "slds-m-left_medium slds-col slds-size_2-of-12 slds-text-align_right", htmlFor: "arrowPositionSlider"}, "Position (%):"),
-        h("div", {className: "slds-form-element__control slider-container slds-col slds-size_4-of-12"},
+        h("div", {className: "slds-form-element__control slider-container slds-col slds-size_3-of-12"},
           h("div", {className: "slds-slider"},
             h("input", {type: "range", id: "arrowPositionSlider", className: "slds-slider__range", value: nullToEmptyString(this.state.arrowButtonPosition), min: "0", max: "100", step: "1", onChange: this.onChangeArrowPosition}),
             h("span", {className: "slds-slider__value", "aria-hidden": true}, this.state.arrowButtonPosition)
@@ -556,18 +546,21 @@ class APIVersionOption extends React.Component {
   }
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, "API Version",
           h(Tooltip, {tooltip: "Update api version", idKey: "APIVersion"})
         ),
       ),
-      h("div", {className: "slds-col slds-size_5-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_3-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-form-element__control"},
-          h("button", {className: "slds-button slds-button_brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
-        ) : null,
-        h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12"},
-          h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
+      h("div", {className: "slds-col slds-size_10-of-12 slds-form-element"},
+        h("div", {className: "slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
+          h("div", {className: "slds-col slds-size_1-of-12"},
+            h("div", {className: "slds-form-element__control"},
+              h("input", {type: "number", required: true, className: "slds-input", value: nullToEmptyString(this.state.apiVersion.split(".0")[0]), onChange: this.onChangeApiVersion}),
+            )
+          ),
+          this.state.apiVersion != defaultApiVersion ? h("div", {className: "slds-col"},
+            h("button", {className: "slds-button slds-button_brand", onClick: this.onRestoreDefaultApiVersion, title: "Restore Extension's default version"}, "Restore Default")
+          ) : null
         )
       )
     );
@@ -694,7 +687,7 @@ class Option extends React.Component {
 
     if (isToggle) {
       return isEnhanced ? null : (
-        h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
+        h("div", {dir: "ltr", className: "slds-form-element__control slds-col slds-size_1-of-12 slds-p-right_medium"},
           h("label", {className: "slds-checkbox_toggle slds-grid"},
             h("input", {type: "checkbox", required: true, id, "aria-describedby": id, className: "slds-input", checked: this.state[this.key || "checked"], onChange: this.onChangeToggle}),
             h("span", {id, className: "slds-checkbox_faux_container center-label"},
@@ -723,7 +716,7 @@ class Option extends React.Component {
         onChange: this.onChange
       })
       : isSelect ? h("select", {
-        className: isEnhanced ? "slds-input enhanced-option-input" : "slds-input slds-m-right_small",
+        className: isEnhanced ? "slds-select enhanced-option-input" : "slds-select slds-m-right_small",
         value: this.state[this.key],
         onChange: this.onChange
       },
@@ -735,11 +728,9 @@ class Option extends React.Component {
     if (isEnhanced) {
       return inputElement;
     } else {
-      // Standard layout wrapping
-      return h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {className: "slds-form-element__control slds-col slds-size_5-of-12"},
-          inputElement
-        )
+      // Standard layout wrapping - returns just the input wrapper
+      return h("div", {className: "slds-form-element__control"},
+        inputElement
       );
     }
   }
@@ -848,25 +839,33 @@ class Option extends React.Component {
         )
       );
     } else {
-      // Standard layout
+      // Standard layout with responsive grid
       return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
         h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
           h("span", {}, this.title,
             h(Tooltip, {tooltip: this.tooltip, idKey: this.key || `option_${this.title || "unnamed"}`})
           )
         ),
-        this.actionButton && h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-          h("div", {className: "slds-form-element__control"},
-            h("button", {
-              className: "slds-button slds-button_brand",
-              onClick: (e) => this.actionButton.onClick(e, this.props.model),
-              title: this.actionButton.title || "Action"
-            }, this.actionButton.label || "Action")
+        h("div", {className: "slds-col slds-size_9-of-12"},
+          h("div", {className: "slds-grid slds-grid_vertical-align-center slds-gutters_small"},
+            // Input field container with configurable size
+            !isToggle && h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12"},
+              this.renderInputControl(id, false)
+            ),
+            // Action button (if present)
+            this.actionButton && h("div", {className: "slds-col"},
+              h("button", {
+                className: "slds-button slds-button_brand",
+                onClick: (e) => this.actionButton.onClick(e, this.props.model),
+                title: this.actionButton.title || "Action"
+              }, this.actionButton.label || "Action")
+            ),
+            // Toggle control aligned to the right
+            isToggle && h("div", {className: "slds-col slds-grid slds-grid_align-end"},
+              this.renderInputControl(id, false)
+            )
           )
-        ),
-        !isToggle ? this.renderInputControl(id, false)
-        : (h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-        this.renderInputControl(id, false))
+        )
       );
     }
   }
@@ -888,7 +887,7 @@ class FaviconOption extends React.Component {
 
     let favicon = localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) ? localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) : "";
     let isInternal = favicon.length > 0 && !favicon.startsWith("http");
-    let smartMode = true;
+    let smartMode = localStorage.getItem("faviconSmartMode") !== null ? JSON.parse(localStorage.getItem("faviconSmartMode")) : true;
     this.tooltip = props.tooltip;
     this.state = {
       favicon,
@@ -952,12 +951,16 @@ class FaviconOption extends React.Component {
   onToogleSmartMode(e) {
     let smartMode = e.target.checked;
     this.setState({smartMode});
+    localStorage.setItem("faviconSmartMode", smartMode);
   }
 
   toggleColorPicker() {
     if (this.state.showColorPicker) {
       this.setState({showColorPicker: false});
     } else {
+      if (!this.state.favicon.startsWith("#")){
+        this.setState({favicon: null});
+      }
       // Calculate position relative to the icon
       const iconElement = this.colorIconRef;
       if (iconElement) {
@@ -1044,7 +1047,7 @@ class FaviconOption extends React.Component {
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, "Custom favicon (org specific)",
           h(Tooltip, {tooltip: this.tooltip, idKey: this.key || "favicon_option"})
         )
@@ -1085,8 +1088,8 @@ class FaviconOption extends React.Component {
           ) : null
         )
       ),
-      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
-        h("div", {dir: "rtl", className: "slds-form-element__control slds-col slds-size_6-of-12"},
+      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {dir: "ltr", className: "slds-form-element__control slds-col "},
           h("label", {className: "slds-checkbox_toggle slds-grid"},
             h("input", {type: "checkbox", required: true, className: "slds-input", checked: this.state.smartMode, onChange: this.onToogleSmartMode}),
             h("span", {className: "slds-checkbox_faux_container center-label"},
@@ -1096,7 +1099,7 @@ class FaviconOption extends React.Component {
             )
           )
         ),
-        h("div", {className: "slds-form-element__control slds-col slds-size_6-of-12"},
+        h("div", {className: "slds-form-element__control slds-col"},
           h("button", {className: "slds-button slds-button_brand", onClick: this.populateFaviconColors, title: "Use favicon for all orgs I've visited"}, "Populate All")
         )
       )
@@ -1146,11 +1149,10 @@ class MultiCheckboxButtonGroup extends React.Component {
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, this.title)
       ),
-      h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align-center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small slds-m-left_xxx-small"},
         h("div", {className: "slds-form-element__control"},
           h("div", {className: "slds-checkbox_button-group"},
             this.state.checkboxes.map((checkbox, index) =>
@@ -1185,11 +1187,10 @@ class CSVSeparatorOption extends React.Component {
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
-      h("div", {className: "slds-col slds-size_4-of-12 text-align-middle"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, "CSV Separator")
       ),
-      h("div", {className: "slds-col slds-size_7-of-12 slds-form-element slds-grid slds-grid_align_center slds-gutters_small"}),
-      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-end slds-grid_vertical-align_center slds-gutters_small"},
+      h("div", {className: "slds-col slds-size_1-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align_center slds-gutters_small slds-m-left_xxx-small"},
         h("input", {type: "text", id: "csvSeparatorInput", className: "slds-input slds-text-align_right slds-m-right_small", placeholder: "CSV Separator", value: nullToEmptyString(this.state.csvSeparator), onChange: this.onChangeCSVSeparator})
       )
     );
@@ -1830,7 +1831,7 @@ class App extends React.Component {
         const importedData = JSON.parse(event.target.result);
 
         for (const [key, value] of Object.entries(importedData)) {
-          if (filterKeys) {
+          if (filterKeys && Array.isArray(filterKeys)) {
             // Only import keys that match the filter
             if (filterKeys.some(filter => key.startsWith(filter))) {
               localStorage.setItem(key, value);
@@ -1856,7 +1857,7 @@ class App extends React.Component {
 
         this.setState({
           showToast: true,
-          toastMessage: filterKeys ? "Flow Scanner rules imported successfully!" : "Options Imported Successfully!",
+          toastMessage: Array.isArray(filterKeys) ? "Flow Scanner rules imported successfully!" : "Options Imported Successfully!",
           toastVariant: "success",
           toastTitle: "Success"
         });
@@ -1883,37 +1884,49 @@ class App extends React.Component {
   render() {
     const {showToast, toastMessage, toastVariant, toastTitle} = this.state;
     let {model} = this.props;
-    return h("div", {},
-      h("div", {id: "user-info", className: "slds-border_bottom"},
-        h("a", {href: model.sfLink, className: "sf-link"},
-          h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-          ),
-          " Salesforce Home"
-        ),
-        h("h1", {className: "slds-text-title_bold"}, "Options"),
-        h("span", {}, " / " + model.userInfo),
-        h("div", {className: "flex-right"},
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: () => this.exportOptions(), title: "Export Options"},
-            h("svg", {className: "slds-button__icon"},
-              h("use", {xlinkHref: "symbols.svg#download"})
-            )
-          ),
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Import Options"},
-            h("svg", {className: "slds-button__icon"},
-              h("use", {xlinkHref: "symbols.svg#upload"})
-            )
-          ),
-          // Hidden file input for importing options
-          h("input", {
-            type: "file",
-            style: {display: "none"},
-            ref: "fileInput",
-            onChange: this.importOptions,
-            accept: "application/json"
-          })
+
+    // Define utility items for this page (injected as "slots")
+    const utilityItems = [
+      // Export Options button
+      h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"},
+        h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: () => this.exportOptions(), title: "Export Options"},
+          h("svg", {className: "slds-button__icon"},
+            h("use", {xlinkHref: "symbols.svg#download"})
+          )
         )
       ),
+      // Import Options button
+      h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"},
+        h("button", {
+          className: "slds-button slds-button_icon slds-button_icon-border-filled",
+          onClick: () => this.refs.fileInput.click(),
+          title: "Import Options"
+        },
+        h("svg", {className: "slds-button__icon"},
+          h("use", {xlinkHref: "symbols.svg#upload"})
+        )
+        ),
+        // Hidden file input for importing options
+        h("input", {
+          type: "file",
+          style: {display: "none"},
+          ref: "fileInput",
+          onChange: this.importOptions,
+          accept: "application/json"
+        })
+      )
+    ];
+
+    return h("div", {},
+      h(PageHeader, {
+        pageTitle: "Options",
+        orgName: model.orgName,
+        sfLink: model.sfLink,
+        sfHost: model.sfHost,
+        spinnerCount: model.spinnerCount,
+        ...model.userInfoModel.getProps(),
+        utilityItems
+      }),
       this.state.showToast
         && h(Toast, {
           variant: this.state.toastVariant,
@@ -1921,8 +1934,10 @@ class App extends React.Component {
           message: this.state.toastMessage,
           onClose: this.hideToast
         }),
-      h("div", {className: "main-container slds-card slds-m-around_small", id: "main-container_header"},
-        h(OptionsTabSelector, {model, appRef: this})
+      h("div", {className: "slds-m-top_xx-large sfir-page-container"},
+        h("div", {className: "slds-card slds-m-around_medium main-container", id: "main-container_header"},
+          h(OptionsTabSelector, {model, appRef: this})
+        )
       )
     );
   }

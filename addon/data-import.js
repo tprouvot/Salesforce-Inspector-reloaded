@@ -4,7 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, copyToClipboard, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel} from "./utils.js";
+import {UserInfoModel, createSpinForMethod} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -70,6 +70,9 @@ class Model {
     this.importTableResult = null;
     this.updateResult(null);
 
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
+
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { this.refreshColumn(); });
 
     // Initialize user info model - handles all user-related properties
@@ -114,24 +117,6 @@ class Model {
     }
   }
 
-  /**
-   * Show the spinner while waiting for a promise.
-   * didUpdate() must be called after calling spinFor.
-   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
-   * @param promise The promise to wait for.
-   */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
-  }
 
   getFormat(text) {
     const trimmedText = text.trim();

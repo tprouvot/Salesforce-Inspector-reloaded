@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants, UserInfoModel} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants, UserInfoModel, createSpinForMethod} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -75,12 +75,16 @@ class Model {
     this.queryInput = null;
     this.filterColumn = ""; // Default filter column
     this.initialQuery = "";
+    this.spinnerCount = 0;
+
+    // Initialize spinFor method early - needed by describeInfo and userInfoModel
+    this.spinFor = createSpinForMethod(this);
+
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => {
       this.queryAutocompleteHandler({newDescribe: true});
       this.didUpdate();
     });
     this.sfLink = "https://" + sfHost;
-    this.spinnerCount = 0;
     this.showHelp = false;
     this.winInnerHeight = 0;
     this.queryAll = false;
@@ -357,24 +361,6 @@ class Model {
     if (this.testCallback) {
       this.testCallback();
     }
-  }
-  /**
-   * Show the spinner while waiting for a promise.
-   * didUpdate() must be called after calling spinFor.
-   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
-   * @param promise The promise to wait for.
-   */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
   }
   /**
    * SOQL query autocomplete handling.

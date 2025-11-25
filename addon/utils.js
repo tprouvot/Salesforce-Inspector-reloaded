@@ -197,6 +197,27 @@ export class PromptTemplate {
   }
 }
 
+/**
+ * Creates a spinFor method for a model context
+ * This method shows a spinner while waiting for a promise.
+ * @param {Object} context - The model context (must have spinnerCount and didUpdate properties)
+ * @returns {Function} A bound spinFor method
+ */
+export function createSpinForMethod(context) {
+  return function(promise) {
+    context.spinnerCount++;
+    promise
+      .catch(err => {
+        console.error("spinFor", err);
+      })
+      .then(() => {
+        context.spinnerCount--;
+        context.didUpdate();
+      })
+      .catch(err => console.log("error handling failed", err));
+  };
+}
+
 // OAuth utilities
 export function getBrowserType() {
   return navigator.userAgent?.includes("Chrome") ? "chrome" : "moz";

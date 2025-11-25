@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
-import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel} from "./utils.js";
+import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod} from "./utils.js";
 import {getFlowScannerRules} from "./flow-scanner.js";
 /* global initButton, lightningflowscanner, ColorPicker */
 import {DescribeInfo} from "./data-load.js";
@@ -22,6 +22,9 @@ class Model {
       //change background color for production
       document.body.classList.add("sfir-prod");
     }
+
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
 
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { });
 
@@ -46,24 +49,6 @@ class Model {
     }
   }
 
-  /**
-   * Show the spinner while waiting for a promise.
-   * didUpdate() must be called after calling spinFor.
-   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
-   * @param promise The promise to wait for.
-   */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
-  }
 
 }
 

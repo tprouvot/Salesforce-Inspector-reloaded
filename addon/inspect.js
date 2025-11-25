@@ -1808,6 +1808,9 @@ class ColumnsVisibiltyBox extends React.Component {
     rowList.toggleAvailableColumns();
     rowList.model.didUpdate();
   }
+  onPopoverClick(e) {
+    e.stopPropagation();
+  }
   render() {
     let {rowList, label, content} = this.props;
     return h("span", {className: "slds-icon_container slds-icon-utility-chevrondown slds-current-color slds-m-left_small", onClick: this.onAvailableColumnsClick},
@@ -1817,7 +1820,8 @@ class ColumnsVisibiltyBox extends React.Component {
       rowList.availableColumns ? h("section", {
         className: "slds-popover slds-dynamic-menu",
         role: "dialog",
-        style: {position: "absolute", left: "-0.5rem", top: "48px", maxHeight: "80vh", overflow: "scroll"}
+        style: {position: "absolute", left: "-0.5rem", top: "48px", maxHeight: "80vh", overflow: "scroll"},
+        onClick: this.onPopoverClick.bind(this)
       },
       h("div", {className: "slds-popover__body slds-p-horizontal_none"},
         h("div", {className: "slds-media"},
@@ -1846,15 +1850,17 @@ class ColumnVisibiltyToggle extends React.Component {
   }
   render() {
     let {rowList, name, disabled} = this.props;
+    const checkboxId = `checkbox-${name}`;
     return h("li", {},
       h("div", {className: "slds-checkbox slds-p-bottom_xx-small"},
         h("input", {
           type: "checkbox",
+          id: checkboxId,
           checked: rowList.selectedColumnMap.has(name),
           onChange: this.onShowColumnChange,
           disabled
         }),
-        h("label", {className: "slds-checkbox__label", htmlFor: "checkbox-unique-id-81"},
+        h("label", {className: "slds-checkbox__label", htmlFor: checkboxId},
           h("span", {className: "slds-checkbox_faux"}),
           h("span", {className: "slds-form-element__label slds-p-left_x-small"}, rowList.createColumn(name).label)
         )

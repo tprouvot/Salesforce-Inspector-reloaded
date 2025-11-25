@@ -1389,10 +1389,10 @@ function PurgeModal(props) {
   h("div", {style: {minHeight: "1.2em", paddingTop: "0.25rem"}},
     purgeDetails && (
       purgeDetails.toDeleteCount === 0
-        ? h("div", {className: "slds-form-element__help"},
+        ? h("div", {className: "slds-text-color_weak"},
           "With this setting, no older versions will be deleted."
         )
-        : h("div", {className: "slds-form-element__help"},
+        : h("div", {className: "slds-text-color_weak"},
           `You will keep the current version and ${purgeDetails.keepCount - 1} previous version${(purgeDetails.keepCount - 1) === 1 ? "" : "s"}, and delete ${purgeDetails.toDeleteCount} older version${purgeDetails.toDeleteCount === 1 ? "" : "s"}.`
         )
     )

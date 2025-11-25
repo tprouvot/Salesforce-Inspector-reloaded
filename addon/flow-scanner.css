@@ -343,8 +343,8 @@ button,
   cursor: not-allowed;
 }
 
-button:hover,
-.button:hover {
+button:not(.slds-button):hover,
+.button:not(.slds-button):hover {
   background-color: #f8f9fa;
   border-color: #0070d2;
   color: #0070d2;
@@ -1595,37 +1595,7 @@ h1 {
   margin: 0 0 16px 0;
 }
 
-/* SLDS Button Icon Overrides */
-.slds-button_icon {
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  min-width: 32px; /* Override generic button min-width */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
 
-.slds-button__icon {
-  width: 1rem;
-  height: 1rem;
-  fill: currentColor;
-  pointer-events: none;
-}
-
-.slds-button_icon-border-filled {
-  border: 1px solid #dddbda;
-  background-color: #fff;
-  color: #706e6b;
-}
-
-.slds-button_icon-border-filled:hover,
-.slds-button_icon-border-filled:focus {
-  border-color: #0070d2;
-  color: #005fb2;
-  background-color: #f4f6f9;
-}
 
 
 .slds-m-left_x-small {

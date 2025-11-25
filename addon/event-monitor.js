@@ -726,23 +726,58 @@ class App extends React.Component {
             model.channelError ? h("span", {className: "slds-badge slds-badge slds-m-right_small slds-m-top_xx-small slds-theme_error"}, model.channelError) : null,
             h("span", {className: "slds-badge slds-badge slds-m-right_small slds-m-top_xx-small"}, filteredEvents.length + " event" + (filteredEvents.length != 1 ? "s" : ""))
           )
-        ),
-        h(ConfirmModal, {
-          isOpen: model.confirmPopup,
-          title: "Important",
-          onConfirm: this.confirmPopupYes,
-          onCancel: this.confirmPopupNo,
-          confirmLabel: "Subscribe",
-          cancelLabel: "Cancel",
-          confirmVariant: model.isProd ? "destructive" : "brand"
-        },
-              model.isProd ? h("p", {}, "WARNING : You are on a PRODUCTION.") : null,
-              h("p", {}, "Use this option sparingly. Subscribing with the -2 option when a large number of event messages are stored can slow performance."),
-        h("p", {}, "Hitting the daily limit can break existing integration!")
+        )
+      ),
+      h("div", {
+        className: "slds-card__body slds-card__body_inner",
+        style: {
+          flex: "1 1 0",
+          minHeight: 0,
+          maxHeight: "100%",
+          overflowY: "auto"
+        }
+      },
+      h("div", {},
+        h("pre", {className: "language-json reset-margin"},
+          filteredEvents.map((event, index) => {
+            const {hidden, ...eventWithoutHidden} = event;
+            return h("code", {
+              onClick: this.onSelectEvent,
+              id: index,
+              key: event.event.replayId,
+              value: eventWithoutHidden,
+              className: `language-json event-box ${model.selectedEventIndex == index ? "event-selected" : "event-not-selected"}`
+            },
+            JSON.stringify(eventWithoutHidden, null, 4)
+            );
+          },
+          setTimeout(() => {
+            if (window.Prism) {
+              window.Prism.highlightAll();
+            }
+          }, 0)
           )
+        )
       )
+      )
+      )
+      ),
+      h(ConfirmModal, {
+        isOpen: model.confirmPopup,
+        title: "Important",
+        onConfirm: this.confirmPopupYes,
+        onCancel: this.confirmPopupNo,
+        confirmLabel: "Subscribe",
+        cancelLabel: "Cancel",
+        confirmVariant: model.isProd ? "destructive" : "brand"
+      },
+      model.isProd ? h("div", {className: "slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error slds-m-bottom_small"},
+        h("span", {className: "slds-assistive-text"}, "warning"),
+        h("h2", {}, "WARNING: You are on a PRODUCTION environment.")
       ) : null,
-      model.confirmPopup ? h("div", {className: "slds-backdrop slds-backdrop_open"}) : null
+      h("p", {className: "slds-m-bottom_small"}, "Use this option sparingly. Subscribing with the -2 option when a large number of event messages are stored can slow performance."),
+      h("p", {}, "Hitting the daily limit can break existing integration!")
+      )
     );
   }
 }

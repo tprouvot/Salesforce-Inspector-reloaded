@@ -1,5 +1,7 @@
 /* global React ReactDOM field-creator.js */
 import {sfConn, apiVersion} from "./inspector.js";
+import {PageHeader} from "./components/PageHeader.js";
+import {UserInfoModel, createSpinForMethod} from "./utils.js";
 
 let h = React.createElement;
 
@@ -936,6 +938,10 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
+    const {sfHost} = props;
+    this.sfHost = sfHost;
+    this.sfLink = "https://" + sfHost;
+    this.spinnerCount = 0;
     this.state = {
       objects: [], // Store all objects fetched from API
       profiles: [],
@@ -951,15 +957,28 @@ class App extends React.Component {
       objectSearch: "",
       fieldErrorMessage: "",
       errorMessageClickable: false,
-      userInfo: "...",
       filteredObjects: [],
       includeManagedPackage: localStorage.getItem("fieldCreatorIncludeManaged") === "true"
     };
+
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
+
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
+
+    // Set orgName from sfHost
+    this.orgName = sfHost.split(".")[0]?.toUpperCase() || "";
+
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
-      document.body.classList.add("prod");
+      document.body.classList.add("sfir-prod");
     }
+  }
+
+  didUpdate() {
+    this.forceUpdate();
   }
 
   // Utility method to check if an object is a platform event
@@ -982,7 +1001,6 @@ class App extends React.Component {
   componentDidMount() {
     this.fetchObjects();
     this.fetchPermissionSets();
-    this.fetchUserInfo();
   }
 
   handleObjectSearch = (e) => {
@@ -1067,17 +1085,6 @@ class App extends React.Component {
   };
 
 
-  fetchUserInfo() {
-    const wsdl = sfConn.wsdl(apiVersion, "Partner");
-    sfConn.soap(wsdl, "getUserInfo", {})
-      .then(res => {
-        const userInfo = `${res.userFullName} / ${res.userName} / ${res.organizationName}`;
-        this.setState({userInfo});
-      })
-      .catch(err => {
-        console.error("Error fetching user info:", err);
-      });
-  }
 
   setFieldPermissions(field, fieldId, objectName) {
     if (!field.profiles || !Array.isArray(field.profiles)) {
@@ -1638,30 +1645,45 @@ class App extends React.Component {
   };
 
   render() {
-    const {fields, showModal, showProfilesModal, currentFieldIndex, userInfo, selectedObject} = this.state;
+    const {fields, showModal, showProfilesModal, currentFieldIndex, selectedObject} = this.state;
 
     return (
       h("div", {onClick: () => this.setState({
         filteredObjects: []
       })},
-      h("div", {id: "user-info"},
-        h("a", {href: `https://${sfConn.instanceHostname}`, className: "sf-link"},
-          h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-          ),
-          " Salesforce Home"
-        ),
-        h("h1", {}, "Field Creator"),
-        h("span", {}, " / " + userInfo),
-        h("div", {className: "flex-right"},
-          h("span", {className: "slds-assistive-text"}),
-          h("div", {className: "slds-spinner__dot-a"}),
-          h("div", {className: "slds-spinner__dot-b"}),
-        ),
-        h("a", {href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/field-creator/", target: "_blank", id: "help-btn", title: "Field Creator Help", onClick: null},
-          h("div", {className: "icon"})
-        ),
-      ),
+      h(PageHeader, {
+        pageTitle: "Field Creator",
+        orgName: this.orgName,
+        sfLink: this.sfLink,
+        sfHost: this.sfHost,
+        spinnerCount: this.spinnerCount,
+        ...this.userInfoModel.getProps(),
+        utilityItems: [
+          h("div", {
+            key: "help-btn",
+            className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
+          },
+          h("a", {
+            href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/field-creator/",
+            target: "_blank",
+            title: "Field Creator Help",
+            className: "slds-button slds-button_icon slds-button_icon-border-filled"
+          },
+          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#question"})
+          )
+          )
+          )
+        ]
+      }),
+      h("div", {
+        className: "slds-m-top_xx-large",
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          height: "calc(100vh - 4rem)"
+        }
+      },
       h("div", {className: "relativePosition"},
         h("div", {className: "area firstHeader relativePosition zIndex1"},
           h("div", {className: "form-group"},
@@ -1812,6 +1834,7 @@ class App extends React.Component {
           )
         )
       ))
+      )
     );
   }
 }

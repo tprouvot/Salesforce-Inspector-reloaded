@@ -1,0 +1,50 @@
+:root {
+    --sfir-custom-color: var(--slds-g-color-surface-inverse-1, var(--slds-g-color-brand-base-20));
+}
+
+.sfir-display-popover-target {
+    visibility: hidden;
+}
+
+.sfir-display-popover-trigger {
+    cursor: pointer;
+}
+
+.sfir-display-popover-trigger:hover .sfir-display-popover-target {
+    visibility: visible;
+    z-index: 1002;
+}
+
+.slds-builder-header.sfir-header-override {
+    background-color: var(--sfir-custom-color);
+}
+
+.sfir-page-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 4rem);
+}
+
+.sfir-full-height{
+    height: 100%;
+}
+
+.sfir-full-width{
+    width: 100%;
+}
+
+html:has(body.sfir-prod),
+.sfir-prod {
+    background-color: #e0a4b5 !important;
+    background-repeat: no-repeat !important;
+    background-size: contain !important;
+    background-attachment: fixed !important;
+}
+
+body{
+    margin: 0px;
+}
+
+.sfir-border-none{
+    border: none !important;
+}

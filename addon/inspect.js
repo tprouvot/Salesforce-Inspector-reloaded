@@ -1596,7 +1596,7 @@ class App extends React.Component {
     // Define navigation items for this page (injected as "slots")
     const navItems = [
       // All tab
-      h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open"},
+      h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open sfir-border-none"},
         h("button", {
           className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
           "aria-haspopup": "true",
@@ -1610,7 +1610,7 @@ class App extends React.Component {
         )
       ),
       // Fields tab
-      h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open"},
+      h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open sfir-border-none"},
         h("button", {
           className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
           "aria-haspopup": "true",
@@ -1638,7 +1638,7 @@ class App extends React.Component {
         )
       ),
       // Relationships tab
-      h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open"},
+      h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open sfir-border-none"},
         h("button", {
           className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
           "aria-haspopup": "true",
@@ -1665,7 +1665,7 @@ class App extends React.Component {
     const utilityItems = [
       // Search filter (conditional)
       model.useTab != "all" ? null
-      : h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"},
+      : h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"},
         h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left"},
           h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", style: {top: "40%"}},
             h("use", {xlinkHref: "symbols.svg#search"})
@@ -1679,7 +1679,7 @@ class App extends React.Component {
         )
       ),
       // Action buttons
-      h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"},
+      h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"},
         h("div", {className: "slds-media__body"},
           h("span", {className: "slds-button-group object-actions"},
             model.editMode == null && model.recordData && (model.useTab == "all" || model.useTab == "fields") ? h("button", {

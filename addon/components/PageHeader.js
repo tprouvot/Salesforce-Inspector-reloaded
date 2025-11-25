@@ -115,14 +115,14 @@ export function PageHeader(props) {
 
       // Navigation slot (optional)
       navItems.length > 0
-        ? h("nav", {className: "slds-builder-header__item slds-builder-header__nav"},
+        ? h("nav", {className: "slds-builder-header__item slds-builder-header__nav sfir-border-none"},
           h("ul", {className: "slds-builder-header__nav-list"},
             ...navItems
           )
         ) : null,
 
       // Center: Page SubTitle (optional)
-      subTitle ? h("div", {className: "slds-builder-header__item slds-has-flexi-truncate"},
+      subTitle ? h("div", {className: "slds-builder-header__item slds-has-flexi-truncate sfir-border-none"},
         h("h1", {className: "slds-builder-header__item-label"},
           h("span", {className: "slds-truncate", title: subTitle}, subTitle)
         )

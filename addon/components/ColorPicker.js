@@ -3,8 +3,6 @@
  * A gradient-based color picker following SLDS design patterns
  */
 
-/* global React */
-/* eslint-disable react/prop-types */
 import {colorNameToHex} from "../utils/colorUtils.js";
 
 let h = React.createElement;

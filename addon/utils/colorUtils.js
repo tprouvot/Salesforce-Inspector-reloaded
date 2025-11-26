@@ -220,7 +220,7 @@ export function colorNameToHex(input) {
   if (!input) return null;
 
   const trimmed = input.trim();
-  
+
   // 1. Check for valid named color
   const lowerTrimmed = trimmed.toLowerCase();
   const hexValue = COLOR_NAME_TO_HEX[lowerTrimmed];

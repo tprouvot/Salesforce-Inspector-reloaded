@@ -153,6 +153,7 @@ class FlowScanner {
     this.flowId = flowId;
     this.currentFlow = null;
     this.scanResults = [];
+    this.rawScanResults = null;
     this.flowScannerCore = null;
     this.isScanning = false;
     this._elementMap = new Map();
@@ -528,8 +529,9 @@ class FlowScanner {
 
       // Run all other built-in rules (if any remain).
       if (Object.keys(ruleConfig.rules).length > 0) {
-        const scanResults = this.flowScannerCore.scan([parsedFlow], ruleConfig);
-        results.push(...this.processScanResults(scanResults));
+        const rawCoreResults = this.flowScannerCore.scan([parsedFlow], ruleConfig);
+        this.rawScanResults = rawCoreResults;
+        results.push(...this.processScanResults(rawCoreResults));
       }
 
       // Manually evaluate the APIVersion rule, if it was configured.
@@ -1236,6 +1238,33 @@ class App extends React.Component {
     }
   }
 
+  onExportSarif() {
+    const scanner = this.flowScanner;
+    if (!scanner?.rawScanResults || scanner.rawScanResults.length === 0) {
+      return;
+    }
+
+    const flow = scanner.currentFlow;
+    const core = scanner.flowScannerCore;
+
+    try {
+      const sarif = core.exportSarif(scanner.rawScanResults);
+
+      const blob = new Blob([sarif], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `flow-scanner-${flow.name}-sarif-${new Date().toISOString().split("T")[0]}.sarif`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("SARIF export failed:", err);
+      alert("SARIF export failed — check console");
+    }
+  }
+
   onExpandAll() {
     this.setState(state => {
       const accordion = {...state.accordion};
@@ -1590,11 +1619,19 @@ class App extends React.Component {
           h("div", {className: "summary-actions"},
             h("button", {
               className: "highlighted button-margin",
-              title: "Export Results",
+              title: "CSV",
               onClick: this.onExportResults,
               disabled: totalIssues === 0
-            }, "Export",
-            ),
+            }, "CSV"),
+
+            h("button", {
+              className: "highlighted button-margin",
+              title: "SARIF",
+              onClick: () => this.onExportSarif(),
+              disabled: totalIssues === 0,
+              style: {background: "#0366d6", borderColor: "#0366d6"}
+            }, "SARIF"),
+
             h("button", {className: "button-margin", id: "expand-all-btn", onClick: this.onExpandAll}, "Expand All"),
             h("button", {className: "button-margin", id: "collapse-all-btn", onClick: this.onCollapseAll}, "Collapse All")
           )

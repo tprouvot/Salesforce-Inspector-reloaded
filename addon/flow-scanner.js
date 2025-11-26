@@ -165,16 +165,29 @@ function getPrimaryAffectedElement(result) {
  * @returns {Object} An object with keepCount and versionsToDelete.
  */
 function getFlowVersionPurgePlan(versions, historySize) {
-  const keepCount = historySize + 1;
+  // We want to keep the 'historySize' most recent versions + the active version (if it's not already in that set)
+  // So 'keepCount' isn't just historySize + 1, it depends on where the active version falls.
+
   const sortedVersions = versions.sort((a, b) => b.VersionNumber - a.VersionNumber);
   const activeVersion = sortedVersions.find(v => v.Status === "Active");
   const activeVersionId = activeVersion ? activeVersion.Id : null;
-  const recentVersions = sortedVersions.slice(0, keepCount);
+
+  // 1. Identify the "recent" set (latest N + 1, where N is historySize)
+  // The user says "keep 5 previous versions", meaning keep Current + 5 previous = 6 total from the top.
+  const recentLimit = historySize + 1;
+  const recentVersions = sortedVersions.slice(0, recentLimit);
   const recentVersionIds = new Set(recentVersions.map(v => v.Id));
+
+  // 2. Identify versions to delete
+  // Delete everything that is NOT in the recent set AND is NOT the active version
   const versionsToDelete = sortedVersions.filter(v => !recentVersionIds.has(v.Id) && v.Id !== activeVersionId);
 
+  // 3. Calculate the actual number of versions we are keeping
+  // Total versions - versions we are deleting
+  const actualKeepCount = versions.length - versionsToDelete.length;
+
   return {
-    keepCount,
+    keepCount: actualKeepCount,
     versionsToDelete
   };
 }

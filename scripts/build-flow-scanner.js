@@ -35,7 +35,6 @@ function logError(message) {
   log(`✗ ${message}`, "red");
 }
 
-
 function createTempDir() {
   "use strict";
   const tempDir = path.join(os.tmpdir(), `flow-scanner-build-${Date.now()}`);
@@ -53,14 +52,26 @@ function cleanupTempDir(tempDir) {
   }
 }
 
+// Clone repo and checkout latest tag
 function setupRemoteRepo(tempDir) {
   "use strict";
   const repoUrl = "https://github.com/flow-scanner/lightning-flow-scanner-core";
 
-  logStep("Cloning lightning-flow-scanner-core repository (shallow clone)");
+  logStep("Cloning lightning-flow-scanner-core repository");
 
   // Clone directly into tempDir with shallow clone (no history)
   execSync(`git clone --depth 1 ${repoUrl} "${tempDir}"`, {stdio: "inherit"});
+
+  // Get the latest tag and checkout
+  try {
+    const latestTag = execSync(`git describe --tags $(git rev-list --tags --max-count=1)`, {cwd: tempDir})
+      .toString().trim();
+    logStep(`Checking out latest tag: ${latestTag}`);
+    execSync(`git checkout tags/${latestTag}`, {cwd: tempDir, stdio: "inherit"});
+    logSuccess(`Checked out tag ${latestTag}`);
+  } catch (error) {
+    log(`No tags found, using default branch`, "yellow");
+  }
 
   logSuccess("Repository cloned successfully");
 }

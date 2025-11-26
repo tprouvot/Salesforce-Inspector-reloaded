@@ -4092,8 +4092,7 @@ class AllDataSelection extends React.PureComponent {
         )
         : null,
       h(
-        "div",
-        {className: "slds-button-group slds-size_1-of-1"},
+        "div", {},
         buttons.map((button, index) =>
           h(
             "a",

@@ -1,6 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {createSpinForMethod} from "./utils.js";
+import {createSpinForMethod, getUserInfo, getLinkTarget} from "./utils.js";
+import {PageHeader} from "./components/PageHeader.js";
 /* global initButton */
 
 class Model {
@@ -10,6 +11,10 @@ class Model {
     this.spinnerCount = 0;
     this.title = "API Request";
     this.userInfo = "...";
+    this.userInitials = "";
+    this.userFullName = "";
+    this.userName = "";
+    this.orgName = sfHost.split(".")[0]?.toUpperCase() || "";
 
     this.apiResponse = null;
     this.selectedTextView = null;
@@ -24,7 +29,7 @@ class Model {
       this.performRequest(apiPromise);
     } else if (args.has("checkDeployStatus")) {
       let wsdl = sfConn.wsdl(apiVersion, "Metadata");
-      this.title = "checkDeployStatus: " + args.get("checkDeployStatus");
+      this.title += " checkDeployStatus: " + args.get("checkDeployStatus");
       let apiPromise = sfConn.soap(wsdl, "checkDeployStatus", {id: args.get("checkDeployStatus"), includeDetails: true});
       this.performRequest(apiPromise);
     } else {
@@ -34,8 +39,12 @@ class Model {
       this.performRequest(apiPromise);
     }
 
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
+    // Fetch user info using utility function
+    this.spinFor(getUserInfo().then(result => {
+      this.userInfo = result.userInfo;
+      this.userInitials = result.userInitials;
+      this.userFullName = result.userFullName;
+      this.userName = result.userName;
     }));
 
   }
@@ -232,8 +241,8 @@ class Model {
       // URLs to further explore the REST API, grouped by table columns
       apiGroupUrls: Object.entries(groupUrls).map(([groupKey, apiUrls]) => ({jsonPath: groupKey, apiUrls, label: apiUrls.length + " API requests, e.g. " + apiUrls[0]})),
     };
-    // Don't update selectedTextView. No radio button will be selected, leaving the text area blank.
-    // The results can be quite large and take a long time to render, so we only want to render a result once the user has explicitly selected it.
+    // Select "Raw JSON" by default (first textView)
+    this.selectedTextView = textViews[0];
   }
 }
 
@@ -245,84 +254,166 @@ let h = React.createElement;
 
 class App extends React.Component {
 
+  componentDidUpdate() {
+    if (window.Prism) {
+      window.Prism.highlightAll();
+    }
+  }
+
   render() {
     let {model} = this.props;
     document.title = model.title;
     return h("div", {},
-      h("div", {id: "user-info"},
-        h("a", {href: model.sfLink, className: "sf-link"},
-          h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-          ),
-          " Salesforce Home"
+      h(PageHeader, {
+        pageTitle: "Explore API",
+        orgName: model.orgName,
+        sfLink: model.sfLink,
+        sfHost: model.sfHost,
+        spinnerCount: model.spinnerCount,
+        userInitials: model.userInitials,
+        userFullName: model.userFullName,
+        userName: model.userName
+      }),
+      h("div", {
+        className: "slds-m-top_xx-large",
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          height: "calc(100vh - 4rem)"
+        }
+      },
+      h("div", {className: "slds-card slds-m-around_medium", id: "result-area"},
+        h("div", {className: "slds-card__header"},
+          h("div", {className: "slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-p-around_small"},
+            h("div", {className: "slds-size_6-of-12"},
+              h("h2", {className: "slds-card__header-title"}, "Request Result")
+            ),
+            h("div", {className: "slds-size_6-of-12 slds-text-align_right"},
+              model.apiResponse && h("span", {
+                className: `slds-badge slds-m-right_small ${model.apiResponse.status == "Error" ? "slds-theme_error" : "slds-theme_success"}`
+              }, "Status: " + model.apiResponse.status)
+            )
+          )
         ),
-        h("h1", {}, "Explore API"),
-        h("span", {}, " / " + model.userInfo),
-        h("div", {className: "flex-right"},
-          h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
-            h("span", {className: "slds-assistive-text"}),
-            h("div", {className: "slds-spinner__dot-a"}),
-            h("div", {className: "slds-spinner__dot-b"}),
-          ),
-        ),
-      ),
-      h("div", {className: "area", id: "result-area"},
-        h("div", {className: "result-bar"},
-          h("h1", {}, "Request Result")
-        ),
-        h("div", {id: "result-table", ref: "scroller"},
+        h("div", {className: "slds-card__body slds-card__body_inner", ref: "scroller"},
           model.apiResponse && h("div", {},
-            h("ul", {},
-              h("li", {className: model.apiResponse.status == "Error" ? "status-error" : "status-success"}, "Status: " + model.apiResponse.status),
-              model.apiResponse.textViews.map(textView =>
-                h("li", {key: textView.name},
-                  h("label", {},
-                    h("input", {type: "radio", name: "textView", checked: model.selectedTextView == textView, onChange: () => { model.selectedTextView = textView; model.didUpdate(); }}),
-                    " " + textView.name
-                  )
-                )
-              )
-            ),
-            model.selectedTextView && !model.selectedTextView.table && h("div", {},
-              h("textarea", {readOnly: true, value: model.selectedTextView.value})
-            ),
-            model.selectedTextView && model.selectedTextView.table && h("div", {},
-              h("table", {className: "scrolltable-scrolled"},
-                h("tbody", {},
-                  model.selectedTextView.table.map((row, key) =>
-                    h("tr", {key},
-                      row.map((cell, key) =>
-                        h("td", {key, className: "scrolltable-cell"}, "" + cell)
-                      )
+            h("fieldset", {className: "slds-form-element"},
+              h("legend", {className: "slds-form-element__legend slds-form-element__label"}, "View Options"),
+              h("div", {className: "slds-form-element__control"},
+                h("div", {className: "slds-radio_button-group"},
+                  model.apiResponse.textViews.map(textView =>
+                    h("span", {
+                      key: textView.name,
+                      className: "slds-button slds-radio_button"
+                    },
+                    h("input", {
+                      type: "radio",
+                      name: "textView",
+                      id: "radio-" + textView.name.replace(/\s+/g, "-").toLowerCase(),
+                      checked: model.selectedTextView == textView,
+                      onChange: () => { model.selectedTextView = textView; model.didUpdate(); }
+                    }),
+                    h("label", {
+                      className: "slds-radio_button__label",
+                      htmlFor: "radio-" + textView.name.replace(/\s+/g, "-").toLowerCase()
+                    },
+                    h("span", {className: "slds-radio_faux"}, textView.name)
+                    )
                     )
                   )
                 )
               )
             ),
-            model.apiResponse.apiGroupUrls && h("ul", {},
-              model.apiResponse.apiGroupUrls.map((apiGroupUrl, key) =>
-                h("li", {key},
-                  h("a", {href: model.openGroupUrl(apiGroupUrl)}, apiGroupUrl.jsonPath),
-                  " - " + apiGroupUrl.label
+            model.selectedTextView && !model.selectedTextView.table && h("div", {
+              className: "slds-m-top_small",
+              style: {
+                maxHeight: "40em",
+                overflowY: "auto",
+                border: "1px solid #dddbda",
+                borderRadius: "4px",
+                backgroundColor: "#f3f2f2"
+              }
+            },
+            h("pre", {
+              className: "reset-margin",
+              style: {margin: 0}
+            },
+            h("code", {
+              className: "language-json",
+              style: {fontSize: "11px"}
+            }, model.selectedTextView.value)
+            )
+            ),
+            model.selectedTextView && model.selectedTextView.table && h("div", {className: "slds-m-top_small", style: {overflowX: "auto"}},
+              h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered", style: {fontSize: "11px"}},
+                h("tbody", {},
+                  model.selectedTextView.table.map((row, key) =>
+                    h("tr", {
+                      key,
+                      className: key === 0 ? "slds-line-height_reset" : "",
+                      style: key === 0 ? {fontWeight: "700", backgroundColor: "#FAFAF9"} : {}
+                    },
+                    row.map((cell, cellKey) =>
+                      (key === 0
+                        ? h("th", {key: cellKey, scope: "col", style: {whiteSpace: "pre"}}, "" + cell)
+                        : h("td", {key: cellKey, style: {whiteSpace: "pre"}}, "" + cell))
+                    )
+                    )
+                  )
                 )
               )
             ),
-            model.apiResponse.apiSubUrls && h("ul", {},
-              model.apiResponse.apiSubUrls.map((apiSubUrl, key) =>
-                h("li", {key},
-                  h("a", {href: model.openSubUrl(apiSubUrl)}, apiSubUrl.jsonPath),
+            model.apiResponse.apiGroupUrls && model.apiResponse.apiGroupUrls.length > 0 && h("div", {className: "slds-m-top_medium"},
+              h("h3", {className: "slds-text-heading_small slds-m-bottom_x-small"}, "Group URLs"),
+              h("ul", {className: "slds-list_dotted"},
+                model.apiResponse.apiGroupUrls.map((apiGroupUrl, key) =>
+                  h("li", {
+                    key,
+                    style: {
+                      padding: "4px",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s"
+                    },
+                    onMouseEnter: e => e.currentTarget.style.backgroundColor = "#e0f3ff",
+                    onMouseLeave: e => e.currentTarget.style.backgroundColor = "transparent"
+                  },
+                  h("a", {href: model.openGroupUrl(apiGroupUrl), className: "slds-text-link"}, apiGroupUrl.jsonPath),
+                  " - " + apiGroupUrl.label
+                  )
+                )
+              )
+            ),
+            model.apiResponse.apiSubUrls && model.apiResponse.apiSubUrls.length > 0 && h("div", {className: "slds-m-top_medium"},
+              h("h3", {className: "slds-text-heading_small slds-m-bottom_x-small"}, "Sub URLs"),
+              h("ul", {className: "slds-list_dotted"},
+                model.apiResponse.apiSubUrls.map((apiSubUrl, key) =>
+                  h("li", {
+                    key,
+                    style: {
+                      padding: "4px",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s"
+                    },
+                    onMouseEnter: e => e.currentTarget.style.backgroundColor = "#e0f3ff",
+                    onMouseLeave: e => e.currentTarget.style.backgroundColor = "transparent"
+                  },
+                  h("a", {href: model.openSubUrl(apiSubUrl), className: "slds-text-link"}, apiSubUrl.jsonPath),
                   " - " + apiSubUrl.label
+                  )
                 )
               )
             )
           ),
-          h("a", {href: "https://www.salesforce.com/us/developer/docs/api_rest/", target: "_blank"}, "REST API documentation"),
-          " Open your browser's ",
-          h("b", {}, "F12 Developer Tools"),
-          " and select the ",
-          h("b", {}, "Console"),
-          " tab to make your own API calls."
-        ),
+          h("div", {className: "slds-box slds-theme_shade slds-m-top_medium"},
+            h("a", {href: "https://www.salesforce.com/us/developer/docs/api_rest/", target: getLinkTarget(), className: "slds-text-link"}, "REST API documentation"),
+            " Open your browser's ",
+            h("strong", {}, "F12 Developer Tools"),
+            " and select the ",
+            h("strong", {}, "Console"),
+            " tab to make your own API calls."
+          )
+        )
+      )
       )
     );
   }

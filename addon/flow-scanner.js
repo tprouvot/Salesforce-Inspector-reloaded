@@ -367,11 +367,67 @@ class FlowScanner {
   async getFlowMetadata() {
     try {
       // Query both Flow and FlowDefinitionView objects to get complete metadata
-      const [flowRes, fdvRes, versions] = await Promise.all([
-        sfConn.rest(this._buildApiUrl(`/query?q=SELECT+Id,Metadata+FROM+Flow+WHERE+Id='${this.flowId}'`, true)),
-        sfConn.rest(this._buildApiUrl(`/query/?q=SELECT+Label,ApiName,ProcessType,TriggerType,TriggerObjectOrEventLabel+FROM+FlowDefinitionView+WHERE+DurableId='${this.flowDefId}'`)),
-        this._fetchFlowVersions()
+      const toolingCompositeUrl = this._buildApiUrl("/composite", true);
+
+      const flowQuery = `SELECT Id,Metadata FROM Flow WHERE Id='${this.flowId}'`;
+      const versionsQuery = `SELECT Id,VersionNumber,Status FROM Flow WHERE DefinitionId='${this.flowDefId}' ORDER BY VersionNumber DESC`;
+
+      const toolingCompositeBody = {
+        allOrNone: false,
+        compositeRequest: [
+          {
+            method: "GET",
+            url: this._buildApiUrl(`/query?q=${encodeURIComponent(flowQuery)}`, true),
+            referenceId: "flow"
+          },
+          {
+            method: "GET",
+            url: this._buildApiUrl(`/query?q=${encodeURIComponent(versionsQuery)}`, true),
+            referenceId: "versions"
+          }
+        ]
+      };
+
+      const [toolingResponse, fdvRes] = await Promise.all([
+        sfConn.rest(toolingCompositeUrl, {
+          method: "POST",
+          body: toolingCompositeBody
+        }),
+        sfConn.rest(this._buildApiUrl(`/query/?q=SELECT+Label,ApiName,ProcessType,TriggerType,TriggerObjectOrEventLabel+FROM+FlowDefinitionView+WHERE+DurableId='${this.flowDefId}'`))
       ]);
+
+      const compositeResponses = toolingResponse && toolingResponse.compositeResponse;
+      if (!compositeResponses || !Array.isArray(compositeResponses)) {
+        throw new Error("Invalid composite response structure for Flow metadata");
+      }
+
+      const flowSub = compositeResponses.find(r => r.referenceId === "flow");
+      const versionsSub = compositeResponses.find(r => r.referenceId === "versions");
+
+      const getCompositeBody = (subRes, referenceId) => {
+        if (!subRes) {
+          throw new Error(`Composite subrequest '${referenceId}' not found`);
+        }
+        const isSuccess = subRes.httpStatusCode >= 200 && subRes.httpStatusCode < 300;
+        if (!isSuccess) {
+          let message;
+          if (Array.isArray(subRes.body) && subRes.body[0] && subRes.body[0].message) {
+            message = subRes.body[0].message;
+          } else if (subRes.body && subRes.body.message) {
+            message = subRes.body.message;
+          } else {
+            message = "Unknown error";
+          }
+          const error = new Error(`Composite subrequest '${referenceId}' failed: ${message}`);
+          error.detail = subRes.body;
+          throw error;
+        }
+        return subRes.body;
+      };
+
+      const flowRes = getCompositeBody(flowSub, "flow");
+      const versionsRes = getCompositeBody(versionsSub, "versions");
+      const versions = versionsRes.records || [];
 
       const flowRecord = flowRes.records?.[0];
       const flowDefView = fdvRes.records?.[0];

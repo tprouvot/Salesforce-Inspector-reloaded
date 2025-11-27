@@ -3866,25 +3866,14 @@ class AllDataSelection extends React.PureComponent {
             h(
               "div",
               {className: "slds-card__body"},
-              selectedValue.sobject.isEverCreatable
-                && displayButton("new", hideButtonsOption)
-                && !selectedValue.sobject.name.endsWith("__e")
-                ? h(
-                  "button",
-                  {
-                    ref: "showNewBtn",
-                    "data-target-link": this.getNewObjectUrl(
-                      sfHost,
-                      selectedValue.sobject.newUrl
-                    ),
-                    target: linkTarget,
-                    onClick: handleLightningLinkClick,
-                    className:
-                        "slds-button slds-button_neutral slds-float_right slds-m-top_xxx-small sfir-button-new",
-                  },
-                  h("span", {}, h("u", {}, "N"), "ew")
-                )
-                : null,
+              selectedValue.sobject.isEverCreatable && displayButton("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e")
+                ? h("a", {
+                  ref: "showNewBtn",
+                  href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
+                  target: linkTarget,
+                  onClick: handleLightningLinkClick,
+                  className: "slds-button slds-button_neutral slds-float_right slds-m-top_xxx-small sfir-button-new"
+                }, h("span", {}, h("u", {}, "N"), "ew ")) : null,
               h(
                 "a",
                 {
@@ -4103,8 +4092,7 @@ class AllDataSelection extends React.PureComponent {
         )
         : null,
       h(
-        "div",
-        {className: "slds-button-group slds-size_1-of-1"},
+        "div", {},
         buttons.map((button, index) =>
           h(
             "a",

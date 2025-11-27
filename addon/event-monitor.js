@@ -4,6 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
 import {copyToClipboard} from "./data-load.js";
+import ConfirmModal from "./components/ConfirmModal.js";
 import {PageHeader} from "./components/PageHeader.js";
 
 const channelTypes = [
@@ -761,39 +762,22 @@ class App extends React.Component {
       )
       )
       ),
-      // Confirmation Modal
-      model.confirmPopup ? h("section", {
-        role: "dialog",
-        tabIndex: "-1",
-        "aria-modal": "true",
-        "aria-labelledby": "modal-heading-01",
-        className: "slds-modal slds-fade-in-open"
+      h(ConfirmModal, {
+        isOpen: model.confirmPopup,
+        title: "Important",
+        onConfirm: this.confirmPopupYes,
+        onCancel: this.confirmPopupNo,
+        confirmLabel: "Subscribe",
+        cancelLabel: "Cancel",
+        confirmVariant: model.isProd ? "destructive" : "brand"
       },
-      h("div", {className: "slds-modal__container"},
-        h("header", {className: "slds-modal__header"},
-          h("h2", {id: "modal-heading-01", className: "slds-modal__title slds-hyphenate"}, "Important")
-        ),
-        h("div", {className: "slds-modal__content slds-p-around_medium"},
-          model.isProd ? h("div", {className: "slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error slds-m-bottom_small"},
-            h("span", {className: "slds-assistive-text"}, "warning"),
-            h("h2", {}, "WARNING: You are on a PRODUCTION environment.")
-          ) : null,
-          h("p", {className: "slds-m-bottom_small"}, "Use this option sparingly. Subscribing with the -2 option when a large number of event messages are stored can slow performance."),
-          h("p", {}, "Hitting the daily limit can break existing integration!")
-        ),
-        h("footer", {className: "slds-modal__footer"},
-          h("button", {
-            className: "slds-button slds-button_neutral",
-            onClick: this.confirmPopupNo
-          }, "Cancel"),
-          h("button", {
-            className: "slds-button slds-button_brand",
-            onClick: this.confirmPopupYes
-          }, "Subscribe")
-        )
-      )
+      model.isProd ? h("div", {className: "slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error slds-m-bottom_small"},
+        h("span", {className: "slds-assistive-text"}, "warning"),
+        h("h2", {}, "WARNING: You are on a PRODUCTION environment.")
       ) : null,
-      model.confirmPopup ? h("div", {className: "slds-backdrop slds-backdrop_open"}) : null
+      h("p", {className: "slds-m-bottom_small"}, "Use this option sparingly. Subscribing with the -2 option when a large number of event messages are stored can slow performance."),
+      h("p", {}, "Hitting the daily limit can break existing integration!")
+      )
     );
   }
 }

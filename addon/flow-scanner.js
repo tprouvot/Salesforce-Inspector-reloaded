@@ -1291,23 +1291,11 @@ function FlowInfoSection(props) {
               h("div", {className: "detail-value"},
                 h("span", {id: "flow-versions-count", style: versionCountStyle}, flow.versions ? flow.versions.length : "Unknown"),
                 (flow.versions && flow.versions.length > 1) && h("button", {
-                  style: {
-                    background: "transparent",
-                    border: "1px solid #dddbda",
-                    borderRadius: "4px",
-                    padding: "2px 4px",
-                    marginLeft: "6px",
-                    cursor: "pointer",
-                    lineHeight: "1",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    verticalAlign: "middle"
-                  },
+                  className: "slds-button slds-button_icon slds-button_icon-bare slds-m-left_x-small",
                   onClick: onPurgeVersions,
                   title: "Purge old versions"
                 },
-                h("svg", {viewBox: "0 0 52 52", width: "14", height: "14", style: {fill: "#0070d2", display: "block"}},
+                h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
                   h("use", {xlinkHref: "symbols.svg#delete"})
                 )
                 )
@@ -1402,14 +1390,14 @@ function ScanSummary(props) {
       ),
       h("div", {className: "summary-actions"},
         h("button", {
-          className: "highlighted button-margin",
+          className: "slds-button slds-button_brand slds-m-right_small",
           title: "Export Results",
           onClick: onExportResults,
           disabled: totalIssues === 0
         }, "Export",
         ),
-        h("button", {className: "button-margin", id: "expand-all-btn", onClick: onExpandAll}, "Expand All"),
-        h("button", {className: "button-margin", id: "collapse-all-btn", onClick: onCollapseAll}, "Collapse All")
+        h("button", {className: "slds-button slds-button_neutral slds-m-right_small", id: "expand-all-btn", onClick: onExpandAll}, "Expand All"),
+        h("button", {className: "slds-button slds-button_neutral", id: "collapse-all-btn", onClick: onCollapseAll}, "Collapse All")
       )
     )
   );

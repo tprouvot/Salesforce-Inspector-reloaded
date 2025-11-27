@@ -9,34 +9,7 @@
 
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, getUserInfo} from "./utils.js";
-import ConfirmModal from "./components/ConfirmModal.js";
-import {PageHeader} from "./components/PageHeader.js";
-
-// Constants
-const DEFAULT_HISTORY_SIZE = 5;
-const MAX_COMPOSITE_BATCH_SIZE = 25;
-const MAX_QUERY_CHUNK_SIZE = 200;
-const FLOW_SCANNER_RULES_STORAGE_KEY = "flowScannerRules";
-const FLOW_SCANNER_HISTORY_SIZE_KEY = "flowScannerHistorySize";
-
-// Severity level mappings
-const SEVERITY_MAPPING = {
-  ui: {
-    note: "info"
-  },
-  storage: {
-    info: "note"
-  }
-};
-
-const CORE_SEVERITY_TO_UI = {
-  error: "error",
-  critical: "error",
-  warning: "warning",
-  info: "info",
-  information: "info"
-};
+import {getLinkTarget} from "./utils.js";
 
 // Flow Scanner Rules Configuration
 export const flowScannerKnownConfigurableRules = {
@@ -770,305 +743,6 @@ class FlowScanner {
 
 let h = React.createElement;
 
-// Cache for color calculations to avoid recomputing
-const versionColorCache = new Map();
-
-function calculateVersionCountStyle(totalVersions) {
-  if (totalVersions <= 0 || typeof totalVersions !== "number") {
-    return {};
-  }
-
-  // Check cache first
-  if (versionColorCache.has(totalVersions)) {
-    return versionColorCache.get(totalVersions);
-  }
-
-  const clamped = Math.max(1, Math.min(50, totalVersions));
-  const ratio = (clamped - 1) / 49;
-  const startColor = {r: 46, g: 204, b: 113};
-  const endColor = {r: 231, g: 76, b: 60};
-  const r = Math.round(startColor.r + ((endColor.r - startColor.r) * ratio));
-  const g = Math.round(startColor.g + ((endColor.g - startColor.g) * ratio));
-  const b = Math.round(startColor.b + ((endColor.b - startColor.b) * ratio));
-  const style = {
-    backgroundColor: `rgb(${r}, ${g}, ${b})`,
-    color: "#ffffff",
-    padding: "0 0.4rem",
-    borderRadius: "999px",
-    minWidth: "2.25rem",
-    textAlign: "center",
-    display: "inline-block"
-  };
-
-  versionColorCache.set(totalVersions, style);
-  return style;
-}
-
-function FlowInfoSection(props) {
-  const {flow, elements, onPurgeVersions, onToggleDescription, handleMouseDown, shouldIgnoreClick} = props;
-
-  if (!flow) {
-    return h("div", {className: "area"},
-      h("div", {className: "flow-info-section"},
-        h("h2", {className: "flow-info-title"},
-          h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
-          h("span", {className: "slds-card__header-title"}, "Flow Information")
-        ),
-        h("div", {className: "flow-info-card compact"},
-          h("div", {}, "Loading flow information...")
-        )
-      )
-    );
-  }
-
-  const totalVersions = flow.versions ? flow.versions.length : 0;
-  const versionCountStyle = calculateVersionCountStyle(totalVersions);
-
-  return h("div", {className: "area"},
-    h("div", {className: "flow-info-section", role: "region", "aria-labelledby": "flow-info-title-text"},
-      h("h2", {className: "flow-info-title"},
-        h("span", {className: "flow-icon", "aria-hidden": "true"}, "⚡"),
-        h("span", {className: "flow-info-title-text", id: "flow-info-title-text"}, "Flow Information")
-      ),
-      h("div", {className: "flow-info-card compact"},
-        h("div", {className: "flow-header-row"},
-          h("div", {className: "flow-details-grid"},
-            h("div", {className: "flow-detail-item flow-label-item"},
-              h("span", {className: "detail-label"}, "Flow Label"),
-              h("span", {className: "detail-value"}, flow.label || "Unknown Label")
-            ),
-            h("div", {className: "flow-detail-item flow-apiname-item"},
-              h("span", {className: "detail-label"}, "Flow API Name"),
-              h("span", {className: "detail-value"}, flow.apiName || "Unknown API Name")
-            ),
-            h("div", {className: "flow-detail-item flow-status-item"},
-              h("span", {className: "detail-label"}, "Status"),
-              h("span", {
-                className: `flow-status-badge ${flow.status?.toLowerCase()}`,
-                role: "status",
-                "aria-live": "polite",
-                id: "flow-status-badge"
-              }, flow.displayStatus)
-            ),
-            h("div", {className: "flow-detail-item flow-type-item"},
-              h("span", {className: "detail-label"}, "Type"),
-              h("span", {className: "detail-value", id: "flow-type"}, flow.type)
-            ),
-            h("div", {className: "flow-detail-item flow-apiversion-item"},
-              h("span", {className: "detail-label"}, "API Version"),
-              h("span", {className: "detail-value", id: "flow-api-version"}, flow.xmlData?.apiVersion || "Unknown")
-            ),
-            h("div", {className: "flow-detail-item flow-elements-item"},
-              h("span", {className: "detail-label"}, "Elements"),
-              h("span", {className: "detail-value", id: "flow-elements-count"}, elements.length)
-            ),
-            h("div", {className: "flow-detail-item flow-versions-item"},
-              h("div", {style: {display: "flex", alignItems: "center", marginBottom: "2px"}},
-                h("span", {className: "detail-label", style: {marginBottom: "0", marginRight: "4px"}}, "Versions"),
-                h("div", {className: "tooltip-container"},
-                  h("svg", {className: "info-icon", "aria-hidden": "true"},
-                    h("use", {xlinkHref: "symbols.svg#info"})
-                  ),
-                  h("div", {className: "tooltip-content"}, "Total stored versions for this flow. Salesforce allows up to 50 versions per flow; the badge color shows how close you are to this limit (green = low, red = high).")
-                )
-              ),
-              h("div", {className: "detail-value"},
-                h("span", {id: "flow-versions-count", style: versionCountStyle}, flow.versions ? flow.versions.length : "Unknown"),
-                (flow.versions && flow.versions.length > 1) && h("button", {
-                  style: {
-                    background: "transparent",
-                    border: "1px solid #dddbda",
-                    borderRadius: "4px",
-                    padding: "2px 4px",
-                    marginLeft: "6px",
-                    cursor: "pointer",
-                    lineHeight: "1",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    verticalAlign: "middle"
-                  },
-                  onClick: onPurgeVersions,
-                  title: "Purge old versions"
-                },
-                h("svg", {viewBox: "0 0 52 52", width: "14", height: "14", style: {fill: "#0070d2", display: "block"}},
-                  h("use", {xlinkHref: "symbols.svg#delete"})
-                )
-                )
-              )
-            ),
-            h("div", {className: "flow-detail-item"},
-              h("span", {className: "detail-label"}, "Triggering Object/Event"),
-              h("span", {className: "detail-value", id: "flow-trigger-object"}, flow.triggerObjectLabel || "—")
-            ),
-            h("div", {className: "flow-detail-item"},
-              h("span", {className: "detail-label"}, "Trigger"),
-              h("span", {className: "detail-value", id: "flow-trigger-type"}, flow.triggerType || "—")
-            )
-          )
-        ),
-        h("div", {className: "flow-desc-row"},
-          h("div", {className: "flow-description-container collapsed"},
-            h("div", {className: "flow-desc-header"},
-              h("button", {
-                className: "description-toggle-btn",
-                type: "button",
-                "aria-expanded": "false",
-                onMouseDown: handleMouseDown,
-                onClick: e => { if (shouldIgnoreClick(e)) return; onToggleDescription(e); }
-              },
-              h("span", {className: "toggle-icon"}, "▼"),
-              h("span", {id: "toggle-label"}, "Show description")
-              )
-            ),
-            h("div", {
-              className: "flow-description clickable",
-              role: "button",
-              tabIndex: "0",
-              "aria-label": "Click to toggle description visibility",
-              dangerouslySetInnerHTML: {
-                __html: (flow.xmlData?.description || "No description provided").replace(/\n/g, "<br>")
-              }
-            })
-          )
-        )
-      )
-    )
-  );
-}
-
-function ScanSummary(props) {
-  const {totalIssues, errorCount, warningCount, infoCount, onExportResults, onExpandAll, onCollapseAll, isStatItemClickable, onStatItemClick} = props;
-
-  // Pre-calculate clickable states to avoid repeated function calls
-  const errorClickable = isStatItemClickable("error", errorCount);
-  const warningClickable = isStatItemClickable("warning", warningCount);
-  const infoClickable = isStatItemClickable("info", infoCount);
-
-  return h("div", {className: "summary-body", role: "status", "aria-live": "polite"},
-    h("h3", {className: "summary-title slds-card__header-title"},
-      h("span", {className: "results-icon"}, "📊"),
-      "Scan Results"
-    ),
-    h("div", {className: "summary-right-panel"},
-      h("div", {className: "summary-stats", role: "group", "aria-label": "Scan results summary"},
-        h("div", {className: "stat-item total", role: "group", "aria-label": "Total issues"},
-          h("span", {className: "stat-number", id: "total-issues-count"}, totalIssues),
-          h("span", {className: "stat-label"}, "Total")
-        ),
-        h("div", {
-          className: `stat-item error${errorClickable ? " clickable" : ""}`,
-          role: "group",
-          "aria-label": "Error issues",
-          onClick: errorClickable ? () => onStatItemClick("error", errorCount) : undefined
-        },
-        h("span", {className: "stat-number", id: "error-issues-count"}, errorCount),
-        h("span", {className: "stat-label"}, "Errors")
-        ),
-        h("div", {
-          className: `stat-item warning${warningClickable ? " clickable" : ""}`,
-          role: "group",
-          "aria-label": "Warning issues",
-          onClick: warningClickable ? () => onStatItemClick("warning", warningCount) : undefined
-        },
-        h("span", {className: "stat-number", id: "warning-issues-count"}, warningCount),
-        h("span", {className: "stat-label"}, "Warnings")
-        ),
-        h("div", {
-          className: `stat-item info${infoClickable ? " clickable" : ""}`,
-          role: "group",
-          "aria-label": "Information issues",
-          onClick: infoClickable ? () => onStatItemClick("info", infoCount) : undefined
-        },
-        h("span", {className: "stat-number", id: "info-issues-count"}, infoCount),
-        h("span", {className: "stat-label"}, "Info")
-        )
-      ),
-      h("div", {className: "summary-actions"},
-        h("button", {
-          className: "highlighted button-margin",
-          title: "Export Results",
-          onClick: onExportResults,
-          disabled: totalIssues === 0
-        }, "Export",
-        ),
-        h("button", {className: "button-margin", id: "expand-all-btn", onClick: onExpandAll}, "Expand All"),
-        h("button", {className: "button-margin", id: "collapse-all-btn", onClick: onCollapseAll}, "Collapse All")
-      )
-    )
-  );
-}
-
-function PurgeModal(props) {
-  const {
-    isOpen,
-    purgeHistorySize,
-    purgeDetails,
-    purgeWarning,
-    maxHistory,
-    onConfirm,
-    onCancel,
-    onHistorySizeChange
-  } = props;
-
-  return h(ConfirmModal, {
-    isOpen,
-    title: "Purge Old Versions",
-    onConfirm,
-    onCancel,
-    confirmLabel: "Purge",
-    cancelLabel: "Cancel",
-    confirmVariant: "destructive",
-    cancelVariant: "neutral",
-    confirmIconName: "symbols.svg#delete",
-    confirmIconPosition: "left",
-    confirmDisabled: !purgeDetails || purgeDetails.toDeleteCount === 0,
-    confirmType: "button",
-    cancelType: "button"
-  },
-  h("div", {style: {display: "flex", alignItems: "center", gap: "1rem"}},
-    h("label", {className: "slds-form-element__label", style: {marginBottom: "0"}}, "Number of previous versions to keep (in addition to the current version):"),
-    h("div", {className: "slds-form-element__control"},
-      h("input", {
-        type: "number",
-        className: "slds-input",
-        style: {width: "80px"},
-        value: purgeHistorySize,
-        onChange: onHistorySizeChange,
-        min: "0",
-        max: maxHistory
-      })
-    )
-  ),
-  h("div", {style: {minHeight: "1.2em", paddingTop: "0.25rem"}},
-    purgeDetails && (
-      purgeDetails.toDeleteCount === 0
-        ? h("div", {className: "slds-text-color_weak"},
-          "With this setting, no older versions will be deleted."
-        )
-        : h("div", {className: "slds-text-color_weak"},
-          `You will keep the current version and ${purgeDetails.keepCount - 1} previous version${(purgeDetails.keepCount - 1) === 1 ? "" : "s"}, and delete ${purgeDetails.toDeleteCount} older version${purgeDetails.toDeleteCount === 1 ? "" : "s"}.`
-        )
-    )
-  ),
-  purgeWarning && h("div", {className: "slds-text-color_error", style: {marginTop: "0.25rem"}},
-    purgeWarning
-  ),
-  purgeDetails
-    ? (purgeDetails.toDeleteCount === 0
-      ? h("div", {className: "slds-text-color_weak slds-m-vertical_small"},
-        h("p", {}, "There are no older versions to purge with this setting."),
-        h("p", {}, "To delete old versions, lower the number of previous versions to keep above.")
-      )
-      : [
-        h("p", {key: "p1", className: "slds-m-bottom_small"}, `When you confirm, Salesforce will permanently delete ${purgeDetails.toDeleteCount} older version${purgeDetails.toDeleteCount === 1 ? "" : "s"} of this flow.`),
-        h("p", {key: "p2", className: "slds-text-color_error"}, "This will also delete any related Flow Interviews (in-progress flow runs) for those versions, and it cannot be undone.")
-      ]
-    )
-    : null
-  );
-}
-
 /**
  * The main React component for the Flow Scanner application.
  */
@@ -1080,11 +754,6 @@ class App extends React.Component {
       loadingMessage: "Loading Flow Data...",
       loadingDescription: "Please wait while we retrieve the flow metadata from Salesforce.",
       userInfo: "...",
-      userInitials: "",
-      userFullName: "",
-      userName: "",
-      orgName: "",
-      spinnerCount: 0,
       // Accordion state: { [severity]: { expanded: bool, rules: { [ruleType]: bool } } }
       accordion: {
         error: {expanded: true, rules: {}},
@@ -1183,18 +852,13 @@ class App extends React.Component {
 
       await sfConn.getSession(sfHost);
 
-      // Set org name from sfHost
-      const orgName = sfHost.split(".")[0]?.toUpperCase() || "";
-      this.setState({orgName});
-
-      // Fetch user info using utility function
-      getUserInfo().then(result => {
+      // Fetch user info
+      sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
         this.setState({
-          userInfo: result.userInfo,
-          userInitials: result.userInitials,
-          userFullName: result.userFullName,
-          userName: result.userName
+          userInfo: res.userFullName + " / " + res.userName + " / " + res.organizationName
         });
+      }).catch(() => {
+        // Keep default "..." if getUserInfo fails
       });
 
       this.flowScanner = new FlowScanner(sfHost, flowDefId, flowId);
@@ -1786,20 +1450,24 @@ class App extends React.Component {
     const scannerVersion = this.flowScanner?.flowScannerCore?.version || "";
 
     return h("div", {},
-      h(PageHeader, {
-        pageTitle: "Flow Scanner",
-        orgName: this.state.orgName,
-        sfLink,
-        sfHost,
-        spinnerCount: this.state.isLoading ? 1 : 0,
-        userInitials: this.state.userInitials,
-        userFullName: this.state.userFullName,
-        userName: this.state.userName,
-        utilityItems: [
-          h("div", {
-            key: "core-version",
-            className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"
-          },
+      h("div", {id: "user-info", className: "slds-border_bottom"},
+        // Salesforce home link
+        h("a", {
+          href: sfLink,
+          className: "sf-link",
+          target: getLinkTarget()
+        },
+        h("svg", {viewBox: "0 0 24 24"},
+          h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
+        ),
+        " Salesforce Home"
+        ),
+        // Title
+        h("h1", {}, "Flow Scanner"),
+        h("span", {}, " / " + this.state.userInfo),
+        // Right-side header elements
+        h("div", {className: "flex-right"},
+          // Note about core library version
           h("div", {className: "flow-scanner-note-header"},
             h("small", {},
               "💡 Based on ",
@@ -1809,29 +1477,17 @@ class App extends React.Component {
               }, "Lightning Flow Scanner Core"),
               `\u00A0 (core v${scannerVersion})`
             )
-          )
           ),
-          h("div", {
-            key: "help-btn",
-            className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
-          },
-          h("button", {
-            className: "slds-button slds-button_icon slds-button_icon-border-filled",
-            title: "Open Flow Scanner Options",
-            onClick: this.onToggleHelp
-          },
-          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-            h("use", {xlinkHref: "symbols.svg#question"})
+          h("a", {href: "#", id: "help-btn", title: "Open Flow Scanner Options", onClick: this.onToggleHelp, target: getLinkTarget()},
+            h("svg", {className: "icon"},
+              h("use", {xlinkHref: "symbols.svg#question"})
+            )
           )
-          )
-          )
-        ]
-      }),
-      h("div", {className: "slds-m-top_xx-large"},
-        h("div", {className: "main-content-wrapper"},
-          this.renderFlowInfo(),
-          this.state.error ? this.renderError() : this.renderScanResults()
         )
+      ),
+      h("div", {className: "main-content-wrapper"},
+        this.renderFlowInfo(),
+        this.state.error ? this.renderError() : this.renderScanResults()
       ),
       this.renderLoadingOverlay(),
       h("div", {className: "sr-only", "aria-live": "polite", "aria-atomic": "true", id: "sr-announcements"})

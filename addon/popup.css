@@ -446,7 +446,6 @@ a.icon-url {
 .slds-button {
   line-height: 1.2rem;
   min-height: 30px;
-  margin-left: 0 !important;
   font-weight: 500;
   font-size: var(--sfir-font-button) !important;
 }

@@ -966,12 +966,17 @@ class FaviconOption extends React.Component {
       localKey.endsWith("_isSandbox")
     );
 
+    // Deep clone availableColors to avoid direct state mutation
+    const availableColors = JSON.parse(JSON.stringify(this.state.availableColors));
+    let stateUpdated = false;
+
     orgs.forEach((org) => {
       let sfHost = org.substring(0, org.indexOf("_isSandbox"));
       let existingColor = localStorage.getItem(sfHost + FaviconOption.CUSTOM_FAVICON_KEY);
 
       if (!existingColor) { // Only assign a color if none is set
-        const chosenColor = getColorForHost(sfHost, this.state.smartMode, this.state.availableColors);
+        // Pass the cloned object to getColorForHost, which will mutate it
+        const chosenColor = getColorForHost(sfHost, this.state.smartMode, availableColors);
         if (chosenColor) {
           console.info(sfHost + FaviconOption.CUSTOM_FAVICON_KEY, chosenColor);
           localStorage.setItem(sfHost + FaviconOption.CUSTOM_FAVICON_KEY, chosenColor);
@@ -981,11 +986,17 @@ class FaviconOption extends React.Component {
               isColor: true
             });
           }
+          stateUpdated = true;
         }
       } else {
         console.info(sfHost + " already has a customFavicon: " + existingColor);
       }
     });
+
+    // Update state with the modified availableColors if any changes occurred
+    if (stateUpdated) {
+      this.setState({availableColors});
+    }
   }
 
 

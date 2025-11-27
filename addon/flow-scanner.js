@@ -9,7 +9,34 @@
 
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget} from "./utils.js";
+import {getLinkTarget, getUserInfo} from "./utils.js";
+import ConfirmModal from "./components/ConfirmModal.js";
+import {PageHeader} from "./components/PageHeader.js";
+
+// Constants
+const DEFAULT_HISTORY_SIZE = 5;
+const MAX_COMPOSITE_BATCH_SIZE = 25;
+const MAX_QUERY_CHUNK_SIZE = 200;
+const FLOW_SCANNER_RULES_STORAGE_KEY = "flowScannerRules";
+const FLOW_SCANNER_HISTORY_SIZE_KEY = "flowScannerHistorySize";
+
+// Severity level mappings
+const SEVERITY_MAPPING = {
+  ui: {
+    note: "info"
+  },
+  storage: {
+    info: "note"
+  }
+};
+
+const CORE_SEVERITY_TO_UI = {
+  error: "error",
+  critical: "error",
+  warning: "warning",
+  info: "info",
+  information: "info"
+};
 
 // Flow Scanner Rules Configuration
 export const flowScannerKnownConfigurableRules = {
@@ -1457,6 +1484,11 @@ class App extends React.Component {
       loadingMessage: "Loading Flow Data...",
       loadingDescription: "Please wait while we retrieve the flow metadata from Salesforce.",
       userInfo: "...",
+      userInitials: "",
+      userFullName: "",
+      userName: "",
+      orgName: "",
+      spinnerCount: 0,
       // Accordion state: { [severity]: { expanded: bool, rules: { [ruleType]: bool } } }
       accordion: {
         error: {expanded: true, rules: {}},
@@ -1607,13 +1639,18 @@ class App extends React.Component {
 
       await sfConn.getSession(sfHost);
 
-      // Fetch user info
-      sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
+      // Set org name from sfHost
+      const orgName = sfHost.split(".")[0]?.toUpperCase() || "";
+      this.setState({orgName});
+
+      // Fetch user info using utility function
+      getUserInfo().then(result => {
         this.setState({
-          userInfo: res.userFullName + " / " + res.userName + " / " + res.organizationName
+          userInfo: result.userInfo,
+          userInitials: result.userInitials,
+          userFullName: result.userFullName,
+          userName: result.userName
         });
-      }).catch(() => {
-        // Keep default "..." if getUserInfo fails
       });
 
       this.flowScanner = new FlowScanner(sfHost, flowDefId, flowId);
@@ -2206,24 +2243,20 @@ class App extends React.Component {
     const maxHistory = versionsLength ? Math.max(0, versionsLength - 1) : 0;
 
     return h("div", {},
-      h("div", {id: "user-info", className: "slds-border_bottom"},
-        // Salesforce home link
-        h("a", {
-          href: sfLink,
-          className: "sf-link",
-          target: getLinkTarget()
-        },
-        h("svg", {viewBox: "0 0 24 24"},
-          h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-        ),
-        " Salesforce Home"
-        ),
-        // Title
-        h("h1", {}, "Flow Scanner"),
-        h("span", {}, " / " + this.state.userInfo),
-        // Right-side header elements
-        h("div", {className: "flex-right"},
-          // Note about core library version
+      h(PageHeader, {
+        pageTitle: "Flow Scanner",
+        orgName: this.state.orgName,
+        sfLink,
+        sfHost,
+        spinnerCount: this.state.isLoading ? 1 : 0,
+        userInitials: this.state.userInitials,
+        userFullName: this.state.userFullName,
+        userName: this.state.userName,
+        utilityItems: [
+          h("div", {
+            key: "core-version",
+            className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small"
+          },
           h("div", {className: "flow-scanner-note-header"},
             h("small", {},
               "💡 Based on ",
@@ -2233,17 +2266,29 @@ class App extends React.Component {
               }, "Lightning Flow Scanner Core"),
               `\u00A0 (core v${scannerVersion})`
             )
-          ),
-          h("a", {href: "#", id: "help-btn", title: "Open Flow Scanner Options", onClick: this.onToggleHelp, target: getLinkTarget()},
-            h("svg", {className: "icon"},
-              h("use", {xlinkHref: "symbols.svg#question"})
-            )
           )
+          ),
+          h("div", {
+            key: "help-btn",
+            className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
+          },
+          h("button", {
+            className: "slds-button slds-button_icon slds-button_icon-border-filled",
+            title: "Open Flow Scanner Options",
+            onClick: this.onToggleHelp
+          },
+          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#question"})
+          )
+          )
+          )
+        ]
+      }),
+      h("div", {className: "slds-m-top_xx-large"},
+        h("div", {className: "main-content-wrapper"},
+          this.renderFlowInfo(),
+          this.state.error ? this.renderError() : this.renderScanResults()
         )
-      ),
-      h("div", {className: "main-content-wrapper"},
-        this.renderFlowInfo(),
-        this.state.error ? this.renderError() : this.renderScanResults()
       ),
       this.renderLoadingOverlay(),
       this.renderPurgeResultModal(),

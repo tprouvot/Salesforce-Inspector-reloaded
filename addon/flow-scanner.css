@@ -320,27 +320,31 @@ button,
   background-color: rgb(0, 112, 210);
   border-color: rgb(0, 112, 210);
   color: #fff;
+  cursor: pointer;
 }
 
 .highlighted:hover,
 .highlighted:active {
   background-color: rgb(0, 95, 178);
   color: #fff;
+  cursor: pointer;
 }
 
 .highlighted:disabled {
   background-color: #c9c7c5;
   border-color: #c9c7c5;
   color: #fff;
+  cursor: not-allowed;
 }
 
 .highlighted:disabled:hover {
   background-color: #c9c7c5;
   color: #fff;
+  cursor: not-allowed;
 }
 
-button:hover,
-.button:hover {
+button:not(.slds-button):hover,
+.button:not(.slds-button):hover {
   background-color: #f8f9fa;
   border-color: #0070d2;
   color: #0070d2;
@@ -1295,33 +1299,6 @@ svg.icon:hover {
   border: none;
   background-color: transparent;
 }
-
-.flow-status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: #e8f5e8;
-  color: #2d5a2d;
-  border: 1px solid #c3e6c3;
-}
-
-.flow-description {
-  font-size: 0.85rem;
-  color: #495057;
-  background: #f8f9fa;
-  border-radius: 4px;
-  border-left: 3px solid #0070d2;
-  padding: 4px 8px;
-  margin: 0;
-  min-width: 120px;
-  word-break: break-word;
-}
-
 @media (max-width: 768px) {
   .flow-detail-item {
     flex-direction: row;
@@ -1416,19 +1393,6 @@ svg.icon:hover {
   gap: 16px;
   min-height: 0;
 }
-
-.flow-description {
-  font-size: 0.85rem;
-  color: #495057;
-  background: #f8f9fa;
-  border-radius: 4px;
-  border-left: 3px solid #0070d2;
-  padding: 4px 8px;
-  margin: 0;
-  min-width: 120px;
-  word-break: break-word;
-}
-
 @media (max-width: 900px) {
   .flow-desc-row {
     flex-direction: column;
@@ -1630,5 +1594,7 @@ h1 {
   color: #6c757d;
   margin: 0 0 16px 0;
 }
-
-
+.purge-results-container .slds-table th,
+.purge-results-container .slds-table td {
+  text-align: center;
+}

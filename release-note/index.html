@@ -1,0 +1,2086 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Thomas Prouvot">
+      
+      
+        <link rel="canonical" href="https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/">
+      
+      
+        <link rel="prev" href="../welcome/">
+      
+      
+        <link rel="next" href="../data-export/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/icon128.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Release Notes - Salesforce Inspector reloaded</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#release-notes" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Salesforce Inspector reloaded" class="md-header__button md-logo" aria-label="Salesforce Inspector reloaded" data-md-component="logo">
+      
+  <img src="../assets/images/icon128.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Salesforce Inspector reloaded
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Release Notes
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../welcome/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../data-export/" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../articles/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Articles
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../troubleshooting/" class="md-tabs__link">
+          
+  
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Salesforce Inspector reloaded" class="md-nav__button md-logo" aria-label="Salesforce Inspector reloaded" data-md-component="logo">
+      
+  <img src="../assets/images/icon128.png" alt="logo">
+
+    </a>
+    Salesforce Inspector reloaded
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../welcome/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Welcome
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to/#use-sf-inspector-with-a-connected-app" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configure Connected App
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#version-127" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.27
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-126" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.26
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-125" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.25
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-124" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.24
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-123" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.23
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-122" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.22
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-121" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.21
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-1201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.20.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.20
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-119" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.19
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-118" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.18
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-117" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.17
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-116" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.16
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-115" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.15
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-114" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.14
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-113" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.13
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Management
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data Management
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Import
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metadata
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Metadata
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../download-metadata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Download Metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../field-creator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Field Creator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../event-monitor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Event Monitor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rest-explorer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    REST Explorer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../limits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Org Limits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How-To
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Articles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../privacy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../donate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Donate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#version-127" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.27
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-126" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.26
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-125" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.25
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-124" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.24
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-123" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.23
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-122" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.22
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-121" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.21
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-1201" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.20.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-120" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.20
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-119" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.19
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-118" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.18
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-117" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.17
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-116" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.16
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-115" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.15
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-114" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.14
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-113" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version 1.13
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href=".." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Home
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../welcome/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="release-notes">Release Notes<a class="headerlink" href="#release-notes" title="Permanent link">&para;</a></h1>
+<h2 id="version-127">Version 1.27<a class="headerlink" href="#version-127" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>Data Export</code> Query tab loses changes after using field autocomplete and switching tabs (issue by <a href="https://github.com/hvilminko">Henri Vilminko</a>)</li>
+<li>Fix gauge display and text when limits are exceeded <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/943">issue #943</a> (contribution by <a href="https://github.com/Annubis45">Sylvain Enguerand</a>)</li>
+<li>Open the Debug Logs from the Data Export page (contribution by <a href="https://github.com/MarkoVukovic">Marko Vuković</a>)</li>
+<li>Fix sandbox banner colorization for Winter 26 changes</li>
+<li><code>Show All Data</code> Save fields selection <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/914">feature 914</a></li>
+<li>Fix 'unexpected query key(s): cache' error in REST Explore <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/909">issue 909</a> issued by <a href="https://github.com/mascot4m">Martin Krchnak</a></li>
+<li><code>Show All Data</code> Limit polymorphic reference types shown to 5 with "Show more" / "Show less" toggle in the field details tooltip <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/865">feature 865</a> (contribution by <a href="https://github.com/rockstartushar">Tushar Dangayach</a>)</li>
+<li>Fix: Enable popup actions for records identified only by DurableId (e.g., FlowDefinitionView) <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/441">issue 441</a> (contribution by <a href="https://github.com/rockstartushar">Tushar Dangayach</a>)</li>
+<li><code>Show All Data</code> Analyze field usage by showing the percentage of records that have a value for each field.</li>
+<li><code>Show All Data</code> Add 'back to record' button <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/884">feature 884</a> (contribution by <a href="https://github.com/KamilGadawski">Kamil Gadawski</a>)</li>
+<li><code>Data Export</code> Suggestions added for queries using IN clause on picklist fields <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/892">feature 892</a> (contribution by <a href="https://github.com/baslu93">Luca Bassani</a>)</li>
+<li>Support for multiple SOQL/SOSL tabs in <code>Data Export</code> <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/132">feature 132</a> (requested Erlend Hansen)</li>
+<li>Add button in Option page to delete generated access token (cf <a href="https://tprouvot.github.io/Salesforce-Inspector-reloaded/troubleshooting/#generate-new-token-error">troubleshooting</a>)</li>
+<li>Add option to configure default popup tab <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/877">feature 877</a> (requested by William Salomon)</li>
+<li>Support manual channel configuration and Change Data Capture Events on <code>Event Monitor</code> <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/859">feature 859</a> (idea by <a href="https://github.com/dmoruzzi">David Moruzzi</a>) and <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/867">feature 867</a> (idea by Ammon Ho)</li>
+<li><code>Metadata</code> Handle SpecifiedTest + Start zip download when ready <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/319">feature 319</a> request by <a href="https://github.com/Astisme">Alfredo Chissotti</a></li>
+<li>Add Metadata Deploy feature</li>
+<li>Add Agentforce integration to generate SOQL queries in Data Export <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/850">feature 850</a></li>
+<li>Add option for SOQL query typo removal in Data Export <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/844">feature 844</a> and <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/849">feature 849</a></li>
+<li>Refactor field-creator api calls to match with extension standards</li>
+<li>Remove the exclusion of InstalledPackage in Download Metadata page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/641">feature 641</a> request by <a href="https://github.com/yuandake">yuandake</a></li>
+<li>Create, Edit and Delete custom shortcuts links in Options page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/102">feature 102</a></li>
+<li>Fix empty lines in picklist values causing deployment errors in Field Creator <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/787">issue 787</a> (contribution by <a href="https://github.com/vicky773h">Vivek Sharma</a>)</li>
+<li><code>Data Import</code> Automatically detect the SObject based on Id field <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/483">feature 483</a> request by <a href="https://github.com/CRMTom92">Tom Bassett</a> and fix <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/829">issue 829</a> &amp; <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/832">issue 832</a></li>
+<li>Add <code>convertCurrency()</code> , <code>FORMAT()</code> and <code>GROUPING()</code> to autocomplete suggestions in Data Export <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/818">feature 818</a> request by <a href="https://github.com/dollarSignUsername">Hubert</a></li>
+<li>Update sandbox banner feature to match with new AppDev Bar <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/815">feature 815</a></li>
+<li>Add refresh button on Org Limits and persist filter in url</li>
+<li>Filter result by column in <code>Data Export</code><a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/685">feature 685</a> (contribution by <a href="https://github.com/laissaouibrahim">Brahim LAISSAOUI</a>)</li>
+<li>Grey out columns that were not imported in <code>Data Import</code> <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/507">feature 507</a> request by <a href="https://github.com/Wintermute1974">Wintermute1974</a> (contribution by <a href="https://github.com/kaustubhdapurkar">Kaustubh Dapurkar</a>)</li>
+<li><code>Show All Data</code>: Iterate through boolean values with up &amp; down key <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/794">feature 794</a> request by <a href="https://github.com/mplaaguilera">mplaaguilera</a></li>
+<li>Fix 'Query Record' not persisting the state of the 'Tooling Api' setting <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/268">issue 268</a> (contribution by <a href="https://github.com/kaustubhdapurkar">Kaustubh Dapurkar</a>)</li>
+<li><code>Show All Data</code> Use alternative field Name in the header (ie CaseNumber) <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/806">feature 806</a> request by <a href="https://github.com/Mart-User">Mart</a></li>
+<li>Implement search on <code>Event Monitor</code> to filter on event details</li>
+<li>Prevent selection of an API version higher than the latest available <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/464">feature 464</a> (contribution by <a href="https://github.com/SalwaHm">Salwa Hammou</a>)</li>
+<li>Fix error propagation on rest 403 <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/881">issue 881</a> (contribution by <a href="https://github.com/scolladon">Sebastien Colladon</a>)</li>
+</ul>
+<h2 id="version-126">Version 1.26<a class="headerlink" href="#version-126" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Fix popup button is not displayed after chrome update <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/855">issue 855</a></li>
+<li>Fix issue with the sorting of child components in Download Metadata</li>
+<li>Fix ' character search in the popup Users tab <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/799">issue 799</a> by <a href="https://github.com/jramirez6964">Josue Ramirez</a></li>
+<li>Support Custom Channels in Event Monitor <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/797">feature 797</a> (idea by <a href="https://github.com/mehdicherf">Mehdi Cherfaoui</a>)</li>
+<li><code>Event Monitor</code> : fix text selection in PlatformEvent payload, persist replayId in url and deduplicate events received</li>
+<li><code>Download Metadata</code> page rework</li>
+<li>Add internal tests for REST Explorer</li>
+<li>Add <code>Delete All ApexLogs</code> Button in popup Org tab <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/726">feature 726</a> request by <a href="https://github.com/shubhambangad-rubrik">Shubham Bangad</a></li>
+<li>Fix Bulk job results via REST explorer <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/756">issue 756</a> by <a href="https://github.com/NatanOnteam">NatanOnteam</a></li>
+<li>Fix <code>Stop</code> button on <code>Data Export</code> page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/773">issue 773</a> by Ashoka Poojari</li>
+<li>Use Lightning Navigation when opening internal Salesforce links from the popup page (contribution by <a href="https://github.com/toly11">Joshua Yarmak</a>)</li>
+<li>Enable query template multi-line in Data Export <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/759">feature 759</a> (contribution by <a href="https://github.com/KamilGadawski">Kamil Gadawski</a>)</li>
+<li>Add <code>Generate package.xml</code> button from a DeployRequest record (idea by Nicolas ROCHE)</li>
+<li>Fix sandbox color banner missing in Flow debug <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/738">issue 738</a> by <a href="https://github.com/CamilleGuillory">Camille Guillory</a></li>
+<li>Fix Upsert Custom Metadata Bug with Metadata Relationship <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/509">issue 509</a> (contribution by <a href="https://github.com/toly11">Joshua Yarmak</a>)</li>
+<li>Guess file format on paste in data import <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/501">feature 501</a> request by <a href="https://github.com/Damecek">Adam Štěpánek</a></li>
+<li>Add chrome extension shortcuts for Setup, Home Page and Dev Console <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/707">feature 707</a> request by <a href="https://github.com/DannyGelf">Danny Gelfenbaum</a></li>
+<li>Add button on User tab to enable LWC debug mode from the popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/696">feature 696</a> request by <a href="https://github.com/b-r-j">b-r-j</a></li>
+<li>Add production org header and customizable text in options <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/679">feature 679</a> request and help by <a href="https://github.com/TimPaulaskasDS">Tim Paulaskas</a></li>
+<li>Add Scale Center links to Shortcut tab search.</li>
+<li>Add info about PlatformEvent limits and consumptions on <code>Event Monitor</code> page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/697">feature 697</a></li>
+<li>Rename <code>Add deleted records?</code> to <code>Deleted/Archived Records?</code> in data export <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/662">feature 662</a> request by <a href="https://github.com/mckayhowell">McKay Howell</a></li>
+<li>Add <code>Donate</code> button in the popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/336">discussion 336</a></li>
+<li>Change user language and locale from the popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/463">feature 463</a></li>
+<li>Update user detail post save redirect <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/671">feature 671</a></li>
+<li>Add new domain for Visualforce pages cf <a href="https://help.salesforce.com/s/articleView?id=001406148&amp;type=1">Ensure Access to Your Visualforce Pages in Summer '24 and Winter '25</a></li>
+<li>Security improvements thanks to <a href="https://github.com/rikaardhosein">Rikaard Hosein</a> <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/661">fix 661</a></li>
+<li>Add option for <code>Field Creator</code> to allow users to choose between PascalCase and Underscores for new field API names. <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/655">feature 655</a> (contribution by <a href="https://github.com/sqone2">Steve Quirion</a>)</li>
+<li>Customize Data Export shortcuts (execute query and insert all fields name in query) <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/653">feature 653</a> in <code>chrome://extensions/shortcuts</code></li>
+<li>Add <a href="https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/headers_calloptions.htm">clientId</a> header param to identify the extension in EventLogFile <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/504">feature 504</a></li>
+<li>Add Apex Classes metadata search in Shortcut tab and new option configuration for the search <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/591">feature 591</a> request by <a href="https://github.com/mpekacki">mpekacki</a></li>
+<li>Add <code>My Personal Information</code> shortcuts <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/627">feature 627</a> request by <a href="https://github.com/Astisme">Alfredo Chissotti</a></li>
+<li>Add compatibility for force.com domain for Sf internal orgs</li>
+<li>Restyle Org Limits <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/626">feature 626</a> request by <a href="https://github.com/VinceFINET">Vincent FINET</a></li>
+<li>Add new options to hide buttons in popup and data export <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/618">feature 618</a></li>
+<li>Added an option for Data Exporter to use local browser time <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/527">feature 527</a> (contribution by <a href="https://github.com/dmoruzzi">David Moruzzi</a>)</li>
+<li>Add <code>calculated</code> to type column <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/680">feature 680</a> (contribution by <a href="https://github.com/lrlip">Lars Lipman</a>)</li>
+<li>Fix LWC Debug mode force page refresh before User update <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/718">issue 718</a> (contribution by <a href="https://github.com/Paul-Kalynyn">Paul Kalinin</a>)</li>
+<li>Fix <code>event-monitor</code> Error on Edge <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/716">issue 716</a> (contribution by <a href="https://github.com/Paul-Kalynyn">Paul Kalinin</a>)</li>
+</ul>
+<h2 id="version-125">Version 1.25<a class="headerlink" href="#version-125" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Security improvements thanks to <a href="https://github.com/rikaardhosein">Rikaard Hosein</a> <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/661">fix 661</a></li>
+<li>Add metadata title on shortcut search <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/639">feature 639</a> request by <a href="https://github.com/Tal-Fr">Tal-Fr</a></li>
+<li>Fix <code>Use Favicon Color</code> option which was not working key <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/634">issue 634</a> raised by <a href="https://github.com/Garywoo">Gary Woodhouse</a></li>
+<li>Add <code>Clear</code> button in Event Monitor and REST Explorer</li>
+<li>Fix <code>Field Creator</code> shortcut key <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/608">issue 608</a></li>
+<li>Add <code>Flow Trigger Explorer</code> in shortcut links <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/610">feature 610</a> request by <a href="https://github.com/JeffKrakowski">JeffKrakowski</a></li>
+<li>Add <code>Import</code> / <code>Export</code> configuration from Option page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/570">feature 570</a></li>
+<li>Add <code>Field Creator</code> page to bulk create fields from the extension (contribution by <a href="https://github.com/SantiParris8">Santiago Parris</a>)</li>
+<li>Add <code>Event Monitor</code> page to subscribe to Platform Events (contribution by <a href="https://github.com/AntoineLeleu-Salesforce">Antoine Leleu</a>)</li>
+<li>Hide "What's new banner" in incognito mode <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/517">feature 517</a></li>
+<li>Persist selected tab when reloading Options page.</li>
+<li>Add button in Options page to reset API Version to extension's default <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/541">feature 541</a></li>
+<li>Enable Salesforce Inspector Reloaded on Debug flow page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/552">feature 552</a> request by <a href="https://github.com/mavtron-andrewrusso">Andrew Russo</a></li>
+<li>Add option to highlight PROD with a 2px top border</li>
+<li>Add response time in REST Explore <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/539">issue 539</a></li>
+<li>Add autocomplete feature for REST Explore page</li>
+<li>Add option to increase the number of saved &amp; history query in data export</li>
+<li>Enable Salesforce Inspector Reloaded on Experience Builder and add compatibility for custom favicon</li>
+<li>Add option to colorize sandbox banner in the same color as the favicon <a href="https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=favico#customize-sandbox-banner-color">doc</a></li>
+<li>Add "Object Access" link in Object popup tab to display Object permission details (Winter 25 feature)</li>
+<li>Fix Platform Event links on popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/500">issue 500</a></li>
+</ul>
+<h2 id="version-124">Version 1.24<a class="headerlink" href="#version-124" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Fix issues <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/543">543</a>, <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/538">538</a>, <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/545">545</a> &amp; <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/545">546</a></li>
+<li>Add new REST Explore page to call Salesforce APIs from the extension</li>
+<li>Add Global Search in Shortcut tab when no result was found</li>
+<li>Enable users to configure custom headers on Data Import (AssignmentRuleHeader, DuplicateRuleHeader, OwnerChangeOptions ...) <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/478">feature 478</a></li>
+<li>Fix CustomSetting links in popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/473">issue 473</a> (contribution by <a href="https://github.com/castellani">Boris Castellani</a>)</li>
+<li>Support SOSL <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/131">feature 131</a> and GraphQL queries in Data Export</li>
+<li>Increase API version to 61 (Summer'24)</li>
+<li>Improve readability for screen readers (<a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/454">feature 454</a> request by <a href="https://github.com/mavtron-andrewrusso">Andrew Russo</a>)</li>
+<li>Restrict autocomplete suggestion to SObject record type names in Data Export page (feature <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/442">442</a> by <a href="https://github.com/CamilleGuillory">Camille Guillory</a>)</li>
+<li>Add <code>Download CSV</code> button in data export page (<a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/101">feature 101</a> requested by <a href="https://github.com/mickaelgudin">Mickael Gudin</a>)</li>
+<li>Customize extension's pages shortcuts in <a href="chrome://extensions/shortcuts">chrome://extensions/shortcuts</a> (<a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/171">feature 171</a> by <a href="https://github.com/asanaEAzimzhanov">asanaEAzimzhanov</a>)</li>
+<li>Add option to exclude formula fields from data export autocomplete <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/415">feature 415</a></li>
+<li>Removes whitespace from both ends in user search <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/410">feature 410</a> (contribution by <a href="https://github.com/cesarblancg">César Blanco</a>)</li>
+<li>Add setup menu items <code>Trusted URLs</code> and <code>Trusted URL and Browser Policy Violations</code> to shortcut links</li>
+<li>Ability to quit popup with escape button <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/378">feature 378</a> (contribution by <a href="https://github.com/gramier">Gerald Ramier</a>)</li>
+<li>Add option to customize org favicon <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/180">feature 180</a></li>
+<li>Add tooltip to options <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/399">feature 399</a> (contribution by <a href="https://github.com/nshulman">Nathan Shulman</a>)</li>
+<li>Fixed popup button disappearance at 100%, also changed horizontal orientation to start at left <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/404">issue 404</a> (contribution by <a href="https://github.com/nshulman">Nathan Shulman</a>)</li>
+<li>Add a button to login-as a user in an new incognito window <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/381">issue 381</a> (contribution by <a href="https://github.com/alanjaouen">Alan Jaouen</a>)</li>
+<li>Add option to hide object name columns in query results from Data Export page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/352">feature 352</a> (contribution by <a href="https://github.com/guillaumeSF">Guillaume Fauritte</a>)</li>
+</ul>
+<h2 id="version-123">Version 1.23<a class="headerlink" href="#version-123" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add new <a href="https://help.salesforce.com/s/articleView?id=release-notes.rn_general_setup_domain_prepare.htm&amp;release=246&amp;type=5">setup pages</a> domain <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/389">feature 389</a> (request by <a href="https://github.com/akalatksy">akalatksy</a>)</li>
+<li>Add "View summary" link on User tab <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/386">feature 386</a></li>
+<li>Add option to hide <code>Delete Records</code> button from Data Export page</li>
+<li>Fix popup not closing in inspect page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/159">issue 159</a> (contribution by <a href="https://github.com/baslu93">Luca Bassani</a>)</li>
+<li>On inspect page, when double clicking on a picklist field, iterate through available values <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/366">feature 366</a></li>
+<li>Integrate Experience Cloud builder link to shortcut search in popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/365">feature 365</a></li>
+<li>Add <code>Flow Versions</code> button in popup when recordId is a flow <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/362">feature 362</a> (feature request by <a href="https://github.com/RebbePod">Rebbe Pod</a>)</li>
+<li>Format relations as expected in import process <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/26">feature 26</a> (contribution by <a href="https://github.com/dufoli">Olivier Dufour</a>)</li>
+<li>Ability to choose header theme <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/294">feature 294</a></li>
+<li>Add query template customization in Option page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/349">feature 349</a></li>
+<li>Add an option to enable / disable SObject context on data export <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/341">issue 341</a></li>
+<li>Remove Consumer key input from data export <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/338">issue 338</a></li>
+<li>Customize extension's favicon <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/197">feature 197</a></li>
+<li>Save default batch size and thread for data import <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/329">feature 329</a> (feature request by <a href="https://github.com/ritterblau">ritterblau</a>)</li>
+<li>Load recently viewed records on popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/321">feature 321</a></li>
+<li>Open documentation when installing the extension <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/322">feature 322</a></li>
+<li>Add Query Plan to data export <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/314">feature 314</a></li>
+<li>Align show-all data 'Type' column with Salesforce's 'Data Type' field <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/312">issue 312</a> by <a href="https://github.com/efcdilascio">efcdilascio</a></li>
+<li>Make data export suggestions scrollable <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/301">feature 301</a> by <a href="https://github.com/vranisimo">Vranisimo</a></li>
+<li>Show the number of filtered records in data export <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/300">feature 300</a> by <a href="https://github.com/vranisimo">Vranisimo</a></li>
+<li>Hide RecType and Name field from popup when field is not set <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/298">feature 298</a></li>
+<li>Display API version in Org tab <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/293">feature 293</a> (feature by <a href="https://github.com/CamilleGuillory">Camille Guillory</a>)</li>
+<li>Add the possibility to hide fields API names after users clicked "Show fields API names"</li>
+<li>Add performance On data export with option to disable in Options/Data Export tab (contribution by <a href="https://github.com/nshulman">Nathan Shulman</a>)</li>
+<li>Clean up popup header and footer (contribution by <a href="https://github.com/nshulman">Nathan Shulman</a>)</li>
+<li>Fix double "Show all data" button <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/63">issue 63</a> (contribution by <a href="https://github.com/baslu93">Luca Bassani</a>)</li>
+<li>Enhanced the user interface with a subtle inline "copied" indicator for field copy actions <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/351">feature 351</a> (contribution by <a href="https://github.com/dyncan">dyncan</a>)</li>
+</ul>
+<h2 id="version-122">Version 1.22<a class="headerlink" href="#version-122" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add AlertBanner component for Alerts following <a href="https://www.lightningdesignsystem.com/components/alert/">SLDS guidelines</a> (contribution by <a href="https://github.com/nshulman">Nathan Shulman</a>)</li>
+<li>Add info banner when extension is updated and convert "Generate token" button to alert. <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/51">feature 51</a> (contribution by <a href="https://github.com/nshulman">Nathan Shulman</a>)</li>
+<li>Add "Hide fields API names" when users clicked "Show fields API names"</li>
+<li>Add "Enable Logs" button in the User tab <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/245">feature 245</a> (contribution by <a href="https://github.com/AntoineLeleu-Salesforce">Antoine Leleu</a>)</li>
+<li>Add default connected app setting and improve access token renew flow. Note: Due to the simplified redirect url, this is a BREAKING CHANGE for users who have created their own connected app: those users MUST update their connected app Callback URL to the new value before they can use this version of the extension (contribution by <a href="https://github.com/mehdicherf">Mehdi Cherfaoui</a>)</li>
+<li>Allow users to define REST callout headers on showAllData page. The need is to prevent the auto assignation of Accounts, Cases and Leads. <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/198">feature 198</a> (issue by <a href="https://github.com/SfdxDieter">SfdxDieter</a>)</li>
+<li>Fix flow scrollability] checkbox on non dev environments <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/258">issue 258</a> (by <a href="https://github.com/samuelkrissi">Samuel Krissi</a>)</li>
+<li>Fix 'Record Type not displayed' in popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/255">issue 255</a></li>
+<li>Add "Options" page to manage local storage variables directly from the UX. Allow to reposition the popup button <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/145">feature 145</a> (contribution by <a href="https://github.com/pietromartino">Pietro Martino</a>)</li>
+<li>Bugfix Delete button does not check for 'toolingApi' parameter <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/254">issue 254</a> (contribution by <a href="https://github.com/ogomezba">Oscar Gomez Balaguer</a>)</li>
+<li>Add Apex classes documentation in shortcut <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/247">feature 247</a></li>
+<li>Disable "Delete records" button when a query returns more than 20k records <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/251">feature 251</a></li>
+<li>Automatically request SObject type for data import and SObject record id for data export <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/45">feature 45</a> SObject record (#45)) (contribution by <a href="https://github.com/dufoli">Olivier Dufour</a>)</li>
+<li>Add support to Hyperforce China Organizations <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/141">PR141</a> (contribution by <a href="https://github.com/yaacov9">Yaacov Elbaz</a>)</li>
+</ul>
+<h2 id="version-121">Version 1.21<a class="headerlink" href="#version-121" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add support for upserting and deleting Custom Metadata (contribution by <a href="https://github.com/toly11">Joshua Yarmak</a>)</li>
+<li>Add "Org" tab to display org and instance information (contribution by <a href="https://github.com/victorgz">Victor Garcia Zarco</a>)</li>
+<li>Undelete records from data import page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/193">feature 193</a></li>
+<li>Create new records from SObject tab ("New" button) <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/226">feature 226</a></li>
+<li>Enhance shortcut search to include any part of the shortcut title, not only the beginning (contribution by <a href="https://github.com/toly11">Joshua Yarmak</a>)</li>
+<li>Org instance in not correct with after Hyperforce migration: store org instance in sessionStorage to retrieve it once per session <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/167">issue 167</a></li>
+<li>Add Salesforce SObject documentation links <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/219">feature 219</a> (idea by Antoine Audollent)</li>
+<li>Add centering buttons section in footer after edit field (contribution by <a href="https://github.com/KamilGadawski">Kamil Gadawski</a>)</li>
+<li>Add dynamic display text show/hide borders table popup in record field preview setting (contribution by <a href="https://github.com/KamilGadawski">Kamil Gadawski</a>)</li>
+<li>Add "Download" option on event log files (contribution by <a href="https://github.com/Annubis45">Annubis45</a>)</li>
+<li>Fix 'Custom Object Name Links Don't Work' in popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/218">issue 218</a> (contribution by <a href="https://github.com/JefersonChaves">Jeferson Chaves</a>)</li>
+<li>Show field API Name on Record Page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/202">PR202</a> (contribution by <a href="https://github.com/MD931">Mouloud Habchi</a>)</li>
+<li>Add support for domains protected by Microsoft Defender for Cloud Apps <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/234">issue 234</a> (contribution by <a href="https://github.com/mehdicherf">Mehdi Cherfaoui</a>)</li>
+</ul>
+<h2 id="version-1201">Version 1.20.1<a class="headerlink" href="#version-1201" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Bugfix Delete Button not enabled when only one record is queried/filtered (contribution by <a href="https://github.com/ogomezba">Oscar Gomez Balaguer</a>)</li>
+<li>Bugfix User selection not displaying information (for orgs without community enabled) <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/211">issue 211</a></li>
+</ul>
+<h2 id="version-120">Version 1.20<a class="headerlink" href="#version-120" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Move popup arrow icon in Flow Builder because of Winter 24 UI changes <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/200">feature 200</a></li>
+<li>Add <code>Login As</code> button for Experience users <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/190">feature 190</a></li>
+<li>Add <code>Delete Records</code> button from data export page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/134">feature 134</a> (contribution by <a href="https://github.com/ogomezba">Oscar Gomez Balaguer</a>)</li>
+<li>Update popup title to show "Salesforce Inspector Reloaded" <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/188">feature 188</a> (idea by <a href="https://github.com/nvuillam">Nicolas Vuillamy</a>)</li>
+<li>Add "Query Record" link from data-export page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/111">feature 111</a> (contribution by <a href="https://github.com/AntoineLeleu-Salesforce">Antoine Leleu</a>)</li>
+<li>Fix "Edit page layout link" for from show all data and use "openLinksInNewTab" property for those links <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/181">issue 181</a></li>
+<li>Update to Salesforce API v 59.0 (Winter '24)</li>
+<li>Add a parameter to activate summary view of pset / psetGroup from shortcut tab <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/175">feature 175</a></li>
+<li>Display record name (and link) in popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/165">feature 165</a></li>
+<li>Add documentation link to popup</li>
+<li>Add option to open extension pages in a new tab using keyboard shortcuts (contribution by <a href="https://github.com/toly11">Joshua Yarmak</a>)</li>
+<li>Add customizable query templates to query export page (idea and co-develop with <a href="https://github.com/samuelkrissi">Samuel Krissi</a>)</li>
+<li>Explore-api page restyling</li>
+<li>Ability to define csv-file separator <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/144">feature 144</a> (issue by <a href="https://github.com/foxysolutions">Reinier van den Assum</a>)</li>
+<li>Fix SObject auto detect for JSON input in data import</li>
+<li>"Lightning Field Setup" (from show all data) link did not work for CustomMetadataType and CustomSettings <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/154">issue 154</a> (issue by <a href="https://github.com/CamilleGuillory">Camille Guillory</a>)</li>
+<li>Add missing Date Literals <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/155">feature 155</a></li>
+<li>Allow navigation to the extension tabs (Object, Users, Shortcuts) using keyboard <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/135">feature 135</a> (feature by <a href="https://github.com/asknet">Sarath Addanki</a>)</li>
+<li>Update query on EntityDefinition to avoid missing objects for large orgs <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/138">issue 138</a> (issue by <a href="https://github.com/AjitRajendran">AjitRajendran</a>)</li>
+<li>Add <code>LIMIT 200</code> when selecting <code>FIELDS(</code> in autocomplete <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/146">feature 146</a> )</li>
+<li>Change method to get extension id to be compatible with firefox <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137">issue 137</a> (issue by <a href="https://github.com/kkorynta">kkorynta</a>)</li>
+<li>Fix hardcoded browser in Generate Token url <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/137">issue 137</a> (issue by <a href="https://github.com/kkorynta">kkorynta</a>)</li>
+<li>Add <code>Create New Flow</code>, <code>Create New Custom Object</code>, <code>Create New Permission Set</code>, <code>Create New Custom Permission</code> and <code>Recycle Bin</code> shortcuts</li>
+<li>Update pop-up release note link to github pages</li>
+<li>Detect SObject on list view page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/121">feature 121</a> (idea by <a href="https://github.com/mehdicherf">Mehdi Cherfaoui</a>)</li>
+<li>Automate test setup manual step of contact to multiple accounts <a href="https://github.com/aimaj">Aidan Majewski</a></li>
+<li>In Data export, set input focus in SOQL query text area. <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/183">feature 183</a> (contribution by <a href="https://github.com/asknet">Sarath Addanki</a>)</li>
+</ul>
+<h2 id="version-119">Version 1.19<a class="headerlink" href="#version-119" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Inspect Page Restyling (UI improvements, red background for PROD, display / hide table borders) <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/105">PR105</a> (contribution by <a href="https://github.com/pietromartino">Pietro Martino</a>)</li>
+<li>Navigate to record detail (Flows, Profiles and PermissionSet) from shortcut search <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/118">feature 118</a></li>
+<li>Fix country codes from LocalSidKey convention <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/117">PR117</a> (contribution by <a href="https://github.com/baslu93">Luca Bassani</a>)</li>
+<li>Use custom shortcuts <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/115">feature 115</a></li>
+<li>Add Export Query button <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/109">feature 109</a> (idea by <a href="https://github.com/rpsherry-starburst">Ryan Sherry</a>)</li>
+<li>Add permission set group assignment button from popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/106">feature 106</a></li>
+</ul>
+<h2 id="version-118">Version 1.18<a class="headerlink" href="#version-118" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Update to Salesforce API v 58.0 (Summer '23)</li>
+<li>Restyle popup with SLDS (Salesforce Lightning Design System) <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/9">feature 9</a> (idea by <a href="https://github.com/lberbey">Loïc BERBEY</a>, contribution by <a href="https://github.com/pietromartino">Pietro Martino</a>)</li>
+<li>Fix "Show all data" shortcut from popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/96">issue 96</a> (fix by <a href="https://github.com/pietromartino">Pietro Martino</a>)</li>
+</ul>
+<h2 id="version-117">Version 1.17<a class="headerlink" href="#version-117" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add toLabel function among autocomplete query suggestions <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/90">feature 90</a> (idea by <a href="https://github.com/mickaelgudin">Mickael Gudin</a>)</li>
+<li>Update spinner on inspect page when loading or saving records and disable button <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/69">feature 69</a> (idea by <a href="https://github.com/CamilleGuillory">Camille Guillory</a>)</li>
+<li>Show "Copy Id" from Inspect page <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/12">feature 12</a></li>
+<li>Add a configuration option for links to open in a new tab <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/78">feature 78</a> (idea by <a href="https://github.com/hvilminko">Henri Vilminko</a>)</li>
+<li>Import data as JSON <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/75">feature 75</a> (idea by <a href="https://github.com/gaelguimini">gaelguimini</a>)</li>
+<li>Fix auto update action on data import <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/73">issue 73</a> (issue by <a href="https://github.com/Juul1">Juul1</a>)</li>
+<li>Restore focus on suggested fields when pressing tab key in query editor <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/66">issue 66</a> (idea by <a href="https://github.com/emunoz-at-wiris">Enrique Muñoz</a>)</li>
+<li>Update shortcut indication for mac users</li>
+<li>Fix links for custom object <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/80">PR80</a> (contribution by <a href="https://github.com/MD931">Mouloud Habchi</a>)</li>
+<li>Fix links for custom setting <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/82">PR82</a> (contribution by <a href="https://github.com/MD931">Mouloud Habchi</a>)</li>
+</ul>
+<h2 id="version-116">Version 1.16<a class="headerlink" href="#version-116" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Select "Update" action by default when the data paste in data-import page contains Id column <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/60">feature 60</a> (idea by Bilel Morsli)</li>
+<li>Allow users to update API Version <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/58">feature 58</a></li>
+<li>Add org instance in the popup and a link to Salesforce trust status website <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/53">feature 53</a> (idea by <a href="https://github.com/CamilleGuillory">Camille Guillory</a> )</li>
+<li>Fix saved query when it contains ":" <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/55">issue 55</a> (bug found by <a href="https://github.com/victorgz/">Victor Garcia</a> )</li>
+</ul>
+<h2 id="version-115">Version 1.15<a class="headerlink" href="#version-115" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add "PSet" button to access user permission set assignment from User tab <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/49">feature 49</a></li>
+<li>Add shortcut tab to access setup quick links <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/42">feature 42</a></li>
+</ul>
+<h2 id="version-114">Version 1.14<a class="headerlink" href="#version-114" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Add checkbox in flow builder to give the possibility to the user to scroll on the flow (by <a href="https://github.com/samuelkrissi">Samuel Krissi</a>)</li>
+</ul>
+<p><img alt="image" src="https://user-images.githubusercontent.com/96471586/226161542-cbedec0a-8988-4559-9152-d067ea6f9cb6.png" /></p>
+<ul>
+<li>Fix links (object fields and object list) for custom metadata objects <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/39">issue 39</a></li>
+<li>Add shortcut link to object list from popup (idea by <a href="https://github.com/samuelkrissi">Samuel Krissi</a> )</li>
+<li>Add shortcuts links to (list of record types, current SObject RecordType and objet details, show all data from user tab) from popup <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/34">feature 34</a></li>
+<li>Update manifest version from <a href="https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/">v2</a> to v3</li>
+<li>Auto detect SObject on import page when posting data which contain SObject header <a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/30">feature 30</a></li>
+<li>Update to Salesforce API v 57.0 (Spring '23)</li>
+<li><a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/20">Switch background color on import page to alert users that it's a production environnement</a></li>
+<li>Implement OAuth2 flow to generate access token for connected App</li>
+</ul>
+<h2 id="version-113">Version 1.13<a class="headerlink" href="#version-113" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/23">Automatically remove spaces from column name in import</a></li>
+<li>Update to Salesforce API v 56.0 (Winter '23)</li>
+<li>Add "Skip all unknown fields" to import page</li>
+<li>Add User Id to pop-up</li>
+<li>Support Enhanced Domain <a href="https://github.com/sorenkrabbe/Chrome-Salesforce-inspector/issues/222">issue #222</a> from <a href="https://github.com/sorenkrabbe/Chrome-Salesforce-inspector/pull/223">PR223</a></li>
+<li><a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/21">Add inactive users to search result</a></li>
+<li>Update to Salesforce API v 55.0 (Summer '22)</li>
+<li>Update to Salesforce API v 54.0 (Spring '22)</li>
+<li><a href="https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/10">Sticked table header to the top on export</a></li>
+<li>Update to Salesforce API v 53.0 (Winter '22)</li>
+<li>Add label to saved query and sort list.</li>
+<li>Remove extra comma when autocomplete query in data export, or select a field from suggested fields just before 'FROM' keyword.</li>
+<li>Add "Copy Id" option when clicking on a SObject field or Id in data export page.</li>
+<li>Integrate UI updates from <a href="https://github.com/Garywoo/Chrome-Salesforce-inspector">Garywoo's fork</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      &copy; 2025 <a href="https://github.com/tprouvot" target="_blank" rel="noopener">Thomas Prouvot</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/tprouvot" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M202.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1M496 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2m-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3m-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/in/thomasprouvot/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.instant", "navigation.path", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+    
+  </body>
+</html>

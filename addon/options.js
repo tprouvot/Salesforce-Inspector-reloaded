@@ -8,6 +8,7 @@ import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
 import ColorPicker from "./components/ColorPicker.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {COLOR_SHADES, getColorForHost, colorNameToHex} from "./utils/colorUtils.js";
 
 class Model {
 
@@ -886,42 +887,22 @@ class FaviconOption extends React.Component {
     this.colorIconRef = null;
 
     let favicon = localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) ? localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) : "";
-    let isInternal = favicon.length > 0 && !favicon.startsWith("http");
+    let isColor = !!colorNameToHex(favicon);
     let smartMode = localStorage.getItem("faviconSmartMode") !== null ? JSON.parse(localStorage.getItem("faviconSmartMode")) : true;
     this.tooltip = props.tooltip;
     this.state = {
       favicon,
-      isInternal,
+      isColor,
       smartMode,
       showColorPicker: false,
-      colorPickerPosition: {top: 0, left: 0}
-    };
-    this.colorShades = {
-      dev: [
-        "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue", "CornflowerBlue",
-        "#CCCCFF", "SteelBlue", "SkyBlue", "#0F52BA", "Navy",
-        "Indigo", "PowderBlue", "LightBlue", "CadetBlue", "Aqua",
-        "Turquoise", "DarkTurquoise", "#6082B6", "LightSlateGray", "MidnightBlue"
-      ],
-      uat: [
-        "MediumOrchid", "Orchid", "DarkOrchid", "DarkViolet", "DarkMagenta",
-        "Purple", "BlueViolet", "Indigo", "DarkSlateBlue", "RebeccaPurple",
-        "MediumPurple", "MediumSlateBlue", "SlateBlue", "Plum", "Violet",
-        "Thistle", "Magenta", "DarkOrchid", "Fuchsia", "#301934"
-      ],
-      int: [
-        "LimeGreen", "SeaGreen", "MediumSeaGreen", "ForestGreen", "Green",
-        "DarkGreen", "YellowGreen", "OliveDrab", "DarkOliveGreen",
-        "SpringGreen", "LawnGreen", "DarkKhaki",
-        "GreenYellow", "DarkSeaGreen", "MediumAquamarine", "DarkCyan",
-        "Teal", "#00A36C", "#347235", "#355E3B"
-      ],
-      full: [
-        "Orange", "DarkOrange", "Coral", "Tomato", "OrangeRed",
-        "Salmon", "IndianRed", "Sienna", "Chocolate", "SaddleBrown",
-        "Peru", "DarkSalmon", "RosyBrown", "Brown", "Maroon",
-        "#b9770e", "#FFE5B4", "#CC5500", "#FF7518", "#FFBF00"
-      ]
+      colorPickerPosition: {top: 0, left: 0},
+      // Track available colors for each environment (will be mutated as colors are used)
+      availableColors: {
+        dev: [...COLOR_SHADES.dev],
+        uat: [...COLOR_SHADES.uat],
+        int: [...COLOR_SHADES.int],
+        full: [...COLOR_SHADES.full]
+      }
     };
   }
 
@@ -930,11 +911,6 @@ class FaviconOption extends React.Component {
       this.pickerInstance.destroy();
       this.pickerInstance = null;
     }
-    this.isPickerOpen = false;
-  }
-
-  shouldComponentUpdate() {
-    return !this.isPickerOpen;
   }
 
   setColorButtonRef(element) {
@@ -943,9 +919,11 @@ class FaviconOption extends React.Component {
 
   onChangeFavicon(e) {
     let favicon = e.target.value;
-    let isInternal = favicon.length > 0 && !favicon.startsWith("http");
-    this.setState({favicon, isInternal});
+    let isColor = !!colorNameToHex(favicon);
+    this.setState({favicon, isColor});
     localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, favicon);
+    // Trigger re-render to update header color dynamically
+    this.props.model.didUpdate();
   }
 
   onToogleSmartMode(e) {
@@ -958,9 +936,6 @@ class FaviconOption extends React.Component {
     if (this.state.showColorPicker) {
       this.setState({showColorPicker: false});
     } else {
-      if (!this.state.favicon.startsWith("#")){
-        this.setState({favicon: null});
-      }
       // Calculate position relative to the icon
       const iconElement = this.colorIconRef;
       if (iconElement) {
@@ -979,68 +954,49 @@ class FaviconOption extends React.Component {
   handleColorSelect(color) {
     this.setState({
       favicon: color,
-      isInternal: true,
+      isColor: true,
       showColorPicker: false
     });
     localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, color);
+    // Trigger re-render to update header color dynamically
+    this.props.model.didUpdate();
   }
 
-  populateFaviconColors(){
+  populateFaviconColors() {
     let orgs = Object.keys(localStorage).filter((localKey) =>
       localKey.endsWith("_isSandbox")
     );
+
+    // Deep clone availableColors to avoid direct state mutation
+    const availableColors = JSON.parse(JSON.stringify(this.state.availableColors));
+    let stateUpdated = false;
 
     orgs.forEach((org) => {
       let sfHost = org.substring(0, org.indexOf("_isSandbox"));
       let existingColor = localStorage.getItem(sfHost + FaviconOption.CUSTOM_FAVICON_KEY);
 
       if (!existingColor) { // Only assign a color if none is set
-        const chosenColor = this.getColorForHost(sfHost, this.state.smartMode);
+        // Pass the cloned object to getColorForHost, which will mutate it
+        const chosenColor = getColorForHost(sfHost, this.state.smartMode, availableColors);
         if (chosenColor) {
           console.info(sfHost + FaviconOption.CUSTOM_FAVICON_KEY, chosenColor);
           localStorage.setItem(sfHost + FaviconOption.CUSTOM_FAVICON_KEY, chosenColor);
           if (sfHost === this.sfHost) {
-            this.setState({favicon: chosenColor});
+            this.setState({
+              favicon: chosenColor,
+              isColor: true
+            });
           }
+          stateUpdated = true;
         }
       } else {
         console.info(sfHost + " already has a customFavicon: " + existingColor);
       }
     });
-  }
 
-  getEnvironmentType(sfHost) {
-    // Function to get environment type based on sfHost
-    if (sfHost.includes("dev")) return "dev";
-    if (sfHost.includes("uat")) return "uat";
-    if (sfHost.includes("int") || sfHost.includes("sit")) return "int";
-    if (sfHost.includes("full")) return "full";
-    return null;
-  }
-
-  getColorForHost(sfHost, smartMode) {
-    // Attempt to get the environment type
-    const envType = this.getEnvironmentType(sfHost);
-
-    // Check if smartMode is true and environment type is valid
-    if (smartMode && envType && this.colorShades[envType].length > 0) {
-      // Select a random color from the corresponding environment shades
-      const randomIndex = Math.floor(Math.random() * this.colorShades[envType].length);
-      const chosenColor = this.colorShades[envType][randomIndex];
-      this.colorShades[envType].splice(randomIndex, 1); // Remove the used color from the list
-      return chosenColor;
-    } else {
-      // If no environment type matches or smartMode is false, use a random color from all available shades
-      const allColors = Object.values(this.colorShades).flat();
-      if (allColors.length > 0) {
-        const randomIndex = Math.floor(Math.random() * allColors.length);
-        const chosenColor = allColors[randomIndex];
-        allColors.splice(randomIndex, 1); // Remove the used color from the list
-        return chosenColor;
-      } else {
-        console.warn("No more colors available.");
-        return null;
-      }
+    // Update state with the modified availableColors if any changes occurred
+    if (stateUpdated) {
+      this.setState({availableColors});
     }
   }
 
@@ -1057,7 +1013,7 @@ class FaviconOption extends React.Component {
           h("input", {
             type: "text",
             className: "slds-input",
-            style: this.state.isInternal ? {paddingRight: "2.5rem"} : {},
+            style: this.state.isColor ? {paddingRight: "2.5rem"} : {},
             placeholder: "All HTML Color Names, Hex code or external URL",
             value: nullToEmptyString(this.state.favicon),
             onChange: this.onChangeFavicon
@@ -1081,7 +1037,7 @@ class FaviconOption extends React.Component {
           })
         ),
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12", style: {position: "relative"}},
-          this.state.isInternal ? h("svg", {
+          this.state.isColor ? h("svg", {
             className: "icon"
           },
           h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})

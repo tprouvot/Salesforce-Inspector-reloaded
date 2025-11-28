@@ -48,3 +48,61 @@ body{
 .sfir-border-none{
     border: none !important;
 }
+
+/* Dropdown menu styles */
+.slds-dropdown__item.sfir-justify-left > a {
+    justify-content: left;
+}
+
+/* Custom icon styles for dropdown menu actions */
+a .icon {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    margin-right: 8px;
+}
+
+a.view-salesforce .icon {
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 1rem;
+    -webkit-mask-image: url(../images/salesforce1.svg);
+    -webkit-mask-position: center;
+    background-color: #009DDC;
+}
+
+a.view-inspector .icon {
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 1rem;
+    -webkit-mask-image: url(../images/salesforce-inspector-logo.svg);
+    -webkit-mask-position: center;
+    background-color: #D8BE5F;
+}
+
+a.query-record .icon {
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 1rem;
+    -webkit-mask-image: url(../images/record_lookup.svg);
+    -webkit-mask-position: center;
+    background-color: #706E6B;
+}
+
+a.copy-id .icon {
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 1rem;
+    -webkit-mask-image: url(../images/copy.svg);
+    -webkit-mask-position: center;
+    background-color: #706E6B;
+}
+
+a.download-salesforce .icon {
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: 1rem;
+    -webkit-mask-image: url(../images/down.svg);
+    -webkit-mask-position: center;
+    background-color: #61fab8;
+}
+
+a.copy-id,
+a.download-salesforce {
+    cursor: pointer;
+}

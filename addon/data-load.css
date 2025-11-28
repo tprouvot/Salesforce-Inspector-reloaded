@@ -2,10 +2,6 @@
   height: 100%;
 }
 
-.slds-dropdown__item.sfir-justify-left > a{
-  justify-content: left;
-}
-
 #result-table {
   height: 100%;
 }
@@ -48,9 +44,6 @@
   border-top: none;
   padding-top: 7px;
   padding-bottom: 7px;
-  /* position: sticky; */
-  /* top: 0; */
-  /* z-index: 1; */
 }
 
 #result-table table {
@@ -81,9 +74,6 @@
   border-top: none;
   padding-top: 7px;
   padding-bottom: 7px;
-  /* position: sticky; */
-  /* top: 0; */
-  /* z-index: 1; */
 }
 
 .scrolltable-cell.skipped {
@@ -94,69 +84,4 @@
   top: 0;
   margin: 102px 232px 0 0;
   z-index: 2;
-}
-
-a .icon {
-  /* background-color: #706E6B; */
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  margin-right: 8px;
-}
-
-a.view-salesforce .icon {
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 1rem;
-  -webkit-mask-image: url(images/salesforce1.svg);
-  -webkit-mask-position: center;
-}
-
-a.view-inspector .icon {
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 1rem;
-  -webkit-mask-image: url(images/salesforce-inspector-logo.svg);
-  -webkit-mask-position: center;
-}
-
-a.query-record .icon {
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 1rem;
-  -webkit-mask-image: url(images/record_lookup.svg);
-  -webkit-mask-position: center;
-  background-color: #706E6B;
-}
-
-a.copy-id .icon {
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 1rem;
-  -webkit-mask-image: url(images/copy.svg);
-  -webkit-mask-position: center;
-  background-color: #706E6B;
-}
-
-a.download-salesforce .icon {
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: 1rem;
-  -webkit-mask-image: url(images/down.svg);
-  -webkit-mask-position: center;
-}
-
-a.download-salesforce .icon {
-  background-color: #61fab8;
-}
-
-a.download-salesforce {
-  cursor: pointer;
-}
-
-a.copy-id {
-  cursor: pointer;
-}
-
-a.view-salesforce .icon {
-  background-color: #009DDC;
-}
-
-a.view-inspector .icon {
-  background-color: #D8BE5F;
 }

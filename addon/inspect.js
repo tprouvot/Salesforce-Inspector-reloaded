@@ -1290,12 +1290,12 @@ class FieldRow extends TableRow {
             args.set("useToolingApi", "1");
           }
           args.set("recordId", recordId);
-          return {href: "inspect.html?" + args, text: "Show all data (" + sobject.name + ")"};
+          return {href: "inspect.html?" + args, text: "Show all data (" + sobject.name + ")", className: "view-inspector"};
         });
     } else {
       links = [];
     }
-    links.push({href: this.idLink(), text: "View in Salesforce"});
+    links.push({href: this.idLink(), text: "View in Salesforce", className: "view-salesforce"});
     links.push({href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
     this.recordIdPop = links;
     elem.props.onOpenPopup(elem);
@@ -2115,7 +2115,18 @@ class FieldValueCell extends React.Component {
       return h("td", {className: col.className, onDoubleClick: this.onTryEdit},
         h("div", {className: "pop-menu-container"},
           h("div", {className: "sfir-inspect-table-text quick-select"}, h("a", {href: row.idLink() /*used to show visited color*/, onClick: this.onRecordIdClick}, row.dataStringValue())),
-          row.recordIdPop == null ? null : h("div", {className: "pop-menu"}, row.recordIdPop.map(link => h("a", {key: link.href, href: link.href, className: link.className, id: link.id, onClick: this.onLinkClick}, link.text)))
+          row.recordIdPop == null ? null : h("div", {className: "slds-dropdown slds-dropdown_left slds-dropdown_actions pop-menu"},
+            h("ul", {className: "slds-dropdown__list"},
+              row.recordIdPop.map(link =>
+                h("li", {key: link.href, className: "slds-dropdown__item sfir-justify-left"},
+                  h("a", {href: link.href, className: link.className, id: link.id, onClick: this.onLinkClick},
+                    h("div", {className: "icon"}),
+                    link.text
+                  )
+                )
+              )
+            )
+          )
         )
       );
     } else {

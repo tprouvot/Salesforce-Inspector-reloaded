@@ -349,7 +349,7 @@ class OptionsTabSelector extends React.Component {
 
   render() {
     return h("div", {className: "slds-tabs_default"},
-      h("ul", {className: "options-tab-container slds-tabs_default__nav", role: "tablist"},
+      h("ul", {className: "sfir-options-tab-container slds-tabs_default__nav", role: "tablist"},
         this.tabs.map((tab) => h(OptionsTab, {key: tab.id, title: tab.tabTitle || tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect}))
       ),
       this.tabs.map((tab) => h(OptionsContainer, {

@@ -357,25 +357,10 @@ class App extends React.PureComponent {
           h("div", {className: "slds-page-header__row"},
             h("div", {className: "slds-page-header__col-title"},
               h("div", {className: "slds-media"},
-                h("div", {className: "slds-media__figure popup-media__figure"},
-                  h("span", {className: "popup-icon_container", title: "Salesforce Inspector Reloaded"},
-                    h("svg", {className: "popup-header__icon", viewBox: "0 0 24 24"},
-                      h("path", {
-                        d: `
-                        M11 9c-.5 0-1-.5-1-1s.5-1 1-1 1 .5 1 1-.5 1-1 1z
-                        m1 5.8c0 .2-.1.3-.3.3h-1.4c-.2 0-.3-.1-.3-.3v-4.6c0-.2.1-.3.3-.3h1.4c.2.0.3.1.3.3z
-                        M11 3.8c-4 0-7.2 3.2-7.2 7.2s3.2 7.2 7.2 7.2s7.2-3.2 7.2-7.2s-3.2-7.2-7.2-7.2z
-                        m0 12.5c-2.9 0-5.3-2.4-5.3-5.3s2.4-5.3 5.3-5.3s5.3 2.4 5.3 5.3-2.4 5.3-5.3 5.3z
-                        M 17.6 15.9c-.2-.2-.3-.2-.5 0l-1.4 1.4c-.2.2-.2.3 0 .5l4 4c.2.2.3.2.5 0l1.4-1.4c.2-.2.2-.3 0-.5z
-                        `
-                      })
-                    )
-                  )
-                ),
                 h("div", {className: "slds-media__body"},
                   h("div", {className: "popup-header__name-title"},
                     h("h1", {},
-                      h("span", {className: "popup-header__title popup-title slds-truncate", title: "Salesforce Inspector Reloaded"}, "Salesforce Inspector Reloaded")
+                      h("span", {className: "popup-header__title popup-title slds-truncate slds-text-align_center slds-p-left_small", title: "Salesforce Inspector Reloaded"}, "Salesforce Inspector Reloaded")
                     )
                   )
                 )
@@ -3387,14 +3372,14 @@ class UserDetails extends React.PureComponent {
       ),
       h(
         "div",
-        {ref: "userButtons", className: "user-buttons center small-font"},
+        {ref: "userButtons", className: "slds-button-group justify-center"},
         h(
           "a",
           {
             href: this.getUserDetailLink(user.Id),
             target: linkTarget,
             onClick: handleLightningLinkClick,
-            className: "slds-button slds-button_neutral slds-m-right_xxx-small",
+            className: "slds-button slds-button_neutral",
           },
           "Details"
         ),
@@ -3404,7 +3389,7 @@ class UserDetails extends React.PureComponent {
             href: this.getUserPsetLink(user.Id),
             target: linkTarget,
             onClick: handleLightningLinkClick,
-            className: "slds-button slds-button_neutral slds-m-right_xxx-small",
+            className: "slds-button slds-button_neutral",
             title: "Show / assign user's permission sets",
           },
           "PSet"
@@ -3415,14 +3400,18 @@ class UserDetails extends React.PureComponent {
             href: this.getUserPsetGroupLink(user.Id),
             target: linkTarget,
             onClick: handleLightningLinkClick,
-            className: "slds-button slds-button_neutral slds-m-right_xxx-small",
+            className: "slds-button slds-button_neutral",
             title: "Show / assign user's permission set groups",
           },
           "PSetG"
-        ),
-        //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
-        user.UserLogins?.records?.[0]?.IsFrozen
-          ? h(
+        )
+      ),
+      //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
+      user.UserLogins?.records?.[0]?.IsFrozen
+        ? h(
+          "div",
+          {className: "user-buttons center small-font slds-m-top_x-small"},
+          h(
             "a",
             {
               id: "unfreezeUser",
@@ -3435,96 +3424,45 @@ class UserDetails extends React.PureComponent {
               "Unfreeze"
             )
           )
-          : h(
-            "div",
+        )
+        : h(
+          "div",
+          {
+            className:
+                "slds-button-group slds-m-top_x-small justify-center small-font",
+            role: "group",
+          },
+          h(
+            "a",
             {
-              className:
-                  "user-buttons justify-center slds-button-group top-space",
-              role: "group",
+              href: "#",
+              id: "enableDebugLog",
+              disabled: false,
+              onClick: this.enableDebugLog,
+              className: "slds-button slds-button_neutral",
+              title: "Enable user debug log",
             },
-            h(
-              "a",
-              {
-                href: "#",
-                id: "enableDebugLog",
-                disabled: false,
-                onClick: this.enableDebugLog,
-                className: "slds-button slds-button_neutral sfir-no-border-right",
-                title: "Enable user debug log",
-              },
-              "Enable Logs"
-            ),
-            h(
-              "div",
-              {
-                ref: "logButtonMenu",
-                className:
-                    "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last",
-              },
-              h(
-                "button",
-                {
-                  className:
-                      "slds-button slds-button_icon slds-button_icon-border-filled",
-                  onMouseEnter: () => this.toggleLogMenu(),
-                  title: "Show options",
-                },
-                h(
-                  "svg",
-                  {className: "slds-button__icon"},
-                  h("use", {xlinkHref: "symbols.svg#down"})
-                ),
-                h(
-                  "span",
-                  {className: "slds-assistive-text"},
-                  "Show options"
-                )
-              ),
-              h(
-                "div",
-                {
-                  className: "slds-dropdown slds-dropdown_right",
-                  onMouseLeave: () => this.toggleLogMenu(),
-                },
-                h(
-                  "ul",
-                  {className: "slds-dropdown__list", role: "menu"},
-                  h(
-                    "li",
-                    {
-                      className: "slds-dropdown__item",
-                      role: "presentation",
-                    },
-                    h(
-                      "a",
-                      {
-                        id: "enableDebugMode",
-                        onClick: () => this.enableDebugMode(user),
-                        tabIndex: "1",
-                      },
-                      h(
-                        "span",
-                        {
-                          className: "slds-truncate",
-                          title:
-                              user.debugModeActionLabel
-                              + " Debug Mode for Lightning Components",
-                        },
-                        user.debugModeActionLabel + " Debug Mode"
-                      )
-                    )
-                  )
-                )
-              )
-            )
+            "Enable Logs"
+          ),
+          h(
+            "a",
+            {
+              id: "enableDebugMode",
+              onClick: () => this.enableDebugMode(user),
+              className: "slds-button slds-button_neutral",
+              title:
+                  user.debugModeActionLabel
+                  + " Debug Mode for Lightning Components",
+            },
+            user.debugModeActionLabel + " Debug Mode"
           )
-      ),
+        ),
       this.doSupportLoginAs(user)
         ? h(
           "div",
           {
             className:
-                "user-buttons justify-center small-font slds-button-group top-space",
+                "slds-button-group slds-m-top_x-small justify-center small-font",
             role: "group",
           },
           h(
@@ -3532,84 +3470,30 @@ class UserDetails extends React.PureComponent {
             {
               href: this.getLoginAsLink(user.Id),
               target: linkTarget,
-              className: "slds-button slds-button_neutral sfir-no-border-right",
+              className: "slds-button slds-button_neutral",
             },
             "LoginAs"
           ),
           h(
-            "div",
+            "a",
             {
-              ref: "buttonMenu",
-              className:
-                  "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last",
+              onClick: () => this.loginAsInIncognito(user.Id),
+              target: linkTarget,
+              className: "slds-button slds-button_neutral",
             },
-            h(
-              "button",
+            "Incognito"
+          ),
+          this.canLoginAsPortal(user)
+            ? h(
+              "a",
               {
-                className:
-                    "slds-button slds-button_icon slds-button_icon-border-filled",
-                onMouseEnter: () => this.toggleMenu(),
-                title: "Show other LoginAs options",
+                href: this.getLoginAsPortalLink(user),
+                target: linkTarget,
+                className: "slds-button slds-button_neutral",
               },
-              h(
-                "svg",
-                {className: "slds-button__icon"},
-                h("use", {xlinkHref: "symbols.svg#down"})
-              ),
-              h(
-                "span",
-                {className: "slds-assistive-text"},
-                "Show other LoginAs options"
-              )
-            ),
-            h(
-              "div",
-              {
-                className: "slds-dropdown slds-dropdown_left",
-                onMouseLeave: () => this.toggleMenu(),
-              },
-              h(
-                "ul",
-                {className: "slds-dropdown__list", role: "menu"},
-                h(
-                  "li",
-                  {className: "slds-dropdown__item", role: "presentation"},
-                  h(
-                    "a",
-                    {
-                      onClick: () => this.loginAsInIncognito(user.Id),
-                      target: linkTarget,
-                      tabIndex: "0",
-                    },
-                    h(
-                      "span",
-                      {className: "slds-truncate", title: "Incognito"},
-                      h(
-                        "span",
-                        {className: "slds-truncate", title: "Incognito"},
-                        "Incognito"
-                      )
-                    )
-                  ),
-                  this.canLoginAsPortal(user)
-                    ? h(
-                      "a",
-                      {
-                        href: this.getLoginAsPortalLink(user),
-                        target: linkTarget,
-                        tabIndex: "1",
-                      },
-                      h(
-                        "span",
-                        {className: "slds-truncate", title: "Portal"},
-                        "Portal"
-                      )
-                    )
-                    : null
-                )
-              )
+              "Portal"
             )
-          )
+            : null
         )
         : null
     );

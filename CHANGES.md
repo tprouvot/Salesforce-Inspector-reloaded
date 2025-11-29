@@ -1,7 +1,7 @@
 # Release Notes
 
 ## Version 2.0
-- Fix Text Field length defaulting to 255 UI Issue  [feature 923](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/923) (contribution by [DivyanshuBist](https://github.com/DivyanshuBist))
+- `Field Creator` Fix Text Field length defaulting to 255 [issue 923](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/923) (contribution by [DivyanshuBist](https://github.com/DivyanshuBist))
 
 - `Options` Add color picker for favicon color by [Camille Guillory](https://github.com/CamilleGuillory)
 - Fix Popup issue when Org is default tab [issue #988](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/988) (contribution by [juanlu-interdiscount](https://github.com/juanlu-interdiscount))

@@ -309,19 +309,6 @@ class FieldOptionModal extends React.Component {
     }));
   };
 
-  handleBlurEventforLength = (event) => {
-    const {name, value} = event.target;
-
-    if(name=='length' && value==""){
-        this.setState((prevState) => ({
-        field: {
-          ...prevState.field,
-          [name]: 255,
-        },
-      }));
-    }
-  };
-
   handleSave = () => {
     this.props.onSave(this.state.field);
   };
@@ -548,9 +535,8 @@ class FieldOptionModal extends React.Component {
               name: "length",
               className: "form-control input-textBox",
               placeholder: "Max is 255 characters.",
-              value: field.length,
+              value: field.length ?? 255,
               onChange: this.handleInputChange,
-              onBlur:this.handleBlurEventforLength,
               defaultValue:"255"
             })
           ),

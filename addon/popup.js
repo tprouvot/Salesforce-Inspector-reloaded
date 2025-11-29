@@ -147,6 +147,7 @@ class App extends React.PureComponent {
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
     this.updateReleaseNotesViewed = this.updateReleaseNotesViewed.bind(this);
     this.showToast = this.showToast.bind(this);
+    this.getListViewQuery = this.getListViewQuery.bind(this);
     this.hideToast = this.hideToast.bind(this);
   }
   onContextRecordChange(e) {
@@ -170,6 +171,8 @@ class App extends React.PureComponent {
       }
       exportArg.set("query", query);
       importArg.set("sobject", e.contextSobject);
+    } else if (this.state.listViewQuery) {
+      exportArg.set("query", this.state.listViewQuery);
     }
     this.setState({
       exportHref: "data-export.html?" + exportArg,
@@ -185,11 +188,67 @@ class App extends React.PureComponent {
         isInSetup: locationHref.includes("/lightning/setup/"),
         contextUrl: locationHref,
       });
+      this.getListViewQuery(locationHref);
     }
     this.setState({
       isFieldsPresent: e.data.isFieldsPresent,
     });
   }
+  async getListViewQuery(url) {
+    if (localStorage.getItem("enableListViewExport") === "false") {
+      this.setState({listViewQuery: null});
+      return;
+    }
+    const match = url
+      ? url.match(/\/lightning\/o\/([^/]+)\/list\?filterName=([^&]+)/)
+      : null;
+    if (!match) {
+      this.setState({listViewQuery: null});
+      return;
+    }
+    const sobjectName = match[1];
+    const filterName = match[2];
+    let listViewId = filterName;
+    let {sfHost} = this.props;
+
+    if (!filterName.startsWith("00B")) {
+      try {
+        const query = `SELECT Id FROM ListView WHERE SobjectType = '${sobjectName}' AND DeveloperName = '${filterName}'`;
+        const res = await sfConn.rest(
+          "/services/data/v"
+            + apiVersion
+            + "/query/?q="
+            + encodeURIComponent(query)
+        );
+        if (res.records && res.records.length > 0) {
+          listViewId = res.records[0].Id;
+        } else {
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+        return;
+      }
+    }
+
+    try {
+      const res = await sfConn.rest(
+        `/services/data/v${apiVersion}/sobjects/${sobjectName}/listviews/${listViewId}/describe`
+      );
+      if (res.query) {
+        let exportArg = new URLSearchParams();
+        exportArg.set("host", sfHost);
+        exportArg.set("query", res.query);
+        this.setState({
+          listViewQuery: res.query,
+          exportHref: "data-export.html?" + exportArg,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   updateReleaseNotesViewed(version) {
     localStorage.setItem("latestReleaseNotesVersionViewed", version);
     this.setState({
@@ -317,8 +376,8 @@ class App extends React.PureComponent {
     } catch (error) {
       console.error("Error generating authorization URL with PKCE:", error);
       const errorMessage = error.message && error.message.includes("Extension context")
-        ? error.message
-        : "Failed to generate authorization URL. Please try again.";
+          ? error.message
+          : "Failed to generate authorization URL. Please try again.";
       alert(errorMessage);
     }
   }
@@ -361,15 +420,15 @@ class App extends React.PureComponent {
                   h("div", {className: "popup-header__name-title"},
                     h("h1", {},
                       h("span", {className: "popup-header__title popup-title slds-truncate slds-text-align_center slds-p-left_small", title: "Salesforce Inspector Reloaded"}, "Salesforce Inspector Reloaded")
-                    )
                   )
                 )
               )
             )
           )
-        ),
+        )
+      ),
 
-        !latestNotesViewed
+      !latestNotesViewed
         && h(AlertBanner, {
           type: "base",
           bannerText: `Current Version: ${addonVersion}`,
@@ -390,20 +449,20 @@ class App extends React.PureComponent {
         }),
         h("div", {id: "toastBanner", className: "hide"},
           h(AlertBanner, {type: bannerUrlAction.type,
-            bannerText: bannerUrlAction.text,
-            iconName: bannerUrlAction.icon,
-            assistiveTest: bannerUrlAction.text,
-            onClose: null,
-            link: {
-              text: bannerUrlAction.title,
-              props: {
-                href: bannerUrlAction.url,
-                target: linkTarget,
+          bannerText: bannerUrlAction.text,
+          iconName: bannerUrlAction.icon,
+          assistiveTest: bannerUrlAction.text,
+          onClose: null,
+          link: {
+            text: bannerUrlAction.title,
+            props: {
+              href: bannerUrlAction.url,
+              target: linkTarget,
                 onClick: (e) => this.handleGenerateTokenClick(e, bannerUrlAction.sfHost, clientId, browser)
               }
             }
-          })
-        ),
+        })
+      ),
         this.state.showToast && this.state.toastConfig && h("div", {id: "toastBanner"},
           h(AlertBanner, {
             type: this.state.toastConfig.type,
@@ -431,230 +490,230 @@ class App extends React.PureComponent {
               }, {}),
           })
         ),
+      h(
+        "div",
+        {className: "main", id: "mainTabs"},
+        h(AllDataBox, {
+          ref: "showAllDataBox",
+          sfHost,
+          showDetailsSupported: !inLightning && !inInspector,
+          linkTarget,
+          contextUrl,
+          onContextRecordChange: this.onContextRecordChange,
+          isFieldsPresent,
+          eventMonitorHref,
+          showToast: this.showToast,
+        }),
         h(
           "div",
-          {className: "main", id: "mainTabs"},
-          h(AllDataBox, {
-            ref: "showAllDataBox",
-            sfHost,
-            showDetailsSupported: !inLightning && !inInspector,
-            linkTarget,
-            contextUrl,
-            onContextRecordChange: this.onContextRecordChange,
-            isFieldsPresent,
-            eventMonitorHref,
-            showToast: this.showToast,
-          }),
-          h(
-            "div",
-            {
-              className:
+          {
+            className:
               "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom slds-border_top",
+          },
+          h(
+            "p",
+            {
+              className:
+                "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small",
+            },
+            h("strong", {}, "Data & Metadata")
+          ),
+          h(
+            "div",
+            {
+              className:
+                "slds-col slds-size_1-of-2 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
             },
             h(
-              "p",
+              "a",
               {
-                className:
-                "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small",
+                ref: "dataExportBtn",
+                href: exportHref,
+                target: linkTarget,
+                className: "page-button slds-button slds-button_neutral",
               },
-              h("strong", {}, "Data & Metadata")
-            ),
-            h(
-              "div",
-              {
-                className:
-                "slds-col slds-size_1-of-2 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
-              },
-              h(
-                "a",
-                {
-                  ref: "dataExportBtn",
-                  href: exportHref,
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral",
-                },
-                h("span", {}, "Data ", h("u", {}, "E"), "xport")
-              )
-            ),
-            h(
-              "div",
-              {
-                className:
-                "slds-col slds-size_1-of-2 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
-              },
-              h(
-                "a",
-                {
-                  ref: "dataImportBtn",
-                  href: importHref,
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral",
-                },
-                h("span", {}, "Data ", h("u", {}, "I"), "mport")
-              )
-            ),
-            h(
-              "div",
-              {
-                className:
-                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
-              },
-              h(
-                "a",
-                {
-                  ref: "fieldCreatorBtn",
-                  href: fieldCreatorHref,
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral",
-                },
-                h("span", {}, "Field Crea", h("u", {}, "t"), "or")
-              )
-            ),
-            h(
-              "div",
-              {
-                className:
-                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
-              },
-              h(
-                "a",
-                {
-                  ref: "metaRetrieveBtn",
-                  href: `metadata-retrieve${
-                    useLegacyDownloadMetadata ? "-legacy" : ""
-                  }.html?${hostArg}`,
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral",
-                },
-                h("span", {}, h("u", {}, "D"), "ownload Metadata")
-              )
+              h("span", {}, "Data ", h("u", {}, "E"), "xport")
             )
           ),
           h(
             "div",
             {
               className:
-              "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom",
+                "slds-col slds-size_1-of-2 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
             },
             h(
-              "p",
+              "a",
+              {
+                ref: "dataImportBtn",
+                href: importHref,
+                target: linkTarget,
+                className: "page-button slds-button slds-button_neutral",
+              },
+              h("span", {}, "Data ", h("u", {}, "I"), "mport")
+            )
+          ),
+          h(
+            "div",
+            {
+              className:
+                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
+            },
+            h(
+              "a",
+              {
+                ref: "fieldCreatorBtn",
+                href: fieldCreatorHref,
+                target: linkTarget,
+                className: "page-button slds-button slds-button_neutral",
+              },
+              h("span", {}, "Field Crea", h("u", {}, "t"), "or")
+            )
+          ),
+          h(
+            "div",
+            {
+              className:
+                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
+            },
+            h(
+              "a",
+              {
+                ref: "metaRetrieveBtn",
+                href: `metadata-retrieve${
+                  useLegacyDownloadMetadata ? "-legacy" : ""
+                }.html?${hostArg}`,
+                target: linkTarget,
+                className: "page-button slds-button slds-button_neutral",
+              },
+              h("span", {}, h("u", {}, "D"), "ownload Metadata")
+            )
+          )
+        ),
+        h(
+          "div",
+          {
+            className:
+              "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom",
+          },
+          h(
+            "p",
+            {
+              className:
+                "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small",
+            },
+            h("strong", {}, "Platform Tools")
+          ),
+          displayButton("org-limits", hideButtonsOption)
+            ? h(
+              "div",
               {
                 className:
-                "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small",
-              },
-              h("strong", {}, "Platform Tools")
-            ),
-            displayButton("org-limits", hideButtonsOption)
-              ? h(
-                "div",
-                {
-                  className:
                     "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
-                },
-                h(
-                  "a",
-                  {
-                    ref: "limitsBtn",
-                    href: limitsHref,
-                    target: linkTarget,
-                    className:
+              },
+              h(
+                "a",
+                {
+                  ref: "limitsBtn",
+                  href: limitsHref,
+                  target: linkTarget,
+                  className:
                       "slds-col page-button slds-button slds-button_neutral",
-                  },
-                  h("span", {}, "Org ", h("u", {}, "L"), "imits")
-                )
+                },
+                h("span", {}, "Org ", h("u", {}, "L"), "imits")
               )
-              : null,
-            displayButton("explore-api", hideButtonsOption)
-              ? h(
-                "div",
-                {
-                  className:
+            )
+            : null,
+          displayButton("explore-api", hideButtonsOption)
+            ? h(
+              "div",
+              {
+                className:
                     "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
-                },
-                h(
-                  "a",
-                  {
-                    ref: "apiExploreBtn",
-                    href: "explore-api.html?" + hostArg,
-                    target: linkTarget,
-                    className: "page-button slds-button slds-button_neutral",
-                  },
-                  h("span", {}, "API E", h("u", {}, "x"), "plorer")
-                )
-              )
-              : null,
-            h(
-              "div",
-              {
-                className:
-                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
               },
               h(
                 "a",
                 {
-                  ref: "restExploreBtn",
-                  href: "rest-explore.html?" + hostArg,
+                  ref: "apiExploreBtn",
+                  href: "explore-api.html?" + hostArg,
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral",
                 },
-                h("span", {}, h("u", {}, "R"), "EST Explorer")
+                h("span", {}, "API E", h("u", {}, "x"), "plorer")
               )
-            ),
-            h(
-              "div",
-              {
-                className:
+            )
+            : null,
+          h(
+            "div",
+            {
+              className:
                 "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+            },
+            h(
+              "a",
+              {
+                ref: "restExploreBtn",
+                href: "rest-explore.html?" + hostArg,
+                target: linkTarget,
+                className: "page-button slds-button slds-button_neutral",
               },
-              h(
-                "a",
-                {
-                  ref: "eventMonitorBtn",
-                  href: eventMonitorHref,
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral",
-                },
-                h("span", {}, "Event ", h("u", {}, "M"), "onitor")
-              )
+              h("span", {}, h("u", {}, "R"), "EST Explorer")
             )
           ),
           h(
             "div",
             {
               className:
-              "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom",
+                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
             },
             h(
-              "p",
+              "a",
+              {
+                ref: "eventMonitorBtn",
+                href: eventMonitorHref,
+                target: linkTarget,
+                className: "page-button slds-button slds-button_neutral",
+              },
+              h("span", {}, "Event ", h("u", {}, "M"), "onitor")
+            )
+          )
+        ),
+        h(
+          "div",
+          {
+            className:
+              "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom",
+          },
+          h(
+            "p",
+            {
+              className:
+                "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small",
+            },
+            h("strong", {}, "Management")
+          ),
+          displayButton("generate-token", hideButtonsOption)
+            ? h(
+              "div",
               {
                 className:
-                "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small",
-              },
-              h("strong", {}, "Management")
-            ),
-            displayButton("generate-token", hideButtonsOption)
-              ? h(
-                "div",
-                {
-                  className:
                     "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
-                },
-                h(
-                  "a",
-                  {
-                    ref: "generateToken",
-                    href: bannerUrlAction.url,
-                    target: linkTarget,
-                    className: !clientId
-                      ? "button hide"
-                      : "page-button slds-button slds-button_neutral",
+              },
+              h(
+                "a",
+                {
+                  ref: "generateToken",
+                  href: bannerUrlAction.url,
+                  target: linkTarget,
+                  className: !clientId
+                    ? "button hide"
+                    : "page-button slds-button slds-button_neutral",
                     onClick: (e) => this.handleGenerateTokenClick(e, sfHost, clientId, browser),
-                  },
-                  h("span", {}, h("u", {}, "G"), "enerate Access Token")
-                )
+                },
+                h("span", {}, h("u", {}, "G"), "enerate Access Token")
               )
-              : null,
-            inLightning
+            )
+            : null,
+          inLightning
             && !isInSetup
             && h(
               "div",
@@ -675,7 +734,7 @@ class App extends React.PureComponent {
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")
               )
             ),
-            // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
+          // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
             inLightning && isInSetup && h(
               "div",
               {
@@ -695,176 +754,176 @@ class App extends React.PureComponent {
                 h("span", {}, "Salesforce ", h("u", {}, "H"), "ome")
               )
             ),
-            displayButton("options", hideButtonsOption)
-              ? h(
-                "div",
-                {
-                  className:
+          displayButton("options", hideButtonsOption)
+            ? h(
+              "div",
+              {
+                className:
                     "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
+              },
+              h(
+                "a",
+                {
+                  ref: "optionsBtn",
+                  href: "options.html?" + hostArg,
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral",
                 },
-                h(
-                  "a",
-                  {
-                    ref: "optionsBtn",
-                    href: "options.html?" + hostArg,
-                    target: linkTarget,
-                    className: "page-button slds-button slds-button_neutral",
-                  },
-                  h("span", {}, "SIR O", h("u", {}, "p"), "tions")
-                )
+                h("span", {}, "SIR O", h("u", {}, "p"), "tions")
               )
-              : null
+            )
+            : null
+        )
+      ),
+      h(
+        "div",
+        {
+          className:
+            "slds-grid slds-grid_vertical-align-center slds-theme_shade slds-p-horizontal_medium slds-p-vertical_xx-small slds-border_top",
+        },
+        h(
+          "div",
+          {
+            className:
+              "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small",
+          },
+          h(
+            "a",
+            {
+              href:
+                "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-"
+                + addonVersion.replace(".", ""),
+              title: "Release note",
+              target: linkTarget,
+            },
+            "v" + addonVersion
+          ),
+          h("span", {}, " / "),
+          h("input", {
+            id: "idApiInput",
+            className: "api-input",
+            type: "number",
+            title: "Update api version",
+            onChange: this.onChangeApi,
+            value: apiVersionInput.split(".0")[0],
+          })
+        ),
+        h(
+          "div",
+          {
+            className:
+              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
+            title: `Shortcut :${
+              this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"
+            }`,
+          },
+          h(
+            "a",
+            {
+              href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=short#customize-extensions-shortcuts",
+              target: linkTarget,
+            },
+            h(
+              "svg",
+              {
+                className:
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                viewBox: "0 0 52 52",
+              },
+              h("use", {
+                xlinkHref: "symbols.svg#type",
+                style: {fill: "#9c9c9c"},
+              })
+            )
           )
         ),
         h(
           "div",
           {
             className:
-              "slds-grid slds-grid_vertical-align-center slds-theme_shade slds-p-horizontal_medium slds-p-vertical_xx-small slds-border_top",
+              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
+            title: "Donate",
           },
           h(
-            "div",
+            "a",
             {
-              className:
-                "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small",
+              href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/donate/",
+              target: linkTarget,
             },
             h(
-              "a",
+              "svg",
               {
-                href:
-                  "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-"
-                  + addonVersion.replace(".", ""),
-                title: "Release note",
-                target: linkTarget,
+                className:
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                viewBox: "0 0 52 52",
               },
-              "v" + addonVersion
-            ),
-            h("span", {}, " / "),
-            h("input", {
-              id: "idApiInput",
-              className: "api-input",
-              type: "number",
-              title: "Update api version",
-              onChange: this.onChangeApi,
-              value: apiVersionInput.split(".0")[0],
-            })
-          ),
+              h("use", {
+                xlinkHref: "symbols.svg#heart",
+                style: {fill: "#9c9c9c"},
+              })
+            )
+          )
+        ),
+        h(
+          "div",
+          {
+            className:
+              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
+            title: "Documentation",
+          },
           h(
-            "div",
+            "a",
             {
-              className:
-                "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
-              title: `Shortcut :${
-                this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"
-              }`,
+              href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/",
+              target: linkTarget,
             },
             h(
-              "a",
+              "svg",
               {
-                href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=short#customize-extensions-shortcuts",
-                target: linkTarget,
+                className:
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                viewBox: "0 0 52 52",
               },
-              h(
-                "svg",
-                {
-                  className:
-                    "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
-                  viewBox: "0 0 52 52",
-                },
-                h("use", {
-                  xlinkHref: "symbols.svg#type",
-                  style: {fill: "#9c9c9c"},
-                })
+              h("use", {
+                xlinkHref: "symbols.svg#info_alt",
+                style: {fill: "#9c9c9c"},
+              })
+            )
+          )
+        ),
+        h(
+          "div",
+          {
+            id: "optionsBtn",
+            className:
+              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small",
+            title: "Options",
+          },
+          h(
+            "a",
+            {
+              ref: "optionsBtn",
+              href: "options.html?" + hostArg,
+              target: linkTarget,
+            },
+            h(
+              "svg",
+              {
+                className:
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                viewBox: "0 0 52 52",
+              },
+              h("use", {
+                xlinkHref: "symbols.svg#settings",
+                style: {fill: "#9c9c9c"},
+              })
               )
             )
-          ),
-          h(
-            "div",
-            {
-              className:
-                "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
-              title: "Donate",
-            },
-            h(
-              "a",
-              {
-                href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/donate/",
-                target: linkTarget,
-              },
-              h(
-                "svg",
-                {
-                  className:
-                    "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
-                  viewBox: "0 0 52 52",
-                },
-                h("use", {
-                  xlinkHref: "symbols.svg#heart",
-                  style: {fill: "#9c9c9c"},
-                })
-              )
-            )
-          ),
-          h(
-            "div",
-            {
-              className:
-                "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
-              title: "Documentation",
-            },
-            h(
-              "a",
-              {
-                href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/",
-                target: linkTarget,
-              },
-              h(
-                "svg",
-                {
-                  className:
-                    "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
-                  viewBox: "0 0 52 52",
-                },
-                h("use", {
-                  xlinkHref: "symbols.svg#info_alt",
-                  style: {fill: "#9c9c9c"},
-                })
-              )
-            )
-          ),
-          h(
-            "div",
-            {
-              id: "optionsBtn",
-              className:
-                "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small",
-              title: "Options",
-            },
-            h(
-              "a",
-              {
-                ref: "optionsBtn",
-                href: "options.html?" + hostArg,
-                target: linkTarget,
-              },
-              h(
-                "svg",
-                {
-                  className:
-                    "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
-                  viewBox: "0 0 52 52",
-                },
-                h("use", {
-                  xlinkHref: "symbols.svg#settings",
-                  style: {fill: "#9c9c9c"},
-                })
-              )
             )
           )
         )
-      )
-    );
-  }
+      );
+    }
 }
 
 class AllDataBox extends React.PureComponent {
@@ -2493,8 +2552,8 @@ class AllDataBoxShortcut extends React.PureComponent {
           })
           : h("div", {className: "center"},
             h("a", {
-              href: `options.html?host=${sfHost}&selectedTab=custom-shortcuts`,
-              target: linkTarget,
+                href: `options.html?host=${sfHost}&selectedTab=custom-shortcuts`,
+                target: linkTarget,
               className: "slds-button slds-button_neutral"
             }, "Add Custom Shortcut")
           )
@@ -3752,10 +3811,10 @@ class AllDataSelection extends React.PureComponent {
               {className: "slds-card__body"},
               selectedValue.sobject.isEverCreatable && displayButton("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e")
                 ? h("a", {
-                  ref: "showNewBtn",
+                    ref: "showNewBtn",
                   href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
-                  target: linkTarget,
-                  onClick: handleLightningLinkClick,
+                    target: linkTarget,
+                    onClick: handleLightningLinkClick,
                   className: "slds-button slds-button_neutral slds-float_right slds-m-top_xxx-small sfir-button-new"
                 }, h("span", {}, h("u", {}, "N"), "ew ")) : null,
               h(

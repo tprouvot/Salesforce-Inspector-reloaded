@@ -2,6 +2,8 @@
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {copyToClipboard, initScrollTable} from "./data-load.js";
+import {PageHeader} from "./components/PageHeader.js";
+import {UserInfoModel, createSpinForMethod} from "./utils.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -70,7 +72,7 @@ class Model {
     this.initialEndpoint = "";
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
-    this.userInfo = "...";
+    this.orgName = "";
     this.winInnerHeight = 0;
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
@@ -105,9 +107,14 @@ class Model {
     ];
     this.selectedTemplate = "";
 
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-    }));
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
+
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
+
+    // Set orgName from sfHost
+    this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
 
     if (args.has("endpoint") && args.has("method")) {
       this.request.endpoint = args.get("endpoint");
@@ -163,7 +170,7 @@ class Model {
   copyAsJson() {
     copyToClipboard(this.apiResponse.value, null, "  ");
   }
-  clear(){
+  clear() {
     this.apiResponse.value = "";
   }
   selectSavedEntry() {
@@ -209,24 +216,6 @@ class Model {
       this.testCallback();
     }
   }
-  /**
-   * Show the spinner while waiting for a promise.
-   * didUpdate() must be called after calling spinFor.
-   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
-   * @param promise The promise to wait for.
-   */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
-  }
 
   doSend() {
     this.startTime = performance.now();
@@ -270,7 +259,7 @@ class Model {
       format,
       value: result.response ? this.formatResponse(result.response, format) : "NONE"
     };
-    if (this.resultClass === "success"){
+    if (this.resultClass === "success") {
       let newApis = Object.keys(result.response)
         .filter(key => typeof result.response[key] == "string" && result.response[key].startsWith("/services/data/"))
         .map(key => ({
@@ -358,13 +347,11 @@ class App extends React.Component {
     let {model} = this.props;
     this.onSelectEntry(e, model.savedHistory.list);
   }
-  resetRequest(model){
+  resetRequest(model) {
     model.apiResponse = "";
-    this.refs.resultBar.classList.remove("success");
-    this.refs.resultBar.classList.remove("error");
     model.didUpdate();
   }
-  onSelectQueryMethod(e){
+  onSelectQueryMethod(e) {
     let {model} = this.props;
     model.request.method = e.target.value;
     this.canSendRequest();
@@ -421,12 +408,12 @@ class App extends React.Component {
     model.copyAsJson();
     model.didUpdate();
   }
-  onClearResponse(){
+  onClearResponse() {
     let {model} = this.props;
     model.clear();
     model.didUpdate();
   }
-  onUpdateBody(e){
+  onUpdateBody(e) {
     let {model} = this.props;
     model.request.body = e.target.value;
     this.canSendRequest();
@@ -437,7 +424,7 @@ class App extends React.Component {
     model.setQueryName(e.target.value);
     model.didUpdate();
   }
-  onSetEndpoint(e){
+  onSetEndpoint(e) {
     let {model} = this.props;
     model.request.endpoint = e.target.value;
     //replace current endpoint with latest on the have the autocomplete works for all api versions
@@ -487,11 +474,11 @@ class App extends React.Component {
       window.Prism.highlightAll();
     }
   }
-  canSendRequest(){
+  canSendRequest() {
     let {model} = this.props;
     model.canSendRequest = model.request.method === "GET" || model.request.body.length > 1;
   }
-  autocompleteClick(value){
+  autocompleteClick(value) {
     let {model} = this.props;
     model.request.method = "GET";
     this.refs.endpoint.value = value.endpoint;
@@ -505,131 +492,239 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     //this.scrollTable.viewportChange();
   }
-  toggleQueryMoreMenu(){
-    this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
+  toggleQueryMoreMenu(event) {
+    this.refs.buttonQueryMenu?.classList.toggle("slds-is-open");
   }
   render() {
     let {model} = this.props;
     return h("div", {},
-      h("div", {id: "user-info"},
-        h("a", {href: model.sfLink, className: "sf-link"},
-          h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-          ),
-          " Salesforce Home"
-        ),
-        h("h1", {}, "REST Explore"),
-        h("span", {}, " / " + model.userInfo),
-        h("div", {className: "flex-right"},
-          h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
-            h("span", {className: "slds-assistive-text"}),
-            h("div", {className: "slds-spinner__dot-a"}),
-            h("div", {className: "slds-spinner__dot-b"}),
-          )
-        ),
-      ),
-      h("div", {className: "area"},
-        h("div", {className: "area-header"},
-        ),
-        h("div", {className: "query-controls"},
-          h("h1", {}, "Request"),
-          h("div", {className: "query-history-controls"},
-            h("select", {value: model.selectedTemplate, onChange: this.onSelectRequestTemplate, className: "query-template", title: "Check documentation to customize templates"},
-              h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
-              model.requestTemplates.map(req => h("option", {key: req.key, value: req.key}, req.method + " " + req.endpoint))
-            ),
-            h("div", {className: "button-group"},
-              h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "History"),
-                model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.method + " " + q.endpoint))
-              ),
-              h("button", {onClick: this.onClearHistory, title: "Clear Request History"}, "Clear")
-            ),
-            h("div", {className: "button-group"},
-              h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "Saved"),
-                model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.label + " " + q.method + " " + q.endpoint))
-              ),
-              h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
-              h("button", {onClick: this.onAddToHistory, title: "Add request to saved history"}, "Save Query"),
-              h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
-                h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleQueryMoreMenu(), title: "Show more options"},
-                  h("svg", {className: "slds-button__icon"},
-                    h("use", {xlinkHref: "symbols.svg#down"})
-                  ),
-                  h("span", {className: "slds-assistive-text"}, "Show more options")
+      h(PageHeader, {
+        pageTitle: "REST Explorer",
+        orgName: model.orgName,
+        sfLink: model.sfLink,
+        sfHost: model.sfHost,
+        spinnerCount: model.spinnerCount,
+        ...model.userInfoModel.getProps()
+      }),
+      h(
+        "div",
+        {
+          className: "slds-m-top_xx-large sfir-page-container"
+        },
+        // Request card (not flexible)
+        h("div", {className: "slds-card slds-m-around_medium"},
+          h("div", {className: "slds-card__body slds-card__body_inner"},
+            h("div", {className: "slds-card__header slds-grid slds-grid_vertical-align-center"},
+              h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
+                h("div", {className: "slds-media__body"},
+                  h("h3", {className: " slds-card__header-title"}, "Request"),
                 ),
-                h("div", {className: "slds-dropdown slds-dropdown_right", onMouseLeave: () => this.toggleQueryMoreMenu()},
-                  h("ul", {className: "slds-dropdown__list", role: "menu"},
-                    h("li", {className: "slds-dropdown__item", role: "presentation"},
-                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
-                        h("span", {className: "slds-truncate"},
-                          h("span", {className: "slds-truncate blue", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
+                h("div", {},
+                  h("div", {className: "slds-form-element__control"},
+                    h("div", {className: "slds-grid slds-grid_align-end"},
+                      h("div", {className: "slds-size_1-of-6"}),
+                      h("div", {className: "slds-size-1-of-6 slds-p-horizontal_xx-small"},
+                        h("div", {className: "slds-form-element__control"},
+                          h("select", {value: model.selectedTemplate, onChange: this.onSelectRequestTemplate, className: "slds-select", title: "Check documentation to customize templates"},
+                            h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
+                            model.requestTemplates.map(req => h("option", {key: req.key, value: req.key}, req.method + " " + req.endpoint))
+                          ),
+                        )
+                      ),
+                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
+                        h("div", {className: "slds-form-element__control"},
+                          h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "slds-select"},
+                            h("option", {value: JSON.stringify(null), disabled: true}, "History"),
+                            model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.method + " " + q.endpoint))
+                          ),
+                        )
+                      ),
+                      h("div", {className: "slds-col slds-p-horizontal_xx-small slds-p-horizontal_xx-small slds-m-right_large"},
+                        h("div", {className: "slds-form-element__control"},
+                          h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Request History"}, "Clear")
+                        )
+                      ),
+                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
+                        h("div", {className: "slds-form-element__control"},
+                          h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "slds-select"},
+                            h("option", {value: JSON.stringify(null), disabled: true}, "Saved"),
+                            model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.label + " " + q.method + " " + q.endpoint))
+                          ),
+                        )
+                      ),
+                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
+                        h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left"},
+                          h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", "aria-hidden": "true"},
+                            h("use", {xlinkHref: "symbols.svg#save"})
+                          ),
+                          h("input", {className: "slds-input", placeholder: "Query Label", value: model.queryName, onInput: this.onSetQueryName})
+                        )
+                      ),
+                      h("div", {className: "slds-col slds-p-left_xx-small"},
+                        h("div", {className: "slds-button-group", role: "group"},
+                          h("button", {
+                            className: "slds-button slds-button_neutral",
+                            onClick: this.onAddToHistory,
+                            style: {whiteSpace: "nowrap"}
+                          }, "Save Query"),
+                          h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last", onClick: (event) => event.currentTarget.classList.toggle("slds-is-open")},
+                            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled"},
+                              h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                                h("use", {xlinkHref: "symbols.svg#down"})
+                              )
+                            ),
+                            h("div", {className: "slds-dropdown slds-dropdown_right slds-dropdown_actions"},
+                              h("ul", {className: "slds-dropdown__list", role: "menu"},
+                                h("li", {className: "slds-dropdown__item", role: "presentation"},
+                                  h("a", {href: "#", role: "menuitem", tabIndex: "0", target: "_blank"},
+                                    h("span", {onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
+                                  )
+                                ),
+                                h("li", {className: "slds-dropdown__item", role: "presentation"},
+                                  h("a", {href: "#", role: "menuitem", tabIndex: "0", target: "_blank"},
+                                    h("span", {onClick: this.onClearSavedHistory, title: "Clear Saved Queries"}, "Clear Saved Queries")
+                                  )
+                                ),
+                              )
+                            )
+                          )
                         )
                       )
-                    ),
-                    h("li", {className: "slds-dropdown__item", role: "presentation"},
-                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
-                        h("span", {className: "slds-truncate"},
-                          h("span", {className: "slds-truncate blue", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+                    )
+                  ),
+                )
+                /*
+                h("fieldset", { className: "slds-form-element slds-form-element_compound" },
+                  h("div", { className: "slds-form-element__control" },
+                    h("div", { className: "slds-form-element__row slds-grid_align-end" },
+                      h("div", { className: "slds-size_4-of-12" },
+                        h("div", { className: "slds-grid" },
+                          h("div", { className: "slds-col" },
+                            h("div", { className: "slds-form-element" },
+
+                            )
+                          ),
+                          h("div", { className: "slds-col" },
+                            h("div", { className: "slds-form-element" },
+
+                            )
+                          ),
+                          h("div", { className: "slds-col" },
+                            h("div", { className: "slds-form-element" },
+                              h("div", { className: "slds-form-element__control" },
+                                h("button", { className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Request History" }, "Clear")
+                              )
+                            )
+                          )
+                        )
+                      ),
+
+                      ),
+                    )
+                  )
+                )*/
+              )
+            ),
+            h("div", {className: "slds-card__body slds-card__body_inner"},
+              h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
+                h("div", {className: "slds-size_1-of-12 slds-p-right_xx-small"},
+                  h("div", {className: "slds-form-element"},
+                    h("div", {className: "slds-form-element__control"},
+                      h("div", {className: "slds-select_container"},
+                        h("select", {className: "slds-select", value: model.request.method, onChange: this.onSelectQueryMethod},
+                          h("option", {key: "get", value: "GET"}, "GET"),
+                          h("option", {key: "post", value: "POST"}, "POST"),
+                          h("option", {key: "put", value: "PUT"}, "PUT"),
+                          h("option", {key: "patch", value: "PATCH"}, "PATCH"),
+                          h("option", {key: "delete", value: "DELETE"}, "DELETE")
                         )
                       )
                     )
                   )
-                )
+                ),
+                h("div", {className: "slds-col sfir-full-width slds-p-horizontal_xx-small"},
+                  h("input", {ref: "endpoint", className: "slds-input", type: "default", placeholder: "/services/data/v" + apiVersion, onChange: this.onSetEndpoint})
+                ),
+                h("div", {className: "slds-col slds-text-align_right slds-p-left_xx-small"},
+                  h("button", {tabIndex: 1, disabled: !model.canSendRequest, onClick: this.onSend, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand"}, "Send")
+                ),
               ),
-            ),
-          ),
-        ),
-        h("div", {className: "query-controls slds-form-element__control"},
-          h("select", {value: model.request.method, onChange: this.onSelectQueryMethod, className: "query-history slds-m-right_medium", title: "Choose rest method"},
-            h("option", {key: "get", value: "GET"}, "GET"),
-            h("option", {key: "post", value: "POST"}, "POST"),
-            h("option", {key: "put", value: "PUT"}, "PUT"),
-            h("option", {key: "patch", value: "PATCH"}, "PATCH"),
-            h("option", {key: "delete", value: "DELETE"}, "DELETE")
-          ),
-          h("input", {ref: "endpoint", className: "slds-input query-control slds-m-right_medium", type: "default", placeholder: "/services/data/v" + apiVersion, onChange: this.onSetEndpoint}),
-          h("div", {className: "flex-right"},
-            h("button", {tabIndex: 1, disabled: !model.canSendRequest, onClick: this.onSend, title: "Ctrl+Enter / F5", className: "highlighted"}, "Send")
-          )
-        ),
-        h("div", {className: "autocomplete-box"},
-          h("div", {className: "autocomplete-header"}),
-          h("div", {className: "autocomplete-results"},
-            model.filteredApiList?.length > 0 ? model.filteredApiList.map(r =>
-              h("div", {className: "autocomplete-result", key: r.key}, h("a", {tabIndex: 0, title: r.key, onClick: e => { e.preventDefault(); this.autocompleteClick(r); model.didUpdate(); }, href: "#", className: "fieldName url"}, h("div", {className: "autocomplete-icon"}), r.key), " ")
-            ) : null
-          ),
-        ),
-        h("div", {className: "autocomplete-box slds-m-top_medium"},
-          h("h1", {className: ""}, "Request Body"),
-          h("div", {className: "slds-m-top_small"},
-            h("textarea", {className: "request-body", value: model.request.body, onChange: this.onUpdateBody})
-          )
-        )
-      ),
-      h("div", {className: "area", id: "result-area"},
-        h("div", {ref: "resultBar", className: `result-bar ${model.resultClass}`},
-          h("h1", {}, "Response"),
-          h("div", {className: "button-group"},
-            h("button", {disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy")
-          ),
-          h("span", {className: "result-status flex-right"},
-            model.apiResponse && h("div", {},
-              h("span", {className: "perf"}, model.totalTime.toFixed(1) + "ms"),
-              h("span", {className: "slds-m-left_medium status-code"}, "Status: " + model.apiResponse?.code)
-            ),
-            h("div", {className: "slds-m-left_medium button-group"},
-              h("button", {disabled: !model.apiResponse, onClick: this.onClearResponse, title: "Clear Response"}, "Clear")
+              h("div", {className: "slds-m-top_medium"},
+                model.filteredApiList?.length > 0
+                  ? model.filteredApiList.map(r =>
+                    h("span", {className: "slds-pill slds-pill_link slds-m-vertical_xxx-small", key: r.key},
+                      h("span", {className: "slds-pill__icon_container"},
+                        h("span", {className: "slds-avatar slds-avatar_circle"},
+                          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                            h("use", {xlinkHref: "symbols.svg#link"})
+                          ),
+                        )
+                      ),
+                      h("a", {
+                        href: "#",
+                        className: "slds-pill__action",
+                        onClick: e => { e.preventDefault(); this.autocompleteClick(r); model.didUpdate(); }
+                      },
+                      h("span", {className: "slds-pill__label"}, r.key)
+                      ),
+                    ),
+                  ) : null
+              ),
+              h("div", {className: "slds-m-top_medium"},
+                h("h3", {className: "slds-text-heading_small"}, "Request Body"),
+                h("div", {className: "slds-m-top_small"},
+                  h("textarea", {className: "slds-textarea", rows: 6, value: model.request.body, onChange: this.onUpdateBody})
+                )
+              )
             )
           )
         ),
-        h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
-        h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null},
-          model.apiResponse && h("div", {},
-            h("pre", {className: "reset-margin"}, // Set the language class for Prism to highlight
-              h("code", {className: "language-" + model.apiResponse.format}, model.apiResponse.value)
+        // Response card (flexible, fills remaining space)
+        h(
+          "div",
+          {
+            className: "slds-card slds-m-around_medium",
+            style: {
+              flex: "1 1 0",
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column"
+            }
+          },
+          h("div", {className: "slds-card__header"},
+            h("div", {className: "slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-p-around_small"},
+              h("div", {className: "slds-size_8-of-12"},
+                h("span", {className: "slds-text-heading_small slds-m-right_small"}, "Response"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy"),
+              ),
+              h("div", {className: "slds-size_4-of-12 slds-text-align_right"},
+                h("span", {},
+                  model.apiResponse && h("div", {},
+                    h("span", {className: "slds-m-right_small"}, model.totalTime.toFixed(1) + "ms"),
+                    h("span", {className: "slds-m-right_small slds-badge slds-theme_" + model.resultClass}, "Status: " + model.apiResponse?.code),
+                    h("button", {className: "slds-button slds-button_neutral", disabled: !model.apiResponse, onClick: this.onClearResponse, title: "Clear Response"}, "Clear")
+                  ),
+                )
+              ),
+            )
+          ),
+          h(
+            "div",
+            {
+              className: "slds-card__body slds-card__body_inner",
+              ref: "scroller",
+              hidden: model.exportError != null,
+              style: {
+                flex: "1 1 0",
+                minHeight: 0,
+                maxHeight: "100%",
+                overflowY: "auto"
+              }
+            },
+            model.apiResponse && h("div", {},
+              h("pre", {className: "reset-margin", style: {margin: 0}},
+                h("code", {className: "language-" + model.apiResponse.format}, model.apiResponse.value)
+              )
             )
           )
         )

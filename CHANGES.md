@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Version 2.0
+- `Field Creator` Fix Text Field length defaulting to 255 [issue 923](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/923) (contribution by [DivyanshuBist](https://github.com/DivyanshuBist))
 
 - `Flow Scanner` Implement 'Purge' old flow versions by [Camille Guillory](https://github.com/CamilleGuillory)
 - `Options` Add color picker for favicon color by [Camille Guillory](https://github.com/CamilleGuillory)

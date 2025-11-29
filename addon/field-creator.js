@@ -537,8 +537,9 @@ class FieldOptionModal extends React.Component {
               name: "length",
               className: "form-control input-textBox",
               placeholder: "Max is 255 characters.",
-              value: field.length || 255,
-              onChange: this.handleInputChange
+              value: field.length ?? 255,
+              onChange: this.handleInputChange,
+              defaultValue:"255"
             })
           ),
           this.renderDescriptionAndHelpText(),

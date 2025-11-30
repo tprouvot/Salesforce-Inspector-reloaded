@@ -55,9 +55,9 @@ function cleanupTempDir(tempDir) {
 
 function setupRemoteRepo(tempDir) {
   "use strict";
-  const repoUrl = "https://github.com/flow-scanner/lightning-flow-scanner-core";
+  const repoUrl = "https://github.com/Flow-Scanner/lightning-flow-scanner.git";
 
-  logStep("Cloning lightning-flow-scanner-core repository (shallow clone)");
+  logStep("Cloning lightning-flow-scanner monorepo (shallow clone)");
 
   // Clone directly into tempDir with shallow clone (no history)
   execSync(`git clone --depth 1 ${repoUrl} "${tempDir}"`, {stdio: "inherit"});
@@ -69,7 +69,7 @@ function getLibraryNameFromViteConfig(tempDir) {
   "use strict";
   logStep("Reading Vite config to get library name");
   try {
-    const viteConfigPath = path.join(tempDir, "vite.config.ts");
+    const viteConfigPath = path.join(tempDir, "packages", "core", "vite.config.ts");
     const viteConfigContent = fs.readFileSync(viteConfigPath, "utf8");
     const match = viteConfigContent.match(/name:\s*"([^"]+)"/);
     if (!match || !match[1]) {
@@ -100,7 +100,7 @@ function runCommand(command, description, cwd) {
 function readPackageJson(tempDir) {
   "use strict";
   try {
-    const packageJsonPath = path.join(tempDir, "package.json");
+    const packageJsonPath = path.join(tempDir, "packages", "core", "package.json");
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
     return packageJson;
   } catch {
@@ -195,14 +195,14 @@ function main() {
     const libraryName = getLibraryNameFromViteConfig(tempDir);
 
     // Step 3: Install dependencies
-    runCommand("npm install", "Installing dependencies", tempDir);
+    runCommand("pnpm install --frozen-lockfile", "Installing dependencies", tempDir);
 
     // Step 4: Build the project
-    runCommand("npm run vite:dist", "Building project with Vite", tempDir);
+    runCommand("pnpm run dist", "Building project with Vite", tempDir);
 
     // Step 5: Find the UMD file
     logStep("Locating compiled UMD file");
-    const distDir = path.join(tempDir, "dist");
+    const distDir = path.join(tempDir, "packages", "core", "dist");
 
     if (!fs.existsSync(distDir)) {
       logError("Dist directory not found. Build may have failed.");

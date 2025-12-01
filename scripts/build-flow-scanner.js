@@ -64,13 +64,13 @@ function setupRemoteRepo(tempDir) {
 
   // Get the latest tag and checkout
   try {
-    const latestTag = execSync(`git describe --tags $(git rev-list --tags --max-count=1)`, {cwd: tempDir})
+    const latestTag = execSync("git describe --tags $(git rev-list --tags --max-count=1)", {cwd: tempDir})
       .toString().trim();
     logStep(`Checking out latest tag: ${latestTag}`);
     execSync(`git checkout tags/${latestTag}`, {cwd: tempDir, stdio: "inherit"});
     logSuccess(`Checked out tag ${latestTag}`);
   } catch (error) {
-    log(`No tags found, using default branch`, "yellow");
+    log("No tags found, using default branch", "yellow");
   }
 
   logSuccess("Repository cloned successfully");

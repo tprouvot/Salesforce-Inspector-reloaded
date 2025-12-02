@@ -1740,7 +1740,7 @@ class App extends React.Component {
         const importedData = JSON.parse(event.target.result);
 
         for (const [key, value] of Object.entries(importedData)) {
-          if (filterKeys) {
+          if (filterKeys && Array.isArray(filterKeys)) {
             // Only import keys that match the filter
             if (filterKeys.some(filter => key.startsWith(filter))) {
               localStorage.setItem(key, value);
@@ -1766,7 +1766,7 @@ class App extends React.Component {
 
         this.setState({
           showToast: true,
-          toastMessage: filterKeys ? "Flow Scanner rules imported successfully!" : "Options Imported Successfully!",
+          toastMessage: Array.isArray(filterKeys) ? "Flow Scanner rules imported successfully!" : "Options Imported Successfully!",
           toastVariant: "success",
           toastTitle: "Success"
         });
@@ -1804,7 +1804,7 @@ class App extends React.Component {
         h("h1", {className: "slds-text-title_bold"}, "Options"),
         h("span", {}, " / " + model.userInfo),
         h("div", {className: "flex-right"},
-          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: this.exportOptions, title: "Export Options"},
+          h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onClick: () => this.exportOptions(), title: "Export Options"},
             h("svg", {className: "slds-button__icon"},
               h("use", {xlinkHref: "symbols.svg#download"})
             )

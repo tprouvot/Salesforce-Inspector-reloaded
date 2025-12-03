@@ -195,7 +195,7 @@ class App extends React.PureComponent {
     });
   }
   async getListViewQuery(url) {
-    if (localStorage.getItem("enableListViewExport") === "false") {
+    if (localStorage.getItem("enableListViewExport") !== "true") {
       this.setState({listViewQuery: null});
       return;
     }

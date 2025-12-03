@@ -2678,21 +2678,21 @@ class AllDataBoxOrg extends React.PureComponent {
                 h(
                   "th",
                   {},
-                  h(
-                    "a",
-                    {
-                      href:
-                        "https://"
-                        + sfHost
-                        + "/lightning/setup/CompanyProfileInfo/home",
-                      title: "Company Information",
-                      target: linkTarget,
-                      onClick: handleLightningLinkClick,
-                    },
-                    "Org Id"
-                  )
+                  "Org Id"
                 ),
-                h("td", {}, orgInfo?.Id.substring(0, 15))
+                h("td", {}, h(
+                  "a",
+                  {
+                    href:
+                      "https://"
+                      + sfHost
+                      + "/lightning/setup/CompanyProfileInfo/home",
+                    title: orgInfo?.Id.substring(0, 15),
+                    target: linkTarget,
+                    onClick: handleLightningLinkClick,
+                  },
+                  orgInfo?.Id.substring(0, 15)
+                ))
               ),
               h(
                 "tr",
@@ -2700,19 +2700,19 @@ class AllDataBoxOrg extends React.PureComponent {
                 h(
                   "th",
                   {},
-                  h(
-                    "a",
-                    {
-                      href:
-                        "https://status.salesforce.com/instances/"
-                        + orgInfo?.InstanceName,
-                      title: "Instance status",
-                      target: linkTarget,
-                    },
-                    "Instance"
-                  )
+                  "Instance"
                 ),
-                h("td", {}, orgInfo?.InstanceName)
+                h("td", {}, h(
+                  "a",
+                  {
+                    href:
+                      "https://status.salesforce.com/instances/"
+                      + orgInfo?.InstanceName,
+                    title: orgInfo?.InstanceName,
+                    target: "_blank",
+                  },
+                  orgInfo?.InstanceName
+                ))
               ),
               h(
                 "tr",
@@ -2758,24 +2758,25 @@ class AllDataBoxOrg extends React.PureComponent {
                 h(
                   "th",
                   {},
-                  h(
+                  "Maint."
+                ),
+                h(
+                  "td",
+                  {}, h(
                     "a",
                     {
                       href:
                         "https://status.salesforce.com/instances/"
                         + orgInfo?.InstanceName
                         + "/maintenances",
-                      title: "Maintenance List",
-                      target: linkTarget,
+                      title: this.getNextMajorRelease(
+                        this.state.instanceStatus?.Maintenances
+                      ),
+                      target: "_blank",
                     },
-                    "Maint."
-                  )
-                ),
-                h(
-                  "td",
-                  {},
-                  this.getNextMajorRelease(
-                    this.state.instanceStatus?.Maintenances
+                    this.getNextMajorRelease(
+                      this.state.instanceStatus?.Maintenances
+                    )
                   )
                 )
               )

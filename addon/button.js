@@ -79,6 +79,19 @@ function initButton(sfHost, inInspector) {
         // Set the overflow property to "auto"
         this.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
       });
+
+      function wheelHandler(e) {
+        if (overflowCheckbox.checked) {
+          if (e.target.matches(".canvas, .builder-canvas, .flow-builder-canvas") || e.target.classList.contains("flow-container")) {
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+          }
+        }
+      }
+
+      observeElement(".canvas, .builder-canvas, .flow-builder-canvas", (canvas) => {
+        canvas.addEventListener("wheel", wheelHandler, { capture: true, passive: false });
+      });
     }
   }
 

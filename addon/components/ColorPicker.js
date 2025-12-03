@@ -3,6 +3,7 @@
  * A gradient-based color picker following SLDS design patterns
  */
 
+/* global React */
 let h = React.createElement;
 
 class ColorPicker extends React.Component {

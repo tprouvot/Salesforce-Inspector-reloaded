@@ -35,7 +35,6 @@ function logError(message) {
   log(`✗ ${message}`, "red");
 }
 
-
 function createTempDir() {
   "use strict";
   const tempDir = path.join(os.tmpdir(), `flow-scanner-build-${Date.now()}`);

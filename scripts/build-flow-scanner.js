@@ -53,16 +53,39 @@ function cleanupTempDir(tempDir) {
   }
 }
 
+// Clone repo and checkout latest core-v* tag
 function setupRemoteRepo(tempDir) {
   "use strict";
-  const repoUrl = "https://github.com/Flow-Scanner/lightning-flow-scanner.git";
+  const repoUrl = "https://github.com/flow-scanner/lightning-flow-scanner";
 
-  logStep("Cloning lightning-flow-scanner monorepo (shallow clone)");
+  logStep("Cloning lightning-flow-scanner-core repository");
 
-  // Clone directly into tempDir with shallow clone (no history)
+  // Shallow clone default branch
   execSync(`git clone --depth 1 ${repoUrl} "${tempDir}"`, {stdio: "inherit"});
 
-  logSuccess("Repository cloned successfully");
+  // Try to find and checkout the latest core-v* tag
+  try {
+    const latestTag = execSync(
+      "git tag -l \"core-v*\" --sort=-v:refname | head -n 1",
+      {cwd: tempDir, encoding: "utf8"}
+    ).trim();
+
+    if (latestTag) {
+      logStep(`Checking out latest core tag: ${latestTag}`);
+      execSync(`git checkout tags/${latestTag} -b build-from-${latestTag}`, {
+        cwd: tempDir,
+        stdio: "inherit"
+      });
+      logSuccess(`Checked out tag ${latestTag}`);
+    } else {
+      log("No core-v* tags found – using default branch", "yellow");
+    }
+  } catch (error) {
+    log(`Warning: Failed to fetch/checkout latest core-v* tag: ${error.message}`, "yellow");
+    log("Continuing with default branch", "yellow");
+  }
+
+  logSuccess("Repository ready");
 }
 
 function getLibraryNameFromViteConfig(tempDir) {
@@ -195,7 +218,7 @@ function main() {
     const libraryName = getLibraryNameFromViteConfig(tempDir);
 
     // Step 3: Install dependencies
-    runCommand("pnpm install --frozen-lockfile", "Installing dependencies", tempDir);
+    runCommand("pnpm install --filter=@flow-scanner/lightning-flow-scanner-core...", "Installing dependencies", tempDir);
 
     // Step 4: Build the project
     runCommand("pnpm run dist", "Building project with Vite", tempDir);

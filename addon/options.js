@@ -171,7 +171,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImpoltrink", default: true}},
-          {option: Option, props: {type: "toggle", title: "Enable List View Export", key: "enableListViewExport", default: true, tooltip: "Automatically populate Data Export query from current List View"}},
+          {option: Option, props: {type: "toggle", title: "Enable List View Export", key: "enableListViewExport", default: false, tooltip: "If enabled, Data Export link will be automatically populated with current ListView"}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
               key: "hideExportButtonsOption",

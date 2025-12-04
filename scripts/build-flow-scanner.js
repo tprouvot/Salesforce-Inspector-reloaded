@@ -58,7 +58,7 @@ function setupRemoteRepo(tempDir) {
   "use strict";
   const repoUrl = "https://github.com/flow-scanner/lightning-flow-scanner";
 
-  logStep("Cloning lightning-flow-scanner-core repository");
+  logStep("Cloning lightning-flow-scanner repository");
 
   // Shallow clone default branch
   execSync(`git clone --depth 1 ${repoUrl} "${tempDir}"`, {stdio: "inherit"});

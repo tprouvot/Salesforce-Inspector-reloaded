@@ -83,7 +83,6 @@ function initButton(sfHost, inInspector) {
       function wheelHandler(e) {
         if (overflowCheckbox.checked) {
           if (e.target.matches(".canvas, .builder-canvas, .flow-builder-canvas") || e.target.classList.contains("flow-container")) {
-            e.stopImmediatePropagation();
             e.stopPropagation();
           }
         }

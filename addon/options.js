@@ -8,6 +8,37 @@ import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
 import ColorPicker from "./components/ColorPicker.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {colorNameToHex} from "./utils/colorUtils.js";
+import {
+  getColorSettingsSnapshot,
+  updateColorSettings,
+  getKnownOrgHosts,
+  ensureFaviconColor,
+  subscribeToColorSettings
+} from "./utils/colorSettingsStore.js";
+import {broadcastSettings} from "./utils/messaging.js";
+
+const COLOR_SETTING_KEYS = [
+  "colorizeFavicon",
+  "colorizeOrgBanner",
+  "colorizeExtHeader",
+  "customFavicon",
+  "orgBannerText",
+  "smartMode"
+];
+const COLOR_SETTING_KEY_SET = new Set(COLOR_SETTING_KEYS);
+
+function containsColorSetting(settings = {}) {
+  return Object.keys(settings || {}).some((key) => COLOR_SETTING_KEY_SET.has(key));
+}
+
+function postLocalSettingsUpdate(sfHost, settings = {}) {
+  const payload = containsColorSetting(settings)
+    ? getColorSettingsSnapshot(sfHost)
+    : settings;
+
+  broadcastSettings(sfHost, payload);
+}
 
 class Model {
 
@@ -103,10 +134,26 @@ class OptionsTabSelector extends React.Component {
                 {label: "Generate Access Token", name: "generate-token", checked: true}
               ]}
           },
-          {option: FaviconOption, props: {key: this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
-          {option: Option, props: {type: "toggle", title: "Use favicon color on sandbox banner", key: "colorizeSandboxBanner"}},
-          {option: Option, props: {type: "toggle", title: "Highlight PROD (color from favicon)", key: "colorizeProdBanner", tooltip: "Top border in extension pages and banner on Salesforce"}},
-          {option: Option, props: {type: "text", title: "Banner text", inputSize: "6", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
+          {option: FaviconOption, props: {key: this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce. (Current org only)"}},
+          {option: MultiToggleGroup,
+            props: {
+              title: "Color & org banner (global)",
+              sfHost: this.sfHost,
+              model: this.model,
+              toggles: [
+                {label: "Favicon", key: "colorizeFavicon", default: true, tooltip: "Apply custom color to browser tab favicon"},
+                {label: "Org Banner", key: "colorizeOrgBanner", tooltip: "Apply custom color to org banner (sandbox header / prod warning)",
+                  textInput: {
+                    key: this.sfHost + "_orgBannerText",
+                    label: "Banner text:",
+                    placeholder: "WARNING: THIS IS PRODUCTION",
+                    tooltip: "Custom banner text for this org"
+                  }
+                },
+                {label: "Ext. Header", key: "colorizeExtHeader", tooltip: "Apply custom color to extension pages header"}
+              ]
+            }
+          },
           {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Exclude users from search",
@@ -349,7 +396,7 @@ class OptionsTabSelector extends React.Component {
 
   render() {
     return h("div", {className: "slds-tabs_default"},
-      h("ul", {className: "sfir-options-tab-container slds-tabs_default__nav", role: "tablist"},
+      h("ul", {className: "options-tab-container slds-tabs_default__nav", role: "tablist"},
         this.tabs.map((tab) => h(OptionsTab, {key: tab.id, title: tab.tabTitle || tab.title, id: tab.id, selectedTabId: this.state.selectedTabId, onTabSelect: this.onTabSelect}))
       ),
       this.tabs.map((tab) => h(OptionsContainer, {
@@ -462,28 +509,24 @@ class ArrowButtonOption extends React.Component {
       arrowButtonOrientation: localStorage.getItem("popupArrowOrientation") ? localStorage.getItem("popupArrowOrientation") : "vertical",
       arrowButtonPosition: localStorage.getItem("popupArrowPosition") ? localStorage.getItem("popupArrowPosition") : "20"
     };
-    this.timeout;
   }
 
   onChangeArrowOrientation(e) {
     let orientation = e.target.value;
     this.setState({arrowButtonOrientation: orientation});
     localStorage.setItem("popupArrowOrientation", orientation);
-    window.location.reload();
+    postLocalSettingsUpdate(this.props.model.sfHost, {
+      popupArrowOrientation: orientation
+    });
   }
 
   onChangeArrowPosition(e) {
-    let position = e.target.value;
+    const position = e.target.value;
     this.setState({arrowButtonPosition: position});
-    console.log("[SFInspector] New Arrow Position Value: ", position);
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
-    this.timeout = setTimeout(() => {
-      console.log("[SFInspector] Setting Arrow Position: ", position);
-      localStorage.setItem("popupArrowPosition", position);
-      window.location.reload();
-    }, 1000);
+    localStorage.setItem("popupArrowPosition", position);
+    postLocalSettingsUpdate(this.props.model.sfHost, {
+      popupArrowPosition: position
+    });
   }
 
   render() {
@@ -880,175 +923,115 @@ class FaviconOption extends React.Component {
     this.sfHost = props.model.sfHost;
     this.onChangeFavicon = this.onChangeFavicon.bind(this);
     this.populateFaviconColors = this.populateFaviconColors.bind(this);
-    this.onToogleSmartMode = this.onToogleSmartMode.bind(this);
+    this.onToggleSmartMode = this.onToggleSmartMode.bind(this);
     this.toggleColorPicker = this.toggleColorPicker.bind(this);
     this.handleColorSelect = this.handleColorSelect.bind(this);
     this.colorIconRef = null;
+    this.unsubscribe = null;
 
-    let favicon = localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) ? localStorage.getItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY) : "";
-    let isInternal = favicon.length > 0 && !favicon.startsWith("http");
-    let smartMode = localStorage.getItem("faviconSmartMode") !== null ? JSON.parse(localStorage.getItem("faviconSmartMode")) : true;
+    const initialSettings = getColorSettingsSnapshot(this.sfHost);
+    const favicon = initialSettings.customFavicon || "";
+    const isColor = !!colorNameToHex(favicon);
+    const smartMode = initialSettings.smartMode;
     this.tooltip = props.tooltip;
     this.state = {
       favicon,
-      isInternal,
+      isColor,
       smartMode,
       showColorPicker: false,
       colorPickerPosition: {top: 0, left: 0}
     };
-    this.colorShades = {
-      dev: [
-        "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "MediumBlue", "CornflowerBlue",
-        "#CCCCFF", "SteelBlue", "SkyBlue", "#0F52BA", "Navy",
-        "Indigo", "PowderBlue", "LightBlue", "CadetBlue", "Aqua",
-        "Turquoise", "DarkTurquoise", "#6082B6", "LightSlateGray", "MidnightBlue"
-      ],
-      uat: [
-        "MediumOrchid", "Orchid", "DarkOrchid", "DarkViolet", "DarkMagenta",
-        "Purple", "BlueViolet", "Indigo", "DarkSlateBlue", "RebeccaPurple",
-        "MediumPurple", "MediumSlateBlue", "SlateBlue", "Plum", "Violet",
-        "Thistle", "Magenta", "DarkOrchid", "Fuchsia", "#301934"
-      ],
-      int: [
-        "LimeGreen", "SeaGreen", "MediumSeaGreen", "ForestGreen", "Green",
-        "DarkGreen", "YellowGreen", "OliveDrab", "DarkOliveGreen",
-        "SpringGreen", "LawnGreen", "DarkKhaki",
-        "GreenYellow", "DarkSeaGreen", "MediumAquamarine", "DarkCyan",
-        "Teal", "#00A36C", "#347235", "#355E3B"
-      ],
-      full: [
-        "Orange", "DarkOrange", "Coral", "Tomato", "OrangeRed",
-        "Salmon", "IndianRed", "Sienna", "Chocolate", "SaddleBrown",
-        "Peru", "DarkSalmon", "RosyBrown", "Brown", "Maroon",
-        "#b9770e", "#FFE5B4", "#CC5500", "#FF7518", "#FFBF00"
-      ]
-    };
+
+    this.unsubscribe = subscribeToColorSettings(this.sfHost, (snapshot) => {
+      const nextFavicon = snapshot.customFavicon || "";
+      this.setState({
+        favicon: nextFavicon,
+        isColor: !!colorNameToHex(nextFavicon),
+        smartMode: snapshot.smartMode
+      });
+    });
   }
 
   componentWillUnmount() {
-    if (this.pickerInstance) {
-      this.pickerInstance.destroy();
-      this.pickerInstance = null;
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
     }
-    this.isPickerOpen = false;
-  }
-
-  shouldComponentUpdate() {
-    return !this.isPickerOpen;
   }
 
   setColorButtonRef(element) {
     this.colorButtonEl = element;
   }
 
-  onChangeFavicon(e) {
-    let favicon = e.target.value;
-    let isInternal = favicon.length > 0 && !favicon.startsWith("http");
-    this.setState({favicon, isInternal});
-    localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, favicon);
-  }
-
-  onToogleSmartMode(e) {
-    let smartMode = e.target.checked;
-    this.setState({smartMode});
-    localStorage.setItem("faviconSmartMode", smartMode);
+  persistColorUpdates(updates) {
+    updateColorSettings(this.sfHost, updates);
+    postLocalSettingsUpdate(this.sfHost, updates);
   }
 
   toggleColorPicker() {
     if (this.state.showColorPicker) {
       this.setState({showColorPicker: false});
-    } else {
-      if (!this.state.favicon.startsWith("#")){
-        this.setState({favicon: null});
-      }
-      // Calculate position relative to the icon
-      const iconElement = this.colorIconRef;
-      if (iconElement) {
-        const rect = iconElement.getBoundingClientRect();
-        this.setState({
-          showColorPicker: true,
-          colorPickerPosition: {
-            top: rect.bottom + 8 + "px",
-            left: rect.left + "px"
-          }
-        });
-      }
+      return;
     }
+
+    const iconElement = this.colorIconRef;
+    if (!iconElement) return;
+
+    const rect = iconElement.getBoundingClientRect();
+    this.setState({
+      showColorPicker: true,
+      colorPickerPosition: {
+        top: rect.bottom + 8 + "px",
+        left: rect.left + "px"
+      }
+    });
+  }
+
+  onChangeFavicon(e) {
+    let favicon = e.target.value;
+    let isColor = !!colorNameToHex(favicon);
+    this.setState({favicon, isColor});
+    // Trigger re-render to update header color dynamically
+    this.props.model.didUpdate();
+    this.persistColorUpdates({customFavicon: favicon});
+  }
+
+  onToggleSmartMode(e) {
+    let smartMode = e.target.checked;
+    this.setState({smartMode});
+    this.persistColorUpdates({smartMode});
+
+    const snapshot = ensureFaviconColor(this.sfHost, smartMode);
+    if (snapshot.customFavicon) {
+      postLocalSettingsUpdate(this.sfHost, {customFavicon: snapshot.customFavicon});
+    }
+    this.props.model.didUpdate();
   }
 
   handleColorSelect(color) {
     this.setState({
       favicon: color,
-      isInternal: true,
+      isColor: true,
       showColorPicker: false
     });
-    localStorage.setItem(this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, color);
+    // Trigger re-render to update header color dynamically
+    this.props.model.didUpdate();
+    this.persistColorUpdates({customFavicon: color});
   }
 
-  populateFaviconColors(){
-    let orgs = Object.keys(localStorage).filter((localKey) =>
-      localKey.endsWith("_isSandbox")
-    );
-
-    orgs.forEach((org) => {
-      let sfHost = org.substring(0, org.indexOf("_isSandbox"));
-      let existingColor = localStorage.getItem(sfHost + FaviconOption.CUSTOM_FAVICON_KEY);
-
-      if (!existingColor) { // Only assign a color if none is set
-        const chosenColor = this.getColorForHost(sfHost, this.state.smartMode);
-        if (chosenColor) {
-          console.info(sfHost + FaviconOption.CUSTOM_FAVICON_KEY, chosenColor);
-          localStorage.setItem(sfHost + FaviconOption.CUSTOM_FAVICON_KEY, chosenColor);
-          if (sfHost === this.sfHost) {
-            this.setState({favicon: chosenColor});
-          }
-        }
-      } else {
-        console.info(sfHost + " already has a customFavicon: " + existingColor);
+  populateFaviconColors() {
+    getKnownOrgHosts().forEach((host) => {
+      const snapshot = ensureFaviconColor(host, this.state.smartMode);
+      if (snapshot.customFavicon) {
+        postLocalSettingsUpdate(host, {customFavicon: snapshot.customFavicon});
       }
     });
   }
-
-  getEnvironmentType(sfHost) {
-    // Function to get environment type based on sfHost
-    if (sfHost.includes("dev")) return "dev";
-    if (sfHost.includes("uat")) return "uat";
-    if (sfHost.includes("int") || sfHost.includes("sit")) return "int";
-    if (sfHost.includes("full")) return "full";
-    return null;
-  }
-
-  getColorForHost(sfHost, smartMode) {
-    // Attempt to get the environment type
-    const envType = this.getEnvironmentType(sfHost);
-
-    // Check if smartMode is true and environment type is valid
-    if (smartMode && envType && this.colorShades[envType].length > 0) {
-      // Select a random color from the corresponding environment shades
-      const randomIndex = Math.floor(Math.random() * this.colorShades[envType].length);
-      const chosenColor = this.colorShades[envType][randomIndex];
-      this.colorShades[envType].splice(randomIndex, 1); // Remove the used color from the list
-      return chosenColor;
-    } else {
-      // If no environment type matches or smartMode is false, use a random color from all available shades
-      const allColors = Object.values(this.colorShades).flat();
-      if (allColors.length > 0) {
-        const randomIndex = Math.floor(Math.random() * allColors.length);
-        const chosenColor = allColors[randomIndex];
-        allColors.splice(randomIndex, 1); // Remove the used color from the list
-        return chosenColor;
-      } else {
-        console.warn("No more colors available.");
-        return null;
-      }
-    }
-  }
-
 
   render() {
     return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
       h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
-        h("span", {}, "Custom favicon (org specific)",
+        h("span", {}, "Org color/favicon",
           h(Tooltip, {tooltip: this.tooltip, idKey: this.key || "favicon_option"})
         )
       ),
@@ -1057,7 +1040,7 @@ class FaviconOption extends React.Component {
           h("input", {
             type: "text",
             className: "slds-input",
-            style: this.state.isInternal ? {paddingRight: "2.5rem"} : {},
+            style: this.state.isColor ? {paddingRight: "2.5rem"} : {},
             placeholder: "All HTML Color Names, Hex code or external URL",
             value: nullToEmptyString(this.state.favicon),
             onChange: this.onChangeFavicon
@@ -1081,7 +1064,7 @@ class FaviconOption extends React.Component {
           })
         ),
         h("div", {className: "slds-form-element__control slds-col slds-size_2-of-12", style: {position: "relative"}},
-          this.state.isInternal ? h("svg", {
+          this.state.isColor ? h("svg", {
             className: "icon"
           },
           h("circle", {r: "12", cx: "12", cy: "12", fill: this.state.favicon})
@@ -1091,7 +1074,7 @@ class FaviconOption extends React.Component {
       h("div", {className: "slds-col slds-size_2-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
         h("div", {dir: "ltr", className: "slds-form-element__control slds-col "},
           h("label", {className: "slds-checkbox_toggle slds-grid"},
-            h("input", {type: "checkbox", required: true, className: "slds-input", checked: this.state.smartMode, onChange: this.onToogleSmartMode}),
+            h("input", {type: "checkbox", required: true, className: "slds-input", checked: this.state.smartMode, onChange: this.onToggleSmartMode}),
             h("span", {className: "slds-checkbox_faux_container center-label"},
               h("span", {className: "slds-checkbox_faux"}),
               h("span", {className: "slds-checkbox_on", title: "Use favicon based on org name (DEV : blue, UAT :green ..)"}, "Smart"),
@@ -1101,6 +1084,101 @@ class FaviconOption extends React.Component {
         ),
         h("div", {className: "slds-form-element__control slds-col"},
           h("button", {className: "slds-button slds-button_brand", onClick: this.populateFaviconColors, title: "Use favicon for all orgs I've visited"}, "Populate All")
+        )
+      )
+    );
+  }
+}
+
+class MultiToggleGroup extends React.Component {
+  constructor(props) {
+    super(props);
+    this.sfHost = props.sfHost;
+    this.model = props.model;
+    this.toggles = props.toggles;
+    const isSandbox = localStorage.getItem(this.sfHost + "_isSandbox");
+    const trialExpDate = localStorage.getItem(this.sfHost + "_trialExpirationDate");
+    this.isProd = isSandbox === "false" && (!trialExpDate || trialExpDate === "null");
+
+    const snapshot = getColorSettingsSnapshot(this.sfHost);
+    const state = {};
+    this.toggles.forEach(t => {
+      const value = typeof snapshot[t.key] === "boolean"
+        ? snapshot[t.key]
+        : (t.default !== undefined ? t.default : false);
+      state[t.key] = value;
+      if (t.textInput) state[t.textInput.key] = snapshot.orgBannerText || "";
+    });
+    this.state = state;
+  }
+
+  handleToggleChange = (key) => (e) => {
+    const checked = e.target.checked;
+    this.setState({[key]: checked});
+    updateColorSettings(this.sfHost, {[key]: checked});
+    if (this.model) this.model.didUpdate();
+    postLocalSettingsUpdate(this.sfHost, {[key]: checked});
+  };
+
+  handleTextChange = (key) => (e) => {
+    const value = e.target.value;
+    this.setState({[key]: value});
+    updateColorSettings(this.sfHost, {orgBannerText: value});
+    postLocalSettingsUpdate(this.sfHost, {orgBannerText: value});
+  };
+
+  render() {
+    const isSingleWithText = this.toggles.length === 1 && this.toggles[0].textInput;
+    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
+        h("span", {}, this.props.title)
+      ),
+      h("div", {className: "slds-col slds-size_9-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small"},
+        h("div", {className: "slds-form-element__control slds-grid slds-grid_vertical-align-center"},
+          isSingleWithText
+            ? this.toggles.map((toggle) =>
+              h("label", {className: "slds-checkbox_toggle slds-grid slds-grid_vertical-align-center", key: toggle.key},
+                h("span", {className: "slds-form-element__label slds-m-right_x-small"}, toggle.label),
+                h("input", {type: "checkbox", id: toggle.key, checked: this.state[toggle.key], onChange: this.handleToggleChange(toggle.key)}),
+                h("span", {className: "slds-checkbox_faux_container"},
+                  h("span", {className: "slds-checkbox_faux"}),
+                  h("span", {className: "slds-checkbox_on"}, "On"),
+                  h("span", {className: "slds-checkbox_off"}, "Off")
+                ),
+                h(Tooltip, {tooltip: toggle.tooltip, idKey: toggle.key})
+              )
+            )
+            : h("div", {className: "slds-checkbox_button-group"},
+              this.toggles.map((toggle) =>
+                h("span", {className: "slds-button slds-checkbox_button", key: toggle.key},
+                  h("input", {type: "checkbox", id: toggle.key, checked: this.state[toggle.key], onChange: this.handleToggleChange(toggle.key)}),
+                  h("label", {className: "slds-checkbox_button__label", htmlFor: toggle.key},
+                    h("span", {className: "slds-checkbox_faux"}, toggle.label,
+                      h(Tooltip, {tooltip: toggle.tooltip, idKey: toggle.key})
+                    )
+                  )
+                )
+              )
+            ),
+          this.toggles.filter(t => t.textInput).map((toggle) =>
+            h("div", {key: toggle.textInput.key, className: "slds-grid slds-grid_vertical-align-center slds-m-left_small"},
+              h("span", {
+                className: "slds-m-right_x-small",
+                style: {whiteSpace: "nowrap"}
+              },
+                h("span", {}, toggle.textInput.label || "Banner:"),
+                h(Tooltip, {tooltip: toggle.textInput.tooltip, idKey: toggle.textInput.key})
+              ),
+              h("input", {
+                type: "text",
+                className: "slds-input",
+                style: {width: "320px"},
+                placeholder: toggle.textInput.placeholder,
+                value: this.state[toggle.textInput.key],
+                onChange: this.handleTextChange(toggle.textInput.key)
+              })
+            )
+          )
         )
       )
     );

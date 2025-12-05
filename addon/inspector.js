@@ -66,10 +66,40 @@ export let sfConn = {
       }
     }
     if (localStorage.getItem(sfHost + "_trialExpirationDate") == null) {
-      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName+,TrialExpirationDate+FROM+Organization").then(res => {
-        localStorage.setItem(sfHost + "_isSandbox", res.records[0].IsSandbox);
-        localStorage.setItem(sfHost + "_orgInstance", res.records[0].InstanceName);
-        localStorage.setItem(sfHost + "_trialExpirationDate", res.records[0].TrialExpirationDate);
+      sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+IsSandbox,+InstanceName,+TrialExpirationDate+FROM+Organization").then(res => {
+        const orgRecord = res.records[0];
+        localStorage.setItem(sfHost + "_isSandbox", orgRecord.IsSandbox);
+        localStorage.setItem(sfHost + "_orgInstance", orgRecord.InstanceName);
+        localStorage.setItem(sfHost + "_trialExpirationDate", orgRecord.TrialExpirationDate);
+
+        // Notify content script via postMessage (since we are in an iframe)
+        if (window.parent) {
+          window.parent.postMessage({
+            insextOrgInfoUpdate: true,
+            sfHost: sfHost,
+            isSandbox: orgRecord.IsSandbox,
+            trialExpirationDate: orgRecord.TrialExpirationDate
+          }, "*");
+        }
+      }).catch(err => {
+        console.error("Failed to fetch Org Info:", err);
+        // Fallback heuristic if API fails (e.g. API Access Control enabled)
+        const h = sfHost.toLowerCase();
+        // csN = Customer Sandbox, sandbox domain, test.salesforce.com
+        const isSandboxGuess = h.includes("sandbox") || h.startsWith("cs") || h === "test.salesforce.com";
+
+        localStorage.setItem(sfHost + "_isSandbox", isSandboxGuess);
+        // We can't know trial expiration, so assume null (not a trial)
+        localStorage.setItem(sfHost + "_trialExpirationDate", "null");
+
+        if (window.parent) {
+          window.parent.postMessage({
+            insextOrgInfoUpdate: true,
+            sfHost: sfHost,
+            isSandbox: isSandboxGuess,
+            trialExpirationDate: "null"
+          }, "*");
+        }
       });
     }
     return this.sessionId;

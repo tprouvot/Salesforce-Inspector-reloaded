@@ -3,10 +3,24 @@ import {sfConn, apiVersion, sessionError} from "./inspector.js";
 import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
+import {getColorSettingsSnapshot} from "./utils/colorSettingsStore.js";
+import {broadcastSettings} from "./utils/messaging.js";
 
-let p = parent;
+let appInstance = null;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
-const isExtensionPage = document.location.ancestorOrigins?.[0].includes(getExtensionId());
+
+// Detect if we are running on an extension page (popup/options) versus the org page
+let isExtensionPage = false;
+try {
+  const ancestorOrigins = document.location.ancestorOrigins;
+  const ancestorOrigin = ancestorOrigins && ancestorOrigins.length > 0 ? ancestorOrigins[0] : null;
+  const extensionId = getExtensionId();
+  if (ancestorOrigin && extensionId) {
+    isExtensionPage = ancestorOrigin.includes(extensionId);
+  }
+} catch {
+  isExtensionPage = false;
+}
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -14,6 +28,9 @@ if (typeof browser === "undefined") {
 }
 
 {
+  // Note: Using "*" as targetOrigin because popup (extension origin) communicates
+  // with parent window (Salesforce org origin). Security is handled by button.js
+  // validating e.source === popupEl.contentWindow for incoming messages.
   parent.postMessage(
     {
       insextInitRequest: true,
@@ -31,7 +48,7 @@ if (typeof browser === "undefined") {
       }
     }
   });
-  chrome.runtime.onMessage.addListener((request) => {
+  browser.runtime.onMessage.addListener((request) => {
     if (request.msg === "shortcut_pressed") {
       if (request.command === "open-popup") {
         parent.postMessage({insextOpenPopup: true}, "*");
@@ -45,32 +62,42 @@ if (typeof browser === "undefined") {
         sfConn.sessionId = newToken;
         sfConn.instanceHostname = request.sfHost;
       }
+    } else if (request.message === "settingsUpdated" && request.sfHost && request.settings) {
+      // Invalidate sessionStorage cache so refreshing pages will pick up new settings
+      sessionStorage.removeItem("filteredStorage");
+      // Forward to button.js on Salesforce page - use "*" since popup is on extension origin
+      broadcastSettings(request.sfHost, request.settings, {
+        targetWindow: parent,
+        targetOrigin: "*",
+        includeRuntime: false
+      });
+      if (appInstance) {
+        appInstance.forceUpdate();
+      }
     }
   });
 }
 
 function getFilteredLocalStorage() {
-  const existingFilteredStorage = sessionStorage.getItem("filteredStorage");
-  if (existingFilteredStorage) {
-    return JSON.parse(existingFilteredStorage);
-  }
-
+  // Always read fresh from localStorage to ensure settings changes are reflected on page refresh
   let host = new URLSearchParams(window.location.search).get("host");
 
-  let domainStart = host?.split(".")[0];
+  const domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
   const keysToSend = [
     "scrollOnFlowBuilder",
-    "colorizeProdBanner",
-    "colorizeSandboxBanner",
     "popupArrowOrientation",
     "popupArrowPosition",
-    "prodBannerText",
   ];
+
   const filteredStorage = Object.fromEntries(
     Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
   );
-  sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
+
+  if (host) {
+    Object.assign(filteredStorage, getColorSettingsSnapshot(host));
+  }
+
   return filteredStorage;
 }
 function closePopup() {
@@ -90,7 +117,7 @@ function showApiName(e) {
 }
 
 function init({sfHost, inDevConsole, inLightning, inInspector}) {
-  let addonVersion = chrome.runtime.getManifest().version_name;
+  let addonVersion = browser.runtime.getManifest().version_name;
 
   sfConn.getSession(sfHost).then(() => {
     ReactDOM.render(
@@ -101,7 +128,8 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
         inInspector,
         addonVersion,
       }),
-      document.getElementById("root")
+      document.getElementById("root"),
+      function() { appInstance = this; }
     );
   });
 }
@@ -4673,7 +4701,7 @@ function sfLocaleKeyToCountryCode(localeKey) {
 window.getRecordId = getRecordId; // for unit tests
 
 function lightningNavigate(details, fallbackURL) {
-  p.postMessage({lightningNavigate: {...details, fallbackURL}}, "*");
+  parent.postMessage({lightningNavigate: {...details, fallbackURL}}, "*");
 }
 
 function navigateWithExtensionCheck(e, url, navigationParams, target = null) {

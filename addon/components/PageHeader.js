@@ -68,20 +68,14 @@ export function PageHeader(props) {
 
   // Check if header color override is enabled and get custom color
   let customHeaderStyle = {};
-  try {
-    const overrideColorsOption = JSON.parse(localStorage.getItem("overrideColorsOption") || "[]");
-    const shouldOverride = overrideColorsOption.find(item => item.name === "header")?.checked;
-    if (shouldOverride && sfHost) {
-      const customColor = localStorage.getItem(sfHost + "_customFavicon");
-      if (customColor) {
-        customHeaderStyle = {
-          backgroundColor: customColor
-        };
-      }
+  const shouldOverride = localStorage.getItem("colorizeExtHeader") === "true";
+  if (shouldOverride && sfHost) {
+    const customColor = localStorage.getItem(sfHost + "_customFavicon");
+    if (customColor) {
+      customHeaderStyle = {
+        backgroundColor: customColor
+      };
     }
-  } catch (e) {
-    // If parsing fails, just use default styles
-    console.error("Error reading color override settings:", e);
   }
 
   return h("div", {className: "slds-builder-header_container"},

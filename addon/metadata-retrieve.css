@@ -1,17 +1,7 @@
 * {
   box-sizing: border-box;
 }
-body {
-  font-family: "Salesforce Sans", Arial, sans-serif;
-  font-size: 0.8125rem;
-  overflow: hidden;
-  margin: 0;
-  background-color: #b0c4df;
-  background-image: url(images/lightning_blue_background.png);
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: 0px 48px;
-}
+
 .sf-link {
   margin-right: 1em;
   background-color: rgb(6, 28, 63);

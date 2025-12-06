@@ -50,3 +50,20 @@ If the error disappeared, clear site data to solve the issue in normal navigatio
 ### Managed Application Installation Error
 
 When installing the default connected app when `API Access Control` is enabled, if you face the error `Managed Application Installation Error` you may have an existing connected app named `Salesforce Inspector reloaded`.
+
+### Logging as incognito with ConnectedApp
+
+If you use the standard Salesforce Inspector Reloaded's Connected App and click `Generate New Token` the `LoginAs Incognito` feature might stop working correctly. Instead of automatically logging you in, you'll be sent to a regular login screen.
+
+This issue occurs because the default Salesforce Inspector Reloaded Connected App doesn't use the required scope for this feature.
+As a workaround, you can create a custom `External Client App` (since the creation of Connected Apps is soon to be deprecated) as described in this [article](https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/#external-client-app-creation).
+
+### Deployment error: No package.xml found
+
+Zip files downloaded from Salesforce (via Retrieve operations) contains a parent folder (typically named "unpackaged") that wraps all the metadata files including `package.xml`.
+This error occurs when attempting to deploy a zip file where the `package.xml` file is not located at the root level of the zip archive and the `singlePackage` option is enabled.
+
+**How to solve it:**
+
+1. **Open deployment settings**: Click the cog wheel icon.
+2. **Single Package**: Disable `Single Package` option.

@@ -288,7 +288,8 @@ class OptionsTabSelector extends React.Component {
             props: {title: "Show buttons",
               key: "hideFlowScannerButtonsOption",
               checkboxes: [
-                {label: "Agentforce", name: "flow-agentforce", checked: false}
+                {label: "Agentforce", name: "flow-agentforce", checked: false},
+                {label: "Settings", name: "flow-settings", checked: true}
               ]}
           },
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_flowScannerAgentForcePrompt", default: Constants.PromptTemplateFlow, tooltip: "Developer name of the prompt template to use for Flow Scanner"}},

@@ -2396,7 +2396,7 @@ class App extends React.Component {
           h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
             h("use", {xlinkHref: "symbols.svg#einstein"})
           ))),
-          h("div", {
+          displayButton("flow-settings", this.state.hideButtonsOption) && h("div", {
             key: "help-btn",
             className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
           },
@@ -2406,7 +2406,7 @@ class App extends React.Component {
             onClick: this.onToggleHelp
           },
           h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-            h("use", {xlinkHref: "symbols.svg#question"})
+            h("use", {xlinkHref: "symbols.svg#settings"})
           )
           )
           )

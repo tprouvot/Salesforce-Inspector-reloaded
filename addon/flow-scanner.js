@@ -1404,7 +1404,7 @@ function ScanSummary(props) {
 }
 
 function AgentforceModal(props) {
-  const {isOpen, onClose, onSend, prompt, onPromptChange, analysisResult} = props;
+  const {isOpen, onClose, onSend, prompt, onPromptChange, analysisResult, error} = props;
   const defaultPrompt = "Based on the following Salesforce Flow metadata, explain in one paragraph what this flow does, what event triggers it, and the business purpose it serves.";
   return h(ConfirmModal, {
     isOpen,
@@ -1428,6 +1428,10 @@ function AgentforceModal(props) {
           style: {minHeight: "120px", resize: "vertical"}
         })
       )
+    ),
+    error && h("div", {className: "slds-box slds-m-top_medium slds-theme_error slds-theme_alert-texture"},
+      h("div", {className: "slds-text-heading_small slds-m-bottom_small"}, "Error"),
+      h("div", {className: "slds-text-body_regular"}, error)
     ),
     analysisResult && h("div", {className: "slds-box slds-m-top_medium"},
       h("div", {className: "slds-text-heading_small slds-m-bottom_small"}, "Analysis Result"),
@@ -1532,7 +1536,8 @@ class App extends React.Component {
       hideButtonsOption: JSON.parse(localStorage.getItem("hideFlowScannerButtonsOption")),
       showAgentforceModal: false,
       agentforcePrompt: "",
-      agentforceAnalysis: ""
+      agentforceAnalysis: "",
+      agentforceError: null
     };
     this.onToggleHelp = this.onToggleHelp.bind(this);
     this.onToggleAgentforce = this.onToggleAgentforce.bind(this);
@@ -1727,7 +1732,8 @@ class App extends React.Component {
     this.setState({
       showAgentforceModal: false,
       agentforcePrompt: "",
-      agentforceAnalysis: ""
+      agentforceAnalysis: "",
+      agentforceError: null
     });
   }
 
@@ -1739,7 +1745,9 @@ class App extends React.Component {
       showAgentforceModal: false,
       isLoading: true,
       loadingMessage: "Generating explanation...",
-      loadingDescription: "Asking Agentforce to analyze the flow metadata."
+      loadingDescription: "Asking Agentforce to analyze the flow metadata.",
+      agentforceError: null,
+      agentforceAnalysis: ""
     });
 
     try {
@@ -1771,7 +1779,7 @@ class App extends React.Component {
       this.setState({
         isLoading: false,
         showAgentforceModal: true, // Re-open modal so user can try again or see their input
-        error: "Agentforce generation failed: " + error.message
+        agentforceError: "Agentforce generation failed: " + error.message
       });
     }
   }
@@ -2418,7 +2426,8 @@ class App extends React.Component {
         onSend: this.onAgentforceSend,
         prompt: this.state.agentforcePrompt,
         onPromptChange: this.onAgentforcePromptChange,
-        analysisResult: this.state.agentforceAnalysis
+        analysisResult: this.state.agentforceAnalysis,
+        error: this.state.agentforceError
       }),
       h(PurgeModal, {
         isOpen: this.state.showPurgeModal,

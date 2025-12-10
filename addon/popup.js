@@ -1307,12 +1307,40 @@ class AllDataBox extends React.PureComponent {
 class AllDataBoxUsers extends React.PureComponent {
   constructor(props) {
     super(props);
+    // Load user search preferences early so they are available in render and getMatches
+    const userSearchFields = this.getUserSearchFieldsFromLocalStorage();
+    const {excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.getUserSearchExclusionsFromLocalStorage();
+
     this.state = {
       selectedUser: null,
       selectedUserId: null,
+      userSearchFields,
+      excludeInactiveUsersFromSearch,
+      excludePortalUsersFromSearch,
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
+  }
+
+  getUserSearchExclusionsFromLocalStorage() {
+    // Try to read from new MultiCheckboxButtonGroup format first
+    const userSearchExclusions = localStorage.getItem("userSearchExclusions");
+    const defaultExclusions = {
+      excludePortalUsersFromSearch: false,
+      excludeInactiveUsersFromSearch: false
+    };
+    if (!userSearchExclusions) {
+      return defaultExclusions;
+    }
+    try {
+      const parsed = JSON.parse(userSearchExclusions);
+      return {
+        excludePortalUsersFromSearch: parsed.find(cb => cb.name === "portal")?.checked || false,
+        excludeInactiveUsersFromSearch: parsed.find(cb => cb.name === "inactive")?.checked || false
+      };
+    } catch (e) {
+      return defaultExclusions;
+    }
   }
 
   componentDidMount() {
@@ -1327,78 +1355,84 @@ class AllDataBoxUsers extends React.PureComponent {
     }
   }
 
+  getUserSearchFieldsFromLocalStorage() {
+    const defaultFields = ["Username", "Email", "Alias", "Name"].map(field => ({name: field, label: field, checked: true}));
+    const userDefaultSearchFieldsOptions = localStorage.getItem("userDefaultSearchFieldsOptions");
+    if (!userDefaultSearchFieldsOptions) {
+      return defaultFields;
+    }
+    try {
+      const parsed = JSON.parse(userDefaultSearchFieldsOptions);
+      if (!Array.isArray(parsed)) {
+        return defaultFields;
+      }
+      const enabledSearchOptions = parsed.filter(field => field && field.name && field.checked === true);
+      return enabledSearchOptions.length > 0 ? enabledSearchOptions : defaultFields;
+    } catch (e) {
+      return defaultFields;
+    }
+  }
+
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
     userQuery = userQuery.trim();
     if (!userQuery) {
       return [];
     }
-
-    const escapedUserQuery = userQuery
-      .replace(/\\/g, "\\\\")
-      .replace(/'/g, "\\'");
-    const fullQuerySelect
-      = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
-    const minimalQuerySelect
-      = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const queryFrom
-      = "from User where (username like '%"
-      + escapedUserQuery
-      + "%' or name like '%"
-      + escapedUserQuery
-      + "%') order by IsActive DESC, LastLoginDate limit 100";
+    const escapedUserQuery = userQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
+    const userSearchWhereClause = this.getUserSearchWhereClause(escapedUserQuery);
+    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
     const compositeQuery = {
-      compositeRequest: [
+      "compositeRequest": [
         {
-          method: "GET",
-          url:
-            "/services/data/v"
-            + apiVersion
-            + "/query/?q="
-            + encodeURIComponent(fullQuerySelect + " " + queryFrom),
-          referenceId: "fullData",
-        },
-        {
-          method: "GET",
-          url:
-            "/services/data/v"
-            + apiVersion
-            + "/query/?q="
-            + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
-          referenceId: "minimalData",
-        },
-      ],
+          "method": "GET",
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
+          "referenceId": "fullData"
+        }, {
+          "method": "GET",
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
+          "referenceId": "minimalData"
+        }
+      ]
     };
 
     try {
       setIsLoading(true);
-      const userSearchResult = await sfConn.rest(
-        "/services/data/v" + apiVersion + "/composite",
-        {method: "POST", body: compositeQuery}
-      );
-      let users = userSearchResult.compositeResponse.find(
-        (elm) => elm.httpStatusCode == 200
-      ).body.records;
+      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
+      let users = userSearchResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records;
       return users;
     } catch (err) {
-      console.error(
-        "Unable to query user details with: "
-          + JSON.stringify(compositeQuery)
-          + ".",
-        err
-      );
+      console.error("Unable to query user details with: " + JSON.stringify(compositeQuery) + ".", err);
       return [];
     } finally {
       setIsLoading(false);
     }
+
+  }
+
+  getUserSearchWhereClause(escapedUserQuery) {
+    const {userSearchFields, excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.state;
+
+    let userSearchWhereClause = "(";
+    userSearchFields.forEach(field => {
+      userSearchWhereClause += field.name + " LIKE '%" + escapedUserQuery + "%' OR ";
+    });
+    userSearchWhereClause = userSearchWhereClause.slice(0, -4);
+    userSearchWhereClause += ")";
+    if (excludeInactiveUsersFromSearch) {
+      userSearchWhereClause += " AND IsActive = true";
+    }
+    if (excludePortalUsersFromSearch) {
+      userSearchWhereClause += " AND IsPortalEnabled = false";
+    }
+    return userSearchWhereClause;
   }
 
   async onDataSelect(userRecord) {
     if (userRecord && userRecord.Id) {
-      await this.setState({
-        selectedUserId: userRecord.Id,
-        selectedUser: null,
-      });
+      await this.setState({selectedUserId: userRecord.Id, selectedUser: null});
       await this.querySelectedUserDetails();
     }
   }
@@ -1411,82 +1445,45 @@ class AllDataBoxUsers extends React.PureComponent {
       return;
     }
     //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
-    const fullQuerySelect
-      = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref";
     //TODO implement a try catch to remove non existing fields ProfileId or IsPortalEnabled (experience is not enabled)
-    const mediumQuerySelect
-      = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
-    const minimalQuerySelect
-      = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
+    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref";
+    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref";
     const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
     const compositeQuery = {
-      compositeRequest: [
+      "compositeRequest": [
         {
-          method: "GET",
-          url:
-            "/services/data/v"
-            + apiVersion
-            + "/query/?q="
-            + encodeURIComponent(fullQuerySelect + " " + queryFrom),
-          referenceId: "fullData",
-        },
-        {
-          method: "GET",
-          url:
-            "/services/data/v"
-            + apiVersion
-            + "/query/?q="
-            + encodeURIComponent(mediumQuerySelect + " " + queryFrom),
-          referenceId: "mediumData",
-        },
-        {
-          method: "GET",
-          url:
-            "/services/data/v"
-            + apiVersion
-            + "/query/?q="
-            + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
-          referenceId: "minimalData",
-        },
-      ],
+          "method": "GET",
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
+          "referenceId": "fullData"
+        }, {
+          "method": "GET",
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(mediumQuerySelect + " " + queryFrom),
+          "referenceId": "mediumData"
+        }, {
+          "method": "GET",
+          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
+          "referenceId": "minimalData"
+        }
+      ]
     };
 
     try {
       setIsLoading(true);
-      //const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + selectedUserId); //Does not return profile details. Query call is therefore prefered
-      const userResult = await sfConn.rest(
-        "/services/data/v" + apiVersion + "/composite",
-        {method: "POST", body: compositeQuery}
-      );
-      let userDetail = userResult.compositeResponse.find(
-        (elm) => elm.httpStatusCode == 200
-      ).body.records[0];
-      userDetail.debugModeActionLabel
-        = userDetail.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
+      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
+      let userDetail = userResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records[0];
+      userDetail.debugModeActionLabel = userDetail.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
       //query NetworkMember only if it is a portal user (display "Login to Experience" button)
-      if (userDetail.IsPortalEnabled) {
-        await sfConn
-          .rest(
-            "/services/data/v"
-              + apiVersion
-              + "/query/?q=SELECT+NetworkId+FROM+NetworkMember+WHERE+MemberId='"
-              + userDetail.Id
-              + "'"
-          )
-          .then((res) => {
-            if (res.records && res.records.length > 0) {
-              userDetail.NetworkId = res.records[0].NetworkId;
-            }
-          });
+      if (userDetail.IsPortalEnabled){
+        await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+NetworkId+FROM+NetworkMember+WHERE+MemberId='" + userDetail.Id + "'").then(res => {
+          if (res.records && res.records.length > 0){
+            userDetail.NetworkId = res.records[0].NetworkId;
+          }
+        });
       }
       await this.setState({selectedUser: userDetail});
     } catch (err) {
-      console.error(
-        "Unable to query user details with: "
-          + JSON.stringify(compositeQuery)
-          + ".",
-        err
-      );
+      console.error("Unable to query user details with: " + JSON.stringify(compositeQuery) + ".", err);
     } finally {
       setIsLoading(false);
     }

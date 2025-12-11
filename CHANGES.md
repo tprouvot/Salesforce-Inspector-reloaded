@@ -2,7 +2,7 @@
 
 ## Version 2.0
 
-- `Data Export` Now Aggregate Queries avoid popup actions menu
+- `Data Export` Prevent popup actions menu for Aggregate result [feature #663](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/663) (contribution by [Phanidra Mangipudi](https://github.com/thephani))
 - `Flow Scanner` Implement Agentforce feature to describe a flow and its components
 - `Field Creator` Fix Text Field length defaulting to 255 [issue 923](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/923) (contribution by [DivyanshuBist](https://github.com/DivyanshuBist))
 - Fix flow scrolling feature by [Camille Guillory](https://github.com/CamilleGuillory) [issue #837](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/837)

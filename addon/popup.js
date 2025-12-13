@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, getSobjectListview, Constants} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -171,6 +171,8 @@ class App extends React.PureComponent {
       }
       exportArg.set("query", query);
       importArg.set("sobject", e.contextSobject);
+    } else if (e.contextSobjectListview) {
+      this.getListViewQuery(e.contextUrl);
     } else if (this.state.listViewQuery) {
       exportArg.set("query", this.state.listViewQuery);
     }
@@ -208,44 +210,70 @@ class App extends React.PureComponent {
     }
     const sobjectName = match[1];
     const filterName = match[2];
-    let listViewId = filterName;
     let {sfHost} = this.props;
 
-    if (!filterName.startsWith("00B")) {
-      try {
-        const query = `SELECT Id FROM ListView WHERE SobjectType = '${sobjectName}' AND DeveloperName = '${filterName}'`;
-        const res = await sfConn.rest(
-          "/services/data/v"
-            + apiVersion
-            + "/query/?q="
-            + encodeURIComponent(query)
-        );
-        if (res.records && res.records.length > 0) {
-          listViewId = res.records[0].Id;
-        } else {
-          return;
-        }
-      } catch (e) {
-        console.error(e);
-        return;
-      }
-    }
-
     try {
-      const res = await sfConn.rest(
-        `/services/data/v${apiVersion}/sobjects/${sobjectName}/listviews/${listViewId}/describe`
-      );
-      if (res.query) {
-        let exportArg = new URLSearchParams();
-        exportArg.set("host", sfHost);
-        exportArg.set("query", res.query);
-        this.setState({
-          listViewQuery: res.query,
-          exportHref: "data-export.html?" + exportArg,
-        });
+      if (!filterName.startsWith("00B")) {
+        // Use Composite API to combine both requests into a single API call
+        const query = `SELECT Id FROM ListView WHERE SobjectType = '${sobjectName}' AND DeveloperName = '${filterName}' LIMIT 1`;
+        const compositePayload = {
+          allOrNone: true,
+          compositeRequest: [
+            {
+              method: "GET",
+              url: `/services/data/v${apiVersion}/query/?q=${encodeURIComponent(
+                query
+              )}`,
+              referenceId: "GetListViewInfo",
+            },
+            {
+              method: "GET",
+              url: `/services/data/v${apiVersion}/sobjects/${sobjectName}/listviews/@{GetListViewInfo.records[0].Id}/describe`,
+              referenceId: "DescribeTheListView",
+            },
+          ],
+        };
+
+        const compositeRes = await sfConn.rest(
+          `/services/data/v${apiVersion}/composite`,
+          {method: "POST", body: compositePayload}
+        );
+
+        // Check if both requests succeeded
+        if (
+          compositeRes.compositeResponse
+          && compositeRes.compositeResponse[1]?.httpStatusCode === 200
+        ) {
+          const describeRes = compositeRes.compositeResponse[1].body;
+          if (describeRes.query) {
+            let exportArg = new URLSearchParams();
+            exportArg.set("host", sfHost);
+            exportArg.set("query", describeRes.query);
+            this.setState({
+              listViewQuery: describeRes.query,
+              exportHref: "data-export.html?" + exportArg,
+            });
+            return;
+          }
+        }
+      } else {
+        // Fallback for direct ID or if composite logic isn't needed (standard behavior for 00B IDs)
+        const res = await sfConn.rest(
+          `/services/data/v${apiVersion}/sobjects/${sobjectName}/listviews/${filterName}/describe`
+        );
+        if (res.query) {
+          let exportArg = new URLSearchParams();
+          exportArg.set("host", sfHost);
+          exportArg.set("query", res.query);
+          this.setState({
+            listViewQuery: res.query,
+            exportHref: "data-export.html?" + exportArg,
+          });
+        }
       }
     } catch (e) {
       console.error(e);
+      this.setState({listViewQuery: null});
     }
   }
 
@@ -919,11 +947,11 @@ class App extends React.PureComponent {
               })
               )
             )
-            )
           )
         )
-      );
-    }
+      )
+    );
+  }
 }
 
 class AllDataBox extends React.PureComponent {
@@ -992,6 +1020,7 @@ class AllDataBox extends React.PureComponent {
         contextRecordId: recordId,
         contextPath: path,
         contextSobject: sobject,
+        contextSobjectListview: getSobjectListview(contextUrl),
       };
       this.setState(context);
       onContextRecordChange(context);

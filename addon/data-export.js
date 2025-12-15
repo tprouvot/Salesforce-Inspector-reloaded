@@ -130,9 +130,11 @@ class Model {
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
 
+    let queryFromUrl = false;
     if (args.has("query")) {
       this.initialQuery = args.get("query");
       this.queryTooling = args.has("useToolingApi");
+      queryFromUrl = true;
     } else if (this.queryHistory.list[0]) {
       this.initialQuery = this.queryHistory.list[0].query;
       this.queryTooling = this.queryHistory.list[0].useToolingApi;
@@ -147,7 +149,7 @@ class Model {
 
     this.queryTabs = [];
     this.activeTabIndex = 0;
-    this.loadQueryTabs();
+    this.loadQueryTabs(queryFromUrl);
   }
 
   updatedExportedData() {
@@ -1076,14 +1078,22 @@ class Model {
     };
   }
 
-  loadQueryTabs() {
+  loadQueryTabs(queryFromUrl) {
     const savedTabs = localStorage.getItem(`${this.sfHost}_queryTabs`);
     if (savedTabs) {
       this.queryTabs = JSON.parse(savedTabs);
+      if (queryFromUrl) {
+        const newTabName = `Query ${this.queryTabs.length + 1}`;
+        this.queryTabs.push({name: newTabName, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
+        this.activeTabIndex = this.queryTabs.length - 1;
+        this.saveQueryTabs();
+      } else {
+        this.activeTabIndex = 0;
+      }
     } else {
       this.queryTabs = [{name: "Query 1", query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
+      this.activeTabIndex = 0;
     }
-    this.activeTabIndex = 0;
   }
 
   saveQueryTabs() {

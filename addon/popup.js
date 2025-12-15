@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, getSobjectListview, Constants} from "./utils.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -150,7 +150,7 @@ class App extends React.PureComponent {
     this.getListViewQuery = this.getListViewQuery.bind(this);
     this.hideToast = this.hideToast.bind(this);
   }
-  onContextRecordChange(e) {
+  async onContextRecordChange(e) {
     let {sfHost} = this.props;
     let limitsArg = new URLSearchParams();
     let exportArg = new URLSearchParams();
@@ -158,23 +158,18 @@ class App extends React.PureComponent {
     exportArg.set("host", sfHost);
     importArg.set("host", sfHost);
     limitsArg.set("host", sfHost);
-    if (
-      e.contextSobject
-      && localStorage.getItem("useSObjectContextOnDataImportLink") !== "false"
-    ) {
+    if (e.contextSobjectListview) {
+      const listViewQuery = await this.getListViewQuery(e.contextSobject, e.contextSobjectListview);
+      if (listViewQuery) {
+        exportArg.set("query", listViewQuery);
+      }
+    } else if (e.contextSobject && localStorage.getItem("useSObjectContextOnDataImportLink") !== "false") {
       let query = "SELECT Id FROM " + e.contextSobject;
-      if (
-        e.contextRecordId
-        && (e.contextRecordId.length == 15 || e.contextRecordId.length == 18)
-      ) {
+      if (e.contextRecordId && (e.contextRecordId.length == 15 || e.contextRecordId.length == 18)) {
         query += " WHERE Id = '" + e.contextRecordId + "'";
       }
       exportArg.set("query", query);
       importArg.set("sobject", e.contextSobject);
-    } else if (e.contextSobjectListview) {
-      this.getListViewQuery(e.contextUrl);
-    } else if (this.state.listViewQuery) {
-      exportArg.set("query", this.state.listViewQuery);
     }
     this.setState({
       exportHref: "data-export.html?" + exportArg,
@@ -190,91 +185,50 @@ class App extends React.PureComponent {
         isInSetup: locationHref.includes("/lightning/setup/"),
         contextUrl: locationHref,
       });
-      this.getListViewQuery(locationHref);
     }
     this.setState({
       isFieldsPresent: e.data.isFieldsPresent,
     });
   }
-  async getListViewQuery(url) {
-    if (localStorage.getItem("enableListViewExport") !== "true") {
-      this.setState({listViewQuery: null});
-      return;
+  async getListViewQuery(sobjectName, filterName) {
+    if (localStorage.getItem("enableListViewExport") !== "true" || !sobjectName || !filterName) {
+      return null;
     }
-    const match = url
-      ? url.match(/\/lightning\/o\/([^/]+)\/list\?filterName=([^&]+)/)
-      : null;
-    if (!match) {
-      this.setState({listViewQuery: null});
-      return;
-    }
-    const sobjectName = match[1];
-    const filterName = match[2];
-    let {sfHost} = this.props;
 
     try {
-      if (!filterName.startsWith("00B")) {
-        // Use Composite API to combine both requests into a single API call
-        const query = `SELECT Id FROM ListView WHERE SobjectType = '${sobjectName}' AND DeveloperName = '${filterName}' LIMIT 1`;
-        const compositePayload = {
-          allOrNone: true,
-          compositeRequest: [
-            {
-              method: "GET",
-              url: `/services/data/v${apiVersion}/query/?q=${encodeURIComponent(
-                query
-              )}`,
-              referenceId: "GetListViewInfo",
-            },
-            {
-              method: "GET",
-              url: `/services/data/v${apiVersion}/sobjects/${sobjectName}/listviews/@{GetListViewInfo.records[0].Id}/describe`,
-              referenceId: "DescribeTheListView",
-            },
-          ],
-        };
-
-        const compositeRes = await sfConn.rest(
-          `/services/data/v${apiVersion}/composite`,
-          {method: "POST", body: compositePayload}
-        );
-
-        // Check if both requests succeeded
-        if (
-          compositeRes.compositeResponse
-          && compositeRes.compositeResponse[1]?.httpStatusCode === 200
-        ) {
-          const describeRes = compositeRes.compositeResponse[1].body;
-          if (describeRes.query) {
-            let exportArg = new URLSearchParams();
-            exportArg.set("host", sfHost);
-            exportArg.set("query", describeRes.query);
-            this.setState({
-              listViewQuery: describeRes.query,
-              exportHref: "data-export.html?" + exportArg,
-            });
-            return;
+      // Use Composite API to combine both requests into a single API call
+      const query = `SELECT Id FROM ListView WHERE SobjectType = '${sobjectName}' AND DeveloperName = '${filterName}' LIMIT 1`;
+      const compositePayload = {
+        allOrNone: true,
+        compositeRequest: [
+          {
+            method: "GET",
+            url: `/services/data/v${apiVersion}/query/?q=${encodeURIComponent(query)}`,
+            referenceId: "GetListViewInfo"
+          },
+          {
+            method: "GET",
+            url: `/services/data/v${apiVersion}/sobjects/${sobjectName}/listviews/@{GetListViewInfo.records[0].Id}/describe`,
+            referenceId: "DescribeTheListView"
           }
-        }
-      } else {
-        // Fallback for direct ID or if composite logic isn't needed (standard behavior for 00B IDs)
-        const res = await sfConn.rest(
-          `/services/data/v${apiVersion}/sobjects/${sobjectName}/listviews/${filterName}/describe`
-        );
-        if (res.query) {
-          let exportArg = new URLSearchParams();
-          exportArg.set("host", sfHost);
-          exportArg.set("query", res.query);
-          this.setState({
-            listViewQuery: res.query,
-            exportHref: "data-export.html?" + exportArg,
-          });
+        ]
+      };
+
+      const compositeRes = await sfConn.rest(`/services/data/v${apiVersion}/composite`, {method: "POST", body: compositePayload});
+
+      // Check if both requests succeeded
+      if (compositeRes.compositeResponse
+            && compositeRes.compositeResponse[1]?.httpStatusCode === 200) {
+        const describeRes = compositeRes.compositeResponse[1].body;
+
+        if (describeRes.query) {
+          return describeRes.query;
         }
       }
     } catch (e) {
       console.error(e);
-      this.setState({listViewQuery: null});
     }
+    return null;
   }
 
   updateReleaseNotesViewed(version) {
@@ -404,8 +358,8 @@ class App extends React.PureComponent {
     } catch (error) {
       console.error("Error generating authorization URL with PKCE:", error);
       const errorMessage = error.message && error.message.includes("Extension context")
-          ? error.message
-          : "Failed to generate authorization URL. Please try again.";
+        ? error.message
+        : "Failed to generate authorization URL. Please try again.";
       alert(errorMessage);
     }
   }
@@ -448,15 +402,15 @@ class App extends React.PureComponent {
                   h("div", {className: "popup-header__name-title"},
                     h("h1", {},
                       h("span", {className: "popup-header__title popup-title slds-truncate slds-text-align_center slds-p-left_small", title: "Salesforce Inspector Reloaded"}, "Salesforce Inspector Reloaded")
+                    )
                   )
                 )
               )
             )
           )
-        )
-      ),
+        ),
 
-      !latestNotesViewed
+        !latestNotesViewed
         && h(AlertBanner, {
           type: "base",
           bannerText: `Current Version: ${addonVersion}`,
@@ -477,20 +431,20 @@ class App extends React.PureComponent {
         }),
         h("div", {id: "toastBanner", className: "hide"},
           h(AlertBanner, {type: bannerUrlAction.type,
-          bannerText: bannerUrlAction.text,
-          iconName: bannerUrlAction.icon,
-          assistiveTest: bannerUrlAction.text,
-          onClose: null,
-          link: {
-            text: bannerUrlAction.title,
-            props: {
-              href: bannerUrlAction.url,
-              target: linkTarget,
+            bannerText: bannerUrlAction.text,
+            iconName: bannerUrlAction.icon,
+            assistiveTest: bannerUrlAction.text,
+            onClose: null,
+            link: {
+              text: bannerUrlAction.title,
+              props: {
+                href: bannerUrlAction.url,
+                target: linkTarget,
                 onClick: (e) => this.handleGenerateTokenClick(e, bannerUrlAction.sfHost, clientId, browser)
               }
             }
-        })
-      ),
+          })
+        ),
         this.state.showToast && this.state.toastConfig && h("div", {id: "toastBanner"},
           h(AlertBanner, {
             type: this.state.toastConfig.type,
@@ -518,230 +472,230 @@ class App extends React.PureComponent {
               }, {}),
           })
         ),
-      h(
-        "div",
-        {className: "main", id: "mainTabs"},
-        h(AllDataBox, {
-          ref: "showAllDataBox",
-          sfHost,
-          showDetailsSupported: !inLightning && !inInspector,
-          linkTarget,
-          contextUrl,
-          onContextRecordChange: this.onContextRecordChange,
-          isFieldsPresent,
-          eventMonitorHref,
-          showToast: this.showToast,
-        }),
         h(
           "div",
-          {
-            className:
+          {className: "main", id: "mainTabs"},
+          h(AllDataBox, {
+            ref: "showAllDataBox",
+            sfHost,
+            showDetailsSupported: !inLightning && !inInspector,
+            linkTarget,
+            contextUrl,
+            onContextRecordChange: this.onContextRecordChange,
+            isFieldsPresent,
+            eventMonitorHref,
+            showToast: this.showToast,
+          }),
+          h(
+            "div",
+            {
+              className:
               "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom slds-border_top",
-          },
-          h(
-            "p",
-            {
-              className:
+            },
+            h(
+              "p",
+              {
+                className:
                 "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small",
-            },
-            h("strong", {}, "Data & Metadata")
-          ),
-          h(
-            "div",
-            {
-              className:
-                "slds-col slds-size_1-of-2 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
-            },
-            h(
-              "a",
-              {
-                ref: "dataExportBtn",
-                href: exportHref,
-                target: linkTarget,
-                className: "page-button slds-button slds-button_neutral",
               },
-              h("span", {}, "Data ", h("u", {}, "E"), "xport")
-            )
-          ),
-          h(
-            "div",
-            {
-              className:
-                "slds-col slds-size_1-of-2 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
-            },
+              h("strong", {}, "Data & Metadata")
+            ),
             h(
-              "a",
-              {
-                ref: "dataImportBtn",
-                href: importHref,
-                target: linkTarget,
-                className: "page-button slds-button slds-button_neutral",
-              },
-              h("span", {}, "Data ", h("u", {}, "I"), "mport")
-            )
-          ),
-          h(
-            "div",
-            {
-              className:
-                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
-            },
-            h(
-              "a",
-              {
-                ref: "fieldCreatorBtn",
-                href: fieldCreatorHref,
-                target: linkTarget,
-                className: "page-button slds-button slds-button_neutral",
-              },
-              h("span", {}, "Field Crea", h("u", {}, "t"), "or")
-            )
-          ),
-          h(
-            "div",
-            {
-              className:
-                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
-            },
-            h(
-              "a",
-              {
-                ref: "metaRetrieveBtn",
-                href: `metadata-retrieve${
-                  useLegacyDownloadMetadata ? "-legacy" : ""
-                }.html?${hostArg}`,
-                target: linkTarget,
-                className: "page-button slds-button slds-button_neutral",
-              },
-              h("span", {}, h("u", {}, "D"), "ownload Metadata")
-            )
-          )
-        ),
-        h(
-          "div",
-          {
-            className:
-              "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom",
-          },
-          h(
-            "p",
-            {
-              className:
-                "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small",
-            },
-            h("strong", {}, "Platform Tools")
-          ),
-          displayButton("org-limits", hideButtonsOption)
-            ? h(
               "div",
               {
                 className:
-                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+                "slds-col slds-size_1-of-2 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
               },
               h(
                 "a",
                 {
-                  ref: "limitsBtn",
-                  href: limitsHref,
-                  target: linkTarget,
-                  className:
-                      "slds-col page-button slds-button slds-button_neutral",
-                },
-                h("span", {}, "Org ", h("u", {}, "L"), "imits")
-              )
-            )
-            : null,
-          displayButton("explore-api", hideButtonsOption)
-            ? h(
-              "div",
-              {
-                className:
-                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
-              },
-              h(
-                "a",
-                {
-                  ref: "apiExploreBtn",
-                  href: "explore-api.html?" + hostArg,
+                  ref: "dataExportBtn",
+                  href: exportHref,
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral",
                 },
-                h("span", {}, "API E", h("u", {}, "x"), "plorer")
+                h("span", {}, "Data ", h("u", {}, "E"), "xport")
               )
-            )
-            : null,
-          h(
-            "div",
-            {
-              className:
-                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
-            },
+            ),
             h(
-              "a",
-              {
-                ref: "restExploreBtn",
-                href: "rest-explore.html?" + hostArg,
-                target: linkTarget,
-                className: "page-button slds-button slds-button_neutral",
-              },
-              h("span", {}, h("u", {}, "R"), "EST Explorer")
-            )
-          ),
-          h(
-            "div",
-            {
-              className:
-                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
-            },
-            h(
-              "a",
-              {
-                ref: "eventMonitorBtn",
-                href: eventMonitorHref,
-                target: linkTarget,
-                className: "page-button slds-button slds-button_neutral",
-              },
-              h("span", {}, "Event ", h("u", {}, "M"), "onitor")
-            )
-          )
-        ),
-        h(
-          "div",
-          {
-            className:
-              "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom",
-          },
-          h(
-            "p",
-            {
-              className:
-                "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small",
-            },
-            h("strong", {}, "Management")
-          ),
-          displayButton("generate-token", hideButtonsOption)
-            ? h(
               "div",
               {
                 className:
-                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
+                "slds-col slds-size_1-of-2 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
               },
               h(
                 "a",
                 {
-                  ref: "generateToken",
-                  href: bannerUrlAction.url,
+                  ref: "dataImportBtn",
+                  href: importHref,
                   target: linkTarget,
-                  className: !clientId
-                    ? "button hide"
-                    : "page-button slds-button slds-button_neutral",
-                    onClick: (e) => this.handleGenerateTokenClick(e, sfHost, clientId, browser),
+                  className: "page-button slds-button slds-button_neutral",
                 },
-                h("span", {}, h("u", {}, "G"), "enerate Access Token")
+                h("span", {}, "Data ", h("u", {}, "I"), "mport")
+              )
+            ),
+            h(
+              "div",
+              {
+                className:
+                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
+              },
+              h(
+                "a",
+                {
+                  ref: "fieldCreatorBtn",
+                  href: fieldCreatorHref,
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral",
+                },
+                h("span", {}, "Field Crea", h("u", {}, "t"), "or")
+              )
+            ),
+            h(
+              "div",
+              {
+                className:
+                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
+              },
+              h(
+                "a",
+                {
+                  ref: "metaRetrieveBtn",
+                  href: `metadata-retrieve${
+                    useLegacyDownloadMetadata ? "-legacy" : ""
+                  }.html?${hostArg}`,
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral",
+                },
+                h("span", {}, h("u", {}, "D"), "ownload Metadata")
               )
             )
-            : null,
-          inLightning
+          ),
+          h(
+            "div",
+            {
+              className:
+              "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom",
+            },
+            h(
+              "p",
+              {
+                className:
+                "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small",
+              },
+              h("strong", {}, "Platform Tools")
+            ),
+            displayButton("org-limits", hideButtonsOption)
+              ? h(
+                "div",
+                {
+                  className:
+                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+                },
+                h(
+                  "a",
+                  {
+                    ref: "limitsBtn",
+                    href: limitsHref,
+                    target: linkTarget,
+                    className:
+                      "slds-col page-button slds-button slds-button_neutral",
+                  },
+                  h("span", {}, "Org ", h("u", {}, "L"), "imits")
+                )
+              )
+              : null,
+            displayButton("explore-api", hideButtonsOption)
+              ? h(
+                "div",
+                {
+                  className:
+                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+                },
+                h(
+                  "a",
+                  {
+                    ref: "apiExploreBtn",
+                    href: "explore-api.html?" + hostArg,
+                    target: linkTarget,
+                    className: "page-button slds-button slds-button_neutral",
+                  },
+                  h("span", {}, "API E", h("u", {}, "x"), "plorer")
+                )
+              )
+              : null,
+            h(
+              "div",
+              {
+                className:
+                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+              },
+              h(
+                "a",
+                {
+                  ref: "restExploreBtn",
+                  href: "rest-explore.html?" + hostArg,
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral",
+                },
+                h("span", {}, h("u", {}, "R"), "EST Explorer")
+              )
+            ),
+            h(
+              "div",
+              {
+                className:
+                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+              },
+              h(
+                "a",
+                {
+                  ref: "eventMonitorBtn",
+                  href: eventMonitorHref,
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral",
+                },
+                h("span", {}, "Event ", h("u", {}, "M"), "onitor")
+              )
+            )
+          ),
+          h(
+            "div",
+            {
+              className:
+              "slds-grid slds-wrap slds-p-vertical_x-small slds-p-horizontal_xx-small slds-border_bottom",
+            },
+            h(
+              "p",
+              {
+                className:
+                "slds-size_1-of-1 slds-p-left_x-small slds-m-vertical_xx-small",
+              },
+              h("strong", {}, "Management")
+            ),
+            displayButton("generate-token", hideButtonsOption)
+              ? h(
+                "div",
+                {
+                  className:
+                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
+                },
+                h(
+                  "a",
+                  {
+                    ref: "generateToken",
+                    href: bannerUrlAction.url,
+                    target: linkTarget,
+                    className: !clientId
+                      ? "button hide"
+                      : "page-button slds-button slds-button_neutral",
+                    onClick: (e) => this.handleGenerateTokenClick(e, sfHost, clientId, browser),
+                  },
+                  h("span", {}, h("u", {}, "G"), "enerate Access Token")
+                )
+              )
+              : null,
+            inLightning
             && !isInSetup
             && h(
               "div",
@@ -762,7 +716,7 @@ class App extends React.PureComponent {
                 h("span", {}, "Setup ", h("u", {}, "H"), "ome")
               )
             ),
-          // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
+            // Workaround for in Lightning the link to Setup always opens a new tab, and the link back cannot open a new tab.
             inLightning && isInSetup && h(
               "div",
               {
@@ -782,169 +736,169 @@ class App extends React.PureComponent {
                 h("span", {}, "Salesforce ", h("u", {}, "H"), "ome")
               )
             ),
-          displayButton("options", hideButtonsOption)
-            ? h(
-              "div",
-              {
-                className:
-                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
-              },
-              h(
-                "a",
+            displayButton("options", hideButtonsOption)
+              ? h(
+                "div",
                 {
-                  ref: "optionsBtn",
-                  href: "options.html?" + hostArg,
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral",
+                  className:
+                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
                 },
-                h("span", {}, "SIR O", h("u", {}, "p"), "tions")
+                h(
+                  "a",
+                  {
+                    ref: "optionsBtn",
+                    href: "options.html?" + hostArg,
+                    target: linkTarget,
+                    className: "page-button slds-button slds-button_neutral",
+                  },
+                  h("span", {}, "SIR O", h("u", {}, "p"), "tions")
+                )
               )
-            )
-            : null
-        )
-      ),
-      h(
-        "div",
-        {
-          className:
-            "slds-grid slds-grid_vertical-align-center slds-theme_shade slds-p-horizontal_medium slds-p-vertical_xx-small slds-border_top",
-        },
+              : null
+          )
+        ),
         h(
           "div",
           {
             className:
-              "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small",
+            "slds-grid slds-grid_vertical-align-center slds-theme_shade slds-p-horizontal_medium slds-p-vertical_xx-small slds-border_top",
           },
           h(
-            "a",
+            "div",
             {
-              href:
+              className:
+              "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small",
+            },
+            h(
+              "a",
+              {
+                href:
                 "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-"
                 + addonVersion.replace(".", ""),
-              title: "Release note",
-              target: linkTarget,
-            },
-            "v" + addonVersion
+                title: "Release note",
+                target: linkTarget,
+              },
+              "v" + addonVersion
+            ),
+            h("span", {}, " / "),
+            h("input", {
+              id: "idApiInput",
+              className: "api-input",
+              type: "number",
+              title: "Update api version",
+              onChange: this.onChangeApi,
+              value: apiVersionInput.split(".0")[0],
+            })
           ),
-          h("span", {}, " / "),
-          h("input", {
-            id: "idApiInput",
-            className: "api-input",
-            type: "number",
-            title: "Update api version",
-            onChange: this.onChangeApi,
-            value: apiVersionInput.split(".0")[0],
-          })
-        ),
-        h(
-          "div",
-          {
-            className:
-              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
-            title: `Shortcut :${
-              this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"
-            }`,
-          },
           h(
-            "a",
+            "div",
             {
-              href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=short#customize-extensions-shortcuts",
-              target: linkTarget,
+              className:
+              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
+              title: `Shortcut :${
+                this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"
+              }`,
             },
             h(
-              "svg",
+              "a",
               {
-                className:
-                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
-                viewBox: "0 0 52 52",
+                href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=short#customize-extensions-shortcuts",
+                target: linkTarget,
               },
-              h("use", {
-                xlinkHref: "symbols.svg#type",
-                style: {fill: "#9c9c9c"},
-              })
+              h(
+                "svg",
+                {
+                  className:
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                  viewBox: "0 0 52 52",
+                },
+                h("use", {
+                  xlinkHref: "symbols.svg#type",
+                  style: {fill: "#9c9c9c"},
+                })
+              )
             )
-          )
-        ),
-        h(
-          "div",
-          {
-            className:
-              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
-            title: "Donate",
-          },
+          ),
           h(
-            "a",
+            "div",
             {
-              href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/donate/",
-              target: linkTarget,
+              className:
+              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
+              title: "Donate",
             },
             h(
-              "svg",
+              "a",
               {
-                className:
-                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
-                viewBox: "0 0 52 52",
+                href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/donate/",
+                target: linkTarget,
               },
-              h("use", {
-                xlinkHref: "symbols.svg#heart",
-                style: {fill: "#9c9c9c"},
-              })
+              h(
+                "svg",
+                {
+                  className:
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                  viewBox: "0 0 52 52",
+                },
+                h("use", {
+                  xlinkHref: "symbols.svg#heart",
+                  style: {fill: "#9c9c9c"},
+                })
+              )
             )
-          )
-        ),
-        h(
-          "div",
-          {
-            className:
-              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
-            title: "Documentation",
-          },
+          ),
           h(
-            "a",
+            "div",
             {
-              href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/",
-              target: linkTarget,
+              className:
+              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
+              title: "Documentation",
             },
             h(
-              "svg",
+              "a",
               {
-                className:
-                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
-                viewBox: "0 0 52 52",
+                href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/",
+                target: linkTarget,
               },
-              h("use", {
-                xlinkHref: "symbols.svg#info_alt",
-                style: {fill: "#9c9c9c"},
-              })
+              h(
+                "svg",
+                {
+                  className:
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                  viewBox: "0 0 52 52",
+                },
+                h("use", {
+                  xlinkHref: "symbols.svg#info_alt",
+                  style: {fill: "#9c9c9c"},
+                })
+              )
             )
-          )
-        ),
-        h(
-          "div",
-          {
-            id: "optionsBtn",
-            className:
+          ),
+          h(
+            "div",
+            {
+              id: "optionsBtn",
+              className:
               "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small",
-            title: "Options",
-          },
-          h(
-            "a",
-            {
-              ref: "optionsBtn",
-              href: "options.html?" + hostArg,
-              target: linkTarget,
+              title: "Options",
             },
             h(
-              "svg",
+              "a",
               {
-                className:
-                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
-                viewBox: "0 0 52 52",
+                ref: "optionsBtn",
+                href: "options.html?" + hostArg,
+                target: linkTarget,
               },
-              h("use", {
-                xlinkHref: "symbols.svg#settings",
-                style: {fill: "#9c9c9c"},
-              })
+              h(
+                "svg",
+                {
+                  className:
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                  viewBox: "0 0 52 52",
+                },
+                h("use", {
+                  xlinkHref: "symbols.svg#settings",
+                  style: {fill: "#9c9c9c"},
+                })
               )
             )
           )
@@ -1016,11 +970,12 @@ class AllDataBox extends React.PureComponent {
       let recordId = getRecordId(contextUrl);
       let path = getSfPathFromUrl(contextUrl);
       let sobject = getSobject(contextUrl);
+      let sobjectListview = getSobjectListview(contextUrl);
       let context = {
         contextRecordId: recordId,
         contextPath: path,
         contextSobject: sobject,
-        contextSobjectListview: getSobjectListview(contextUrl),
+        contextSobjectListview: sobjectListview,
       };
       this.setState(context);
       onContextRecordChange(context);
@@ -2581,8 +2536,8 @@ class AllDataBoxShortcut extends React.PureComponent {
           })
           : h("div", {className: "center"},
             h("a", {
-                href: `options.html?host=${sfHost}&selectedTab=custom-shortcuts`,
-                target: linkTarget,
+              href: `options.html?host=${sfHost}&selectedTab=custom-shortcuts`,
+              target: linkTarget,
               className: "slds-button slds-button_neutral"
             }, "Add Custom Shortcut")
           )
@@ -3840,10 +3795,10 @@ class AllDataSelection extends React.PureComponent {
               {className: "slds-card__body"},
               selectedValue.sobject.isEverCreatable && displayButton("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e")
                 ? h("a", {
-                    ref: "showNewBtn",
+                  ref: "showNewBtn",
                   href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
-                    target: linkTarget,
-                    onClick: handleLightningLinkClick,
+                  target: linkTarget,
+                  onClick: handleLightningLinkClick,
                   className: "slds-button slds-button_neutral slds-float_right slds-m-top_xxx-small sfir-button-new"
                 }, h("span", {}, h("u", {}, "N"), "ew ")) : null,
               h(
@@ -4735,6 +4690,16 @@ function getSobject(href) {
     if (match) {
       return match[1];
     }
+  }
+  return null;
+}
+
+function getSobjectListview(href) {
+  const match = href
+    ? href.match(/\/lightning\/o\/([^/]+)\/list\?filterName=([^&]+)/)
+    : null;
+  if (match) {
+    return match[2]; // Return the filterName
   }
   return null;
 }

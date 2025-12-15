@@ -257,14 +257,3 @@ export async function getPKCEParameters(sfHost) {
     throw error;
   }
 }
-
-export function getSobjectListview(href) {
-  const match = href
-    ? href.match(/\/lightning\/o\/([^/]+)\/list\?filterName=([^&]+)/)
-    : null;
-  if (match) {
-    return match[2]; // Return the filterName
-  }
-  return null;
-}
-

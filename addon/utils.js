@@ -2,6 +2,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 
 export class Constants {
   static PromptTemplateSOQL = "GenerateSOQL";
+  static PromptTemplateFlow = "DescribeFlow";
   // Consumer Key of default connected app
   static DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs";
   static ACCESS_TOKEN = "_access_token";

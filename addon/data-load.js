@@ -347,6 +347,10 @@ function renderCell(rt, cell, td) {
     return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?([+-]\d{4})$/.test(text);
   }
   if (typeof cell == "object" && cell != null && cell.attributes && cell.attributes.type) {
+    if (cell.attributes.type == "AggregateResult") {
+      td.textContent = cell.attributes.type;
+      return;
+    }
     popLink(
       () => {
         let recordId = null;

@@ -3,90 +3,8 @@
  * @description This file provides the styles for the Flow Scanner component,
  * which is used to analyze and report on Salesforce Flows.
  */
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-Light.woff2);
-  font-weight: 300;
-}
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-LightItalic.woff2);
-  font-style: italic;
-  font-weight: 300;
-}
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-Regular.woff2);
-  font-weight: 400;
-}
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-Italic.woff2);
-  font-style: italic;
-  font-weight: 400;
-}
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-Bold.woff2);
-  font-weight: 700;
-}
-@font-face {
-  font-family: "Salesforce Sans";
-  src: url(fonts/SalesforceSans-BoldItalic.woff2);
-  font-style: italic;
-  font-weight: 700;
-}
 
-* {
-  box-sizing: border-box;
-  vertical-align: middle;
-}
-
-html,
-body,
-#root,
-[data-reactroot] {
-  height: 100vh;
-  line-height: 1.5;
-  color: #16325c;
-}
-
-[data-reactroot] {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-body {
-  font-family: "Salesforce Sans", Arial, sans-serif;
-  font-size: 0.8125rem;
-  margin: 0;
-  background-color: #b0c4df;
-  background-image: url(images/lightning_blue_background.png);
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: 0px 48px;
-}
-
-#user-info {
-  background: #f7f9fb;
-  height: 48px;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  flex-wrap: nowrap;
-}
-
-#user-info h1 {
-  padding: 0 6px 0 10px;
-}
-
-#user-info span {
-  font-size: 1em;
-}
-
-.main-content-wrapper {
+ .main-content-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -133,10 +51,9 @@ body {
 }
 
 .area {
-  background-color: #f8f8f8;
+  background-color: #ffffff;
   padding: 8px 12px;
   border-radius: 5px;
-  border: 1px solid #dddbda;
   margin: 12px 12px 0 12px;
 }
 
@@ -320,27 +237,31 @@ button,
   background-color: rgb(0, 112, 210);
   border-color: rgb(0, 112, 210);
   color: #fff;
+  cursor: pointer;
 }
 
 .highlighted:hover,
 .highlighted:active {
   background-color: rgb(0, 95, 178);
   color: #fff;
+  cursor: pointer;
 }
 
 .highlighted:disabled {
   background-color: #c9c7c5;
   border-color: #c9c7c5;
   color: #fff;
+  cursor: not-allowed;
 }
 
 .highlighted:disabled:hover {
   background-color: #c9c7c5;
   color: #fff;
+  cursor: not-allowed;
 }
 
-button:hover,
-.button:hover {
+button:not(.slds-button):hover,
+.button:not(.slds-button):hover {
   background-color: #f8f9fa;
   border-color: #0070d2;
   color: #0070d2;
@@ -361,10 +282,6 @@ button:disabled,
   font-weight: 600;
   font-size: 0.875rem;
   color: #2c3e50;
-}
-
-.results-icon {
-  font-size: 1.125rem;
 }
 
 .summary-title {
@@ -927,7 +844,6 @@ svg.icon:hover {
 
 .rule-section:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  z-index: 9999 !important;
 }
 
 .rule-section:last-child {
@@ -1262,10 +1178,8 @@ svg.icon:hover {
 
 .flow-info-card {
   background: #ffffff;
-  border: 1px solid #e9ecef;
   border-radius: 8px;
   padding: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .flow-detail-item {
@@ -1295,33 +1209,6 @@ svg.icon:hover {
   border: none;
   background-color: transparent;
 }
-
-.flow-status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: #e8f5e8;
-  color: #2d5a2d;
-  border: 1px solid #c3e6c3;
-}
-
-.flow-description {
-  font-size: 0.85rem;
-  color: #495057;
-  background: #f8f9fa;
-  border-radius: 4px;
-  border-left: 3px solid #0070d2;
-  padding: 4px 8px;
-  margin: 0;
-  min-width: 120px;
-  word-break: break-word;
-}
-
 @media (max-width: 768px) {
   .flow-detail-item {
     flex-direction: row;
@@ -1416,19 +1303,6 @@ svg.icon:hover {
   gap: 16px;
   min-height: 0;
 }
-
-.flow-description {
-  font-size: 0.85rem;
-  color: #495057;
-  background: #f8f9fa;
-  border-radius: 4px;
-  border-left: 3px solid #0070d2;
-  padding: 4px 8px;
-  margin: 0;
-  min-width: 120px;
-  word-break: break-word;
-}
-
 @media (max-width: 900px) {
   .flow-desc-row {
     flex-direction: column;
@@ -1442,7 +1316,7 @@ svg.icon:hover {
 
 .flow-scanner-note-header {
   margin-right: 12px;
-  color: #6c757d;
+  color: #ffffff;
   font-size: 0.875rem;
   line-height: 1.4;
   display: flex;
@@ -1630,5 +1504,7 @@ h1 {
   color: #6c757d;
   margin: 0 0 16px 0;
 }
-
-
+.purge-results-container .slds-table th,
+.purge-results-container .slds-table td {
+  text-align: center;
+}

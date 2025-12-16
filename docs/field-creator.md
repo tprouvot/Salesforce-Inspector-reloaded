@@ -2,10 +2,22 @@
 
 ![image](https://github.com/user-attachments/assets/5dfe73a1-b218-471a-93b5-0f281a90ba44)
 
+## Eligible Objects
+
+The Field Creator supports creating fields for the following types of objects:
+
+- **Standard Objects** - Objects that support page layouts (Account, Contact, Opportunity, etc.)
+- **Custom Objects** - User-defined objects ending with `__c`
+- **Platform Events** - Event objects ending with `__e` for real-time event processing
+- **Custom Metadata Types** - Configuration objects ending with `__mdt`
+
+> **Note**: The field types available and permissions behavior may vary depending on the object type selected. For example, Platform Events have limited field type support and do not use field-level security.
+
 ## Supported Field Types
 
 The Field Creator feature supports the following field types:
 
+### For Standard Objects and Custom Objects
 - **Checkbox**
 - **Currency**
 - **Number**
@@ -23,6 +35,16 @@ The Field Creator feature supports the following field types:
 - **LongTextArea**
 - **Html**
 
+### For Platform Events (Limited Support)
+- **Checkbox**
+- **Date**
+- **DateTime**
+- **Number**
+- **Text**
+- **LongTextArea**
+
+> **Platform Event Limitations**: Platform Events do not support Help Text, Unique constraints, or External ID options. Only the Description field property is available.
+
 ## Getting Started
 
 1. Open the Field Creator through the pop-up.
@@ -30,6 +52,8 @@ The Field Creator feature supports the following field types:
  <img width="200" src="https://github.com/user-attachments/assets/da2f92fa-97a9-437b-82bd-cd71a9248964">
 
 2. Select the object you want to create fields for from the dropdown menu.
+3. Use the managed package toggle to include/exclude objects from managed packages in the object selector.
+
 <img width="450" src="https://github.com/user-attachments/assets/d7a48850-4756-43f9-bddd-ad9d8dd0da5d">
 
 
@@ -75,5 +99,6 @@ The Field Creator feature supports the following field types:
 
 ## Available Options
 - You can choose the default naming convention ('PascalCase' or 'Underscore') for the API Name of the fields.
+- You can configure whether to include managed package objects in the object selector (disabled by default).
 
 <img width="1258" alt="Field Naming Convention" src="https://github.com/user-attachments/assets/06df73b8-e936-4133-847c-6ddca48ddc42">

@@ -50,6 +50,7 @@ After scanning, you'll see a results panel with:
   - Click on a rule or severity group to expand/collapse details
 
 **Severity Levels:**
+
 - **Error:** Critical issues that should be fixed
 - **Warning:** Potential problems or risky patterns
 - **Info:** Recommendations or minor suggestions
@@ -58,6 +59,7 @@ Exemple of a scan result:
 ![image](https://github.com/user-attachments/assets/0a1879e1-ee4f-489b-970c-785fe8ed083f)
 
 **No Issues?**
+
 - If your flow passes all checks, you'll see a success message: "No Issues Found. Great job!"
 
 ---
@@ -82,6 +84,50 @@ You can export the scan results as a CSV file for documentation or sharing:
 Option page:
 ![image](https://github.com/user-attachments/assets/24e2b297-7d8f-4db8-b0dd-353fcd742e5f)
 
+---
+
+## Purging Old Flow Versions
+
+Over time, flows can accumulate many stored versions in Salesforce. Flow Scanner includes a **Purge Old Versions** feature to help you clean up obsolete versions safely.
+
+### What the Purge Feature Does
+
+- Deletes **old, non-active versions** of the current flow.
+- Optionally deletes any **Flow Interviews** (in-progress runs) related to those versions before removing the versions themselves.
+- Uses the Salesforce **Composite API**, so multiple versions and interviews are deleted efficiently in batches.
+
+### How to Use It
+
+1. Open Flow Scanner on a specific flow.
+2. In the **Flow Information** panel, look for the **Versions** value and the trash/bin button next to it.
+   - The bin button only appears if the flow has **more than one version** (there is something to purge).
+3. Click the bin button to open the **Purge Old Versions** dialog.
+4. Choose the **number of previous versions to keep** (in addition to the current version).
+5. Review the summary text telling you how many versions will be deleted and how many will be kept.
+6. Confirm the purge.
+
+Flow Scanner then:
+
+- Finds all versions older than the ones you chose to keep (plus the active version) and marks them for deletion.
+- Looks up and deletes related Flow Interviews for those versions.
+- Deletes the old versions themselves using the Tooling API.
+- Shows a **Purge Results** dialog with per-version status:
+  - Version number
+  - Flow status (Deleted/Failed)
+  - Interviews deleted (or "No interviews" if none existed)
+  - Any error message returned by Salesforce
+
+### Version Limit & Color Indicator
+
+Salesforce allows **up to 50 stored versions per flow**. To help you see how close you are to that limit, Flow Scanner displays the version count with a colored badge:
+
+- **Green**: few versions stored (far from the limit).
+- **Yellow/Orange**: moderate number of versions.
+- **Red**: near the 50-version limit.
+
+You can hover over the small **info icon** next to "Versions" to see a short explanation of the 50-version limit and what the badge color means.
+
+Using the purge feature periodically helps keep your org clean and avoids hitting the maximum number of versions for critical flows.
 
 ---
 
@@ -166,6 +212,80 @@ graph TD
 - `/services/data/vXX.0/sobjects/` - Related object metadata when needed
 
 **Authentication**: Leverages existing Salesforce Inspector session (handled globally by extension)
+
+---
+
+## Generate Flow Analysis with Agentforce
+
+> **Prerequisite**
+> Agentforce needs to be enabled.
+> The prompt DescribeFlow needs to be deployed in the org.
+
+You can use Agentforce to generate detailed flow analysis directly from the Flow Scanner page. This feature leverages Salesforce's Prompt Templates to help you understand what your flow does, when it executes, and what business purpose it serves.
+
+> **Note**
+> The standard Salesforce 'Prompt Template User' permission is required to use this feature.
+
+By default, the Agentforce button is hidden. To enable it:
+
+1. Go to Options -> Flow Scanner
+2. Enable "Show Agentforce button"
+3. Optionally, you can customize the prompt template name that will be used for generating flow analysis
+
+### How to Use
+
+1. Open Flow Scanner on any flow
+2. Click the Agentforce (Einstein) button in the header
+3. The modal will open with a default prompt: "Based on the following Salesforce Flow metadata, explain in one paragraph what this flow does, what event triggers it, and the business purpose it serves."
+4. You can modify the prompt or use the default one
+5. Click **Send** to generate the analysis
+6. The analysis result will appear below the instruction textarea in an SLDS box
+
+The Agentforce feature analyzes the flow's XML metadata and provides insights about:
+
+- What the flow does
+- What events trigger it
+- The business purpose it serves
+- Key components and their relationships
+- Decision logic and data handling
+
+DescribeFlow.genAiPromptTemplate meta content:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>kHV1dE2/3c+Ln69ej5g+TuywC22Qn/hIXhG7gDkb9JA=_1</activeVersionIdentifier>
+    <description>Based on a flow metadata, describe what the flow does, when it is executed and what are the metadata it interact with</description>
+    <developerName>DescribeFlow</developerName>
+    <masterLabel>Describe Flow</masterLabel>
+    <templateVersions>
+        <content>As a Salesforce expert in Flow and based on those metadata: {!$Input:FlowMetadata}, perform an analysis as detailed in this description: {!$Input:Description}
+
+Instructions:**
+1. Output the generated analysis clearly enclosed within &lt;flowAnalysis&gt; tags.
+</content>
+        <inputs>
+            <apiName>Description</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Description</masterLabel>
+            <referenceName>Input:Description</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>FlowMetadata</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Flow Metadata</masterLabel>
+            <referenceName>Input:FlowMetadata</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4OmniMini</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>kHV1dE2/3c+Ln69ej5g+TuywC22Qn/hIXhG7gDkb9JA=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>
+```
 
 ---
 

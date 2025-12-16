@@ -2,8 +2,6 @@
   "name": "salesforce-inspector",
   "scripts": {
     "eslint": "eslint .",
-    "firefox-dev-build": "node scripts/dev-build.js firefox",
-    "chrome-dev-build": "node scripts/dev-build.js chrome",
     "firefox-release-build": "node scripts/release-build.js firefox",
     "chrome-release-build": "node scripts/release-build.js chrome",
     "build-flow-scanner": "node scripts/build-flow-scanner.js"

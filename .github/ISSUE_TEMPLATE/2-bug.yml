@@ -41,17 +41,19 @@ body:
       label: Version
       description: Which version are you using?
       options:
-        - "1.23"
-        - "1.24"
-        - "1.25"
+        - "1.27"
         - "1.26"
         - "beta"
+    validations:
+      required: true
+      default: 0
   - type: dropdown
     id: browsers
     attributes:
       label: What browser are you using?
-      multiple: true
       options:
-        - Firefox
         - Chrome
         - Microsoft Edge
+        - Firefox
+    validations:
+      required: true

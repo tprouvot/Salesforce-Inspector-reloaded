@@ -60,27 +60,10 @@ As a workaround, you can create a custom `External Client App` (since the creati
 
 ### Deployment error: No package.xml found
 
-This error occurs when attempting to deploy a zip file where the `package.xml` file is not located at the root level of the zip archive. This commonly happens when:
-
-1. **Retrieved metadata structure**: Zip files downloaded from Salesforce (via Retrieve operations) contains a parent folder (typically named "unpackaged") that wraps all the metadata files including `package.xml`.
-2. **Deploy requirement mismatch**: The Salesforce Deploy API expects `package.xml` to be at the root level of the zip file, not inside a subfolder.
+Zip files downloaded from Salesforce (via Retrieve operations) contains a parent folder (typically named "unpackaged") that wraps all the metadata files including `package.xml`.
+This error occurs when attempting to deploy a zip file where the `package.xml` file is not located at the root level of the zip archive and the `singlePackage` option is enabled.
 
 **How to solve it:**
 
-1. **Extract and re-zip**: Extract the downloaded zip file, locate the `package.xml` inside the parent folder, move all contents (including `package.xml`) to a new folder, and create a new zip file with `package.xml` at the root level.
-2. **Verify structure**: Before deploying, ensure your zip file structure looks like this:
-   ```
-   metadata.zip
-   ├── package.xml
-   ├── classes/
-   ├── objects/
-   └── [other metadata folders]
-   ```
-   **Not like this:**
-   ```
-   metadata.zip
-   └── unpackaged/
-       ├── package.xml
-       ├── classes/
-       └── [other folders]
-   ```
+1. **Open deployment settings**: Click the cog wheel icon.
+2. **Single Package**: Disable `Single Package` option.

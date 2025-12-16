@@ -29,31 +29,49 @@ function initButton(sfHost, inInspector) {
   loadPopup(sfHost);
   document.body.appendChild(rootEl);
 
-  addFlowScrollability();
-
   function addFlowScrollability(popupEl) {
     const currentUrl = window.location.href;
     // Check the current URL for the string "builder_platform_interaction"
     if (currentUrl.includes("builder_platform_interaction")) {
-      // Create a new checkbox element
-      const headerFlow = document.querySelector("builder_platform_interaction-container-common");
+      const checkboxState = iFrameLocalStorage.scrollOnFlowBuilder;
+
+      // Create toggle container with styling to match navbar
+      const toggleContainer = document.createElement("div");
+      toggleContainer.className = "slds-form-element__control";
+      toggleContainer.style.cssText = "margin-left: auto; display: flex; align-items: center; gap: 0.5rem;";
+
+      // Create descriptive label text
+      const labelText = document.createElement("span");
+      labelText.textContent = "Enable flow scrollability";
+      labelText.style.color = "white";
+
+      // Create label wrapper
+      const overflowLabel = document.createElement("label");
+      overflowLabel.className = "slds-checkbox_toggle slds-grid";
+
+      // Create checkbox input
       const overflowCheckbox = document.createElement("input");
       overflowCheckbox.type = "checkbox";
       overflowCheckbox.id = "overflow-checkbox";
-      const checkboxState = iFrameLocalStorage.scrollOnFlowBuilder;
-      // Check local storage for the checkbox state
-      (checkboxState != null) ? (overflowCheckbox.checked = checkboxState) : (overflowCheckbox.checked = true);
-      // Create a new label element for the checkbox
-      const overflowLabel = document.createElement("label");
-      overflowLabel.textContent = "Enable flow scrollability";
-      overflowLabel.htmlFor = "overflow-checkbox";
-      if (currentUrl.includes("sandbox")){
-        overflowCheckbox.className = "checkboxScrollSandbox";
-        overflowLabel.className = "labelCheckboxScrollSandbox";
-      } else {
-        overflowCheckbox.className = "checkboxScrollProd";
-        overflowLabel.className = "labeCheckboxScrollProd";
-      }
+      overflowCheckbox.className = "slds-input";
+      overflowCheckbox.checked = (checkboxState != null) ? checkboxState : true;
+
+      // Create faux container
+      const fauxContainer = document.createElement("span");
+      fauxContainer.className = "slds-checkbox_faux_container center-label";
+      fauxContainer.setAttribute("aria-live", "assertive");
+
+      // Create faux checkbox
+      const fauxCheckbox = document.createElement("span");
+      fauxCheckbox.className = "slds-checkbox_faux";
+
+      // Assemble the structure
+      fauxContainer.appendChild(fauxCheckbox);
+      overflowLabel.appendChild(overflowCheckbox);
+      overflowLabel.appendChild(fauxContainer);
+      toggleContainer.appendChild(labelText);
+      toggleContainer.appendChild(overflowLabel);
+
       // Get a reference to the <head> element
       const head = document.head;
       // Create a new <style> element
@@ -62,9 +80,16 @@ function initButton(sfHost, inInspector) {
       style.textContent = ".canvas {overflow : auto!important ; }";
       // Append the <style> element to the <head> element
       head.appendChild(style);
-      // Append the checkbox and label elements to the body of the document
-      headerFlow.appendChild(overflowCheckbox);
-      headerFlow.appendChild(overflowLabel);
+
+      // Add toggle before last child of .slds-builder-header
+      observeElement(".slds-builder-header", (builderHeader) => {
+        const lastChild = builderHeader.lastElementChild;
+        if (lastChild) {
+          builderHeader.insertBefore(toggleContainer, lastChild);
+        } else {
+          builderHeader.appendChild(toggleContainer);
+        }
+      });
       // Set the overflow property to "auto"
       overflowCheckbox.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
       // Listen for changes to the checkbox state
@@ -79,9 +104,22 @@ function initButton(sfHost, inInspector) {
         // Set the overflow property to "auto"
         this.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
       });
+
+      function wheelHandler(e) {
+        if (overflowCheckbox.checked) {
+          if (e.target.matches(".canvas, .builder-canvas, .flow-builder-canvas") || e.target.classList.contains("flow-container")) {
+            e.stopPropagation();
+          }
+        }
+      }
+
+      observeElement(".canvas, .builder-canvas, .flow-builder-canvas", (canvas) => {
+        canvas.addEventListener("wheel", wheelHandler, {capture: true, passive: false});
+      });
     }
   }
 
+  // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
   // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
   function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos}) {
     o = o || "vertical"; // Default to vertical
@@ -89,8 +127,8 @@ function initButton(sfHost, inInspector) {
     pos = pos ? Math.min(95, pos) + "%" : "122px";
     const [posStyle, oStyle] = isVertical ? ["top", "right"] : ["left", "bottom"];
     const imgSrc = isVertical
-      ? "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAPCAYAAADd/14OAAAA40lEQVQoz2P4//8/AzpWzGj6L59U/V8urgxMg/g4FUn6J/+X9E38LxWc8V8htR67IpCkuGfMfxCQjSpENRFFkXvk/1+/foGxQloDSD0DVkVfvnyBY7hCdEVv3rxBwXCFIIdKh2WDFT1+/BgDo1qd2fL/1q1bWDFcoW5xz3/Xppn/oycu/X/x4kUMDFeoWdD136R8wn+f9rlgxSdOnEDBKFajK96/fz8coyjEpnj79u1gjKEQXXFE/+L/Gzdu/G9WMfG/am4HZlzDFAf3LPwfOWEJWBPIwwzYUg9MsXXNFDAN4gMAmASShdkS4AcAAAAASUVORK5CYII="
-      : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAKCAYAAABrGwT5AAAAAXNSR0IArs4c6QAAAFBlWElmTU0AKgAAAAgAAgESAAMAAAABAAEAAIdpAAQAAAABAAAAJgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAD6ADAAQAAAABAAAACgAAAADdC3pnAAABWWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNi4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyI+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgoZXuEHAAABKElEQVQoFWNgwAI0C7r+6xb3/AdJKaTW/1fMaAKz0ZUyoguANHKzszEIcnMy3Hn+muHX2+cMLDwCDExs7Az3Z9ShqGdC1gzTKCHAyyDGz8OwszCM4c/Hdwy/P75l+PfrJwO6C+CakTXyc3EwlDnogM09M6eL4e+Xj1gNAGtG15hrrozsIIarSydjNYARXWOKnhQDJycnBubg4GBQDk5lYObhZ2DlFwaHARMocORFBRl4ONgYYtSEUGxE5zzevJDh77cvwEB8AQ4DJnZWFgY2FmaGSCU+dLVY+S+2LWZg+PeP4f+f3wwsP3//Yfj8/SdD6/G3DK/evceqAVkQFHiMwGhjZGFlYPn68xfDwzfvGX78+sPwYFYDSjwia4KxQdHF/JePgZGZmQEASqV1t0W3n+oAAAAASUVORK5CYII=";
+      ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M14 7l-5 5 5 5' stroke='%230176d3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
+      : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M7 10l5 5 5-5' stroke='%230176d3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
     const btnClass = `insext-btn-${o}`;
     return {pos, posStyle, oStyle, imgSrc, btnClass};
   }
@@ -229,7 +267,7 @@ function initButton(sfHost, inInspector) {
     // return a value for direction popup will expand, based on position and orientation
     function calcDirection(pos, o) {
       if (o === "horizontal") {
-        return pos < 8 ? "right" : pos >= 90 ? "left" : "centered";
+        return pos < 90 ? "left" : "right";
       }
       return pos >= 55 ? "up" : null;
     }

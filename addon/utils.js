@@ -2,6 +2,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 
 export class Constants {
   static PromptTemplateSOQL = "GenerateSOQL";
+  static PromptTemplateFlow = "DescribeFlow";
   // Consumer Key of default connected app
   static DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs";
   static ACCESS_TOKEN = "_access_token";
@@ -255,5 +256,40 @@ export async function getPKCEParameters(sfHost) {
   } catch (error) {
     console.error("Error fetching PKCE parameters:", error);
     throw error;
+  }
+}
+
+// Copy text to the clipboard, without rendering it, since rendering is slow.
+export function copyToClipboard(value) {
+  // Check for unit tests - wrap in try-catch to handle SecurityError in popup mode
+  try {
+    if (parent && parent.isUnitTest) {
+      parent.testClipboardValue = value;
+      return;
+    }
+  } catch (error) {
+    // SecurityError occurs in popup mode when accessing parent frame
+    console.error("Error copying to clipboard:", error);
+  }
+  // Use execCommand to trigger an oncopy event and use an event handler to copy the text to the clipboard.
+  // The oncopy event only works on editable elements, e.g. an input field.
+  let temp = document.createElement("input");
+  // The oncopy event only works if there is something selected in the editable element.
+  temp.value = "temp";
+  temp.addEventListener("copy", e => {
+    e.clipboardData.setData("text/plain", value);
+    e.preventDefault();
+  });
+  document.body.appendChild(temp);
+  try {
+    // The oncopy event only works if there is something selected in the editable element.
+    temp.select();
+    // Trigger the oncopy event
+    let success = document.execCommand("copy");
+    if (!success) {
+      alert("Copy failed");
+    }
+  } finally {
+    document.body.removeChild(temp);
   }
 }

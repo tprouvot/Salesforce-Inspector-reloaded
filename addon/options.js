@@ -100,7 +100,8 @@ class OptionsTabSelector extends React.Component {
                 {label: "Explore API", name: "explore-api", checked: true},
                 {label: "Org Limits", name: "org-limits", checked: true},
                 {label: "Options", name: "options", checked: true},
-                {label: "Generate Access Token", name: "generate-token", checked: true}
+                {label: "Generate Access Token", name: "generate-token", checked: true},
+                {label: "Copy User Id", name: "copy-userId", checked: true}
               ]}
           },
           {option: FaviconOption, props: {key: this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
@@ -171,6 +172,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
           {option: Option, props: {type: "toggle", title: "Use SObject context on Data Export ", key: "useSObjectContextOnDataImpoltrink", default: true}},
+          {option: Option, props: {type: "toggle", title: "Enable List View Export", key: "enableListViewExport", default: false, tooltip: "If enabled, Data Export link will be automatically populated with current ListView"}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
               key: "hideExportButtonsOption",
@@ -284,6 +286,15 @@ class OptionsTabSelector extends React.Component {
         ],
         content: [
           {option: Option, props: {type: "number", title: "Flow History Size", key: "flowScannerHistorySize", default: 5, tooltip: "Number of old flow versions to keep when purging (in addition to the latest version)."}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Show buttons",
+              key: "hideFlowScannerButtonsOption",
+              checkboxes: [
+                {label: "Agentforce", name: "flow-agentforce", checked: false},
+                {label: "Settings", name: "flow-settings", checked: true}
+              ]}
+          },
+          {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_flowScannerAgentForcePrompt", default: Constants.PromptTemplateFlow, tooltip: "Developer name of the prompt template to use for Flow Scanner"}},
           {option: FlowScannerRules, props: {model: this.model}}
         ]
       },

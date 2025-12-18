@@ -1,4 +1,4 @@
-/* eslint-disable require-atomic-updates */
+
 
 export async function dataExportTest(test) {
   console.log("TEST data-export");
@@ -615,5 +615,20 @@ export async function dataExportTest(test) {
   assertEquals(0, vm.autocompleteResults.results.length);
   await waitForSpinner();
   assertEquals("User fields suggestions:", vm.autocompleteResults.title);
+
+  // Test: Open with query param when tabs already exist
+  vm.queryTabs = [{name: "Tab 1", query: "SELECT Id FROM User", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false}];
+  vm.saveQueryTabs();
+
+  let params = new URLSearchParams();
+  params.set("query", "SELECT Id FROM Account");
+  let {model: model2} = await loadPage("data-export.html", params);
+
+  assertEquals(2, model2.queryTabs.length);
+  assertEquals("Tab 1", model2.queryTabs[0].name);
+  assertEquals("SELECT Id FROM User", model2.queryTabs[0].query);
+  assertEquals("Query 2", model2.queryTabs[1].name);
+  assertEquals("SELECT Id FROM Account", model2.queryTabs[1].query);
+  assertEquals(1, model2.activeTabIndex);
 
 }

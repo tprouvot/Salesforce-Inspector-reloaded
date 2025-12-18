@@ -548,7 +548,7 @@ class App extends React.PureComponent {
                   target: linkTarget,
                   className: "page-button slds-button slds-button_neutral",
                 },
-                h("span", {}, "Log ", h("u", {}, "V"), "iewer")
+                h("span", {}, "Logs ", h("u", {}, "V"), "iewer")
               )
             ),
             h(

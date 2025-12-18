@@ -740,17 +740,21 @@ class FlowScanner {
     if (!this.flowScannerCore) {
       return [];
     }
-
-    // Cache result - creating temp Flow is expensive and result never changes
+    // Cache result since these element types don't change
     if (!this._cachedFlowElementTypes) {
-      const tempFlow = new this.flowScannerCore.Flow("temp", {});
+      const Flow = this.flowScannerCore.Flow;
+      if (!Flow) {
+        console.warn('Flow class not found in flowScannerCore');
+        return [];
+      }
+
+      // Access the static arrays directly from the Flow class
       this._cachedFlowElementTypes = [
-        ...tempFlow.flowNodes,
-        ...tempFlow.flowResources,
-        ...tempFlow.flowVariables
+        ...(Flow.NODE_TAGS || []),
+        ...(Flow.RESOURCE_TAGS || []),
+        ...(Flow.VARIABLE_TAGS || [])
       ];
     }
-
     return this._cachedFlowElementTypes;
   }
 

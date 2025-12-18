@@ -52,46 +52,58 @@ function cleanupTempDir(tempDir) {
   }
 }
 
-// Clone repo and checkout latest core-v* tag
+// Clone repo and checkout latest core-v* tag, extracting only packages/core
 function setupRemoteRepo(tempDir) {
   "use strict";
-  const repoUrl = "https://github.com/flow-scanner/lightning-flow-scanner";
+  const repoUrl = "https://github.com/Flow-Scanner/lightning-flow-scanner";
 
-  logStep("Cloning lightning-flow-scanner repository");
+  logStep("Cloning monorepo and extracting core package");
 
-  // Shallow clone default branch
-  execSync(`git clone --depth 1 ${repoUrl} "${tempDir}"`, {stdio: "inherit"});
+  // Create a temporary subdir for the full clone
+  const cloneDir = path.join(tempDir, ".full-clone");
+  fs.mkdirSync(cloneDir, {recursive: true});
 
-  // Try to find and checkout the latest core-v* tag
+  // Shallow clone the monorepo
+  execSync(`git clone --depth 1 ${repoUrl} "${cloneDir}"`, {stdio: "inherit"});
+
+  // Checkout the latest core-v* tag if available
   try {
     const latestTag = execSync(
       "git tag -l \"core-v*\" --sort=-v:refname | head -n 1",
-      {cwd: tempDir, encoding: "utf8"}
+      {cwd: cloneDir, encoding: "utf8"}
     ).trim();
 
     if (latestTag) {
       logStep(`Checking out latest core tag: ${latestTag}`);
-      execSync(`git checkout tags/${latestTag} -b build-from-${latestTag}`, {
-        cwd: tempDir,
-        stdio: "inherit"
-      });
+      execSync(`git checkout tags/${latestTag}`, {cwd: cloneDir, stdio: "inherit"});
       logSuccess(`Checked out tag ${latestTag}`);
     } else {
       log("No core-v* tags found – using default branch", "yellow");
     }
   } catch (error) {
-    log(`Warning: Failed to fetch/checkout latest core-v* tag: ${error.message}`, "yellow");
     log("Continuing with default branch", "yellow");
   }
 
-  logSuccess("Repository ready");
+  // Copy the entire contents of packages/core into tempDir using Node's built-in fs.cpSync
+  const coreSource = path.join(cloneDir, "packages", "core");
+  if (!fs.existsSync(coreSource)) {
+    logError("packages/core directory not found in repository");
+    process.exit(1);
+  }
+
+  fs.cpSync(coreSource, tempDir, { recursive: true, preserveTimestamps: true });
+
+  // Clean up the full clone
+  fs.rmSync(cloneDir, {recursive: true, force: true});
+
+  logSuccess("Core package extracted and ready");
 }
 
 function getLibraryNameFromViteConfig(tempDir) {
   "use strict";
   logStep("Reading Vite config to get library name");
   try {
-    const viteConfigPath = path.join(tempDir, "packages", "core", "vite.config.ts");
+    const viteConfigPath = path.join(tempDir, "vite.config.ts");
     const viteConfigContent = fs.readFileSync(viteConfigPath, "utf8");
     const match = viteConfigContent.match(/name:\s*"([^"]+)"/);
     if (!match || !match[1]) {
@@ -122,7 +134,7 @@ function runCommand(command, description, cwd) {
 function readPackageJson(tempDir) {
   "use strict";
   try {
-    const packageJsonPath = path.join(tempDir, "packages", "core", "package.json");
+    const packageJsonPath = path.join(tempDir, "package.json");
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
     return packageJson;
   } catch {
@@ -217,14 +229,14 @@ function main() {
     const libraryName = getLibraryNameFromViteConfig(tempDir);
 
     // Step 3: Install dependencies
-    runCommand("pnpm install --filter=@flow-scanner/lightning-flow-scanner-core...", "Installing dependencies", tempDir);
+    runCommand("npm install", "Installing dependencies", tempDir);
 
     // Step 4: Build the project
-    runCommand("pnpm run dist", "Building project with Vite", tempDir);
+    runCommand("npm run vite:dist", "Building project with Vite", tempDir);
 
     // Step 5: Find the UMD file
     logStep("Locating compiled UMD file");
-    const distDir = path.join(tempDir, "packages", "core", "dist");
+    const distDir = path.join(tempDir, "dist");
 
     if (!fs.existsSync(distDir)) {
       logError("Dist directory not found. Build may have failed.");

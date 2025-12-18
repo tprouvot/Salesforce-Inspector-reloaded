@@ -23,6 +23,7 @@ This page allows users to retrieve metadata from a Salesforce organization. It p
 The import button provides multiple ways to load existing metadata configurations:
 
 #### Importing Package.xml Files
+
 * **File Selection:** Click the import button to open a file picker dialog.
 * **Supported Formats:** Accepts `.xml` files containing valid package.xml content.
 * **Validation:** The system validates the XML structure and metadata types before processing.
@@ -30,6 +31,7 @@ The import button provides multiple ways to load existing metadata configuration
 * **Error Handling:** Invalid or malformed package.xml files will display appropriate error messages.
 
 #### Importing ZIP Files for Deployment
+
 * **Package ZIP Import:** Import ZIP files containing metadata packages for deployment.
 * **Direct Deployment:** ZIP files with metadata can be directly deployed to the Salesforce organization.
 * **Content Validation:** The system validates the ZIP structure and metadata contents.
@@ -73,6 +75,7 @@ The import button provides multiple ways to load existing metadata configuration
 When deploying metadata, you can configure the following options:
 
 ### Boolean Options
+
 * **Allow Missing Files:** When enabled, allows deployment to succeed even if files specified in the package.xml are missing.
 * **Check Only:** When enabled, validates the deployment without making any changes to the organization.
 * **Ignore Warnings:** When enabled, allows deployment to succeed even if there are warnings.
@@ -82,6 +85,7 @@ When deploying metadata, you can configure the following options:
 * **Rollback On Error:** When enabled, rolls back the deployment if an error occurs.
 
 ### Test Level Options
+
 * **No Test Run:** No tests are run. This is the default for development environments.
 * **Run Specified Tests:** Only runs the tests specified in the runTests option. Requires 75% code coverage for each class and trigger.
 * **Run Local Tests:** Runs all tests in your org except those from installed managed and unlocked packages. This is the default for production deployments.

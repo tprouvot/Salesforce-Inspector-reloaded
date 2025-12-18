@@ -166,13 +166,19 @@ function renderCell(rt, cell, td) {
     a.addEventListener("click", e => {
       e.preventDefault();
       let pop = document.createElement("div");
-      pop.className = "pop-menu";
+      pop.className = "slds-dropdown slds-dropdown_left slds-dropdown_actions";
+      let ul = document.createElement("ul");
+      ul.className = "slds-dropdown__list";
+      pop.appendChild(ul);
       td.appendChild(pop);
       let {objectTypes, recordId} = recordInfo();
       let objectType = undefined;
       function setLinks(linkOptions = {isCopy: true, isQueryRecord: true, isShowAllData: true, isViewInSalesforce: true}) {
         // Show All Data link
         if (linkOptions.isShowAllData) {
+          let liShow = document.createElement("li");
+          liShow.className = "slds-dropdown__item sfir-justify-left";
+          ul.appendChild(liShow);
           let aShow = document.createElement("a");
           let args = new URLSearchParams();
           args.set("host", rt.sfHost);
@@ -189,12 +195,16 @@ function renderCell(rt, cell, td) {
           aShow.className = "view-inspector";
           let aShowIcon = document.createElement("div");
           aShowIcon.className = "icon";
-          pop.appendChild(aShow);
+          liShow.appendChild(aShow);
           aShow.prepend(aShowIcon);
+          ul.appendChild(liShow);
         }
 
         // Query Record link
         if (linkOptions.isQueryRecord) {
+          let liQuery = document.createElement("li");
+          liQuery.className = "slds-dropdown__item sfir-justify-left";
+          ul.appendChild(liQuery);
           let aQuery = document.createElement("a");
           let query = "SELECT Id FROM " + objectType + " WHERE Id = '" + recordId + "'";
           let queryArgs = new URLSearchParams();
@@ -209,26 +219,38 @@ function renderCell(rt, cell, td) {
           aQuery.className = "query-record";
           let aQueryIcon = document.createElement("div");
           aQueryIcon.className = "icon";
-          pop.appendChild(aQuery);
+          liQuery.appendChild(aQuery);
           aQuery.prepend(aQueryIcon);
+          ul.appendChild(liQuery);
         }
 
         // View in Salesforce link
         if (linkOptions.isViewInSalesforce && recordId && isRecordId(recordId) && !recordId.endsWith("0000000000AAA")) {
+          let liView = document.createElement("li");
+          liView.className = "slds-dropdown__item sfir-justify-left";
+          ul.appendChild(liView);
           let aView = document.createElement("a");
           aView.href = "https://" + rt.sfHost + "/" + recordId;
+          //debug log specific link
+          if (recordId.startsWith("07L")) {
+            aView.href = "https://" + rt.sfHost + "/one/one.app#/alohaRedirect/p/setup/layout/ApexDebugLogDetailEdit/d?apex_log_id=" + recordId;
+          }
           aView.target = "_blank";
           aView.textContent = "View in Salesforce";
           aView.className = "view-salesforce";
           let aViewIcon = document.createElement("div");
           aViewIcon.className = "icon";
-          pop.appendChild(aView);
+          liView.appendChild(aView);
           aView.prepend(aViewIcon);
+          ul.appendChild(liView);
         }
 
         // Download Event Log or Copy Id
         if (linkOptions.isCopy) {
           if (isEventLogFile(recordId)) {
+            let liDownload = document.createElement("li");
+            liDownload.className = "slds-dropdown__item sfir-justify-left";
+            ul.appendChild(liDownload);
             let aDownload = document.createElement("a");
             aDownload.id = recordId;
             aDownload.target = "_blank";
@@ -236,7 +258,7 @@ function renderCell(rt, cell, td) {
             aDownload.className = "download-salesforce";
             let aDownloadIcon = document.createElement("div");
             aDownloadIcon.className = "icon";
-            pop.appendChild(aDownload);
+            liDownload.appendChild(aDownload);
             aDownload.prepend(aDownloadIcon);
             aDownload.addEventListener("click", e => {
               sfConn.rest(e.target.id, {responseType: "text/csv"}).then(data => {
@@ -245,21 +267,26 @@ function renderCell(rt, cell, td) {
                 downloadLink.href = "data:text/csv;charset=utf-8," + data;
                 downloadLink.click();
               });
+              ul.appendChild(liDownload);
               td.removeChild(pop);
             });
           } else {
+            let liCopy = document.createElement("li");
+            liCopy.className = "slds-dropdown__item sfir-justify-left";
+            ul.appendChild(liCopy);
             let aCopy = document.createElement("a");
             aCopy.className = "copy-id";
             aCopy.textContent = "Copy Id";
             aCopy.id = recordId;
             let aCopyIcon = document.createElement("div");
             aCopyIcon.className = "icon";
-            pop.appendChild(aCopy);
+            liCopy.appendChild(aCopy);
             aCopy.prepend(aCopyIcon);
             aCopy.addEventListener("click", e => {
               navigator.clipboard.writeText(e.target.id);
               td.removeChild(pop);
             });
+            ul.appendChild(liCopy);
           }
         }
       }
@@ -320,6 +347,10 @@ function renderCell(rt, cell, td) {
     return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?([+-]\d{4})$/.test(text);
   }
   if (typeof cell == "object" && cell != null && cell.attributes && cell.attributes.type) {
+    if (cell.attributes.type == "AggregateResult") {
+      td.textContent = cell.attributes.type;
+      return;
+    }
     popLink(
       () => {
         let recordId = null;
@@ -602,10 +633,11 @@ export function initScrollTable(scroller) {
       }
 
       scrolled.textContent = "";
-      scrolled.style.height = totalHeight + "px";
-      scrolled.style.width = totalWidth + "px";
+      //scrolled.style.height = totalHeight + "px";
+      //scrolled.style.width = totalWidth + "px";
 
       let table = document.createElement("table");
+      table.className = "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-is-relative";
       let cellsVisible = false;
 
       // Ensure firstRowIdx never goes below headerRows
@@ -616,6 +648,10 @@ export function initScrollTable(scroller) {
         if (rowVisible[r] == 0) continue;
         let row = data.table[r];
         let tr = document.createElement("tr");
+        tr.className = "slds-line-height_reset";
+        tr.style.position = "sticky";
+        tr.style.top = "0";
+        tr.style.zIndex = "9";
         for (let c = firstColIdx; c < lastColIdx; c++) {
           if (colVisible[c] == 0) continue;
           let cell = row[c];
@@ -636,6 +672,7 @@ export function initScrollTable(scroller) {
         }
         let row = data.table[r];
         let tr = document.createElement("tr");
+        tr.className = "slds-line-height_reset";
         for (let c = firstColIdx; c < lastColIdx; c++) {
           if (colVisible[c] == 0) {
             continue;

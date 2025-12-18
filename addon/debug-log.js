@@ -612,8 +612,8 @@ function deriveActionFromBody(text) {
     const parts = full.split(".");
     
     if (parts.length >= 2) {
-      const method = parts.pop(); // dernier élément = méthode
-      const cls = parts.pop(); // avant-dernier = classe
+      const method = parts.pop();
+      const cls = parts.pop();
       return {label: `${cls}.${method}`};
     }
     return {label: full};
@@ -633,18 +633,60 @@ function deriveActionFromBody(text) {
     return {label: `${apexAction[1]}.${apexAction[2]}`};
   }
 
-  // 4. Look for other CODE_UNIT_STARTED entries
-  const codeUnitMatch = text.match(/CODE_UNIT_STARTED\|[^\|]*\|([^\|\n]+)/);
-  if (codeUnitMatch) {
-    const unit = codeUnitMatch[1].trim();
-    
-    // Trigger
-    if (/^Trigger[:\.]?/i.test(unit)) {
-      const name = unit.split(/[:\.]/)[1] || unit.replace(/^Trigger[:\.]?/i, "");
-      return {label: `Trigger · ${name}`};
+  // 3b. Trigger entries (multi-field variant)
+  // Example:
+  //   ...|CODE_UNIT_STARTED|[EXTERNAL]|01q...|MyTrigger on Object__c trigger event BeforeUpdate|__sfdc_trigger/MyTrigger
+  //   ...|CODE_UNIT_STARTED|[EXTERNAL]|TRIGGERS
+  // Try to capture descriptive text and the trigger name from the __sfdc_trigger path in one go
+  let triggerDetail = text.match(/CODE_UNIT_STARTED\|[^\|]*\|[^\|]*\|([^|\n]+?)\|__sfdc_trigger\/([A-Za-z0-9_]+)/i);
+  if (triggerDetail) {
+    const desc = triggerDetail[1].trim();
+    const trigFromPath = triggerDetail[2];
+    // Pattern: <TriggerName> on <Object> trigger event <Event>
+    const m = desc.match(/^([A-Za-z0-9_]+)\s+on\s+([A-Za-z0-9_]+)\s+trigger\s+event\s+([A-Za-z]+)$/i);
+    if (m) {
+      const trigName = m[1] || trigFromPath;
+      const ev = m[3];
+      return {label: `Trigger · ${trigName} (${ev})`};
     }
-    
-    // Class with dot notation
+    // Fallback: try to extract just the event and use path name as trigger name
+    const m2 = desc.match(/trigger\s+event\s+([A-Za-z]+)/i);
+    if (m2) {
+      const ev = m2[1];
+      const namePart = (desc.replace(/\s*trigger\s+event\s+[A-Za-z]+/i, "").trim()) || trigFromPath;
+      return {label: `Trigger · ${namePart} (${ev})`};
+    }
+    // Final fallback: at least show the trigger name from the path
+    return {label: `Trigger · ${trigFromPath}`};
+  }
+  // If the combined pattern didn't match, still try to get the name from the path anywhere in the text
+  const triggerNameOnly = text.match(/__sfdc_trigger\/([A-Za-z0-9_]+)/i);
+  if (triggerNameOnly) {
+    return {label: `Trigger · ${triggerNameOnly[1]}`};
+  }
+
+  // 4. Look for other CODE_UNIT_STARTED entries
+  // Try to capture the more descriptive fourth field first, then fallback to the third
+  const codeUnitFourth = text.match(/CODE_UNIT_STARTED\|[^\|]*\|[^\|]*\|([^\|\n]+)/);
+  const codeUnitThird = text.match(/CODE_UNIT_STARTED\|[^\|]*\|([^\|\n]+)/);
+  const unit = (codeUnitFourth && codeUnitFourth[1].trim()) || (codeUnitThird && codeUnitThird[1].trim());
+  if (unit) {
+    // Trigger-like description (when not captured by the specific pattern above)
+    if (/\btrigger\s+event\b/i.test(unit)) {
+      const m = unit.match(/^([A-Za-z0-9_]+)\s+on\s+([A-Za-z0-9_]+)\s+trigger\s+event\s+([A-Za-z]+)$/i);
+      if (m) {
+        return {label: `Trigger · ${m[1]} (${m[3]})`};
+      }
+      const evOnly = unit.match(/trigger\s+event\s+([A-Za-z]+)/i);
+      if (evOnly) {
+        const ev = evOnly[1];
+        const namePart = unit.replace(/\s*trigger\s+event\s+[A-Za-z]+/i, "").trim();
+        return {label: `Trigger · ${namePart || "-"} (${ev})`};
+      }
+      return {label: `Trigger · ${unit}`};
+    }
+
+    // Class with dot notation ("Class.ClassName.Method")
     if (/^Class[\.:]/i.test(unit)) {
       const withoutPrefix = unit.replace(/^Class[\.:]/i, "");
       const parts = withoutPrefix.split(".");
@@ -652,13 +694,13 @@ function deriveActionFromBody(text) {
       const className = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
       return {label: method && method !== className ? `${className}.${method}` : className};
     }
-    
+
     // Flow
     if (/^Flow[:\.]?/i.test(unit)) {
       const name = unit.split(/[:\.]/)[1] || unit.replace(/^Flow[:\.]?/i, "");
       return {label: `Flow · ${name}`};
     }
-    
+
     return {label: unit};
   }
 
@@ -917,7 +959,7 @@ function LogsTable({model}) {
                 h("td", {style: {width: cw.actions}},
                   h("div", {className: "slds-button_group sfir-actions", role: "group", style: {whiteSpace: "nowrap"}},
                     h("button", {type: "button", className: "slds-button slds-button_neutral", onClick: () => model.preview(log.Id)},
-                      h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#info_alt"})),
+                      h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#search"})),
                       "Preview"
                     ),
                     // Download: icon-only button, same size as Share/Delete
@@ -1061,8 +1103,8 @@ class App extends React.Component {
 
     return h("div", {},
       h(PageHeader, {
-        pageTitle: "Debug Log",
-        subTitle: "View and manage Salesforce debug logs",
+        pageTitle: "Logs",
+        subTitle: "View and manage Salesforce logs",
         orgName: this.model.userInfoModel.userInfo,
         sfLink: `https://${this.model.sfHost}`,
         sfHost: this.model.sfHost,

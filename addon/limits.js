@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {copyToClipboard} from "./data-load.js";
+import {copyToClipboard} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel} from "./utils.js";
 /* global initButton */

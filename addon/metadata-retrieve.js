@@ -1,6 +1,6 @@
 import {sfConn, apiVersion} from "./inspector.js";
 import Toast from "./components/Toast.js";
-import {copyToClipboard} from "./data-load.js";
+import {copyToClipboard} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod} from "./utils.js";
 

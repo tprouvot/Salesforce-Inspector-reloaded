@@ -1,7 +1,8 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {copyToClipboard, initScrollTable} from "./data-load.js";
+import {copyToClipboard} from "./utils.js";
+import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod} from "./utils.js";
 

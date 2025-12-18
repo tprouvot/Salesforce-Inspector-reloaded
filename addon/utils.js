@@ -269,7 +269,7 @@ export function copyToClipboard(value) {
     }
   } catch (error) {
     // SecurityError occurs in popup mode when accessing parent frame
-    // Continue with normal clipboard logic
+    console.error("Error copying to clipboard:", error);
   }
   // Use execCommand to trigger an oncopy event and use an event handler to copy the text to the clipboard.
   // The oncopy event only works on editable elements, e.g. an input field.

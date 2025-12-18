@@ -3242,6 +3242,22 @@ class UserDetails extends React.PureComponent {
       .catch((err) => this.showErrorToast("User Unfreeze", err));
   }
 
+  async resetUserPassword(user) {
+    try {
+      await sfConn.rest(
+        "/services/data/v" + apiVersion + "/sobjects/User/" + user.Id + "/password",
+        {method: "DELETE"}
+      );
+      this.showSuccessToast(
+        "Password Reset",
+        `Password reset initiated for ${user.Name}`
+      );
+    } catch (err) {
+      console.error("Error during password reset", err);
+      this.showErrorToast("Password Reset");
+    }
+  }
+
   toggleMenu() {
     this.refs.buttonMenu.classList.toggle("slds-is-open");
   }
@@ -3460,7 +3476,19 @@ class UserDetails extends React.PureComponent {
             title: "Show / assign user's permission set groups",
           },
           "PSetG"
-        )
+        ),
+        displayButton("reset-password", hideButtonsOption)
+          ? h(
+            "button",
+            {
+              type: "button",
+              onClick: () => this.resetUserPassword(user),
+              className: "slds-button slds-button_neutral",
+              title: "Reset user password via API",
+            },
+            "Reset Pwd"
+          )
+          : null
       ),
       //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
       user.UserLogins?.records?.[0]?.IsFrozen

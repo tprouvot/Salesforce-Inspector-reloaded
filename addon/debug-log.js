@@ -30,6 +30,7 @@ class Model {
     // Users cache for picklist and table rendering
     this.userMap = new Map(); // id -> name
     this.userOptions = []; // [{id, name}]
+    this.resolvingUsers = new Set(); // avoid duplicate fetches for names
 
     // Action summary cache (logId -> {label})
     this.actionSummary = new Map();
@@ -47,7 +48,9 @@ class Model {
     this.startResize = null;
 
     // Pagination for lazy loading
-    this.pageSize = 15;
+    const savedPageSize = parseInt(localStorage.getItem('sfir.debugLog.pageSize'), 10);
+    this.allowedPageSizes = [10, 15, 25, 50, 100];
+    this.pageSize = this.allowedPageSizes.includes(savedPageSize) ? savedPageSize : 15;
     this.pageIndex = 0;
     this.offset = 0; // deprecated, kept for fallback
     this.hasMore = true;
@@ -72,7 +75,51 @@ class Model {
 
   async init() {
     await sfConn.getSession(this.sfHost);
+    await this.populatePicklistFromAllLogs();
     await this.fetchLogs(true);
+  }
+
+  async populatePicklistFromAllLogs() {
+    this.spinnerCount++;
+    try {
+      // Gather all distinct LogUserId from all logs (no filters)
+      const ids = new Set();
+      let url = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent("SELECT LogUserId FROM ApexLog WHERE LogUserId != null");
+      while (url) {
+        const res = await sfConn.rest(url);
+        (res.records || []).forEach(r => { if (r.LogUserId) ids.add(r.LogUserId); });
+        url = res.nextRecordsUrl || null;
+      }
+
+      const allIds = Array.from(ids);
+      // Resolve names in chunks, rebuild userMap and userOptions from the full list
+      const map = new Map();
+      for (let i = 0; i < allIds.length; i += 200) {
+        const chunk = allIds.slice(i, i + 200);
+        const soql = `SELECT Id, Name FROM User WHERE Id IN (${chunk.map(id => `'${id}'`).join(",")})`;
+        try {
+          const res = await sfConn.rest(`/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(soql));
+          (res.records || []).forEach(u => map.set(u.Id, u.Name));
+        } catch (e) {
+          console.error("populatePicklistFromAllLogs", e);
+        }
+      }
+      this.userMap = map;
+      this.userOptions = Array.from(map, ([id, name]) => ({id, name})).sort((a, b) => a.name.localeCompare(b.name));
+      this.didUpdate();
+    } catch (e) {
+      console.error("populatePicklistFromAllLogs.root", e);
+    } finally {
+      this.spinnerCount--;
+    }
+  }
+
+  refreshAll() {
+    // Rebuild picklist from all logs, then reload current page with fresh count
+    (async () => {
+      await this.populatePicklistFromAllLogs();
+      await this.fetchLogs(true);
+    })();
   }
 
   buildWhereClause() {
@@ -197,8 +244,7 @@ class Model {
     // Collect unique user ids from logs
     const ids = Array.from(new Set((logs || []).map(l => l.LogUserId).filter(Boolean)));
     if (ids.length === 0) {
-      this.userMap = new Map();
-      this.userOptions = [];
+      // Keep existing options; just clear map for missing logs is not helpful, so do not wipe picklist
       return;
     }
 
@@ -214,8 +260,21 @@ class Model {
         console.error("buildUsersFromLogs", e);
       }
     }
-    this.userMap = map;
-    this.userOptions = Array.from(map, ([id, name]) => ({id, name})).sort((a, b) => a.name.localeCompare(b.name));
+    // Merge into existing userMap to avoid losing known users
+    const merged = new Map(this.userMap);
+    for (const [id, name] of map) merged.set(id, name);
+    this.userMap = merged;
+
+    // Only initialize or extend picklist; never shrink it based on current logs
+    if (!Array.isArray(this.userOptions) || this.userOptions.length === 0) {
+      this.userOptions = Array.from(merged, ([id, name]) => ({id, name})).sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      const existingIds = new Set(this.userOptions.map(o => o.id));
+      const additions = Array.from(map, ([id, name]) => ({id, name})).filter(o => !existingIds.has(o.id));
+      if (additions.length) {
+        this.userOptions = this.userOptions.concat(additions).sort((a, b) => a.name.localeCompare(b.name));
+      }
+    }
   }
 
   async resolveActionsFromBodiesLimited(limit = 50) {
@@ -251,6 +310,32 @@ class Model {
         this.resolvingActions.delete(log.Id);
         this.didUpdate();
       });
+  }
+
+  ensureUserName(id) {
+    if (!id) return;
+    if (this.userMap.has(id) || this.resolvingUsers.has(id)) return;
+    this.resolvingUsers.add(id);
+    (async () => {
+      try {
+        const soql = `SELECT Id, Name FROM User WHERE Id='${id}'`;
+        const res = await sfConn.rest(`/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(soql));
+        const rec = (res.records || [])[0];
+        if (rec && rec.Id) {
+          // update map
+          this.userMap.set(rec.Id, rec.Name);
+          // extend picklist options without shrinking
+          if (!this.userOptions.find(o => o.id === rec.Id)) {
+            this.userOptions = this.userOptions.concat([{id: rec.Id, name: rec.Name}]).sort((a, b) => a.name.localeCompare(b.name));
+          }
+          this.didUpdate();
+        }
+      } catch (e) {
+        // ignore; keep showing ID
+      } finally {
+        this.resolvingUsers.delete(id);
+      }
+    })();
   }
 
   toggleSelect(id, checked) {
@@ -490,6 +575,15 @@ class Model {
     this.pageIndex--;
     this.fetchLogs(true, false); // rebuild users for the new page
   }
+
+  setPageSize(size) {
+    const n = parseInt(size, 10);
+    if (!this.allowedPageSizes.includes(n) || n === this.pageSize) return;
+    this.pageSize = n;
+    try { localStorage.setItem('sfir.debugLog.pageSize', String(n)); } catch (_) {}
+    this.pageIndex = 0;
+    this.fetchLogs(true, true);
+  }
 }
 
 function parseAction(operation) {
@@ -645,7 +739,7 @@ class SldsPicklist extends React.Component {
 function Filters({model}) {
   const onUserPick = (val) => {
     model.filters.userId = val;
-    model.fetchLogs(true); // rebuild users to ensure names are shown
+    model.fetchLogs(true); // rebuild users to resolve names; picklist stays intact (we don't shrink it)
   };
   const onStartChange = (e) => { model.filters.start = e.target.value; };
   const onEndChange = (e) => { model.filters.end = e.target.value; };
@@ -683,6 +777,14 @@ function LogsTable({model}) {
   const onMouseMove = (e) => model.onResizeMove(e.clientX);
   const onMouseUp = () => model.onResizeEnd();
 
+  // Compute smarter display counts and offset
+  const offset = model.pageIndex * model.pageSize;
+  const total = model.totalCount;
+  const displayedCountBase = (model.pageIndex + 1) * model.pageSize;
+  const displayedCount = total != null
+    ? Math.min(total, displayedCountBase)
+    : displayedCountBase;
+
   return h("div", {className: "slds-card", onMouseMove, onMouseUp},
     h("div", {className: "slds-card__header slds-grid"},
       h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
@@ -693,21 +795,43 @@ function LogsTable({model}) {
             )
           )
         ),
+        // Place title and page size picker side-by-side
         h("div", {className: "slds-media__body"},
-          h("h2", {className: "slds-card__header-title"},
-            h("span", {className: "slds-truncate"},
-              // Show "Logs (X of Y)" when total known, or "of ..." while loading
-              model.totalCount != null
-                ? `Logs (${model.logs.length} of ${model.totalCount})`
-                : (model.countLoading
-                    ? `Logs (${model.logs.length} of ...)`
-                    : `Logs (${model.logs.length})`)
+          h("div", {className: "slds-grid slds-grid_vertical-align-center slds-gutters_small"},
+            h("span", {className: ""},
+              h("h2", {className: "slds-card__header-title"},
+                h("span", {className: "slds-truncate"},
+                  total != null
+                    ? `Logs (${displayedCount} of ${total})`
+                    : (model.countLoading
+                        ? `Logs (${displayedCount} of ...)`
+                        : `Logs (${displayedCount})`)
+                )
+              )
+            ),
+            h("div", {className: "slds-col slds-grow-none"},
+              h("div", {className: "slds-form-element"},
+                h("label", {className: "slds-form-element__label", htmlFor: "sfir-page-size"}, "Page size"),
+                h("div", {className: "slds-form-element__control"},
+                  h("div", {className: "slds-select_container"},
+                    h("select", {
+                      id: "sfir-page-size",
+                      className: "slds-select",
+                      value: String(model.pageSize),
+                      onChange: (e) => model.setPageSize(e.target.value)
+                    },
+                      ...model.allowedPageSizes.map(v => h("option", {key: v, value: String(v)}, String(v)))
+                    )
+                  )
+                )
+              )
             )
           )
         ),
+        // Keep actions on the right
         h("div", {className: "slds-no-flex"},
           h("div", {className: "slds-button_group", role: "group"},
-            h("button", {className: "slds-button slds-button_neutral slds-m-right_x-small", onClick: () => model.fetchLogs(true)},
+            h("button", {className: "slds-button slds-button_neutral slds-m-right_x-small", onClick: () => model.refreshAll()},
               h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
                 h("use", {xlinkHref: "symbols.svg#refresh"})
               ),
@@ -773,6 +897,7 @@ function LogsTable({model}) {
           h("tbody", {},
             ...model.logs.map(log => {
               model.ensureActionDerived(log);
+              model.ensureUserName(log.LogUserId);
               return h("tr", {key: log.Id},
                 h("td", {}, h("input", {type: "checkbox", checked: model.selectedIds.has(log.Id), onChange: (e) => model.toggleSelect(log.Id, e.target.checked)})),
                 h("td", {style: {width: cw.user}}, model.userMap.get(log.LogUserId) || log.LogUserId || "-"),

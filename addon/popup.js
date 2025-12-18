@@ -543,6 +543,23 @@ class App extends React.PureComponent {
               h(
                 "a",
                 {
+                  ref: "debugLogBtn",
+                  href: "debug-log.html?" + hostArg,
+                  target: linkTarget,
+                  className: "page-button slds-button slds-button_neutral",
+                },
+                h("span", {}, "Debug ", h("u", {}, "L"), "og")
+              )
+            ),
+            h(
+              "div",
+              {
+                className:
+                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
+              },
+              h(
+                "a",
+                {
                   ref: "fieldCreatorBtn",
                   href: fieldCreatorHref,
                   target: linkTarget,
@@ -3223,10 +3240,7 @@ class UserDetails extends React.PureComponent {
   unfreezeUser(user) {
     sfConn
       .rest(
-        "/services/data/v"
-          + apiVersion
-          + "/sobjects/UserLogin/"
-          + user.UserLogins?.records?.[0]?.Id,
+        "/services/data/v" + apiVersion + "/sobjects/UserLogin/" + user.UserLogins?.records?.[0]?.Id,
         {
           method: "PATCH",
           body: {IsFrozen: false},

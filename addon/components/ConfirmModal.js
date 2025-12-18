@@ -140,7 +140,8 @@ export default class ConfirmModal extends React.Component {
       confirmValue,
       cancelValue,
       confirmTabIndex,
-      cancelTabIndex
+      cancelTabIndex,
+      containerClassName
     } = this.props;
 
     if (!isOpen) {
@@ -155,7 +156,7 @@ export default class ConfirmModal extends React.Component {
 
     return h("div", {},
       h("div", {className: "slds-modal slds-fade-in-open", role: "dialog", "aria-modal": "true", "aria-labelledby": "modal-heading-01"},
-        h("div", {className: "slds-modal__container"},
+        h("div", {className: `slds-modal__container${containerClassName ? " " + containerClassName : ""}`},
           h("div", {className: "slds-modal__header"},
             h("h2", {id: "modal-heading-01", className: "slds-modal__title slds-text-heading_medium slds-hyphenate"}, title || "Important")
           ),

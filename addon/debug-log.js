@@ -1103,8 +1103,7 @@ class App extends React.Component {
 
     return h("div", {},
       h(PageHeader, {
-        pageTitle: "Logs",
-        subTitle: "View and manage Salesforce logs",
+        pageTitle: "Salesforce log viewer",
         orgName: this.model.userInfoModel.userInfo,
         sfLink: `https://${this.model.sfHost}`,
         sfHost: this.model.sfHost,

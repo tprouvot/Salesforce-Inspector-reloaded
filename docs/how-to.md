@@ -407,3 +407,26 @@ This feature is particularly useful for:
 - Understanding field adoption across your organization
 
 ![Smart Field Usage demo](https://github.com/user-attachments/assets/ef93bf3c-8737-4a21-b38b-ce4822f8b573)
+
+## Toggle Reset Password button on the User Tab
+
+This feature enables a **Reset Password** button on the **User Tab** page in Salesforce Inspector Reloaded. The button can be turned **on or off** from the extension **Options** page.
+
+### How it works
+
+1. Open **Salesforce Inspector Reloaded**.
+2. Navigate to the **Options** page.
+3. Locate the **Enable Reset Password button on User Tab** option.
+4. Toggle the option:
+   - **On** – the **Reset Password** button is displayed on the **User Tab**.
+   - **Off** – the **Reset Password** button is hidden.
+
+When enabled, the **Reset Password** button appears while inspecting a User record and allows you to reset the user’s password directly from the User Tab, without navigating to Salesforce Setup.
+
+![Reset Password button on User Tab](image.png)
+
+> **Note:** If the current session does not have sufficient permissions to access user information or perform a password reset, Salesforce returns an **INSUFFICIENT_ACCESS** error.
+
+![INSUFFICIENT_ACCESS error example](image-1.png)
+
+

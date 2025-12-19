@@ -1,11 +1,10 @@
 # Release Notes
 
 ## Version 2.0
-
+- `User Tab` [popup] The “Reset Password” option in the User tab can be enabled or disabled using the options. [feature #486](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/486) (contribution by [Phanidra Mangipudi](https://github.com/thephani))
 - `Popup` Add "Copy Id" icon to User tab [feature 906](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/906) (contribution by [Arnav Gupta](https://github.com/ArnavGuptaaa)).
 - `Data Export` Auto-populate SOQL editor from Salesforce List View context [feature 969](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/969) (request and contribution by [Temam Abdelkrim](https://github.com/KRIMOD)) and [feature 817](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/817) (request by [Nicolas Vuillamy](https://github.com/nvuillam))
 - `Data Export` Prevent popup actions menu for Aggregate result [feature #663](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/663) (contribution by [Phanidra Mangipudi](https://github.com/thephani))
-- `User Tab` [popup] The “Reset Password” option in the User tab can be enabled or disabled using the options. [feature #486](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/486) (contribution by [Phanidra Mangipudi](https://github.com/thephani))
 - `Flow Scanner` Implement Agentforce feature to describe a flow and its components
 - `Field Creator` Fix Text Field length defaulting to 255 [issue 923](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/923) (contribution by [DivyanshuBist](https://github.com/DivyanshuBist))
 - Fix flow scrolling feature by [Camille Guillory](https://github.com/CamilleGuillory) [issue #837](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/837)

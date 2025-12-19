@@ -829,15 +829,19 @@ class App extends React.Component {
     this.setState({showToast: false, toastMessage: ""});
     model.didUpdate();
   }
+  getLanguageForMetadata(metadataType) {
+    if (!metadataType) return "markup";
+    if (metadataType === "ApexPage") return "markup";
+    if (metadataType === "ApexClass" || metadataType === "ApexTrigger") return "apex";
+    return "markup"; // default
+  }
   async onViewMetadata(metadataType, metadataName) {
     let {model} = this.props;
     this.setState({
       showMetadataModal: true,
       metadataXmlContent: "Loading...",
       metadataFileName: metadataName,
-      metadataType,
-      metadataFormat: null,
-      metadataLanguage: null
+      metadataType
     });
     model.didUpdate();
 
@@ -847,17 +851,13 @@ class App extends React.Component {
           this.setState({
             metadataXmlContent: result.content,
             metadataFileName: metadataName,
-            metadataType,
-            metadataFormat: result.format,
-            metadataLanguage: result.language
+            metadataType
           });
         } else {
           this.setState({
             metadataXmlContent: "No content found",
             metadataFileName: metadataName,
-            metadataType,
-            metadataFormat: null,
-            metadataLanguage: null
+            metadataType
           });
         }
         model.didUpdate();
@@ -866,9 +866,7 @@ class App extends React.Component {
         this.setState({
           metadataXmlContent: "Error retrieving metadata: " + error.message,
           metadataFileName: metadataName,
-          metadataType,
-          metadataFormat: null,
-          metadataLanguage: null
+          metadataType
         });
         model.didUpdate();
       })
@@ -879,9 +877,7 @@ class App extends React.Component {
       showMetadataModal: false,
       metadataXmlContent: null,
       metadataFileName: null,
-      metadataType: null,
-      metadataFormat: null,
-      metadataLanguage: null
+      metadataType: null
     });
     this.props.model.didUpdate();
   }
@@ -902,7 +898,7 @@ class App extends React.Component {
     model.didUpdate();
   }
   onDownloadMetadataXml() {
-    const {metadataXmlContent, metadataFileName, metadataType, metadataFormat} = this.state;
+    const {metadataXmlContent, metadataFileName, metadataType} = this.state;
     if (!metadataXmlContent || metadataXmlContent === "Loading..." || metadataXmlContent.startsWith("Error")) {
       return;
     }
@@ -914,7 +910,8 @@ class App extends React.Component {
       fileExtension = model.metadataTypeMap[metadataType].suffix;
     }
 
-    // Determine MIME type based on format
+    // Derive format from metadata type to determine MIME type
+    const metadataFormat = model.getMetadataFormat(metadataType);
     let mimeType = "text/xml";
     if (metadataFormat === "code") {
       mimeType = "text/plain";
@@ -958,7 +955,7 @@ class App extends React.Component {
             h("pre", {className: "reset-margin"},
               h("code", {
                 id: "metadata-xml-content",
-                className: "language-" + (this.state.metadataLanguage || "markup")
+                className: "language-" + (this.getLanguageForMetadata(this.state.metadataType))
               }, this.state.metadataXmlContent || "")
             )
           )

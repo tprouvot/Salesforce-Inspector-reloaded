@@ -105,7 +105,6 @@ Add a new property `csvSeparator` containing the needed separator for CSV files
 
    <img alt="Update csv separator" src="../assets/images/how-to/csv-separator.png?raw=true" height="300">
 
-
 ## Open links in a new tab
 
 If you want to _always_ open extension's links in a new tab, you can enable> **Warning**
@@ -115,13 +114,13 @@ If you want to _always_ open extension's links in a new tab, you can enable> **W
 > **Warning**
    > Enabling this option will prevent you to use `Lightning navigation` which allows faster navigation.
 
-- Data <ins>E</ins>xport : e
-- Data <ins>I</ins>mport : i
-- Org <ins>L</ins>imits : l
-- <ins>D</ins>ownload Metadata : d
-- E<ins>x</ins>plore API : x
-- Event <ins>M</ins>onitor : m
-- <ins>F</ins>ield Creator : f
+* Data <ins>E</ins>xport : e
+* Data <ins>I</ins>mport : i
+* Org <ins>L</ins>imits : l
+* <ins>D</ins>ownload Metadata : d
+* E<ins>x</ins>plore API : x
+* Event <ins>M</ins>onitor : m
+* <ins>F</ins>ield Creator : f
 
 ## Disable metadata search from Shortcut tab
 
@@ -140,38 +139,44 @@ Go on a Salesforce flow and check / uncheck the checbox to update navigation scr
 
 <img width="1234" alt="Use custom shortcuts" src="https://github.com/user-attachments/assets/036045b8-133c-46c1-90d0-1db7aa81a190" />
 
-
 You can add custom links to the "Shortcut" tab. These links will be stored in the `sfHost + "_orgLinks"` localStorage variable. The links are stored as a JSON array with the following properties:
-- `label`: The label of the link
-- `link`: The link to the page
-- `section`: The section where the link will be displayed
-- `isExternal`: A boolean indicating if the link is external (starts with 'http' or 'www')
+
+* `label`: The label of the link
+* `link`: The link to the page
+* `section`: The section where the link will be displayed
+* `isExternal`: A boolean indicating if the link is external (starts with 'http' or 'www')
 
 The links are displayed in a table format with the following features:
-- Sortable columns (click on column headers to sort)
-- Search functionality to filter links by label, link, or section
-- Edit and delete buttons for each link
-- Add button to create new links
+
+* Sortable columns (click on column headers to sort)
+* Search functionality to filter links by label, link, or section
+* Edit and delete buttons for each link
+* Add button to create new links
 
 To add a new link:
+
 1. Click the "+" button at the bottom of the table
 2. Fill in the label, link, and section fields
 3. Click the check icon to save or the X icon to cancel
 
 To edit a link:
+
 1. Click the edit icon (pencil) next to the link
 2. Modify the fields
 3. Click the check icon to save or the X icon to cancel
 
 To delete a link:
+
 1. Click the delete icon (trash) next to the link
 
 To search links:
+
 1. Use the search box at the top of the table
 2. Type any text to filter links by label, link, or section
 3. The table updates in real-time as you type
 
 To sort links:
+
 1. Click on any column header to sort by that column
 2. Click again to reverse the sort order
 3. The current sort column is indicated by an up/down arrow icon
@@ -211,14 +216,12 @@ Since the plugin's api version is only updated when all productions have been up
 
 ![2023-11-10_09-50-55 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6ae51a29-9887-41a6-8148-d9e12c2dc10d)
 
-
 ## Delete All Apex Logs
 
 Sometimes you need to purge the ApexLogs from you org, mostly when the maximum size limit is reached.
 You can now delete all apex logs with a simple click. From the popup, select 'Org' tab and click 'Delete All ApexLogs' button.
 
 <img width="278" alt="Delete All Apex Logs" src="https://github.com/user-attachments/assets/7ba32e4d-1fdd-43e7-89cd-9c480c913211" />
-
 
 ## Enable debug logs
 
@@ -243,21 +246,21 @@ Warning: Salesforce is slower for users who have debug mode enabled.
 
 <img width="278" alt="Enable Debug Mode" src="https://github.com/user-attachments/assets/f4dabb96-6b1d-48a1-828d-cc7d5da92e57" />
 
-
 ## Customize extension's favicon
 
 From the option page, you can customize the default favicon by:
 
-- a predefined color name among [those values](https://www.w3schools.com/tags/ref_colornames.asp) or any HTML color code you want (ie `#FF8C00`).
-- a custom favicon url (ie "https://stackoverflow.com/favicon.ico")
+* a predefined color name among [those values](https://www.w3schools.com/tags/ref_colornames.asp) or any HTML color code you want (ie `#FF8C00`).
+* a custom favicon url (ie "<https://stackoverflow.com/favicon.ico>")
 
 The customization is linked to the org, it means you can have different colors for DEV and UAT env for example.
 
 <img width="878" alt="image" src="https://github.com/user-attachments/assets/fdf24a37-2cab-402e-a101-4a20bc4e1ae4">
 
 Now if you want to populate all the orgs you visited with a custom favicon, you have two options:
-- Smart mode enabled: this will analyze your environment name and populate a favicon based on this (blue for dev, green for int, purple for uat and orange for full)
-- Random: this will choose a random color among all the predefined colors
+
+* Smart mode enabled: this will analyze your environment name and populate a favicon based on this (blue for dev, green for int, purple for uat and orange for full)
+* Random: this will choose a random color among all the predefined colors
 
 Then you click on Populate All and that's it!
 Note: orgs with an existing customized favicon won't be affected.
@@ -267,9 +270,7 @@ Note: orgs with an existing customized favicon won't be affected.
 From the option page, enable "Use favicon color on sandbox banner"
 <img width="772" alt="image" src="https://github.com/user-attachments/assets/28cb7f5f-01fd-48b9-a5da-f50f6cbb2f81">
 
-
 <img width="1087" alt="image" src="https://github.com/user-attachments/assets/f90999c2-f93e-423a-bcb7-18a8aa717a17">
-
 
 ## Customize extension's shortcuts
 
@@ -282,11 +283,11 @@ Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and cho
 If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
 Example:
 
-- Data <ins>E</ins>xport : e
-- Data <ins>I</ins>mport : i
-- Org <ins>L</ins>imits : l
-- <ins>D</ins>ownload Metadata : d
-- E<ins>x</ins>plore API : x
+* Data <ins>E</ins>xport : e
+* Data <ins>I</ins>mport : i
+* Org <ins>L</ins>imits : l
+* <ins>D</ins>ownload Metadata : d
+* E<ins>x</ins>plore API : x
 
 ## Highlight PROD with a top border
 
@@ -296,10 +297,10 @@ Under `User Experience` tab, enable the option `Highlight PROD with a top border
 
 <img width="955" alt="highlight prod with a top border" src="https://github.com/user-attachments/assets/4ff26e23-08b2-447a-be8d-004488f2a3a1">
 
-
 ## Import / Export configuration (saved query etc.)
 
 ### With 1.25 and above
+
 To export and import your current configuration, go to the options page and click the corresponding icon in the header:
 
 <img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753">
@@ -318,17 +319,49 @@ From the User tab in the popup, click on the user language flag to display the a
 ![2024-12-04_16-07-35 (1)](https://github.com/user-attachments/assets/d07da946-dba0-4bb4-8f3b-313392bbf557)
 
 ## Default Popup Tab
+
 You can configure which tab should be selected by default when opening the popup. To do this:
+
 1. Open the options page
 2. Go to the "User Experience" tab
 3. Find the "Default Popup Tab" option
 4. Select your preferred tab:
-   - Object: Shows the SObject search and details
-   - Users: Shows the user search and details
-   - Shortcuts: Shows your configured shortcuts
-   - Org: Shows organization information
+   * Object: Shows the SObject search and details
+   * Users: Shows the user search and details
+   * Shortcuts: Shows your configured shortcuts
+   * Org: Shows organization information
 
 The selected tab will be remembered and used as the default when opening the popup.
+
+## API Cache Configuration
+
+Salesforce Inspector Reloaded uses a caching system to reduce the number of API calls made to Salesforce, improving performance and reducing API usage. The extension caches API response data to optimize queries and avoid unnecessary API requests.
+
+### Cached Requests
+
+The following API requests are cached:
+
+* **User Object Describe** (`/services/data/vXX.0/sobjects/User/describe`) - Caches field permission information to optimize user search queries and dynamically build SELECT clauses based on accessible fields
+
+### Why Use Caching?
+
+* **Reduced API Calls**: Caching field permissions means the extension doesn't need to call the describe API every time you search for users
+* **Better Performance**: Faster user searches since cached data is retrieved instantly
+* **Optimized Queries**: The extension builds queries dynamically based on cached field permissions, only including fields you have access to
+* **API Limit Preservation**: Helps preserve your Salesforce API request limits by avoiding redundant describe calls
+
+### Configuring Cache Period
+
+You can configure how long cached data should be stored:
+
+1. Open the extension and click the "Options" button
+2. Navigate to the "User Experience" tab
+3. Find the "API cache period (days)" setting
+4. Enter the number of days you want cached data to remain valid (default: 7 days)
+5. Click the "Clear Cache" button if you need to immediately refresh cached data
+
+> **Note**
+> The cache is org-specific, meaning each Salesforce org has its own cached data. Cache entries are automatically cleared when they expire based on your configured cache period.
 
 ## Customize User Tab Search Filters and Fields
 
@@ -344,27 +377,28 @@ By default, user searches look through Username, Email, Alias, and Name fields. 
 2. Navigate to the "User Experience" tab
 3. Find the "User Default Search Fields" section
 4. Check/uncheck the fields you want to include in searches:
-   - **Username** - The user's unique username (default: enabled)
-   - **Email** - The user's email address (default: enabled)
-   - **Alias** - The user's alias (default: enabled)
-   - **Name** - The user's full name (default: enabled)
-   - **Profile Name** - Search by the user's profile name (default: disabled)
+   * **Username** - The user's unique username (default: enabled)
+   * **Email** - The user's email address (default: enabled)
+   * **Alias** - The user's alias (default: enabled)
+   * **Name** - The user's full name (default: enabled)
+   * **Profile Name** - Search by the user's profile name (default: disabled)
 
 The search placeholder text in the User tab will automatically update to reflect which fields are currently enabled for searching.
 
 ### Applying Search Filters
 
-You can exclude certain types of users from appearing in search results:
+You can exclude certain types of users from appearing in search results.
+Because the IsPortalEnabled field does not exist in orgs where there is no portal, we made this option org specific.
 
 1. In the same "User Experience" tab in Options
 2. Find the "Exclude users from search" section
 3. Enable the filters you want to apply:
-   - **Exclude Portal users** - Hides users who have portal access enabled
-   - **Exclude Inactive users** - Hides users who are marked as inactive
+   * **Exclude Portal users** - Hides users who have portal access enabled
+   * **Exclude Inactive users** - Hides users who are marked as inactive
 
 ## Generate a package.xml from a deployment
 
-From a	DeployRequest record, click on the `Generate package.xml` button to download the package.xml for this deployment.
+From a DeployRequest record, click on the `Generate package.xml` button to download the package.xml for this deployment.
 > [!NOTE]
 > If you retrieve the related metadata it may have been modified since the deployment, so you are not sure to retrieve what was deployed.
 
@@ -379,12 +413,12 @@ The field usage analysis feature helps you understand which fields in your Sales
 1. **Navigate to an SObject**: Select an SObject from the popup or navigate to any SObject page in Salesforce
 2. **Open Show All Data**: Click the "Show all data" button to open the field inspection page
 3. **Calculate Field Usage**: You have two options:
-   - **Individual field**: Click on "Get field usage" link next to any field to calculate usage for that specific field only
-   - **All fields**: Click on the refresh icon (🔄) in the "Usage (%)" column header to calculate usage for all fields at once
+   * **Individual field**: Click on "Get field usage" link next to any field to calculate usage for that specific field only
+   * **All fields**: Click on the refresh icon (🔄) in the "Usage (%)" column header to calculate usage for all fields at once
 4. **View Results**:
-   - Hover over any percentage to see the detailed breakdown (e.g., "1,247 / 5,000 records (25%)")
-   - Required fields automatically show 100% usage
-   - Fields that can't be analyzed (like textarea or address fields) will be empty
+   * Hover over any percentage to see the detailed breakdown (e.g., "1,247 / 5,000 records (25%)")
+   * Required fields automatically show 100% usage
+   * Fields that can't be analyzed (like textarea or address fields) will be empty
 5. **Export Results**: Use the table settings menu (gear icon) to copy the table or download as CSV
 
 ### Important Notes
@@ -392,18 +426,19 @@ The field usage analysis feature helps you understand which fields in your Sales
 > **Warning**
 > Field usage analysis uses Salesforce API calls and counts against your API request limits. For large orgs, consider using this feature in a copy of production to avoid hitting API limits.
 
-- The feature uses Composite API to efficiently batch multiple field queries
-- Loading indicators show when calculations are in progress
-- Results are cached during your session for better performance
-- Required fields (nillable = false) automatically show 100% usage without making API calls
+* The feature uses Composite API to efficiently batch multiple field queries
+* Loading indicators show when calculations are in progress
+* Results are cached during your session for better performance
+* Required fields (nillable = false) automatically show 100% usage without making API calls
 
 ### Use Cases
 
 This feature is particularly useful for:
-- Data cleanup projects
-- Field deprecation planning
-- Org optimization initiatives
-- Documentation and audit requirements
-- Understanding field adoption across your organization
+
+* Data cleanup projects
+* Field deprecation planning
+* Org optimization initiatives
+* Documentation and audit requirements
+* Understanding field adoption across your organization
 
 ![Smart Field Usage demo](https://github.com/user-attachments/assets/ef93bf3c-8737-4a21-b38b-ce4822f8b573)

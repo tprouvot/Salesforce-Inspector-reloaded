@@ -293,3 +293,120 @@ export function copyToClipboard(value) {
     document.body.removeChild(temp);
   }
 }
+
+/**
+ * DataCache - Generic caching utility for any JSON-serializable data
+ * Stores data with timestamps and provides expiration checking based on user-configured days.
+ */
+export class DataCache {
+  /**
+   * Get the cache period in days from localStorage
+   * @returns {number} Cache period in days (default: 7)
+   */
+  static getCachePeriodDays() {
+    const cachePeriod = localStorage.getItem("cachePeriodDays");
+    if (cachePeriod === null || cachePeriod === undefined) {
+      return 7; // Default to 7 days
+    }
+    const days = parseInt(cachePeriod, 10);
+    return isNaN(days) || days < 1 ? 7 : days;
+  }
+
+  /**
+   * Check if a cache entry is still valid
+   * @param {Object} cacheEntry - Cache entry with data and timestamp
+   * @param {number} cacheDays - Number of days the cache should be valid
+   * @returns {boolean} True if cache is valid, false if expired
+   */
+  static isCacheValid(cacheEntry, cacheDays) {
+    if (!cacheEntry || !cacheEntry.timestamp) {
+      return false;
+    }
+    const now = Date.now();
+    const cacheAge = now - cacheEntry.timestamp;
+    const maxAge = cacheDays * 24 * 60 * 60 * 1000; // Convert days to milliseconds
+    return cacheAge < maxAge;
+  }
+
+  /**
+   * Get cached data if valid, null if expired or missing
+   * @param {string} cacheKey - Unique key for the cached data
+   * @param {string} sfHost - Salesforce host (for scoping cache per org)
+   * @returns {Object|null} Cached data if valid, null otherwise
+   */
+  static getCachedData(cacheKey, sfHost) {
+    const storageKey = `${sfHost}_cache_${cacheKey}`;
+    const cached = localStorage.getItem(storageKey);
+
+    if (!cached) {
+      return null;
+    }
+
+    try {
+      const cacheEntry = JSON.parse(cached);
+      const cacheDays = this.getCachePeriodDays();
+
+      if (this.isCacheValid(cacheEntry, cacheDays)) {
+        return cacheEntry.data;
+      } else {
+        // Cache expired, remove it
+        localStorage.removeItem(storageKey);
+        return null;
+      }
+    } catch (e) {
+      console.error(`Error parsing cache entry for ${cacheKey}:`, e);
+      localStorage.removeItem(storageKey);
+      return null;
+    }
+  }
+
+  /**
+   * Store data in cache with current timestamp
+   * @param {string} cacheKey - Unique key for the cached data
+   * @param {string} sfHost - Salesforce host (for scoping cache per org)
+   * @param {*} data - Any JSON-serializable data to cache
+   */
+  static setCachedData(cacheKey, sfHost, data) {
+    const storageKey = `${sfHost}_cache_${cacheKey}`;
+    const cacheEntry = {
+      data,
+      timestamp: Date.now()
+    };
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(cacheEntry));
+    } catch (e) {
+      console.error(`Error storing cache entry for ${cacheKey}:`, e);
+    }
+  }
+
+  /**
+   * Clear a specific cache entry
+   * @param {string} cacheKey - Unique key for the cached data
+   * @param {string} sfHost - Salesforce host (for scoping cache per org)
+   */
+  static clearCache(cacheKey, sfHost) {
+    const storageKey = `${sfHost}_cache_${cacheKey}`;
+    localStorage.removeItem(storageKey);
+  }
+
+  /**
+   * Clear all cache entries for a specific host
+   * @param {string} sfHost - Salesforce host
+   */
+  static clearAllCache(sfHost) {
+    const prefix = `${sfHost}_cache_`;
+    const keysToRemove = [];
+
+    // Collect all keys that match the pattern
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        keysToRemove.push(key);
+      }
+    }
+
+    // Remove all matching keys
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+  }
+}

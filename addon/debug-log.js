@@ -15,14 +15,14 @@ class Model {
 
     this.logs = [];
     this.selectedIds = new Set();
-    this.filters = { userId: "", start: "", end: "" };
+    this.filters = {userId: "", start: "", end: ""};
     this.previewLog = null; // {id, body, fileName}
-    this.previewSearch = { term: "", liveTerm: "", index: 0, _timer: 0 };
+    this.previewSearch = {term: "", liveTerm: "", index: 0, _timer: 0};
     this._onPreviewKeyDown = (e) => {
       const key = (e.key || "").toLowerCase();
       if ((e.ctrlKey || e.metaKey) && key === "f") {
         e.preventDefault();
-        const inp = document.querySelector('.sfir-preview-search-input');
+        const inp = document.querySelector(".sfir-preview-search-input");
         if (inp) inp.focus();
       }
     };
@@ -48,7 +48,7 @@ class Model {
     this.startResize = null;
 
     // Pagination for lazy loading
-    const savedPageSize = parseInt(localStorage.getItem('sfir.debugLog.pageSize'), 10);
+    const savedPageSize = parseInt(localStorage.getItem("sfir.debugLog.pageSize"), 10);
     this.allowedPageSizes = [10, 15, 25, 50, 100];
     this.pageSize = this.allowedPageSizes.includes(savedPageSize) ? savedPageSize : 15;
     this.pageIndex = 0;
@@ -166,7 +166,7 @@ class Model {
           const countQuery = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent(countSoql);
           const countRes = await sfConn.rest(countQuery);
           // For COUNT() queries, totalSize holds the count
-          this.totalCount = typeof countRes.totalSize === 'number' ? countRes.totalSize : 0;
+          this.totalCount = typeof countRes.totalSize === "number" ? countRes.totalSize : 0;
         } catch (e) {
           console.error("fetchLogs.count", e);
           this.totalCount = null; // unknown; UI will omit total and pagination falls back to page size heuristic
@@ -202,11 +202,11 @@ class Model {
       const soql = `SELECT COUNT() FROM ApexLog${whereClause}`;
       const query = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent(soql);
       const res = await sfConn.rest(query);
-      this.totalCount = (res && typeof res.totalSize === 'number') ? res.totalSize : 0;
+      this.totalCount = (res && typeof res.totalSize === "number") ? res.totalSize : 0;
     } catch (e) {
       console.error("fetchTotalCount", e);
       // Fallback to current page length if count fails
-      if (typeof this.totalCount !== 'number') this.totalCount = this.logs.length || 0;
+      if (typeof this.totalCount !== "number") this.totalCount = this.logs.length || 0;
     }
   }
 
@@ -305,7 +305,7 @@ class Model {
         const detail = deriveActionFromBody(text) || parseAction(log.Operation);
         this.actionSummary.set(log.Id, detail);
       })
-      .catch(() => {/* ignore */})
+      .catch(() => { /* ignore */ })
       .finally(() => {
         this.resolvingActions.delete(log.Id);
         this.didUpdate();
@@ -392,10 +392,10 @@ class Model {
       const blob = xhr.response;
       const text = await blob.text();
       this.previewLog = {id, body: text, fileName: `${id}.log`};
-      this.previewSearch = { term: "", liveTerm: "", index: 0, _timer: 0 };
-      window.addEventListener('keydown', this._onPreviewKeyDown, true);
+      this.previewSearch = {term: "", liveTerm: "", index: 0, _timer: 0};
+      window.addEventListener("keydown", this._onPreviewKeyDown, true);
       setTimeout(() => {
-        const inp = document.querySelector('.sfir-preview-search-input');
+        const inp = document.querySelector(".sfir-preview-search-input");
         if (inp) inp.focus();
       }, 0);
     } catch (e) {
@@ -413,13 +413,13 @@ class Model {
       clearTimeout(this.previewSearch._timer);
       this.previewSearch._timer = 0;
     }
-    window.removeEventListener('keydown', this._onPreviewKeyDown, true);
+    window.removeEventListener("keydown", this._onPreviewKeyDown, true);
     this.didUpdate();
   }
 
   // Debounced search update to keep typing smooth in preview
   updatePreviewSearchTermLive(term){
-    if (!this.previewSearch) this.previewSearch = { term: "", liveTerm: "", index: 0, _timer: 0 };
+    if (!this.previewSearch) this.previewSearch = {term: "", liveTerm: "", index: 0, _timer: 0};
     this.previewSearch.liveTerm = term || "";
     if (this.previewSearch._timer) clearTimeout(this.previewSearch._timer);
     this.previewSearch._timer = setTimeout(() => {
@@ -431,13 +431,13 @@ class Model {
   }
 
   nextPreviewMatch(){
-    const cnt = document.querySelectorAll('.sfir-highlight').length;
+    const cnt = document.querySelectorAll(".sfir-highlight").length;
     if (!cnt) return;
     this.previewSearch.index = (this.previewSearch.index + 1) % cnt;
     this.didUpdate();
   }
   prevPreviewMatch(){
-    const cnt = document.querySelectorAll('.sfir-highlight').length;
+    const cnt = document.querySelectorAll(".sfir-highlight").length;
     if (!cnt) return;
     this.previewSearch.index = (this.previewSearch.index - 1 + cnt) % cnt;
     this.didUpdate();
@@ -479,9 +479,9 @@ class Model {
 
         // Prefer Web Share API with file attachment when available (no compression)
         try {
-          const file = new File([blob], fileName, { type: "text/plain" });
-          if (navigator && navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({ title: subject, text: "", files: [file] });
+          const file = new File([blob], fileName, {type: "text/plain"});
+          if (navigator && navigator.canShare && navigator.canShare({files: [file]})) {
+            await navigator.share({title: subject, text: "", files: [file]});
             return;
           }
         } catch (_) {
@@ -491,7 +491,7 @@ class Model {
         // Secondary attempt: Web Share without files (opens native share sheet on some desktops)
         try {
           if (navigator && typeof navigator.share === "function") {
-            await navigator.share({ title: subject, text: `Salesforce debug log: ${fileName}` });
+            await navigator.share({title: subject, text: `Salesforce debug log: ${fileName}`});
             return;
           }
         } catch (_) {
@@ -515,19 +515,19 @@ class Model {
           const base64 = await toBase64(blob);
           const CRLF = "\r\n";
           const emlParts = [
-            `MIME-Version: 1.0`,
+            "MIME-Version: 1.0",
             `Subject: ${encodeHeader(subject)}`,
             `Content-Type: multipart/mixed; boundary=\"${boundary}\"`,
             "",
             `--${boundary}`,
-            `Content-Type: text/plain; charset=UTF-8`,
-            `Content-Transfer-Encoding: 7bit`,
+            "Content-Type: text/plain; charset=UTF-8",
+            "Content-Transfer-Encoding: 7bit",
             "",
             `Attached Salesforce debug log: ${fileName}.`,
             "",
             `--${boundary}`,
             `Content-Type: text/plain; name=\"${fileName}\"`,
-            `Content-Transfer-Encoding: base64`,
+            "Content-Transfer-Encoding: base64",
             `Content-Disposition: attachment; filename=\"${fileName}\"`,
             "",
             base64,
@@ -535,7 +535,7 @@ class Model {
             ""
           ].join(CRLF);
 
-          const emlBlob = new Blob([emlParts], { type: "message/rfc822" });
+          const emlBlob = new Blob([emlParts], {type: "message/rfc822"});
           const url = URL.createObjectURL(emlBlob);
           const a = document.createElement("a");
           a.href = url;
@@ -580,7 +580,7 @@ class Model {
     const n = parseInt(size, 10);
     if (!this.allowedPageSizes.includes(n) || n === this.pageSize) return;
     this.pageSize = n;
-    try { localStorage.setItem('sfir.debugLog.pageSize', String(n)); } catch (_) {}
+    try { localStorage.setItem("sfir.debugLog.pageSize", String(n)); } catch (_) {}
     this.pageIndex = 0;
     this.fetchLogs(true, true);
   }
@@ -590,7 +590,8 @@ function parseAction(operation) {
   if (!operation) return {label: "-"};
   const op = operation.trim();
   if (op === "CODE_UNIT_STARTED") return {label: "-"};
-  let type = op, name = "";
+  let type = op,
+    name = "";
   if (op.includes("/")) {
     [type, name] = op.split("/", 2);
   } else if (op.includes(":")) {
@@ -610,7 +611,7 @@ function deriveActionFromBody(text) {
   if (methodEntry && methodEntry[1]) {
     const full = methodEntry[1];
     const parts = full.split(".");
-    
+
     if (parts.length >= 2) {
       const method = parts.pop();
       const cls = parts.pop();
@@ -846,8 +847,8 @@ function LogsTable({model}) {
                   total != null
                     ? `Logs (${displayedCount} of ${total})`
                     : (model.countLoading
-                        ? `Logs (${displayedCount} of ...)`
-                        : `Logs (${displayedCount})`)
+                      ? `Logs (${displayedCount} of ...)`
+                      : `Logs (${displayedCount})`)
                 )
               )
             ),
@@ -862,7 +863,7 @@ function LogsTable({model}) {
                       value: String(model.pageSize),
                       onChange: (e) => model.setPageSize(e.target.value)
                     },
-                      ...model.allowedPageSizes.map(v => h("option", {key: v, value: String(v)}, String(v)))
+                    ...model.allowedPageSizes.map(v => h("option", {key: v, value: String(v)}, String(v)))
                     )
                   )
                 )
@@ -884,10 +885,10 @@ function LogsTable({model}) {
               disabled: model.selectedIds.size === 0,
               onClick: () => (model.confirmBulkDelete = true, model.didUpdate())
             },
-              h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-                h("use", {xlinkHref: "symbols.svg#delete"})
-              ),
-              "Delete Selected"
+            h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+              h("use", {xlinkHref: "symbols.svg#delete"})
+            ),
+            "Delete Selected"
             )
           )
         )
@@ -955,7 +956,7 @@ function LogsTable({model}) {
                     log.Status || "-"
                   )
                 ),
-                h("td", {style: {width: cw.size}}, (log.LogLength/1024|0)),
+                h("td", {style: {width: cw.size}}, (Number.parseFloat(log.LogLength / 1024).toFixed(2) | 0)),
                 h("td", {style: {width: cw.actions}},
                   h("div", {className: "slds-button_group sfir-actions", role: "group", style: {whiteSpace: "nowrap"}},
                     h("button", {type: "button", className: "slds-button slds-button_neutral", onClick: () => model.preview(log.Id)},
@@ -998,12 +999,12 @@ function LogsTable({model}) {
 
 // Small CSS helper for resizer (inlined for now)
 const style = document.createElement("style");
-style.textContent = `.sfir-col-resizer{display:inline-block; width:6px; cursor:col-resize; margin-left:4px}`;
+style.textContent = ".sfir-col-resizer{display:inline-block; width:6px; cursor:col-resize; margin-left:4px}";
 document.head.appendChild(style);
 
 // Add small CSS to ensure scroll container works (full height with viewport)
 const style2 = document.createElement("style");
-style2.textContent = `.sfir-table-scroll{position:relative; height: calc(100vh - 260px); overflow:auto}`;
+style2.textContent = ".sfir-table-scroll{position:relative; height: calc(100vh - 260px); overflow:auto}";
 document.head.appendChild(style2);
 
 function PreviewModal({model}) {
@@ -1011,19 +1012,24 @@ function PreviewModal({model}) {
   if (!log) return null;
 
   // build highlighted HTML with current selection
-  const escapeHtml = (s) => (s || "").replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+  const escapeHtml = (s) => (s || "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
   const buildHighlighted = (text, term, currentIdx) => {
     const src = text || "";
     const q = term || "";
     if (!q) return {html: escapeHtml(src), count: 0};
     const pattern = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const re = new RegExp(pattern, "gi");
-    let out = "", last = 0, m, i = 0, count = 0;
+    let out = "",
+      last = 0,
+      m,
+      i = 0,
+      count = 0;
     while ((m = re.exec(src))){
-      const start = m.index, end = start + m[0].length;
+      const start = m.index,
+        end = start + m[0].length;
       out += escapeHtml(src.slice(last, start));
       const isCurrent = i === currentIdx;
-      out += `<mark class="sfir-highlight${isCurrent ? ' current' : ''}" ${isCurrent ? 'id="sfir-current-match"' : ''}>${escapeHtml(src.slice(start, end))}</mark>`;
+      out += `<mark class="sfir-highlight${isCurrent ? " current" : ""}" ${isCurrent ? 'id="sfir-current-match"' : ""}>${escapeHtml(src.slice(start, end))}</mark>`;
       last = end; i++; count++;
       // Hard cap to avoid excessive DOM for insanely frequent matches
       if (count > 2000) { out += escapeHtml(src.slice(last)); return {html: out, count}; }
@@ -1033,8 +1039,11 @@ function PreviewModal({model}) {
   };
   const {html, count} = buildHighlighted(log.body, model.previewSearch.term, model.previewSearch.index);
   setTimeout(() => {
-    const el = document.getElementById('sfir-current-match');
-    if (el) el.scrollIntoView({block: 'center'});
+    const el = document.getElementById("sfir-current-match");
+    if (el) el.scrollIntoView({block: "center"});
+    if (window.Prism) {
+      window.Prism.highlightAll();
+    }
   }, 0);
 
   return h(ConfirmModal, {
@@ -1050,47 +1059,55 @@ function PreviewModal({model}) {
     onConfirm: () => { model.download(log.id); model.closePreview(); },
     containerClassName: "modalContainer"
   },
-    // search toolbar
-    h("div", {className: "slds-grid slds-gutters slds-m-bottom_x-small"},
-      h("div", {className: "slds-col"},
-        h("div", {className: "slds-form-element"},
-          h("div", {className: "slds-form-element__control"},
-            h("div", {className: "slds-input-has-icon slds-input-has-icon_left"},
-              h("span", {className: "slds-icon_container slds-input__icon slds-input__icon_left"},
-                h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#search"}))
-              ),
-              h("input", {type: "text", placeholder: "Find in log (Ctrl/⌘+F)", className: "slds-input sfir-preview-search-input", defaultValue: model.previewSearch.term, autoComplete: "off", onInput: (e) => model.updatePreviewSearchTermLive(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter') { e.preventDefault(); model.nextPreviewMatch(); } }})
-            )
-          )
-        )
-      ),
-      h("div", {className: "slds-col slds-grow-none slds-align_absolute-center slds-text-body_small"}, `${count ? (model.previewSearch.index + 1) : 0} / ${count}`),
-      h("div", {className: "slds-col slds-grow-none"},
-        h("div", {className: "slds-button_group", role: "group"},
-          h("button", {className: "slds-button slds-button_neutral", onClick: () => model.prevPreviewMatch(), title: "Previous match"},
-            h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#left"}))
-          ),
-          h("button", {className: "slds-button slds-button_neutral", onClick: () => model.nextPreviewMatch(), title: "Next match"},
-            h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#right"}))
+  // search toolbar
+  h("div", {className: "slds-grid slds-gutters slds-m-bottom_x-small"},
+    h("div", {className: "slds-col"},
+      h("div", {className: "slds-form-element"},
+        h("div", {className: "slds-form-element__control"},
+          h("div", {className: "slds-input-has-icon slds-input-has-icon_left"},
+            h("span", {className: "slds-icon_container slds-input__icon slds-input__icon_left"},
+              h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#search"}))
+            ),
+            h("input", {type: "text", placeholder: "Find in log (Ctrl/⌘+F)", className: "slds-input sfir-preview-search-input", defaultValue: model.previewSearch.term, autoComplete: "off", onInput: (e) => model.updatePreviewSearchTermLive(e.target.value), onKeyDown: (e) => { if (e.key === "Enter") { e.preventDefault(); model.nextPreviewMatch(); } }})
           )
         )
       )
     ),
-    // log body
-    h("pre", {style: {maxHeight: "60vh", overflow: "auto", background: "#f4f6f9", padding: "8px", borderRadius: "4px"}, dangerouslySetInnerHTML: {__html: html}})
+    h("div", {className: "slds-col slds-grow-none slds-align_absolute-center slds-text-body_small"}, `${count ? (model.previewSearch.index + 1) : 0} / ${count}`),
+    h("div", {className: "slds-col slds-grow-none"},
+      h("div", {className: "slds-button_group", role: "group"},
+        h("button", {className: "slds-button slds-button_neutral", onClick: () => model.prevPreviewMatch(), title: "Previous match"},
+          h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#left"}))
+        ),
+        h("button", {className: "slds-button slds-button_neutral", onClick: () => model.nextPreviewMatch(), title: "Next match"},
+          h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#right"}))
+        )
+      )
+    )
+  ),
+  // log body
+  h("pre", {
+    className: "language-log",
+    style: {maxHeight: "60vh", overflow: "auto"}
+  },
+  h("code", {
+    className: "language-log",
+    dangerouslySetInnerHTML: {__html: html}
+  })
+  )
   );
 }
 
 // Add CSS for preview search highlights
 const style3 = document.createElement("style");
-style3.textContent = `mark.sfir-highlight{background:#ffe58a;padding:0 .0rem;border-radius:2px} mark.sfir-highlight.current{background:#f8d24e;outline:1px solid #e1b600}`;
+style3.textContent = "mark.sfir-highlight{background:#ffe58a;padding:0 .0rem;border-radius:2px} mark.sfir-highlight.current{background:#f8d24e;outline:1px solid #e1b600}";
 document.head.appendChild(style3);
 
 class App extends React.Component {
   constructor(props){
     super(props);
     this.model = new Model(props.sfHost);
-    this.state = { tick: 0 };
+    this.state = {tick: 0};
     this.model.render = () => this.setState({tick: this.state.tick + 1});
   }
 

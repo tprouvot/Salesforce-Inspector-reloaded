@@ -534,20 +534,8 @@ class App extends React.PureComponent {
                 h("span", {}, "Data ", h("u", {}, "I"), "mport")
               )
             ),
-            h(
-              "div",
-              {
-                className:
-                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
-              },
-              h(
-                "a",
-                {
-                  ref: "debugLogBtn",
-                  href: "debug-log.html?" + hostArg,
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral",
-                },
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+              h("a", {ref: "debugLogBtn", href: "debug-log.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
                 h("span", {}, "Logs ", h("u", {}, "V"), "iewer")
               )
             ),

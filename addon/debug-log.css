@@ -1,8 +1,7 @@
 .modalContainer{
-            max-width: 100rem;
-            width: 90%;
+  max-width: 100rem;
+  width: 90%;
 }
-
 /* Ensure action buttons have consistent height */
 .sfir-actions .slds-button {
   height: 32px; /* match SLDS default small button height */
@@ -20,7 +19,6 @@
   padding-left: 0.5rem;
   padding-right: 0.5rem;
 }
-
 /* Icon-only action buttons: enforce same size */
 .sfir-actions .slds-button[title="Share"],
 .sfir-actions .slds-button[title="Delete"] {
@@ -36,7 +34,6 @@
   width: 16px;
   height: 16px;
 }
-
 .sfir-actions .slds-button[title="Download"] {
   height: 32px;
   width: 32px;

@@ -1,8 +1,7 @@
 import {sfConn, apiVersion, XML} from "./inspector.js";
 import Toast from "./components/Toast.js";
-import {copyToClipboard} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {Spinner} from "./components/Spinner.js";
 

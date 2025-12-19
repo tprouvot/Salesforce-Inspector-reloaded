@@ -4,6 +4,7 @@ import {copyToClipboard} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, createSpinForMethod} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
+import {Spinner} from "./components/Spinner.js";
 
 class Model {
   constructor(sfHost) {
@@ -347,43 +348,97 @@ class Model {
     return formattedXml;
   }
 
+  getMetadataFormat(metadataType) {
+    // Code-based metadata types that have a 'body' field with source code
+    const codeBasedTypes = ["ApexClass", "ApexTrigger"];
+    // HTML/Markup-based metadata types that have 'content' or 'markup' field
+    const markupBasedTypes = ["ApexPage", "ApexComponent"];
+
+    if (codeBasedTypes.includes(metadataType)) {
+      return "code";
+    } else if (markupBasedTypes.includes(metadataType)) {
+      return "markup";
+    }
+    // Default to XML format
+    return "xml";
+  }
+
+  shouldUseToolingApi(metadataType) {
+    // Metadata types that should use Tooling API directly instead of readMetadata
+    return ["ApexClass", "ApexTrigger", "ApexPage"].includes(metadataType);
+  }
+
   async retrieveSingleMetadata(metadataType, metadataName) {
     try {
-      let metadataApi = sfConn.wsdl(apiVersion, "Metadata");
-
-      // Use readMetadata which returns metadata directly without ZIP
-      // See: https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_readMetadata.htm
-      let result = await sfConn.soap(metadataApi, "readMetadata", {
-        type: metadataType,
-        fullNames: metadataName === "*" ? [] : [metadataName]
-      });
-
-      // Handle case where result might be a JSON string
-      if (typeof result === "string") {
-        try {
-          result = JSON.parse(result);
-        } catch (e) {
-          // If parsing fails, result is already an object
-        }
+      // For metadata types that should use Tooling API directly (ApexClass, ApexTrigger, ApexPage)
+      // use Tooling API as readMetadata may not be supported for these types
+      if (this.shouldUseToolingApi(metadataType)) {
+        return await this.retrieveMetadataViaTooling(metadataType, metadataName);
       }
 
-      // readMetadata returns an object with a 'records' property
-      // records can be either an array or a single object
-      if (!result || !result.records) {
-        throw new Error("No metadata found");
+      // For other metadata types, use readMetadata
+      return await this.retrieveViaReadMetadata(metadataType, metadataName);
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  }
+
+  async retrieveViaReadMetadata(metadataType, metadataName) {
+    let metadataApi = sfConn.wsdl(apiVersion, "Metadata");
+
+    // Use readMetadata which returns metadata directly without ZIP
+    // See: https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_readMetadata.htm
+    let result = await sfConn.soap(metadataApi, "readMetadata", {
+      type: metadataType,
+      fullNames: metadataName === "*" ? [] : [metadataName]
+    });
+
+    // Handle case where result might be a JSON string
+    if (typeof result === "string") {
+      try {
+        result = JSON.parse(result);
+      } catch {
+        // If parsing fails, result is already an object
       }
+    }
 
-      // Convert records to array if it's a single object
-      let recordsArray = Array.isArray(result.records) ? result.records : [result.records];
+    // readMetadata returns an object with a 'records' property
+    // records can be either an array or a single object
+    if (!result || !result.records) {
+      throw new Error("No metadata found");
+    }
 
-      if (recordsArray.length === 0) {
-        throw new Error("No metadata found");
-      }
+    // Convert records to array if it's a single object
+    let recordsArray = Array.isArray(result.records) ? result.records : [result.records];
 
-      // Get the first metadata record
-      const metadataRecord = recordsArray[0];
+    if (recordsArray.length === 0) {
+      throw new Error("No metadata found");
+    }
 
-      // Use the XML.stringify utility to convert the metadata object to XML
+    // Get the first metadata record
+    const metadataRecord = recordsArray[0];
+    const format = this.getMetadataFormat(metadataType);
+
+    // Handle different metadata formats
+    if (format === "code") {
+      // For ApexClass and ApexTrigger, extract the body field
+      const body = metadataRecord.body || metadataRecord.content || "";
+      return {
+        content: body,
+        format: "code",
+        language: "markup" // Prism doesn't have Java/Apex, use markup for basic display
+      };
+    } else if (format === "markup") {
+      // For ApexPage and ApexComponent, extract content or markup field
+      const content = metadataRecord.content || metadataRecord.markup || "";
+      return {
+        content,
+        format: "markup",
+        language: "markup"
+      };
+    } else {
+      // XML format - convert metadata object to XML
       const xmlContent = XML.stringify({
         name: metadataType,
         attributes: ' xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
@@ -392,11 +447,62 @@ class Model {
 
       // Format the XML with proper indentation
       const formattedXml = this.formatXml(xmlContent);
-      return formattedXml;
-    } catch (e) {
-      console.error(e);
-      throw e;
+      return {
+        content: formattedXml,
+        format: "xml",
+        language: "markup"
+      };
     }
+  }
+
+  async retrieveMetadataViaTooling(metadataType, metadataName) {
+    // Use Tooling API to retrieve metadata source code/markup
+    // Tooling API REST endpoint: /services/data/v{version}/tooling/query/
+    const format = this.getMetadataFormat(metadataType);
+
+    let toolingObject;
+    let fields;
+
+    if (metadataType === "ApexClass" || metadataType === "ApexTrigger") {
+      toolingObject = metadataType;
+      fields = "Id, Name, Body";
+    } else if (metadataType === "ApexPage") {
+      toolingObject = "ApexPage";
+      fields = "Id, Name, Markup";
+    } else {
+      throw new Error(`Tooling API not supported for metadata type: ${metadataType}`);
+    }
+
+    const query = `SELECT ${fields} FROM ${toolingObject} WHERE Name = '${metadataName.replace(/'/g, "''")}'`;
+    const result = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(query)}`);
+
+    if (!result || !result.records || result.records.length === 0) {
+      throw new Error("No metadata found");
+    }
+
+    const record = result.records[0];
+
+    // Extract content based on metadata type
+    let content;
+    if (metadataType === "ApexPage") {
+      content = record.Markup || "";
+    } else {
+      content = record.Body || "";
+    }
+
+    // Determine language for Prism syntax highlighting
+    let language;
+    if (metadataType === "ApexPage") {
+      language = "markup";
+    } else {
+      language = "apex"; // Prism doesn't have Java/Apex, use markup for basic display
+    }
+
+    return {
+      content,
+      format,
+      language
+    };
   }
 }
 
@@ -725,46 +831,57 @@ class App extends React.Component {
   }
   async onViewMetadata(metadataType, metadataName) {
     let {model} = this.props;
-    try {
-      this.setState({
-        showMetadataModal: true,
-        metadataXmlContent: "Loading...",
-        metadataFileName: metadataName,
-        metadataType
-      });
-      model.didUpdate();
+    this.setState({
+      showMetadataModal: true,
+      metadataXmlContent: "Loading...",
+      metadataFileName: metadataName,
+      metadataType,
+      metadataFormat: null,
+      metadataLanguage: null
+    });
+    model.didUpdate();
 
-      const xmlContent = await model.retrieveSingleMetadata(metadataType, metadataName);
-      if (xmlContent) {
+    model.spinFor(
+      model.retrieveSingleMetadata(metadataType, metadataName).then(result => {
+        if (result && result.content) {
+          this.setState({
+            metadataXmlContent: result.content,
+            metadataFileName: metadataName,
+            metadataType,
+            metadataFormat: result.format,
+            metadataLanguage: result.language
+          });
+        } else {
+          this.setState({
+            metadataXmlContent: "No content found",
+            metadataFileName: metadataName,
+            metadataType,
+            metadataFormat: null,
+            metadataLanguage: null
+          });
+        }
+        model.didUpdate();
+      }).catch(error => {
+        console.error(error);
         this.setState({
-          metadataXmlContent: xmlContent,
+          metadataXmlContent: "Error retrieving metadata: " + error.message,
           metadataFileName: metadataName,
-          metadataType
+          metadataType,
+          metadataFormat: null,
+          metadataLanguage: null
         });
-      } else {
-        this.setState({
-          metadataXmlContent: "No XML content found",
-          metadataFileName: metadataName,
-          metadataType
-        });
-      }
-      model.didUpdate();
-    } catch (error) {
-      console.error(error);
-      this.setState({
-        metadataXmlContent: "Error retrieving metadata: " + error.message,
-        metadataFileName: metadataName,
-        metadataType
-      });
-      model.didUpdate();
-    }
+        model.didUpdate();
+      })
+    );
   }
   onCloseMetadataModal() {
     this.setState({
       showMetadataModal: false,
       metadataXmlContent: null,
       metadataFileName: null,
-      metadataType: null
+      metadataType: null,
+      metadataFormat: null,
+      metadataLanguage: null
     });
     this.props.model.didUpdate();
   }
@@ -777,7 +894,7 @@ class App extends React.Component {
     let {model} = this.props;
     this.setState({
       showToast: true,
-      toastMessage: "Metadata XML copied to clipboard",
+      toastMessage: "Metadata copied to clipboard",
       toastVariant: "success",
       toastTitle: "Success"
     });
@@ -785,7 +902,7 @@ class App extends React.Component {
     model.didUpdate();
   }
   onDownloadMetadataXml() {
-    const {metadataXmlContent, metadataFileName, metadataType} = this.state;
+    const {metadataXmlContent, metadataFileName, metadataType, metadataFormat} = this.state;
     if (!metadataXmlContent || metadataXmlContent === "Loading..." || metadataXmlContent.startsWith("Error")) {
       return;
     }
@@ -797,7 +914,15 @@ class App extends React.Component {
       fileExtension = model.metadataTypeMap[metadataType].suffix;
     }
 
-    const blob = new Blob([metadataXmlContent], {type: "text/xml"});
+    // Determine MIME type based on format
+    let mimeType = "text/xml";
+    if (metadataFormat === "code") {
+      mimeType = "text/plain";
+    } else if (metadataFormat === "markup") {
+      mimeType = "text/html";
+    }
+
+    const blob = new Blob([metadataXmlContent], {type: mimeType});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = (metadataFileName || "metadata") + "." + fileExtension;
@@ -820,7 +945,7 @@ class App extends React.Component {
         }),
         this.state.showMetadataModal && h(ConfirmModal, {
           isOpen: this.state.showMetadataModal,
-          title: "Metadata XML: " + (this.state.metadataFileName || ""),
+          title: "Metadata: " + (this.state.metadataFileName || ""),
           onCancel: this.onCloseMetadataModal,
           onCopy: this.onCopyMetadataXml,
           copyLabel: "Copy",
@@ -833,7 +958,7 @@ class App extends React.Component {
             h("pre", {className: "reset-margin"},
               h("code", {
                 id: "metadata-xml-content",
-                className: "language-markup"
+                className: "language-" + (this.state.metadataLanguage || "markup")
               }, this.state.metadataXmlContent || "")
             )
           )
@@ -851,6 +976,17 @@ class App extends React.Component {
           spinnerCount: model.spinnerCount,
           ...model.userInfoModel.getProps()
         }),
+        ((model.progress == "working" || model.progress == "deploying") || model.spinnerCount > 0)
+        && h("div", {
+          className: "sfir-spinner-overlay"
+        },
+        h(Spinner, {
+          size: "large",
+          type: "brand",
+          text: model.progress == "working" ? "Retrieving metadata..." : (model.progress == "deploying" ? "Deploying metadata..." : "Loading..."),
+          centered: false
+        })
+        ),
         h("div", {
           className: "slds-m-top_xx-large",
           style: {
@@ -1160,12 +1296,12 @@ class ObjectSelector extends React.Component {
                     style: {display: "inline-flex", alignItems: "center", gap: "0.5rem"}
                   },
                   child.fullName + (child.expanded ? " (" + child.childXmlNames.length + ")" : ""),
-                  !child.isFolder && isHovered && h("svg", {
+                  !child.isFolder && isHovered && !metadataType.toLowerCase().includes("bundle") && h("svg", {
                     className: "slds-icon slds-icon_x-small slds-icon-text-default",
                     style: {cursor: "pointer", flexShrink: 0},
                     viewBox: "0 0 52 52",
                     onClick: (e) => this.onViewMetadataClick(e, metadataType, metadataName),
-                    title: "View metadata XML"
+                    title: "View metadata"
                   },
                   h("use", {xlinkHref: "symbols.svg#preview"})
                   )

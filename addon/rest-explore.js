@@ -1,9 +1,9 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {copyToClipboard, initScrollTable} from "./data-load.js";
+import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard} from "./utils.js";
 
 class QueryHistory {
   constructor(storageKey, max) {

@@ -1,8 +1,8 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants, UserInfoModel, createSpinForMethod} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard} from "./utils.js";
 /* global initButton */
-import {Enumerable, DescribeInfo, copyToClipboard, initScrollTable, s} from "./data-load.js";
+import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 
 class QueryHistory {
@@ -849,6 +849,7 @@ class Model {
         if (ar.length > 0) {
           vm.queryInput.focus();
           vm.queryInput.setRangeText(ar.join(", ") + (isAfterFrom ? " " : ""), selStart - contextPath.length, selEnd, "end");
+          vm.updateCurrentTabQuery(vm.queryInput.value);
         }
         vm.queryAutocompleteHandler();
         return;

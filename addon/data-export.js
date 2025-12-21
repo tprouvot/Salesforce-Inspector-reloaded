@@ -331,7 +331,10 @@ class Model {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
   }
   downloadAsCsv(){
-    const blob = new Blob([this.exportedData.csvSerialize(this.separator)], {type: "data:text/csv;charset=utf-8,"});
+    // Add UTF-8 BOM for Excel compatibility with Hebrew and other non-Latin characters
+    const BOM = "\uFEFF";
+    const csvContent = this.exportedData.csvSerialize(this.separator);
+    const blob = new Blob([BOM + csvContent], {type: "data:text/csv;charset=utf-8,"});
     const downloadAnchor = document.createElement("a");
     downloadAnchor.download = `${this.autocompleteResults.sobjectName}-${new Date().toLocaleDateString()}.csv`;
     downloadAnchor.href = window.URL.createObjectURL(blob);

@@ -324,9 +324,10 @@ class FlowScanner {
       csvRows.push(row.join(","));
     });
 
-    // Create a Blob and trigger a download.
+    // Create a Blob and trigger a download with UTF-8 BOM for Excel compatibility
     const csvContent = csvRows.join("\n");
-    const blob = new Blob([csvContent], {type: "text/csv"});
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvContent], {type: "text/csv;charset=utf-8;"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

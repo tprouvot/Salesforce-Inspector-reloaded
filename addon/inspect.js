@@ -501,8 +501,9 @@ class Model {
     // Create Excel content (CSV format that Excel can open)
     let csvContent = [headers.join(","), ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))].join("\n");
 
-    // Create and download file
-    let blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});
+    // Create and download file with UTF-8 BOM for Excel compatibility with Hebrew and other non-Latin characters
+    const BOM = "\uFEFF";
+    let blob = new Blob([BOM + csvContent], {type: "text/csv;charset=utf-8;"});
     let link = document.createElement("a");
     let url = URL.createObjectURL(blob);
     link.setAttribute("href", url);

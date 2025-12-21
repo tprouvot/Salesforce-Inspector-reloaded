@@ -1295,7 +1295,7 @@ function PreviewModal({model}) {
   
   // For very large files (>1MB), skip Prism highlighting to avoid freezing
   const bodySize = displayBody.length;
-  const isLargeFile = bodySize > 1000000; // 1MB threshold
+  const isLargeFile = bodySize > 1500000; // 1MB threshold
 
   // build highlighted HTML with current selection
   const escapeHtml = (s) => (s || "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
@@ -1868,101 +1868,6 @@ class App extends React.Component {
     );
   }
 }
-
-// Debug helper function - accessible from browser console
-window.debugAgentforceAccess = async function() {
-  console.log("=== Manual Agentforce Access Debug ===");
-  console.log("This function will help you debug why the AI button is not showing.");
-  console.log("");
-  
-  try {
-    const sfHost = new URLSearchParams(location.search).get("host");
-    if (!sfHost) {
-      console.error("❌ Cannot determine Salesforce host from URL");
-      return;
-    }
-    console.log(`✓ Salesforce Host: ${sfHost}`);
-    
-    await sfConn.getSession(sfHost);
-    console.log("✓ Session established");
-    
-    // Step 1: Test PromptVersion API access
-    console.log("\n--- Step 1: Testing PromptVersion API Access ---");
-    const testQuery = encodeURIComponent("SELECT Id FROM PromptVersion LIMIT 1");
-    const testUrl = `/services/data/v${apiVersion}/tooling/query/?q=${testQuery}`;
-    console.log(`Query URL: ${testUrl}`);
-    
-    try {
-      const testResult = await sfConn.rest(testUrl);
-      console.log("✓ PromptVersion API is accessible");
-      console.log("  Result:", testResult);
-    } catch (e) {
-      console.error("❌ PromptVersion API is NOT accessible");
-      console.error("  Error:", e.message);
-      console.error("  This usually means:");
-      console.error("    - Missing 'Prompt Template User' permission set");
-      console.error("    - Agentforce/Einstein not enabled in org");
-      console.error("    - API version doesn't support PromptVersion");
-      return;
-    }
-    
-    // Step 2: List all Prompt Templates in the org
-    console.log("\n--- Step 2: Finding All Prompt Templates ---");
-    const listQuery = encodeURIComponent("SELECT Id, Name, IsActive FROM PromptTemplate");
-    const listUrl = `/services/data/v${apiVersion}/tooling/query/?q=${listQuery}`;
-    
-    try {
-      const listResult = await sfConn.rest(listUrl);
-      console.log(`Found ${listResult.records.length} Prompt Template(s) in your org:`);
-      listResult.records.forEach(pt => {
-        console.log(`  - "${pt.Name}" (Id: ${pt.Id}, IsActive: ${pt.IsActive})`);
-      });
-    } catch (e) {
-      console.error("❌ Could not list Prompt Templates:", e.message);
-    }
-    
-    // Step 3: Check for the specific template
-    console.log("\n--- Step 3: Checking for Required Template ---");
-    const promptTemplateName = localStorage.getItem(sfHost + "_debugLogAgentForcePrompt");
-    const templateName = promptTemplateName || Constants.PromptTemplateDebugLog;
-    console.log(`Looking for template: "${templateName}"`);
-    console.log(`  - Custom override in localStorage: ${promptTemplateName ? `"${promptTemplateName}"` : "None"}`);
-    console.log(`  - Default from Constants: "${Constants.PromptTemplateDebugLog}"`);
-    
-    const promptQuery = encodeURIComponent(`SELECT Id, Name FROM PromptVersion WHERE PromptTemplateId IN (SELECT Id FROM PromptTemplate WHERE Name = '${templateName}' AND IsActive = true) AND Status = 'Published' LIMIT 1`);
-    const promptUrl = `/services/data/v${apiVersion}/tooling/query/?q=${promptQuery}`;
-    console.log(`Query: SELECT Id, Name FROM PromptVersion WHERE PromptTemplateId IN (SELECT Id FROM PromptTemplate WHERE Name = '${templateName}' AND IsActive = true) AND Status = 'Published' LIMIT 1`);
-    
-    try {
-      const promptResult = await sfConn.rest(promptUrl);
-      if (promptResult.records.length > 0) {
-        console.log(`✅ SUCCESS! Template "${templateName}" found and is published!`);
-        console.log("  Result:", promptResult.records[0]);
-        console.log("\n🎉 The AI button SHOULD be visible. If it's not, please:");
-        console.log("  1. Refresh the page");
-        console.log("  2. Check browser console for other errors");
-      } else {
-        console.warn(`⚠️ FAILED: Template "${templateName}" not found or not published`);
-        console.log("\n📋 To fix this, you need to:");
-        console.log(`  1. Make sure a Prompt Template named "${templateName}" exists in your org`);
-        console.log("  2. Ensure the template is Active (IsActive = true)");
-        console.log("  3. Ensure the template has a Published version");
-        console.log("\nOR");
-        console.log("  Set a custom template name by running:");
-        console.log(`  localStorage.setItem("${sfHost}_debugLogAgentForcePrompt", "YourTemplateName")`);
-      }
-    } catch (e) {
-      console.error("❌ Query failed:", e.message);
-    }
-    
-  } catch (e) {
-    console.error("❌ Debug function failed:", e);
-  }
-  
-  console.log("\n=== Debug Complete ===");
-};
-
-console.log("💡 Tip: You can run 'debugAgentforceAccess()' in the console to manually test AI button requirements");
 
 {
   let args = new URLSearchParams(location.search);

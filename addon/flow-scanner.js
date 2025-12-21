@@ -9,7 +9,7 @@
 
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, getUserInfo} from "./utils.js";
+import {getLinkTarget, getUserInfo, displayButton, Constants, PromptTemplate} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {PageHeader} from "./components/PageHeader.js";
 
@@ -1403,6 +1403,44 @@ function ScanSummary(props) {
   );
 }
 
+function AgentforceModal(props) {
+  const {isOpen, onClose, onSend, prompt, onPromptChange, analysisResult, error} = props;
+  const defaultPrompt = "Based on the following Salesforce Flow metadata, explain in one paragraph what this flow does, what event triggers it, and the business purpose it serves.";
+  return h(ConfirmModal, {
+    isOpen,
+    title: "Agentforce Flow Scanner",
+    onConfirm: onSend,
+    onCancel: onClose,
+    confirmLabel: "Send",
+    cancelLabel: "Cancel",
+    confirmVariant: "brand",
+    cancelVariant: "neutral"
+  },
+  h("div", {},
+    h("div", {className: "slds-form-element"},
+      h("label", {className: "slds-form-element__label"}, "Instructions"),
+      h("div", {className: "slds-form-element__control"},
+        h("textarea", {
+          className: "slds-textarea",
+          placeholder: defaultPrompt,
+          value: prompt || "",
+          onChange: onPromptChange,
+          style: {minHeight: "120px", resize: "vertical"}
+        })
+      )
+    ),
+    error && h("div", {className: "slds-box slds-m-top_medium slds-theme_error slds-theme_alert-texture"},
+      h("div", {className: "slds-text-heading_small slds-m-bottom_small"}, "Error"),
+      h("div", {className: "slds-text-body_regular"}, error)
+    ),
+    analysisResult && h("div", {className: "slds-box slds-m-top_medium"},
+      h("div", {className: "slds-text-heading_small slds-m-bottom_small"}, "Analysis Result"),
+      h("div", {className: "slds-text-body_regular", style: {whiteSpace: "pre-wrap"}}, analysisResult)
+    )
+  )
+  );
+}
+
 function PurgeModal(props) {
   const {
     isOpen,
@@ -1494,9 +1532,18 @@ class App extends React.Component {
         error: {expanded: true, rules: {}},
         warning: {expanded: true, rules: {}},
         info: {expanded: true, rules: {}}
-      }
+      },
+      hideButtonsOption: JSON.parse(localStorage.getItem("hideFlowScannerButtonsOption")),
+      showAgentforceModal: false,
+      agentforcePrompt: "",
+      agentforceAnalysis: "",
+      agentforceError: null
     };
     this.onToggleHelp = this.onToggleHelp.bind(this);
+    this.onToggleAgentforce = this.onToggleAgentforce.bind(this);
+    this.onAgentforceClose = this.onAgentforceClose.bind(this);
+    this.onAgentforceSend = this.onAgentforceSend.bind(this);
+    this.onAgentforcePromptChange = this.onAgentforcePromptChange.bind(this);
     this.onToggleDescription = this.onToggleDescription.bind(this);
     this.onExportResults = this.onExportResults.bind(this);
     this.onExpandAll = this.onExpandAll.bind(this);
@@ -1670,6 +1717,75 @@ class App extends React.Component {
     const target = getLinkTarget(e);
     const url = chrome.runtime.getURL(`options.html?selectedTab=flow-scanner&host=${this.flowScanner?.sfHost}`);
     window.open(url, target);
+  }
+
+  onToggleAgentforce(e) {
+    if (e) {
+      e.preventDefault();
+    }
+    this.setState({
+      showAgentforceModal: true
+    });
+  }
+
+  onAgentforceClose() {
+    this.setState({
+      showAgentforceModal: false,
+      agentforcePrompt: "",
+      agentforceAnalysis: "",
+      agentforceError: null
+    });
+  }
+
+  async onAgentforceSend() {
+    const defaultPrompt = "Based on the following Salesforce Flow metadata, explain in one paragraph what this flow does, what event triggers it, and the business purpose it serves.";
+    const instructions = this.state.agentforcePrompt || defaultPrompt;
+
+    this.setState({
+      showAgentforceModal: false,
+      isLoading: true,
+      loadingMessage: "Generating explanation...",
+      loadingDescription: "Asking Agentforce to analyze the flow metadata.",
+      agentforceError: null,
+      agentforceAnalysis: ""
+    });
+
+    try {
+      const promptTemplateName = localStorage.getItem(this.flowScanner.sfHost + "_flowScannerAgentForcePrompt");
+      const templateName = promptTemplateName || Constants.PromptTemplateFlow;
+      const promptTemplate = new PromptTemplate(templateName);
+
+      // Use the XML metadata as the context for the prompt
+      const flowMetadata = this.flowScanner?.currentFlow?.xmlData ? JSON.stringify(this.flowScanner.currentFlow.xmlData) : "";
+
+      const result = await promptTemplate.generate({
+        Description: instructions,
+        FlowMetadata: flowMetadata
+      });
+
+      if (result.success) {
+        // Extract analysis from the result (using [\s\S] to match across newlines)
+        const flowMatch = result.result.match(/<flowAnalysis>([\s\S]*?)<\/flowAnalysis>/);
+        const extractedAnalysis = flowMatch ? flowMatch[1].trim() : result.result;
+        this.setState({
+          isLoading: false,
+          showAgentforceModal: true,
+          agentforceAnalysis: extractedAnalysis
+        });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      this.setState({
+        isLoading: false,
+        showAgentforceModal: true, // Re-open modal so user can try again or see their input
+        agentforceError: "Agentforce generation failed: " + error.message
+      });
+    }
+  }
+
+  onAgentforcePromptChange(e) {
+    this.setState({agentforcePrompt: e.target.value});
   }
 
   onToggleDescription(e) {
@@ -2268,7 +2384,19 @@ class App extends React.Component {
             )
           )
           ),
-          h("div", {
+          displayButton("flow-agentforce", this.state.hideButtonsOption) && h("div", {
+            key: "einstiein-btn",
+            className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
+          },
+          h("button", {
+            className: "slds-button slds-button_icon slds-button_icon-border-filled",
+            title: "Open Agentforce Flow Scanner",
+            onClick: this.onToggleAgentforce
+          },
+          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#einstein"})
+          ))),
+          displayButton("flow-settings", this.state.hideButtonsOption) && h("div", {
             key: "help-btn",
             className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
           },
@@ -2278,7 +2406,7 @@ class App extends React.Component {
             onClick: this.onToggleHelp
           },
           h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-            h("use", {xlinkHref: "symbols.svg#question"})
+            h("use", {xlinkHref: "symbols.svg#settings"})
           )
           )
           )
@@ -2292,6 +2420,15 @@ class App extends React.Component {
       ),
       this.renderLoadingOverlay(),
       this.renderPurgeResultModal(),
+      h(AgentforceModal, {
+        isOpen: this.state.showAgentforceModal,
+        onClose: this.onAgentforceClose,
+        onSend: this.onAgentforceSend,
+        prompt: this.state.agentforcePrompt,
+        onPromptChange: this.onAgentforcePromptChange,
+        analysisResult: this.state.agentforceAnalysis,
+        error: this.state.agentforceError
+      }),
       h(PurgeModal, {
         isOpen: this.state.showPurgeModal,
         purgeHistorySize: this.state.purgeHistorySize,

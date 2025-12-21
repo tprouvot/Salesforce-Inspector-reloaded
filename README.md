@@ -43,7 +43,7 @@ We all know and love Salesforce Inspector: As the great Søren Krabbe did not ha
 
 [![view - Documentation](https://img.shields.io/badge/view-Documentation-blue?style=for-the-badge)](https://tprouvot.github.io/Salesforce-Inspector-reloaded/ "Go to extension documentation")
 
-  - Salesforce Developers Blog [Improve Your Productivity with Salesforce Inspector Reloaded](https://developer.salesforce.com/blogs/2024/07/improve-your-productivity-with-salesforce-inspector-reloaded)
+- Salesforce Developers Blog [Improve Your Productivity with Salesforce Inspector Reloaded](https://developer.salesforce.com/blogs/2024/07/improve-your-productivity-with-salesforce-inspector-reloaded)
 - SalesforceBen :
   - [Salesforce Inspector Reloaded](https://www.salesforceben.com/salesforce-inspector-reloaded/)
   - [Video](https://youtu.be/dvYp5mKxxzM?si=hBCIaGOyqAJlerea)
@@ -126,18 +126,40 @@ Thank you for shaping our extension's future! Your feedback makes it better.
 
 Contributions are welcome!
 
-Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
+**Before starting developments**, create a feature request and explain the goal of it and the uses cases that it addresses. Let's discuss the implementation first, then you can start the development.
+
 You can check for the [open issues](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues) and [check if any help is wanted](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues?q=state%3Aopen%20label%3A%22help%20wanted%22)
 
-Before starting developments, create a feature request and explain the goal of it and the uses cases that it addresses.
-To submit a PR, please create a branch from releaseCandidate which is the work in progress next version.
-This branch will be merge into master when the new version is published on web store.
+**Project Structure**
 
-Make sure to update CHANGES.md file by describing the improvement / bugfix you realized.
+- `addon/`: Contains the extension source code.
+- `addon/inspector.js`: Handles Salesforce connection and API calls.
+- `addon/utils.js`: Common utility functions.
+- `addon/components/`: React components.
 
-In order to make sure everyone who reads documentation is aware of your improvement, you can update the 'how-to' page to document / expose this new functionality.
+**Component Development**
 
-Linting : to assure indentation, formatting and best practices coherence, please install ESLint extension.
+- **SLDS Usage**: When creating new components, use Salesforce Design System (SLDS) classes and structure.
+  - Styles are defined in `addon/styles/slds/slds.css`.
+- **Location**: Save new components under the `addon/components/` folder to promote reusability (e.g., see existing components like `PageHeader.js`, `ConfirmModal.js`).
+
+**Code Reuse**
+
+- **Check Existing**: Before creating new functions, search the codebase (especially `addon/utils.js`) to see if existing logic can be reused to avoid duplication.
+
+**General Guidelines**
+
+- When modifying the UI, check both Chrome and Firefox compatibility if possible.
+- Use `browser` namespace for WebExtension APIs (polyfill provided or checked).
+
+### Submitting a Pull Request
+
+To submit a PR, please create a branch from `releaseCandidate` which is the work in progress next version.
+This branch will be merged into beta and then master when the new version is published on web store.
+
+1. **Update CHANGES.md**: Describe the improvement / bugfix you realized (latest contributions on top of the file).
+2. **Update Documentation**: In order to make sure everyone who reads documentation is aware of your improvement, update the 'how-to' page to document / expose this new functionality.
+3. **Linting**: To assure indentation, formatting and best practices coherence, please install ESLint extension.
 
 ## Development
 

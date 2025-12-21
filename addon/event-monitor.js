@@ -1,9 +1,8 @@
 /* global React ReactDOM */
-import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod} from "./utils.js";
+import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, copyToClipboard} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
-import {copyToClipboard} from "./data-load.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {PageHeader} from "./components/PageHeader.js";
 

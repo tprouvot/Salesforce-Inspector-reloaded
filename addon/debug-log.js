@@ -1295,7 +1295,7 @@ function PreviewModal({model}) {
   
   // For very large files (>1MB), skip Prism highlighting to avoid freezing
   const bodySize = displayBody.length;
-  const isLargeFile = bodySize > 1500000; // 1MB threshold
+  const isLargeFile = bodySize > 1500000; // 1.5MB threshold
 
   // build highlighted HTML with current selection
   const escapeHtml = (s) => (s || "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));

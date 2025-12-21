@@ -83,6 +83,8 @@ class Model {
     this.agentforceAnalysis = "";
     this.agentforceError = null;
     this.agentforceAnalyzing = false;
+    this.agentforceCustomInstructions = ""; // Store custom instructions
+    this.agentforceEditMode = false; // Toggle between read-only and edit mode
 
     // Preview loading state
     this.previewLoading = false;
@@ -116,6 +118,10 @@ class Model {
     this.agentforceAnalysis = "";
     this.agentforceError = null;
     this.agentforceAnalyzing = false;
+    this.agentforceEditMode = false;
+    // Load custom instructions from localStorage or use default
+    const savedInstructions = localStorage.getItem(this.sfHost + "_debugLogCustomInstructions");
+    this.agentforceCustomInstructions = savedInstructions || this.getDefaultInstructions();
     this.didUpdate();
   }
 
@@ -125,11 +131,31 @@ class Model {
     this.agentforceAnalysis = "";
     this.agentforceError = null;
     this.agentforceAnalyzing = false;
+    this.agentforceEditMode = false;
     this.didUpdate();
   }
 
-  async sendAgentforceAnalysis() {
-    const defaultPrompt = `Analyze this Salesforce debug log in detail and provide a comprehensive report with the following sections:
+  toggleAgentforceEditMode() {
+    this.agentforceEditMode = !this.agentforceEditMode;
+    this.didUpdate();
+  }
+
+  updateAgentforceInstructions(newInstructions) {
+    this.agentforceCustomInstructions = newInstructions;
+    // Save to localStorage
+    localStorage.setItem(this.sfHost + "_debugLogCustomInstructions", newInstructions);
+    this.didUpdate();
+  }
+
+  resetAgentforceInstructions() {
+    const defaultInstructions = this.getDefaultInstructions();
+    this.agentforceCustomInstructions = defaultInstructions;
+    localStorage.removeItem(this.sfHost + "_debugLogCustomInstructions");
+    this.didUpdate();
+  }
+
+  getDefaultInstructions() {
+    return `Analyze this Salesforce debug log in detail and provide a comprehensive report with the following sections:
 
 1. EXECUTIVE SUMMARY
    - What is the main action or transaction being executed?
@@ -182,8 +208,10 @@ class Model {
    - Trace variable values and state changes
 
 Please structure your response in a clear, organized manner using these sections. Be specific, cite line numbers when relevant, and provide actionable insights.`;
-    
-    const instructions = defaultPrompt;
+  }
+
+  async sendAgentforceAnalysis() {
+    const instructions = this.agentforceCustomInstructions || this.getDefaultInstructions();
 
     this.agentforceAnalyzing = true;
     this.agentforceError = null;
@@ -1598,59 +1626,10 @@ function PreviewModal({model}) {
 function AgentforceModal({model}) {
   if (!model.showAgentforceModal) return null;
   
-  const defaultPrompt = `Analyze this Salesforce debug log in detail and provide a comprehensive report with the following sections:
-
-1. EXECUTIVE SUMMARY
-   - What is the main action or transaction being executed?
-   - What triggered this execution? (User action, trigger, scheduled job, API call, etc.)
-   - Was the execution successful or did it fail?
-   - Overall execution time and performance assessment
-
-2. EXECUTION FLOW
-   - List the main steps of execution in chronological order
-   - Identify all classes, methods, and triggers that were invoked
-   - Show the call stack and execution path
-   - Highlight any significant decision points or branches
-
-3. DATA OPERATIONS
-   - SOQL Queries: List all queries, number of rows returned, and execution time
-   - DML Operations: Identify all inserts, updates, deletes, and undeletes
-   - Records affected: How many records were queried or modified?
-   - Any bulk operations or batch processing?
-
-4. ERRORS & EXCEPTIONS
-   - Identify all errors, exceptions, and failures
-   - For each error: provide the error message, line number, and context
-   - Explain the root cause of each error
-   - Stack trace analysis if available
-
-5. PERFORMANCE ANALYSIS
-   - Total execution time
-   - Identify slow queries or operations (>100ms)
-   - CPU time consumption
-   - Database time vs CPU time ratio
-   - Any governor limit warnings or usage concerns
-
-6. GOVERNOR LIMITS USAGE
-   - SOQL queries used vs limit
-   - DML statements used vs limit
-   - Heap size used vs limit
-   - CPU time used vs limit
-   - Any limits that are close to being exceeded (>70%)
-
-7. BEST PRACTICES & RECOMMENDATIONS
-   - Code optimization suggestions
-   - Performance improvement opportunities
-   - Potential bulkification issues
-   - Security or design pattern concerns
-   - Suggested fixes for any identified problems
-
-8. DEBUG STATEMENTS
-   - List all USER_DEBUG statements with their values
-   - Highlight any important debug information
-   - Trace variable values and state changes
-
-Please structure your response in a clear, organized manner using these sections. Be specific, cite line numbers when relevant, and provide actionable insights.`;
+  const defaultPrompt = model.getDefaultInstructions();
+  const currentInstructions = model.agentforceCustomInstructions || defaultPrompt;
+  const isCustomized = currentInstructions !== defaultPrompt;
+  const isEditMode = model.agentforceEditMode;
   
   const isAnalyzing = model.agentforceAnalyzing || false;
   const hasResults = model.agentforceAnalysis || model.agentforceError;
@@ -1682,32 +1661,93 @@ Please structure your response in a clear, organized manner using these sections
     containerClassName: "modalContainer"
   },
   h("div", {className: "slds-p-around_medium"},
-    // Instructions Section (Read-only display)
+    // Instructions Section with Edit/View toggle
     !hasResults && h("div", {className: "slds-form-element slds-m-bottom_medium"},
-      h("label", {className: "slds-form-element__label slds-text-heading_small"}, 
-        h("span", {}, "📋 Comprehensive Analysis Instructions")
+      h("div", {className: "slds-grid slds-grid_align-spread slds-m-bottom_x-small"},
+        h("label", {className: "slds-form-element__label slds-text-heading_small"}, 
+          h("span", {}, "📋 Analysis Instructions"),
+          isCustomized && h("span", {
+            className: "slds-badge slds-badge_lightest slds-m-left_x-small",
+            style: {fontSize: "0.75rem"}
+          }, "✨ Customized")
+        ),
+        h("div", {className: "slds-button-group", role: "group"},
+          h("button", {
+            className: `slds-button slds-button_${isEditMode ? "brand" : "neutral"}`,
+            title: "Edit instructions",
+            onClick: () => model.toggleAgentforceEditMode(),
+            disabled: isAnalyzing
+          }, 
+            h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+              h("use", {xlinkHref: "symbols.svg#edit"})
+            ),
+            "Edit"
+          ),
+          isCustomized && h("button", {
+            className: "slds-button slds-button_neutral",
+            title: "Reset to default instructions",
+            onClick: () => {
+              if (confirm("Reset to default instructions? Your custom instructions will be lost.")) {
+                model.resetAgentforceInstructions();
+              }
+            },
+            disabled: isAnalyzing
+          }, 
+            h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+              h("use", {xlinkHref: "symbols.svg#refresh"})
+            ),
+            "Reset"
+          )
+        )
       ),
-      h("div", {className: "slds-box slds-theme_shade slds-m-top_x-small", style: {maxHeight: "400px", overflowY: "auto"}},
-        h("div", {
-          className: "slds-text-body_small",
+      
+      // Edit Mode - Editable textarea
+      isEditMode ? h("div", {},
+        h("textarea", {
+          className: "slds-textarea",
           style: {
-            whiteSpace: "pre-wrap",
-            lineHeight: "1.7",
-            color: "#3e3e3c",
-            fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            padding: "0.75rem"
-          }
-        }, defaultPrompt)
-      ),
-      h("div", {className: "slds-form-element__help slds-m-top_small"},
-        h("div", {className: "slds-text-body_small"},
-          "✨ The AI will provide a detailed analysis covering:",
-          h("ul", {className: "slds-list_dotted slds-m-top_xx-small slds-m-left_medium"},
-            h("li", {}, "Executive Summary & Execution Flow"),
-            h("li", {}, "Data Operations (SOQL/DML)"),
-            h("li", {}, "Errors & Performance Issues"),
-            h("li", {}, "Governor Limits Usage"),
-            h("li", {}, "Best Practices & Recommendations")
+            minHeight: "400px",
+            fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace",
+            fontSize: "0.875rem",
+            lineHeight: "1.7"
+          },
+          value: currentInstructions,
+          onInput: (e) => model.updateAgentforceInstructions(e.target.value),
+          placeholder: "Enter your custom analysis instructions...",
+          disabled: isAnalyzing
+        }),
+        h("div", {className: "slds-form-element__help slds-m-top_small"},
+          h("div", {className: "slds-text-body_small slds-text-color_weak"},
+            "💡 Tip: Customize these instructions to focus on specific aspects of your debug logs. Changes are automatically saved."
+          )
+        )
+      ) : h("div", {},
+        // View Mode - Read-only display
+        h("div", {
+          className: "slds-box slds-theme_shade slds-m-top_x-small",
+          style: {maxHeight: "400px", overflowY: "auto"}
+        },
+          h("div", {
+            className: "slds-text-body_small",
+            style: {
+              whiteSpace: "pre-wrap",
+              lineHeight: "1.7",
+              color: "#3e3e3c",
+              fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+              padding: "0.75rem"
+            }
+          }, currentInstructions)
+        ),
+        h("div", {className: "slds-form-element__help slds-m-top_small"},
+          h("div", {className: "slds-text-body_small"},
+            "✨ The AI will provide a detailed analysis covering:",
+            h("ul", {className: "slds-list_dotted slds-m-top_xx-small slds-m-left_medium"},
+              h("li", {}, "Executive Summary & Execution Flow"),
+              h("li", {}, "Data Operations (SOQL/DML)"),
+              h("li", {}, "Errors & Performance Issues"),
+              h("li", {}, "Governor Limits Usage"),
+              h("li", {}, "Best Practices & Recommendations")
+            )
           )
         )
       )

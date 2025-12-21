@@ -63,7 +63,7 @@ function setupRemoteRepo(tempDir) {
   const cloneDir = path.join(tempDir, ".full-clone");
   fs.mkdirSync(cloneDir, {recursive: true});
 
-  // Shallow clone the monorepo
+  // Get the latest tag and checkout
   execSync(`git clone --depth 1 ${repoUrl} "${cloneDir}"`, {stdio: "inherit"});
 
   // Checkout the latest core-v* tag if available
@@ -81,7 +81,7 @@ function setupRemoteRepo(tempDir) {
       log("No core-v* tags found – using default branch", "yellow");
     }
   } catch (error) {
-    log("Continuing with default branch", "yellow");
+    log("No tags found, using default branch", "yellow");
   }
 
   // Copy the entire contents of packages/core into tempDir using Node's built-in fs.cpSync
@@ -96,7 +96,7 @@ function setupRemoteRepo(tempDir) {
   // Clean up the full clone
   fs.rmSync(cloneDir, {recursive: true, force: true});
 
-  logSuccess("Core package extracted and ready");
+  logSuccess("Repository cloned successfully");
 }
 
 function getLibraryNameFromViteConfig(tempDir) {

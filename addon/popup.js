@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -3311,7 +3311,23 @@ class UserDetails extends React.PureComponent {
                     target: linkTarget,
                     title: "Show all data",
                   },
-                  user.Id
+                  user.Id,
+                  displayButton("copy-userId", hideButtonsOption)
+                    ? h("span", {
+                      className: "sfir-copy-userid-icon",
+                      title: "Copy to clipboard",
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        handleUserIdCopy(e, user.Id);
+                      },
+                      onMouseEnter: (e) => e.stopPropagation(),
+                      onMouseLeave: (e) => e.stopPropagation()
+                    },
+                    h("svg", {className: "slds-button__icon slds-m-left_xx-small sfir-vertical-align_sub"},
+                      h("use", {xlinkHref: "symbols.svg#copy"})
+                    )
+                    )
+                    : null,
                 )
               )
             ),
@@ -4746,4 +4762,9 @@ function handleLightningLinkClick(e) {
   e.preventDefault(); // Prevent the default link behavior (href navigation)
   const url = e.currentTarget.href;
   navigateWithExtensionCheck(e, url, {navigationType: "url", url});
+}
+
+function handleUserIdCopy(e, userId) {
+  e.preventDefault();
+  copyToClipboard(userId);
 }

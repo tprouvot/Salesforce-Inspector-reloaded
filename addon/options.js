@@ -100,7 +100,8 @@ class OptionsTabSelector extends React.Component {
                 {label: "Explore API", name: "explore-api", checked: true},
                 {label: "Org Limits", name: "org-limits", checked: true},
                 {label: "Options", name: "options", checked: true},
-                {label: "Generate Access Token", name: "generate-token", checked: true}
+                {label: "Generate Access Token", name: "generate-token", checked: true},
+                {label: "Copy User Id", name: "copy-userId", checked: true}
               ]}
           },
           {option: FaviconOption, props: {key: this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},

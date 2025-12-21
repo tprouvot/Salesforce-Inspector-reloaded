@@ -1324,7 +1324,7 @@ function PreviewModal({model}) {
     return {html: out, count};
   };
   // First, let Prism do its syntax highlighting (if available) - with caching
-  // Skip Prism for large files (>1MB) or when filter is being processed to avoid browser crash
+  // Skip Prism for large files (>1.5MB) or when filter is being processed to avoid browser crash
   let processedBody;
   const prismCacheKey = `prism_${cacheKey}_${isLargeFile}_${isFilterProcessing}`;
   

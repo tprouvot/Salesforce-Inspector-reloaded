@@ -1654,7 +1654,7 @@ class FlowScannerRules extends React.Component {
 
   async loadRules() {
     try {
-      // Try to load the actual flow-scanner if available
+      // Try to load the actual flow-scanner-core if available
       let flowScannerCore = null;
 
       if (typeof lightningflowscanner !== "undefined") {

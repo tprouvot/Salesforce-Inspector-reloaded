@@ -1293,7 +1293,7 @@ function PreviewModal({model}) {
     model._cachedFilterKey = cacheKey;
   }
   
-  // For very large files (>1MB), skip Prism highlighting to avoid freezing
+  // For very large files (>1.5MB), skip Prism highlighting to avoid freezing
   const bodySize = displayBody.length;
   const isLargeFile = bodySize > 1500000; // 1.5MB threshold
 

@@ -1,7 +1,27 @@
 .modalContainer{
   max-width: 100rem;
   width: 90%;
+  position: relative;
+  z-index: 9001; /* Above backdrop */
 }
+
+/* Backdrop for Agentforce modal */
+.slds-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9000;
+}
+
+.slds-backdrop_open {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.2s linear;
+}
+
 /* Ensure action buttons have consistent height */
 .sfir-actions .slds-button {
   height: 32px; /* match SLDS default small button height */
@@ -45,4 +65,35 @@
 .sfir-actions .slds-button[title="Download"] .slds-button__icon {
   width: 16px;
   height: 16px;
+}
+
+/* Column resizer (kept for styling even though resizing is removed) */
+.sfir-col-resizer {
+  display: inline-block;
+  width: 6px;
+  cursor: col-resize;
+  margin-left: 4px;
+}
+
+/* Table scroll container */
+.sfir-table-scroll {
+  position: relative;
+  height: calc(100vh - 260px);
+  overflow: auto;
+}
+
+/* Preview search highlights */
+mark.sfir-highlight {
+  background: #ffe58a !important;
+  color: #000 !important;
+  padding: 0 0.2rem;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+mark.sfir-highlight.current {
+  background: #f8d24e !important;
+  outline: 2px solid #e1b600;
+  outline-offset: 1px;
+  font-weight: 600;
 }

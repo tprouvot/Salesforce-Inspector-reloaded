@@ -3,6 +3,7 @@
 ## Version 2.0
 
 - `Popup` Add "Copy Id" icon to User tab [feature 906](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/906) (contribution by [Arnav Gupta](https://github.com/ArnavGuptaaa)).
+- `Logs Viewer` Enhanced UI with pagination (10/15/25/50/100 logs per page), persistent page-size selector, "Logs (X of Y)" count with exact total, stable user filter populated from all logs org-wide, improved action label parsing (including Triggers with event names, VFRemote calls, and descriptive signatures), preview modal with search and highlight, grep-like log filtering with templates, AI/Agentforce integration to analyze logs and explain exceptions, optimized search navigation for large files, download, share, and delete actions (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
 - `Data Export` Auto-populate SOQL editor from Salesforce List View context [feature 969](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/969) (request and contribution by [Temam Abdelkrim](https://github.com/KRIMOD)) and [feature 817](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/817) (request by [Nicolas Vuillamy](https://github.com/nvuillam))
 - `Data Export` Prevent popup actions menu for Aggregate result [feature #663](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/663) (contribution by [Phanidra Mangipudi](https://github.com/thephani))
 - `Flow Scanner` Implement Agentforce feature to describe a flow and its components
@@ -23,7 +24,6 @@
 - `Show All Data` Support keyboard shortcut to save edited record values [feature 951](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/951) request by [Mohak Gaur](https://github.com/mohakgaurrr)
 - `Documentation` Revised instructions for creating an External Client App, reflecting the deprecation of Connected Apps and added detailed steps for OAuth configuration and known issues related to Incognito mode [bug 962](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/962) (contribution by [Thomas Malidin Delabriere](https://github.com/tmalidin33))
 - `Authentication` Implement OAuth 2.0 Web Server Flow with [Proof Key for Code Exchange (PKCE)](https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_pkce.htm&type=5) for orgs with API Access Control enabled - [feature 873](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/873) (contribution by [Mehdi Cherfaoui](https://github.com/mehdicherf))
-- `Logs Viewer` preview all logs, share in mail, possibility to see the action call without open it, filter by user/datetime, download and delete selected logs contribution by [Samuel Krissi](https://github.com/samuelkrissi)
 
 ## Version 1.27
 

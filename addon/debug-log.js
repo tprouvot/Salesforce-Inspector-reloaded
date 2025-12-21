@@ -1,14 +1,16 @@
 /* global React ReactDOM initButton */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, UserInfoModel, createSpinForMethod} from "./utils.js";
+import {getLinkTarget, UserInfoModel, createSpinForMethod, PromptTemplate, Constants} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
 import ConfirmModal from "./components/ConfirmModal.js";
+import Toast from "./components/Toast.js";
 
 const h = React.createElement;
 
 class Model {
   constructor(sfHost) {
     this.sfHost = sfHost;
+    this.orgName = sfHost.split(".")[0]?.toUpperCase() || "";
     this.spinnerCount = 0;
 
     this.userInfoModel = new UserInfoModel(createSpinForMethod(this));
@@ -17,7 +19,19 @@ class Model {
     this.selectedIds = new Set();
     this.filters = {userId: "", start: "", end: ""};
     this.previewLog = null; // {id, body, fileName}
-    this.previewSearch = {term: "", liveTerm: "", index: 0, _timer: 0};
+    this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
+    this.previewFilter = ""; // grep-like filter for log lines
+    this.filterTemplates = [
+      {label: "No filter", value: ""},
+      {label: "USER_DEBUG", value: "USER_DEBUG"},
+      {label: "Exceptions", value: "EXCEPTION_THROWN|FATAL_ERROR"},
+      {label: "DML Operations", value: "DML_BEGIN|DML_END"},
+      {label: "Limits", value: "LIMIT_USAGE|CUMULATIVE_LIMIT_USAGE"},
+      {label: "Callouts", value: "CALLOUT_REQUEST|CALLOUT_RESPONSE"},
+      {label: "Flow", value: "FLOW_CREATE_INTERVIEW|FLOW_START_INTERVIEW|FLOW_ELEMENT"},
+      {label: "Validation Rules", value: "VALIDATION_RULE|VALIDATION_FORMULA"},
+      {label: "USER_DEBUG + Exceptions", value: "USER_DEBUG|EXCEPTION_THROWN|FATAL_ERROR"},
+    ];
     this._onPreviewKeyDown = (e) => {
       const key = (e.key || "").toLowerCase();
       if ((e.ctrlKey || e.metaKey) && key === "f") {
@@ -36,7 +50,7 @@ class Model {
     this.actionSummary = new Map();
     this.resolvingActions = new Set();
 
-    // Column widths for dynamic resizing
+    // Column widths (fixed, no resizing)
     this.columnWidths = {
       user: 150,
       action: 280,
@@ -45,7 +59,6 @@ class Model {
       size: 90,
       actions: 260
     };
-    this.startResize = null;
 
     // Pagination for lazy loading
     const savedPageSize = parseInt(localStorage.getItem("sfir.debugLog.pageSize"), 10);
@@ -60,17 +73,155 @@ class Model {
     // Total count of logs for current filters
     this.totalCount = null; // null = unknown/not loaded, number otherwise
     this.countLoading = false; // true while COUNT() is in-flight
-  }
 
-  setColumnWidth(col, width) {
-    const min = 80; // prevent collapsing too far
-    const max = 800;
-    this.columnWidths[col] = Math.max(min, Math.min(max, Math.round(width)));
-    this.didUpdate();
+    // Toast notifications
+    this.toast = null; // {variant: "success"|"error"|"info", title: string, message: string}
+
+    // AI/Agentforce integration
+    this.showAgentforceModal = false;
+    this.agentforcePrompt = "";
+    this.agentforceAnalysis = "";
+    this.agentforceError = null;
+    this.agentforceAnalyzing = false;
+
+    // Preview loading state
+    this.previewLoading = false;
+    this.previewFilterProcessing = false; // Track when filter is being applied
   }
 
   didUpdate() {
     this.render();
+  }
+
+  showToast(variant, title, message, duration = 5000) {
+    this.toast = {variant, title, message};
+    this.didUpdate();
+    if (duration > 0) {
+      setTimeout(() => {
+        this.toast = null;
+        this.didUpdate();
+      }, duration);
+    }
+  }
+
+  closeToast() {
+    this.toast = null;
+    this.didUpdate();
+  }
+
+  // AI/Agentforce methods
+  openAgentforce() {
+    this.showAgentforceModal = true;
+    this.agentforcePrompt = "";
+    this.agentforceAnalysis = "";
+    this.agentforceError = null;
+    this.agentforceAnalyzing = false;
+    this.didUpdate();
+  }
+
+  closeAgentforce() {
+    this.showAgentforceModal = false;
+    this.agentforcePrompt = "";
+    this.agentforceAnalysis = "";
+    this.agentforceError = null;
+    this.agentforceAnalyzing = false;
+    this.didUpdate();
+  }
+
+  async sendAgentforceAnalysis() {
+    const defaultPrompt = `Analyze this Salesforce debug log in detail and provide a comprehensive report with the following sections:
+
+1. EXECUTIVE SUMMARY
+   - What is the main action or transaction being executed?
+   - What triggered this execution? (User action, trigger, scheduled job, API call, etc.)
+   - Was the execution successful or did it fail?
+   - Overall execution time and performance assessment
+
+2. EXECUTION FLOW
+   - List the main steps of execution in chronological order
+   - Identify all classes, methods, and triggers that were invoked
+   - Show the call stack and execution path
+   - Highlight any significant decision points or branches
+
+3. DATA OPERATIONS
+   - SOQL Queries: List all queries, number of rows returned, and execution time
+   - DML Operations: Identify all inserts, updates, deletes, and undeletes
+   - Records affected: How many records were queried or modified?
+   - Any bulk operations or batch processing?
+
+4. ERRORS & EXCEPTIONS
+   - Identify all errors, exceptions, and failures
+   - For each error: provide the error message, line number, and context
+   - Explain the root cause of each error
+   - Stack trace analysis if available
+
+5. PERFORMANCE ANALYSIS
+   - Total execution time
+   - Identify slow queries or operations (>100ms)
+   - CPU time consumption
+   - Database time vs CPU time ratio
+   - Any governor limit warnings or usage concerns
+
+6. GOVERNOR LIMITS USAGE
+   - SOQL queries used vs limit
+   - DML statements used vs limit
+   - Heap size used vs limit
+   - CPU time used vs limit
+   - Any limits that are close to being exceeded (>70%)
+
+7. BEST PRACTICES & RECOMMENDATIONS
+   - Code optimization suggestions
+   - Performance improvement opportunities
+   - Potential bulkification issues
+   - Security or design pattern concerns
+   - Suggested fixes for any identified problems
+
+8. DEBUG STATEMENTS
+   - List all USER_DEBUG statements with their values
+   - Highlight any important debug information
+   - Trace variable values and state changes
+
+Please structure your response in a clear, organized manner using these sections. Be specific, cite line numbers when relevant, and provide actionable insights.`;
+    
+    const instructions = defaultPrompt;
+
+    this.agentforceAnalyzing = true;
+    this.agentforceError = null;
+    this.agentforceAnalysis = "";
+    this.didUpdate();
+
+    try {
+      const promptTemplateName = localStorage.getItem(this.sfHost + "_debugLogAgentForcePrompt");
+      const templateName = promptTemplateName || Constants.PromptTemplateDebugLog;
+      const promptTemplate = new PromptTemplate(templateName);
+
+      // Use filtered log content if filter is active, otherwise full log
+      const logContent = this.previewFilter
+        ? this.getFilteredLogBody()
+        : (this.previewLog?.body || "");
+
+      const result = await promptTemplate.generate({
+        Instructions: instructions,
+        LogContent: logContent.substring(0, 50000) // Limit to 50K chars to avoid API limits
+      });
+
+      if (result.success) {
+        // Extract analysis from the result
+        const analysisMatch = result.result.match(/<analysis>([\s\S]*?)<\/analysis>/);
+        const extractedAnalysis = analysisMatch ? analysisMatch[1].trim() : result.result;
+        
+        this.agentforceAnalysis = extractedAnalysis;
+        this.agentforceError = null;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      this.agentforceError = "Agentforce analysis failed: " + error.message;
+      this.agentforceAnalysis = "";
+    } finally {
+      this.agentforceAnalyzing = false;
+      this.didUpdate();
+    }
   }
 
   async init() {
@@ -354,6 +505,7 @@ class Model {
 
   async deleteSelected() {
     if (this.selectedIds.size === 0) return;
+    const count = this.selectedIds.size;
     this.spinnerCount++;
     try {
       const ids = Array.from(this.selectedIds);
@@ -361,10 +513,12 @@ class Model {
         const chunk = ids.slice(i, i + 200);
         await sfConn.rest(`/services/data/v${apiVersion}/composite/sobjects?ids=${chunk.join(",")}&allOrNone=false`, {method: "DELETE"});
       }
-      await this.fetchLogs(true);
       this.selectedIds.clear();
+      await this.fetchLogs(true);
+      this.showToast("success", "Logs Deleted", `Successfully deleted ${count} log${count > 1 ? "s" : ""}.`);
     } catch (e) {
       console.error("deleteSelected", e);
+      this.showToast("error", "Delete Failed", `Failed to delete selected logs: ${e.message || "Unknown error"}`);
     } finally {
       this.spinnerCount--;
       this.didUpdate();
@@ -375,10 +529,12 @@ class Model {
     this.spinnerCount++;
     try {
       await sfConn.rest(`/services/data/v${apiVersion}/sobjects/ApexLog/${id}`, {method: "DELETE"});
-      await this.fetchLogs(true);
       this.selectedIds.delete(id);
+      await this.fetchLogs(true);
+      this.showToast("success", "Log Deleted", "Successfully deleted the log.");
     } catch (e) {
       console.error("deleteOne", e);
+      this.showToast("error", "Delete Failed", `Failed to delete log: ${e.message || "Unknown error"}`);
     } finally {
       this.spinnerCount--;
       this.didUpdate();
@@ -386,13 +542,18 @@ class Model {
   }
 
   async preview(id) {
+    this.previewLoading = true;
+    this.previewLog = {id, body: "", fileName: `${id}.log`}; // Show modal immediately with loading state
+    this.didUpdate();
+    
     this.spinnerCount++;
     try {
       const xhr = await sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/ApexLog/${id}/Body`, {responseType: "blob"}, true);
       const blob = xhr.response;
       const text = await blob.text();
       this.previewLog = {id, body: text, fileName: `${id}.log`};
-      this.previewSearch = {term: "", liveTerm: "", index: 0, _timer: 0};
+      this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
+      this.previewFilter = ""; // Reset filter when opening new log
       window.addEventListener("keydown", this._onPreviewKeyDown, true);
       setTimeout(() => {
         const inp = document.querySelector(".sfir-preview-search-input");
@@ -402,6 +563,7 @@ class Model {
       console.error("preview", e);
       this.previewLog = {id, body: "Error loading log", fileName: `${id}.log`};
     } finally {
+      this.previewLoading = false;
       this.spinnerCount--;
       this.didUpdate();
     }
@@ -409,17 +571,62 @@ class Model {
 
   closePreview() {
     this.previewLog = null;
+    // Reset search state completely when closing preview
+    this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
+    this.previewFilter = "";
+    // Clear cached processed body
+    this._cachedProcessedBody = null;
+    this._cachedFilteredBody = null;
     if (this.previewSearch && this.previewSearch._timer) {
       clearTimeout(this.previewSearch._timer);
-      this.previewSearch._timer = 0;
     }
     window.removeEventListener("keydown", this._onPreviewKeyDown, true);
     this.didUpdate();
   }
 
+  applyPreviewFilter(filterText) {
+    // Show loading state immediately
+    this.previewFilterProcessing = true;
+    this.previewFilter = filterText;
+    // Clear cache when filter changes
+    this._cachedProcessedBody = null;
+    this._cachedFilteredBody = null;
+    this.didUpdate();
+    
+    // Process filter change asynchronously to avoid blocking UI
+    setTimeout(() => {
+      try {
+        // Reset search when filter changes
+        this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
+        this.previewFilterProcessing = false;
+        this.didUpdate();
+      } catch (e) {
+        console.error("applyPreviewFilter", e);
+        this.previewFilterProcessing = false;
+        this.didUpdate();
+      }
+    }, 50); // Small delay to let UI update with spinner first
+  }
+
+  getFilteredLogBody() {
+    if (!this.previewLog || !this.previewLog.body) return "";
+    if (!this.previewFilter) return this.previewLog.body;
+    
+    const lines = this.previewLog.body.split("\n");
+    const patterns = this.previewFilter.split("|").map(p => p.trim()).filter(Boolean);
+    
+    if (patterns.length === 0) return this.previewLog.body;
+    
+    const filteredLines = lines.filter(line => {
+      return patterns.some(pattern => line.includes(pattern));
+    });
+    
+    return filteredLines.join("\n");
+  }
+
   // Debounced search update to keep typing smooth in preview
   updatePreviewSearchTermLive(term){
-    if (!this.previewSearch) this.previewSearch = {term: "", liveTerm: "", index: 0, _timer: 0};
+    if (!this.previewSearch) this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
     this.previewSearch.liveTerm = term || "";
     if (this.previewSearch._timer) clearTimeout(this.previewSearch._timer);
     this.previewSearch._timer = setTimeout(() => {
@@ -431,16 +638,40 @@ class Model {
   }
 
   nextPreviewMatch(){
-    const cnt = document.querySelectorAll(".sfir-highlight").length;
+    const cnt = this.previewSearch.count;
     if (!cnt) return;
     this.previewSearch.index = (this.previewSearch.index + 1) % cnt;
-    this.didUpdate();
+    // Just scroll to the element without re-rendering
+    this._scrollToCurrentMatch();
   }
   prevPreviewMatch(){
-    const cnt = document.querySelectorAll(".sfir-highlight").length;
+    const cnt = this.previewSearch.count;
     if (!cnt) return;
     this.previewSearch.index = (this.previewSearch.index - 1 + cnt) % cnt;
-    this.didUpdate();
+    // Just scroll to the element without re-rendering
+    this._scrollToCurrentMatch();
+  }
+
+  _scrollToCurrentMatch() {
+    // Update the current highlight class without re-rendering the whole component
+    const allMarks = document.querySelectorAll('.sfir-highlight');
+    allMarks.forEach((mark, idx) => {
+      if (idx === this.previewSearch.index) {
+        mark.classList.add('current');
+        mark.id = 'sfir-current-match';
+        mark.scrollIntoView({block: "center", behavior: "smooth"});
+      } else {
+        mark.classList.remove('current');
+        if (mark.id === 'sfir-current-match') {
+          mark.removeAttribute('id');
+        }
+      }
+    });
+    // Force update just the counter display
+    const counterEl = document.querySelector('.sfir-search-counter');
+    if (counterEl) {
+      counterEl.textContent = `${this.previewSearch.index + 1} / ${this.previewSearch.count}`;
+    }
   }
 
   download(id) {
@@ -602,44 +833,67 @@ function parseAction(operation) {
   return {label: name ? `${type} · ${name}` : type || "-"};
 }
 
-// Try to extract a clearer action (Class.Method from METHOD_ENTRY preferred; fallback to Code Unit or Flow markers)
+// Try to extract a clearer action (CODE_UNIT_STARTED preferred; fallback to METHOD_ENTRY or Flow markers)
 function deriveActionFromBody(text) {
   if (!text) return null;
 
-  // 1. Prefer METHOD_ENTRY lines: "...|METHOD_ENTRY|[line]|classId|Class.Method(params)"
-  const methodEntry = text.match(/\bMETHOD_ENTRY\|[^\|]*\|[^\|]*\|([A-Za-z0-9_\.]+)\(.*?\)/);
-  if (methodEntry && methodEntry[1]) {
-    const full = methodEntry[1];
-    const parts = full.split(".");
-
-    if (parts.length >= 2) {
-      const method = parts.pop();
-      const cls = parts.pop();
-      return {label: `${cls}.${method}`};
-    }
-    return {label: full};
-  }
-
-  // 2. Look for CODE_UNIT_STARTED with full signature: Class.Method(params)
-  const codeUnitWithSignature = text.match(/CODE_UNIT_STARTED\|[^\|]*\|[^\|]*\|([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\([^\)]*\)/);
-  if (codeUnitWithSignature) {
-    const cls = codeUnitWithSignature[1];
-    const method = codeUnitWithSignature[2];
-    return {label: `${cls}.${method}`};
-  }
-
-  // 3. Look for apex:// actions (LWC/Aura)
-  const apexAction = text.match(/apex:\/\/([A-Za-z0-9_]+)\/ACTION\$([A-Za-z0-9_]+)/);
+  // 1. PRIORITY: Look for apex:// actions (LWC/Aura) in CODE_UNIT_STARTED
+  // Match: CODE_UNIT_STARTED|[EXTERNAL]|apex://ClassName/ACTION$methodName
+  const apexAction = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|apex:\/\/([A-Za-z0-9_]+)\/ACTION\$([A-Za-z0-9_]+)/m);
   if (apexAction) {
     return {label: `${apexAction[1]}.${apexAction[2]}`};
   }
 
-  // 3b. Trigger entries (multi-field variant)
+  // 2a. VFRemote and similar patterns with ID in 3rd field and description in 4th
+  // Match: CODE_UNIT_STARTED|[EXTERNAL]|<ID>|VFRemote: ClassName invoke(methodName)
+  // Match: CODE_UNIT_STARTED|[EXTERNAL]|<ID>|ClassName.methodName(params)
+  const codeUnitWithIdAndDesc = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|[0-9a-zA-Z]{15,18}\|(.+?)$/m);
+  if (codeUnitWithIdAndDesc) {
+    const description = codeUnitWithIdAndDesc[1].trim();
+    
+    // Handle VFRemote pattern: "VFRemote: ClassName invoke(methodName)"
+    const vfRemoteMatch = description.match(/^VFRemote:\s*([A-Za-z0-9_]+)\s+invoke\(([A-Za-z0-9_]+)\)/);
+    if (vfRemoteMatch) {
+      return {label: `VFRemote · ${vfRemoteMatch[1]}.${vfRemoteMatch[2]}`};
+    }
+    
+    // Handle standard signature: "ClassName.methodName(params)"
+    const standardSig = description.match(/^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\(/);
+    if (standardSig) {
+      const cls = standardSig[1];
+      const method = standardSig[2];
+      if (method === cls) {
+        return {label: `${cls} (constructor)`};
+      }
+      return {label: `${cls}.${method}`};
+    }
+    
+    // If none of the above matched, return the full description
+    if (description && description !== 'TRIGGERS' && !description.startsWith('[')) {
+      return {label: description};
+    }
+  }
+
+  // 2b. Look for CODE_UNIT_STARTED with full signature: Class.Method(params)
+  // Use ^ and \d to match at line start with timestamp to avoid matching other event types
+  // Handles both 3-field and 4-field variants (with/without ID)
+  const codeUnitWithSignature = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|(?:[^\|]*\|)?([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\([^\)]*\)/m);
+  if (codeUnitWithSignature) {
+    const cls = codeUnitWithSignature[1];
+    const method = codeUnitWithSignature[2];
+    // If method name equals class name, it's a constructor
+    if (method === cls) {
+      return {label: `${cls} (constructor)`};
+    }
+    return {label: `${cls}.${method}`};
+  }
+
+  // 3. Trigger entries (multi-field variant) - CHECK BEFORE generic class name pattern
   // Example:
   //   ...|CODE_UNIT_STARTED|[EXTERNAL]|01q...|MyTrigger on Object__c trigger event BeforeUpdate|__sfdc_trigger/MyTrigger
   //   ...|CODE_UNIT_STARTED|[EXTERNAL]|TRIGGERS
   // Try to capture descriptive text and the trigger name from the __sfdc_trigger path in one go
-  let triggerDetail = text.match(/CODE_UNIT_STARTED\|[^\|]*\|[^\|]*\|([^|\n]+?)\|__sfdc_trigger\/([A-Za-z0-9_]+)/i);
+  let triggerDetail = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|[^\|]*\|([^|\n]+?)\|__sfdc_trigger\/([A-Za-z0-9_]+)/im);
   if (triggerDetail) {
     const desc = triggerDetail[1].trim();
     const trigFromPath = triggerDetail[2];
@@ -666,10 +920,46 @@ function deriveActionFromBody(text) {
     return {label: `Trigger · ${triggerNameOnly[1]}`};
   }
 
-  // 4. Look for other CODE_UNIT_STARTED entries
+  // 4. Look for CODE_UNIT_STARTED with just a class name (no method signature)
+  // This catches trigger handlers and other classes where only the class name appears
+  const codeUnitClassName = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|(?:[^\|]*\|)?([A-Za-z0-9_]+)(?:\||$)/m);
+  if (codeUnitClassName) {
+    const className = codeUnitClassName[1];
+    // Make sure it's not a special keyword or path (those are handled by other patterns)
+    if (className && !['TRIGGERS', 'EXTERNAL'].includes(className) && !className.includes('.')) {
+      return {label: className};
+    }
+  }
+
+  // 5. Fallback to METHOD_ENTRY lines: "...|METHOD_ENTRY|[line]|classId|Class.Method(params)"
+  const methodEntry = text.match(/\bMETHOD_ENTRY\|[^\|]*\|[^\|]*\|([A-Za-z0-9_\.]+)\(.*?\)/);
+  if (methodEntry && methodEntry[1]) {
+    const full = methodEntry[1];
+    const parts = full.split(".");
+
+    if (parts.length >= 2) {
+      const method = parts.pop();
+      const cls = parts.pop();
+      // If method name equals class name, it's a constructor
+      if (method === cls) {
+        return {label: `${cls} (constructor)`};
+      }
+      return {label: `${cls}.${method}`};
+    }
+    return {label: full};
+  }
+
+  // 6. Look for Execute Anonymous: CODE_UNIT_STARTED|[EXTERNAL]|execute_anonymous_apex (no ID field)
+  const executeAnon = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|\[EXTERNAL\]\|execute_anonymous_apex/m);
+  if (executeAnon) {
+    return {label: "execute_anonymous_apex"};
+  }
+
+  // 7. Look for other CODE_UNIT_STARTED entries
   // Try to capture the more descriptive fourth field first, then fallback to the third
-  const codeUnitFourth = text.match(/CODE_UNIT_STARTED\|[^\|]*\|[^\|]*\|([^\|\n]+)/);
-  const codeUnitThird = text.match(/CODE_UNIT_STARTED\|[^\|]*\|([^\|\n]+)/);
+  // Use ^ and \d to match at line start with timestamp to avoid matching other event types
+  const codeUnitFourth = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|[^\|]*\|([^\|\n]+)/m);
+  const codeUnitThird = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|([^\|\n]+)/m);
   const unit = (codeUnitFourth && codeUnitFourth[1].trim()) || (codeUnitThird && codeUnitThird[1].trim());
   if (unit) {
     // Trigger-like description (when not captured by the specific pattern above)
@@ -705,7 +995,7 @@ function deriveActionFromBody(text) {
     return {label: unit};
   }
 
-  // 5. Look for FLOW start lines
+  // 8. Look for FLOW start lines
   const flowMatch = text.match(/FLOW_(?:START|CREATE)_INTERVIEW[^\|]*\|([^\n\|]+)/);
   if (flowMatch) {
     return {label: `Flow · ${flowMatch[1].trim()}`};
@@ -813,12 +1103,6 @@ function Filters({model}) {
 function LogsTable({model}) {
   const allChecked = model.logs.length > 0 && model.logs.every(l => model.selectedIds.has(l.Id));
   const cw = model.columnWidths;
-  const Resizer = ({col}) => h("span", {
-    className: "sfir-col-resizer",
-    onMouseDown: (e) => model.onResizeStart(col, e.clientX)
-  });
-  const onMouseMove = (e) => model.onResizeMove(e.clientX);
-  const onMouseUp = () => model.onResizeEnd();
 
   // Compute smarter display counts and offset
   const offset = model.pageIndex * model.pageSize;
@@ -828,7 +1112,7 @@ function LogsTable({model}) {
     ? Math.min(total, displayedCountBase)
     : displayedCountBase;
 
-  return h("div", {className: "slds-card", onMouseMove, onMouseUp},
+  return h("div", {className: "slds-card"},
     h("div", {className: "slds-card__header slds-grid"},
       h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
         h("div", {className: "slds-media__figure"},
@@ -912,29 +1196,21 @@ function LogsTable({model}) {
                 h("input", {type: "checkbox", checked: allChecked, onChange: (e) => model.toggleSelectAll(e.target.checked)})
               ),
               h("th", {},
-                "User",
-                h(Resizer, {col: "user"})
+                "User"
               ),
               h("th", {},
-                "Action",
-                h(Resizer, {col: "action"})
+                "Action"
               ),
               h("th", {},
-                "Start Time",
-                h(Resizer, {col: "start"})
+                "Start Time"
               ),
               h("th", {},
-                "Status",
-                h(Resizer, {col: "status"})
+                "Status"
               ),
               h("th", {},
-                "Size (KB)",
-                h(Resizer, {col: "size"})
+                "Size (KB)"
               ),
-              h("th", {"aria-label": "Row actions"},
-                // Header intentionally left blank per request
-                h(Resizer, {col: "actions"})
-              )
+              h("th", {"aria-label": "Row actions"})
             )
           ),
           h("tbody", {},
@@ -956,7 +1232,7 @@ function LogsTable({model}) {
                     log.Status || "-"
                   )
                 ),
-                h("td", {style: {width: cw.size}}, (Number.parseFloat(log.LogLength / 1024).toFixed(2) | 0)),
+                h("td", {style: {width: cw.size}}, (log.LogLength / 1024).toFixed(2)),
                 h("td", {style: {width: cw.actions}},
                   h("div", {className: "slds-button_group sfir-actions", role: "group", style: {whiteSpace: "nowrap"}},
                     h("button", {type: "button", className: "slds-button slds-button_neutral", onClick: () => model.preview(log.Id)},
@@ -997,19 +1273,29 @@ function LogsTable({model}) {
   );
 }
 
-// Small CSS helper for resizer (inlined for now)
-const style = document.createElement("style");
-style.textContent = ".sfir-col-resizer{display:inline-block; width:6px; cursor:col-resize; margin-left:4px}";
-document.head.appendChild(style);
-
-// Add small CSS to ensure scroll container works (full height with viewport)
-const style2 = document.createElement("style");
-style2.textContent = ".sfir-table-scroll{position:relative; height: calc(100vh - 260px); overflow:auto}";
-document.head.appendChild(style2);
-
 function PreviewModal({model}) {
   const log = model.previewLog;
   if (!log) return null;
+
+  const isLoading = model.previewLoading;
+  const isFilterProcessing = model.previewFilterProcessing;
+
+  // Get filtered log body (with caching)
+  const currentFilter = model.previewFilter || "";
+  const cacheKey = `${log.id}_${currentFilter}`;
+  
+  let displayBody;
+  if (model._cachedFilteredBody && model._cachedFilterKey === cacheKey) {
+    displayBody = model._cachedFilteredBody;
+  } else {
+    displayBody = model.getFilteredLogBody();
+    model._cachedFilteredBody = displayBody;
+    model._cachedFilterKey = cacheKey;
+  }
+  
+  // For very large files (>1MB), skip Prism highlighting to avoid freezing
+  const bodySize = displayBody.length;
+  const isLargeFile = bodySize > 1000000; // 1MB threshold
 
   // build highlighted HTML with current selection
   const escapeHtml = (s) => (s || "").replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
@@ -1037,13 +1323,117 @@ function PreviewModal({model}) {
     out += escapeHtml(src.slice(last));
     return {html: out, count};
   };
-  const {html, count} = buildHighlighted(log.body, model.previewSearch.term, model.previewSearch.index);
+  // First, let Prism do its syntax highlighting (if available) - with caching
+  // Skip Prism for large files (>1MB) or when filter is being processed to avoid browser crash
+  let processedBody;
+  const prismCacheKey = `prism_${cacheKey}_${isLargeFile}_${isFilterProcessing}`;
+  
+  if (model._cachedProcessedBody && model._cachedProcessedKey === prismCacheKey) {
+    // Use cached Prism result
+    processedBody = model._cachedProcessedBody;
+  } else {
+    // Process with Prism and cache the result
+    if (!isLargeFile && !isFilterProcessing && window.Prism && window.Prism.highlight) {
+      try {
+        // Let Prism highlight the syntax first
+        processedBody = window.Prism.highlight(displayBody, window.Prism.languages.log || window.Prism.languages.markup, 'log');
+      } catch (e) {
+        // If Prism fails, use raw body
+        processedBody = escapeHtml(displayBody);
+      }
+    } else {
+      processedBody = escapeHtml(displayBody);
+    }
+    // Cache the processed result
+    model._cachedProcessedBody = processedBody;
+    model._cachedProcessedKey = prismCacheKey;
+  }
+  
+  // Now apply search highlighting on top of Prism's output
+  const applySearchHighlight = (htmlText, term, currentIdx) => {
+    if (!term) return {html: htmlText, count: 0};
+    
+    // Create a temporary div to parse the HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlText;
+    
+    const pattern = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let globalMatchIndex = 0;
+    let totalMatches = 0;
+    
+    // Function to recursively highlight text nodes while preserving Prism's structure
+    const highlightInNode = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent;
+        const regex = new RegExp(pattern, 'gi');
+        const matches = [];
+        let match;
+        
+        while ((match = regex.exec(text)) !== null) {
+          matches.push({start: match.index, end: match.index + match[0].length, text: match[0]});
+          if (matches.length > 500) break; // Safety limit per text node
+        }
+        
+        if (matches.length > 0) {
+          const fragment = document.createDocumentFragment();
+          let lastIndex = 0;
+          
+          matches.forEach(m => {
+            // Text before match
+            if (m.start > lastIndex) {
+              fragment.appendChild(document.createTextNode(text.substring(lastIndex, m.start)));
+            }
+            
+            // Create highlighted mark
+            const mark = document.createElement('mark');
+            mark.className = 'sfir-highlight';
+            if (globalMatchIndex === currentIdx) {
+              mark.classList.add('current');
+              mark.id = 'sfir-current-match';
+            }
+            mark.textContent = m.text;
+            fragment.appendChild(mark);
+            
+            lastIndex = m.end;
+            globalMatchIndex++;
+            totalMatches++;
+          });
+          
+          // Remaining text after last match
+          if (lastIndex < text.length) {
+            fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+          }
+          
+          node.parentNode.replaceChild(fragment, node);
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'MARK') {
+        // Recurse through child nodes (make a copy of childNodes array to avoid live collection issues)
+        const children = Array.from(node.childNodes);
+        children.forEach(child => highlightInNode(child));
+      }
+    };
+    
+    highlightInNode(tempDiv);
+    
+    return {
+      html: tempDiv.innerHTML,
+      count: totalMatches
+    };
+  };
+  
+  const {html, count} = applySearchHighlight(processedBody, model.previewSearch.term, model.previewSearch.index);
+  
+  // Update count in model state and adjust index if needed
+  if (model.previewSearch.count !== count) {
+    model.previewSearch.count = count;
+    if (model.previewSearch.index >= count) {
+      model.previewSearch.index = count > 0 ? count - 1 : 0;
+    }
+  }
+  
   setTimeout(() => {
     const el = document.getElementById("sfir-current-match");
     if (el) el.scrollIntoView({block: "center"});
-    if (window.Prism) {
-      window.Prism.highlightAll();
-    }
   }, 0);
 
   return h(ConfirmModal, {
@@ -1059,6 +1449,56 @@ function PreviewModal({model}) {
     onConfirm: () => { model.download(log.id); model.closePreview(); },
     containerClassName: "modalContainer"
   },
+  // Large file warning
+  isLargeFile && !isLoading && !isFilterProcessing && h("div", {className: "slds-notify slds-notify_alert slds-alert_warning slds-m-bottom_x-small", role: "alert"},
+    h("span", {className: "slds-icon_container slds-icon-utility-warning slds-m-right_x-small"},
+      h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
+        h("use", {xlinkHref: "symbols.svg#warning"})
+      )
+    ),
+    h("h2", {}, 
+      h("span", {className: "slds-text-body_small"}, 
+        `⚠️ Large file (${(bodySize / 1024 / 1024).toFixed(2)} MB). Syntax highlighting is disabled to prevent browser crashes. Search and filtering still work.`
+      )
+    )
+  ),
+  // Filter template row
+  h("div", {className: "slds-grid slds-gutters slds-m-bottom_x-small"},
+    h("div", {className: "slds-col"},
+      h("div", {className: "slds-form-element"},
+        h("label", {className: "slds-form-element__label", htmlFor: "sfir-log-filter-template"}, "Filter Template"),
+        h("div", {className: "slds-form-element__control"},
+          h("div", {className: "slds-select_container"},
+            h("select", {
+              id: "sfir-log-filter-template",
+              className: "slds-select",
+              value: model.previewFilter,
+              onChange: (e) => model.applyPreviewFilter(e.target.value),
+              disabled: isLoading || isFilterProcessing
+            },
+            ...model.filterTemplates.map(t => h("option", {key: t.value, value: t.value}, t.label))
+            )
+          )
+        )
+      )
+    ),
+    h("div", {className: "slds-col"},
+      h("div", {className: "slds-form-element"},
+        h("label", {className: "slds-form-element__label", htmlFor: "sfir-log-filter-custom"}, "Custom Filter (use | for OR)"),
+        h("div", {className: "slds-form-element__control"},
+          h("input", {
+            id: "sfir-log-filter-custom",
+            type: "text",
+            className: "slds-input",
+            placeholder: "e.g., USER_DEBUG|EXCEPTION_THROWN",
+            value: model.previewFilter,
+            onChange: (e) => model.applyPreviewFilter(e.target.value),
+            disabled: isLoading || isFilterProcessing
+          })
+        )
+      )
+    )
+  ),
   // search toolbar
   h("div", {className: "slds-grid slds-gutters slds-m-bottom_x-small"},
     h("div", {className: "slds-col"},
@@ -1068,40 +1508,310 @@ function PreviewModal({model}) {
             h("span", {className: "slds-icon_container slds-input__icon slds-input__icon_left"},
               h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#search"}))
             ),
-            h("input", {type: "text", placeholder: "Find in log (Ctrl/⌘+F)", className: "slds-input sfir-preview-search-input", defaultValue: model.previewSearch.term, autoComplete: "off", onInput: (e) => model.updatePreviewSearchTermLive(e.target.value), onKeyDown: (e) => { if (e.key === "Enter") { e.preventDefault(); model.nextPreviewMatch(); } }})
+            h("input", {
+              type: "text", 
+              placeholder: "Find in log (Ctrl/⌘+F)", 
+              className: "slds-input sfir-preview-search-input", 
+              defaultValue: model.previewSearch.term, 
+              autoComplete: "off", 
+              onInput: (e) => model.updatePreviewSearchTermLive(e.target.value), 
+              onKeyDown: (e) => { if (e.key === "Enter") { e.preventDefault(); model.nextPreviewMatch(); } },
+              disabled: isLoading || isFilterProcessing
+            })
           )
         )
       )
     ),
-    h("div", {className: "slds-col slds-grow-none slds-align_absolute-center slds-text-body_small"}, `${count ? (model.previewSearch.index + 1) : 0} / ${count}`),
     h("div", {className: "slds-col slds-grow-none"},
       h("div", {className: "slds-button_group", role: "group"},
-        h("button", {className: "slds-button slds-button_neutral", onClick: () => model.prevPreviewMatch(), title: "Previous match"},
+        h("button", {className: "slds-button slds-button_neutral", onClick: () => model.prevPreviewMatch(), title: "Previous match", disabled: isLoading || isFilterProcessing},
           h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#left"}))
         ),
-        h("button", {className: "slds-button slds-button_neutral", onClick: () => model.nextPreviewMatch(), title: "Next match"},
+        h("button", {className: "slds-button slds-button_neutral", onClick: () => model.nextPreviewMatch(), title: "Next match", disabled: isLoading || isFilterProcessing},
           h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#right"}))
         )
+      ),
+      h("div", {className: "slds-align_absolute-center slds-text-body_small slds-m-top_xx-small sfir-search-counter"}, `${count ? (model.previewSearch.index + 1) : 0} / ${count}`)
+    ),
+    // AI button
+    h("div", {className: "slds-col slds-grow-none"},
+      h("button", {
+        className: "slds-button slds-button_brand",
+        onClick: () => model.openAgentforce(),
+        title: "Analyze with AI",
+        disabled: isLoading || isFilterProcessing
+      },
+      h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+        h("use", {xlinkHref: "symbols.svg#einstein"})
+      ),
+      "Analyze with AI"
       )
     )
   ),
-  // log body
-  h("pre", {
-    className: "language-log",
-    style: {maxHeight: "60vh", overflow: "auto"}
-  },
-  h("code", {
-    className: "language-log",
-    dangerouslySetInnerHTML: {__html: html}
-  })
-  )
+  // Loading state, filter processing state, or log body
+  isLoading 
+    ? h("div", {className: "slds-align_absolute-center slds-m-vertical_xx-large", style: {minHeight: "60vh"}},
+        h("div", {className: "slds-spinner_container"},
+          h("div", {role: "status", className: "slds-spinner slds-spinner_large slds-spinner_brand"},
+            h("span", {className: "slds-assistive-text"}, "Loading log..."),
+            h("div", {className: "slds-spinner__dot-a"}),
+            h("div", {className: "slds-spinner__dot-b"})
+          )
+        ),
+        h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
+          h("div", {}, "📄 Loading debug log..."),
+          h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"}, 
+            "Please wait while we fetch the log file"
+          )
+        )
+      )
+    : isFilterProcessing
+      ? h("div", {className: "slds-align_absolute-center slds-m-vertical_xx-large", style: {minHeight: "60vh"}},
+          h("div", {className: "slds-spinner_container"},
+            h("div", {role: "status", className: "slds-spinner slds-spinner_large slds-spinner_brand"},
+              h("span", {className: "slds-assistive-text"}, "Processing filter..."),
+              h("div", {className: "slds-spinner__dot-a"}),
+              h("div", {className: "slds-spinner__dot-b"})
+            )
+          ),
+          h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
+            h("div", {}, "🔄 Applying filter..."),
+            h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"}, 
+              isLargeFile 
+                ? "Processing large file, this may take a moment"
+                : "Please wait"
+            )
+          )
+        )
+    : h("pre", {
+        className: "language-log",
+        style: {maxHeight: "60vh", overflow: "auto"}
+      },
+      h("code", {
+        className: "language-log",
+        dangerouslySetInnerHTML: {__html: html}
+      })
+    )
   );
 }
 
-// Add CSS for preview search highlights
-const style3 = document.createElement("style");
-style3.textContent = "mark.sfir-highlight{background:#ffe58a;padding:0 .0rem;border-radius:2px} mark.sfir-highlight.current{background:#f8d24e;outline:1px solid #e1b600}";
-document.head.appendChild(style3);
+function AgentforceModal({model}) {
+  if (!model.showAgentforceModal) return null;
+  
+  const defaultPrompt = `Analyze this Salesforce debug log in detail and provide a comprehensive report with the following sections:
+
+1. EXECUTIVE SUMMARY
+   - What is the main action or transaction being executed?
+   - What triggered this execution? (User action, trigger, scheduled job, API call, etc.)
+   - Was the execution successful or did it fail?
+   - Overall execution time and performance assessment
+
+2. EXECUTION FLOW
+   - List the main steps of execution in chronological order
+   - Identify all classes, methods, and triggers that were invoked
+   - Show the call stack and execution path
+   - Highlight any significant decision points or branches
+
+3. DATA OPERATIONS
+   - SOQL Queries: List all queries, number of rows returned, and execution time
+   - DML Operations: Identify all inserts, updates, deletes, and undeletes
+   - Records affected: How many records were queried or modified?
+   - Any bulk operations or batch processing?
+
+4. ERRORS & EXCEPTIONS
+   - Identify all errors, exceptions, and failures
+   - For each error: provide the error message, line number, and context
+   - Explain the root cause of each error
+   - Stack trace analysis if available
+
+5. PERFORMANCE ANALYSIS
+   - Total execution time
+   - Identify slow queries or operations (>100ms)
+   - CPU time consumption
+   - Database time vs CPU time ratio
+   - Any governor limit warnings or usage concerns
+
+6. GOVERNOR LIMITS USAGE
+   - SOQL queries used vs limit
+   - DML statements used vs limit
+   - Heap size used vs limit
+   - CPU time used vs limit
+   - Any limits that are close to being exceeded (>70%)
+
+7. BEST PRACTICES & RECOMMENDATIONS
+   - Code optimization suggestions
+   - Performance improvement opportunities
+   - Potential bulkification issues
+   - Security or design pattern concerns
+   - Suggested fixes for any identified problems
+
+8. DEBUG STATEMENTS
+   - List all USER_DEBUG statements with their values
+   - Highlight any important debug information
+   - Trace variable values and state changes
+
+Please structure your response in a clear, organized manner using these sections. Be specific, cite line numbers when relevant, and provide actionable insights.`;
+  
+  const isAnalyzing = model.agentforceAnalyzing || false;
+  const hasResults = model.agentforceAnalysis || model.agentforceError;
+  
+  return h("div", {},
+    // Backdrop
+    h("div", {
+      className: "slds-backdrop slds-backdrop_open",
+      onClick: () => model.closeAgentforce()
+    }),
+    // Modal
+    h(ConfirmModal, {
+      isOpen: true,
+      title: h("div", {className: "slds-grid slds-grid_vertical-align-center"},
+      h("span", {className: "slds-icon_container slds-icon-utility-einstein slds-m-right_small"},
+        h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
+          h("use", {xlinkHref: "symbols.svg#einstein"})
+        )
+      ),
+      h("span", {}, "AI-Powered Debug Log Analysis")
+    ),
+    onConfirm: isAnalyzing ? null : () => model.sendAgentforceAnalysis(),
+    onCancel: () => model.closeAgentforce(),
+    confirmLabel: isAnalyzing ? "Analyzing..." : (hasResults ? "Analyze Again" : "Analyze"),
+    cancelLabel: hasResults ? "Close" : "Cancel",
+    confirmVariant: "brand",
+    cancelVariant: "neutral",
+    confirmDisabled: isAnalyzing,
+    containerClassName: "modalContainer"
+  },
+  h("div", {className: "slds-p-around_medium"},
+    // Instructions Section (Read-only display)
+    !hasResults && h("div", {className: "slds-form-element slds-m-bottom_medium"},
+      h("label", {className: "slds-form-element__label slds-text-heading_small"}, 
+        h("span", {}, "📋 Comprehensive Analysis Instructions")
+      ),
+      h("div", {className: "slds-box slds-theme_shade slds-m-top_x-small", style: {maxHeight: "400px", overflowY: "auto"}},
+        h("div", {
+          className: "slds-text-body_small",
+          style: {
+            whiteSpace: "pre-wrap",
+            lineHeight: "1.7",
+            color: "#3e3e3c",
+            fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            padding: "0.75rem"
+          }
+        }, defaultPrompt)
+      ),
+      h("div", {className: "slds-form-element__help slds-m-top_small"},
+        h("div", {className: "slds-text-body_small"},
+          "✨ The AI will provide a detailed analysis covering:",
+          h("ul", {className: "slds-list_dotted slds-m-top_xx-small slds-m-left_medium"},
+            h("li", {}, "Executive Summary & Execution Flow"),
+            h("li", {}, "Data Operations (SOQL/DML)"),
+            h("li", {}, "Errors & Performance Issues"),
+            h("li", {}, "Governor Limits Usage"),
+            h("li", {}, "Best Practices & Recommendations")
+          )
+        )
+      )
+    ),
+    
+    // Analyzing State
+    isAnalyzing && h("div", {className: "slds-align_absolute-center slds-m-vertical_large"},
+      h("div", {className: "slds-spinner_container"},
+        h("div", {role: "status", className: "slds-spinner slds-spinner_medium slds-spinner_brand"},
+          h("span", {className: "slds-assistive-text"}, "Analyzing log..."),
+          h("div", {className: "slds-spinner__dot-a"}),
+          h("div", {className: "slds-spinner__dot-b"})
+        )
+      ),
+      h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
+        h("div", {}, "🤖 AI is performing a comprehensive analysis..."),
+        h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"}, 
+          "Analyzing execution flow, data operations, performance, and governor limits"
+        ),
+        h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_xx-small"}, 
+          "This may take 30-60 seconds for detailed insights"
+        )
+      )
+    ),
+    
+    // Error State
+    model.agentforceError && h("div", {className: "slds-m-top_medium"},
+      h("div", {className: "slds-notify slds-notify_alert slds-alert_error", role: "alert"},
+        h("span", {className: "slds-icon_container slds-icon-utility-error slds-m-right_small"},
+          h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#error"})
+          )
+        ),
+        h("h2", {}, 
+          h("span", {className: "slds-text-heading_small"}, "Analysis Failed")
+        )
+      ),
+      h("div", {className: "slds-box slds-box_small slds-theme_error slds-m-top_small"},
+        h("div", {className: "slds-text-body_regular", style: {fontFamily: "monospace", fontSize: "0.875rem"}}, 
+          model.agentforceError
+        )
+      )
+    ),
+    
+    // Success State with Results
+    model.agentforceAnalysis && h("div", {className: "slds-m-top_medium"},
+      h("div", {className: "slds-notify slds-notify_alert slds-alert_success slds-m-bottom_small", role: "alert"},
+        h("span", {className: "slds-icon_container slds-icon-utility-success slds-m-right_small"},
+          h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#success"})
+          )
+        ),
+        h("h2", {}, 
+          h("span", {className: "slds-text-heading_small"}, "✨ Analysis Complete")
+        )
+      ),
+      h("div", {className: "slds-card"},
+        h("div", {className: "slds-card__header slds-grid"},
+          h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
+            h("div", {className: "slds-media__body"},
+              h("h2", {className: "slds-card__header-title"},
+                h("span", {}, "AI Analysis Results")
+              )
+            ),
+            h("div", {className: "slds-no-flex"},
+              h("button", {
+                className: "slds-button slds-button_icon slds-button_icon-border-filled",
+                title: "Copy to clipboard",
+                onClick: () => {
+                  navigator.clipboard.writeText(model.agentforceAnalysis);
+                  model.showToast("success", "Copied", "Analysis copied to clipboard");
+                }
+              },
+              h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                h("use", {xlinkHref: "symbols.svg#copy"})
+              )
+              )
+            )
+          )
+        ),
+        h("div", {className: "slds-card__body slds-card__body_inner"},
+          h("div", {
+            className: "slds-text-body_regular",
+            style: {
+              whiteSpace: "pre-wrap",
+              lineHeight: "1.8",
+              maxHeight: "65vh",
+              overflowY: "auto",
+              backgroundColor: "#fafaf9",
+              border: "1px solid #e5e5e5",
+              borderRadius: "0.25rem",
+              padding: "1.25rem",
+              fontFamily: "'SF Pro Text', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
+              fontSize: "0.9375rem",
+              color: "#181818"
+            }
+          }, model.agentforceAnalysis)
+        )
+      )
+    )
+  )
+  ) // Close ConfirmModal
+  ); // Close wrapper div with backdrop
+}
 
 class App extends React.Component {
   constructor(props){
@@ -1121,7 +1831,7 @@ class App extends React.Component {
     return h("div", {},
       h(PageHeader, {
         pageTitle: "Logs Viewer",
-        orgName: this.model.userInfoModel.userInfo,
+        orgName: model.orgName,
         sfLink: `https://${this.model.sfHost}`,
         sfHost: this.model.sfHost,
         spinnerCount: this.model.spinnerCount,
@@ -1147,10 +1857,112 @@ class App extends React.Component {
         message: `Are you sure you want to delete ${model.selectedIds.size} selected log(s)?`,
         onCancel: () => { model.confirmBulkDelete = false; model.didUpdate(); },
         onConfirm: () => { model.confirmBulkDelete = false; model.deleteSelected(); },
-      }) : null
+      }) : null,
+      model.toast ? h(Toast, {
+        variant: model.toast.variant,
+        title: model.toast.title,
+        message: model.toast.message,
+        onClose: () => model.closeToast()
+      }) : null,
+      h(AgentforceModal, {model})
     );
   }
 }
+
+// Debug helper function - accessible from browser console
+window.debugAgentforceAccess = async function() {
+  console.log("=== Manual Agentforce Access Debug ===");
+  console.log("This function will help you debug why the AI button is not showing.");
+  console.log("");
+  
+  try {
+    const sfHost = new URLSearchParams(location.search).get("host");
+    if (!sfHost) {
+      console.error("❌ Cannot determine Salesforce host from URL");
+      return;
+    }
+    console.log(`✓ Salesforce Host: ${sfHost}`);
+    
+    await sfConn.getSession(sfHost);
+    console.log("✓ Session established");
+    
+    // Step 1: Test PromptVersion API access
+    console.log("\n--- Step 1: Testing PromptVersion API Access ---");
+    const testQuery = encodeURIComponent("SELECT Id FROM PromptVersion LIMIT 1");
+    const testUrl = `/services/data/v${apiVersion}/tooling/query/?q=${testQuery}`;
+    console.log(`Query URL: ${testUrl}`);
+    
+    try {
+      const testResult = await sfConn.rest(testUrl);
+      console.log("✓ PromptVersion API is accessible");
+      console.log("  Result:", testResult);
+    } catch (e) {
+      console.error("❌ PromptVersion API is NOT accessible");
+      console.error("  Error:", e.message);
+      console.error("  This usually means:");
+      console.error("    - Missing 'Prompt Template User' permission set");
+      console.error("    - Agentforce/Einstein not enabled in org");
+      console.error("    - API version doesn't support PromptVersion");
+      return;
+    }
+    
+    // Step 2: List all Prompt Templates in the org
+    console.log("\n--- Step 2: Finding All Prompt Templates ---");
+    const listQuery = encodeURIComponent("SELECT Id, Name, IsActive FROM PromptTemplate");
+    const listUrl = `/services/data/v${apiVersion}/tooling/query/?q=${listQuery}`;
+    
+    try {
+      const listResult = await sfConn.rest(listUrl);
+      console.log(`Found ${listResult.records.length} Prompt Template(s) in your org:`);
+      listResult.records.forEach(pt => {
+        console.log(`  - "${pt.Name}" (Id: ${pt.Id}, IsActive: ${pt.IsActive})`);
+      });
+    } catch (e) {
+      console.error("❌ Could not list Prompt Templates:", e.message);
+    }
+    
+    // Step 3: Check for the specific template
+    console.log("\n--- Step 3: Checking for Required Template ---");
+    const promptTemplateName = localStorage.getItem(sfHost + "_debugLogAgentForcePrompt");
+    const templateName = promptTemplateName || Constants.PromptTemplateDebugLog;
+    console.log(`Looking for template: "${templateName}"`);
+    console.log(`  - Custom override in localStorage: ${promptTemplateName ? `"${promptTemplateName}"` : "None"}`);
+    console.log(`  - Default from Constants: "${Constants.PromptTemplateDebugLog}"`);
+    
+    const promptQuery = encodeURIComponent(`SELECT Id, Name FROM PromptVersion WHERE PromptTemplateId IN (SELECT Id FROM PromptTemplate WHERE Name = '${templateName}' AND IsActive = true) AND Status = 'Published' LIMIT 1`);
+    const promptUrl = `/services/data/v${apiVersion}/tooling/query/?q=${promptQuery}`;
+    console.log(`Query: SELECT Id, Name FROM PromptVersion WHERE PromptTemplateId IN (SELECT Id FROM PromptTemplate WHERE Name = '${templateName}' AND IsActive = true) AND Status = 'Published' LIMIT 1`);
+    
+    try {
+      const promptResult = await sfConn.rest(promptUrl);
+      if (promptResult.records.length > 0) {
+        console.log(`✅ SUCCESS! Template "${templateName}" found and is published!`);
+        console.log("  Result:", promptResult.records[0]);
+        console.log("\n🎉 The AI button SHOULD be visible. If it's not, please:");
+        console.log("  1. Refresh the page");
+        console.log("  2. Check browser console for other errors");
+      } else {
+        console.warn(`⚠️ FAILED: Template "${templateName}" not found or not published`);
+        console.log("\n📋 To fix this, you need to:");
+        console.log(`  1. Make sure a Prompt Template named "${templateName}" exists in your org`);
+        console.log("  2. Ensure the template is Active (IsActive = true)");
+        console.log("  3. Ensure the template has a Published version");
+        console.log("\nOR");
+        console.log("  Set a custom template name by running:");
+        console.log(`  localStorage.setItem("${sfHost}_debugLogAgentForcePrompt", "YourTemplateName")`);
+      }
+    } catch (e) {
+      console.error("❌ Query failed:", e.message);
+    }
+    
+  } catch (e) {
+    console.error("❌ Debug function failed:", e);
+  }
+  
+  console.log("\n=== Debug Complete ===");
+};
+
+console.log("💡 Tip: You can run 'debugAgentforceAccess()' in the console to manually test AI button requirements");
 
 {
   let args = new URLSearchParams(location.search);

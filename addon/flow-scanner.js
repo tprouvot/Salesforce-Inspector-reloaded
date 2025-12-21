@@ -744,13 +744,13 @@ class FlowScanner {
     // Cache result - creating temp Flow is expensive and result never changes
     if (!this._cachedFlowElementTypes) {
       const tempFlow = new this.flowScannerCore.Flow("temp", {});
-
       this._cachedFlowElementTypes = [
         ...(tempFlow.NODE_TAGS || []),
         ...(tempFlow.RESOURCE_TAGS || []),
         ...(tempFlow.VARIABLE_TAGS || [])
       ];
     }
+
     return this._cachedFlowElementTypes;
   }
 

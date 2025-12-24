@@ -65,7 +65,6 @@ function setupRemoteRepo(tempDir) {
 
   // Get the latest tag and checkout
   execSync(`git clone --depth 1 ${repoUrl} "${cloneDir}"`, {stdio: "inherit"});
-
   try {
     const latestTag = execSync(
       "git tag -l \"core-v*\" --sort=-v:refname | head -n 1",

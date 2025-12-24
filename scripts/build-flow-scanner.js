@@ -73,13 +73,9 @@ function setupRemoteRepo(tempDir) {
       {cwd: cloneDir, encoding: "utf8"}
     ).trim();
 
-    if (latestTag) {
-      logStep(`Checking out latest core tag: ${latestTag}`);
-      execSync(`git checkout tags/${latestTag}`, {cwd: cloneDir, stdio: "inherit"});
-      logSuccess(`Checked out tag ${latestTag}`);
-    } else {
-      log("No core-v* tags found – using default branch", "yellow");
-    }
+    logStep(`Checking out latest core tag: ${latestTag}`);
+    execSync(`git checkout tags/${latestTag}`, {cwd: cloneDir, stdio: "inherit"});
+    logSuccess(`Checked out tag ${latestTag}`);
   } catch (error) {
     log("No tags found, using default branch", "yellow");
   }

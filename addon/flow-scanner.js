@@ -2407,7 +2407,7 @@ class App extends React.Component {
                 target: getLinkTarget(),
                 title: scannerVersion ? `View v${scannerVersion} on npm` : "View package on npm"
               }, "Lightning Flow Scanner Core"),
-              scannerVersion ? ` (v${scannerVersion})` : ""
+              `\u00A0 (core v${scannerVersion})`
             )
           )
           ),

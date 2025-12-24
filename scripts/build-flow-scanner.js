@@ -52,27 +52,25 @@ function cleanupTempDir(tempDir) {
   }
 }
 
-// Clone repo and checkout latest core-v* tag, extracting only packages/core
+// Clone repo and checkout latest tag
 function setupRemoteRepo(tempDir) {
   "use strict";
   const repoUrl = "https://github.com/Flow-Scanner/lightning-flow-scanner";
 
   logStep("Cloning monorepo and extracting core package");
 
-  // Create a temporary subdir for the full clone
+  // Clone directly into cloneDir with shallow clone (no history)
   const cloneDir = path.join(tempDir, ".full-clone");
   fs.mkdirSync(cloneDir, {recursive: true});
 
   // Get the latest tag and checkout
   execSync(`git clone --depth 1 ${repoUrl} "${cloneDir}"`, {stdio: "inherit"});
 
-  // Checkout the latest core-v* tag if available
   try {
     const latestTag = execSync(
       "git tag -l \"core-v*\" --sort=-v:refname | head -n 1",
       {cwd: cloneDir, encoding: "utf8"}
     ).trim();
-
     logStep(`Checking out latest core tag: ${latestTag}`);
     execSync(`git checkout tags/${latestTag}`, {cwd: cloneDir, stdio: "inherit"});
     logSuccess(`Checked out tag ${latestTag}`);

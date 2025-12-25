@@ -13,8 +13,8 @@ class ProfilesModal extends React.Component {
       allReadProfiles: false,
       allEditPermissionSets: false,
       allReadPermissionSets: false,
-      isProfilesExpanded: false,
-      isPermissionSetsExpanded: true,
+      isProfilesExpanded: true,
+      isPermissionSetsExpanded: false,
       searchTerm: "",
       permissions: this.initializePermissions(props.field, props.permissionSets)
     };

@@ -43,7 +43,8 @@ class ProfilesModal extends React.Component {
         if (permissions[profile.name]) {
           permissions[profile.name] = {
             edit: profile.access === "edit",
-            read: profile.access === "edit" || profile.access === "read"
+            read: profile.access === "edit" || profile.access === "read",
+            id: profile.id
           };
         }
       });
@@ -265,7 +266,14 @@ class ProfilesModal extends React.Component {
                 if (perm.edit || perm.read) {
                   acc.push({
                     name,
-                    access: perm.edit ? "edit" : "read"
+                    access: perm.edit ? "edit" : "read",
+                    id: perm.id
+                  });
+                } else if (perm.id) {
+                  acc.push({
+                    name,
+                    access: "none",
+                    id: perm.id
                   });
                 }
                 return acc;
@@ -363,7 +371,7 @@ class FieldOptionModal extends React.Component {
               name: "precision",
               className: "form-control input-textBox",
               placeholder: "Max is 18 - Decimal Places",
-              value: field.precision,
+              value: field.precision ?? "",
               onChange: this.handleInputChange
             })
           ),
@@ -375,7 +383,7 @@ class FieldOptionModal extends React.Component {
               name: "decimal",
               className: "form-control input-textBox",
               placeholder: "Max is 18 - Length",
-              value: field.decimal,
+              value: field.decimal ?? "",
               onChange: this.handleInputChange
             })
           ),
@@ -431,7 +439,7 @@ class FieldOptionModal extends React.Component {
               id: "geolocationDecimalPlaces",
               name: "decimal",
               className: "form-control input-textBox",
-              value: field.decimal,
+              value: field.decimal ?? "",
               onChange: this.handleInputChange
             })
           ),
@@ -450,7 +458,7 @@ class FieldOptionModal extends React.Component {
               name: "precision",
               className: "form-control input-textBox",
               placeholder: "Max is 18 less Decimal Places",
-              value: field.precision,
+              value: field.precision || "",
               onChange: this.handleInputChange
             })
           ),
@@ -462,7 +470,7 @@ class FieldOptionModal extends React.Component {
               name: "decimal",
               className: "form-control input-textBox",
               placeholder: "Max is 18 less Length",
-              value: field.decimal,
+              value: field.decimal || "",
               onChange: this.handleInputChange
             })
           ),
@@ -483,7 +491,7 @@ class FieldOptionModal extends React.Component {
               className: "form-control",
               rows: "5",
               placeholder: "Enter picklist values separated by line breaks.",
-              value: field.picklistvalues,
+              value: field.picklistvalues || "",
               onChange: this.handleInputChange
             })
           ),
@@ -511,6 +519,7 @@ class FieldOptionModal extends React.Component {
               " Use first value as default"
             )
           ),
+          this.renderRestrictToDefinedValues(),
           field.type === "MultiselectPicklist" && h("div", {className: "form-group"},
             h("label", {htmlFor: "picklist-multiVisibleLines"}, "# Visible Lines"),
             h("input", {
@@ -519,7 +528,7 @@ class FieldOptionModal extends React.Component {
               name: "vislines",
               className: "form-control input-textBox",
               placeholder: "This field is required.",
-              value: field.vislines,
+              value: field.vislines || "",
               onChange: this.handleInputChange
             })
           ),
@@ -564,7 +573,7 @@ class FieldOptionModal extends React.Component {
               name: "length",
               className: "form-control input-textBox",
               placeholder: "Max is 131,072 characters.",
-              value: field.length,
+              value: field.length ?? "",
               onChange: this.handleInputChange
             })
           ),
@@ -576,7 +585,7 @@ class FieldOptionModal extends React.Component {
               name: "vislines",
               className: "form-control input-textBox",
               placeholder: "This field is required.",
-              value: field.vislines,
+              value: field.vislines ?? "",
               onChange: this.handleInputChange
             })
           ),
@@ -946,7 +955,8 @@ class App extends React.Component {
       objects: [], // Store all objects fetched from API
       profiles: [],
       permissionSets: {},
-      fields: [{label: "", name: "", type: "Text"}],
+      // fields: [{label: "", name: "", type: "Text"}],
+      fields: [],
       showProfilesModal: false,
       currentFieldIndex: null,
       showModal: false,
@@ -958,7 +968,8 @@ class App extends React.Component {
       fieldErrorMessage: "",
       errorMessageClickable: false,
       filteredObjects: [],
-      includeManagedPackage: localStorage.getItem("fieldCreatorIncludeManaged") === "true"
+      includeManagedPackage: localStorage.getItem("fieldCreatorIncludeManaged") === "true",
+      loading: false
     };
 
     // Initialize spinFor method
@@ -987,6 +998,142 @@ class App extends React.Component {
   // Utility method to get allowed field types for platform events
   getAllowedPlatformEventFieldTypes = () => ["Checkbox", "Date", "DateTime", "Number", "Text", "LongTextArea"];
 
+  mapMetadataToUI(record) {
+    const md = record.Metadata;
+    if (!md) {
+      console.error("Missing Metadata for record", record);
+      return {
+        id: record.Id,
+        label: record.DeveloperName,
+        name: record.DeveloperName,
+        type: "Text",
+        existing: true
+      };
+    }
+
+    const type = this.mapFieldTypeFromMetadata(md.type);
+
+    let picklistvalues = "";
+    let sortalpha = false;
+    let firstvaluedefault = false;
+    let restrictToDefinedValues = false;
+
+    if (md.valueSet) {
+      if (md.valueSet.valueSetDefinition && md.valueSet.valueSetDefinition.value) {
+        const values = Array.isArray(md.valueSet.valueSetDefinition.value)
+          ? md.valueSet.valueSetDefinition.value
+          : [md.valueSet.valueSetDefinition.value];
+        picklistvalues = values.map(v => v.fullName).join("\n");
+        sortalpha = md.valueSet.valueSetDefinition.sorted === true || md.valueSet.valueSetDefinition.sorted === "true";
+        firstvaluedefault = values.length > 0 && (values[0].default === true || values[0].default === "true");
+      }
+      restrictToDefinedValues = md.valueSet.restricted === true || md.valueSet.restricted === "true";
+    } else if (md.picklist) {
+      if (md.picklist.picklistValues) {
+        const values = Array.isArray(md.picklist.picklistValues)
+          ? md.picklist.picklistValues
+          : [md.picklist.picklistValues];
+        picklistvalues = values.map(v => v.fullName).join("\n");
+        sortalpha = md.picklist.sorted === true || md.picklist.sorted === "true";
+        firstvaluedefault = values.length > 0 && (values[0].default === true || values[0].default === "true");
+      }
+    }
+
+    return {
+      id: record.Id,
+      label: md.label,
+      name: record.DeveloperName,
+      originalName: record.DeveloperName,
+      type: type,
+      description: md.description,
+      helptext: md.inlineHelpText,
+      required: md.required,
+      uniqueSetting: md.unique,
+      external: md.externalId,
+
+      // Type specific
+      length: md.length,
+      precision: md.precision,
+      decimal: md.scale,
+      vislines: md.visibleLines,
+      checkboxDefault: md.defaultValue === "true" || md.defaultValue === true ? "checked" : "unchecked",
+
+      // Picklist
+      picklistvalues: picklistvalues,
+      sortalpha: sortalpha,
+      firstvaluedefault: firstvaluedefault,
+      restrictToDefinedValues: restrictToDefinedValues,
+
+      deploymentStatus: "success",
+      existing: true
+    };
+  }
+
+  mapFieldTypeFromMetadata(type) {
+    const typeMap = {
+      "Checkbox": "Checkbox",
+      "Currency": "Currency",
+      "Date": "Date",
+      "DateTime": "DateTime",
+      "Email": "Email",
+      "Location": "Location",
+      "Number": "Number",
+      "Percent": "Percent",
+      "Phone": "Phone",
+      "Picklist": "Picklist",
+      "MultiselectPicklist": "MultiselectPicklist",
+      "Text": "Text",
+      "TextArea": "TextArea",
+      "LongTextArea": "LongTextArea",
+      "Html": "Html",
+      "Url": "Url"
+    };
+    // Reverse map not strictly needed if keys match values, but for safety
+    return Object.keys(typeMap).find(key => typeMap[key] === type) || type;
+  }
+
+  loadExistingFields = async () => {
+    const {selectedObject} = this.state;
+    if (!selectedObject) return;
+
+    this.setState({loading: true});
+
+    try {
+      // Use durableId (01I...) for custom objects, or try EntityDefinition ID for standard
+      let tableEnumOrId = selectedObject.durableId;
+
+      // 1. Get IDs first (Metadata cannot be queried with multiple rows)
+      const query = `SELECT Id FROM CustomField WHERE TableEnumOrId = '${tableEnumOrId}'`;
+
+      const res = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent(query)}`);
+
+      // 2. Fetch details for each field in parallel
+      // We limit concurrency to avoid hitting limits too hard, though for < 50 fields Promise.all is usually fine
+      // But let's be safe with a simple Promise.all for now as Inspector is usually interactive tool
+      const fieldPromises = res.records.map(record =>
+        sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/CustomField/${record.Id}`)
+      );
+
+      const fieldDetails = await Promise.all(fieldPromises);
+
+      const existingFields = fieldDetails.map(record => this.mapMetadataToUI(record));
+
+      this.setState(prevState => {
+        const currentIds = new Set(prevState.fields.map(f => f.id).filter(id => id));
+        const newUniqueFields = existingFields.filter(f => !currentIds.has(f.id));
+
+        return {
+          fields: [...prevState.fields, ...newUniqueFields],
+          loading: false
+        };
+      });
+
+    } catch (error) {
+      console.error("Error loading existing fields", error);
+      this.setState({fieldErrorMessage: "Error loading existing fields: " + error.message, loading: false});
+    }
+  };
+
   // Generate the appropriate Fields setup link for different object types
   getObjectFieldsLink = (selectedObject) => {
     if (selectedObject.name.endsWith("__mdt")) {
@@ -996,6 +1143,13 @@ class App extends React.Component {
     } else {
       return `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject.name}/FieldsAndRelationships/view`;
     }
+  };
+
+  getObjectLayoutsLink = (selectedObject) => {
+    if (selectedObject.name.endsWith("__mdt") || selectedObject.name.endsWith("__e")) {
+      return null;
+    }
+    return `https://${sfConn.instanceHostname}/lightning/setup/ObjectManager/${selectedObject.name}/PageLayouts/view`;
   };
 
   componentDidMount() {
@@ -1049,10 +1203,19 @@ class App extends React.Component {
         return aName.localeCompare(bName);
       });
 
-    this.setState({
+    const newState = {
       objectSearch: e.target.value,
       filteredObjects: sortedFilteredObjects,
-    });
+    };
+
+    if (this.state.selectedObject) {
+      Object.assign(newState, this.getResetState());
+      // Restore the search term and filtered objects we just calculated
+      newState.objectSearch = e.target.value;
+      newState.filteredObjects = sortedFilteredObjects;
+    }
+
+    this.setState(newState);
   };
 
   handleObjectSelect = (obj) => {
@@ -1091,6 +1254,24 @@ class App extends React.Component {
       return Promise.resolve([]);
     }
     const permissionPromises = field.profiles.map(profile => {
+      if (profile.id) {
+        if (profile.access === "none") {
+          return sfConn.rest(`/services/data/v${apiVersion}/sobjects/FieldPermissions/${profile.id}`, {
+            method: "DELETE"
+          });
+        } else {
+          return sfConn.rest(`/services/data/v${apiVersion}/sobjects/FieldPermissions/${profile.id}`, {
+            method: "PATCH",
+            body: {
+              PermissionsEdit: profile.access === "edit",
+              PermissionsRead: profile.access === "edit" || profile.access === "read"
+            }
+          });
+        }
+      }
+
+      if (profile.access === "none") return Promise.resolve();
+
       const permissionSetId = this.state.permissionSetMap[profile.name] || profile.name;
       const fieldPermissionBody = {
         ParentId: permissionSetId,
@@ -1109,11 +1290,35 @@ class App extends React.Component {
     return Promise.all(permissionPromises);
   }
 
+  fetchFieldPermissions = async (fieldName) => {
+    const {selectedObject, permissionSetIdToName} = this.state;
+    const fullFieldName = `${selectedObject.name}.${fieldName}__c`;
+
+    const query = `SELECT Id, ParentId, Parent.Name, PermissionsEdit, PermissionsRead FROM FieldPermissions WHERE SobjectType = '${selectedObject.name}' AND Field = '${fullFieldName}'`;
+    const res = await sfConn.rest(`/services/data/v${apiVersion}/query?q=${encodeURIComponent(query)}`);
+
+    return res.records.map(r => {
+      // Use ID to look up the correct key name from permissionSets state
+      // Fallback to Parent.Name if not found (though it should be found if fetchPermissionSets loaded all)
+      const name = permissionSetIdToName?.[r.ParentId] || r.Parent.Name;
+
+      let access = "none";
+      if (r.PermissionsEdit) access = "edit";
+      else if (r.PermissionsRead) access = "read";
+
+      return {name, access, id: r.Id};
+    });
+  };
+
   createField(field, objectName) {
     const {selectedObject} = this.state;
     const isForPlatformEvent = this.isPlatformEvent(selectedObject);
 
     const newField = {
+      // For rename, FullName must be the OLD name if renaming is supported, or we use Metadata.fullName
+      // But Tooling API typically requires FullName to match the ID if patching.
+      // Actually for Tooling API PATCH, we don't set FullName in body usually, just Metadata.
+      // If we want to RENAME, we should change FullName.
       FullName: `${objectName}.${field.name}__c`,
       Metadata: {
         label: field.label,
@@ -1197,6 +1402,24 @@ class App extends React.Component {
 
       default:
         console.warn(`Unsupported field type: ${field.type}`);
+    }
+
+    if (field.existing && field.id) {
+      // If name changed, we need to update FullName to rename it
+      const body = {Metadata: newField.Metadata};
+      if (field.originalName && field.name !== field.originalName) {
+        body.FullName = `${objectName}.${field.name}__c`;
+      }
+
+      return sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/CustomField/${field.id}`, {
+        method: "PATCH",
+        body: body
+      })
+        .then(() => this.setFieldPermissions(field, field.id, objectName))
+        .catch(error => {
+          console.error("Error updating field:", error);
+          throw error;
+        });
     }
 
     return sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/CustomField`, {
@@ -1334,21 +1557,31 @@ class App extends React.Component {
     }
   };
 
-  fetchPermissionSets = () => {
-    sfConn.rest(`/services/data/v${apiVersion}/query/?q=SELECT+Id,Name,Profile.Name+FROM+PermissionSet`)
-      .then(data => {
-        let permissionSets = {};
-        let permissionSetMap = {};
-        data.records.forEach(record => {
-          permissionSets[record.Name] = record.Profile ? record.Profile.Name : null;
-          permissionSetMap[record.Name] = record.Id;
-        });
+  fetchPermissionSets = async () => {
+    try {
+      let permissionSets = {};
+      let permissionSetMap = {};
+      let permissionSetIdToName = {};
 
-        this.setState({permissionSets, permissionSetMap});
-      })
-      .catch(error => {
-        console.error("Error fetching permission sets:", error);
+      let records = [];
+      let nextUrl = `/services/data/v${apiVersion}/query/?q=${encodeURIComponent("SELECT Id, Name, Profile.Name FROM PermissionSet")}`;
+
+      while (nextUrl) {
+        const res = await sfConn.rest(nextUrl);
+        records = records.concat(res.records);
+        nextUrl = res.nextRecordsUrl;
+      }
+
+      records.forEach(record => {
+        permissionSets[record.Name] = record.Profile ? record.Profile.Name : null;
+        permissionSetMap[record.Name] = record.Id;
+        permissionSetIdToName[record.Id] = record.Name;
       });
+
+      this.setState({permissionSets, permissionSetMap, permissionSetIdToName});
+    } catch (error) {
+      console.error("Error fetching permission sets:", error);
+    }
   };
 
   addRow = () => {
@@ -1529,11 +1762,33 @@ class App extends React.Component {
     }
   };
 
-  onEditProfiles = (index) => {
-    this.setState({
-      showProfilesModal: true,
-      currentFieldIndex: index,
-    });
+  onEditProfiles = async (index) => {
+    const field = this.state.fields[index];
+
+    if (field.existing && !field.profiles) {
+      this.setState({loading: true});
+      try {
+        const permissions = await this.fetchFieldPermissions(field.name);
+        const updatedField = {...field, profiles: permissions};
+        const newFields = [...this.state.fields];
+        newFields[index] = updatedField;
+
+        this.setState({
+          fields: newFields,
+          showProfilesModal: true,
+          currentFieldIndex: index,
+          loading: false
+        });
+      } catch (e) {
+        console.error(e);
+        this.setState({fieldErrorMessage: "Error fetching permissions: " + e.message, loading: false});
+      }
+    } else {
+      this.setState({
+        showProfilesModal: true,
+        currentFieldIndex: index,
+      });
+    }
   };
 
   onCloseModal = () => {
@@ -1596,8 +1851,25 @@ class App extends React.Component {
     });
   };
 
+  getResetState = () => ({
+    selectedObject: null,
+    fields: [],
+    objectSearch: "",
+    filteredObjects: [],
+    showProfilesModal: false,
+    currentFieldIndex: null,
+    showModal: false,
+    showImportModal: false,
+    allFieldsHavePermissions: true,
+    importCsvContent: "",
+    importError: "",
+    fieldErrorMessage: "",
+    errorMessageClickable: false,
+    loading: false
+  });
+
   clearAll = () => {
-    location.reload();
+    this.setState(this.getResetState());
   };
 
   checkAllFieldsHavePermissions = () => {
@@ -1693,7 +1965,14 @@ class App extends React.Component {
               target: "_blank",
               className: "fieldsLink marginLeft10",
               rel: "noopener noreferrer"
-            }, "(Fields)"), h("br", null),
+            }, "(Fields)"),
+            selectedObject && this.getObjectLayoutsLink(selectedObject) && h("a", {
+              href: this.getObjectLayoutsLink(selectedObject),
+              target: "_blank",
+              className: "fieldsLink marginLeft10",
+              rel: "noopener noreferrer"
+            }, "(Layouts)"),
+            h("br", null),
             h("div", {className: "relativePosition width400"},
               h("input", {
                 type: "text",
@@ -1733,7 +2012,13 @@ class App extends React.Component {
           h("div", {className: "col-xs-12 text-center", id: "deploy"},
             h("button", {"aria-label": "Clear Button", className: "btn btn-large", onClick: this.clearAll}, "Clear All"),
             h("button", {"aria-label": "Open Import modal button", className: "btn btn-large", onClick: this.openImportModal}, "Import"),
-            h("button", {"disabled": !this.state.selectedObject, "aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Deploy Fields"),
+            h("button", {
+              "disabled": !this.state.selectedObject || this.state.loading,
+              "aria-label": "Load Existing Fields Button",
+              className: "btn btn-large",
+              onClick: this.loadExistingFields
+            }, this.state.loading ? "Loading..." : "Load Existing Fields"),
+            h("button", {"disabled": !this.state.selectedObject, "aria-label": "Deploy Button", className: "btn btn-large highlighted", onClick: this.deploy}, "Save / Deploy Fields"),
             !this.state.allFieldsHavePermissions && !this.isPlatformEvent(selectedObject) && h("p", {className: "errorText"}, "Some fields are missing permissions."),
           )
         )

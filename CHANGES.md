@@ -40,10 +40,9 @@
 - Support for multiple SOQL/SOSL tabs in `Data Export` [feature 132](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/132) (requested Erlend Hansen)
 - Add button in Option page to delete generated access token (cf [troubleshooting](https://tprouvot.github.io/Salesforce-Inspector-reloaded/troubleshooting/#generate-new-token-error))
 - Add option to configure default popup tab [feature 877](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/877) (requested by William Salomon)
-- Support Manual channel configuration and Change Data Capture Events on `Event Monitor` [feature 859](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/859) (idea by [David Moruzzi](https://github.com/dmoruzzi)) and [feature 867](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/867) (idea by Ammon Ho)
+- Support manual channel configuration and Change Data Capture Events on `Event Monitor` [feature 859](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/859) (idea by [David Moruzzi](https://github.com/dmoruzzi)) and [feature 867](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/867) (idea by Ammon Ho)
 - `Metadata` Handle SpecifiedTest + Start zip download when ready [feature 319](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/319) request by [Alfredo Chissotti](https://github.com/Astisme)
 - Add Metadata Deploy feature
-- Fix issue with the sorting of child components in Download Metadata
 - Add Agentforce integration to generate SOQL queries in Data Export [feature 850](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/850)
 - Add option for SOQL query typo removal in Data Export [feature 844](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/844) and [feature 849](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/849)
 - Refactor field-creator api calls to match with extension standards

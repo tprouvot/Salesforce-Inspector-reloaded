@@ -1,0 +1,25 @@
+{
+  "orgName": "TestOrg",
+  "edition": "Developer",
+  "features": [
+    "API",
+    "AddCustomApps:10",
+    "AddCustomTabs:30",
+    "EnableSetPasswordInApi",
+    "AuthorApex",
+    "DebugApex"
+  ],
+  "settings": {
+    "lightningExperienceSettings": {
+      "enableS1DesktopEnabled": true
+    },
+    "mobileSettings": {
+      "enableS1EncryptedStoragePref2": false
+    },
+    "securitySettings": {
+      "sessionSettings": {
+        "lockerServiceNext": true
+      }
+    }
+  }
+}

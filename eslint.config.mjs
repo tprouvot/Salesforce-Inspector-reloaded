@@ -3,7 +3,6 @@ import pluginJs from "@eslint/js";
 import pluginReactConfig from "eslint-plugin-react/configs/recommended.js";
 import {fixupConfigRules} from "@eslint/compat";
 
-
 export default [
   {
     languageOptions: {
@@ -90,14 +89,15 @@ export default [
       "yield-star-spacing": "error"
     }
   },
-  // Node.js configuration for scripts directory
+  // Node.js configuration for scripts, tests, and wdio config
   {
-    files: ["scripts/**/*.js"],
+    files: ["scripts/**/*.js", "test/**/*.js", "wdio.conf.js"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "script",
       globals: {
-        ...globals.node
+        ...globals.node,
+        ...globals.mocha
       }
     },
     rules: {

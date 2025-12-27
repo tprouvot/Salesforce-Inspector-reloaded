@@ -15,3 +15,5 @@ venv/
 .vscode/
 .DS_Store
 .cursorrules
+chrome-test-profile/
+firefox-test-profile/

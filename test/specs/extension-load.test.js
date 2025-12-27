@@ -21,12 +21,6 @@ before(async () => {
 
     const jsonStart = output.search(/\{\s*"status"\s*:/);
     const jsonEnd = output.lastIndexOf('}');
-
-    if (jsonStart === -1 || jsonEnd === -1) {
-      console.error('RAW OUTPUT:\n', output);
-      throw new Error('Could not locate valid JSON block');
-    }
-
     const jsonString = output.slice(jsonStart, jsonEnd + 1);
     const result = JSON.parse(jsonString);
 
@@ -42,46 +36,87 @@ before(async () => {
 });
 
 it('should inject content scripts on a Salesforce scratch org', async () => {
-  const { hostname } = new URL(instanceUrl);
-
   // 1️⃣ Navigate to the scratch org domain
-  await browser.url(`https://${hostname}`);
+  await browser.url(instanceUrl);
+  console.log('Step 1: Navigated to org');
+  await browser.pause(2000);
 
-  // 2️⃣ Set Salesforce session cookie
+  // 2️⃣ Get the ACTUAL current URL after any redirects
+  const currentUrl = await browser.getUrl();
+  console.log('Current URL after redirect:', currentUrl);
+  
+  // Extract the actual hostname we're on
+  const { hostname: actualHostname } = new URL(currentUrl);
+  console.log('Actual hostname:', actualHostname);
+
+  // 3️⃣ Set cookie for the ACTUAL domain (without leading dot)
   await browser.setCookies([
     {
       name: 'sid',
       value: sessionId,
-      domain: `.${hostname}`,
+      domain: actualHostname, // No leading dot
       path: '/',
       secure: true,
       httpOnly: true,
     },
   ]);
+  console.log('Step 2: Cookie set for', actualHostname);
 
-  // 3️⃣ Go to a Lightning page (content scripts inject here)
+  // 4️⃣ Navigate to Lightning home
   await browser.url(`${instanceUrl}/lightning/page/home`);
+  await browser.pause(3000);
 
-  // 4️⃣ Make sure we're not redirected to login
+  // 5️⃣ Verify authentication
+  const title = await browser.getTitle();
+  console.log('Page title:', title);
+  
   await browser.waitUntil(
-    async () => !(await browser.getTitle()).includes('Login'),
+    async () => {
+      const currentTitle = await browser.getTitle();
+      return !currentTitle.includes('Login');
+    },
     {
       timeout: 30000,
       timeoutMsg: 'Failed to authenticate into scratch org',
     }
   );
+  console.log('Step 3: Authentication confirmed');
+  await browser.refresh();
+  await browser.pause(2000);
 
-  // 5️⃣ ASSERT: Inspector Reloaded injected
+  // 6️⃣ Debug extension-visible effects (DOM only)
+  const extensionState = await browser.execute(() => {
+    return {
+      currentUrl: window.location.href,
+      hasButton: !!document.querySelector('button[data-inspector-button]'),
+      totalButtons: document.querySelectorAll('button').length,
+    };
+  });
+
+  console.log('\n📊 EXTENSION STATE (DOM-visible):');
+  console.log(JSON.stringify(extensionState, null, 2));
+
+  // 7️⃣ Wait for Inspector button
+  let attempts = 0;
   await browser.waitUntil(
-    async () =>
-      await browser.execute(() =>
-        !!document.querySelector('button[data-inspector-button]')
-      ),
+    async () => {
+      attempts++;
+      const found = await browser.execute(() => {
+        return !!document.querySelector('div.insext-btn[title*="Salesforce details"]')
+      });
+      
+      if (!found && attempts % 5 === 0) {
+        console.log(`Attempt ${attempts}: Still waiting for Inspector button...`);
+      }
+      
+      return found;
+    },
     {
       timeout: 20000,
-      timeoutMsg: 'Salesforce Inspector Reloaded did not inject',
+      interval: 1000,
+      timeoutMsg: 'Salesforce Inspector Reloaded did not inject after 20 seconds',
     }
   );
-  
-});
 
+  console.log('✅ Inspector button found!');
+});

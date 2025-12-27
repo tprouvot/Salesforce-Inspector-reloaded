@@ -1,54 +1,69 @@
+// wdio.conf.js
 require("dotenv").config();
 const path = require("path");
+const fs = require("fs");
+const { execSync } = require("child_process");
 
-const extensionPath = path.resolve(__dirname, "addon"); // Absolute path to your extension folder
+// Build extension
+console.log("🔨 Building Chrome extension...");
+execSync("npm run chrome-release-build", { stdio: "inherit" });
 
-/* eslint-disable strict */
+const extensionPath = path.resolve(__dirname, "target/chrome/dist/addon");
+const userDataDir = path.resolve(__dirname, "chrome-test-profile");
+
+// Create profile directory if it doesn't exist
+if (!fs.existsSync(userDataDir)) {
+  fs.mkdirSync(userDataDir, { recursive: true });
+}
+
+console.log("✅ Extension path:", extensionPath);
+console.log("📁 Profile path:", userDataDir);
+
 exports.config = {
   runner: "local",
-
-  specs: [
-    "./test/**/*.test.js"
-  ],
-
-  exclude: [],
-
+  specs: ["./test/**/*.test.js"],
   maxInstances: 1,
 
-  capabilities: [{
-    browserName: "chrome",
-    "goog:chromeOptions": {
-      args: [
-        `--disable-extensions-except=${extensionPath}`,
-        `--load-extension=${extensionPath}`,
-        "--no-sandbox",
-        "--disable-gpu",
-        "--disable-background-networking",
-        "--disable-background-timer-throttling",
-        "--disable-dev-shm-usage"
-      ]
-    }
-  }],
+  capabilities: [
+    {
+      browserName: "chrome",
+      "goog:chromeOptions": {
+        // Use a persistent user profile
+        args: [
+          `--user-data-dir=${userDataDir}`,
+          `--load-extension=${extensionPath}`,
+          `--disable-extensions-except=${extensionPath}`,
+          "--no-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          // Keep the browser window visible
+          "--disable-blink-features=AutomationControlled"
+        ],
+      },
+    },
+  ],
 
   framework: "mocha",
-
   mochaOpts: {
     ui: "bdd",
-    timeout: 120000
+    timeout: 120000,
   },
-
   reporters: ["spec"],
-
   logLevel: "info",
 
-  bail: 0,
-
-  baseUrl: "http://localhost",
-
-  waitforTimeout: 10000,
-
-  connectionRetryTimeout: 120000,
-
-  connectionRetryCount: 3,
-
+  // Give extension time to initialize
+  before: async function() {
+    console.log("⏳ Waiting for extension to initialize...");
+    await browser.pause(3000);
+    
+    // Check if extension is loaded
+    const extensions = await browser.execute(() => {
+      if (typeof chrome !== 'undefined' && chrome.runtime) {
+        return { hasRuntime: true, id: chrome.runtime.id };
+      }
+      return { hasRuntime: false };
+    });
+    
+    console.log("🔧 Extension context:", extensions);
+  },
 };

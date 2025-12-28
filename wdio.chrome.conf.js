@@ -6,6 +6,19 @@ import { chromium } from 'playwright-core';
 
 dotenv.config();
 
+// Ensure Playwright Chromium is installed
+try {
+  const chromiumPath = chromium.executablePath();
+  if (!fs.existsSync(chromiumPath)) {
+    console.log("📦 Playwright Chromium not found, installing...");
+    execSync("npx playwright install chromium", { stdio: "inherit" });
+    console.log("✅ Chromium installed");
+  }
+} catch (err) {
+  console.error("❌ Failed to setup Chromium. Run: npx playwright install chromium");
+  process.exit(1);
+}
+
 // Build extension
 console.log("🔨 Building Chrome extension...");
 execSync("npm run chrome-release-build", { stdio: "inherit" });
@@ -53,16 +66,6 @@ export const config = {
 
   before: async () => {
     console.log('⏳ Playwright Chromium + extension loading...');
-    await browser.pause(8000);
-    
-    await browser.url('chrome://extensions/');
     await browser.pause(5000);
-    
-    const debugInfo = await browser.execute(() => {
-      return Array.from(document.querySelectorAll('extensions-item')).length;
-    });
-    console.log('🔍 Extensions found:', debugInfo);
-    
-    await browser.url('about:blank');
   }
 };

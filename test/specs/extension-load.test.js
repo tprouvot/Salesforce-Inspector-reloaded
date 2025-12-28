@@ -6,7 +6,7 @@ let instanceUrl;
 before(async () => {
   try {
     const output = execSync(
-      'sf org display --target-org InspectorReloadedOrg --json',
+      'sf org display --json',
       {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'ignore'],

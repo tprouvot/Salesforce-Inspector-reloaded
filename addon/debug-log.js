@@ -61,7 +61,7 @@ class Model {
     };
 
     // Pagination for lazy loading
-    const savedPageSize = parseInt(localStorage.getItem("sfir.debugLog.pageSize"), 10);
+    const savedPageSize = parseInt(localStorage.getItem("debugLogPageSize"), 10);
     this.allowedPageSizes = [10, 15, 25, 50, 100];
     this.pageSize = this.allowedPageSizes.includes(savedPageSize) ? savedPageSize : 15;
     this.pageIndex = 0;
@@ -914,7 +914,7 @@ Please structure your response in a clear, organized manner using these sections
     const n = parseInt(size, 10);
     if (!this.allowedPageSizes.includes(n) || n === this.pageSize) return;
     this.pageSize = n;
-    try { localStorage.setItem("sfir.debugLog.pageSize", String(n)); } catch (_) {}
+    localStorage.setItem("debugLogPageSize", String(n));
     this.pageIndex = 0;
     this.fetchLogs(true, true);
   }

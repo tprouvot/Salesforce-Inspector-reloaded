@@ -97,7 +97,8 @@ export default [
       sourceType: "script",
       globals: {
         ...globals.node,
-        ...globals.mocha
+        ...globals.mocha,
+        process: "readonly",
       }
     },
     rules: {

@@ -1719,7 +1719,7 @@ function AgentforceModal({model}) {
           isCustomized && h("span", {
             className: "slds-badge slds-badge_lightest slds-m-left_x-small",
             style: {fontSize: "0.75rem"}
-          }, "✨ Customized")
+          }, "Customized")
         ),
         h("div", {className: "slds-button-group", role: "group"},
           h("button", {
@@ -1837,7 +1837,7 @@ function AgentforceModal({model}) {
           )
         ),
         h("h2", {},
-          h("span", {className: "slds-text-heading_small"}, "✨ Analysis Complete")
+          h("span", {className: "slds-text-heading_small"}, "Analysis Complete")
         )
       ),
       h("div", {className: "slds-card"},

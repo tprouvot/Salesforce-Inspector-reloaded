@@ -1588,7 +1588,7 @@ function PreviewModal({model, hideButtonsOption}) {
         )
       ),
       h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
-        h("div", {}, "📄 Loading debug log..."),
+        h("div", {}, "Loading debug log..."),
         h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"},
           "Please wait while we fetch the log file"
         )
@@ -1604,7 +1604,7 @@ function PreviewModal({model, hideButtonsOption}) {
           )
         ),
         h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
-          h("div", {}, "🔄 Applying filter..."),
+          h("div", {}, "Applying filter..."),
           h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"},
             isLargeFile
               ? "Processing large file, this may take a moment"
@@ -1668,9 +1668,9 @@ function AgentforceModal({model}) {
           h("label", {className: "slds-form-element__label slds-text-heading_small"},
             h("span", {}, "Analysis Instructions"),
             isCustomized && h("span", {
-              className: "slds-badge slds-badge_lightest slds-m-left_x-small",
+              className: "slds-badge slds-theme_info slds-m-left_x-small",
               style: {fontSize: "0.75rem"}
-            }, "✨ Customized")
+            }, "Customized")
           ),
           h("div", {className: "slds-button-group", role: "group"},
             h("button", {
@@ -1802,7 +1802,7 @@ function AgentforceModal({model}) {
             )
           ),
           h("h2", {},
-            h("span", {className: "slds-text-heading_small"}, "✨ Analysis Complete")
+            h("span", {className: "slds-text-heading_small"}, "Analysis Complete")
           )
         ),
         h("div", {className: "slds-card"},

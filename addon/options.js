@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
-import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod} from "./utils.js";
+import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod, DataCache} from "./utils.js";
 import {getFlowScannerRules} from "./flow-scanner.js";
 /* global initButton, lightningflowscanner */
 import {DescribeInfo} from "./data-load.js";
@@ -95,13 +95,15 @@ class OptionsTabSelector extends React.Component {
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
               key: "hideButtonsOption",
+              length: 8,
               checkboxes: [
                 {label: "New", name: "new", checked: true},
                 {label: "Explore API", name: "explore-api", checked: true},
                 {label: "Org Limits", name: "org-limits", checked: true},
                 {label: "Options", name: "options", checked: true},
                 {label: "Generate Access Token", name: "generate-token", checked: true},
-                {label: "Copy User Id", name: "copy-userId", checked: true}
+                {label: "Copy User Id", name: "copy-userId", checked: true},
+                {label: "Reset Password", name: "reset-password", checked: true}
               ]}
           },
           {option: FaviconOption, props: {key: this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
@@ -110,8 +112,8 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "text", title: "Banner text", inputSize: "6", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
           {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
           {option: MultiCheckboxButtonGroup,
-            props: {title: "Exclude users from search",
-              key: "userSearchExclusions",
+            props: {title: "Exclude users from search (org specific)",
+              key: this.sfHost + "_userSearchExclusions",
               checkboxes: [
                 {label: " Exclude Portal users", name: "portal", checked: false},
                 {label: " Exclude Inactive users", name: "inactive", checked: false}
@@ -138,6 +140,31 @@ class OptionsTabSelector extends React.Component {
                 {label: "Shortcuts", name: "shortcuts"},
                 {label: "Org", name: "org"}
               ]}
+          },
+          {option: Option,
+            props: {type: "number",
+              title: "API cache period (days)",
+              key: "cachePeriodDays",
+              default: 7,
+              min: 1,
+              inputSize: "3",
+              tooltip: "Some API request are redundant, to limit the number of calls, we implemented a cache. This option allows you to configure the cache period.",
+              actionButton: {
+                label: "Clear Reloaded Cache",
+                title: "Clear extension Cache",
+                onClick: (e, model, appRef) => {
+                  DataCache.clearCache("userFieldNames", model.sfHost);
+                  if (appRef) {
+                    appRef.setState({
+                      showToast: true,
+                      toastMessage: "User describe cache cleared successfully.",
+                      toastVariant: "success",
+                      toastTitle: "Success"
+                    });
+                    setTimeout(() => appRef.hideToast(), 3000);
+                  }
+                }
+              }}
           },
         ]
       },
@@ -387,7 +414,8 @@ class OptionsTabSelector extends React.Component {
         actionButtons: tab.actionButtons,
         content: tab.content,
         selectedTabId: this.state.selectedTabId,
-        model: this.model
+        model: this.model,
+        appRef: this.appRef
       }))
     );
   }
@@ -412,6 +440,7 @@ class OptionsContainer extends React.Component {
   constructor(props) {
     super(props);
     this.model = props.model;
+    this.appRef = props.appRef;
   }
 
   getClass() {
@@ -469,7 +498,8 @@ class OptionsContainer extends React.Component {
             key: c.props?.key || `option-${index}`,
             storageKey: c.props?.key,
             ...c.props,
-            model: this.model
+            model: this.model,
+            appRef: this.appRef
           })
         )
       )
@@ -610,6 +640,7 @@ class Option extends React.Component {
     this.placeholder = props.placeholder;
     this.actionButton = props.actionButton;
     this.inputSize = props.inputSize || "3";
+    this.min = props.min; // Minimum value for number input type (sets HTML min attribute)
 
     // Enhanced properties
     this.enhancedTitle = props.enhancedTitle;
@@ -732,7 +763,8 @@ class Option extends React.Component {
       className: isEnhanced ? "slds-input enhanced-option-input" : "slds-input",
       placeholder: this.placeholder,
       value: nullToEmptyString(this.state[this.key]),
-      onChange: this.onChange
+      onChange: this.onChange,
+      ...(this.type === "number" && this.min !== undefined ? {min: this.min} : {})
     })
       : isTextArea ? h("textarea", {
         id,
@@ -879,10 +911,11 @@ class Option extends React.Component {
               this.renderInputControl(id, false)
             ),
             // Action button (if present)
+            // appRef is passed to allow actionButton handlers to show toast notifications via appRef.setState()
             this.actionButton && h("div", {className: "slds-col"},
               h("button", {
                 className: "slds-button slds-button_brand",
-                onClick: (e) => this.actionButton.onClick(e, this.props.model),
+                onClick: (e) => this.actionButton.onClick(e, this.props.model, this.props.appRef),
                 title: this.actionButton.title || "Action"
               }, this.actionButton.label || "Action")
             ),
@@ -1142,6 +1175,7 @@ class MultiCheckboxButtonGroup extends React.Component {
     this.title = props.title;
     this.key = props.storageKey;
     this.unique = props.unique || false;
+    this.length = props.length || 6;
 
     // Load checkboxes from localStorage or default to props.checkboxes
     const storedCheckboxes = localStorage.getItem(this.key) ? JSON.parse(localStorage.getItem(this.key)) : [];
@@ -1178,7 +1212,7 @@ class MultiCheckboxButtonGroup extends React.Component {
       h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, this.title)
       ),
-      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small slds-m-left_xxx-small"},
+      h("div", {className: "slds-col slds-size_" + this.length + "-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small slds-m-left_xxx-small"},
         h("div", {className: "slds-form-element__control"},
           h("div", {className: "slds-checkbox_button-group"},
             this.state.checkboxes.map((checkbox, index) =>

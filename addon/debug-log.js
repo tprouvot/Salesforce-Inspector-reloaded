@@ -237,7 +237,7 @@ Please structure your response in a clear, organized manner using these sections
         // Extract analysis from the result
         const analysisMatch = result.result.match(/<analysis>([\s\S]*?)<\/analysis>/);
         const extractedAnalysis = analysisMatch ? analysisMatch[1].trim() : result.result;
-        
+
         this.agentforceAnalysis = extractedAnalysis;
         this.agentforceError = null;
       } else {
@@ -573,7 +573,7 @@ Please structure your response in a clear, organized manner using these sections
     this.previewLoading = true;
     this.previewLog = {id, body: "", fileName: `${id}.log`}; // Show modal immediately with loading state
     this.didUpdate();
-    
+
     this.spinnerCount++;
     try {
       const xhr = await sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/ApexLog/${id}/Body`, {responseType: "blob"}, true);
@@ -620,7 +620,7 @@ Please structure your response in a clear, organized manner using these sections
     this._cachedProcessedBody = null;
     this._cachedFilteredBody = null;
     this.didUpdate();
-    
+
     // Process filter change asynchronously to avoid blocking UI
     setTimeout(() => {
       try {
@@ -639,16 +639,14 @@ Please structure your response in a clear, organized manner using these sections
   getFilteredLogBody() {
     if (!this.previewLog || !this.previewLog.body) return "";
     if (!this.previewFilter) return this.previewLog.body;
-    
+
     const lines = this.previewLog.body.split("\n");
     const patterns = this.previewFilter.split("|").map(p => p.trim()).filter(Boolean);
-    
+
     if (patterns.length === 0) return this.previewLog.body;
-    
-    const filteredLines = lines.filter(line => {
-      return patterns.some(pattern => line.includes(pattern));
-    });
-    
+
+    const filteredLines = lines.filter(line => patterns.some(pattern => line.includes(pattern)));
+
     return filteredLines.join("\n");
   }
 
@@ -682,21 +680,21 @@ Please structure your response in a clear, organized manner using these sections
 
   _scrollToCurrentMatch() {
     // Update the current highlight class without re-rendering the whole component
-    const allMarks = document.querySelectorAll('.sfir-highlight');
+    const allMarks = document.querySelectorAll(".sfir-highlight");
     allMarks.forEach((mark, idx) => {
       if (idx === this.previewSearch.index) {
-        mark.classList.add('current');
-        mark.id = 'sfir-current-match';
+        mark.classList.add("current");
+        mark.id = "sfir-current-match";
         mark.scrollIntoView({block: "center", behavior: "smooth"});
       } else {
-        mark.classList.remove('current');
-        if (mark.id === 'sfir-current-match') {
-          mark.removeAttribute('id');
+        mark.classList.remove("current");
+        if (mark.id === "sfir-current-match") {
+          mark.removeAttribute("id");
         }
       }
     });
     // Force update just the counter display
-    const counterEl = document.querySelector('.sfir-search-counter');
+    const counterEl = document.querySelector(".sfir-search-counter");
     if (counterEl) {
       counterEl.textContent = `${this.previewSearch.index + 1} / ${this.previewSearch.count}`;
     }
@@ -878,13 +876,13 @@ function deriveActionFromBody(text) {
   const codeUnitWithIdAndDesc = text.match(/^\d+[^\|]*\|CODE_UNIT_STARTED\|[^\|]*\|[0-9a-zA-Z]{15,18}\|(.+?)$/m);
   if (codeUnitWithIdAndDesc) {
     const description = codeUnitWithIdAndDesc[1].trim();
-    
+
     // Handle VFRemote pattern: "VFRemote: ClassName invoke(methodName)"
     const vfRemoteMatch = description.match(/^VFRemote:\s*([A-Za-z0-9_]+)\s+invoke\(([A-Za-z0-9_]+)\)/);
     if (vfRemoteMatch) {
       return {label: `VFRemote · ${vfRemoteMatch[1]}.${vfRemoteMatch[2]}`};
     }
-    
+
     // Handle standard signature: "ClassName.methodName(params)"
     const standardSig = description.match(/^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)\(/);
     if (standardSig) {
@@ -895,9 +893,9 @@ function deriveActionFromBody(text) {
       }
       return {label: `${cls}.${method}`};
     }
-    
+
     // If none of the above matched, return the full description
-    if (description && description !== 'TRIGGERS' && !description.startsWith('[')) {
+    if (description && description !== "TRIGGERS" && !description.startsWith("[")) {
       return {label: description};
     }
   }
@@ -954,7 +952,7 @@ function deriveActionFromBody(text) {
   if (codeUnitClassName) {
     const className = codeUnitClassName[1];
     // Make sure it's not a special keyword or path (those are handled by other patterns)
-    if (className && !['TRIGGERS', 'EXTERNAL'].includes(className) && !className.includes('.')) {
+    if (className && !["TRIGGERS", "EXTERNAL"].includes(className) && !className.includes(".")) {
       return {label: className};
     }
   }
@@ -1311,7 +1309,7 @@ function PreviewModal({model}) {
   // Get filtered log body (with caching)
   const currentFilter = model.previewFilter || "";
   const cacheKey = `${log.id}_${currentFilter}`;
-  
+
   let displayBody;
   if (model._cachedFilteredBody && model._cachedFilterKey === cacheKey) {
     displayBody = model._cachedFilteredBody;
@@ -1320,7 +1318,7 @@ function PreviewModal({model}) {
     model._cachedFilteredBody = displayBody;
     model._cachedFilterKey = cacheKey;
   }
-  
+
   // For very large files (>1.5MB), skip Prism highlighting to avoid freezing
   const bodySize = displayBody.length;
   const isLargeFile = bodySize > 1500000; // 1.5MB threshold
@@ -1355,7 +1353,7 @@ function PreviewModal({model}) {
   // Skip Prism for large files (>1.5MB) or when filter is being processed to avoid browser crash
   let processedBody;
   const prismCacheKey = `prism_${cacheKey}_${isLargeFile}_${isFilterProcessing}`;
-  
+
   if (model._cachedProcessedBody && model._cachedProcessedKey === prismCacheKey) {
     // Use cached Prism result
     processedBody = model._cachedProcessedBody;
@@ -1364,7 +1362,7 @@ function PreviewModal({model}) {
     if (!isLargeFile && !isFilterProcessing && window.Prism && window.Prism.highlight) {
       try {
         // Let Prism highlight the syntax first
-        processedBody = window.Prism.highlight(displayBody, window.Prism.languages.log || window.Prism.languages.markup, 'log');
+        processedBody = window.Prism.highlight(displayBody, window.Prism.languages.log || window.Prism.languages.markup, "log");
       } catch (e) {
         // If Prism fails, use raw body
         processedBody = escapeHtml(displayBody);
@@ -1376,81 +1374,81 @@ function PreviewModal({model}) {
     model._cachedProcessedBody = processedBody;
     model._cachedProcessedKey = prismCacheKey;
   }
-  
+
   // Now apply search highlighting on top of Prism's output
   const applySearchHighlight = (htmlText, term, currentIdx) => {
     if (!term) return {html: htmlText, count: 0};
-    
+
     // Create a temporary div to parse the HTML
-    const tempDiv = document.createElement('div');
+    const tempDiv = document.createElement("div");
     tempDiv.innerHTML = htmlText;
-    
-    const pattern = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const pattern = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     let globalMatchIndex = 0;
     let totalMatches = 0;
-    
+
     // Function to recursively highlight text nodes while preserving Prism's structure
     const highlightInNode = (node) => {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent;
-        const regex = new RegExp(pattern, 'gi');
+        const regex = new RegExp(pattern, "gi");
         const matches = [];
         let match;
-        
+
         while ((match = regex.exec(text)) !== null) {
           matches.push({start: match.index, end: match.index + match[0].length, text: match[0]});
           if (matches.length > 500) break; // Safety limit per text node
         }
-        
+
         if (matches.length > 0) {
           const fragment = document.createDocumentFragment();
           let lastIndex = 0;
-          
+
           matches.forEach(m => {
             // Text before match
             if (m.start > lastIndex) {
               fragment.appendChild(document.createTextNode(text.substring(lastIndex, m.start)));
             }
-            
+
             // Create highlighted mark
-            const mark = document.createElement('mark');
-            mark.className = 'sfir-highlight';
+            const mark = document.createElement("mark");
+            mark.className = "sfir-highlight";
             if (globalMatchIndex === currentIdx) {
-              mark.classList.add('current');
-              mark.id = 'sfir-current-match';
+              mark.classList.add("current");
+              mark.id = "sfir-current-match";
             }
             mark.textContent = m.text;
             fragment.appendChild(mark);
-            
+
             lastIndex = m.end;
             globalMatchIndex++;
             totalMatches++;
           });
-          
+
           // Remaining text after last match
           if (lastIndex < text.length) {
             fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
           }
-          
+
           node.parentNode.replaceChild(fragment, node);
         }
-      } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'MARK') {
+      } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== "MARK") {
         // Recurse through child nodes (make a copy of childNodes array to avoid live collection issues)
         const children = Array.from(node.childNodes);
         children.forEach(child => highlightInNode(child));
       }
     };
-    
+
     highlightInNode(tempDiv);
-    
+
     return {
       html: tempDiv.innerHTML,
       count: totalMatches
     };
   };
-  
+
   const {html, count} = applySearchHighlight(processedBody, model.previewSearch.term, model.previewSearch.index);
-  
+
   // Update count in model state and adjust index if needed
   if (model.previewSearch.count !== count) {
     model.previewSearch.count = count;
@@ -1458,7 +1456,7 @@ function PreviewModal({model}) {
       model.previewSearch.index = count > 0 ? count - 1 : 0;
     }
   }
-  
+
   setTimeout(() => {
     const el = document.getElementById("sfir-current-match");
     if (el) el.scrollIntoView({block: "center"});
@@ -1484,8 +1482,8 @@ function PreviewModal({model}) {
         h("use", {xlinkHref: "symbols.svg#warning"})
       )
     ),
-    h("h2", {}, 
-      h("span", {className: "slds-text-body_small"}, 
+    h("h2", {},
+      h("span", {className: "slds-text-body_small"},
         `⚠️ Large file (${(bodySize / 1024 / 1024).toFixed(2)} MB). Syntax highlighting is disabled to prevent browser crashes. Search and filtering still work.`
       )
     )
@@ -1537,12 +1535,12 @@ function PreviewModal({model}) {
               h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#search"}))
             ),
             h("input", {
-              type: "text", 
-              placeholder: "Find in log (Ctrl/⌘+F)", 
-              className: "slds-input sfir-preview-search-input", 
-              defaultValue: model.previewSearch.term, 
-              autoComplete: "off", 
-              onInput: (e) => model.updatePreviewSearchTermLive(e.target.value), 
+              type: "text",
+              placeholder: "Find in log (Ctrl/⌘+F)",
+              className: "slds-input sfir-preview-search-input",
+              defaultValue: model.previewSearch.term,
+              autoComplete: "off",
+              onInput: (e) => model.updatePreviewSearchTermLive(e.target.value),
               onKeyDown: (e) => { if (e.key === "Enter") { e.preventDefault(); model.nextPreviewMatch(); } },
               disabled: isLoading || isFilterProcessing
             })
@@ -1577,41 +1575,41 @@ function PreviewModal({model}) {
     )
   ),
   // Loading state, filter processing state, or log body
-  isLoading 
+  isLoading
     ? h("div", {className: "slds-align_absolute-center slds-m-vertical_xx-large", style: {minHeight: "60vh"}},
+      h("div", {className: "slds-spinner_container"},
+        h("div", {role: "status", className: "slds-spinner slds-spinner_large slds-spinner_brand"},
+          h("span", {className: "slds-assistive-text"}, "Loading log..."),
+          h("div", {className: "slds-spinner__dot-a"}),
+          h("div", {className: "slds-spinner__dot-b"})
+        )
+      ),
+      h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
+        h("div", {}, "📄 Loading debug log..."),
+        h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"},
+          "Please wait while we fetch the log file"
+        )
+      )
+    )
+    : isFilterProcessing
+      ? h("div", {className: "slds-align_absolute-center slds-m-vertical_xx-large", style: {minHeight: "60vh"}},
         h("div", {className: "slds-spinner_container"},
           h("div", {role: "status", className: "slds-spinner slds-spinner_large slds-spinner_brand"},
-            h("span", {className: "slds-assistive-text"}, "Loading log..."),
+            h("span", {className: "slds-assistive-text"}, "Processing filter..."),
             h("div", {className: "slds-spinner__dot-a"}),
             h("div", {className: "slds-spinner__dot-b"})
           )
         ),
         h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
-          h("div", {}, "📄 Loading debug log..."),
-          h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"}, 
-            "Please wait while we fetch the log file"
+          h("div", {}, "🔄 Applying filter..."),
+          h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"},
+            isLargeFile
+              ? "Processing large file, this may take a moment"
+              : "Please wait"
           )
         )
       )
-    : isFilterProcessing
-      ? h("div", {className: "slds-align_absolute-center slds-m-vertical_xx-large", style: {minHeight: "60vh"}},
-          h("div", {className: "slds-spinner_container"},
-            h("div", {role: "status", className: "slds-spinner slds-spinner_large slds-spinner_brand"},
-              h("span", {className: "slds-assistive-text"}, "Processing filter..."),
-              h("div", {className: "slds-spinner__dot-a"}),
-              h("div", {className: "slds-spinner__dot-b"})
-            )
-          ),
-          h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
-            h("div", {}, "🔄 Applying filter..."),
-            h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"}, 
-              isLargeFile 
-                ? "Processing large file, this may take a moment"
-                : "Please wait"
-            )
-          )
-        )
-    : h("pre", {
+      : h("pre", {
         className: "language-log",
         style: {maxHeight: "60vh", overflow: "auto"}
       },
@@ -1619,21 +1617,21 @@ function PreviewModal({model}) {
         className: "language-log",
         dangerouslySetInnerHTML: {__html: html}
       })
-    )
+      )
   );
 }
 
 function AgentforceModal({model}) {
   if (!model.showAgentforceModal) return null;
-  
+
   const defaultPrompt = model.getDefaultInstructions();
   const currentInstructions = model.agentforceCustomInstructions || defaultPrompt;
   const isCustomized = currentInstructions !== defaultPrompt;
   const isEditMode = model.agentforceEditMode;
-  
+
   const isAnalyzing = model.agentforceAnalyzing || false;
   const hasResults = model.agentforceAnalysis || model.agentforceError;
-  
+
   return h("div", {},
     // Backdrop
     h("div", {
@@ -1644,89 +1642,89 @@ function AgentforceModal({model}) {
     h(ConfirmModal, {
       isOpen: true,
       title: h("div", {className: "slds-grid slds-grid_vertical-align-center"},
-      h("span", {className: "slds-icon_container slds-icon-utility-einstein slds-m-right_small"},
-        h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
-          h("use", {xlinkHref: "symbols.svg#einstein"})
-        )
-      ),
-      h("span", {}, "AI-Powered Debug Log Analysis")
-    ),
-    onConfirm: isAnalyzing ? null : () => model.sendAgentforceAnalysis(),
-    onCancel: () => model.closeAgentforce(),
-    confirmLabel: isAnalyzing ? "Analyzing..." : (hasResults ? "Analyze Again" : "Analyze"),
-    cancelLabel: hasResults ? "Close" : "Cancel",
-    confirmVariant: "brand",
-    cancelVariant: "neutral",
-    confirmDisabled: isAnalyzing,
-    containerClassName: "modalContainer"
-  },
-  h("div", {className: "slds-p-around_medium"},
-    // Instructions Section with Edit/View toggle
-    !hasResults && h("div", {className: "slds-form-element slds-m-bottom_medium"},
-      h("div", {className: "slds-grid slds-grid_align-spread slds-m-bottom_x-small"},
-        h("label", {className: "slds-form-element__label slds-text-heading_small"}, 
-          h("span", {}, "📋 Analysis Instructions"),
-          isCustomized && h("span", {
-            className: "slds-badge slds-badge_lightest slds-m-left_x-small",
-            style: {fontSize: "0.75rem"}
-          }, "✨ Customized")
+        h("span", {className: "slds-icon_container slds-icon-utility-einstein slds-m-right_small"},
+          h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
+            h("use", {xlinkHref: "symbols.svg#einstein"})
+          )
         ),
-        h("div", {className: "slds-button-group", role: "group"},
-          h("button", {
-            className: `slds-button slds-button_${isEditMode ? "brand" : "neutral"}`,
-            title: "Edit instructions",
-            onClick: () => model.toggleAgentforceEditMode(),
-            disabled: isAnalyzing
-          }, 
+        h("span", {}, "AI-Powered Debug Log Analysis")
+      ),
+      onConfirm: isAnalyzing ? null : () => model.sendAgentforceAnalysis(),
+      onCancel: () => model.closeAgentforce(),
+      confirmLabel: isAnalyzing ? "Analyzing..." : (hasResults ? "Analyze Again" : "Analyze"),
+      cancelLabel: hasResults ? "Close" : "Cancel",
+      confirmVariant: "brand",
+      cancelVariant: "neutral",
+      confirmDisabled: isAnalyzing,
+      containerClassName: "modalContainer"
+    },
+    h("div", {className: "slds-p-around_medium"},
+    // Instructions Section with Edit/View toggle
+      !hasResults && h("div", {className: "slds-form-element slds-m-bottom_medium"},
+        h("div", {className: "slds-grid slds-grid_align-spread slds-m-bottom_x-small"},
+          h("label", {className: "slds-form-element__label slds-text-heading_small"},
+            h("span", {}, "📋 Analysis Instructions"),
+            isCustomized && h("span", {
+              className: "slds-badge slds-badge_lightest slds-m-left_x-small",
+              style: {fontSize: "0.75rem"}
+            }, "✨ Customized")
+          ),
+          h("div", {className: "slds-button-group", role: "group"},
+            h("button", {
+              className: `slds-button slds-button_${isEditMode ? "brand" : "neutral"}`,
+              title: "Edit instructions",
+              onClick: () => model.toggleAgentforceEditMode(),
+              disabled: isAnalyzing
+            },
             h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
               h("use", {xlinkHref: "symbols.svg#edit"})
             ),
             "Edit"
-          ),
-          isCustomized && h("button", {
-            className: "slds-button slds-button_neutral",
-            title: "Reset to default instructions",
-            onClick: () => {
-              if (confirm("Reset to default instructions? Your custom instructions will be lost.")) {
-                model.resetAgentforceInstructions();
-              }
+            ),
+            isCustomized && h("button", {
+              className: "slds-button slds-button_neutral",
+              title: "Reset to default instructions",
+              onClick: () => {
+                if (confirm("Reset to default instructions? Your custom instructions will be lost.")) {
+                  model.resetAgentforceInstructions();
+                }
+              },
+              disabled: isAnalyzing
             },
-            disabled: isAnalyzing
-          }, 
             h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
               h("use", {xlinkHref: "symbols.svg#refresh"})
             ),
             "Reset"
+            )
           )
-        )
-      ),
-      
-      // Edit Mode - Editable textarea
-      isEditMode ? h("div", {},
-        h("textarea", {
-          className: "slds-textarea",
-          style: {
-            minHeight: "400px",
-            fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace",
-            fontSize: "0.875rem",
-            lineHeight: "1.7"
-          },
-          value: currentInstructions,
-          onInput: (e) => model.updateAgentforceInstructions(e.target.value),
-          placeholder: "Enter your custom analysis instructions...",
-          disabled: isAnalyzing
-        }),
-        h("div", {className: "slds-form-element__help slds-m-top_small"},
-          h("div", {className: "slds-text-body_small slds-text-color_weak"},
-            "💡 Tip: Customize these instructions to focus on specific aspects of your debug logs. Changes are automatically saved."
+        ),
+
+        // Edit Mode - Editable textarea
+        isEditMode ? h("div", {},
+          h("textarea", {
+            className: "slds-textarea",
+            style: {
+              minHeight: "400px",
+              fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace",
+              fontSize: "0.875rem",
+              lineHeight: "1.7"
+            },
+            value: currentInstructions,
+            onInput: (e) => model.updateAgentforceInstructions(e.target.value),
+            placeholder: "Enter your custom analysis instructions...",
+            disabled: isAnalyzing
+          }),
+          h("div", {className: "slds-form-element__help slds-m-top_small"},
+            h("div", {className: "slds-text-body_small slds-text-color_weak"},
+              "💡 Tip: Customize these instructions to focus on specific aspects of your debug logs. Changes are automatically saved."
+            )
           )
-        )
-      ) : h("div", {},
+        ) : h("div", {},
         // View Mode - Read-only display
-        h("div", {
-          className: "slds-box slds-theme_shade slds-m-top_x-small",
-          style: {maxHeight: "400px", overflowY: "auto"}
-        },
+          h("div", {
+            className: "slds-box slds-theme_shade slds-m-top_x-small",
+            style: {maxHeight: "400px", overflowY: "auto"}
+          },
           h("div", {
             className: "slds-text-body_small",
             style: {
@@ -1737,119 +1735,119 @@ function AgentforceModal({model}) {
               padding: "0.75rem"
             }
           }, currentInstructions)
-        ),
-        h("div", {className: "slds-form-element__help slds-m-top_small"},
-          h("div", {className: "slds-text-body_small"},
-            "✨ The AI will provide a detailed analysis covering:",
-            h("ul", {className: "slds-list_dotted slds-m-top_xx-small slds-m-left_medium"},
-              h("li", {}, "Executive Summary & Execution Flow"),
-              h("li", {}, "Data Operations (SOQL/DML)"),
-              h("li", {}, "Errors & Performance Issues"),
-              h("li", {}, "Governor Limits Usage"),
-              h("li", {}, "Best Practices & Recommendations")
-            )
-          )
-        )
-      )
-    ),
-    
-    // Analyzing State
-    isAnalyzing && h("div", {className: "slds-align_absolute-center slds-m-vertical_large"},
-      h("div", {className: "slds-spinner_container"},
-        h("div", {role: "status", className: "slds-spinner slds-spinner_medium slds-spinner_brand"},
-          h("span", {className: "slds-assistive-text"}, "Analyzing log..."),
-          h("div", {className: "slds-spinner__dot-a"}),
-          h("div", {className: "slds-spinner__dot-b"})
-        )
-      ),
-      h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
-        h("div", {}, "🤖 AI is performing a comprehensive analysis..."),
-        h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"}, 
-          "Analyzing execution flow, data operations, performance, and governor limits"
-        ),
-        h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_xx-small"}, 
-          "This may take 30-60 seconds for detailed insights"
-        )
-      )
-    ),
-    
-    // Error State
-    model.agentforceError && h("div", {className: "slds-m-top_medium"},
-      h("div", {className: "slds-notify slds-notify_alert slds-alert_error", role: "alert"},
-        h("span", {className: "slds-icon_container slds-icon-utility-error slds-m-right_small"},
-          h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-            h("use", {xlinkHref: "symbols.svg#error"})
-          )
-        ),
-        h("h2", {}, 
-          h("span", {className: "slds-text-heading_small"}, "Analysis Failed")
-        )
-      ),
-      h("div", {className: "slds-box slds-box_small slds-theme_error slds-m-top_small"},
-        h("div", {className: "slds-text-body_regular", style: {fontFamily: "monospace", fontSize: "0.875rem"}}, 
-          model.agentforceError
-        )
-      )
-    ),
-    
-    // Success State with Results
-    model.agentforceAnalysis && h("div", {className: "slds-m-top_medium"},
-      h("div", {className: "slds-notify slds-notify_alert slds-alert_success slds-m-bottom_small", role: "alert"},
-        h("span", {className: "slds-icon_container slds-icon-utility-success slds-m-right_small"},
-          h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-            h("use", {xlinkHref: "symbols.svg#success"})
-          )
-        ),
-        h("h2", {}, 
-          h("span", {className: "slds-text-heading_small"}, "✨ Analysis Complete")
-        )
-      ),
-      h("div", {className: "slds-card"},
-        h("div", {className: "slds-card__header slds-grid"},
-          h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
-            h("div", {className: "slds-media__body"},
-              h("h2", {className: "slds-card__header-title"},
-                h("span", {}, "AI Analysis Results")
-              )
-            ),
-            h("div", {className: "slds-no-flex"},
-              h("button", {
-                className: "slds-button slds-button_icon slds-button_icon-border-filled",
-                title: "Copy to clipboard",
-                onClick: () => {
-                  navigator.clipboard.writeText(model.agentforceAnalysis);
-                  model.showToast("success", "Copied", "Analysis copied to clipboard");
-                }
-              },
-              h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-                h("use", {xlinkHref: "symbols.svg#copy"})
-              )
+          ),
+          h("div", {className: "slds-form-element__help slds-m-top_small"},
+            h("div", {className: "slds-text-body_small"},
+              "✨ The AI will provide a detailed analysis covering:",
+              h("ul", {className: "slds-list_dotted slds-m-top_xx-small slds-m-left_medium"},
+                h("li", {}, "Executive Summary & Execution Flow"),
+                h("li", {}, "Data Operations (SOQL/DML)"),
+                h("li", {}, "Errors & Performance Issues"),
+                h("li", {}, "Governor Limits Usage"),
+                h("li", {}, "Best Practices & Recommendations")
               )
             )
           )
+        )
+      ),
+
+      // Analyzing State
+      isAnalyzing && h("div", {className: "slds-align_absolute-center slds-m-vertical_large"},
+        h("div", {className: "slds-spinner_container"},
+          h("div", {role: "status", className: "slds-spinner slds-spinner_medium slds-spinner_brand"},
+            h("span", {className: "slds-assistive-text"}, "Analyzing log..."),
+            h("div", {className: "slds-spinner__dot-a"}),
+            h("div", {className: "slds-spinner__dot-b"})
+          )
         ),
-        h("div", {className: "slds-card__body slds-card__body_inner"},
-          h("div", {
-            className: "slds-text-body_regular",
-            style: {
-              whiteSpace: "pre-wrap",
-              lineHeight: "1.8",
-              maxHeight: "65vh",
-              overflowY: "auto",
-              backgroundColor: "#fafaf9",
-              border: "1px solid #e5e5e5",
-              borderRadius: "0.25rem",
-              padding: "1.25rem",
-              fontFamily: "'SF Pro Text', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
-              fontSize: "0.9375rem",
-              color: "#181818"
-            }
-          }, model.agentforceAnalysis)
+        h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
+          h("div", {}, "🤖 AI is performing a comprehensive analysis..."),
+          h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"},
+            "Analyzing execution flow, data operations, performance, and governor limits"
+          ),
+          h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_xx-small"},
+            "This may take 30-60 seconds for detailed insights"
+          )
+        )
+      ),
+
+      // Error State
+      model.agentforceError && h("div", {className: "slds-m-top_medium"},
+        h("div", {className: "slds-notify slds-notify_alert slds-alert_error", role: "alert"},
+          h("span", {className: "slds-icon_container slds-icon-utility-error slds-m-right_small"},
+            h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
+              h("use", {xlinkHref: "symbols.svg#error"})
+            )
+          ),
+          h("h2", {},
+            h("span", {className: "slds-text-heading_small"}, "Analysis Failed")
+          )
+        ),
+        h("div", {className: "slds-box slds-box_small slds-theme_error slds-m-top_small"},
+          h("div", {className: "slds-text-body_regular", style: {fontFamily: "monospace", fontSize: "0.875rem"}},
+            model.agentforceError
+          )
+        )
+      ),
+
+      // Success State with Results
+      model.agentforceAnalysis && h("div", {className: "slds-m-top_medium"},
+        h("div", {className: "slds-notify slds-notify_alert slds-alert_success slds-m-bottom_small", role: "alert"},
+          h("span", {className: "slds-icon_container slds-icon-utility-success slds-m-right_small"},
+            h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
+              h("use", {xlinkHref: "symbols.svg#success"})
+            )
+          ),
+          h("h2", {},
+            h("span", {className: "slds-text-heading_small"}, "✨ Analysis Complete")
+          )
+        ),
+        h("div", {className: "slds-card"},
+          h("div", {className: "slds-card__header slds-grid"},
+            h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
+              h("div", {className: "slds-media__body"},
+                h("h2", {className: "slds-card__header-title"},
+                  h("span", {}, "AI Analysis Results")
+                )
+              ),
+              h("div", {className: "slds-no-flex"},
+                h("button", {
+                  className: "slds-button slds-button_icon slds-button_icon-border-filled",
+                  title: "Copy to clipboard",
+                  onClick: () => {
+                    navigator.clipboard.writeText(model.agentforceAnalysis);
+                    model.showToast("success", "Copied", "Analysis copied to clipboard");
+                  }
+                },
+                h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#copy"})
+                )
+                )
+              )
+            )
+          ),
+          h("div", {className: "slds-card__body slds-card__body_inner"},
+            h("div", {
+              className: "slds-text-body_regular",
+              style: {
+                whiteSpace: "pre-wrap",
+                lineHeight: "1.8",
+                maxHeight: "65vh",
+                overflowY: "auto",
+                backgroundColor: "#fafaf9",
+                border: "1px solid #e5e5e5",
+                borderRadius: "0.25rem",
+                padding: "1.25rem",
+                fontFamily: "'SF Pro Text', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
+                fontSize: "0.9375rem",
+                color: "#181818"
+              }
+            }, model.agentforceAnalysis)
+          )
         )
       )
     )
-  )
-  ) // Close ConfirmModal
+    ) // Close ConfirmModal
   ); // Close wrapper div with backdrop
 }
 

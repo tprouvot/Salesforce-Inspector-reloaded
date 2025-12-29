@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>eUd0mbAGZWKA1sA0ycUimsyKANZzHc5nXBMvmeka9S8=_1</activeVersionIdentifier>
     <description>Analyzes Salesforce debug logs to identify errors, exceptions, performance issues, and provides explanations and recommendations.</description>
     <developerName>AnalyzeDebugLog</developerName>
     <masterLabel>Analyze Debug Log</masterLabel>

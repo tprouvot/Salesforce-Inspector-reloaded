@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard} from "./utils.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -1367,7 +1367,7 @@ class AllDataBoxUsers extends React.PureComponent {
 
   getUserSearchExclusionsFromLocalStorage() {
     // Try to read from new MultiCheckboxButtonGroup format first
-    const userSearchExclusions = localStorage.getItem("userSearchExclusions");
+    const userSearchExclusions = localStorage.getItem(this.props.sfHost + "_userSearchExclusions");
     const defaultExclusions = {
       excludePortalUsersFromSearch: false,
       excludeInactiveUsersFromSearch: false
@@ -1416,6 +1416,51 @@ class AllDataBoxUsers extends React.PureComponent {
     }
   }
 
+  /**
+   * Get User object accessible field names, using cache if available
+   * Only caches the field names we're interested in, not the entire describe result
+   * @returns {Promise<Array<string>>} Array of accessible field names
+   */
+  async getUserDescribeFields() {
+    const {sfHost} = this.props;
+    const cacheKey = "userFieldNames";
+
+    // Check cache first
+    let fieldNames = DataCache.getCachedData(cacheKey, sfHost);
+
+    if (!fieldNames) {
+      // Cache expired or missing, fetch fresh data
+      try {
+        const userDescribe = await sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/describe`, {
+          method: "GET"
+        });
+        // Only cache the field names we're interested in
+        const fieldsOfInterest = ["ProfileId", "Profile", "IsPortalEnabled"];
+        fieldNames = userDescribe.fields
+          .filter(field => fieldsOfInterest.includes(field.name))
+          .map(field => field.name);
+        // Store in cache
+        DataCache.setCachedData(cacheKey, sfHost, fieldNames);
+      } catch (err) {
+        console.error("Error fetching User describe:", err);
+        // Return empty array if fetch fails
+        return [];
+      }
+    }
+
+    return fieldNames;
+  }
+
+  /**
+   * Check if a field exists in the cached User describe result
+   * @param {string} fieldName - Name of the field to check
+   * @returns {Promise<boolean>} True if field is accessible, false otherwise
+   */
+  async hasFieldAccess(fieldName) {
+    const fieldNames = await this.getUserDescribeFields();
+    return fieldNames.includes(fieldName);
+  }
+
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
     userQuery = userQuery.trim();
@@ -1423,31 +1468,27 @@ class AllDataBoxUsers extends React.PureComponent {
       return [];
     }
     const escapedUserQuery = userQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
-    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const userSearchWhereClause = this.getUserSearchWhereClause(escapedUserQuery);
-    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
-    const compositeQuery = {
-      "compositeRequest": [
-        {
-          "method": "GET",
-          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
-          "referenceId": "fullData"
-        }, {
-          "method": "GET",
-          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
-          "referenceId": "minimalData"
-        }
-      ]
-    };
 
+    // Get cached field permissions
+    const hasProfileId = await this.hasFieldAccess("ProfileId");
+
+    // Build SELECT clause dynamically based on available fields
+    // If ProfileId is accessible, Profile.Name should also be accessible
+    let fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
+    if (hasProfileId) {
+      fullQuerySelect += ", ProfileId, Profile.Name";
+    }
+
+    const userSearchWhereClause = await this.getUserSearchWhereClause(escapedUserQuery);
+    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
+
+    // Use single query since we're building it dynamically based on accessible fields
     try {
       setIsLoading(true);
-      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
-      let users = userSearchResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records;
-      return users;
+      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom));
+      return userSearchResult.records || [];
     } catch (err) {
-      console.error("Unable to query user details with: " + JSON.stringify(compositeQuery) + ".", err);
+      console.error("Unable to query user details:", err);
       return [];
     } finally {
       setIsLoading(false);
@@ -1455,7 +1496,7 @@ class AllDataBoxUsers extends React.PureComponent {
 
   }
 
-  getUserSearchWhereClause(escapedUserQuery) {
+  async getUserSearchWhereClause(escapedUserQuery) {
     const {userSearchFields, excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.state;
 
     let userSearchWhereClause = "(";
@@ -1468,7 +1509,11 @@ class AllDataBoxUsers extends React.PureComponent {
       userSearchWhereClause += " AND IsActive = true";
     }
     if (excludePortalUsersFromSearch) {
-      userSearchWhereClause += " AND IsPortalEnabled = false";
+      // Check if IsPortalEnabled field is accessible before adding filter
+      const hasIsPortalEnabled = await this.hasFieldAccess("IsPortalEnabled");
+      if (hasIsPortalEnabled) {
+        userSearchWhereClause += " AND IsPortalEnabled = false";
+      }
     }
     return userSearchWhereClause;
   }

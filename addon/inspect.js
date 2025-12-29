@@ -1476,7 +1476,6 @@ class App extends React.Component {
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onUpdateTableBorderSettings = this.onUpdateTableBorderSettings.bind(this);
     this.handleClick = this.handleClick.bind(this);
-    this.closePopMenu = this.closePopMenu.bind(this);
     this.onOpenPopup = this.onOpenPopup.bind(this);
   }
   componentDidMount() {
@@ -1561,10 +1560,6 @@ class App extends React.Component {
     model.updateShowTableBorder();
     model.reloadTables();
     model.didUpdate();
-    // Save to local storage
-  }
-  onGoToSalesforceRecord(){
-    history.back();
   }
   handleClick(e){
     const {model} = this.props;
@@ -1579,9 +1574,6 @@ class App extends React.Component {
       model.popupReactElement = model.popupTmpReactElement;
       model.popupTmpReactElement = undefined;
     }
-  }
-  closePopMenu(){
-    this.onToggleObjectActions();
   }
   onOpenPopup(elem){
     const {model} = this.props;
@@ -1732,6 +1724,7 @@ class App extends React.Component {
           sfLink: model.sfLink,
           sfHost: model.sfHost,
           spinnerCount: model.spinnerCount,
+          backLink: model.viewLink(),
           ...model.userInfoModel.getProps(),
           utilityItems
         }),
@@ -1880,11 +1873,14 @@ class RowTable extends React.Component {
     this.onOpenPopup = this.onOpenPopup.bind(this);
     this.showTableBorder = this.props.model.showTableBorder;
     this.tableSettingsOpen = false;
-  }
-  onToggleTableSettings() {
     this.state = {
       showOrHideBorders: localStorage.getItem("displayInspectTableBorders") === "true" ? "Hide table borders" : "Show table borders"
     };
+  }
+  onToggleTableSettings() {
+    this.setState({
+      showOrHideBorders: localStorage.getItem("displayInspectTableBorders") === "true" ? "Hide table borders" : "Show table borders"
+    });
     this.tableSettingsOpen = !this.tableSettingsOpen;
     this.props.model.didUpdate();
     if (this.tableSettingsOpen){

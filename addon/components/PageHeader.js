@@ -23,6 +23,7 @@ let h = React.createElement;
  * @param {string} [props.userErrorDescription] - Optional error description to display in the popover
  * @param {Array} [props.navItems] - Optional array of navigation items (slot)
  * @param {Array} [props.utilityItems] - Optional array of utility items (slot)
+ * @param {string} [props.backLink] - Optional link for the back button (replaces home icon when provided)
  *
  * Example usage:
  *
@@ -63,7 +64,8 @@ export function PageHeader(props) {
     userErrorDescription = null,
     navItems = [],
     utilityItems = [],
-    subTitle
+    subTitle,
+    backLink
   } = props;
 
   // Check if header color override is enabled and get custom color
@@ -90,10 +92,21 @@ export function PageHeader(props) {
       h("div", {className: "slds-builder-header__item"},
         h("div", {className: "slds-builder-header__item-label"},
           h("div", {className: "slds-media__body"},
-            h("a", {href: sfLink},
+            h("a", {href: sfLink, title: "Home"},
               h("span", {className: "slds-badge slds-badge_lightest"},
                 h("span", {className: "slds-badge__icon slds-badge__icon_left"},
-                  h("span", {className: "slds-icon_container slds-current-color", title: "Home"},
+                  backLink ? h("a", {
+                    href: backLink,
+                    title: "Back to Record",
+                    className: "sfir-icon-link",
+                    onClick: (e) => e.stopPropagation()
+                  },
+                  h("span", {className: "slds-icon_container slds-current-color"},
+                    h("svg", {className: "slds-icon slds-icon_xx-small", "aria-hidden": "true"},
+                      h("use", {xlinkHref: "symbols.svg#back"})
+                    )
+                  )
+                  ) : h("span", {className: "slds-icon_container slds-current-color", title: "Home"},
                     h("svg", {className: "slds-icon slds-icon_xx-small", "aria-hidden": "true"},
                       h("use", {xlinkHref: "symbols.svg#home"})
                     )

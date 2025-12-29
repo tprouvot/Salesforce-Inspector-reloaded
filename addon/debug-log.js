@@ -89,6 +89,10 @@ class Model {
     // Preview loading state
     this.previewLoading = false;
     this.previewFilterProcessing = false; // Track when filter is being applied
+
+    // Sorting state
+    this.sortColumn = "StartTime"; // Default sort column
+    this.sortDirection = "DESC"; // ASC or DESC
   }
 
   didUpdate() {
@@ -309,6 +313,76 @@ Please structure your response in a clear, organized manner using these sections
     return where.length ? ` WHERE ${where.join(" AND ")}` : "";
   }
 
+  handleSort(column) {
+    // Map display column names to field names
+    const columnMap = {
+      "User": "LogUserId",
+      "Action": "Operation",
+      "Start Time": "StartTime",
+      "Status": "Status",
+      "Size (KB)": "LogLength"
+    };
+
+    const sortField = columnMap[column];
+    if (!sortField) return;
+
+    // Toggle direction if clicking the same column, otherwise default to ASC
+    if (this.sortColumn === sortField) {
+      this.sortDirection = this.sortDirection === "ASC" ? "DESC" : "ASC";
+    } else {
+      this.sortColumn = sortField;
+      this.sortDirection = "ASC";
+    }
+
+    // Sort the logs array in memory
+    this.sortLogs();
+    this.didUpdate();
+  }
+
+  sortLogs() {
+    if (!this.logs || this.logs.length === 0) return;
+
+    const sortField = this.sortColumn;
+    const direction = this.sortDirection === "ASC" ? 1 : -1;
+
+    this.logs.sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+
+      // Handle derived fields
+      if (sortField === "LogUserId") {
+        aVal = this.userMap.get(aVal) || aVal || "";
+        bVal = this.userMap.get(bVal) || bVal || "";
+      } else if (sortField === "Operation") {
+        aVal = (this.actionSummary.get(a.Id)?.label) || aVal || "";
+        bVal = (this.actionSummary.get(b.Id)?.label) || bVal || "";
+      }
+
+      // Handle null/undefined
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      // Auto-detect type and convert
+      const aDate = new Date(aVal).getTime();
+      const bDate = new Date(bVal).getTime();
+      if (!isNaN(aDate) && !isNaN(bDate) && aDate !== bDate) {
+        return (aDate < bDate ? -1 : 1) * direction;
+      }
+
+      const aNum = Number(aVal);
+      const bNum = Number(bVal);
+      if (!isNaN(aNum) && !isNaN(bNum) && aNum !== bNum) {
+        return (aNum < bNum ? -1 : 1) * direction;
+      }
+
+      // String comparison
+      aVal = String(aVal).toLowerCase();
+      bVal = String(bVal).toLowerCase();
+      return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * direction;
+    });
+  }
+
   async fetchLogs(rebuildUsers = false, reset = true) {
     this.spinnerCount++;
     try {
@@ -326,6 +400,9 @@ Please structure your response in a clear, organized manner using these sections
       const res = await sfConn.rest(query);
       const batch = res.records || [];
       this.logs = batch;
+
+      // Apply current sort to the loaded logs
+      this.sortLogs();
 
       // Seed/refresh action summary for new items
       for (const l of batch) {
@@ -1130,6 +1207,28 @@ function LogsTable({model, hideButtonsOption}) {
   const allChecked = model.logs.length > 0 && model.logs.every(l => model.selectedIds.has(l.Id));
   const cw = model.columnWidths;
 
+  // Helper to render sortable column header
+  const renderSortableHeader = (label, soqlColumn) => {
+    const isSorted = model.sortColumn === soqlColumn;
+    const isAsc = isSorted && model.sortDirection === "ASC";
+    const sortClass = isSorted ? (isAsc ? "slds-is-sorted slds-is-sorted_asc" : "slds-is-sorted") : "";
+
+    return h("th", {
+      className: `slds-is-sortable ${sortClass}`,
+      scope: "col",
+      onClick: () => model.handleSort(label)
+    },
+    h("div", {className: "slds-grid slds-grid_align-spread"},
+      h("span", {className: "slds-truncate"}, label),
+      h("span", {className: `slds-icon_container slds-is-sortable__icon ${isSorted ? "" : "slds-is-sortable__icon-always"}`, title: isSorted ? (isAsc ? "Sorted ascending" : "Sorted descending") : "Sort"},
+        h("svg", {className: "slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
+          h("use", {xlinkHref: "symbols.svg#arrowdown"})
+        )
+      )
+    )
+    );
+  };
+
   // Compute smarter display counts and offset
   const offset = model.pageIndex * model.pageSize;
   const total = model.totalCount;
@@ -1221,21 +1320,11 @@ function LogsTable({model, hideButtonsOption}) {
               h("th", {},
                 h("input", {type: "checkbox", checked: allChecked, onChange: (e) => model.toggleSelectAll(e.target.checked)})
               ),
-              h("th", {},
-                "User"
-              ),
-              h("th", {},
-                "Action"
-              ),
-              h("th", {},
-                "Start Time"
-              ),
-              h("th", {},
-                "Status"
-              ),
-              h("th", {},
-                "Size (KB)"
-              ),
+              renderSortableHeader("User", "LogUserId"),
+              renderSortableHeader("Action", "Operation"),
+              renderSortableHeader("Start Time", "StartTime"),
+              renderSortableHeader("Status", "Status"),
+              renderSortableHeader("Size (KB)", "LogLength"),
               h("th", {"aria-label": "Row actions"})
             )
           ),

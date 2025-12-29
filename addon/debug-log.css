@@ -97,3 +97,15 @@ mark.sfir-highlight.current {
   outline-offset: 1px;
   font-weight: 600;
 }
+
+/* Make sort icon always visible for sortable columns */
+.slds-is-sortable__icon-always {
+  display: inline-block !important;
+  flex-shrink: 0;
+  margin-inline-start: var(--slds-g-spacing-1);
+}
+
+/* Add cursor pointer for sortable column headers */
+.slds-is-sortable {
+  cursor: pointer;
+}

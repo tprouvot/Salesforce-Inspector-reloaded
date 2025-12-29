@@ -3,7 +3,7 @@
 ## Version 2.0
 
 - `Popup` Add "Copy Id" icon to User tab [feature 906](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/906) (contribution by [Arnav Gupta](https://github.com/ArnavGuptaaa)).
-- `Logs Viewer` Enhanced UI with pagination (10/15/25/50/100 logs per page), persistent page-size selector, "Logs (X of Y)" count with exact total, stable user filter populated from all logs org-wide, improved action label parsing (including Triggers with event names, VFRemote calls, and descriptive signatures), preview modal with search and highlight, grep-like log filtering with templates, AI/Agentforce integration to analyze logs and explain exceptions( with edit mode, local persistence, and reset to defaults functionality), optimized search navigation for large files, download, share, and delete actions (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
+- `Logs Viewer` Allow users to display, filter, delete, share and explain debug logs (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
 - `Data Export` Auto-populate SOQL editor from Salesforce List View context [feature 969](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/969) (request and contribution by [Temam Abdelkrim](https://github.com/KRIMOD)) and [feature 817](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/817) (request by [Nicolas Vuillamy](https://github.com/nvuillam))
 - `Data Export` Prevent popup actions menu for Aggregate result [feature #663](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/663) (contribution by [Phanidra Mangipudi](https://github.com/thephani))
 - `Flow Scanner` Implement Agentforce feature to describe a flow and its components

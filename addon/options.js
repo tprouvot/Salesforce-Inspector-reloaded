@@ -299,6 +299,13 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
+        id: "logs-viewer",
+        tabTitle: "Log Viewer",
+        content: [
+          {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_debugLogAgentForcePrompt", default: Constants.PromptTemplateDebugLog, tooltip: "Developer name of the prompt template to use for Debug Log Analysis"}},
+        ]
+      },
+      {
         id: "custom-shortcuts",
         tabTitle: "Custom Shortcuts",
         content: [

@@ -1,7 +1,7 @@
 /* global React ReactDOM field-creator.js */
 import {sfConn, apiVersion} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, getGlobalValueSets} from "./utils.js";
 
 let h = React.createElement;
 
@@ -476,6 +476,33 @@ class FieldOptionModal extends React.Component {
       case "MultiselectPicklist":
         return h("div", {className: `field_options ${field.type}_options`},
           h("div", {className: "form-group"},
+            h("label", {htmlFor: `${field.type.toLowerCase()}Options`}, "Values"),
+            h("div", {className: "radio"},
+              h("label", null,
+                h("input", {
+                  type: "radio",
+                  name: "picklistSource",
+                  value: "GLOBAL",
+                  checked: field.picklistSource === "GLOBAL",
+                  onChange: this.handleInputChange
+                }),
+                " Use global picklist value set"
+              )
+            ),
+            h("div", {className: "radio"},
+              h("label", null,
+                h("input", {
+                  type: "radio",
+                  name: "picklistSource",
+                  value: "INLINE",
+                  checked: field.picklistSource === "INLINE",
+                  onChange: this.handleInputChange
+                }),
+                " Enter values, with each value separated by a new line"
+              )
+            )
+          ),
+          field.picklistSource === "INLINE" && h("div", {className: "form-group"},
             h("label", {htmlFor: `${field.type.toLowerCase()}Options`}, "Picklist Values"),
             h("textarea", {
               id: `${field.type.toLowerCase()}Options`,
@@ -487,14 +514,32 @@ class FieldOptionModal extends React.Component {
               onChange: this.handleInputChange
             })
           ),
+          field.picklistSource === "GLOBAL" && h("div", {className: "form-group"},
+            h("label", null, "Global Value Set"),
+            h("select", {
+              name: "globalValueSetName",
+              className: "form-control",
+              value: field.globalValueSetName || "",
+              onChange: this.handleInputChange
+            },
+            h("option", {value: ""}, "-- Select Global Value Set --"),
+            ...(this.props.globalValueSets || []).map(gvs =>
+              h("option", {key: gvs.DeveloperName, value: gvs.DeveloperName},
+                `${gvs.MasterLabel} (${gvs.DeveloperName})`
+              )
+            )
+            )
+          )
+          ,
           h("div", {className: "checkbox"},
             h("label", {className: "centerHorizontally"},
               h("input", {
                 type: "checkbox",
                 id: `${field.type.toLowerCase()}SortAlpha`,
                 name: "sortalpha",
-                checked: field.sortalpha,
-                onChange: this.handleInputChange
+                checked: field.picklistSource === "GLOBAL" ? false : field.sortalpha,
+                onChange: this.handleInputChange,
+                disabled: field.picklistSource === "GLOBAL" ? true : false
               }),
               " Sort values alphabetically"
             )
@@ -505,8 +550,9 @@ class FieldOptionModal extends React.Component {
                 type: "checkbox",
                 id: `${field.type.toLowerCase()}FirstValueDefault`,
                 name: "firstvaluedefault",
-                checked: field.firstvaluedefault,
-                onChange: this.handleInputChange
+                checked: field.picklistSource === "GLOBAL" ? false : field.firstvaluedefault,
+                onChange: this.handleInputChange,
+                disabled: field.picklistSource === "GLOBAL" ? true : false
               }),
               " Use first value as default"
             )
@@ -958,7 +1004,9 @@ class App extends React.Component {
       fieldErrorMessage: "",
       errorMessageClickable: false,
       filteredObjects: [],
-      includeManagedPackage: localStorage.getItem("fieldCreatorIncludeManaged") === "true"
+      includeManagedPackage: localStorage.getItem("fieldCreatorIncludeManaged") === "true",
+      globalValueSets: [],
+      globalValueSetsLoaded: false
     };
 
     // Initialize spinFor method
@@ -1001,6 +1049,7 @@ class App extends React.Component {
   componentDidMount() {
     this.fetchObjects();
     this.fetchPermissionSets();
+    this.fetchGlobalValueSets();
   }
 
   handleObjectSearch = (e) => {
@@ -1163,19 +1212,25 @@ class App extends React.Component {
 
       case "Picklist":
       case "MultiselectPicklist":
-        newField.Metadata.valueSet = {
-          valueSetDefinition: {
-            sorted: field.sortalpha || false,
-            value: field.picklistvalues
-              .split("\n")
-              .map(value => value.trim())
-              .filter(value => value.length > 0)
-              .map((value, index) => ({
-                fullName: value,
-                default: field.firstvaluedefault && index === 0
-              }))
-          }
-        };
+        if (field.picklistSource == "GLOBAL"){
+          newField.Metadata.valueSet = {
+            valueSetName: field.globalValueSetName
+          };
+        } else {
+          newField.Metadata.valueSet = {
+            valueSetDefinition: {
+              sorted: field.sortalpha || false,
+              value: field.picklistvalues
+                .split("\n")
+                .map(value => value.trim())
+                .filter(value => value.length > 0)
+                .map((value, index) => ({
+                  fullName: value,
+                  default: field.firstvaluedefault && index === 0
+                }))
+            }
+          };
+        }
         if (field.type === "MultiselectPicklist") {
           newField.Metadata.visibleLines = parseInt(field.vislines) || 4;
         }
@@ -1349,6 +1404,18 @@ class App extends React.Component {
       .catch(error => {
         console.error("Error fetching permission sets:", error);
       });
+  };
+
+  fetchGlobalValueSets = async () => {
+    try {
+      const globalValueSets = await getGlobalValueSets();
+      this.setState({
+        globalValueSets,
+        globalValueSetsLoaded: true
+      });
+    } catch (e) {
+      console.error("Failed to load Global Value Sets", e);
+    }
   };
 
   addRow = () => {
@@ -1769,7 +1836,8 @@ class App extends React.Component {
         selectedObject,
         isPlatformEvent: this.isPlatformEvent,
         onSave: this.onSaveFieldOptions,
-        onClose: this.onCloseModal
+        onClose: this.onCloseModal,
+        globalValueSets: this.state.globalValueSets,
       }),
       this.state.showImportModal && h("div", {onClick: this.closeImportModal, className: "modalOverlay"},
         h("div", {onClick: (e) => e.stopPropagation(), className: "modalContent"},

@@ -54,6 +54,15 @@ export async function setOrgInfo(sfHost) {
   return orgInfo;
 }
 
+export async function getGlobalValueSets() {
+  const res = await sfConn.rest(
+    `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent(
+      "SELECT Id, DeveloperName, MasterLabel FROM GlobalValueSet ORDER BY DeveloperName"
+    )
+  );
+  return res.records;
+}
+
 export async function getUserInfo() {
   try {
     const res = await sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {});

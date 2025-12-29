@@ -3243,18 +3243,27 @@ class UserDetails extends React.PureComponent {
   }
 
   async resetUserPassword(user) {
+    // Disable the button immediately
+    this.setState({
+      [`resetPasswordDisabled_${user.Id}`]: true
+    });
+
     try {
       await sfConn.rest(
-        "/services/data/v" + apiVersion + "/sobjects/User/" + user.Id + "/password",
+        `/services/data/v${apiVersion}/sobjects/User/${user.Id}/password`,
         {method: "DELETE"}
       );
       this.showSuccessToast(
-        "Password Reset",
-        `Password reset initiated for ${user.Name}`
+        "Success",
+        "Password reset successfully"
       );
     } catch (err) {
       console.error("Error during password reset", err);
       this.showErrorToast("Password Reset");
+      // Re-enable button on error so user can retry
+      this.setState({
+        [`resetPasswordDisabled_${user.Id}`]: false
+      });
     }
   }
 
@@ -3267,7 +3276,7 @@ class UserDetails extends React.PureComponent {
   }
 
   render() {
-    let {user, linkTarget} = this.props;
+    let {user, linkTarget, currentUserId} = this.props;
     return h(
       "div",
       {className: "all-data-box-inner"},
@@ -3477,36 +3486,25 @@ class UserDetails extends React.PureComponent {
           },
           "PSetG"
         ),
-        displayButton("reset-password", hideButtonsOption)
+        displayButton("reset-password", hideButtonsOption) && user.Id !== currentUserId
           ? h(
             "button",
             {
               type: "button",
               onClick: () => this.resetUserPassword(user),
               className: "slds-button slds-button_neutral",
-              title: "Reset user password via API",
+              title: "Reset Password",
+              disabled: this.state[`resetPasswordDisabled_${user.Id}`] || false,
             },
-            "Reset Pwd"
+            "Reset"
           )
           : null
       ),
       //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
       user.UserLogins?.records?.[0]?.IsFrozen
-        ? h(
-          "div",
-          {className: "user-buttons center small-font slds-m-top_x-small"},
-          h(
-            "a",
-            {
-              id: "unfreezeUser",
-              className: "slds-button slds-button_neutral",
-              onClick: () => this.unfreezeUser(user),
-            },
-            h(
-              "span",
-              {className: "slds-truncate", title: "Unfreeze User Login"},
-              "Unfreeze"
-            )
+        ? h("div", {className: "user-buttons center small-font slds-m-top_x-small"},
+          h("a", {id: "unfreezeUser", className: "slds-button slds-button_neutral", onClick: () => this.unfreezeUser(user)},
+            h("span", {className: "slds-truncate", title: "Unfreeze User Login"}, "Unfreeze")
           )
         )
         : h(

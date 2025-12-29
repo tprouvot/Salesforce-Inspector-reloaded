@@ -95,6 +95,7 @@ class OptionsTabSelector extends React.Component {
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
               key: "hideButtonsOption",
+              length: 8,
               checkboxes: [
                 {label: "New", name: "new", checked: true},
                 {label: "Explore API", name: "explore-api", checked: true},
@@ -1128,6 +1129,7 @@ class MultiCheckboxButtonGroup extends React.Component {
     this.title = props.title;
     this.key = props.storageKey;
     this.unique = props.unique || false;
+    this.length = props.length || 6;
 
     // Load checkboxes from localStorage or default to props.checkboxes
     const storedCheckboxes = localStorage.getItem(this.key) ? JSON.parse(localStorage.getItem(this.key)) : [];
@@ -1164,7 +1166,7 @@ class MultiCheckboxButtonGroup extends React.Component {
       h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, this.title)
       ),
-      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small slds-m-left_xxx-small"},
+      h("div", {className: "slds-col slds-size_" + this.length + "-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small slds-m-left_xxx-small"},
         h("div", {className: "slds-form-element__control"},
           h("div", {className: "slds-checkbox_button-group"},
             this.state.checkboxes.map((checkbox, index) =>

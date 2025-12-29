@@ -1303,6 +1303,9 @@ function PreviewModal({model, hideButtonsOption}) {
   const log = model.previewLog;
   if (!log) return null;
 
+  // Hide preview modal when Agentforce modal is open to avoid UI confusion
+  if (model.showAgentforceModal) return null;
+
   const isLoading = model.previewLoading;
   const isFilterProcessing = model.previewFilterProcessing;
 

@@ -303,6 +303,14 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Log Viewer",
         content: [
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_debugLogAgentForcePrompt", default: Constants.PromptTemplateDebugLog, tooltip: "Developer name of the prompt template to use for Debug Log Analysis"}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Show buttons",
+              key: "hideDebugLogButtonsOption",
+              checkboxes: [
+                {label: "Share Logs", name: "share-logs", checked: true},
+                {label: "Agentforce", name: "logs-agentforce", checked: false}
+              ]}
+          },
         ]
       },
       {

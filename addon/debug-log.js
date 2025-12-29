@@ -1,6 +1,6 @@
 /* global React ReactDOM initButton */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, UserInfoModel, createSpinForMethod, PromptTemplate, Constants} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, PromptTemplate, Constants, displayButton} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import Toast from "./components/Toast.js";
@@ -235,7 +235,7 @@ Please structure your response in a clear, organized manner using these sections
 
       if (result.success) {
         // Extract analysis from the result
-        const analysisMatch = result.result.match(/<analysis>([\s\S]*?)<\/analysis>/);
+        const analysisMatch = result.result.match(/<logAnalysis>([\s\S]*?)<\/logAnalysis>/);
         const extractedAnalysis = analysisMatch ? analysisMatch[1].trim() : result.result;
 
         this.agentforceAnalysis = extractedAnalysis;
@@ -1126,7 +1126,7 @@ function Filters({model}) {
   );
 }
 
-function LogsTable({model}) {
+function LogsTable({model, hideButtonsOption}) {
   const allChecked = model.logs.length > 0 && model.logs.every(l => model.selectedIds.has(l.Id));
   const cw = model.columnWidths;
 
@@ -1269,8 +1269,8 @@ function LogsTable({model}) {
                     h("button", {type: "button", className: "slds-button slds-button_neutral", title: "Download", onClick: () => model.download(log.Id)},
                       h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#download"}))
                     ),
-                    // Share: icon-only button, sends the file (no truncated body)
-                    h("button", {type: "button", className: "slds-button slds-button_neutral", title: "Share", onClick: () => model.share(log.Id)},
+                    // Share: icon-only button, sends the file (no truncated body) (conditional)
+                    displayButton("share-logs", hideButtonsOption) && h("button", {type: "button", className: "slds-button slds-button_neutral", title: "Share", onClick: () => model.share(log.Id)},
                       h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#share"}))
                     ),
                     // Delete: icon-only button, same size as Share
@@ -1299,7 +1299,7 @@ function LogsTable({model}) {
   );
 }
 
-function PreviewModal({model}) {
+function PreviewModal({model, hideButtonsOption}) {
   const log = model.previewLog;
   if (!log) return null;
 
@@ -1559,18 +1559,18 @@ function PreviewModal({model}) {
       ),
       h("div", {className: "slds-align_absolute-center slds-text-body_small slds-m-top_xx-small sfir-search-counter"}, `${count ? (model.previewSearch.index + 1) : 0} / ${count}`)
     ),
-    // AI button
-    h("div", {className: "slds-col slds-grow-none"},
+    // AI button (conditional)
+    displayButton("logs-agentforce", hideButtonsOption) && h("div", {className: "slds-col slds-grow-none"},
       h("button", {
         className: "slds-button slds-button_brand",
         onClick: () => model.openAgentforce(),
-        title: "Analyze with AI",
+        title: "Analyze with Agentforce",
         disabled: isLoading || isFilterProcessing
       },
       h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
         h("use", {xlinkHref: "symbols.svg#einstein"})
       ),
-      "Analyze with AI"
+      "Analyze"
       )
     )
   ),
@@ -1647,7 +1647,7 @@ function AgentforceModal({model}) {
             h("use", {xlinkHref: "symbols.svg#einstein"})
           )
         ),
-        h("span", {}, "AI-Powered Debug Log Analysis")
+        h("span", {}, "Agentforce Debug Log Analysis")
       ),
       onConfirm: isAnalyzing ? null : () => model.sendAgentforceAnalysis(),
       onCancel: () => model.closeAgentforce(),
@@ -1663,7 +1663,7 @@ function AgentforceModal({model}) {
       !hasResults && h("div", {className: "slds-form-element slds-m-bottom_medium"},
         h("div", {className: "slds-grid slds-grid_align-spread slds-m-bottom_x-small"},
           h("label", {className: "slds-form-element__label slds-text-heading_small"},
-            h("span", {}, "📋 Analysis Instructions"),
+            h("span", {}, "Analysis Instructions"),
             isCustomized && h("span", {
               className: "slds-badge slds-badge_lightest slds-m-left_x-small",
               style: {fontSize: "0.75rem"}
@@ -1738,7 +1738,7 @@ function AgentforceModal({model}) {
           ),
           h("div", {className: "slds-form-element__help slds-m-top_small"},
             h("div", {className: "slds-text-body_small"},
-              "✨ The AI will provide a detailed analysis covering:",
+              "Agentforce will provide a detailed analysis covering:",
               h("ul", {className: "slds-list_dotted slds-m-top_xx-small slds-m-left_medium"},
                 h("li", {}, "Executive Summary & Execution Flow"),
                 h("li", {}, "Data Operations (SOQL/DML)"),
@@ -1761,7 +1761,7 @@ function AgentforceModal({model}) {
           )
         ),
         h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
-          h("div", {}, "🤖 AI is performing a comprehensive analysis..."),
+          h("div", {}, "Agentforce is performing a comprehensive analysis..."),
           h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"},
             "Analyzing execution flow, data operations, performance, and governor limits"
           ),
@@ -1807,7 +1807,7 @@ function AgentforceModal({model}) {
             h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
               h("div", {className: "slds-media__body"},
                 h("h2", {className: "slds-card__header-title"},
-                  h("span", {}, "AI Analysis Results")
+                  h("span", {}, "Agentforce Analysis Results")
                 )
               ),
               h("div", {className: "slds-no-flex"},
@@ -1865,6 +1865,7 @@ class App extends React.Component {
 
   render() {
     const {model} = this;
+    const hideButtonsOption = JSON.parse(localStorage.getItem("hideDebugLogButtonsOption"));
 
     return h("div", {},
       h(PageHeader, {
@@ -1878,10 +1879,10 @@ class App extends React.Component {
 
       h("div", {className: "slds-m-around_medium"},
         h(Filters, {model}),
-        h(LogsTable, {model})
+        h(LogsTable, {model, hideButtonsOption})
       ),
 
-      model.previewLog ? h(PreviewModal, {model}) : null,
+      model.previewLog ? h(PreviewModal, {model, hideButtonsOption}) : null,
       model.confirmDeleteId ? h(ConfirmModal, {
         isOpen: true,
         title: "Delete Log",

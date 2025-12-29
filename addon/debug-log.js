@@ -463,50 +463,6 @@ Please structure your response in a clear, organized manner using these sections
     }
   }
 
-  async fetchTotalCount() {
-    try {
-      const whereClause = this.buildWhereClause();
-      const soql = `SELECT COUNT() FROM ApexLog${whereClause}`;
-      const query = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent(soql);
-      const res = await sfConn.rest(query);
-      this.totalCount = (res && typeof res.totalSize === "number") ? res.totalSize : 0;
-    } catch (e) {
-      console.error("fetchTotalCount", e);
-      // Fallback to current page length if count fails
-      if (typeof this.totalCount !== "number") this.totalCount = this.logs.length || 0;
-    }
-  }
-
-  async loadMore() {
-    if (this.loadingMore || !this.hasMore || !this.nextUrl) return;
-    this.loadingMore = true;
-    try {
-      const res = await sfConn.rest(this.nextUrl);
-      const batch = res.records || [];
-      this.logs = this.logs.concat(batch);
-
-      // Seed action summary for appended items
-      for (const l of batch) {
-        const base = parseAction(l.Operation);
-        this.actionSummary.set(l.Id, base);
-      }
-
-      // Update nextUrl and hasMore (use exact URL returned by Salesforce)
-      this.nextUrl = res.nextRecordsUrl || null;
-      this.hasMore = !!this.nextUrl;
-
-      // Resolve actions for the appended batch
-      this.resolveActionsFromBodiesLimited(Math.min(20, batch.length));
-      this.didUpdate();
-    } catch (e) {
-      console.error("loadMore", e);
-      this.hasMore = false;
-      this.nextUrl = null;
-    } finally {
-      this.loadingMore = false;
-    }
-  }
-
   async buildUsersFromLogs(logs) {
     // Collect unique user ids from logs
     const ids = Array.from(new Set((logs || []).map(l => l.LogUserId).filter(Boolean)));
@@ -1315,8 +1271,8 @@ function LogsTable({model, hideButtonsOption}) {
       )
     ),
     h("div", {className: "slds-card__body"},
-      h("div", {className: "slds-scrollable_x", style: {maxWidth: "100%"}},
-        h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped", style: {tableLayout: "fixed", minWidth: "900px"}},
+      h("div", {className: "slds-scrollable_x sfir-logs-table-container"},
+        h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped sfir-logs-table"},
           h("colgroup", {},
             h("col", {style: {width: 44}}),
             h("col", {style: {width: cw.user}}),
@@ -1354,13 +1310,13 @@ function LogsTable({model, hideButtonsOption}) {
                 ),
                 h("td", {style: {width: cw.start}}, new Date(log.StartTime).toLocaleString()),
                 h("td", {style: {width: cw.status}},
-                  h("div", {className: "slds-scrollable_y slds-text-body_small", style: {maxHeight: "2.5rem", overflow: "auto"}},
+                  h("div", {className: "slds-scrollable_y slds-text-body_small sfir-log-status-cell"},
                     log.Status || "-"
                   )
                 ),
                 h("td", {style: {width: cw.size}}, (log.LogLength / 1024).toFixed(2)),
                 h("td", {style: {width: cw.actions}},
-                  h("div", {className: "slds-button_group sfir-actions", role: "group", style: {whiteSpace: "nowrap"}},
+                  h("div", {className: "slds-button_group sfir-actions sfir-log-actions-group", role: "group"},
                     h("button", {type: "button", className: "slds-button slds-button_neutral", onClick: () => model.preview(log.Id)},
                       h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#search"})),
                       "Preview"
@@ -1681,8 +1637,8 @@ function PreviewModal({model, hideButtonsOption}) {
   ),
   // Loading state, filter processing state, or log body
   isLoading
-    ? h("div", {className: "slds-align_absolute-center slds-m-vertical_xx-large", style: {minHeight: "60vh", position: "relative"}},
-      h("div", {className: "slds-spinner_container", style: {position: "absolute", top: "0", left: "0", right: "0", bottom: "0", zIndex: "9002"}},
+    ? h("div", {className: "slds-align_absolute-center slds-m-vertical_xx-large sfir-preview-loading-container"},
+      h("div", {className: "slds-spinner_container sfir-preview-spinner-container"},
         h("div", {role: "status", className: "slds-spinner slds-spinner_large slds-spinner_brand"},
           h("span", {className: "slds-assistive-text"}, "Loading log..."),
           h("div", {className: "slds-spinner__dot-a"}),
@@ -1697,8 +1653,8 @@ function PreviewModal({model, hideButtonsOption}) {
       )
     )
     : isFilterProcessing
-      ? h("div", {className: "slds-align_absolute-center slds-m-vertical_xx-large", style: {minHeight: "60vh", position: "relative"}},
-        h("div", {className: "slds-spinner_container", style: {position: "absolute", top: "0", left: "0", right: "0", bottom: "0", zIndex: "9002"}},
+      ? h("div", {className: "slds-align_absolute-center slds-m-vertical_xx-large sfir-preview-loading-container"},
+        h("div", {className: "slds-spinner_container sfir-preview-spinner-container"},
           h("div", {role: "status", className: "slds-spinner slds-spinner_large slds-spinner_brand"},
             h("span", {className: "slds-assistive-text"}, "Processing filter..."),
             h("div", {className: "slds-spinner__dot-a"}),
@@ -1715,8 +1671,7 @@ function PreviewModal({model, hideButtonsOption}) {
         )
       )
       : h("pre", {
-        className: "language-log",
-        style: {maxHeight: "60vh", overflow: "unset"}
+        className: "language-log sfir-preview-code-block"
       },
       h("code", {
         className: "language-log",
@@ -1799,13 +1754,7 @@ function AgentforceModal({model}) {
       // Edit Mode - Editable textarea
       isEditMode ? h("div", {},
         h("textarea", {
-          className: "slds-textarea",
-          style: {
-            minHeight: "60vh",
-            fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace",
-            fontSize: "0.875rem",
-            lineHeight: "1.7"
-          },
+          className: "slds-textarea sfir-agentforce-textarea",
           value: currentInstructions,
           onInput: (e) => model.updateAgentforceInstructions(e.target.value),
           placeholder: "Enter your custom analysis instructions...",
@@ -1819,18 +1768,10 @@ function AgentforceModal({model}) {
       ) : h("div", {},
       // View Mode - Read-only display
         h("div", {
-          className: "slds-box slds-theme_shade slds-m-top_x-small",
-          style: {maxHeight: "60vh", overflowY: "auto"}
+          className: "slds-box slds-theme_shade slds-m-top_x-small sfir-agentforce-instructions-container"
         },
         h("div", {
-          className: "slds-text-body_small",
-          style: {
-            whiteSpace: "pre-wrap",
-            lineHeight: "1.7",
-            color: "#3e3e3c",
-            fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-            padding: "0.75rem"
-          }
+          className: "slds-text-body_small sfir-agentforce-instructions-content"
         }, currentInstructions)
         ),
         h("div", {className: "slds-form-element__help slds-m-top_small"},
@@ -1849,7 +1790,7 @@ function AgentforceModal({model}) {
     ),
 
     // Analyzing State
-    isAnalyzing && h("div", {className: "slds-align_absolute-center slds-m-vertical_large", style: {minHeight: "60vh"}},
+    isAnalyzing && h("div", {className: "slds-align_absolute-center slds-m-vertical_large sfir-agentforce-analyzing-container"},
       h("div", {className: "slds-spinner_container"},
         h("div", {role: "status", className: "slds-spinner slds-spinner_medium slds-spinner_brand"},
           h("span", {className: "slds-assistive-text"}, "Analyzing log..."),
@@ -1881,7 +1822,7 @@ function AgentforceModal({model}) {
         )
       ),
       h("div", {className: "slds-box slds-box_small slds-theme_error slds-m-top_small"},
-        h("div", {className: "slds-text-body_regular", style: {fontFamily: "monospace", fontSize: "0.875rem"}},
+        h("div", {className: "slds-text-body_regular sfir-agentforce-error-content"},
           model.agentforceError
         )
       )
@@ -1925,20 +1866,7 @@ function AgentforceModal({model}) {
         ),
         h("div", {className: "slds-card__body slds-card__body_inner"},
           h("div", {
-            className: "slds-text-body_regular",
-            style: {
-              whiteSpace: "pre-wrap",
-              lineHeight: "1.8",
-              maxHeight: "60vh",
-              overflowY: "auto",
-              backgroundColor: "#fafaf9",
-              border: "1px solid #e5e5e5",
-              borderRadius: "0.25rem",
-              padding: "1.25rem",
-              fontFamily: "'SF Pro Text', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
-              fontSize: "0.9375rem",
-              color: "#181818"
-            }
+            className: "slds-text-body_regular sfir-agentforce-results"
           }, model.agentforceAnalysis)
         )
       )

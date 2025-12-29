@@ -79,6 +79,8 @@ nav:
       - Data Management:
           - Data Export: data-export.md
           - Data Import: data-import.md
+      - Debugging:
+          - Debug Logs Viewer: logs-viewer.md
       - Metadata:
           - Download Metadata: download-metadata.md
           - Field Creator: field-creator.md

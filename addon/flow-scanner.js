@@ -326,7 +326,7 @@ class FlowScanner {
 
     // Create a Blob and trigger a download.
     const csvContent = csvRows.join("\n");
-    const blob = new Blob([csvContent], {type: "text/csv"});    
+    const blob = new Blob([csvContent], {type: "text/csv"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

@@ -579,14 +579,17 @@ class Model {
 
     // Find sobject name
     let sobjectName, isAfterFrom;
+    // Find out what sobject we are querying, by using the word after the "from" keyword.
+    // Assuming no subqueries in the select clause, we should find the correct sobjectName. There should be only one "from" keyword, and strings (which may contain the word "from") are only allowed after the real "from" keyword.
     let fromKeywordMatch = /(^|\s)from\s+([a-z0-9_]*)/i.exec(query);
     let findKeywordMatch = /(^|\s)find\s+([a-z0-9_]*)/i.exec(query);
     let graphKeywordMatch = /(^|\s)uiapi\s+([a-z0-9_]*)/i.exec(query);
-    
+
     if (fromKeywordMatch) {
       sobjectName = fromKeywordMatch[2];
       isAfterFrom = selStart > fromKeywordMatch.index + 1;
     } else {
+      // We still want to find the from keyword if the user is typing just before the keyword, and there is no space.
       fromKeywordMatch = /^from\s+([a-z0-9_]*)/i.exec(query.substring(selEnd));
       if (fromKeywordMatch) {
         sobjectName = fromKeywordMatch[1];
@@ -602,10 +605,11 @@ class Model {
       }
     }
 
-    // Check for subquery
+    // If we are in a subquery, try to detect that.
     fromKeywordMatch = /\(\s*select.*\sfrom\s+([a-z0-9_]*)/i.exec(query);
     if (fromKeywordMatch && fromKeywordMatch.index < selStart) {
       let subQuery = query.substring(fromKeywordMatch.index, selStart);
+      // Try to detect if the subquery ends before the selection
       if (subQuery.split(")").length < subQuery.split("(").length) {
         sobjectName = fromKeywordMatch[1];
         isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
@@ -672,7 +676,7 @@ class Model {
     // If we are on the right hand side of a comparison operator, autocomplete field values
     let isFieldValue = query.substring(0, selStart).match(/\s*[<>=!]+\s*('?[^'\s]*)$/);
     
-    // Handle IN clause
+    // In clause on picklist field
     let isInWithValues = query.substring(0, selStart).match(/\s*in\s*\(\s*(?:(?:'[^']*'\s*,\s*)+|')('?[^'\s]*)$/i);
     let inValuesUtilized = "";
     if (isInWithValues){

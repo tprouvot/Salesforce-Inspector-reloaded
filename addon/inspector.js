@@ -343,7 +343,7 @@ export let sfConn = {
 
 };
 
-class XML {
+export class XML {
   static stringify({name, attributes, value}) {
     function buildRequest(el, params) {
       if (params == null) {

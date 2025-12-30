@@ -845,6 +845,7 @@ class Model {
 
     // 7. FIELD VALUE AUTOCOMPLETE
     if (isFieldValue) {
+      // Autocomplete field values
       let contextValueFields = contextSobjectDescribes
         .flatMap(sobjectDescribe => sobjectDescribe.fields
           .filter(field => field.name.toLowerCase() == fieldName.toLowerCase())

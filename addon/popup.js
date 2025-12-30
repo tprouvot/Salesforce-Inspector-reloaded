@@ -10,7 +10,7 @@ const isExtensionPage = document.location.ancestorOrigins?.[0].includes(getExten
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
-  var browser = chrome;
+  let browser = chrome;
 }
 
 {
@@ -273,6 +273,7 @@ class App extends React.PureComponent {
       h: ["click", "homeBtn"],
       p: ["click", "optionsBtn"],
       m: ["click", "eventMonitorBtn"],
+      v: ["click", "logsViewerBtn"],
       o: ["tab", "objectTab"],
       u: ["tab", "userTab"],
       s: ["tab", "shortcutTab"],
@@ -535,7 +536,7 @@ class App extends React.PureComponent {
               )
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
-              h("a", {ref: "debugLogBtn", href: "debug-log.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
+              h("a", {ref: "logsViewerBtn", href: "debug-log.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
                 h("span", {}, "Logs ", h("u", {}, "V"), "iewer")
               )
             ),

@@ -165,7 +165,7 @@
       "description": "Flow Scanner"
     },
     "debug-log": {
-      "description": "Debug Log"
+      "description": "Logs Viewer"
     }
   }
 }

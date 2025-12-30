@@ -10,7 +10,7 @@ const isExtensionPage = document.location.ancestorOrigins?.[0].includes(getExten
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
-  window.browser = chrome;
+  var browser = chrome;
 }
 
 {

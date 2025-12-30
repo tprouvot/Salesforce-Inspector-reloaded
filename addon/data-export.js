@@ -440,6 +440,7 @@ class Model {
       return sortRank(a) - sortRank(b) || a.rank - b.rank || a.value.localeCompare(b.value);
     }
 
+    // If we are just after the "from" keyword, autocomplete the sobject name
     let beforeCursor = query.substring(0, selStart).trim().toLowerCase();
     let afterCursor = query.substring(selEnd).trim().toLowerCase();
 

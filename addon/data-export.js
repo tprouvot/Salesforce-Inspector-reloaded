@@ -332,11 +332,12 @@ class Model {
   }
   downloadAsCsv(){
     // Add UTF-8 BOM for Excel compatibility with Hebrew and other non-Latin characters
-    const BOM = "\uFEFF";
     const csvContent = this.exportedData.csvSerialize(this.separator);
-    const blob = new Blob([BOM + csvContent], {type: "data:text/csv;charset=utf-8,"});
+    const BOM = localStorage.getItem("useBomForCsvExport") === "true" ? "\uFEFF" : "";
+    const blob = new Blob([BOM + csvContent], {type: "text/csv;charset=utf-8;"});
+
     const downloadAnchor = document.createElement("a");
-    downloadAnchor.download = `${this.autocompleteResults.sobjectName}-${new Date().toLocaleDateString()}.csv`;
+    downloadAnchor.download = `${this.autocompleteResults.sobjectName}-${new Date().toISOString().split("T")[0]}.csv`;
     downloadAnchor.href = window.URL.createObjectURL(blob);
     downloadAnchor.click();
   }
@@ -1973,8 +1974,8 @@ class App extends React.Component {
               ),
               h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Space to insert all field name autosuggestions or to load suggestions for field values."),
               h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Enter or F5 to execute the export."),
-              h("p", {className: "slds-m-bottom_x-small"}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
-              h("p", {}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
+              h("p", {}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
+              h("p", {className: "slds-m-bottom_x-small"}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
             ),
             h("div", {hidden: !model.showAI},
               h("h3", {className: "slds-text-heading_small slds-m-top_medium slds-m-left_xxx-small"}, "Agentforce SOQL query builder"),

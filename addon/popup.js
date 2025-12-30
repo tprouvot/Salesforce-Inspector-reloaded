@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
+import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 import {getColorSettingsSnapshot} from "./utils/colorSettingsStore.js";
@@ -60,7 +60,7 @@ if (typeof browser === "undefined") {
       const newToken = localStorage.getItem(request.sfHost + Constants.ACCESS_TOKEN);
       if (newToken) {
         sfConn.sessionId = newToken;
-        sfConn.instanceHostname = request.sfHost;
+        init({sfHost: request.sfHost});
       }
     } else if (request.message === "settingsUpdated" && request.sfHost && request.settings) {
       // Invalidate sessionStorage cache so refreshing pages will pick up new settings
@@ -175,9 +175,10 @@ class App extends React.PureComponent {
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
     this.updateReleaseNotesViewed = this.updateReleaseNotesViewed.bind(this);
     this.showToast = this.showToast.bind(this);
+    this.getListViewQuery = this.getListViewQuery.bind(this);
     this.hideToast = this.hideToast.bind(this);
   }
-  onContextRecordChange(e) {
+  async onContextRecordChange(e) {
     let {sfHost} = this.props;
     let limitsArg = new URLSearchParams();
     let exportArg = new URLSearchParams();
@@ -185,15 +186,14 @@ class App extends React.PureComponent {
     exportArg.set("host", sfHost);
     importArg.set("host", sfHost);
     limitsArg.set("host", sfHost);
-    if (
-      e.contextSobject
-      && localStorage.getItem("useSObjectContextOnDataImportLink") !== "false"
-    ) {
+    if (e.contextSobjectListview) {
+      const listViewQuery = await this.getListViewQuery(e.contextSobject, e.contextSobjectListview);
+      if (listViewQuery) {
+        exportArg.set("query", listViewQuery);
+      }
+    } else if (e.contextSobject && localStorage.getItem("useSObjectContextOnDataImportLink") !== "false") {
       let query = "SELECT Id FROM " + e.contextSobject;
-      if (
-        e.contextRecordId
-        && (e.contextRecordId.length == 15 || e.contextRecordId.length == 18)
-      ) {
+      if (e.contextRecordId && (e.contextRecordId.length == 15 || e.contextRecordId.length == 18)) {
         query += " WHERE Id = '" + e.contextRecordId + "'";
       }
       exportArg.set("query", query);
@@ -218,6 +218,47 @@ class App extends React.PureComponent {
       isFieldsPresent: e.data.isFieldsPresent,
     });
   }
+  async getListViewQuery(sobjectName, filterName) {
+    if (localStorage.getItem("enableListViewExport") !== "true" || !sobjectName || !filterName) {
+      return null;
+    }
+
+    try {
+      // Use Composite API to combine both requests into a single API call
+      const query = `SELECT Id FROM ListView WHERE SobjectType = '${sobjectName}' AND DeveloperName = '${filterName}' LIMIT 1`;
+      const compositePayload = {
+        allOrNone: true,
+        compositeRequest: [
+          {
+            method: "GET",
+            url: `/services/data/v${apiVersion}/query/?q=${encodeURIComponent(query)}`,
+            referenceId: "GetListViewInfo"
+          },
+          {
+            method: "GET",
+            url: `/services/data/v${apiVersion}/sobjects/${sobjectName}/listviews/@{GetListViewInfo.records[0].Id}/describe`,
+            referenceId: "DescribeTheListView"
+          }
+        ]
+      };
+
+      const compositeRes = await sfConn.rest(`/services/data/v${apiVersion}/composite`, {method: "POST", body: compositePayload});
+
+      // Check if both requests succeeded
+      if (compositeRes.compositeResponse
+            && compositeRes.compositeResponse[1]?.httpStatusCode === 200) {
+        const describeRes = compositeRes.compositeResponse[1].body;
+
+        if (describeRes.query) {
+          return describeRes.query;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return null;
+  }
+
   updateReleaseNotesViewed(version) {
     localStorage.setItem("latestReleaseNotesVersionViewed", version);
     this.setState({
@@ -748,20 +789,20 @@ class App extends React.PureComponent {
           "div",
           {
             className:
-              "slds-grid slds-grid_vertical-align-center slds-theme_shade slds-p-horizontal_medium slds-p-vertical_xx-small slds-border_top",
+            "slds-grid slds-grid_vertical-align-center slds-theme_shade slds-p-horizontal_medium slds-p-vertical_xx-small slds-border_top",
           },
           h(
             "div",
             {
               className:
-                "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small",
+              "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small",
             },
             h(
               "a",
               {
                 href:
-                  "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-"
-                  + addonVersion.replace(".", ""),
+                "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-"
+                + addonVersion.replace(".", ""),
                 title: "Release note",
                 target: linkTarget,
               },
@@ -781,7 +822,7 @@ class App extends React.PureComponent {
             "div",
             {
               className:
-                "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
+              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
               title: `Shortcut :${
                 this.isMac() ? "[ctrl+option+i]" : "[ctrl+alt+i]"
               }`,
@@ -796,7 +837,7 @@ class App extends React.PureComponent {
                 "svg",
                 {
                   className:
-                    "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
                   viewBox: "0 0 52 52",
                 },
                 h("use", {
@@ -810,7 +851,7 @@ class App extends React.PureComponent {
             "div",
             {
               className:
-                "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
+              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
               title: "Donate",
             },
             h(
@@ -823,7 +864,7 @@ class App extends React.PureComponent {
                 "svg",
                 {
                   className:
-                    "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
                   viewBox: "0 0 52 52",
                 },
                 h("use", {
@@ -837,7 +878,7 @@ class App extends React.PureComponent {
             "div",
             {
               className:
-                "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
+              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container",
               title: "Documentation",
             },
             h(
@@ -850,7 +891,7 @@ class App extends React.PureComponent {
                 "svg",
                 {
                   className:
-                    "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
                   viewBox: "0 0 52 52",
                 },
                 h("use", {
@@ -865,7 +906,7 @@ class App extends React.PureComponent {
             {
               id: "optionsBtn",
               className:
-                "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small",
+              "slds-col slds-size_1-of-12 slds-text-align_right slds-icon_container slds-m-right_small",
               title: "Options",
             },
             h(
@@ -879,7 +920,7 @@ class App extends React.PureComponent {
                 "svg",
                 {
                   className:
-                    "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
+                  "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small",
                   viewBox: "0 0 52 52",
                 },
                 h("use", {
@@ -957,10 +998,12 @@ class AllDataBox extends React.PureComponent {
       let recordId = getRecordId(contextUrl);
       let path = getSfPathFromUrl(contextUrl);
       let sobject = getSobject(contextUrl);
+      let sobjectListview = getSobjectListview(contextUrl);
       let context = {
         contextRecordId: recordId,
         contextPath: path,
         contextSobject: sobject,
+        contextSobjectListview: sobjectListview,
       };
       this.setState(context);
       onContextRecordChange(context);
@@ -1335,12 +1378,40 @@ class AllDataBox extends React.PureComponent {
 class AllDataBoxUsers extends React.PureComponent {
   constructor(props) {
     super(props);
+    // Load user search preferences early so they are available in render and getMatches
+    const userSearchFields = this.getUserSearchFieldsFromLocalStorage();
+    const {excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.getUserSearchExclusionsFromLocalStorage();
+
     this.state = {
       selectedUser: null,
       selectedUserId: null,
+      userSearchFields,
+      excludeInactiveUsersFromSearch,
+      excludePortalUsersFromSearch,
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
+  }
+
+  getUserSearchExclusionsFromLocalStorage() {
+    // Try to read from new MultiCheckboxButtonGroup format first
+    const userSearchExclusions = localStorage.getItem(this.props.sfHost + "_userSearchExclusions");
+    const defaultExclusions = {
+      excludePortalUsersFromSearch: false,
+      excludeInactiveUsersFromSearch: false
+    };
+    if (!userSearchExclusions) {
+      return defaultExclusions;
+    }
+    try {
+      const parsed = JSON.parse(userSearchExclusions);
+      return {
+        excludePortalUsersFromSearch: parsed.find(cb => cb.name === "portal")?.checked || false,
+        excludeInactiveUsersFromSearch: parsed.find(cb => cb.name === "inactive")?.checked || false
+      };
+    } catch (e) {
+      return defaultExclusions;
+    }
   }
 
   componentDidMount() {
@@ -1355,78 +1426,129 @@ class AllDataBoxUsers extends React.PureComponent {
     }
   }
 
+  getUserSearchFieldsFromLocalStorage() {
+    const defaultFields = ["Username", "Email", "Alias", "Name"].map(field => ({name: field, label: field, checked: true}));
+    const userDefaultSearchFieldsOptions = localStorage.getItem("userDefaultSearchFieldsOptions");
+    if (!userDefaultSearchFieldsOptions) {
+      return defaultFields;
+    }
+    try {
+      const parsed = JSON.parse(userDefaultSearchFieldsOptions);
+      if (!Array.isArray(parsed)) {
+        return defaultFields;
+      }
+      const enabledSearchOptions = parsed.filter(field => field && field.name && field.checked === true);
+      return enabledSearchOptions.length > 0 ? enabledSearchOptions : defaultFields;
+    } catch (e) {
+      return defaultFields;
+    }
+  }
+
+  /**
+   * Get User object accessible field names, using cache if available
+   * Only caches the field names we're interested in, not the entire describe result
+   * @returns {Promise<Array<string>>} Array of accessible field names
+   */
+  async getUserDescribeFields() {
+    const {sfHost} = this.props;
+    const cacheKey = "userFieldNames";
+
+    // Check cache first
+    let fieldNames = DataCache.getCachedData(cacheKey, sfHost);
+
+    if (!fieldNames) {
+      // Cache expired or missing, fetch fresh data
+      try {
+        const userDescribe = await sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/describe`, {
+          method: "GET"
+        });
+        // Only cache the field names we're interested in
+        const fieldsOfInterest = ["ProfileId", "Profile", "IsPortalEnabled"];
+        fieldNames = userDescribe.fields
+          .filter(field => fieldsOfInterest.includes(field.name))
+          .map(field => field.name);
+        // Store in cache
+        DataCache.setCachedData(cacheKey, sfHost, fieldNames);
+      } catch (err) {
+        console.error("Error fetching User describe:", err);
+        // Return empty array if fetch fails
+        return [];
+      }
+    }
+
+    return fieldNames;
+  }
+
+  /**
+   * Check if a field exists in the cached User describe result
+   * @param {string} fieldName - Name of the field to check
+   * @returns {Promise<boolean>} True if field is accessible, false otherwise
+   */
+  async hasFieldAccess(fieldName) {
+    const fieldNames = await this.getUserDescribeFields();
+    return fieldNames.includes(fieldName);
+  }
+
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
     userQuery = userQuery.trim();
     if (!userQuery) {
       return [];
     }
+    const escapedUserQuery = userQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 
-    const escapedUserQuery = userQuery
-      .replace(/\\/g, "\\\\")
-      .replace(/'/g, "\\'");
-    const fullQuerySelect
-      = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
-    const minimalQuerySelect
-      = "select Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const queryFrom
-      = "from User where (username like '%"
-      + escapedUserQuery
-      + "%' or name like '%"
-      + escapedUserQuery
-      + "%') order by IsActive DESC, LastLoginDate limit 100";
-    const compositeQuery = {
-      compositeRequest: [
-        {
-          method: "GET",
-          url:
-            "/services/data/v"
-            + apiVersion
-            + "/query/?q="
-            + encodeURIComponent(fullQuerySelect + " " + queryFrom),
-          referenceId: "fullData",
-        },
-        {
-          method: "GET",
-          url:
-            "/services/data/v"
-            + apiVersion
-            + "/query/?q="
-            + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
-          referenceId: "minimalData",
-        },
-      ],
-    };
+    // Get cached field permissions
+    const hasProfileId = await this.hasFieldAccess("ProfileId");
 
+    // Build SELECT clause dynamically based on available fields
+    // If ProfileId is accessible, Profile.Name should also be accessible
+    let fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
+    if (hasProfileId) {
+      fullQuerySelect += ", ProfileId, Profile.Name";
+    }
+
+    const userSearchWhereClause = await this.getUserSearchWhereClause(escapedUserQuery);
+    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
+
+    // Use single query since we're building it dynamically based on accessible fields
     try {
       setIsLoading(true);
-      const userSearchResult = await sfConn.rest(
-        "/services/data/v" + apiVersion + "/composite",
-        {method: "POST", body: compositeQuery}
-      );
-      let users = userSearchResult.compositeResponse.find(
-        (elm) => elm.httpStatusCode == 200
-      ).body.records;
-      return users;
+      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom));
+      return userSearchResult.records || [];
     } catch (err) {
-      console.error(
-        "Unable to query user details with: "
-          + JSON.stringify(compositeQuery)
-          + ".",
-        err
-      );
+      console.error("Unable to query user details:", err);
       return [];
     } finally {
       setIsLoading(false);
     }
+
+  }
+
+  async getUserSearchWhereClause(escapedUserQuery) {
+    const {userSearchFields, excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.state;
+
+    let userSearchWhereClause = "(";
+    userSearchFields.forEach(field => {
+      userSearchWhereClause += field.name + " LIKE '%" + escapedUserQuery + "%' OR ";
+    });
+    userSearchWhereClause = userSearchWhereClause.slice(0, -4);
+    userSearchWhereClause += ")";
+    if (excludeInactiveUsersFromSearch) {
+      userSearchWhereClause += " AND IsActive = true";
+    }
+    if (excludePortalUsersFromSearch) {
+      // Check if IsPortalEnabled field is accessible before adding filter
+      const hasIsPortalEnabled = await this.hasFieldAccess("IsPortalEnabled");
+      if (hasIsPortalEnabled) {
+        userSearchWhereClause += " AND IsPortalEnabled = false";
+      }
+    }
+    return userSearchWhereClause;
   }
 
   async onDataSelect(userRecord) {
     if (userRecord && userRecord.Id) {
-      await this.setState({
-        selectedUserId: userRecord.Id,
-        selectedUser: null,
-      });
+      await this.setState({selectedUserId: userRecord.Id, selectedUser: null});
       await this.querySelectedUserDetails();
     }
   }
@@ -1438,83 +1560,38 @@ class AllDataBoxUsers extends React.PureComponent {
     if (!selectedUserId) {
       return;
     }
-    //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
-    const fullQuerySelect
-      = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
-    //TODO implement a try catch to remove non existing fields ProfileId or IsPortalEnabled (experience is not enabled)
-    const mediumQuerySelect
-      = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
-    const minimalQuerySelect
-      = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
+    // Get cached field permissions
+    const hasProfileId = await this.hasFieldAccess("ProfileId");
+    const hasIsPortalEnabled = await this.hasFieldAccess("IsPortalEnabled");
+
+    // Build SELECT clause dynamically based on available fields
+    // If ProfileId is accessible, Profile.Name should also be accessible
+    let querySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
+    if (hasProfileId) {
+      querySelect += ", ProfileId, Profile.Name";
+    }
+    if (hasIsPortalEnabled) {
+      querySelect += ", IsPortalEnabled";
+    }
+
     const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
-    const compositeQuery = {
-      compositeRequest: [
-        {
-          method: "GET",
-          url:
-            "/services/data/v"
-            + apiVersion
-            + "/query/?q="
-            + encodeURIComponent(fullQuerySelect + " " + queryFrom),
-          referenceId: "fullData",
-        },
-        {
-          method: "GET",
-          url:
-            "/services/data/v"
-            + apiVersion
-            + "/query/?q="
-            + encodeURIComponent(mediumQuerySelect + " " + queryFrom),
-          referenceId: "mediumData",
-        },
-        {
-          method: "GET",
-          url:
-            "/services/data/v"
-            + apiVersion
-            + "/query/?q="
-            + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
-          referenceId: "minimalData",
-        },
-      ],
-    };
 
     try {
       setIsLoading(true);
-      //const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/sobjects/User/" + selectedUserId); //Does not return profile details. Query call is therefore prefered
-      const userResult = await sfConn.rest(
-        "/services/data/v" + apiVersion + "/composite",
-        {method: "POST", body: compositeQuery}
-      );
-      let userDetail = userResult.compositeResponse.find(
-        (elm) => elm.httpStatusCode == 200
-      ).body.records[0];
-      userDetail.debugModeActionLabel
-        = userDetail.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
+      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(querySelect + " " + queryFrom));
+      let userDetail = userResult.records[0];
+      userDetail.debugModeActionLabel = userDetail.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
       //query NetworkMember only if it is a portal user (display "Login to Experience" button)
-      if (userDetail.IsPortalEnabled) {
-        await sfConn
-          .rest(
-            "/services/data/v"
-              + apiVersion
-              + "/query/?q=SELECT+NetworkId+FROM+NetworkMember+WHERE+MemberId='"
-              + userDetail.Id
-              + "'"
-          )
-          .then((res) => {
-            if (res.records && res.records.length > 0) {
-              userDetail.NetworkId = res.records[0].NetworkId;
-            }
-          });
+      if (userDetail.IsPortalEnabled){
+        await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+NetworkId+FROM+NetworkMember+WHERE+MemberId='" + userDetail.Id + "'").then(res => {
+          if (res.records && res.records.length > 0){
+            userDetail.NetworkId = res.records[0].NetworkId;
+          }
+        });
       }
       await this.setState({selectedUser: userDetail});
     } catch (err) {
-      console.error(
-        "Unable to query user details with: "
-          + JSON.stringify(compositeQuery)
-          + ".",
-        err
-      );
+      console.error("Unable to query user details:", err);
     } finally {
       setIsLoading(false);
     }
@@ -3230,6 +3307,31 @@ class UserDetails extends React.PureComponent {
       .catch((err) => this.showErrorToast("User Unfreeze", err));
   }
 
+  async resetUserPassword(user) {
+    // Disable the button immediately
+    this.setState({
+      [`resetPasswordDisabled_${user.Id}`]: true
+    });
+
+    try {
+      await sfConn.rest(
+        `/services/data/v${apiVersion}/sobjects/User/${user.Id}/password`,
+        {method: "DELETE"}
+      );
+      this.showSuccessToast(
+        "Success",
+        "Password reset successfully"
+      );
+    } catch (err) {
+      console.error("Error during password reset", err);
+      this.showErrorToast("Password Reset");
+      // Re-enable button on error so user can retry
+      this.setState({
+        [`resetPasswordDisabled_${user.Id}`]: false
+      });
+    }
+  }
+
   toggleMenu() {
     this.refs.buttonMenu.classList.toggle("slds-is-open");
   }
@@ -3239,7 +3341,7 @@ class UserDetails extends React.PureComponent {
   }
 
   render() {
-    let {user, linkTarget} = this.props;
+    let {user, linkTarget, currentUserId} = this.props;
     return h(
       "div",
       {className: "all-data-box-inner"},
@@ -3299,7 +3401,23 @@ class UserDetails extends React.PureComponent {
                     target: linkTarget,
                     title: "Show all data",
                   },
-                  user.Id
+                  user.Id,
+                  displayButton("copy-userId", hideButtonsOption)
+                    ? h("span", {
+                      className: "sfir-copy-userid-icon",
+                      title: "Copy to clipboard",
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        handleUserIdCopy(e, user.Id);
+                      },
+                      onMouseEnter: (e) => e.stopPropagation(),
+                      onMouseLeave: (e) => e.stopPropagation()
+                    },
+                    h("svg", {className: "slds-button__icon slds-m-left_xx-small sfir-vertical-align_sub"},
+                      h("use", {xlinkHref: "symbols.svg#copy"})
+                    )
+                    )
+                    : null,
                 )
               )
             ),
@@ -3432,25 +3550,26 @@ class UserDetails extends React.PureComponent {
             title: "Show / assign user's permission set groups",
           },
           "PSetG"
-        )
+        ),
+        displayButton("reset-password", hideButtonsOption) && user.Id !== currentUserId
+          ? h(
+            "button",
+            {
+              type: "button",
+              onClick: () => this.resetUserPassword(user),
+              className: "slds-button slds-button_neutral",
+              title: "Reset Password",
+              disabled: this.state[`resetPasswordDisabled_${user.Id}`] || false,
+            },
+            "Reset"
+          )
+          : null
       ),
       //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
       user.UserLogins?.records?.[0]?.IsFrozen
-        ? h(
-          "div",
-          {className: "user-buttons center small-font slds-m-top_x-small"},
-          h(
-            "a",
-            {
-              id: "unfreezeUser",
-              className: "slds-button slds-button_neutral",
-              onClick: () => this.unfreezeUser(user),
-            },
-            h(
-              "span",
-              {className: "slds-truncate", title: "Unfreeze User Login"},
-              "Unfreeze"
-            )
+        ? h("div", {className: "user-buttons center small-font slds-m-top_x-small"},
+          h("a", {id: "unfreezeUser", className: "slds-button slds-button_neutral", onClick: () => this.unfreezeUser(user)},
+            h("span", {className: "slds-truncate", title: "Unfreeze User Login"}, "Unfreeze")
           )
         )
         : h(
@@ -4679,6 +4798,16 @@ function getSobject(href) {
   return null;
 }
 
+function getSobjectListview(href) {
+  const match = href
+    ? href.match(/\/lightning\/o\/([^/]+)\/list\?filterName=([^&]+)/)
+    : null;
+  if (match) {
+    return match[2]; // Return the filterName
+  }
+  return null;
+}
+
 function getSfPathFromUrl(href) {
   let url = new URL(href);
   if (url.protocol.endsWith("-extension:")) {
@@ -4724,4 +4853,9 @@ function handleLightningLinkClick(e) {
   e.preventDefault(); // Prevent the default link behavior (href navigation)
   const url = e.currentTarget.href;
   navigateWithExtensionCheck(e, url, {navigationType: "url", url});
+}
+
+function handleUserIdCopy(e, userId) {
+  e.preventDefault();
+  copyToClipboard(userId);
 }

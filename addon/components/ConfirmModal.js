@@ -117,30 +117,43 @@ export default class ConfirmModal extends React.Component {
       children,
       onCancel,
       onConfirm,
+      onCopy,
       confirmVariant = "brand",
       cancelVariant = "neutral",
+      copyVariant = "neutral",
       confirmLabel = "Confirm",
       cancelLabel = "Cancel",
+      copyLabel = "Copy",
       confirmButtonClass,
       cancelButtonClass,
+      copyButtonClass,
       confirmStretch,
       cancelStretch,
+      copyStretch,
       confirmIconName,
       confirmIconPosition,
       cancelIconName,
       cancelIconPosition,
+      copyIconName,
+      copyIconPosition,
       confirmType = "button",
       cancelType = "button",
+      copyType = "button",
       confirmDisabled,
       cancelDisabled,
+      copyDisabled,
       confirmTitle,
       cancelTitle,
+      copyTitle,
       confirmName,
       cancelName,
+      copyName,
       confirmValue,
       cancelValue,
+      copyValue,
       confirmTabIndex,
-      cancelTabIndex
+      cancelTabIndex,
+      copyTabIndex
     } = this.props;
 
     if (!isOpen) {
@@ -149,9 +162,11 @@ export default class ConfirmModal extends React.Component {
 
     const confirmClassName = getButtonClassName(confirmButtonClass, confirmVariant, confirmStretch);
     const cancelClassName = getButtonClassName(cancelButtonClass, cancelVariant, cancelStretch);
+    const copyClassName = getButtonClassName(copyButtonClass, copyVariant, copyStretch);
 
     const confirmChildren = buildButtonChildren(confirmLabel, confirmIconName, confirmIconPosition);
     const cancelChildren = buildButtonChildren(cancelLabel, cancelIconName, cancelIconPosition);
+    const copyChildren = buildButtonChildren(copyLabel, copyIconName, copyIconPosition);
 
     return h("div", {},
       h("div", {className: "slds-modal slds-fade-in-open", role: "dialog", "aria-modal": "true", "aria-labelledby": "modal-heading-01"},
@@ -174,6 +189,16 @@ export default class ConfirmModal extends React.Component {
               value: cancelValue,
               tabIndex: cancelTabIndex
             }, ...cancelChildren),
+            onCopy && h("button", {
+              onClick: onCopy,
+              disabled: copyDisabled,
+              className: copyClassName,
+              type: copyType,
+              title: copyTitle,
+              name: copyName,
+              value: copyValue,
+              tabIndex: copyTabIndex
+            }, ...copyChildren),
             onConfirm && h("button", {
               onClick: onConfirm,
               disabled: confirmDisabled,

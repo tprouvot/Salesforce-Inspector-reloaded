@@ -476,6 +476,29 @@ a.icon-url {
 .sfir-vertical-align_top {
   vertical-align: top;
 }
+.sfir-vertical-align_sub {
+  vertical-align: sub;
+}
 .sfir-no-border-right{
   border-right: none;
+}
+
+/* Copy userId icon hover styles */
+.sfir-copy-userid-icon {
+  display: inline-block;
+  cursor: pointer;
+}
+
+.sfir-copy-userid-icon svg {
+  fill: var(--sfir-icon-color);
+  transition: fill 0.1s linear;
+}
+
+.sfir-copy-userid-icon:hover svg {
+  fill: var(--sfir-blue-color);
+}
+
+/* Prevent link hover decoration when hovering copy icon */
+a:hover:has(.sfir-copy-userid-icon:hover) {
+  text-decoration: none;
 }

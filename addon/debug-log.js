@@ -50,12 +50,17 @@ class Model {
     this.actionSummary = new Map();
     this.resolvingActions = new Set();
 
+    // Log bodies cache (logId -> body text) for searching
+    this.logBodies = new Map();
+
     // Column widths (fixed, no resizing)
     this.columnWidths = {
       user: 150,
-      action: 280,
+      action: 150,
+      operation: 250,
+      request: 90,
       start: 140,
-      status: 250,
+      status: 100,
       size: 90,
       actions: 260
     };
@@ -93,6 +98,11 @@ class Model {
     // Sorting state
     this.sortColumn = "StartTime"; // Default sort column
     this.sortDirection = "DESC"; // ASC or DESC
+
+    // Toggle for fetching log bodies (for action details)
+    const savedFetchBodies = localStorage.getItem("debugLogFetchBodies");
+    this.fetchLogBodies = savedFetchBodies === null ? true : JSON.parse(savedFetchBodies);
+    this.fetchBodiesSearchTerm = ""; // Search term for filtering logs when fetching bodies
   }
 
   didUpdate() {
@@ -325,6 +335,8 @@ Please structure your response in a clear, organized manner using these sections
     const columnMap = {
       "User": "LogUserId",
       "Action": "Operation",
+      "Operation": "Operation",
+      "Request": "Request",
       "Start Time": "StartTime",
       "Status": "Status",
       "Size (KB)": "LogLength"
@@ -446,7 +458,10 @@ Please structure your response in a clear, organized manner using these sections
         this.hasMore = batch.length === this.pageSize;
       }
 
-      this.resolveActionsFromBodiesLimited(Math.min(this.pageSize, batch.length));
+      // Only fetch log bodies if toggle is enabled
+      if (this.fetchLogBodies) {
+        this.resolveActionsFromBodiesLimited(Math.min(this.pageSize, batch.length));
+      }
     } catch (e) {
       console.error("fetchLogs", e);
       if (reset) this.logs = [];
@@ -502,6 +517,8 @@ Please structure your response in a clear, organized manner using these sections
       try {
         const xhr = await sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/ApexLog/${log.Id}/Body`, {responseType: "blob"}, true);
         const text = await xhr.response.text();
+        // Store log body for searching
+        this.logBodies.set(log.Id, text);
         const detail = deriveActionFromBody(text) || parseAction(log.Operation);
         this.actionSummary.set(log.Id, detail);
         this.didUpdate();
@@ -512,6 +529,7 @@ Please structure your response in a clear, organized manner using these sections
   }
 
   ensureActionDerived(log) {
+
     const current = this.actionSummary.get(log.Id);
     if (current && current.label && current.label !== "CODE_UNIT_STARTED" && current.label !== "-") {
       return;
@@ -521,8 +539,11 @@ Please structure your response in a clear, organized manner using these sections
     sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/ApexLog/${log.Id}/Body`, {responseType: "blob"}, true)
       .then(xhr => xhr.response.text())
       .then(text => {
+        // Store log body for searching
+        this.logBodies.set(log.Id, text);
         const detail = deriveActionFromBody(text) || parseAction(log.Operation);
         this.actionSummary.set(log.Id, detail);
+        this.didUpdate(); // Trigger re-render to update filtered results
       })
       .catch(() => { /* ignore */ })
       .finally(() => {
@@ -609,16 +630,46 @@ Please structure your response in a clear, organized manner using these sections
     }
   }
 
+  async getLogBodyText(id) {
+    // Check if body is already cached
+    const cachedBody = this.logBodies.get(id);
+    if (cachedBody) {
+      return cachedBody;
+    }
+
+    // Fetch from API
+    const xhr = await sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/ApexLog/${id}/Body`, {responseType: "blob"}, true);
+    const blob = xhr.response;
+    const text = await blob.text();
+    // Cache the body for future use
+    this.logBodies.set(id, text);
+    return text;
+  }
+
   async preview(id) {
     this.previewLoading = true;
     this.previewLog = {id, body: "", fileName: `${id}.log`}; // Show modal immediately with loading state
     this.didUpdate();
 
+    // Check if body is already cached for instant display
+    const cachedBody = this.logBodies.get(id);
+    if (cachedBody) {
+      this.previewLog = {id, body: cachedBody, fileName: `${id}.log`};
+      this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
+      this.previewFilter = ""; // Reset filter when opening new log
+      this.previewLoading = false;
+      window.addEventListener("keydown", this._onPreviewKeyDown, true);
+      setTimeout(() => {
+        const inp = document.querySelector(".sfir-preview-search-input");
+        if (inp) inp.focus();
+      }, 0);
+      this.didUpdate();
+      return;
+    }
+
     this.spinnerCount++;
     try {
-      const xhr = await sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/ApexLog/${id}/Body`, {responseType: "blob"}, true);
-      const blob = xhr.response;
-      const text = await blob.text();
+      const text = await this.getLogBodyText(id);
       this.previewLog = {id, body: text, fileName: `${id}.log`};
       this.previewSearch = {term: "", liveTerm: "", index: 0, count: 0, _timer: 0};
       this.previewFilter = ""; // Reset filter when opening new log
@@ -744,8 +795,8 @@ Please structure your response in a clear, organized manner using these sections
     // Fetch blob via authenticated REST, then save
     (async () => {
       try {
-        const xhr = await sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/ApexLog/${id}/Body`, {responseType: "blob"}, true);
-        const blob = xhr.response;
+        const text = await this.getLogBodyText(id);
+        const blob = new Blob([text], {type: "text/plain"});
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -765,8 +816,8 @@ Please structure your response in a clear, organized manner using these sections
     if (!log) return;
     (async () => {
       try {
-        const xhr = await sfConn.rest(`/services/data/v${apiVersion}/tooling/sobjects/ApexLog/${id}/Body`, {responseType: "blob"}, true);
-        const blob = xhr.response;
+        const text = await this.getLogBodyText(id);
+        const blob = new Blob([text], {type: "text/plain"});
 
         const action = (this.actionSummary.get(id) || parseAction(log.Operation) || {label: id}).label || id;
         const start = new Date(log.StartTime).toLocaleString();
@@ -880,6 +931,33 @@ Please structure your response in a clear, organized manner using these sections
     localStorage.setItem("debugLogPageSize", String(n));
     this.pageIndex = 0;
     this.fetchLogs(true, true);
+  }
+
+  toggleFetchLogBodies() {
+    this.fetchLogBodies = !this.fetchLogBodies;
+    localStorage.setItem("debugLogFetchBodies", JSON.stringify(this.fetchLogBodies));
+    // Clear search term when disabling
+    if (!this.fetchLogBodies) {
+      this.fetchBodiesSearchTerm = "";
+    }
+    this.didUpdate();
+  }
+
+  getFilteredLogs() {
+    // If search is disabled or no search term, return all logs
+    if (!this.fetchLogBodies || !this.fetchBodiesSearchTerm || this.fetchBodiesSearchTerm.trim() === "") {
+      return this.logs;
+    }
+
+    const searchTerm = this.fetchBodiesSearchTerm.toLowerCase().trim();
+    return this.logs.filter(log => {
+      const body = this.logBodies.get(log.Id);
+      if (!body) {
+        // If body not loaded yet, include it (will be filtered once body is loaded)
+        return true;
+      }
+      return body.toLowerCase().includes(searchTerm);
+    });
   }
 }
 
@@ -1167,7 +1245,8 @@ function Filters({model}) {
 }
 
 function LogsTable({model, hideButtonsOption}) {
-  const allChecked = model.logs.length > 0 && model.logs.every(l => model.selectedIds.has(l.Id));
+  const filteredLogs = model.getFilteredLogs();
+  const allChecked = filteredLogs.length > 0 && filteredLogs.every(l => model.selectedIds.has(l.Id));
   const cw = model.columnWidths;
 
   // Helper to render sortable column header
@@ -1195,10 +1274,13 @@ function LogsTable({model, hideButtonsOption}) {
   // Compute smarter display counts and offset
   const offset = model.pageIndex * model.pageSize;
   const total = model.totalCount;
+  const filteredCount = filteredLogs.length;
   const displayedCountBase = (model.pageIndex + 1) * model.pageSize;
-  const displayedCount = total != null
-    ? Math.min(total, displayedCountBase)
-    : displayedCountBase;
+  const displayedCount = model.fetchBodiesSearchTerm && model.fetchBodiesSearchTerm.trim() !== ""
+    ? filteredCount
+    : (total != null
+      ? Math.min(total, displayedCountBase)
+      : displayedCountBase);
 
   return h("div", {className: "slds-card"},
     h("div", {className: "slds-card__header slds-grid"},
@@ -1216,11 +1298,13 @@ function LogsTable({model, hideButtonsOption}) {
             h("span", {className: ""},
               h("h2", {className: "slds-card__header-title"},
                 h("span", {className: "slds-truncate"},
-                  total != null
-                    ? `Logs (${displayedCount} of ${total})`
-                    : (model.countLoading
-                      ? `Logs (${displayedCount} of ...)`
-                      : `Logs (${displayedCount})`)
+                  model.fetchBodiesSearchTerm && model.fetchBodiesSearchTerm.trim() !== ""
+                    ? `Logs (${filteredCount}${total != null ? ` of ${total}` : ""}${model.fetchLogBodies && filteredCount < model.logs.length ? " - filtered" : ""})`
+                    : (total != null
+                      ? `Logs (${displayedCount} of ${total})`
+                      : (model.countLoading
+                        ? `Logs (${displayedCount} of ...)`
+                        : `Logs (${displayedCount})`))
                 )
               )
             ),
@@ -1238,6 +1322,41 @@ function LogsTable({model, hideButtonsOption}) {
                     ...model.allowedPageSizes.map(v => h("option", {key: v, value: String(v)}, String(v)))
                     )
                   )
+                )
+              )
+            )
+          )
+        ),
+        // Search form between Page Size and Refresh button
+        h("div", {className: "slds-col slds-grow-none slds-m-right_xx-large"},
+          h("div", {className: "slds-form-element"},
+            h("div", {className: "slds-form-element__control", style: {display: "flex", alignItems: "center", gap: "0.5rem"}},
+              model.fetchLogBodies && h("div", {className: "slds-input-has-icon slds-input-has-icon_left", style: {flex: "1", minWidth: "200px"}},
+                h("svg", {className: "slds-input__icon slds-input__icon_left slds-icon-text-default", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#search"})
+                ),
+                h("input", {
+                  type: "search",
+                  className: "slds-input",
+                  placeholder: "Search in logs...",
+                  value: model.fetchBodiesSearchTerm || "",
+                  onChange: (e) => {
+                    model.fetchBodiesSearchTerm = e.target.value;
+                    model.didUpdate();
+                  }
+                })
+              ),
+              h("label", {className: "slds-checkbox_toggle slds-grid", title: model.fetchLogBodies ? "Disable fetching log bodies for action details" : "Enable fetching log bodies for action details"},
+                h("input", {
+                  type: "checkbox",
+                  checked: model.fetchLogBodies,
+                  onChange: () => model.toggleFetchLogBodies(),
+                  "aria-describedby": "fetch-bodies-toggle"
+                }),
+                h("span", {id: "fetch-bodies-toggle", className: "slds-checkbox_faux_container center-label"},
+                  h("span", {className: "slds-checkbox_faux"}),
+                  h("span", {className: "slds-checkbox_on"}, "Fetch Bodies"),
+                  h("span", {className: "slds-checkbox_off"}, "Disabled")
                 )
               )
             )
@@ -1272,9 +1391,11 @@ function LogsTable({model, hideButtonsOption}) {
           h("colgroup", {},
             h("col", {style: {width: 44}}),
             h("col", {style: {width: cw.user}}),
-            h("col", {style: {width: cw.action}}),
+            h("col", {style: {width: cw.operation}}),
+            h("col", {style: {width: cw.request}}),
             h("col", {style: {width: cw.start}}),
             h("col", {style: {width: cw.status}}),
+            h("col", {style: {width: cw.action}}),
             h("col", {style: {width: cw.size}}),
             h("col", {style: {width: cw.actions}})
           ),
@@ -1284,31 +1405,39 @@ function LogsTable({model, hideButtonsOption}) {
                 h("input", {type: "checkbox", checked: allChecked, onChange: (e) => model.toggleSelectAll(e.target.checked)})
               ),
               renderSortableHeader("User", "LogUserId"),
-              renderSortableHeader("Action", "Operation"),
+              renderSortableHeader("Operation", "Operation"),
+              renderSortableHeader("Request", "Request"),
               renderSortableHeader("Start Time", "StartTime"),
               renderSortableHeader("Status", "Status"),
+              renderSortableHeader("Action", "Operation"),
               renderSortableHeader("Size (KB)", "LogLength"),
               h("th", {"aria-label": "Row actions"})
             )
           ),
           h("tbody", {},
-            ...model.logs.map(log => {
+            ...model.getFilteredLogs().map(log => {
               model.ensureActionDerived(log);
               model.ensureUserName(log.LogUserId);
               return h("tr", {key: log.Id},
                 h("td", {}, h("input", {type: "checkbox", checked: model.selectedIds.has(log.Id), onChange: (e) => model.toggleSelect(log.Id, e.target.checked)})),
                 h("td", {style: {width: cw.user}}, model.userMap.get(log.LogUserId) || log.LogUserId || "-"),
-                h("td", {style: {width: cw.action}, className: "slds-scrollable_x"},
-                  (() => {
-                    const label = (model.actionSummary.get(log.Id) || parseAction(log.Operation)).label;
-                    return h("span", {className: "slds-truncate", title: label}, label);
-                  })()
+                h("td", {style: {width: cw.operation}, className: "slds-scrollable_x"},
+                  h("span", {className: "slds-truncate", title: log.Operation || "-"}, log.Operation || "-")
+                ),
+                h("td", {style: {width: cw.request}, className: "slds-scrollable_x"},
+                  h("span", {className: "slds-truncate", title: log.Request || "-"}, log.Request || "-")
                 ),
                 h("td", {style: {width: cw.start}}, new Date(log.StartTime).toLocaleString()),
                 h("td", {style: {width: cw.status}},
                   h("div", {className: "slds-scrollable_y slds-text-body_small sfir-log-status-cell"},
                     log.Status || "-"
                   )
+                ),
+                h("td", {style: {width: cw.action}, className: "slds-scrollable_x"},
+                  (() => {
+                    const label = (model.actionSummary.get(log.Id) || parseAction(log.Operation)).label;
+                    return h("span", {className: "slds-truncate", title: label}, label);
+                  })()
                 ),
                 h("td", {style: {width: cw.size}}, (log.LogLength / 1024).toFixed(2)),
                 h("td", {style: {width: cw.actions}},

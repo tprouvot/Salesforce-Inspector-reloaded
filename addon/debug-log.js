@@ -276,27 +276,23 @@ Please structure your response in a clear, organized manner using these sections
   async populatePicklistFromAllLogs() {
     this.spinnerCount++;
     try {
-      // Gather all distinct LogUserId from all logs (no filters)
-      const ids = new Set();
-      let url = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent("SELECT LogUserId FROM ApexLog WHERE LogUserId != null");
+      // Gather all distinct LogUserId and LogUser.Name from all logs (no filters)
+      // Using relationship query to get both ID and Name in a single query
+      const map = new Map();
+      let url = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent("SELECT LogUserId, LogUser.Name FROM ApexLog WHERE LogUserId != null");
       while (url) {
         const res = await sfConn.rest(url);
-        (res.records || []).forEach(r => { if (r.LogUserId) ids.add(r.LogUserId); });
+        (res.records || []).forEach(r => {
+          if (r.LogUserId && r.LogUser) {
+            // LogUser.Name might be null if user doesn't exist, but LogUserId is still valid
+            const userName = r.LogUser.Name || r.LogUserId;
+            map.set(r.LogUserId, userName);
+          } else if (r.LogUserId) {
+            // Fallback: if LogUser relationship is null but LogUserId exists, use ID as name
+            map.set(r.LogUserId, r.LogUserId);
+          }
+        });
         url = res.nextRecordsUrl || null;
-      }
-
-      const allIds = Array.from(ids);
-      // Resolve names in chunks, rebuild userMap and userOptions from the full list
-      const map = new Map();
-      for (let i = 0; i < allIds.length; i += 200) {
-        const chunk = allIds.slice(i, i + 200);
-        const soql = `SELECT Id, Name FROM User WHERE Id IN (${chunk.map(id => `'${id}'`).join(",")})`;
-        try {
-          const res = await sfConn.rest(`/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(soql));
-          (res.records || []).forEach(u => map.set(u.Id, u.Name));
-        } catch (e) {
-          console.error("populatePicklistFromAllLogs", e);
-        }
       }
       this.userMap = map;
       this.userOptions = Array.from(map, ([id, name]) => ({id, name})).sort((a, b) => a.name.localeCompare(b.name));

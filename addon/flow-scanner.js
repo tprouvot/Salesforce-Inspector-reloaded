@@ -324,10 +324,9 @@ class FlowScanner {
       csvRows.push(row.join(","));
     });
 
-    // Create a Blob and trigger a download with UTF-8 BOM for Excel compatibility
+    // Create a Blob and trigger a download
     const csvContent = csvRows.join("\n");
-    const blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});
-    const url = URL.createObjectURL(blob);
+    const blob = new Blob([csvContent], {type: "text/csv"});    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = "flow-scan-" + this.currentFlow.name + "-" + new Date().toISOString().split("T")[0] + ".csv";

@@ -2,7 +2,7 @@
 
 ## Version 2.0
 
-- `Data Export` Fix CSV export encoding for non-Latin characters (Hebrew, Arabic, Chinese, etc.) by adding UTF-8 BOM for Excel compatibility - affects `Data Export` CSV downloads (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
+- `Data Export` Fix CSV export encoding for non-Latin characters (Hebrew, Arabic, Chinese, etc.) by adding UTF-8 BOM for Excel compatibility (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
 - `User Tab` [popup] Add 'Reset Password' button and a new option to hide it. [feature #486](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/486) (contribution by [Phanidra Mangipudi](https://github.com/thephani))
 - `Popup` Add "Copy Id" icon to User tab [feature 906](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/906) (contribution by [Arnav Gupta](https://github.com/ArnavGuptaaa)).
 - `Data Export` Auto-populate SOQL editor from Salesforce List View context [feature 969](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/969) (request and contribution by [Temam Abdelkrim](https://github.com/KRIMOD)) and [feature 817](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/817) (request by [Nicolas Vuillamy](https://github.com/nvuillam))

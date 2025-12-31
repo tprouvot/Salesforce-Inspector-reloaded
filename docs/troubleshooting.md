@@ -49,9 +49,8 @@ If the error disappeared, clear site data to solve the issue in normal navigatio
 
 ### CSV Export encoding issues in Excel
 
-If you experience issues with non-Latin characters (e.g., Hebrew, Arabic) when opening exported CSV files in Excel, you can enable the "Use BOM for CSV export" option in the extension settings.
-This option adds a UTF-8 Byte Order Mark (BOM) to the beginning of the file, which helps Excel correctly identify the encoding.
-Note: This is a workaround and may be removed in future releases if a better solution is found.
+If you experience recent issues when opening exported CSV files in Excel, you can disable the "Use BOM for CSV export" option in the extension settings.
+This option adds a UTF-8 Byte Order Mark (BOM) to the beginning of the file, which helps Excel correctly identify the encoding for non latin characters.
 
 ### Managed Application Installation Error
 

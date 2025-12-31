@@ -295,6 +295,22 @@ export function copyToClipboard(value) {
 }
 
 /**
+ * Downloads a CSV file with optional UTF-8 BOM for Excel compatibility
+ * @param {string} csvContent - The CSV content to download
+ * @param {string} filename - The filename for the downloaded file
+ */
+export function downloadCsvFile(csvContent, filename) {
+  // Add UTF-8 BOM for Excel compatibility with Hebrew and other non-Latin characters
+  const BOM = localStorage.getItem("useBomForCsvExport") === "true" ? "\uFEFF" : "";
+  const blob = new Blob([BOM + csvContent], {type: "text/csv;charset=utf-8;"});
+
+  const downloadAnchor = document.createElement("a");
+  downloadAnchor.download = filename;
+  downloadAnchor.href = window.URL.createObjectURL(blob);
+  downloadAnchor.click();
+}
+
+/**
  * DataCache - Generic caching utility for any JSON-serializable data
  * Stores data with timestamps and provides expiration checking based on user-configured days.
  */

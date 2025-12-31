@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {copyToClipboard} from "./utils.js";
+import {copyToClipboard, downloadCsvFile} from "./utils.js";
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -502,15 +502,8 @@ class Model {
     let csvContent = [headers.join(","), ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))].join("\n");
 
     // Create and download file
-    let blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});
-    let link = document.createElement("a");
-    let url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${this.objectName()}_${activeTab}_${new Date().toISOString().split("T")[0]}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const filename = `${this.objectName()}_${activeTab}_${new Date().toLocaleDateString()}.csv`;
+    downloadCsvFile(csvContent, filename);
   }
 }
 

@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -331,15 +331,9 @@ class Model {
     copyToClipboard(JSON.stringify(this.exportedData.records, null, "  "));
   }
   downloadAsCsv(){
-    // Add UTF-8 BOM for Excel compatibility with Hebrew and other non-Latin characters
     const csvContent = this.exportedData.csvSerialize(this.separator);
-    const BOM = localStorage.getItem("useBomForCsvExport") === "true" ? "\uFEFF" : "";
-    const blob = new Blob([BOM + csvContent], {type: "text/csv;charset=utf-8;"});
-
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.download = `${this.autocompleteResults.sobjectName}-${new Date().toISOString().split("T")[0]}.csv`;
-    downloadAnchor.href = window.URL.createObjectURL(blob);
-    downloadAnchor.click();
+    const filename = `${this.exportedData.records[0].attributes.type}-${new Date().toLocaleDateString()}.csv`;
+    downloadCsvFile(csvContent, filename);
   }
   deleteRecords(e) {
     let data = this.exportedData.csvSerialize(this.separator);

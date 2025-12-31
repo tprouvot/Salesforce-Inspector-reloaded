@@ -2015,7 +2015,7 @@ class App extends React.Component {
 
     return h("div", {},
       h(PageHeader, {
-        pageTitle: "Logs Viewer",
+        pageTitle: "Logs Viewer (beta)",
         orgName: model.orgName,
         sfLink: `https://${this.model.sfHost}`,
         sfHost: this.model.sfHost,

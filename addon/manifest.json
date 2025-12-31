@@ -83,7 +83,8 @@
         "field-creator.html",
         "options.html",
         "event-monitor.html",
-        "flow-scanner.html"
+        "flow-scanner.html",
+        "debug-log.html"
       ],
       "matches": [
         "https://*.salesforce.com/*",
@@ -162,6 +163,9 @@
     },
     "flow-scanner": {
       "description": "Flow Scanner"
+    },
+    "debug-log": {
+      "description": "Logs Viewer"
     }
   }
 }

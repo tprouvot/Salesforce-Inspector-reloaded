@@ -88,7 +88,20 @@ export default class ConfirmModal extends React.Component {
     window.removeEventListener("keydown", this.handleKeyDown, true);
   }
 
+  handleClose = (e) => {
+    // Call onCancel first, fall back to onConfirm if onCancel is not available
+    if (typeof this.props.onCancel === "function") {
+      this.props.onCancel(e);
+    } else if (typeof this.props.onConfirm === "function") {
+      this.props.onConfirm(e);
+    }
+  };
+
   handleKeyDown = (e) => {
+    if (this.props.ignoreEsc) {
+      return;
+    }
+
     const isEscapeKey = e.key === "Escape" || e.key === "Esc";
     if (!isEscapeKey) {
       return;
@@ -101,12 +114,7 @@ export default class ConfirmModal extends React.Component {
       return;
     }
 
-    // Call onCancel first, fall back to onConfirm if onCancel is not available
-    if (typeof this.props.onCancel === "function") {
-      this.props.onCancel(e);
-    } else if (typeof this.props.onConfirm === "function") {
-      this.props.onConfirm(e);
-    }
+    this.handleClose(e);
   };
 
   render() {
@@ -153,7 +161,9 @@ export default class ConfirmModal extends React.Component {
       copyValue,
       confirmTabIndex,
       cancelTabIndex,
-      copyTabIndex
+      containerClassName,
+      copyTabIndex,
+      rootStyle
     } = this.props;
 
     if (!isOpen) {
@@ -168,9 +178,15 @@ export default class ConfirmModal extends React.Component {
     const cancelChildren = buildButtonChildren(cancelLabel, cancelIconName, cancelIconPosition);
     const copyChildren = buildButtonChildren(copyLabel, copyIconName, copyIconPosition);
 
-    return h("div", {},
+    return h("div", {style: rootStyle},
       h("div", {className: "slds-modal slds-fade-in-open", role: "dialog", "aria-modal": "true", "aria-labelledby": "modal-heading-01"},
-        h("div", {className: "slds-modal__container"},
+        h("div", {className: `slds-modal__container${containerClassName ? " " + containerClassName : ""}`},
+          h("button", {className: "slds-button slds-button_icon slds-modal__close", onClick: this.handleClose},
+            h("svg", {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
+              h("use", {xlinkHref: "symbols.svg#close"})
+            ),
+            h("span", {className: "slds-assistive-text"}, "Cancel and close")
+          ),
           h("div", {className: "slds-modal__header"},
             h("h2", {id: "modal-heading-01", className: "slds-modal__title slds-text-heading_medium slds-hyphenate"}, title || "Important")
           ),

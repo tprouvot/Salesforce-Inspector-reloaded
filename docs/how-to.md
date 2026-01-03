@@ -64,6 +64,8 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 
     <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
 
+---
+
 ## Migrate saved queries from legacy extension to Salesforce Inspector Reloaded
 
 1. Open data export page on legacy extension
@@ -99,11 +101,15 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 
 Re-import this json in the new extension (with the same key `insextSavedQueryHistory`)
 
+---
+
 ## Define a CSV separator
 
 Add a new property `csvSeparator` containing the needed separator for CSV files
 
    <img alt="Update csv separator" src="../assets/images/how-to/csv-separator.png?raw=true" height="300">
+
+---
 
 ## Open links in a new tab
 
@@ -122,6 +128,8 @@ If you want to _always_ open extension's links in a new tab, you can enable> **W
 * Event <ins>M</ins>onitor : m
 * <ins>F</ins>ield Creator : f
 
+---
+
 ## Disable metadata search from Shortcut tab
 
 By default when you enter keyword in the Shortcut tab, the search is performed on the Setup link shortcuts _AND_ metadata (Flows, PermissionSets and Profiles).
@@ -129,11 +137,15 @@ If you want to disable the search on the metadata, update related option:
 
 <img width="892" alt="image" src="https://github.com/user-attachments/assets/2541fc22-9f1b-4cd1-90cd-d4615b313d96">
 
+---
+
 ## Enable / Disable Flow scrollability
 
 Go on a Salesforce flow and check / uncheck the checbox to update navigation scrollability on the Flow Builder
 
 ![2023-09-29_16-01-14 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/91845a31-8f53-4ea1-b895-4cb036d1bed0)
+
+---
 
 ## Add custom links to "Shortcut" tab
 
@@ -185,6 +197,8 @@ The links are stored in the browser's localStorage, so they will persist between
 
 <img width="278" alt="Custom Link Search" src="https://github.com/user-attachments/assets/5ccd6778-4fb2-46d5-9b54-cd47cb03c7bb" />
 
+---
+
 ## Enable summary view of PermissionSet / PermissionSetGroups from shortcut tab
 
 Since Winter 24, there is a beta functionality to view a summary of the PermissionSet / PermissionSetGroups
@@ -197,6 +211,8 @@ You can enable this view for the Shortcut search by enabling the option as shown
 
 Then when you click on a PermissionSet / PermissionSetGroups search result, you'll be redirected to the summary.
 
+---
+
 ## Customize Create / Update rest callout headers (to prevent execution of auto assignment rules for Accounts, Cases, or Leads)
 
 [Assignment Rule Header](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/headers_autoassign.htm)
@@ -207,6 +223,8 @@ From the popup, click on "Options" button and select the API tab.
 
 If you want to prevent auto assignment rules, set the `createUpdateRestCalloutHeaders` property to `{"Sforce-Auto-Assign" : false}`
 
+---
+
 ## Update API Version
 
 Since the plugin's api version is only updated when all productions have been updated to the new release, you may want to use the latest version during preview windows.
@@ -216,12 +234,16 @@ Since the plugin's api version is only updated when all productions have been up
 
 ![2023-11-10_09-50-55 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/6ae51a29-9887-41a6-8148-d9e12c2dc10d)
 
+---
+
 ## Delete All Apex Logs
 
 Sometimes you need to purge the ApexLogs from you org, mostly when the maximum size limit is reached.
 You can now delete all apex logs with a simple click. From the popup, select 'Org' tab and click 'Delete All ApexLogs' button.
 
 <img width="278" alt="Delete All Apex Logs" src="https://github.com/user-attachments/assets/7ba32e4d-1fdd-43e7-89cd-9c480c913211" />
+
+---
 
 ## Enable debug logs
 
@@ -239,12 +261,16 @@ You can update the debug level (configuration is per organization) and duration 
 > **Warning**
 > Increasing the default duration may lead to a high volume of logs generated.
 
+---
+
 ## Enable Debug Mode (for Lightning Components)
 
 Enable debug mode to make it easier to debug JavaScript code from Lightning components.
 Warning: Salesforce is slower for users who have debug mode enabled.
 
 <img width="278" alt="Enable Debug Mode" src="https://github.com/user-attachments/assets/f4dabb96-6b1d-48a1-828d-cc7d5da92e57" />
+
+---
 
 ## Customize extension's favicon
 
@@ -265,12 +291,16 @@ Now if you want to populate all the orgs you visited with a custom favicon, you 
 Then you click on Populate All and that's it!
 Note: orgs with an existing customized favicon won't be affected.
 
+---
+
 ## Customize sandbox banner color
 
 From the option page, enable "Use favicon color on sandbox banner"
 <img width="772" alt="image" src="https://github.com/user-attachments/assets/28cb7f5f-01fd-48b9-a5da-f50f6cbb2f81">
 
 <img width="1087" alt="image" src="https://github.com/user-attachments/assets/f90999c2-f93e-423a-bcb7-18a8aa717a17">
+
+---
 
 ## Customize extension's shortcuts
 
@@ -289,6 +319,8 @@ Example:
 * <ins>D</ins>ownload Metadata : d
 * E<ins>x</ins>plore API : x
 
+---
+
 ## Highlight PROD with a top border
 
 Production environment are critical, to avoid confusion with other orgs, you can enable an option which will add a 2px border on the top of the Salesforce UI and also in the extension's pages.
@@ -296,6 +328,8 @@ Production environment are critical, to avoid confusion with other orgs, you can
 Under `User Experience` tab, enable the option `Highlight PROD with a top border (color from favicon)`.
 
 <img width="955" alt="highlight prod with a top border" src="https://github.com/user-attachments/assets/4ff26e23-08b2-447a-be8d-004488f2a3a1">
+
+---
 
 ## Import / Export configuration (saved query etc.)
 
@@ -305,6 +339,8 @@ To export and import your current configuration, go to the options page and clic
 
 <img width="889" alt="Import / Export Configuration" src="https://github.com/user-attachments/assets/00428039-9b83-4c14-9a27-5e5034c52753">
 
+---
+
 ## Hide some buttons in the popup
 
 Since the extension offers more features, the number of button is increasing.
@@ -312,11 +348,15 @@ Some of the users may don't need some of those, to make the popup lighter some o
 
 <img width="1024" alt="Hide Buttons" src="https://github.com/user-attachments/assets/50b4cb3c-7886-4b38-96a9-b5a6d93b69e6">
 
+---
+
 ## Switch user language from the popup
 
 From the User tab in the popup, click on the user language flag to display the available languages.
 
 ![2024-12-04_16-07-35 (1)](https://github.com/user-attachments/assets/d07da946-dba0-4bb4-8f3b-313392bbf557)
+
+---
 
 ## Default Popup Tab
 
@@ -332,6 +372,8 @@ You can configure which tab should be selected by default when opening the popup
    * Org: Shows organization information
 
 The selected tab will be remembered and used as the default when opening the popup.
+
+---
 
 ## API Cache Configuration
 
@@ -362,6 +404,8 @@ You can configure how long cached data should be stored:
 
 > **Note**
 > The cache is org-specific, meaning each Salesforce org has its own cached data. Cache entries are automatically cleared when they expire based on your configured cache period.
+
+---
 
 ## Customize User Tab Search Filters and Fields
 
@@ -396,6 +440,8 @@ Because the IsPortalEnabled field does not exist in orgs where there is no porta
    * **Exclude Portal users** - Hides users who have portal access enabled
    * **Exclude Inactive users** - Hides users who are marked as inactive
 
+---
+
 ## Generate a package.xml from a deployment
 
 From a DeployRequest record, click on the `Generate package.xml` button to download the package.xml for this deployment.
@@ -403,6 +449,8 @@ From a DeployRequest record, click on the `Generate package.xml` button to downl
 > If you retrieve the related metadata it may have been modified since the deployment, so you are not sure to retrieve what was deployed.
 
 <img width="1143" alt="Generate package.xml from a deployment" src="https://github.com/user-attachments/assets/4acb7422-0547-409d-9e23-d8c3176f8055" />
+
+---
 
 ## Perform a field usage analysis for an SObject
 
@@ -443,6 +491,8 @@ This feature is particularly useful for:
 
 ![Smart Field Usage demo](https://github.com/user-attachments/assets/ef93bf3c-8737-4a21-b38b-ce4822f8b573)
 
+---
+
 ## User Tab Toggle Reset Password button
 
 This feature enables a **Reset Password** button on the **User Tab** page in Salesforce Inspector Reloaded. The button can be displayed **on or off** from the extension **Options** page.
@@ -466,4 +516,133 @@ When enabled, the **Reset Password** button appears while inspecting a User reco
 > **Note:** If the current session does not have sufficient permissions to access user information or perform a password reset, Salesforce returns an **INSUFFICIENT_ACCESS** error.
 
 <img width="278" height="161" alt="Reset password error" src="https://github.com/user-attachments/assets/5814e9d5-f037-41af-8f84-1997ab539292" />
+
+---
+
+## Transaction Security Policies
+
+[Transaction Security Policies](https://developer.salesforce.com/docs/atlas.en-us.securityImplGuide.meta/securityImplGuide/enhanced_transaction_security_policy_types.htm) allow organizations to monitor and control Salesforce user activity in real-time. These policies evaluate user transactions against defined criteria and enforce actions when conditions are met, enhancing your organization's security posture by proactively preventing risky or unauthorized activity.
+
+
+### Quick Start: Targeting Salesforce Inspector Reloaded
+
+The **Salesforce Inspector Reloaded** browser extension can be identified in the `ApiEvent` object by its `Client` field. When actions are performed through the extension, this field is populated with:
+
+```
+Salesforce Inspector Reloaded
+```
+
+It is suggested to use the `Contains` operator when checking this field, as the value may include additional versioning or metadata in the future.
+
+
+#### Using Condition Builder
+
+1. Navigate to **Setup -> Transaction Security Policies -> New**.
+2. Select **Condition Builder** as the creation method.
+3. Provide a **Policy Name** and **Description**.
+4. Select the **Event** to monitor, typically `ApiEvent` for extension-related activity.
+5. Set **Condition Logic** (e.g., "All Conditions Are Met (AND)").
+6. Add a condition where:
+
+   ```
+   Client contains Salesforce Inspector Reloaded
+   ```
+7. Optionally, add more conditions (e.g., `RowsProcessed` >= 20, specific objects affected).
+8. Define the policy outcome logic on Policy Outcome webpage.
+
+<img width="800" alt="Disable query input" src="../assets/images/how-to/tsp_creation_demo.gif?raw=true">
+
+
+#### Using Apex
+
+1. Navigate to **Setup -> Transaction Security Policies -> New**.
+2. Select **Apex** as the creation method.
+3. Choose **New Empty Apex Class**.
+5. Within the "Transaction Security Policies" overview page, click on the newly created "Apex Condition" link to open the ApexClass.
+6. Define the policy logic by implementing the `TxnSecurity.EventCondition` interface.
+
+Example Apex code to trigger the outcome when Salesforce Inspector Reloaded affects 20 or more Account records:
+
+```apex
+global class SalesforceInspectorPolicy implements TxnSecurity.EventCondition {
+
+    global Boolean evaluate(SObject event) {
+
+        // Get the name of the client application making the request.
+        // For example, Salesforce Inspector Reloaded sends 'Salesforce Inspector Reloaded'.
+        String client = (String) event.get('Client');  
+
+        // Get the number of database rows affected by this operation.
+        // Useful to identify bulk operations or large updates.
+        Integer rowsProcessed = (Integer) event.get('RowsProcessed');  
+
+        // Get a comma-separated list of Salesforce objects (entities) affected.
+        // Example: "Account,Contact,Opportunity"
+        String entities = (String) event.get('QueriedEntities'); // Comma-separated list of objects affected
+
+
+        // Check three conditions:
+        // 1. The client contains Salesforce Inspector Reloaded
+        // 2. 20 or more rows were affected
+        // 3. The operation affected Account records
+        if (client.contains('Salesforce Inspector Reloaded')  
+            && rowsProcessed >= 20
+            && entities.contains('Account')) {
+
+            // All conditions met: trigger the transaction security action
+            return true;  
+        }
+
+        // Conditions not met: do nothing
+        return false;  
+    }
+}
+```
+
+This Apex policy triggers whenever a user performs an action using Salesforce Inspector Reloaded that affects **20 or more Account records**. The key check is the `Client` field, which identifies the originating application.
+
+
+### Important Considerations
+
+**Spoofing Risk:** The `Client` field is provided by the requesting application. Malicious users could spoof this value. Policies based solely on `Client` should **not** be relied upon for critical security enforcement.
+
+**Layered Security:** Always use Salesforce's core security mechanisms in conjunction with Transaction Security Policies:
+
+  - Object and field-level permissions
+  - Sharing rules
+  - Login IP restrictions
+  - Session settings
+
+Transaction Security Policies are most effective for **monitoring, alerting, and mitigating risky behaviors** in real-time, but they should complement-not replace-the standard Salesforce security model.
+
+
+### Common Use Cases
+
+This section outlines common scenarios where Transaction Security Policies may be beneficial with with a focus on Salesforce Inspector Reloaded usage.
+
+#### Unbounded Data Exports
+
+With Salesforce Inspector Reloaded, users can execute Salesforce SOQL/SOSL queries in an adhoc manner, potentially leading to unbounded data exports. Transaction Security Policies can be configured to restrict such unbounded data exports, ensuring that users cannot inadvertently export large volumes of data thereby wasting API usage allocations.
+
+
+| Section             | Configuration                                                                                                                                                                                            |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Event**           | API Event                                                                                                                                                                                                |
+| **Condition Logic** | Custom Condition Logic Is Met                                                                                                                                                                            |
+| **Custom Logic**    | `1 AND 2 AND NOT (3 OR 4)`                                                                                                                                                                               |
+| **Outcome**         | Block                                                                                                                                                                                                    |
+| **Block Message**   | Data exports via Salesforce Inspector Reloaded exceeding **[Threshold]** records are not permitted without explicit opt-in via `Id != null` or a `LIMIT` clause. Please modify your query and try again. |
+
+
+### Conditions
+
+| # | Field         | Operator | Value                         |
+|---|---------------|----------|-------------------------------|
+| 1 | Client        | contains | Salesforce Inspector Reloaded |
+| 2 | RowsProcessed | ≥        | `[Threshold]`                 |
+| 3 | Query         | contains | `Id != null`                  |
+| 4 | Query         | contains | `LIMIT`                       |
+
+
+The threshold should probably be in increments of 2000 records, as this is the typical batch size for the API response. In addition, having a sufficiently high threshold (e.g., 10,000 records) to ensure users do not preemptively add `Id != null` to their queries. Alternatively, removing the `Id != null` condition and only relying on the `LIMIT` clause may be more desirable, depending on your organization's data access policies.
 

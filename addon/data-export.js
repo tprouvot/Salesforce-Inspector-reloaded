@@ -403,9 +403,12 @@ class Model {
       } else {
         vm.queryInput.focus();
         //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
-        let indexFrom = query.toLowerCase().indexOf("from");
-        if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
-          suffix = "";
+        if (suffix.trim() == ",") {
+          let afterCursorText = query.substring(selEnd).trim();
+          // Remove comma suffix if: already has comma, or FROM keyword is next, or reaching end of query before FROM
+          if (afterCursorText.startsWith(",") || afterCursorText.toLowerCase().startsWith("from")) {
+            suffix = "";
+          }
         }
         vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
         //add query suffix if needed
@@ -426,13 +429,34 @@ class Model {
 
     function sortRank({value, title}) {
       let i = 0;
-      if (value.toLowerCase() == searchTerm.toLowerCase()) return i++;
-      if (title.toLowerCase() == searchTerm.toLowerCase()) return i++;
-      if (value.toLowerCase().startsWith(searchTerm.toLowerCase())) return i++;
-      if (title.toLowerCase().startsWith(searchTerm.toLowerCase())) return i++;
-      if (value.toLowerCase().includes("__" + searchTerm.toLowerCase())) return i++;
-      if (value.toLowerCase().includes("_" + searchTerm.toLowerCase())) return i++;
-      if (title.toLowerCase().includes(" " + searchTerm.toLowerCase())) return i++;
+      if (value.toLowerCase() == searchTerm.toLowerCase()) {
+        return i;
+      }
+      i++;
+      if (title.toLowerCase() == searchTerm.toLowerCase()) {
+        return i;
+      }
+      i++;
+      if (value.toLowerCase().startsWith(searchTerm.toLowerCase())) {
+        return i;
+      }
+      i++;
+      if (title.toLowerCase().startsWith(searchTerm.toLowerCase())) {
+        return i;
+      }
+      i++;
+      if (value.toLowerCase().includes("__" + searchTerm.toLowerCase())) {
+        return i;
+      }
+      i++;
+      if (value.toLowerCase().includes("_" + searchTerm.toLowerCase())) {
+        return i;
+      }
+      i++;
+      if (title.toLowerCase().includes(" " + searchTerm.toLowerCase())) {
+        return i;
+      }
+      i++;
       return i;
     }
     
@@ -476,8 +500,8 @@ class Model {
       if (afterSelect.length === 0 || afterSelect.match(/^[,\s]*$/)) {
         let suggestions = [
           {value: "Id FROM", title: "Id FROM - Quick start (then replace Id with your fields)", suffix: " ", rank: 1, autocompleteType: "pattern", dataType: ""},
-          {value: "Id", title: "Id - Record identifier", suffix: ", ", rank: 2, autocompleteType: "fieldName", dataType: "id"},
-          {value: "Name", title: "Name - Record name", suffix: ", ", rank: 2, autocompleteType: "fieldName", dataType: "string"},
+          {value: "Id", title: "Id - Record identifier", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "id"},
+          {value: "Name", title: "Name - Record name", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "string"},
           {value: "Id, Name FROM", title: "Id, Name FROM - Common starter", suffix: " ", rank: 2, autocompleteType: "pattern", dataType: ""},
           {value: "FROM", title: "FROM - Will auto-add Id (object first approach)", suffix: " ", rank: 3, autocompleteType: "keyword", dataType: ""}
         ];
@@ -937,17 +961,43 @@ class Model {
               rank: 1
             };
           }
-          yield {value: "YESTERDAY", title: "Yesterday", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "TODAY", title: "Today", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "TOMORROW", title: "Tomorrow", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "LAST_WEEK", title: "Last week", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "THIS_WEEK", title: "This week", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "NEXT_WEEK", title: "Next week", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "LAST_MONTH", title: "Last month", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "THIS_MONTH", title: "This month", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "NEXT_MONTH", title: "Next month", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "LAST_90_DAYS", title: "Last 90 days", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "NEXT_90_DAYS", title: "Next 90 days", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "YESTERDAY", title: "Starts 12:00:00 the day before and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "TODAY", title: "Starts 12:00:00 of the current day and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "TOMORROW", title: "Starts 12:00:00 after the current day and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_WEEK", title: "Starts 12:00:00 on the first day of the week before the most recent first day of the week and continues for seven full days. First day of the week is determined by your locale.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_WEEK", title: "Starts 12:00:00 on the most recent first day of the week before the current day and continues for seven full days. First day of the week is determined by your locale.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_WEEK", title: "Starts 12:00:00 on the most recent first day of the week after the current day and continues for seven full days. First day of the week is determined by your locale.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_MONTH", title: "Starts 12:00:00 on the first day of the month before the current day and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_MONTH", title: "Starts 12:00:00 on the first day of the month that the current day is in and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_MONTH", title: "Starts 12:00:00 on the first day of the month after the month that the current day is in and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_90_DAYS", title: "Starts 12:00:00 of the current day and continues for the last 90 days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_90_DAYS", title: "Starts 12:00:00 of the current day and continues for the next 90 days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the last n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the next n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_DAYS_AGO:n", title: "Starts at 12:00:00 AM on the day n days before the current day and continues for 24 hours. (The range doesn't include today.)", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next week and continues for the next n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous week and continues for the last n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_WEEKS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the month that started n months before the start of the current month and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_MONTHS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next month and continues for the next n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_MONTHS:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous month and continues for the last n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_MONTHS_AGO:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous month and continues for the last n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_QUARTER", title: "Starts 12:00:00 of the current quarter and continues to the end of the current quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_QUARTER", title: "Starts 12:00:00 of the previous quarter and continues to the end of that quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_QUARTER", title: "Starts 12:00:00 of the next quarter and continues to the end of that quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_QUARTERS:n", title: "Starts 12:00:00 of the next quarter and continues to the end of the nth quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_QUARTERS:n", title: "Starts 12:00:00 of the previous quarter and continues to the end of the previous nth quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_QUARTERS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the calendar quarter n quarters before the current calendar quarter and continues to the end of that quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_YEAR", title: "Starts 12:00:00 on January 1 of the current year and continues through the end of December 31 of the current year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_YEAR", title: "Starts 12:00:00 on January 1 of the previous year and continues through the end of December 31 of that year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_YEAR", title: "Starts 12:00:00 on January 1 of the following year and continues through the end of December 31 of that year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_YEARS:n", title: "Starts 12:00:00 on January 1 of the following year and continues through the end of December 31 of the nth year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_YEARS:n", title: "Starts 12:00:00 on January 1 of the previous year and continues through the end of December 31 of the previous nth year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the current fiscal year and continues through the end of the last day of the fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the last fiscal year and continues through the end of the last day of that fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the next fiscal year and continues through the end of the last day of that fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_FISCAL_YEARS:n", title: "Starts 12:00:00 on the first day of the next fiscal year and continues through the end of the last day of the nth fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_FISCAL_YEARS:n", title: "Starts 12:00:00 on the first day of the last fiscal year and continues through the end of the last day of the previous nth fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_FISCAL_YEARS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the fiscal year n fiscal years ago and continues through the end of the last day of that fiscal year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
         }
         
         if (field.nillable) {
@@ -1822,6 +1872,16 @@ class App extends React.Component {
     // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
     queryInput.addEventListener("keyup", queryAutocompleteEvent);
     queryInput.addEventListener("mouseup", queryAutocompleteEvent);
+
+    // Remove trailing comma when user leaves the query input
+    queryInput.addEventListener("blur", () => {
+      let query = model.queryInput.value;
+      let cleanedQuery = model.removeTypo(query);
+      if (cleanedQuery !== query) {
+        model.queryInput.value = cleanedQuery;
+        model.updateCurrentTabQuery(cleanedQuery);
+      }
+    });
 
     // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
     // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50

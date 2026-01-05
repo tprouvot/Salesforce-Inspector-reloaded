@@ -55,23 +55,39 @@ function cleanupTempDir(tempDir) {
 // Clone repo and checkout latest tag
 function setupRemoteRepo(tempDir) {
   "use strict";
-  const repoUrl = "https://github.com/flow-scanner/lightning-flow-scanner-core";
+  const repoUrl = "https://github.com/Flow-Scanner/lightning-flow-scanner";
 
-  logStep("Cloning lightning-flow-scanner-core repository");
+  logStep("Cloning monorepo and extracting core package");
 
-  // Clone directly into tempDir with shallow clone (no history)
-  execSync(`git clone --depth 1 ${repoUrl} "${tempDir}"`, {stdio: "inherit"});
+  // Clone directly into cloneDir with shallow clone (no history)
+  const cloneDir = path.join(tempDir, ".full-clone");
+  fs.mkdirSync(cloneDir, {recursive: true});
 
   // Get the latest tag and checkout
+  execSync(`git clone --depth 1 ${repoUrl} "${cloneDir}"`, {stdio: "inherit"});
   try {
-    const latestTag = execSync("git describe --tags $(git rev-list --tags --max-count=1)", {cwd: tempDir})
-      .toString().trim();
-    logStep(`Checking out latest tag: ${latestTag}`);
-    execSync(`git checkout tags/${latestTag}`, {cwd: tempDir, stdio: "inherit"});
+    const latestTag = execSync(
+      "git tag -l \"core-v*\" --sort=-v:refname | head -n 1",
+      {cwd: cloneDir, encoding: "utf8"}
+    ).trim();
+    logStep(`Checking out latest core tag: ${latestTag}`);
+    execSync(`git checkout tags/${latestTag}`, {cwd: cloneDir, stdio: "inherit"});
     logSuccess(`Checked out tag ${latestTag}`);
   } catch (error) {
     log("No tags found, using default branch", "yellow");
   }
+
+  // Copy the entire contents of packages/core into tempDir using Node's built-in fs.cpSync
+  const coreSource = path.join(cloneDir, "packages", "core");
+  if (!fs.existsSync(coreSource)) {
+    logError("packages/core directory not found in repository");
+    process.exit(1);
+  }
+
+  fs.cpSync(coreSource, tempDir, { recursive: true, preserveTimestamps: true });
+
+  // Clean up the full clone
+  fs.rmSync(cloneDir, {recursive: true, force: true});
 
   logSuccess("Repository cloned successfully");
 }

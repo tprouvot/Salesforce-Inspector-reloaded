@@ -122,8 +122,6 @@ export let sfConn = {
     const sfHost = "https://" + this.instanceHostname;
     const fullUrl = new URL(url, sfHost);
     xhr.open(method, fullUrl.toString(), true);
-    xhr.setRequestHeader("Accept", "application/json; charset=UTF-8");
-    xhr.setRequestHeader("Sforce-Call-Options", `client=${clientId}`);
 
     if (api == "bulk") {
       xhr.setRequestHeader("X-SFDC-Session", this.sessionId);
@@ -133,8 +131,20 @@ export let sfConn = {
       throw new Error("Unknown api");
     }
 
-    if (body !== undefined) {
+    // Apply custom headers first (but filter out protected headers)
+    const protectedHeaders = ["Sforce-Call-Options"];
+    for (let [name, value] of Object.entries(headers)) {
+      if (!protectedHeaders.includes(name)) {
+        xhr.setRequestHeader(name, value);
+      }
+    }
+
+    // Set default Content-Type header if body is present and Content-Type not provided by custom headers
+    if (body !== undefined && !headers.hasOwnProperty("Content-Type")) {
       xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+    }
+
+    if (body !== undefined) {
       if (bodyType == "json") {
         body = JSON.stringify(body);
       } else if (bodyType == "raw") {
@@ -144,9 +154,13 @@ export let sfConn = {
       }
     }
 
-    for (let [name, value] of Object.entries(headers)) {
-      xhr.setRequestHeader(name, value);
+    // Set default Accept header if not provided by custom headers
+    if (!headers.hasOwnProperty("Accept")) {
+      xhr.setRequestHeader("Accept", "application/json; charset=UTF-8");
     }
+
+    // Always set this header last to ensure it cannot be overridden
+    xhr.setRequestHeader("Sforce-Call-Options", `client=${clientId}`);
 
     xhr.responseType = responseType;
     await new Promise((resolve, reject) => {
@@ -313,7 +327,7 @@ export let sfConn = {
 
 };
 
-class XML {
+export class XML {
   static stringify({name, attributes, value}) {
     function buildRequest(el, params) {
       if (params == null) {

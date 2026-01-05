@@ -9,7 +9,7 @@
 
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, getUserInfo, displayButton, Constants, PromptTemplate} from "./utils.js";
+import {getLinkTarget, getUserInfo, isOptionEnabled, Constants, PromptTemplate} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {PageHeader} from "./components/PageHeader.js";
 
@@ -2384,7 +2384,7 @@ class App extends React.Component {
             )
           )
           ),
-          displayButton("flow-agentforce", this.state.hideButtonsOption) && h("div", {
+          isOptionEnabled("flow-agentforce", this.state.hideButtonsOption) && h("div", {
             key: "einstiein-btn",
             className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
           },
@@ -2396,7 +2396,7 @@ class App extends React.Component {
           h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
             h("use", {xlinkHref: "symbols.svg#einstein"})
           ))),
-          displayButton("flow-settings", this.state.hideButtonsOption) && h("div", {
+          isOptionEnabled("flow-settings", this.state.hideButtonsOption) && h("div", {
             key: "help-btn",
             className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
           },

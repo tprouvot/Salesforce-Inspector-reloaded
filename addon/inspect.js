@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {copyToClipboard} from "./data-load.js";
+import {copyToClipboard, downloadCsvFile} from "./utils.js";
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -502,15 +502,8 @@ class Model {
     let csvContent = [headers.join(","), ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))].join("\n");
 
     // Create and download file
-    let blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});
-    let link = document.createElement("a");
-    let url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${this.objectName()}_${activeTab}_${new Date().toISOString().split("T")[0]}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const filename = `${this.objectName()}_${activeTab}_${new Date().toLocaleDateString()}.csv`;
+    downloadCsvFile(csvContent, filename);
   }
 }
 
@@ -1476,7 +1469,6 @@ class App extends React.Component {
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onUpdateTableBorderSettings = this.onUpdateTableBorderSettings.bind(this);
     this.handleClick = this.handleClick.bind(this);
-    this.closePopMenu = this.closePopMenu.bind(this);
     this.onOpenPopup = this.onOpenPopup.bind(this);
   }
   componentDidMount() {
@@ -1561,10 +1553,6 @@ class App extends React.Component {
     model.updateShowTableBorder();
     model.reloadTables();
     model.didUpdate();
-    // Save to local storage
-  }
-  onGoToSalesforceRecord(){
-    history.back();
   }
   handleClick(e){
     const {model} = this.props;
@@ -1579,9 +1567,6 @@ class App extends React.Component {
       model.popupReactElement = model.popupTmpReactElement;
       model.popupTmpReactElement = undefined;
     }
-  }
-  closePopMenu(){
-    this.onToggleObjectActions();
   }
   onOpenPopup(elem){
     const {model} = this.props;
@@ -1732,6 +1717,7 @@ class App extends React.Component {
           sfLink: model.sfLink,
           sfHost: model.sfHost,
           spinnerCount: model.spinnerCount,
+          backLink: model.viewLink(),
           ...model.userInfoModel.getProps(),
           utilityItems
         }),
@@ -1880,11 +1866,14 @@ class RowTable extends React.Component {
     this.onOpenPopup = this.onOpenPopup.bind(this);
     this.showTableBorder = this.props.model.showTableBorder;
     this.tableSettingsOpen = false;
-  }
-  onToggleTableSettings() {
     this.state = {
       showOrHideBorders: localStorage.getItem("displayInspectTableBorders") === "true" ? "Hide table borders" : "Show table borders"
     };
+  }
+  onToggleTableSettings() {
+    this.setState({
+      showOrHideBorders: localStorage.getItem("displayInspectTableBorders") === "true" ? "Hide table borders" : "Show table borders"
+    });
     this.tableSettingsOpen = !this.tableSettingsOpen;
     this.props.model.didUpdate();
     if (this.tableSettingsOpen){

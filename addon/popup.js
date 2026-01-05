@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -273,6 +273,7 @@ class App extends React.PureComponent {
       h: ["click", "homeBtn"],
       p: ["click", "optionsBtn"],
       m: ["click", "eventMonitorBtn"],
+      v: ["click", "logsViewerBtn"],
       o: ["tab", "objectTab"],
       u: ["tab", "userTab"],
       s: ["tab", "shortcutTab"],
@@ -534,6 +535,11 @@ class App extends React.PureComponent {
                 h("span", {}, "Data ", h("u", {}, "I"), "mport")
               )
             ),
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+              h("a", {ref: "logsViewerBtn", href: "debug-log.html?" + hostArg, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
+                h("span", {}, "Logs ", h("u", {}, "V"), "iewer (beta)")
+              )
+            ),
             h(
               "div",
               {
@@ -585,7 +591,7 @@ class App extends React.PureComponent {
               },
               h("strong", {}, "Platform Tools")
             ),
-            displayButton("org-limits", hideButtonsOption)
+            isOptionEnabled("org-limits", hideButtonsOption)
               ? h(
                 "div",
                 {
@@ -605,7 +611,7 @@ class App extends React.PureComponent {
                 )
               )
               : null,
-            displayButton("explore-api", hideButtonsOption)
+            isOptionEnabled("explore-api", hideButtonsOption)
               ? h(
                 "div",
                 {
@@ -673,7 +679,7 @@ class App extends React.PureComponent {
               },
               h("strong", {}, "Management")
             ),
-            displayButton("generate-token", hideButtonsOption)
+            isOptionEnabled("generate-token", hideButtonsOption)
               ? h(
                 "div",
                 {
@@ -736,7 +742,7 @@ class App extends React.PureComponent {
                 h("span", {}, "Salesforce ", h("u", {}, "H"), "ome")
               )
             ),
-            displayButton("options", hideButtonsOption)
+            isOptionEnabled("options", hideButtonsOption)
               ? h(
                 "div",
                 {
@@ -1367,7 +1373,7 @@ class AllDataBoxUsers extends React.PureComponent {
 
   getUserSearchExclusionsFromLocalStorage() {
     // Try to read from new MultiCheckboxButtonGroup format first
-    const userSearchExclusions = localStorage.getItem("userSearchExclusions");
+    const userSearchExclusions = localStorage.getItem(this.props.sfHost + "_userSearchExclusions");
     const defaultExclusions = {
       excludePortalUsersFromSearch: false,
       excludeInactiveUsersFromSearch: false
@@ -1416,6 +1422,51 @@ class AllDataBoxUsers extends React.PureComponent {
     }
   }
 
+  /**
+   * Get User object accessible field names, using cache if available
+   * Only caches the field names we're interested in, not the entire describe result
+   * @returns {Promise<Array<string>>} Array of accessible field names
+   */
+  async getUserDescribeFields() {
+    const {sfHost} = this.props;
+    const cacheKey = "userFieldNames";
+
+    // Check cache first
+    let fieldNames = DataCache.getCachedData(cacheKey, sfHost);
+
+    if (!fieldNames) {
+      // Cache expired or missing, fetch fresh data
+      try {
+        const userDescribe = await sfConn.rest(`/services/data/v${apiVersion}/sobjects/User/describe`, {
+          method: "GET"
+        });
+        // Only cache the field names we're interested in
+        const fieldsOfInterest = ["ProfileId", "Profile", "IsPortalEnabled"];
+        fieldNames = userDescribe.fields
+          .filter(field => fieldsOfInterest.includes(field.name))
+          .map(field => field.name);
+        // Store in cache
+        DataCache.setCachedData(cacheKey, sfHost, fieldNames);
+      } catch (err) {
+        console.error("Error fetching User describe:", err);
+        // Return empty array if fetch fails
+        return [];
+      }
+    }
+
+    return fieldNames;
+  }
+
+  /**
+   * Check if a field exists in the cached User describe result
+   * @param {string} fieldName - Name of the field to check
+   * @returns {Promise<boolean>} True if field is accessible, false otherwise
+   */
+  async hasFieldAccess(fieldName) {
+    const fieldNames = await this.getUserDescribeFields();
+    return fieldNames.includes(fieldName);
+  }
+
   async getMatches(userQuery) {
     let {setIsLoading} = this.props;
     userQuery = userQuery.trim();
@@ -1423,31 +1474,27 @@ class AllDataBoxUsers extends React.PureComponent {
       return [];
     }
     const escapedUserQuery = userQuery.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, ProfileId, Profile.Name";
-    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    const userSearchWhereClause = this.getUserSearchWhereClause(escapedUserQuery);
-    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
-    const compositeQuery = {
-      "compositeRequest": [
-        {
-          "method": "GET",
-          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
-          "referenceId": "fullData"
-        }, {
-          "method": "GET",
-          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
-          "referenceId": "minimalData"
-        }
-      ]
-    };
 
+    // Get cached field permissions
+    const hasProfileId = await this.hasFieldAccess("ProfileId");
+
+    // Build SELECT clause dynamically based on available fields
+    // If ProfileId is accessible, Profile.Name should also be accessible
+    let fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
+    if (hasProfileId) {
+      fullQuerySelect += ", ProfileId, Profile.Name";
+    }
+
+    const userSearchWhereClause = await this.getUserSearchWhereClause(escapedUserQuery);
+    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
+
+    // Use single query since we're building it dynamically based on accessible fields
     try {
       setIsLoading(true);
-      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
-      let users = userSearchResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records;
-      return users;
+      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom));
+      return userSearchResult.records || [];
     } catch (err) {
-      console.error("Unable to query user details with: " + JSON.stringify(compositeQuery) + ".", err);
+      console.error("Unable to query user details:", err);
       return [];
     } finally {
       setIsLoading(false);
@@ -1455,7 +1502,7 @@ class AllDataBoxUsers extends React.PureComponent {
 
   }
 
-  getUserSearchWhereClause(escapedUserQuery) {
+  async getUserSearchWhereClause(escapedUserQuery) {
     const {userSearchFields, excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.state;
 
     let userSearchWhereClause = "(";
@@ -1468,7 +1515,11 @@ class AllDataBoxUsers extends React.PureComponent {
       userSearchWhereClause += " AND IsActive = true";
     }
     if (excludePortalUsersFromSearch) {
-      userSearchWhereClause += " AND IsPortalEnabled = false";
+      // Check if IsPortalEnabled field is accessible before adding filter
+      const hasIsPortalEnabled = await this.hasFieldAccess("IsPortalEnabled");
+      if (hasIsPortalEnabled) {
+        userSearchWhereClause += " AND IsPortalEnabled = false";
+      }
     }
     return userSearchWhereClause;
   }
@@ -1487,34 +1538,26 @@ class AllDataBoxUsers extends React.PureComponent {
     if (!selectedUserId) {
       return;
     }
-    //Optimistically attempt broad query (fullQuery) and fall back to minimalQuery to ensure some data is returned in most cases (e.g. profile cannot be queried by community users)
-    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, IsPortalEnabled, UserPreferencesUserDebugModePref";
-    //TODO implement a try catch to remove non existing fields ProfileId or IsPortalEnabled (experience is not enabled)
-    const mediumQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ProfileId, Profile.Name, ContactId, UserPreferencesUserDebugModePref";
-    const minimalQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref";
+    // Get cached field permissions
+    const hasProfileId = await this.hasFieldAccess("ProfileId");
+    const hasIsPortalEnabled = await this.hasFieldAccess("IsPortalEnabled");
+
+    // Build SELECT clause dynamically based on available fields
+    // If ProfileId is accessible, Profile.Name should also be accessible
+    let querySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
+    if (hasProfileId) {
+      querySelect += ", ProfileId, Profile.Name";
+    }
+    if (hasIsPortalEnabled) {
+      querySelect += ", IsPortalEnabled";
+    }
+
     const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
-    const compositeQuery = {
-      "compositeRequest": [
-        {
-          "method": "GET",
-          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom),
-          "referenceId": "fullData"
-        }, {
-          "method": "GET",
-          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(mediumQuerySelect + " " + queryFrom),
-          "referenceId": "mediumData"
-        }, {
-          "method": "GET",
-          "url": "/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(minimalQuerySelect + " " + queryFrom),
-          "referenceId": "minimalData"
-        }
-      ]
-    };
 
     try {
       setIsLoading(true);
-      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/composite", {method: "POST", body: compositeQuery});
-      let userDetail = userResult.compositeResponse.find((elm) => elm.httpStatusCode == 200).body.records[0];
+      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(querySelect + " " + queryFrom));
+      let userDetail = userResult.records[0];
       userDetail.debugModeActionLabel = userDetail.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
       //query NetworkMember only if it is a portal user (display "Login to Experience" button)
       if (userDetail.IsPortalEnabled){
@@ -1526,7 +1569,7 @@ class AllDataBoxUsers extends React.PureComponent {
       }
       await this.setState({selectedUser: userDetail});
     } catch (err) {
-      console.error("Unable to query user details with: " + JSON.stringify(compositeQuery) + ".", err);
+      console.error("Unable to query user details:", err);
     } finally {
       setIsLoading(false);
     }
@@ -3223,10 +3266,7 @@ class UserDetails extends React.PureComponent {
   unfreezeUser(user) {
     sfConn
       .rest(
-        "/services/data/v"
-          + apiVersion
-          + "/sobjects/UserLogin/"
-          + user.UserLogins?.records?.[0]?.Id,
+        "/services/data/v" + apiVersion + "/sobjects/UserLogin/" + user.UserLogins?.records?.[0]?.Id,
         {
           method: "PATCH",
           body: {IsFrozen: false},
@@ -3242,6 +3282,31 @@ class UserDetails extends React.PureComponent {
       .catch((err) => this.showErrorToast("User Unfreeze", err));
   }
 
+  async resetUserPassword(user) {
+    // Disable the button immediately
+    this.setState({
+      [`resetPasswordDisabled_${user.Id}`]: true
+    });
+
+    try {
+      await sfConn.rest(
+        `/services/data/v${apiVersion}/sobjects/User/${user.Id}/password`,
+        {method: "DELETE"}
+      );
+      this.showSuccessToast(
+        "Success",
+        "Password reset successfully"
+      );
+    } catch (err) {
+      console.error("Error during password reset", err);
+      this.showErrorToast("Password Reset");
+      // Re-enable button on error so user can retry
+      this.setState({
+        [`resetPasswordDisabled_${user.Id}`]: false
+      });
+    }
+  }
+
   toggleMenu() {
     this.refs.buttonMenu.classList.toggle("slds-is-open");
   }
@@ -3251,7 +3316,7 @@ class UserDetails extends React.PureComponent {
   }
 
   render() {
-    let {user, linkTarget} = this.props;
+    let {user, linkTarget, currentUserId} = this.props;
     return h(
       "div",
       {className: "all-data-box-inner"},
@@ -3311,7 +3376,23 @@ class UserDetails extends React.PureComponent {
                     target: linkTarget,
                     title: "Show all data",
                   },
-                  user.Id
+                  user.Id,
+                  isOptionEnabled("copy-userId", hideButtonsOption)
+                    ? h("span", {
+                      className: "sfir-copy-userid-icon",
+                      title: "Copy to clipboard",
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        handleUserIdCopy(e, user.Id);
+                      },
+                      onMouseEnter: (e) => e.stopPropagation(),
+                      onMouseLeave: (e) => e.stopPropagation()
+                    },
+                    h("svg", {className: "slds-button__icon slds-m-left_xx-small sfir-vertical-align_sub"},
+                      h("use", {xlinkHref: "symbols.svg#copy"})
+                    )
+                    )
+                    : null,
                 )
               )
             ),
@@ -3444,25 +3525,26 @@ class UserDetails extends React.PureComponent {
             title: "Show / assign user's permission set groups",
           },
           "PSetG"
-        )
+        ),
+        isOptionEnabled("reset-password", hideButtonsOption) && user.Id !== currentUserId
+          ? h(
+            "button",
+            {
+              type: "button",
+              onClick: () => this.resetUserPassword(user),
+              className: "slds-button slds-button_neutral",
+              title: "Reset Password",
+              disabled: this.state[`resetPasswordDisabled_${user.Id}`] || false,
+            },
+            "Reset"
+          )
+          : null
       ),
       //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
       user.UserLogins?.records?.[0]?.IsFrozen
-        ? h(
-          "div",
-          {className: "user-buttons center small-font slds-m-top_x-small"},
-          h(
-            "a",
-            {
-              id: "unfreezeUser",
-              className: "slds-button slds-button_neutral",
-              onClick: () => this.unfreezeUser(user),
-            },
-            h(
-              "span",
-              {className: "slds-truncate", title: "Unfreeze User Login"},
-              "Unfreeze"
-            )
+        ? h("div", {className: "user-buttons center small-font slds-m-top_x-small"},
+          h("a", {id: "unfreezeUser", className: "slds-button slds-button_neutral", onClick: () => this.unfreezeUser(user)},
+            h("span", {className: "slds-truncate", title: "Unfreeze User Login"}, "Unfreeze")
           )
         )
         : h(
@@ -3790,7 +3872,7 @@ class AllDataSelection extends React.PureComponent {
             h(
               "div",
               {className: "slds-card__body"},
-              selectedValue.sobject.isEverCreatable && displayButton("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e")
+              selectedValue.sobject.isEverCreatable && isOptionEnabled("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e")
                 ? h("a", {
                   ref: "showNewBtn",
                   href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),
@@ -4746,4 +4828,9 @@ function handleLightningLinkClick(e) {
   e.preventDefault(); // Prevent the default link behavior (href navigation)
   const url = e.currentTarget.href;
   navigateWithExtensionCheck(e, url, {navigationType: "url", url});
+}
+
+function handleUserIdCopy(e, userId) {
+  e.preventDefault();
+  copyToClipboard(userId);
 }

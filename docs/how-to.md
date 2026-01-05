@@ -140,12 +140,14 @@ Go on a Salesforce flow and check / uncheck the checbox to update navigation scr
 <img width="1234" alt="Use custom shortcuts" src="https://github.com/user-attachments/assets/036045b8-133c-46c1-90d0-1db7aa81a190" />
 
 You can add custom links to the "Shortcut" tab. These links will be stored in the `sfHost + "_orgLinks"` localStorage variable. The links are stored as a JSON array with the following properties:
+
 * `label`: The label of the link
 * `link`: The link to the page
 * `section`: The section where the link will be displayed
 * `isExternal`: A boolean indicating if the link is external (starts with 'http' or 'www')
 
 The links are displayed in a table format with the following features:
+
 * Sortable columns (click on column headers to sort)
 * Search functionality to filter links by label, link, or section
 * Edit and delete buttons for each link
@@ -256,6 +258,7 @@ The customization is linked to the org, it means you can have different colors f
 <img width="878" alt="image" src="https://github.com/user-attachments/assets/fdf24a37-2cab-402e-a101-4a20bc4e1ae4">
 
 Now if you want to populate all the orgs you visited with a custom favicon, you have two options:
+
 * Smart mode enabled: this will analyze your environment name and populate a favicon based on this (blue for dev, green for int, purple for uat and orange for full)
 * Random: this will choose a random color among all the predefined colors
 
@@ -330,6 +333,36 @@ You can configure which tab should be selected by default when opening the popup
 
 The selected tab will be remembered and used as the default when opening the popup.
 
+## API Cache Configuration
+
+Salesforce Inspector Reloaded uses a caching system to reduce the number of API calls made to Salesforce, improving performance and reducing API usage. The extension caches API response data to optimize queries and avoid unnecessary API requests.
+
+### Cached Requests
+
+The following API requests are cached:
+
+* **User Object Describe** (`/services/data/vXX.0/sobjects/User/describe`) - Caches field permission information to optimize user search queries and dynamically build SELECT clauses based on accessible fields
+
+### Why Use Caching?
+
+* **Reduced API Calls**: Caching field permissions means the extension doesn't need to call the describe API every time you search for users
+* **Better Performance**: Faster user searches since cached data is retrieved instantly
+* **Optimized Queries**: The extension builds queries dynamically based on cached field permissions, only including fields you have access to
+* **API Limit Preservation**: Helps preserve your Salesforce API request limits by avoiding redundant describe calls
+
+### Configuring Cache Period
+
+You can configure how long cached data should be stored:
+
+1. Open the extension and click the "Options" button
+2. Navigate to the "User Experience" tab
+3. Find the "API cache period (days)" setting
+4. Enter the number of days you want cached data to remain valid (default: 7 days)
+5. Click the "Clear Cache" button if you need to immediately refresh cached data
+
+> **Note**
+> The cache is org-specific, meaning each Salesforce org has its own cached data. Cache entries are automatically cleared when they expire based on your configured cache period.
+
 ## Customize User Tab Search Filters and Fields
 
 The User tab in the popup allows you to search for users across your Salesforce org. You can customize both the search fields used and apply filters to exclude certain types of users from the search results.
@@ -354,7 +387,8 @@ The search placeholder text in the User tab will automatically update to reflect
 
 ### Applying Search Filters
 
-You can exclude certain types of users from appearing in search results:
+You can exclude certain types of users from appearing in search results.
+Because the IsPortalEnabled field does not exist in orgs where there is no portal, we made this option org specific.
 
 1. In the same "User Experience" tab in Options
 2. Find the "Exclude users from search" section
@@ -400,6 +434,7 @@ The field usage analysis feature helps you understand which fields in your Sales
 ### Use Cases
 
 This feature is particularly useful for:
+
 * Data cleanup projects
 * Field deprecation planning
 * Org optimization initiatives
@@ -407,3 +442,27 @@ This feature is particularly useful for:
 * Understanding field adoption across your organization
 
 ![Smart Field Usage demo](https://github.com/user-attachments/assets/ef93bf3c-8737-4a21-b38b-ce4822f8b573)
+
+## User Tab Toggle Reset Password button
+
+This feature enables a **Reset Password** button on the **User Tab** page in Salesforce Inspector Reloaded. The button can be displayed **on or off** from the extension **Options** page.
+
+### How it works
+
+1. Open **Salesforce Inspector Reloaded**.
+2. Navigate to the **Options** page.
+3. Locate the **Enable Reset Password button on User Tab** option.
+4. Toggle the option:
+
+* **On** – the **Reset Password** button is displayed on the **User Tab**.
+* **Off** – the **Reset Password** button is hidden.
+
+<img width="2912" height="1230" alt="Rest Password option" src="https://github.com/user-attachments/assets/0de7deaa-5800-46ef-9af4-27cfed57efa7" />
+
+When enabled, the **Reset Password** button appears while inspecting a User record and allows you to reset the user’s password directly from the User Tab, without navigating to Salesforce Setup.
+
+<img width="278" height="126" alt="Reset password success" src="https://github.com/user-attachments/assets/377ea58f-d230-4d19-905e-987dce47a802" />
+
+> **Note:** If the current session does not have sufficient permissions to access user information or perform a password reset, Salesforce returns an **INSUFFICIENT_ACCESS** error.
+
+<img width="278" height="161" alt="Reset password error" src="https://github.com/user-attachments/assets/5814e9d5-f037-41af-8f84-1997ab539292" />

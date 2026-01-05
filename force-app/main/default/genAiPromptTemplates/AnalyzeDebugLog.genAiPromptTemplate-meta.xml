@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>eUd0mbAGZWKA1sA0ycUimsyKANZzHc5nXBMvmeka9S8=_1</activeVersionIdentifier>
+    <description>Analyzes Salesforce debug logs to identify errors, exceptions, performance issues, and provides explanations and recommendations.</description>
+    <developerName>AnalyzeDebugLog</developerName>
+    <masterLabel>Analyze Debug Log</masterLabel>
+    <templateVersions>
+        <content>As a Salesforce expert specializing in debugging and performance optimization, analyze the following debug log content and provide insights based on the user&apos;s instructions.
+
+**Debug Log Content:**
+{!$Input:LogContent}
+
+**Analysis Instructions:**
+{!$Input:Instructions}
+
+**Analysis Guidelines:**
+1. **Identify Critical Issues:** Look for EXCEPTION_THROWN, FATAL_ERROR, SYSTEM_METHOD_EXIT errors, and any failed operations.
+2. **Performance Analysis:** Check LIMIT_USAGE and CUMULATIVE_LIMIT_USAGE lines for governor limit consumption (SOQL queries, DML statements, CPU time, heap size).
+3. **Code Execution Flow:** Trace METHOD_ENTRY, CODE_UNIT_STARTED, and CODE_UNIT_FINISHED to understand execution path.
+4. **Database Operations:** Review SOQL_EXECUTE_BEGIN/END and DML_BEGIN/END statements for query efficiency and data operations.
+5. **User Debug Statements:** Extract USER_DEBUG messages which often contain custom debugging information.
+6. **Root Cause:** If exceptions are present, identify the line numbers, classes, and methods where they occurred.
+7. **Recommendations:** Suggest specific fixes, optimizations, or best practices to resolve issues.
+
+**Output Format:**
+Provide your analysis clearly enclosed within &lt;logAnalysis&gt; tags. Structure your response with:
+- **Summary:** Brief overview of findings (2-3 sentences)
+- **Critical Issues:** List of errors/exceptions with line numbers and explanations
+- **Performance Concerns:** Governor limit usage and potential bottlenecks
+- **Recommendations:** Actionable steps to fix issues or improve performance
+- **Additional Notes:** Any other relevant observations
+
+Example:
+&lt;logAnalysis&gt;
+**Summary:**
+The log shows a NullPointerException in the AccountTriggerHandler at line 45, caused by accessing a null Account field. Additionally, the transaction consumed 85% of available SOQL queries.
+
+**Critical Issues:**
+- Line 156: EXCEPTION_THROWN: System.NullPointerException: Attempt to de-reference a null object
+- Occurred in: AccountTriggerHandler.updateRelatedContacts() at line 45
+
+**Performance Concerns:**
+- SOQL Queries: 85/100 (85% usage)
+- Heap Size: 3.2 MB / 6 MB (53% usage)
+- Consider bulkifying the SOQL queries in the loop at line 38
+
+**Recommendations:**
+1. Add null check before accessing Account.ParentId field at line 45
+2. Move SOQL query outside the for loop to avoid hitting governor limits
+3. Use a Map to cache Account records instead of querying in each iteration
+
+**Additional Notes:**
+The trigger is handling 150 records, which is within limits but approaching the threshold where bulk operations become critical.
+&lt;/logAnalysis&gt;
+</content>
+        <inputs>
+            <apiName>LogContent</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Log Content</masterLabel>
+            <referenceName>Input:LogContent</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>Instructions</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Instructions</masterLabel>
+            <referenceName>Input:Instructions</referenceName>
+            <required>true</required>
+        </inputs>
+        <status>Published</status>
+        <versionIdentifier>eUd0mbAGZWKA1sA0ycUimsyKANZzHc5nXBMvmeka9S8=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

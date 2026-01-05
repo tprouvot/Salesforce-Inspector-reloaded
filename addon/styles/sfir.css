@@ -49,6 +49,11 @@ body{
     border: none !important;
 }
 
+.sfir-icon-link {
+    color: inherit;
+    text-decoration: none;
+}
+
 /* Dropdown menu styles */
 .slds-dropdown__item.sfir-justify-left > a {
     justify-content: left;

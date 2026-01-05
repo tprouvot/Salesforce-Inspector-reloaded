@@ -129,35 +129,6 @@ export function s(num, suffix = "s") {
   return num == 1 ? "" : suffix;
 }
 
-// Copy text to the clipboard, without rendering it, since rendering is slow.
-export function copyToClipboard(value) {
-  if (parent && parent.isUnitTest) { // for unit tests
-    parent.testClipboardValue = value;
-    return;
-  }
-  // Use execCommand to trigger an oncopy event and use an event handler to copy the text to the clipboard.
-  // The oncopy event only works on editable elements, e.g. an input field.
-  let temp = document.createElement("input");
-  // The oncopy event only works if there is something selected in the editable element.
-  temp.value = "temp";
-  temp.addEventListener("copy", e => {
-    e.clipboardData.setData("text/plain", value);
-    e.preventDefault();
-  });
-  document.body.appendChild(temp);
-  try {
-    // The oncopy event only works if there is something selected in the editable element.
-    temp.select();
-    // Trigger the oncopy event
-    let success = document.execCommand("copy");
-    if (!success) {
-      alert("Copy failed");
-    }
-  } finally {
-    document.body.removeChild(temp);
-  }
-}
-
 function renderCell(rt, cell, td) {
   function popLink(recordInfo, label) {
     let a = document.createElement("a");
@@ -633,8 +604,6 @@ export function initScrollTable(scroller) {
       }
 
       scrolled.textContent = "";
-      //scrolled.style.height = totalHeight + "px";
-      //scrolled.style.width = totalWidth + "px";
 
       let table = document.createElement("table");
       table.className = "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-is-relative";
@@ -656,7 +625,11 @@ export function initScrollTable(scroller) {
           if (colVisible[c] == 0) continue;
           let cell = row[c];
           let td = document.createElement("td");
-          td.className = `scrolltable-cell header ${(cell.startsWith("_") && greyOutSkippedColumns) ? "skipped" : ""}`;
+          let cellClasses = `scrolltable-cell header ${(cell.startsWith("_") && greyOutSkippedColumns) ? "skipped" : ""}`;
+          if (data.preventLineWrap !== false) {
+            cellClasses += " prevent-line-wrap";
+          }
+          td.className = cellClasses;
           td.style.minWidth = colWidths[c] + "px";
           td.style.height = rowHeights[r] + "px";
           renderCell(data, cell, td);
@@ -679,10 +652,14 @@ export function initScrollTable(scroller) {
           }
           let cell = row[c];
           let td = document.createElement("td");
-          td.className = "scrolltable-cell";
+          let cellClasses = "scrolltable-cell";
           if (c < headerCols) {
-            td.className += " header";
+            cellClasses += " header";
           }
+          if (data.preventLineWrap !== false) {
+            cellClasses += " prevent-line-wrap";
+          }
+          td.className = cellClasses;
           td.style.minWidth = colWidths[c] + "px";
           td.style.height = rowHeights[r] + "px";
           renderCell(data, cell, td);

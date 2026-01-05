@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
-import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod} from "./utils.js";
+import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod, DataCache} from "./utils.js";
 import {getFlowScannerRules} from "./flow-scanner.js";
 /* global initButton, lightningflowscanner */
 import {DescribeInfo} from "./data-load.js";
@@ -95,12 +95,15 @@ class OptionsTabSelector extends React.Component {
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
               key: "hideButtonsOption",
+              length: 8,
               checkboxes: [
                 {label: "New", name: "new", checked: true},
                 {label: "Explore API", name: "explore-api", checked: true},
                 {label: "Org Limits", name: "org-limits", checked: true},
                 {label: "Options", name: "options", checked: true},
-                {label: "Generate Access Token", name: "generate-token", checked: true}
+                {label: "Generate Access Token", name: "generate-token", checked: true},
+                {label: "Copy User Id", name: "copy-userId", checked: true},
+                {label: "Reset Password", name: "reset-password", checked: true}
               ]}
           },
           {option: FaviconOption, props: {key: this.sfHost + FaviconOption.CUSTOM_FAVICON_KEY, tooltip: "You may need to add this domain to CSP trusted domains to see the favicon in Salesforce."}},
@@ -109,8 +112,8 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "text", title: "Banner text", inputSize: "6", key: this.sfHost + "_prodBannerText", tooltip: "Text that will be displayed in the banner (if enabled)", placeholder: "WARNING: THIS IS PRODUCTION"}},
           {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
           {option: MultiCheckboxButtonGroup,
-            props: {title: "Exclude users from search",
-              key: "userSearchExclusions",
+            props: {title: "Exclude users from search (org specific)",
+              key: this.sfHost + "_userSearchExclusions",
               checkboxes: [
                 {label: " Exclude Portal users", name: "portal", checked: false},
                 {label: " Exclude Inactive users", name: "inactive", checked: false}
@@ -137,6 +140,31 @@ class OptionsTabSelector extends React.Component {
                 {label: "Shortcuts", name: "shortcuts"},
                 {label: "Org", name: "org"}
               ]}
+          },
+          {option: Option,
+            props: {type: "number",
+              title: "API cache period (days)",
+              key: "cachePeriodDays",
+              default: 7,
+              min: 1,
+              inputSize: "3",
+              tooltip: "Some API request are redundant, to limit the number of calls, we implemented a cache. This option allows you to configure the cache period.",
+              actionButton: {
+                label: "Clear Reloaded Cache",
+                title: "Clear extension Cache",
+                onClick: (e, model, appRef) => {
+                  DataCache.clearCache("userFieldNames", model.sfHost);
+                  if (appRef) {
+                    appRef.setState({
+                      showToast: true,
+                      toastMessage: "User describe cache cleared successfully.",
+                      toastVariant: "success",
+                      toastTitle: "Success"
+                    });
+                    setTimeout(() => appRef.hideToast(), 3000);
+                  }
+                }
+              }}
           },
         ]
       },
@@ -182,13 +210,16 @@ class OptionsTabSelector extends React.Component {
               ]}
           },
           {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
+          {option: Option, props: {type: "toggle", title: "Prevent line wrap in Data Export table cells", key: "preventLineWrapDataExport", default: true, tooltip: "When enabled, prevents text from wrapping in table cells (matches v1.27 behavior)"}},
           {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100, inputSize: "1"}},
           {option: Option, props: {type: "number", title: "Number of saved queries", key: "numberOfQueriesSaved", default: 50, inputSize: "1"}},
           {option: Option, props: {type: "textarea", title: "Query Templates", key: "queryTemplates", inputSize: "6", placeholder: "SELECT Id FROM// SELECT Id FROM WHERE//SELECT Id FROM WHERE IN//SELECT Id FROM WHERE LIKE//SELECT Id FROM ORDER BY//SELECT ID FROM MYTEST__c//SELECT ID WHERE"}},
           {option: Option, props: {type: "toggle", title: "Enable Query Typo Fix", key: "enableQueryTypoFix", default: false, tooltip: "Enable automation that removes typos from query input"}},
-          {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}}
+          {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}},
+          //This option is created to disable BOM for CSV in case of errors appearing during export, created in v2.0.0, can be deleted in two releases if no issues are reported
+          {option: Option, props: {type: "toggle", default: true, title: "Use BOM for CSV export", key: "useBomForCsvExport", tooltip: "Add UTF-8 BOM (Byte Order Mark) for Excel compatibility with non-Latin characters."}}
         ]
       },
       {
@@ -298,10 +329,40 @@ class OptionsTabSelector extends React.Component {
         ]
       },
       {
+        id: "logs-viewer",
+        tabTitle: "Log Viewer",
+        content: [
+          {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_debugLogAgentForcePrompt", default: Constants.PromptTemplateDebugLog, tooltip: "Developer name of the prompt template to use for Debug Log Analysis"}},
+          {option: Option, props: {type: "toggle", title: "Fetch log bodies for action details", key: "debugLogFetchBodies", default: true, tooltip: "When enabled, fetches log bodies to derive detailed action information. Disable to reduce API calls and improve performance."}},
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Show buttons",
+              key: "hideDebugLogButtonsOption",
+              checkboxes: [
+                {label: "Share Logs", name: "share-logs", checked: true},
+                {label: "Agentforce", name: "logs-agentforce", checked: false}
+              ]}
+          },
+        ]
+      },
+      {
         id: "custom-shortcuts",
         tabTitle: "Custom Shortcuts",
         content: [
           {option: CustomShortcuts, props: {}}
+        ]
+      },
+      {
+        id: "rest-explore",
+        tabTitle: "REST Explorer",
+        content: [
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Display response information",
+              key: "restExploreDisplayOptions",
+              checkboxes: [
+                {label: "Response Size", name: "responseSize", checked: true},
+                {label: "Response Duration", name: "responseDuration", checked: true}
+              ]}
+          }
         ]
       }
     ];
@@ -371,7 +432,8 @@ class OptionsTabSelector extends React.Component {
         actionButtons: tab.actionButtons,
         content: tab.content,
         selectedTabId: this.state.selectedTabId,
-        model: this.model
+        model: this.model,
+        appRef: this.appRef
       }))
     );
   }
@@ -396,6 +458,7 @@ class OptionsContainer extends React.Component {
   constructor(props) {
     super(props);
     this.model = props.model;
+    this.appRef = props.appRef;
   }
 
   getClass() {
@@ -453,7 +516,8 @@ class OptionsContainer extends React.Component {
             key: c.props?.key || `option-${index}`,
             storageKey: c.props?.key,
             ...c.props,
-            model: this.model
+            model: this.model,
+            appRef: this.appRef
           })
         )
       )
@@ -594,6 +658,7 @@ class Option extends React.Component {
     this.placeholder = props.placeholder;
     this.actionButton = props.actionButton;
     this.inputSize = props.inputSize || "3";
+    this.min = props.min; // Minimum value for number input type (sets HTML min attribute)
 
     // Enhanced properties
     this.enhancedTitle = props.enhancedTitle;
@@ -716,7 +781,8 @@ class Option extends React.Component {
       className: isEnhanced ? "slds-input enhanced-option-input" : "slds-input",
       placeholder: this.placeholder,
       value: nullToEmptyString(this.state[this.key]),
-      onChange: this.onChange
+      onChange: this.onChange,
+      ...(this.type === "number" && this.min !== undefined ? {min: this.min} : {})
     })
       : isTextArea ? h("textarea", {
         id,
@@ -863,10 +929,11 @@ class Option extends React.Component {
               this.renderInputControl(id, false)
             ),
             // Action button (if present)
+            // appRef is passed to allow actionButton handlers to show toast notifications via appRef.setState()
             this.actionButton && h("div", {className: "slds-col"},
               h("button", {
                 className: "slds-button slds-button_brand",
-                onClick: (e) => this.actionButton.onClick(e, this.props.model),
+                onClick: (e) => this.actionButton.onClick(e, this.props.model, this.props.appRef),
                 title: this.actionButton.title || "Action"
               }, this.actionButton.label || "Action")
             ),
@@ -1126,6 +1193,7 @@ class MultiCheckboxButtonGroup extends React.Component {
     this.title = props.title;
     this.key = props.storageKey;
     this.unique = props.unique || false;
+    this.length = props.length || 6;
 
     // Load checkboxes from localStorage or default to props.checkboxes
     const storedCheckboxes = localStorage.getItem(this.key) ? JSON.parse(localStorage.getItem(this.key)) : [];
@@ -1162,7 +1230,7 @@ class MultiCheckboxButtonGroup extends React.Component {
       h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
         h("span", {}, this.title)
       ),
-      h("div", {className: "slds-col slds-size_6-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small slds-m-left_xxx-small"},
+      h("div", {className: "slds-col slds-size_" + this.length + "-of-12 slds-form-element slds-grid slds-grid_align-start slds-grid_vertical-align-center slds-gutters_small slds-m-left_xxx-small"},
         h("div", {className: "slds-form-element__control"},
           h("div", {className: "slds-checkbox_button-group"},
             this.state.checkboxes.map((checkbox, index) =>

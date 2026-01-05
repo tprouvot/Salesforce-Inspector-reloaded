@@ -201,3 +201,17 @@ textarea {
 select {
   width: auto;
 }
+
+/* Spinner overlay for metadata retrieval */
+.sfir-spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.75);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

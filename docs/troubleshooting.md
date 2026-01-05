@@ -47,6 +47,11 @@ tokens.forEach((element) => localStorage.removeItem(element));
 Still facing the issue ? Try to connect to your org in an anonymous window (make sure you allowed the extension to run in private mode).
 If the error disappeared, clear site data to solve the issue in normal navigation.
 
+### CSV Export encoding issues in Excel
+
+If you experience recent issues when opening exported CSV files in Excel, you can disable the "Use BOM for CSV export" option in the extension settings.
+This option adds a UTF-8 Byte Order Mark (BOM) to the beginning of the file, which helps Excel correctly identify the encoding for non latin characters.
+
 ### Managed Application Installation Error
 
 When installing the default connected app when `API Access Control` is enabled, if you face the error `Managed Application Installation Error` you may have an existing connected app named `Salesforce Inspector reloaded`.
@@ -67,3 +72,26 @@ This error occurs when attempting to deploy a zip file where the `package.xml` f
 
 1. **Open deployment settings**: Click the cog wheel icon.
 2. **Single Package**: Disable `Single Package` option.
+
+### Cache-related issues
+
+The extension caches field permission information to optimize API usage. If you encounter issues related to cached data (such as incorrect field permissions or stale data), you can clear the cache.
+
+**Symptoms:**
+
+* User search queries fail with field permission errors
+
+**How to clear the cache:**
+
+1. **Using the Options page** (recommended):
+   * Open the extension and click the "Options" button
+   * Navigate to the "User Experience" tab
+   * Find the "API cache period (days)" setting
+   * Click the "Clear Cache" button next to it
+   * A success message will confirm the cache has been cleared
+
+**After clearing the cache:**
+
+* The extension will fetch fresh field permission data on the next user search
+* Queries will be rebuilt based on current field permissions
+* Cache will be repopulated automatically with the new data

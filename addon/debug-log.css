@@ -1,0 +1,191 @@
+.modalContainer{
+  max-width: 100rem;
+  width: 90%;
+  position: relative;
+  z-index: 9001; /* Above backdrop */
+}
+
+/* Backdrop for Agentforce modal */
+.slds-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9000;
+}
+
+.slds-backdrop_open {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.2s linear;
+}
+
+/* Ensure action buttons have consistent height */
+.sfir-actions .slds-button {
+  height: 32px; /* match SLDS default small button height */
+  line-height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.sfir-actions .slds-button .slds-button__icon {
+  height: 16px;
+  width: 16px;
+}
+.sfir-actions .slds-button[title="Share"] {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+/* Icon-only action buttons: enforce same size */
+.sfir-actions .slds-button[title="Share"],
+.sfir-actions .slds-button[title="Delete"] {
+  height: 32px;
+  width: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sfir-actions .slds-button[title="Share"] .slds-button__icon,
+.sfir-actions .slds-button[title="Delete"] .slds-button__icon {
+  width: 16px;
+  height: 16px;
+}
+.sfir-actions .slds-button[title="Download"] {
+  height: 32px;
+  width: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.sfir-actions .slds-button[title="Download"] .slds-button__icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Column resizer (kept for styling even though resizing is removed) */
+.sfir-col-resizer {
+  display: inline-block;
+  width: 6px;
+  cursor: col-resize;
+  margin-left: 4px;
+}
+
+/* Table scroll container */
+.sfir-table-scroll {
+  position: relative;
+  height: calc(100vh - 260px);
+  overflow: auto;
+}
+
+/* Preview search highlights */
+mark.sfir-highlight {
+  background: #ffe58a !important;
+  color: #000 !important;
+  padding: 0 0.2rem;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+mark.sfir-highlight.current {
+  background: #f8d24e !important;
+  outline: 2px solid #e1b600;
+  outline-offset: 1px;
+  font-weight: 600;
+}
+
+/* Make sort icon always visible for sortable columns */
+.slds-is-sortable__icon-always {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 0.5;
+}
+
+/* Add cursor pointer for sortable column headers */
+.slds-is-sortable {
+  cursor: pointer;
+}
+
+/* Agentforce Modal Styles */
+.sfir-agentforce-textarea {
+  min-height: 60vh;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.sfir-agentforce-instructions-container {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.sfir-agentforce-instructions-content {
+  white-space: pre-wrap;
+  line-height: 1.7;
+  color: #3e3e3c;
+  padding: 0.75rem;
+}
+
+.sfir-agentforce-analyzing-container {
+  min-height: 60vh;
+}
+
+.sfir-agentforce-error-content {
+  font-size: 0.875rem;
+}
+
+.sfir-agentforce-results {
+  white-space: pre-wrap;
+  line-height: 1.8;
+  max-height: 60vh;
+  overflow-y: auto;
+  background-color: #fafaf9;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.25rem;
+  padding: 1.25rem;
+  font-size: 0.9375rem;
+  color: #181818;
+}
+
+/* Preview Modal Styles */
+.sfir-preview-loading-container {
+  min-height: 60vh;
+  position: relative;
+}
+
+.sfir-preview-spinner-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9002;
+}
+
+.sfir-preview-code-block {
+  max-height: 60vh;
+  overflow: unset;
+}
+
+/* Logs Table Styles */
+.sfir-logs-table-container {
+  max-width: 100%;
+}
+
+.sfir-logs-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 900px;
+}
+
+.sfir-log-status-cell {
+  max-height: 2.5rem;
+  overflow: auto;
+}
+
+.sfir-log-actions-group {
+  white-space: nowrap;
+}

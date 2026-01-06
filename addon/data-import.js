@@ -206,7 +206,6 @@ class Model {
 
   getDataFromJson(json) {
     json = JSON.parse(json);
-    let csv;
     let fields = ["_"].concat(Object.keys(json[0]));
     fields = fields.filter(field => field != "attributes");
 
@@ -215,25 +214,28 @@ class Model {
       separator = localStorage.getItem("csvSeparator");
     }
 
-    let sobject = json[0]["attributes"]["type"];
-    if (sobject) {
-      csv = json
-        .map((row) => fields
-          .map((fieldName) => {
-            const ignore = fieldName == "_";
-            let value = ignore ? sobject : row[fieldName];
-            if (typeof value == "boolean" || (value && typeof value !== "object")) {
-              return ignore ? `"[${sobject}]"` : JSON.stringify(value);
-            } else {
-              return null;
-            }
-          })
-          .filter(value => value !== null)
-          .join(separator));
-      fields = fields.map(str => `"${str}"`);
-      csv.unshift(fields.join(separator));
-      csv = csv.join("\r\n");
+    let sobject = json[0]?.attributes?.type;
+    if (!sobject) {
+      // Remove the "_" column if no sobject type
+      fields = fields.filter(field => field != "_");
     }
+
+    let csv = json
+      .map((row) => fields
+        .map((fieldName) => {
+          const ignore = fieldName == "_";
+          let value = ignore ? sobject : row[fieldName];
+          if (typeof value == "boolean" || (value && typeof value !== "object")) {
+            return ignore ? `"[${sobject}]"` : JSON.stringify(value);
+          } else {
+            return null;
+          }
+        })
+        .filter(value => value !== null)
+        .join(separator));
+    fields = fields.map(str => `"${str}"`);
+    csv.unshift(fields.join(separator));
+    csv = csv.join("\r\n");
     return csv;
   }
 

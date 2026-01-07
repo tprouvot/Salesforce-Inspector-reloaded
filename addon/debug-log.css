@@ -110,6 +110,26 @@ mark.sfir-highlight.current {
   cursor: pointer;
 }
 
+/* Make resize handles easier to interact with */
+.slds-resizable__handle {
+  cursor: col-resize;
+}
+
+/* Align header checkbox with body checkboxes */
+.sfir-logs-table thead th .slds-th__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 2rem;
+}
+
+/* Center all checkboxes in the checkbox column */
+.sfir-logs-table tbody td[role="gridcell"]:first-child {
+  text-align: center;
+  vertical-align: middle;
+}
+
 /* Agentforce Modal Styles */
 .sfir-agentforce-textarea {
   min-height: 60vh;
@@ -173,6 +193,7 @@ mark.sfir-highlight.current {
 /* Logs Table Styles */
 .sfir-logs-table-container {
   max-width: 100%;
+  overflow-x: auto;
 }
 
 .sfir-logs-table {
@@ -181,9 +202,9 @@ mark.sfir-highlight.current {
   min-width: 900px;
 }
 
-.sfir-log-status-cell {
-  max-height: 2.5rem;
-  overflow: auto;
+/* Ensure table cells support truncation */
+.sfir-logs-table td {
+  overflow: hidden;
 }
 
 .sfir-log-actions-group {

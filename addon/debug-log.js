@@ -53,18 +53,26 @@ class Model {
     // Log bodies cache (logId -> body text) for searching
     this.logBodies = new Map();
 
-    // Column widths as percentages for better distribution
-    this.columnWidths = {
-      checkbox: "3%",
-      user: "15%",
-      operation: "15%",
-      request: "6%",
-      start: "11%",
-      status: "6%",
-      action: "14%",
-      size: "7%",
-      actions: "15%"
+    // Column widths - load from localStorage or use defaults (in pixels for precise resizing)
+    const savedWidths = localStorage.getItem(this.sfHost + "_debugLogColumnWidths");
+    this.columnWidths = savedWidths ? JSON.parse(savedWidths) : {
+      checkbox: 50,
+      user: 180,
+      operation: 180,
+      request: 100,
+      start: 160,
+      status: 100,
+      action: 180,
+      size: 100,
+      actions: 180
     };
+
+    // Column resize state
+    this.resizing = null; // {column: string, startX: number, startWidth: number}
+
+    // Bind resize handlers
+    this._onResizeMove = this.onResizeMove.bind(this);
+    this._onResizeEnd = this.onResizeEnd.bind(this);
 
     // Pagination for lazy loading
     const savedPageSize = parseInt(localStorage.getItem("debugLogPageSize"), 10);
@@ -1004,6 +1012,37 @@ Please structure your response in a clear, organized manner using these sections
       this.didUpdate();
     }
   }
+
+  // Column resizing methods
+  startResize(columnKey, e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.resizing = {
+      column: columnKey,
+      startX: e.pageX,
+      startWidth: this.columnWidths[columnKey]
+    };
+    document.addEventListener("mousemove", this._onResizeMove);
+    document.addEventListener("mouseup", this._onResizeEnd);
+  }
+
+  onResizeMove(e) {
+    if (!this.resizing) return;
+    const delta = e.pageX - this.resizing.startX;
+    const newWidth = Math.max(50, this.resizing.startWidth + delta);
+    this.columnWidths[this.resizing.column] = newWidth;
+    this.didUpdate();
+  }
+
+  onResizeEnd() {
+    if (this.resizing) {
+      // Save to localStorage
+      localStorage.setItem(this.sfHost + "_debugLogColumnWidths", JSON.stringify(this.columnWidths));
+      this.resizing = null;
+    }
+    document.removeEventListener("mousemove", this._onResizeMove);
+    document.removeEventListener("mouseup", this._onResizeEnd);
+  }
 }
 
 function parseAction(operation) {
@@ -1295,22 +1334,44 @@ function LogsTable({model, hideButtonsOption}) {
   const cw = model.columnWidths;
 
   // Helper to render sortable column header
-  const renderSortableHeader = (label, soqlColumn) => {
+  const renderSortableHeader = (label, soqlColumn, columnKey) => {
     const isSorted = model.sortColumn === soqlColumn;
     const isAsc = isSorted && model.sortDirection === "ASC";
     const sortClass = isSorted ? (isAsc ? "slds-is-sorted slds-is-sorted_asc" : "slds-is-sorted") : "";
 
     return h("th", {
-      className: `slds-is-sortable ${sortClass}`,
-      scope: "col",
+      className: `slds-is-sortable slds-is-resizable ${sortClass}`,
+      scope: "col"
+    },
+    h("a", {
+      className: "slds-th__action slds-text-link_reset",
+      role: "button",
+      tabIndex: "0",
       onClick: () => model.handleSort(label)
     },
-    h("div", {className: "slds-grid slds-grid_align-spread"},
-      h("span", {className: "slds-truncate"}, label),
-      h("span", {className: `slds-icon_container slds-is-sortable__icon ${isSorted ? "" : "slds-is-sortable__icon-always"}`, title: isSorted ? (isAsc ? "Sorted ascending" : "Sorted descending") : "Sort"},
+    h("span", {className: "slds-assistive-text"}, "Sort by "),
+    h("div", {className: "slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate"},
+      h("span", {className: "slds-truncate", title: label}, label),
+      h("span", {className: `slds-icon_container slds-icon-utility-arrowdown ${isSorted ? "" : "slds-is-sortable__icon"}`, title: isSorted ? (isAsc ? "Sorted ascending" : "Sorted descending") : "Sort"},
         h("svg", {className: "slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
           h("use", {xlinkHref: "symbols.svg#arrowdown"})
         )
+      )
+    )
+    ),
+    h("div", {className: "slds-resizable"},
+      h("input", {
+        type: "range",
+        className: "slds-resizable__input slds-assistive-text",
+        min: "20",
+        max: "1000",
+        "aria-label": `${label} column width`
+      }),
+      h("span", {
+        className: "slds-resizable__handle",
+        onMouseDown: (e) => model.startResize(columnKey, e)
+      },
+      h("span", {className: "slds-resizable__divider"})
       )
     )
     );
@@ -1434,29 +1495,65 @@ function LogsTable({model, hideButtonsOption}) {
       h("div", {className: "slds-scrollable_x sfir-logs-table-container"},
         h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped slds-table_fixed-layout sfir-logs-table"},
           h("colgroup", {},
-            h("col", {style: {width: cw.checkbox}}),
-            h("col", {style: {width: cw.user}}),
-            h("col", {style: {width: cw.operation}}),
-            h("col", {style: {width: cw.request}}),
-            h("col", {style: {width: cw.start}}),
-            h("col", {style: {width: cw.status}}),
-            h("col", {style: {width: cw.action}}),
-            h("col", {style: {width: cw.size}}),
-            h("col", {style: {width: cw.actions}})
+            h("col", {style: {width: `${cw.checkbox}px`}}),
+            h("col", {style: {width: `${cw.user}px`}}),
+            h("col", {style: {width: `${cw.operation}px`}}),
+            h("col", {style: {width: `${cw.request}px`}}),
+            h("col", {style: {width: `${cw.start}px`}}),
+            h("col", {style: {width: `${cw.status}px`}}),
+            h("col", {style: {width: `${cw.action}px`}}),
+            h("col", {style: {width: `${cw.size}px`}}),
+            h("col", {style: {width: `${cw.actions}px`}})
           ),
           h("thead", {},
             h("tr", {},
-              h("th", {},
-                h("input", {type: "checkbox", checked: allChecked, onChange: (e) => model.toggleSelectAll(e.target.checked)})
+              h("th", {className: "slds-is-resizable", scope: "col"},
+                h("div", {className: "slds-th__action"},
+                  h("input", {type: "checkbox", checked: allChecked, onChange: (e) => model.toggleSelectAll(e.target.checked)})
+                ),
+                h("div", {className: "slds-resizable"},
+                  h("input", {
+                    type: "range",
+                    className: "slds-resizable__input slds-assistive-text",
+                    min: "20",
+                    max: "1000",
+                    "aria-label": "Checkbox column width"
+                  }),
+                  h("span", {
+                    className: "slds-resizable__handle",
+                    onMouseDown: (e) => model.startResize("checkbox", e)
+                  },
+                  h("span", {className: "slds-resizable__divider"})
+                  )
+                )
               ),
-              renderSortableHeader("User", "LogUserId"),
-              renderSortableHeader("Operation", "Operation"),
-              renderSortableHeader("Request", "Request"),
-              renderSortableHeader("Start Time", "StartTime"),
-              renderSortableHeader("Status", "Status"),
-              renderSortableHeader("Action", "Operation"),
-              renderSortableHeader("Size (MB)", "LogLength"),
-              h("th", {"aria-label": "Row actions"})
+              renderSortableHeader("User", "LogUserId", "user"),
+              renderSortableHeader("Operation", "Operation", "operation"),
+              renderSortableHeader("Request", "Request", "request"),
+              renderSortableHeader("Start Time", "StartTime", "start"),
+              renderSortableHeader("Status", "Status", "status"),
+              renderSortableHeader("Action", "Operation", "action"),
+              renderSortableHeader("Size (MB)", "LogLength", "size"),
+              h("th", {className: "slds-is-resizable", scope: "col", "aria-label": "Row actions"},
+                h("div", {className: "slds-th__action"},
+                  h("span", {className: "slds-assistive-text"}, "Actions")
+                ),
+                h("div", {className: "slds-resizable"},
+                  h("input", {
+                    type: "range",
+                    className: "slds-resizable__input slds-assistive-text",
+                    min: "20",
+                    max: "1000",
+                    "aria-label": "Actions column width"
+                  }),
+                  h("span", {
+                    className: "slds-resizable__handle",
+                    onMouseDown: (e) => model.startResize("actions", e)
+                  },
+                  h("span", {className: "slds-resizable__divider"})
+                  )
+                )
+              )
             )
           ),
           h("tbody", {},
@@ -1464,42 +1561,44 @@ function LogsTable({model, hideButtonsOption}) {
               model.ensureActionDerived(log);
               model.ensureUserName(log.LogUserId);
               return h("tr", {key: log.Id},
-                h("td", {}, h("input", {type: "checkbox", checked: model.selectedIds.has(log.Id), onChange: (e) => model.toggleSelect(log.Id, e.target.checked)})),
-                h("td", {},
+                h("td", {role: "gridcell"},
+                  h("input", {type: "checkbox", checked: model.selectedIds.has(log.Id), onChange: (e) => model.toggleSelect(log.Id, e.target.checked)})
+                ),
+                h("td", {role: "gridcell"},
                   h("span", {className: "slds-truncate", title: model.getUserDisplayName(log.LogUserId)},
                     model.getUserDisplayName(log.LogUserId)
                   )
                 ),
-                h("td", {},
+                h("td", {role: "gridcell"},
                   h("span", {className: "slds-truncate", title: log.Operation || "-"}, log.Operation || "-")
                 ),
-                h("td", {},
+                h("td", {role: "gridcell"},
                   h("span", {className: "slds-truncate", title: log.Request || "-"}, log.Request || "-")
                 ),
-                h("td", {},
+                h("td", {role: "gridcell"},
                   h("span", {className: "slds-truncate", title: new Date(log.StartTime).toLocaleString()},
                     new Date(log.StartTime).toLocaleString()
                   )
                 ),
-                h("td", {},
-                  h("div", {className: "slds-scrollable_y slds-text-body_small sfir-log-status-cell"},
+                h("td", {role: "gridcell"},
+                  h("span", {className: "slds-truncate", title: log.Status || "-"},
                     log.Status || "-"
                   )
                 ),
-                h("td", {},
+                h("td", {role: "gridcell"},
                   (() => {
                     const label = (model.actionSummary.get(log.Id) || parseAction(log.Operation)).label;
                     return h("span", {className: "slds-truncate", title: label}, label);
                   })()
                 ),
-                h("td", {},
+                h("td", {role: "gridcell"},
                   (() => {
                     const sizeMB = log.LogLength / (1024 * 1024);
                     const formatted = sizeMB < 1 ? sizeMB.toFixed(2) : sizeMB.toFixed(1);
                     return h("span", {className: "slds-truncate", title: `${formatted} MB`}, `${formatted} MB`);
                   })()
                 ),
-                h("td", {},
+                h("td", {role: "gridcell"},
                   h("div", {className: "slds-button_group sfir-actions sfir-log-actions-group", role: "group"},
                     h("button", {type: "button", className: "slds-button slds-button_neutral", onClick: () => model.preview(log.Id)},
                       h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#search"})),

@@ -306,8 +306,7 @@ Please structure your response in a clear, organized manner using these sections
       // Gather all distinct LogUserId and LogUser.Name from all logs (no filters)
       // Using relationship query to get both ID, Name, and Profile.Name in a single query
       const map = new Map();
-      const selectFields = "SELECT LogUserId, LogUser.Name, LogUser.Profile.Name FROM ApexLog WHERE LogUserId != null";
-      let url = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent(selectFields);
+      let url = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent("SELECT LogUserId, LogUser.Name, LogUser.Profile.Name FROM ApexLog WHERE LogUserId != null");
       while (url) {
         const res = await sfConn.rest(url);
         (res.records || []).forEach(r => {
@@ -428,7 +427,10 @@ Please structure your response in a clear, organized manner using these sections
     });
   }
 
+  // eslint-disable-next-line no-unused-vars
   async fetchLogs(rebuildUsers = false, reset = true) {
+    // Note: rebuildUsers parameter is kept for backward compatibility but no longer used
+    // User information is loaded once at init by populatePicklistFromAllLogs()
     this.spinnerCount++;
     try {
       if (reset) {
@@ -455,10 +457,8 @@ Please structure your response in a clear, organized manner using these sections
         this.actionSummary.set(l.Id, base);
       }
 
-      // Rebuild users list (names + picklist) only when resetting or filters changed
-      if (rebuildUsers) {
-        await this.buildUsersFromLogs(this.logs);
-      }
+      // Note: User information is already loaded by populatePicklistFromAllLogs() at init
+      // Individual missing users are resolved on-demand by ensureUserName()
 
       // If we reset (filters changed), also fetch the total count with identical filters
       if (reset) {
@@ -500,46 +500,6 @@ Please structure your response in a clear, organized manner using these sections
     }
   }
 
-  async buildUsersFromLogs(logs) {
-    // Collect unique user ids from logs
-    const ids = Array.from(new Set((logs || []).map(l => l.LogUserId).filter(Boolean)));
-    if (ids.length === 0) {
-      // Keep existing options; just clear map for missing logs is not helpful, so do not wipe picklist
-      return;
-    }
-
-    const idChunks = [];
-    for (let i = 0; i < ids.length; i += 200) idChunks.push(ids.slice(i, i + 200));
-    const map = new Map();
-    for (const chunk of idChunks) {
-      // Always include Profile.Name in query
-      const soql = `SELECT Id, Name, Profile.Name FROM User WHERE Id IN (${chunk.map(id => `'${id}'`).join(",")})`;
-      try {
-        const res = await sfConn.rest(`/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(soql));
-        (res.records || []).forEach(u => {
-          const profileName = u.Profile && u.Profile.Name ? u.Profile.Name : null;
-          map.set(u.Id, {name: u.Name, profileName});
-        });
-      } catch (e) {
-        console.error("buildUsersFromLogs", e);
-      }
-    }
-    // Merge into existing userMap to avoid losing known users
-    const merged = new Map(this.userMap);
-    for (const [id, user] of map) merged.set(id, user);
-    this.userMap = merged;
-
-    // Only initialize or extend picklist; never shrink it based on current logs
-    if (!Array.isArray(this.userOptions) || this.userOptions.length === 0) {
-      this.userOptions = Array.from(merged, ([id, name]) => ({id, name})).sort((a, b) => a.name.localeCompare(b.name));
-    } else {
-      const existingIds = new Set(this.userOptions.map(o => o.id));
-      const additions = Array.from(map, ([id, name]) => ({id, name})).filter(o => !existingIds.has(o.id));
-      if (additions.length) {
-        this.userOptions = this.userOptions.concat(additions).sort((a, b) => a.name.localeCompare(b.name));
-      }
-    }
-  }
 
   async resolveActionsFromBodiesLimited(limit = 50) {
     const slice = this.logs.slice(0, limit);
@@ -948,12 +908,12 @@ Please structure your response in a clear, organized manner using these sections
   nextPage() {
     if (!this.hasMore) return;
     this.pageIndex++;
-    this.fetchLogs(true, false); // rebuild users for the new page
+    this.fetchLogs(false, false);
   }
   prevPage() {
     if (this.pageIndex === 0) return;
     this.pageIndex--;
-    this.fetchLogs(true, false); // rebuild users for the new page
+    this.fetchLogs(false, false);
   }
 
   setPageSize(size) {
@@ -1300,7 +1260,7 @@ class SldsPicklist extends React.Component {
 function Filters({model}) {
   const onUserPick = (val) => {
     model.filters.userId = val;
-    model.fetchLogs(true); // rebuild users to resolve names; picklist stays intact (we don't shrink it)
+    model.fetchLogs(true);
   };
   const onStartChange = (e) => { model.filters.start = e.target.value; };
   const onEndChange = (e) => { model.filters.end = e.target.value; };

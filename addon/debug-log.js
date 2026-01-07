@@ -42,7 +42,7 @@ class Model {
     };
 
     // Users cache for picklist and table rendering
-    this.userMap = new Map(); // id -> name
+    this.userMap = new Map(); // id -> {name, profileName}
     this.userOptions = []; // [{id, name}]
     this.resolvingUsers = new Set(); // avoid duplicate fetches for names
 
@@ -104,9 +104,15 @@ class Model {
     const savedFetchBodies = localStorage.getItem("debugLogFetchBodies");
     this.fetchLogBodies = savedFetchBodies === null ? true : JSON.parse(savedFetchBodies);
     this.fetchBodiesSearchTerm = ""; // Search term for filtering logs when fetching bodies
+
+    // Toggle for showing profile names as suffix (read from options)
+    const savedShowProfileNames = localStorage.getItem("debugLogShowProfileNames");
+    this.showProfileNames = savedShowProfileNames === null ? false : JSON.parse(savedShowProfileNames);
   }
 
   didUpdate() {
+    // Check if showProfileNames option changed in options page
+    this.updateShowProfileNames();
     this.render();
   }
 
@@ -280,6 +286,8 @@ Please structure your response in a clear, organized manner using these sections
 
   async init() {
     await sfConn.getSession(this.sfHost);
+    // Update showProfileNames from localStorage (in case it was changed in options)
+    this.updateShowProfileNames();
     await this.populatePicklistFromAllLogs();
     await this.fetchLogs(true);
   }
@@ -288,25 +296,31 @@ Please structure your response in a clear, organized manner using these sections
     this.spinnerCount++;
     try {
       // Gather all distinct LogUserId and LogUser.Name from all logs (no filters)
-      // Using relationship query to get both ID and Name in a single query
+      // Using relationship query to get both ID, Name, and Profile.Name in a single query
       const map = new Map();
-      let url = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent("SELECT LogUserId, LogUser.Name FROM ApexLog WHERE LogUserId != null");
+      const selectFields = "SELECT LogUserId, LogUser.Name, LogUser.Profile.Name FROM ApexLog WHERE LogUserId != null";
+      let url = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent(selectFields);
       while (url) {
         const res = await sfConn.rest(url);
         (res.records || []).forEach(r => {
           if (r.LogUserId && r.LogUser) {
             // LogUser.Name might be null if user doesn't exist, but LogUserId is still valid
             const userName = r.LogUser.Name || r.LogUserId;
-            map.set(r.LogUserId, userName);
+            const profileName = r.LogUser.Profile && r.LogUser.Profile.Name ? r.LogUser.Profile.Name : null;
+            map.set(r.LogUserId, {name: userName, profileName});
           } else if (r.LogUserId) {
             // Fallback: if LogUser relationship is null but LogUserId exists, use ID as name
-            map.set(r.LogUserId, r.LogUserId);
+            map.set(r.LogUserId, {name: r.LogUserId, profileName: null});
           }
         });
         url = res.nextRecordsUrl || null;
       }
-      this.userMap = map;
-      this.userOptions = Array.from(map, ([id, name]) => ({id, name})).sort((a, b) => a.name.localeCompare(b.name));
+      // Merge into existing userMap to avoid losing known users
+      const merged = new Map(this.userMap);
+      for (const [id, user] of map) merged.set(id, user);
+      this.userMap = merged;
+      this.userOptions = Array.from(merged, ([id, user]) => ({id, name: user.name})).sort((a, b) => a.name.localeCompare(b.name));
+
       this.didUpdate();
     } catch (e) {
       console.error("populatePicklistFromAllLogs.root", e);
@@ -371,8 +385,11 @@ Please structure your response in a clear, organized manner using these sections
 
       // Handle derived fields
       if (sortField === "LogUserId") {
-        aVal = this.userMap.get(aVal) || aVal || "";
-        bVal = this.userMap.get(bVal) || bVal || "";
+        // Use display name for sorting (without profile suffix for consistent sorting)
+        const aUser = this.userMap.get(aVal);
+        const bUser = this.userMap.get(bVal);
+        aVal = aUser ? aUser.name : aVal || "";
+        bVal = bUser ? bUser.name : bVal || "";
       } else if (sortField === "Operation") {
         aVal = (this.actionSummary.get(a.Id)?.label) || aVal || "";
         bVal = (this.actionSummary.get(b.Id)?.label) || bVal || "";
@@ -487,17 +504,21 @@ Please structure your response in a clear, organized manner using these sections
     for (let i = 0; i < ids.length; i += 200) idChunks.push(ids.slice(i, i + 200));
     const map = new Map();
     for (const chunk of idChunks) {
-      const soql = `SELECT Id, Name FROM User WHERE Id IN (${chunk.map(id => `'${id}'`).join(",")})`;
+      // Always include Profile.Name in query
+      const soql = `SELECT Id, Name, Profile.Name FROM User WHERE Id IN (${chunk.map(id => `'${id}'`).join(",")})`;
       try {
         const res = await sfConn.rest(`/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(soql));
-        (res.records || []).forEach(u => map.set(u.Id, u.Name));
+        (res.records || []).forEach(u => {
+          const profileName = u.Profile && u.Profile.Name ? u.Profile.Name : null;
+          map.set(u.Id, {name: u.Name, profileName});
+        });
       } catch (e) {
         console.error("buildUsersFromLogs", e);
       }
     }
     // Merge into existing userMap to avoid losing known users
     const merged = new Map(this.userMap);
-    for (const [id, name] of map) merged.set(id, name);
+    for (const [id, user] of map) merged.set(id, user);
     this.userMap = merged;
 
     // Only initialize or extend picklist; never shrink it based on current logs
@@ -559,12 +580,14 @@ Please structure your response in a clear, organized manner using these sections
     this.resolvingUsers.add(id);
     (async () => {
       try {
-        const soql = `SELECT Id, Name FROM User WHERE Id='${id}'`;
+        // Always include Profile.Name in query
+        const soql = `SELECT Id, Name, Profile.Name FROM User WHERE Id='${id}'`;
         const res = await sfConn.rest(`/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(soql));
         const rec = (res.records || [])[0];
         if (rec && rec.Id) {
-          // update map
-          this.userMap.set(rec.Id, rec.Name);
+          // update map with user object
+          const profileName = rec.Profile && rec.Profile.Name ? rec.Profile.Name : null;
+          this.userMap.set(rec.Id, {name: rec.Name, profileName});
           // extend picklist options without shrinking
           if (!this.userOptions.find(o => o.id === rec.Id)) {
             this.userOptions = this.userOptions.concat([{id: rec.Id, name: rec.Name}]).sort((a, b) => a.name.localeCompare(b.name));
@@ -944,6 +967,7 @@ Please structure your response in a clear, organized manner using these sections
     this.didUpdate();
   }
 
+
   getFilteredLogs() {
     // If search is disabled or no search term, return all logs
     if (!this.fetchLogBodies || !this.fetchBodiesSearchTerm || this.fetchBodiesSearchTerm.trim() === "") {
@@ -959,6 +983,26 @@ Please structure your response in a clear, organized manner using these sections
       }
       return body.toLowerCase().includes(searchTerm);
     });
+  }
+
+  getUserDisplayName(userId) {
+    const user = this.userMap.get(userId);
+    if (!user) return userId || "-";
+    if (!this.showProfileNames) {
+      return user.name;
+    }
+    return user.profileName ? `${user.name} (${user.profileName})` : user.name;
+  }
+
+  // Note: Option is managed in options.js, this method reads from localStorage
+  updateShowProfileNames() {
+    const savedShowProfileNames = localStorage.getItem("debugLogShowProfileNames");
+    const newValue = savedShowProfileNames === null ? false : JSON.parse(savedShowProfileNames);
+    if (this.showProfileNames !== newValue) {
+      this.showProfileNames = newValue;
+      // Profile names are already fetched, just need to update display
+      this.didUpdate();
+    }
   }
 }
 
@@ -1224,7 +1268,7 @@ function Filters({model}) {
   const apply = (e) => { e.preventDefault(); model.fetchLogs(true); };
   const reset = (e) => { e.preventDefault(); model.filters = {userId: "", start: "", end: ""}; model.fetchLogs(true); };
 
-  const userOptions = [{value: "", label: "All users"}, ...model.userOptions.map(u => ({value: u.id, label: u.name}))];
+  const userOptions = [{value: "", label: "All users"}, ...model.userOptions.map(u => ({value: u.id, label: model.getUserDisplayName(u.id)}))];
 
   return h("form", {className: "slds-grid slds-gutters slds-m-bottom_small slds-m-top_xx-large slds-size_xx-large", onSubmit: apply},
     h("div", {className: "slds-col slds-size_1-of-3"},
@@ -1422,8 +1466,8 @@ function LogsTable({model, hideButtonsOption}) {
               return h("tr", {key: log.Id},
                 h("td", {}, h("input", {type: "checkbox", checked: model.selectedIds.has(log.Id), onChange: (e) => model.toggleSelect(log.Id, e.target.checked)})),
                 h("td", {},
-                  h("span", {className: "slds-truncate", title: model.userMap.get(log.LogUserId) || log.LogUserId || "-"},
-                    model.userMap.get(log.LogUserId) || log.LogUserId || "-"
+                  h("span", {className: "slds-truncate", title: model.getUserDisplayName(log.LogUserId)},
+                    model.getUserDisplayName(log.LogUserId)
                   )
                 ),
                 h("td", {},
@@ -1685,7 +1729,7 @@ function PreviewModal({model, hideButtonsOption}) {
     ),
     h("h2", {},
       h("span", {className: "slds-text-body_small"},
-        `⚠️ Large file (${(bodySize / 1024 / 1024).toFixed(2)} MB). Syntax highlighting is disabled to prevent browser crashes. Search and filtering still work.`
+        `Large file (${(bodySize / 1024 / 1024).toFixed(2)} MB). Syntax highlighting is disabled to prevent browser crashes. Search and filtering still work.`
       )
     )
   ),

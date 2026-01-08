@@ -200,7 +200,7 @@ function getFlowVersionPurgePlan(versions, historySize) {
  */
 function getFlowScannerLinks(version) {
   const npmPackage = "@flow-scanner/lightning-flow-scanner-core";
-  const githubRepo = "https://github.com/flow-scanner/lightning-flow-scanner";
+  const githubRepo = "https://github.com/Flow-Scanner/lightning-flow-scanner";
 
   if (!version || !/^\d+\.\d+\.\d+/.test(version)) {
     // Fallback to main package/repo if version is invalid

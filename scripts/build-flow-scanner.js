@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const {execSync} = require("child_process");
-const fs = require("fs");
+const fs = require("fs-extra");
 const path = require("path");
 const os = require("os");
 
@@ -52,6 +52,21 @@ function cleanupTempDir(tempDir) {
   }
 }
 
+function getLatestTag(cwd) {
+  "use strict";
+  try {
+    const tagsOutput = execSync('git tag -l "core-v*"', {cwd, encoding: "utf8"});
+    return tagsOutput
+      .trim()
+      .split(/\r?\n/)
+      .map(t => t.trim())
+      .filter(Boolean)
+      .sort((a, b) => b.localeCompare(a, undefined, {numeric: true, sensitivity: "base"}))[0];
+  } catch {
+    return null;
+  }
+}
+
 // Clone repo and checkout latest tag
 function setupRemoteRepo(tempDir) {
   "use strict";
@@ -63,31 +78,51 @@ function setupRemoteRepo(tempDir) {
   const cloneDir = path.join(tempDir, ".full-clone");
   fs.mkdirSync(cloneDir, {recursive: true});
 
-  // Get the latest tag and checkout
+  // Clone the repository (shallow clone for speed)
   execSync(`git clone --depth 1 ${repoUrl} "${cloneDir}"`, {stdio: "inherit"});
-  try {
-    const latestTag = execSync(
-      "git tag -l \"core-v*\" --sort=-v:refname | head -n 1",
-      {cwd: cloneDir, encoding: "utf8"}
-    ).trim();
-    logStep(`Checking out latest core tag: ${latestTag}`);
-    execSync(`git checkout tags/${latestTag}`, {cwd: cloneDir, stdio: "inherit"});
-    logSuccess(`Checked out tag ${latestTag}`);
-  } catch (error) {
-    log("No tags found, using default branch", "yellow");
+
+  // Fetch all tags (shallow clone doesn't include tags by default)
+  execSync("git fetch --tags --force", {cwd: cloneDir, stdio: "inherit"});
+
+  // Check if a version argument was provided (e.g. node scripts/build-flow-scanner.js 6.13.0)
+  const targetVersion = process.argv[2];
+  let tagToCheckout;
+
+  if (targetVersion) {
+    // If user provided a specific version (e.g. "6.13.0"), construct the tag (e.g. "core-v6.13.0")
+    // If they provided the full tag (e.g. "core-v6.13.0"), use it as is
+    tagToCheckout = targetVersion.startsWith("core-v") ? targetVersion : `core-v${targetVersion}`;
+    logStep(`Using specified version: ${tagToCheckout}`);
+  } else {
+    // Auto-detect latest if no version specified
+    tagToCheckout = getLatestTag(cloneDir);
+    if (tagToCheckout) {
+      logStep(`Auto-detected latest version: ${tagToCheckout}`);
+    }
   }
 
-  // Copy the entire contents of packages/core into tempDir using Node's built-in fs.cpSync
+  if (tagToCheckout) {
+    try {
+      execSync(`git checkout tags/${tagToCheckout}`, {cwd: cloneDir, stdio: "inherit"});
+      logSuccess(`Checked out tag ${tagToCheckout}`);
+    } catch (e) {
+      log(`Warning: Failed to checkout tag ${tagToCheckout}: ${e.message}. Using default branch.`, "yellow");
+    }
+  } else {
+    log("No core-v* tags found, using default branch", "yellow");
+  }
+
+  // Copy the entire contents of packages/core into tempDir using fs-extra for compatibility
   const coreSource = path.join(cloneDir, "packages", "core");
   if (!fs.existsSync(coreSource)) {
     logError("packages/core directory not found in repository");
     process.exit(1);
   }
 
-  fs.cpSync(coreSource, tempDir, { recursive: true, preserveTimestamps: true });
+  fs.copySync(coreSource, tempDir, {dereference: true});
 
   // Clean up the full clone
-  fs.rmSync(cloneDir, {recursive: true, force: true});
+  fs.removeSync(cloneDir);
 
   logSuccess("Repository cloned successfully");
 }
@@ -203,6 +238,14 @@ function main() {
   "use strict";
   log("🚀 Lightning Flow Scanner Core Build Script", "green");
   log("============================================", "green");
+
+  // Show usage information if version argument is provided
+  const targetVersion = process.argv[2];
+  if (targetVersion) {
+    log(`Building specific version: ${targetVersion}`, "blue");
+  } else {
+    log("Building latest version (use 'node scripts/build-flow-scanner.js <version>' to specify a version)", "blue");
+  }
 
   let tempDir;
 

@@ -75,6 +75,6 @@ skinparam activityBackgroundColor #D4E4FC
 `}return s}y.ASCII_ICONS=he,y.ASCII_VARIABLE_ICONS=me,y.Compiler=Y,y.DEFAULT_ICONS=se,y.DEFAULT_VARIABLE_ICONS=ne,y.Flow=_,y.FlowAttribute=C,y.FlowElement=B,y.FlowNode=E,y.FlowResource=re,y.FlowType=h,y.FlowVariable=j,y.ParsedFlow=oe,y.RuleResult=q,y.ScanResult=ye,y.Violation=g,y.exportDetails=Re,y.exportDiagram=Rt,y.exportSarif=Ce,y.fix=_e,y.getRules=pt,y.parse=gt,y.scan=Tt,Object.defineProperty(y,Symbol.toStringTag,{value:"Module"})}));
 
 // Version injection
-if (typeof window !== 'undefined' && window.lightningflowscanner) {
-  window.lightningflowscanner.version = "6.16.1";
+if (typeof window !== "undefined" && window["lightningflowscanner"]) {
+  window["lightningflowscanner"].version = "6.16.1";
 }

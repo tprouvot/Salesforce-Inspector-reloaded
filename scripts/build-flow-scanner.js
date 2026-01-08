@@ -106,10 +106,12 @@ function setupRemoteRepo(tempDir) {
       execSync(`git checkout tags/${tagToCheckout}`, {cwd: cloneDir, stdio: "inherit"});
       logSuccess(`Checked out tag ${tagToCheckout}`);
     } catch (e) {
-      log(`Warning: Failed to checkout tag ${tagToCheckout}: ${e.message}. Using default branch.`, "yellow");
+      logError(`Failed to checkout tag ${tagToCheckout}: ${e.message}`);
+      process.exit(1);
     }
   } else {
-    log("No core-v* tags found, using default branch", "yellow");
+    logError("No core-v* tags found. Aborting build.");
+    process.exit(1);
   }
 
   // Copy the entire contents of packages/core into tempDir using fs-extra for compatibility
@@ -200,13 +202,15 @@ function injectVersion(umdFilePath, version, libraryName) {
     logStep("Injecting version and library name information");
 
     // Define the library name for dynamic access in the addon
-    const libraryNameSnippet = `window.flowScannerLibraryName = "${libraryName}";\n`;
+    const libraryNameLiteral = JSON.stringify(libraryName);
+    const versionLiteral = JSON.stringify(version);
+    const libraryNameSnippet = `window.flowScannerLibraryName = ${libraryNameLiteral};\n`;
 
     // Create the version injection snippet
     const versionSnippet = `
 // Version injection
-if (typeof window !== 'undefined' && window.${libraryName}) {
-  window.${libraryName}.version = "${version}";
+if (typeof window !== "undefined" && window[${libraryNameLiteral}]) {
+  window[${libraryNameLiteral}].version = ${versionLiteral};
 }`;
 
     // Prepend library name and append the version snippet to the UMD content

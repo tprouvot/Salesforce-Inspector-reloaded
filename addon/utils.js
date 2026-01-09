@@ -24,12 +24,12 @@ export function nullToEmptyString(value) {
   return (value == null) ? "" : value;
 }
 
-export function displayButton(buttonName, hideButtonsOption){
-  const button = hideButtonsOption?.find((element) => element.name == buttonName);
-  if (button){
-    return button.checked;
+export function isOptionEnabled(optionName, optionsArray){
+  const option = optionsArray?.find((element) => element.name == optionName);
+  if (option){
+    return option.checked;
   }
-  //if no option was found, display the button
+  //if no option was found, enable by default
   return true;
 }
 

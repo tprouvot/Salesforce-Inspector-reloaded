@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, displayButton, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -591,7 +591,7 @@ class App extends React.PureComponent {
               },
               h("strong", {}, "Platform Tools")
             ),
-            displayButton("org-limits", hideButtonsOption)
+            isOptionEnabled("org-limits", hideButtonsOption)
               ? h(
                 "div",
                 {
@@ -611,7 +611,7 @@ class App extends React.PureComponent {
                 )
               )
               : null,
-            displayButton("explore-api", hideButtonsOption)
+            isOptionEnabled("explore-api", hideButtonsOption)
               ? h(
                 "div",
                 {
@@ -679,7 +679,7 @@ class App extends React.PureComponent {
               },
               h("strong", {}, "Management")
             ),
-            displayButton("generate-token", hideButtonsOption)
+            isOptionEnabled("generate-token", hideButtonsOption)
               ? h(
                 "div",
                 {
@@ -742,7 +742,7 @@ class App extends React.PureComponent {
                 h("span", {}, "Salesforce ", h("u", {}, "H"), "ome")
               )
             ),
-            displayButton("options", hideButtonsOption)
+            isOptionEnabled("options", hideButtonsOption)
               ? h(
                 "div",
                 {
@@ -2901,7 +2901,7 @@ class UserDetails extends React.PureComponent {
     this.state = {};
   }
 
-  showSuccessToast(operation, message) {
+  showSuccessToast(operation, message, link) {
     const {showToast} = this.props;
     if (showToast) {
       showToast({
@@ -2909,21 +2909,24 @@ class UserDetails extends React.PureComponent {
         bannerText: operation,
         iconName: "success",
         assistiveTest: `${operation} completed successfully`,
-        link: {
+        link: link || {
           text: message || `${operation} completed successfully`,
         },
       });
     }
   }
 
-  showErrorToast(operation) {
+  showErrorToast(operation, message) {
     const {showToast} = this.props;
     if (showToast) {
       showToast({
         type: "error",
         bannerText: `${operation} Failed`,
         iconName: "error",
-        link: {
+        assistiveTest: `Failed to ${operation.toLowerCase()}`,
+        link: message ? {
+          text: message,
+        } : {
           text: null,
         },
       });
@@ -2942,57 +2945,90 @@ class UserDetails extends React.PureComponent {
     let {user} = this.props;
     const DTnow = new Date(Date.now());
 
-    //Enable debug level and expiration time (minutes) as default parameters.
-    let debugLogDebugLevel = localStorage.getItem(
-      this.sfHost + "_debugLogDebugLevel"
-    );
-    if (debugLogDebugLevel == null) {
-      localStorage.setItem(
-        this.sfHost + "_debugLogDebugLevel",
-        "SFDC_DevConsole"
+    // Disable the button immediately
+    this.setState({
+      [`enableDebugLogDisabled_${user.Id}`]: true
+    });
+
+    try {
+      //Enable debug level and expiration time (minutes) as default parameters.
+      let debugLogDebugLevel = localStorage.getItem(
+        this.sfHost + "_debugLogDebugLevel"
       );
-    }
-
-    let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");
-    if (debugLogTimeMinutes == null) {
-      localStorage.setItem("debugLogTimeMinutes", 15);
-    }
-    let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
-
-    let traceFlags = await this.getTraceFlags(
-      user.Id,
-      DTnow,
-      debugLogDebugLevel,
-      debugTimeInMs
-    );
-    /*If an old trace flag is found on the user and with this debug level
-     *Update the trace flag extending the experiation date.
-     */
-    if (traceFlags.size > 0) {
-      this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
-      //Else create new trace flag
-    } else {
-      let debugLog = await this.getDebugLog(debugLogDebugLevel);
-
-      if (debugLog && debugLog.size > 0) {
-        this.insertTraceFlag(
-          user.Id,
-          debugLog.records[0].Id,
-          DTnow,
-          debugTimeInMs
-        );
-      } else {
-        throw new Error(
-          'Debug Level with developerName = "'
-            + debugLogDebugLevel
-            + '" not found'
+      if (debugLogDebugLevel == null) {
+        localStorage.setItem(
+          this.sfHost + "_debugLogDebugLevel",
+          "SFDC_DevConsole"
         );
       }
+
+      let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");
+      if (debugLogTimeMinutes == null) {
+        localStorage.setItem("debugLogTimeMinutes", 15);
+      }
+      let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
+
+      let traceFlags = await this.getTraceFlags(
+        user.Id,
+        DTnow,
+        debugLogDebugLevel,
+        debugTimeInMs
+      );
+      /*If an old trace flag is found on the user and with this debug level
+       *Update the trace flag extending the experiation date.
+       */
+      if (traceFlags.size > 0) {
+        await this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
+        //Else create new trace flag
+      } else {
+        let debugLog = await this.getDebugLog(debugLogDebugLevel);
+
+        if (debugLog && debugLog.size > 0) {
+          await this.insertTraceFlag(
+            user.Id,
+            debugLog.records[0].Id,
+            DTnow,
+            debugTimeInMs
+          );
+        } else {
+          throw new Error(
+            'Debug Level with developerName = "'
+              + debugLogDebugLevel
+              + '" not found'
+          );
+        }
+      }
+      // Update button state to show it's enabled
+      this.setState({
+        [`enableDebugLogEnabled_${user.Id}`]: true,
+        [`enableDebugLogDisabled_${user.Id}`]: false
+      });
+      this.showSuccessToast(
+        "Debug logs enabled successfully",
+        null,
+        {
+          props: {
+            href: "#",
+            onClick: (e) => {
+              e.preventDefault();
+              browser.runtime.sendMessage({message: "reloadPage"});
+            },
+            className: "slds-text-link",
+          },
+          text: "Reload page",
+        }
+      );
+    } catch (err) {
+      console.log("Error during debug log activation", err);
+      // Re-enable button on error so user can retry
+      this.setState({
+        [`enableDebugLogDisabled_${user.Id}`]: false
+      });
+      this.showErrorToast(
+        "Enable Debug Log",
+        err.message || "An error occurred"
+      );
     }
-    //Disable button after executing.
-    const element = document.querySelector("#enableDebugLog");
-    element.setAttribute("disabled", true);
-    element.text = "Logs Enabled";
   }
 
   toggleDisplay(event, refKey) {
@@ -3249,21 +3285,64 @@ class UserDetails extends React.PureComponent {
   }
 
   enableDebugMode(user) {
+    const currentDebugMode = this.state[`userDebugMode_${user.Id}`] !== undefined
+      ? this.state[`userDebugMode_${user.Id}`]
+      : user.UserPreferencesUserDebugModePref;
+    const action = currentDebugMode ? "Disable" : "Enable";
+
+    // Disable the button immediately
+    this.setState({
+      [`enableDebugModeDisabled_${user.Id}`]: true
+    });
+
     sfConn
       .rest("/services/data/v" + apiVersion + "/sobjects/User/" + user.Id, {
         method: "PATCH",
         body: {
-          UserPreferencesUserDebugModePref:
-            !user.UserPreferencesUserDebugModePref,
+          UserPreferencesUserDebugModePref: !currentDebugMode,
         },
       })
-      .then(() => browser.runtime.sendMessage({message: "reloadPage"}))
-      .catch((err) =>
-        console.log("Error during user debug mode activation", err)
-      );
+      .then(() => {
+        // Update local state to reflect the new debug mode status
+        this.setState({
+          [`userDebugMode_${user.Id}`]: !currentDebugMode,
+          [`enableDebugModeDisabled_${user.Id}`]: false
+        });
+        this.showSuccessToast(
+          `Debug mode ${action.toLowerCase()}d successfully`,
+          null,
+          {
+            props: {
+              href: "#",
+              onClick: (e) => {
+                e.preventDefault();
+                browser.runtime.sendMessage({message: "reloadPage"});
+              },
+              className: "slds-text-link",
+            },
+            text: "Reload page",
+          }
+        );
+      })
+      .catch((err) => {
+        console.log("Error during user debug mode activation", err);
+        // Re-enable button on error so user can retry
+        this.setState({
+          [`enableDebugModeDisabled_${user.Id}`]: false
+        });
+        this.showErrorToast(
+          `${action} Debug Mode`,
+          err.message || "An error occurred"
+        );
+      });
   }
 
   unfreezeUser(user) {
+    // Disable the button immediately
+    this.setState({
+      [`unfreezeUserDisabled_${user.Id}`]: true
+    });
+
     sfConn
       .rest(
         "/services/data/v" + apiVersion + "/sobjects/UserLogin/" + user.UserLogins?.records?.[0]?.Id,
@@ -3274,12 +3353,36 @@ class UserDetails extends React.PureComponent {
       )
       .then(() => {
         this.showSuccessToast(
-          "User Unfreeze",
-          `User ${user.Name} has been unfrozen successfully`
+          `User ${user.Name} has been unfrozen successfully`,
+          null,
+          {
+            props: {
+              href: "#",
+              onClick: (e) => {
+                e.preventDefault();
+                browser.runtime.sendMessage({message: "reloadPage"});
+              },
+              className: "slds-text-link",
+            },
+            text: "Reload page",
+          }
         );
-        browser.runtime.sendMessage({message: "reloadPage"});
+        // Re-enable button after success
+        this.setState({
+          [`unfreezeUserDisabled_${user.Id}`]: false
+        });
       })
-      .catch((err) => this.showErrorToast("User Unfreeze", err));
+      .catch((err) => {
+        console.log("Error during user unfreeze", err);
+        // Re-enable button on error so user can retry
+        this.setState({
+          [`unfreezeUserDisabled_${user.Id}`]: false
+        });
+        this.showErrorToast(
+          "User Unfreeze",
+          err.message || "An error occurred"
+        );
+      });
   }
 
   async resetUserPassword(user) {
@@ -3377,7 +3480,7 @@ class UserDetails extends React.PureComponent {
                     title: "Show all data",
                   },
                   user.Id,
-                  displayButton("copy-userId", hideButtonsOption)
+                  isOptionEnabled("copy-userId", hideButtonsOption)
                     ? h("span", {
                       className: "sfir-copy-userid-icon",
                       title: "Copy to clipboard",
@@ -3526,7 +3629,7 @@ class UserDetails extends React.PureComponent {
           },
           "PSetG"
         ),
-        displayButton("reset-password", hideButtonsOption) && user.Id !== currentUserId
+        isOptionEnabled("reset-password", hideButtonsOption) && user.Id !== currentUserId
           ? h(
             "button",
             {
@@ -3543,8 +3646,21 @@ class UserDetails extends React.PureComponent {
       //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
       user.UserLogins?.records?.[0]?.IsFrozen
         ? h("div", {className: "user-buttons center small-font slds-m-top_x-small"},
-          h("a", {id: "unfreezeUser", className: "slds-button slds-button_neutral", onClick: () => this.unfreezeUser(user)},
-            h("span", {className: "slds-truncate", title: "Unfreeze User Login"}, "Unfreeze")
+          h("a", {
+            href: "#",
+            id: "unfreezeUser",
+            className: "slds-button slds-button_neutral",
+            disabled: this.state[`unfreezeUserDisabled_${user.Id}`] || false,
+            onClick: (e) => {
+              if (this.state[`unfreezeUserDisabled_${user.Id}`]) {
+                e.preventDefault();
+                return;
+              }
+              this.unfreezeUser(user);
+            },
+            title: "Unfreeze User Login"
+          },
+          h("span", {className: "slds-truncate"}, "Unfreeze")
           )
         )
         : h(
@@ -3559,24 +3675,48 @@ class UserDetails extends React.PureComponent {
             {
               href: "#",
               id: "enableDebugLog",
-              disabled: false,
-              onClick: this.enableDebugLog,
+              onClick: (e) => {
+                if (this.state[`enableDebugLogDisabled_${user.Id}`]) {
+                  e.preventDefault();
+                  return;
+                }
+                this.enableDebugLog();
+              },
               className: "slds-button slds-button_neutral",
-              title: "Enable user debug log",
+              disabled: this.state[`enableDebugLogDisabled_${user.Id}`] || false,
+              title: this.state[`enableDebugLogEnabled_${user.Id}`] ? "Logs enabled" : "Enable user debug log",
             },
-            "Enable Logs"
+            this.state[`enableDebugLogEnabled_${user.Id}`] ? "Logs Enabled" : "Enable Logs"
           ),
           h(
             "a",
             {
+              href: "#",
               id: "enableDebugMode",
-              onClick: () => this.enableDebugMode(user),
+              onClick: (e) => {
+                if (this.state[`enableDebugModeDisabled_${user.Id}`]) {
+                  e.preventDefault();
+                  return;
+                }
+                this.enableDebugMode(user);
+              },
               className: "slds-button slds-button_neutral",
-              title:
-                  user.debugModeActionLabel
-                  + " Debug Mode for Lightning Components",
+              disabled: this.state[`enableDebugModeDisabled_${user.Id}`] || false,
+              title: (() => {
+                const currentDebugMode = this.state[`userDebugMode_${user.Id}`] !== undefined
+                  ? this.state[`userDebugMode_${user.Id}`]
+                  : user.UserPreferencesUserDebugModePref;
+                const actionLabel = currentDebugMode ? "Disable" : "Enable";
+                return actionLabel + " Debug Mode for Lightning Components";
+              })(),
             },
-            user.debugModeActionLabel + " Debug Mode"
+            (() => {
+              const currentDebugMode = this.state[`userDebugMode_${user.Id}`] !== undefined
+                ? this.state[`userDebugMode_${user.Id}`]
+                : user.UserPreferencesUserDebugModePref;
+              const actionLabel = currentDebugMode ? "Disable" : "Enable";
+              return actionLabel + " Debug Mode";
+            })()
           )
         ),
       this.doSupportLoginAs(user)
@@ -3872,7 +4012,7 @@ class AllDataSelection extends React.PureComponent {
             h(
               "div",
               {className: "slds-card__body"},
-              selectedValue.sobject.isEverCreatable && displayButton("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e")
+              selectedValue.sobject.isEverCreatable && isOptionEnabled("new", hideButtonsOption) && !selectedValue.sobject.name.endsWith("__e")
                 ? h("a", {
                   ref: "showNewBtn",
                   href: this.getNewObjectUrl(sfHost, selectedValue.sobject.newUrl),

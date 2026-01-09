@@ -1,6 +1,6 @@
 /* global React ReactDOM initButton */
 import {sfConn, apiVersion} from "./inspector.js";
-import {UserInfoModel, createSpinForMethod, PromptTemplate, Constants, displayButton} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, PromptTemplate, Constants, isOptionEnabled} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import Toast from "./components/Toast.js";
@@ -42,7 +42,7 @@ class Model {
     };
 
     // Users cache for picklist and table rendering
-    this.userMap = new Map(); // id -> name
+    this.userMap = new Map(); // id -> {name, profileName}
     this.userOptions = []; // [{id, name}]
     this.resolvingUsers = new Set(); // avoid duplicate fetches for names
 
@@ -53,17 +53,26 @@ class Model {
     // Log bodies cache (logId -> body text) for searching
     this.logBodies = new Map();
 
-    // Column widths (fixed, no resizing)
-    this.columnWidths = {
-      user: 150,
-      action: 150,
-      operation: 250,
-      request: 90,
-      start: 140,
+    // Column widths - load from localStorage or use defaults (in pixels for precise resizing)
+    const savedWidths = localStorage.getItem(this.sfHost + "_debugLogColumnWidths");
+    this.columnWidths = savedWidths ? JSON.parse(savedWidths) : {
+      checkbox: 50,
+      user: 180,
+      operation: 180,
+      request: 100,
+      start: 160,
       status: 100,
-      size: 90,
-      actions: 260
+      action: 180,
+      size: 100,
+      actions: 180
     };
+
+    // Column resize state
+    this.resizing = null; // {column: string, startX: number, startWidth: number}
+
+    // Bind resize handlers
+    this._onResizeMove = this.onResizeMove.bind(this);
+    this._onResizeEnd = this.onResizeEnd.bind(this);
 
     // Pagination for lazy loading
     const savedPageSize = parseInt(localStorage.getItem("debugLogPageSize"), 10);
@@ -103,9 +112,15 @@ class Model {
     const savedFetchBodies = localStorage.getItem("debugLogFetchBodies");
     this.fetchLogBodies = savedFetchBodies === null ? true : JSON.parse(savedFetchBodies);
     this.fetchBodiesSearchTerm = ""; // Search term for filtering logs when fetching bodies
+
+    // Toggle for showing profile names as suffix (read from options)
+    const savedShowProfileNames = localStorage.getItem("debugLogShowProfileNames");
+    this.showProfileNames = savedShowProfileNames === null ? false : JSON.parse(savedShowProfileNames);
   }
 
   didUpdate() {
+    // Check if showProfileNames option changed in options page
+    this.updateShowProfileNames();
     this.render();
   }
 
@@ -279,6 +294,8 @@ Please structure your response in a clear, organized manner using these sections
 
   async init() {
     await sfConn.getSession(this.sfHost);
+    // Update showProfileNames from localStorage (in case it was changed in options)
+    this.updateShowProfileNames();
     await this.populatePicklistFromAllLogs();
     await this.fetchLogs(true);
   }
@@ -287,25 +304,30 @@ Please structure your response in a clear, organized manner using these sections
     this.spinnerCount++;
     try {
       // Gather all distinct LogUserId and LogUser.Name from all logs (no filters)
-      // Using relationship query to get both ID and Name in a single query
+      // Using relationship query to get both ID, Name, and Profile.Name in a single query
       const map = new Map();
-      let url = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent("SELECT LogUserId, LogUser.Name FROM ApexLog WHERE LogUserId != null");
+      let url = `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent("SELECT LogUserId, LogUser.Name, LogUser.Profile.Name FROM ApexLog WHERE LogUserId != null");
       while (url) {
         const res = await sfConn.rest(url);
         (res.records || []).forEach(r => {
           if (r.LogUserId && r.LogUser) {
             // LogUser.Name might be null if user doesn't exist, but LogUserId is still valid
             const userName = r.LogUser.Name || r.LogUserId;
-            map.set(r.LogUserId, userName);
+            const profileName = r.LogUser.Profile && r.LogUser.Profile.Name ? r.LogUser.Profile.Name : null;
+            map.set(r.LogUserId, {name: userName, profileName});
           } else if (r.LogUserId) {
             // Fallback: if LogUser relationship is null but LogUserId exists, use ID as name
-            map.set(r.LogUserId, r.LogUserId);
+            map.set(r.LogUserId, {name: r.LogUserId, profileName: null});
           }
         });
         url = res.nextRecordsUrl || null;
       }
-      this.userMap = map;
-      this.userOptions = Array.from(map, ([id, name]) => ({id, name})).sort((a, b) => a.name.localeCompare(b.name));
+      // Merge into existing userMap to avoid losing known users
+      const merged = new Map(this.userMap);
+      for (const [id, user] of map) merged.set(id, user);
+      this.userMap = merged;
+      this.userOptions = Array.from(merged, ([id, user]) => ({id, name: user.name})).sort((a, b) => a.name.localeCompare(b.name));
+
       this.didUpdate();
     } catch (e) {
       console.error("populatePicklistFromAllLogs.root", e);
@@ -339,7 +361,7 @@ Please structure your response in a clear, organized manner using these sections
       "Request": "Request",
       "Start Time": "StartTime",
       "Status": "Status",
-      "Size (KB)": "LogLength"
+      "Size (MB)": "LogLength"
     };
 
     const sortField = columnMap[column];
@@ -370,8 +392,11 @@ Please structure your response in a clear, organized manner using these sections
 
       // Handle derived fields
       if (sortField === "LogUserId") {
-        aVal = this.userMap.get(aVal) || aVal || "";
-        bVal = this.userMap.get(bVal) || bVal || "";
+        // Use display name for sorting (without profile suffix for consistent sorting)
+        const aUser = this.userMap.get(aVal);
+        const bUser = this.userMap.get(bVal);
+        aVal = aUser ? aUser.name : aVal || "";
+        bVal = bUser ? bUser.name : bVal || "";
       } else if (sortField === "Operation") {
         aVal = (this.actionSummary.get(a.Id)?.label) || aVal || "";
         bVal = (this.actionSummary.get(b.Id)?.label) || bVal || "";
@@ -402,7 +427,10 @@ Please structure your response in a clear, organized manner using these sections
     });
   }
 
+  // eslint-disable-next-line no-unused-vars
   async fetchLogs(rebuildUsers = false, reset = true) {
+    // Note: rebuildUsers parameter is kept for backward compatibility but no longer used
+    // User information is loaded once at init by populatePicklistFromAllLogs()
     this.spinnerCount++;
     try {
       if (reset) {
@@ -429,10 +457,8 @@ Please structure your response in a clear, organized manner using these sections
         this.actionSummary.set(l.Id, base);
       }
 
-      // Rebuild users list (names + picklist) only when resetting or filters changed
-      if (rebuildUsers) {
-        await this.buildUsersFromLogs(this.logs);
-      }
+      // Note: User information is already loaded by populatePicklistFromAllLogs() at init
+      // Individual missing users are resolved on-demand by ensureUserName()
 
       // If we reset (filters changed), also fetch the total count with identical filters
       if (reset) {
@@ -474,42 +500,6 @@ Please structure your response in a clear, organized manner using these sections
     }
   }
 
-  async buildUsersFromLogs(logs) {
-    // Collect unique user ids from logs
-    const ids = Array.from(new Set((logs || []).map(l => l.LogUserId).filter(Boolean)));
-    if (ids.length === 0) {
-      // Keep existing options; just clear map for missing logs is not helpful, so do not wipe picklist
-      return;
-    }
-
-    const idChunks = [];
-    for (let i = 0; i < ids.length; i += 200) idChunks.push(ids.slice(i, i + 200));
-    const map = new Map();
-    for (const chunk of idChunks) {
-      const soql = `SELECT Id, Name FROM User WHERE Id IN (${chunk.map(id => `'${id}'`).join(",")})`;
-      try {
-        const res = await sfConn.rest(`/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(soql));
-        (res.records || []).forEach(u => map.set(u.Id, u.Name));
-      } catch (e) {
-        console.error("buildUsersFromLogs", e);
-      }
-    }
-    // Merge into existing userMap to avoid losing known users
-    const merged = new Map(this.userMap);
-    for (const [id, name] of map) merged.set(id, name);
-    this.userMap = merged;
-
-    // Only initialize or extend picklist; never shrink it based on current logs
-    if (!Array.isArray(this.userOptions) || this.userOptions.length === 0) {
-      this.userOptions = Array.from(merged, ([id, name]) => ({id, name})).sort((a, b) => a.name.localeCompare(b.name));
-    } else {
-      const existingIds = new Set(this.userOptions.map(o => o.id));
-      const additions = Array.from(map, ([id, name]) => ({id, name})).filter(o => !existingIds.has(o.id));
-      if (additions.length) {
-        this.userOptions = this.userOptions.concat(additions).sort((a, b) => a.name.localeCompare(b.name));
-      }
-    }
-  }
 
   async resolveActionsFromBodiesLimited(limit = 50) {
     const slice = this.logs.slice(0, limit);
@@ -558,12 +548,14 @@ Please structure your response in a clear, organized manner using these sections
     this.resolvingUsers.add(id);
     (async () => {
       try {
-        const soql = `SELECT Id, Name FROM User WHERE Id='${id}'`;
+        // Always include Profile.Name in query
+        const soql = `SELECT Id, Name, Profile.Name FROM User WHERE Id='${id}'`;
         const res = await sfConn.rest(`/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(soql));
         const rec = (res.records || [])[0];
         if (rec && rec.Id) {
-          // update map
-          this.userMap.set(rec.Id, rec.Name);
+          // update map with user object
+          const profileName = rec.Profile && rec.Profile.Name ? rec.Profile.Name : null;
+          this.userMap.set(rec.Id, {name: rec.Name, profileName});
           // extend picklist options without shrinking
           if (!this.userOptions.find(o => o.id === rec.Id)) {
             this.userOptions = this.userOptions.concat([{id: rec.Id, name: rec.Name}]).sort((a, b) => a.name.localeCompare(b.name));
@@ -916,12 +908,12 @@ Please structure your response in a clear, organized manner using these sections
   nextPage() {
     if (!this.hasMore) return;
     this.pageIndex++;
-    this.fetchLogs(true, false); // rebuild users for the new page
+    this.fetchLogs(false, false);
   }
   prevPage() {
     if (this.pageIndex === 0) return;
     this.pageIndex--;
-    this.fetchLogs(true, false); // rebuild users for the new page
+    this.fetchLogs(false, false);
   }
 
   setPageSize(size) {
@@ -943,6 +935,7 @@ Please structure your response in a clear, organized manner using these sections
     this.didUpdate();
   }
 
+
   getFilteredLogs() {
     // If search is disabled or no search term, return all logs
     if (!this.fetchLogBodies || !this.fetchBodiesSearchTerm || this.fetchBodiesSearchTerm.trim() === "") {
@@ -958,6 +951,57 @@ Please structure your response in a clear, organized manner using these sections
       }
       return body.toLowerCase().includes(searchTerm);
     });
+  }
+
+  getUserDisplayName(userId) {
+    const user = this.userMap.get(userId);
+    if (!user) return userId || "-";
+    if (!this.showProfileNames) {
+      return user.name;
+    }
+    return user.profileName ? `${user.name} (${user.profileName})` : user.name;
+  }
+
+  // Note: Option is managed in options.js, this method reads from localStorage
+  updateShowProfileNames() {
+    const savedShowProfileNames = localStorage.getItem("debugLogShowProfileNames");
+    const newValue = savedShowProfileNames === null ? false : JSON.parse(savedShowProfileNames);
+    if (this.showProfileNames !== newValue) {
+      this.showProfileNames = newValue;
+      // Profile names are already fetched, just need to update display
+      this.didUpdate();
+    }
+  }
+
+  // Column resizing methods
+  startResize(columnKey, e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.resizing = {
+      column: columnKey,
+      startX: e.pageX,
+      startWidth: this.columnWidths[columnKey]
+    };
+    document.addEventListener("mousemove", this._onResizeMove);
+    document.addEventListener("mouseup", this._onResizeEnd);
+  }
+
+  onResizeMove(e) {
+    if (!this.resizing) return;
+    const delta = e.pageX - this.resizing.startX;
+    const newWidth = Math.max(50, this.resizing.startWidth + delta);
+    this.columnWidths[this.resizing.column] = newWidth;
+    this.didUpdate();
+  }
+
+  onResizeEnd() {
+    if (this.resizing) {
+      // Save to localStorage
+      localStorage.setItem(this.sfHost + "_debugLogColumnWidths", JSON.stringify(this.columnWidths));
+      this.resizing = null;
+    }
+    document.removeEventListener("mousemove", this._onResizeMove);
+    document.removeEventListener("mouseup", this._onResizeEnd);
   }
 }
 
@@ -1216,14 +1260,14 @@ class SldsPicklist extends React.Component {
 function Filters({model}) {
   const onUserPick = (val) => {
     model.filters.userId = val;
-    model.fetchLogs(true); // rebuild users to resolve names; picklist stays intact (we don't shrink it)
+    model.fetchLogs(true);
   };
   const onStartChange = (e) => { model.filters.start = e.target.value; };
   const onEndChange = (e) => { model.filters.end = e.target.value; };
   const apply = (e) => { e.preventDefault(); model.fetchLogs(true); };
   const reset = (e) => { e.preventDefault(); model.filters = {userId: "", start: "", end: ""}; model.fetchLogs(true); };
 
-  const userOptions = [{value: "", label: "All users"}, ...model.userOptions.map(u => ({value: u.id, label: u.name}))];
+  const userOptions = [{value: "", label: "All users"}, ...model.userOptions.map(u => ({value: u.id, label: model.getUserDisplayName(u.id)}))];
 
   return h("form", {className: "slds-grid slds-gutters slds-m-bottom_small slds-m-top_xx-large slds-size_xx-large", onSubmit: apply},
     h("div", {className: "slds-col slds-size_1-of-3"},
@@ -1250,22 +1294,44 @@ function LogsTable({model, hideButtonsOption}) {
   const cw = model.columnWidths;
 
   // Helper to render sortable column header
-  const renderSortableHeader = (label, soqlColumn) => {
+  const renderSortableHeader = (label, soqlColumn, columnKey) => {
     const isSorted = model.sortColumn === soqlColumn;
     const isAsc = isSorted && model.sortDirection === "ASC";
     const sortClass = isSorted ? (isAsc ? "slds-is-sorted slds-is-sorted_asc" : "slds-is-sorted") : "";
 
     return h("th", {
-      className: `slds-is-sortable ${sortClass}`,
-      scope: "col",
+      className: `slds-is-sortable slds-is-resizable ${sortClass}`,
+      scope: "col"
+    },
+    h("a", {
+      className: "slds-th__action slds-text-link_reset",
+      role: "button",
+      tabIndex: "0",
       onClick: () => model.handleSort(label)
     },
-    h("div", {className: "slds-grid slds-grid_align-spread"},
-      h("span", {className: "slds-truncate"}, label),
-      h("span", {className: `slds-icon_container slds-is-sortable__icon ${isSorted ? "" : "slds-is-sortable__icon-always"}`, title: isSorted ? (isAsc ? "Sorted ascending" : "Sorted descending") : "Sort"},
+    h("span", {className: "slds-assistive-text"}, "Sort by "),
+    h("div", {className: "slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate"},
+      h("span", {className: "slds-truncate", title: label}, label),
+      h("span", {className: `slds-icon_container slds-icon-utility-arrowdown ${isSorted ? "" : "slds-is-sortable__icon"}`, title: isSorted ? (isAsc ? "Sorted ascending" : "Sorted descending") : "Sort"},
         h("svg", {className: "slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
           h("use", {xlinkHref: "symbols.svg#arrowdown"})
         )
+      )
+    )
+    ),
+    h("div", {className: "slds-resizable"},
+      h("input", {
+        type: "range",
+        className: "slds-resizable__input slds-assistive-text",
+        min: "20",
+        max: "1000",
+        "aria-label": `${label} column width`
+      }),
+      h("span", {
+        className: "slds-resizable__handle",
+        onMouseDown: (e) => model.startResize(columnKey, e)
+      },
+      h("span", {className: "slds-resizable__divider"})
       )
     )
     );
@@ -1387,31 +1453,67 @@ function LogsTable({model, hideButtonsOption}) {
     ),
     h("div", {className: "slds-card__body"},
       h("div", {className: "slds-scrollable_x sfir-logs-table-container"},
-        h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped sfir-logs-table"},
+        h("table", {className: "slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped slds-table_fixed-layout sfir-logs-table"},
           h("colgroup", {},
-            h("col", {style: {width: 44}}),
-            h("col", {style: {width: cw.user}}),
-            h("col", {style: {width: cw.operation}}),
-            h("col", {style: {width: cw.request}}),
-            h("col", {style: {width: cw.start}}),
-            h("col", {style: {width: cw.status}}),
-            h("col", {style: {width: cw.action}}),
-            h("col", {style: {width: cw.size}}),
-            h("col", {style: {width: cw.actions}})
+            h("col", {style: {width: `${cw.checkbox}px`}}),
+            h("col", {style: {width: `${cw.user}px`}}),
+            h("col", {style: {width: `${cw.operation}px`}}),
+            h("col", {style: {width: `${cw.request}px`}}),
+            h("col", {style: {width: `${cw.start}px`}}),
+            h("col", {style: {width: `${cw.status}px`}}),
+            h("col", {style: {width: `${cw.action}px`}}),
+            h("col", {style: {width: `${cw.size}px`}}),
+            h("col", {style: {width: `${cw.actions}px`}})
           ),
           h("thead", {},
             h("tr", {},
-              h("th", {},
-                h("input", {type: "checkbox", checked: allChecked, onChange: (e) => model.toggleSelectAll(e.target.checked)})
+              h("th", {className: "slds-is-resizable", scope: "col"},
+                h("div", {className: "slds-th__action"},
+                  h("input", {type: "checkbox", checked: allChecked, onChange: (e) => model.toggleSelectAll(e.target.checked)})
+                ),
+                h("div", {className: "slds-resizable"},
+                  h("input", {
+                    type: "range",
+                    className: "slds-resizable__input slds-assistive-text",
+                    min: "20",
+                    max: "1000",
+                    "aria-label": "Checkbox column width"
+                  }),
+                  h("span", {
+                    className: "slds-resizable__handle",
+                    onMouseDown: (e) => model.startResize("checkbox", e)
+                  },
+                  h("span", {className: "slds-resizable__divider"})
+                  )
+                )
               ),
-              renderSortableHeader("User", "LogUserId"),
-              renderSortableHeader("Operation", "Operation"),
-              renderSortableHeader("Request", "Request"),
-              renderSortableHeader("Start Time", "StartTime"),
-              renderSortableHeader("Status", "Status"),
-              renderSortableHeader("Action", "Operation"),
-              renderSortableHeader("Size (KB)", "LogLength"),
-              h("th", {"aria-label": "Row actions"})
+              renderSortableHeader("User", "LogUserId", "user"),
+              renderSortableHeader("Operation", "Operation", "operation"),
+              renderSortableHeader("Request", "Request", "request"),
+              renderSortableHeader("Start Time", "StartTime", "start"),
+              renderSortableHeader("Status", "Status", "status"),
+              renderSortableHeader("Action", "Operation", "action"),
+              renderSortableHeader("Size (MB)", "LogLength", "size"),
+              h("th", {className: "slds-is-resizable", scope: "col", "aria-label": "Row actions"},
+                h("div", {className: "slds-th__action"},
+                  h("span", {className: "slds-assistive-text"}, "Actions")
+                ),
+                h("div", {className: "slds-resizable"},
+                  h("input", {
+                    type: "range",
+                    className: "slds-resizable__input slds-assistive-text",
+                    min: "20",
+                    max: "1000",
+                    "aria-label": "Actions column width"
+                  }),
+                  h("span", {
+                    className: "slds-resizable__handle",
+                    onMouseDown: (e) => model.startResize("actions", e)
+                  },
+                  h("span", {className: "slds-resizable__divider"})
+                  )
+                )
+              )
             )
           ),
           h("tbody", {},
@@ -1419,28 +1521,44 @@ function LogsTable({model, hideButtonsOption}) {
               model.ensureActionDerived(log);
               model.ensureUserName(log.LogUserId);
               return h("tr", {key: log.Id},
-                h("td", {}, h("input", {type: "checkbox", checked: model.selectedIds.has(log.Id), onChange: (e) => model.toggleSelect(log.Id, e.target.checked)})),
-                h("td", {style: {width: cw.user}}, model.userMap.get(log.LogUserId) || log.LogUserId || "-"),
-                h("td", {style: {width: cw.operation}, className: "slds-scrollable_x"},
+                h("td", {role: "gridcell"},
+                  h("input", {type: "checkbox", checked: model.selectedIds.has(log.Id), onChange: (e) => model.toggleSelect(log.Id, e.target.checked)})
+                ),
+                h("td", {role: "gridcell"},
+                  h("span", {className: "slds-truncate", title: model.getUserDisplayName(log.LogUserId)},
+                    model.getUserDisplayName(log.LogUserId)
+                  )
+                ),
+                h("td", {role: "gridcell"},
                   h("span", {className: "slds-truncate", title: log.Operation || "-"}, log.Operation || "-")
                 ),
-                h("td", {style: {width: cw.request}, className: "slds-scrollable_x"},
+                h("td", {role: "gridcell"},
                   h("span", {className: "slds-truncate", title: log.Request || "-"}, log.Request || "-")
                 ),
-                h("td", {style: {width: cw.start}}, new Date(log.StartTime).toLocaleString()),
-                h("td", {style: {width: cw.status}},
-                  h("div", {className: "slds-scrollable_y slds-text-body_small sfir-log-status-cell"},
+                h("td", {role: "gridcell"},
+                  h("span", {className: "slds-truncate", title: new Date(log.StartTime).toLocaleString()},
+                    new Date(log.StartTime).toLocaleString()
+                  )
+                ),
+                h("td", {role: "gridcell"},
+                  h("span", {className: "slds-truncate", title: log.Status || "-"},
                     log.Status || "-"
                   )
                 ),
-                h("td", {style: {width: cw.action}, className: "slds-scrollable_x"},
+                h("td", {role: "gridcell"},
                   (() => {
                     const label = (model.actionSummary.get(log.Id) || parseAction(log.Operation)).label;
                     return h("span", {className: "slds-truncate", title: label}, label);
                   })()
                 ),
-                h("td", {style: {width: cw.size}}, (log.LogLength / 1024).toFixed(2)),
-                h("td", {style: {width: cw.actions}},
+                h("td", {role: "gridcell"},
+                  (() => {
+                    const sizeMB = log.LogLength / (1024 * 1024);
+                    const formatted = sizeMB < 1 ? sizeMB.toFixed(2) : sizeMB.toFixed(1);
+                    return h("span", {className: "slds-truncate", title: `${formatted} MB`}, `${formatted} MB`);
+                  })()
+                ),
+                h("td", {role: "gridcell"},
                   h("div", {className: "slds-button_group sfir-actions sfir-log-actions-group", role: "group"},
                     h("button", {type: "button", className: "slds-button slds-button_neutral", onClick: () => model.preview(log.Id)},
                       h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#search"})),
@@ -1451,7 +1569,7 @@ function LogsTable({model, hideButtonsOption}) {
                       h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#download"}))
                     ),
                     // Share: icon-only button, sends the file (no truncated body) (conditional)
-                    displayButton("share-logs", hideButtonsOption) && h("button", {type: "button", className: "slds-button slds-button_neutral", title: "Share", onClick: () => model.share(log.Id)},
+                    isOptionEnabled("share-logs", hideButtonsOption) && h("button", {type: "button", className: "slds-button slds-button_neutral", title: "Share", onClick: () => model.share(log.Id)},
                       h("svg", {className: "slds-button__icon", "aria-hidden": "true"}, h("use", {xlinkHref: "symbols.svg#share"}))
                     ),
                     // Delete: icon-only button, same size as Share
@@ -1670,7 +1788,7 @@ function PreviewModal({model, hideButtonsOption}) {
     ),
     h("h2", {},
       h("span", {className: "slds-text-body_small"},
-        `⚠️ Large file (${(bodySize / 1024 / 1024).toFixed(2)} MB). Syntax highlighting is disabled to prevent browser crashes. Search and filtering still work.`
+        `Large file (${(bodySize / 1024 / 1024).toFixed(2)} MB). Syntax highlighting is disabled to prevent browser crashes. Search and filtering still work.`
       )
     )
   ),
@@ -1746,7 +1864,7 @@ function PreviewModal({model, hideButtonsOption}) {
       h("div", {className: "slds-align_absolute-center slds-text-body_small slds-m-top_xx-small sfir-search-counter"}, `${count ? (model.previewSearch.index + 1) : 0} / ${count}`)
     ),
     // AI button (conditional)
-    displayButton("logs-agentforce", hideButtonsOption) && h("div", {className: "slds-col slds-grow-none"},
+    isOptionEnabled("logs-agentforce", hideButtonsOption) && h("div", {className: "slds-col slds-grow-none"},
       h("button", {
         className: "slds-button slds-button_brand",
         onClick: () => model.openAgentforce(),

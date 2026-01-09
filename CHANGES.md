@@ -2,6 +2,10 @@
 
 ## Version 2.0
 
+- `Popup` Use banner to display success / errors when enabling logs, unfreeze user and enabling debug mode
+- `Data Import` Make attributes property not mandatory for JSON import [feature #1041](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1041) (request by [Devin Schlegel](https://github.com/TachyonicSpace))
+- Fix: Line Wrap in Export Does Not Work [issue #1027](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1027) (request by [Andrew Russo](https://github.com/TachyonicSpace))
+- `Rest Explore` Add customizable headers, detect language from response and fix [issue 786](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/786)
 - `Data Export` Fix CSV export encoding for non-Latin characters (Hebrew, Arabic, Chinese, etc.) by adding UTF-8 BOM for Excel compatibility (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
 - `Logs Viewer` Allow users to display, filter, delete, share and explain debug logs (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
 - `User Tab` [popup] Add 'Reset Password' button and a new option to hide it. [feature #486](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/486) (contribution by [Phanidra Mangipudi](https://github.com/thephani))

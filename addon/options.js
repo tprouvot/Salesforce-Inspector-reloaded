@@ -210,6 +210,7 @@ class OptionsTabSelector extends React.Component {
               ]}
           },
           {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
+          {option: Option, props: {type: "toggle", title: "Prevent line wrap in Data Export table cells", key: "preventLineWrapDataExport", default: true, tooltip: "When enabled, prevents text from wrapping in table cells (matches v1.27 behavior)"}},
           {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
           {option: Option, props: {type: "number", title: "Number of queries stored in the history", key: "numberOfQueriesInHistory", default: 100, inputSize: "1"}},
@@ -333,6 +334,7 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_debugLogAgentForcePrompt", default: Constants.PromptTemplateDebugLog, tooltip: "Developer name of the prompt template to use for Debug Log Analysis"}},
           {option: Option, props: {type: "toggle", title: "Fetch log bodies for action details", key: "debugLogFetchBodies", default: true, tooltip: "When enabled, fetches log bodies to derive detailed action information. Disable to reduce API calls and improve performance."}},
+          {option: Option, props: {type: "toggle", title: "Show profile names as suffix in user filter", key: "debugLogShowProfileNames", default: false, tooltip: "When enabled, displays user profile names as a suffix in the format 'Name (ProfileName)' in the user filter picklist and logs table."}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Show buttons",
               key: "hideDebugLogButtonsOption",
@@ -348,6 +350,20 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "Custom Shortcuts",
         content: [
           {option: CustomShortcuts, props: {}}
+        ]
+      },
+      {
+        id: "rest-explore",
+        tabTitle: "REST Explorer",
+        content: [
+          {option: MultiCheckboxButtonGroup,
+            props: {title: "Display response information",
+              key: "restExploreDisplayOptions",
+              checkboxes: [
+                {label: "Response Size", name: "responseSize", checked: true},
+                {label: "Response Duration", name: "responseDuration", checked: true}
+              ]}
+          }
         ]
       }
     ];

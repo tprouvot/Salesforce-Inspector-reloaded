@@ -80,6 +80,10 @@
   background-color: lightgrey;
 }
 
+.scrolltable-cell.prevent-line-wrap {
+  white-space: pre !important;
+}
+
 .pop-menu.saveOptions {
   top: 0;
   margin: 102px 232px 0 0;

@@ -66,7 +66,8 @@
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   const version = manifest.version;
 
-  const defaultZipName = `target/${browserType}/${browserType}-release-build-v${version}.zip`;
+  const betaSuffix = process.env.ENVIRONMENT_TYPE == "BETA" ? "-beta" : "";
+  const defaultZipName = `target/${browserType}/${browserType}-release-build-v${version}${betaSuffix}.zip`;
 
   zipdir(`target/${browserType}/dist`, {saveTo: process.env.ZIP_FILE_NAME || defaultZipName}, err => {
     if (err) {

@@ -3,7 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, isOptionEnabled} from "./utils.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -94,9 +94,11 @@ class Model {
     this.apiResponse = null;
     this.canSendRequest = true;
     this.resultClass = "neutral";
-    this.request = {endpoint: "", method: "get", body: ""};
+    this.request = {endpoint: "", method: "get", body: "", headers: ""};
+    this.showHeadersEditor = false;
     this.apiList;
     this.filteredApiList;
+    this.displayOptions = JSON.parse(localStorage.getItem("restExploreDisplayOptions") || "[]");
     this.requestTemplates = localStorage.getItem("requestTemplates") ? this.requestTemplates = localStorage.getItem("requestTemplates").split("//") : [
       {key: "getLimit", endpoint: `/services/data/v${apiVersion}/limits`, method: "GET", body: ""},
       {key: "executeApex", endpoint: `/services/data/v${apiVersion}/tooling/executeAnonymous/?anonymousBody=System.debug(LoggingLevel.INFO, 'Executing apex example');`, method: "GET", body: ""},
@@ -158,6 +160,42 @@ class Model {
   toggleSavedOptions() {
     this.expandSavedOptions = !this.expandSavedOptions;
   }
+  toggleHeadersEditor() {
+    this.showHeadersEditor = !this.showHeadersEditor;
+    if (this.showHeadersEditor && !this.request.headers) {
+      // Pre-populate with default headers when first opened
+      this.request.headers = this.getDefaultHeaders();
+    }
+  }
+  getDefaultHeaders() {
+    // Get default headers that can be edited
+    // Note: Authorization/X-SFDC-Session headers are set automatically based on API type
+    const headers = [];
+    headers.push("Accept: application/json; charset=UTF-8");
+    if (this.request.body && this.request.body.length > 0) {
+      headers.push("Content-Type: application/json; charset=UTF-8");
+    }
+    return headers.join("\n");
+  }
+  parseHeaders(headersText) {
+    const headers = {};
+    if (!headersText || !headersText.trim()) {
+      return headers;
+    }
+    const lines = headersText.split("\n");
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const colonIndex = trimmed.indexOf(":");
+      if (colonIndex === -1) continue;
+      const name = trimmed.substring(0, colonIndex).trim();
+      const value = trimmed.substring(colonIndex + 1).trim();
+      if (name && value) {
+        headers[name] = value;
+      }
+    }
+    return headers;
+  }
   showDescribeUrl() {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
@@ -218,15 +256,23 @@ class Model {
   }
 
   doSend() {
-    this.startTime = performance.now();
+    const shouldCalculateDuration = isOptionEnabled("responseDuration", this.displayOptions);
+    if (shouldCalculateDuration) {
+      this.startTime = performance.now();
+    }
     this.canSendRequest = false;
     let api = this.request.endpoint.startsWith("/services/async/") ? "bulk" : "normal";
-    let responseType = this.request.endpoint.startsWith("/services/async/") ? "xml" : "json";
+    // Use empty string for responseType to allow access to responseText
+    // This enables dynamic format detection based on Content-Type header
+    let responseType = this.request.endpoint.startsWith("/services/async/") ? "xml" : "";
     this.request.method = this.request.method.toUpperCase();
-    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress, useCache: false}, true)
+    const customHeaders = this.parseHeaders(this.request.headers);
+    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", headers: customHeaders, progressHandler: this.autocompleteProgress, useCache: false}, true)
       .catch(err => {
         this.canSendRequest = true;
-        this.totalTime = performance.now() - this.startTime;
+        if (shouldCalculateDuration) {
+          this.totalTime = performance.now() - this.startTime;
+        }
         if (err.name != "AbortError") {
           this.autocompleteResults = {
             title: "Error: " + err.message,
@@ -237,7 +283,9 @@ class Model {
       })
       .then((result) => {
         //generate key with timestamp
-        this.totalTime = performance.now() - this.startTime;
+        if (shouldCalculateDuration) {
+          this.totalTime = performance.now() - this.startTime;
+        }
         this.request.key = Date.now();
         this.queryHistory.add(this.request);
         if (!result) {
@@ -249,23 +297,96 @@ class Model {
       }));
   }
 
-  parseResponse(result, status) {
+  getFormatFromContentType(result) {
+    const contentType = result.getResponseHeader ? result.getResponseHeader("Content-Type") : "";
 
+    // Check if endpoint is ApexLog Body
+    if (this.request.endpoint && this.request.endpoint.includes("ApexLog") && this.request.endpoint.includes("Body")) {
+      return "log";
+    }
+    if (!contentType) {
+      return result.responseType || "json";
+    }
+    if (contentType.includes("xml")) {
+      return "xml";
+    }
+    if (contentType.includes("csv")) {
+      return "csv";
+    }
+    if (contentType.includes("text/")) {
+      return "text";
+    }
+    if (contentType.includes("application/json")) {
+      return "json";
+    }
+    return result.responseType || "json";
+  }
+
+  getResponseText(result) {
+    // When responseType is "json", response contains parsed object (or null), can't access responseText
+    if (result.responseType === "json" && result.response !== null && result.response !== undefined) {
+      return null; // Already parsed
+    }
+    // For other responseTypes, get raw text
+    return result.responseText || result.response || "";
+  }
+
+  parseResponse(result, status) {
     this.resultClass = result.status < 300 ? "success" : result.status > 399 ? "error" : "";
-    let format = result.responseType.length > 0 ? result.responseType : "xml";
+
+    const format = this.getFormatFromContentType(result);
+    const responseText = this.getResponseText(result);
+    let responseData = null;
+    const shouldCalculateSize = isOptionEnabled("responseSize", this.displayOptions);
+    let responseSize = 0;
+
+    if (responseText === null) {
+      // Already parsed (responseType was "json")
+      responseData = result.response;
+      // Calculate size from stringified JSON only if option is enabled
+      if (shouldCalculateSize && responseData !== null && responseData !== undefined) {
+        responseSize = new Blob([JSON.stringify(responseData)]).size;
+      }
+    } else if (responseText) {
+      // Calculate size from raw response text only if option is enabled
+      if (shouldCalculateSize) {
+        responseSize = new Blob([responseText]).size;
+      }
+      // Parse based on format
+      if (format === "json") {
+        try {
+          responseData = JSON.parse(responseText);
+        } catch {
+          // Not valid JSON, treat as text or log
+          responseData = responseText;
+          const fallbackFormat = (this.request.endpoint && this.request.endpoint.includes("ApexLog") && this.request.endpoint.includes("Body")) ? "log" : "text";
+          this.apiResponse = {
+            status,
+            code: result.status,
+            format: fallbackFormat,
+            value: this.formatResponse(responseText, fallbackFormat),
+            size: responseSize
+          };
+          return;
+        }
+      } else {
+        responseData = responseText;
+      }
+    }
+
     this.apiResponse = {
       status,
       code: result.status,
       format,
-      value: result.response ? this.formatResponse(result.response, format) : "NONE"
+      value: responseData ? this.formatResponse(responseData, format) : "NONE",
+      size: responseSize
     };
-    if (this.resultClass === "success") {
-      let newApis = Object.keys(result.response)
-        .filter(key => typeof result.response[key] == "string" && result.response[key].startsWith("/services/data/"))
-        .map(key => ({
-          key,
-          "endpoint": result.response[key]
-        }));
+
+    // Extract new API endpoints from successful JSON responses
+    if (this.resultClass === "success" && responseData && typeof responseData === "object" && !Array.isArray(responseData)) {
+      const newApis = Object.keys(responseData)
+        .filter(key => typeof responseData[key] == "string" && responseData[key].startsWith("/services/data/"))
+        .map(key => ({key, "endpoint": responseData[key]}));
       newApis.forEach(api => {
         if (!this.apiList.some(existingApi => existingApi.key === api.key)) {
           this.apiList.push(api);
@@ -278,9 +399,16 @@ class Model {
   formatResponse(resp, format) {
     if (format === "xml") {
       return this.formatXml(resp);
-    } else {
+    }
+    if (format === "text" || format === "log") {
+      // For text/log responses, return as-is
+      return typeof resp === "string" ? resp : String(resp);
+    }
+    // For JSON, stringify if it's an object, otherwise return as-is
+    if (typeof resp === "object" && resp !== null) {
       return JSON.stringify(resp, null, "    ");
     }
+    return String(resp);
   }
 
   formatXml(sourceXml) {
@@ -303,7 +431,18 @@ class Model {
     let resultDoc = xsltProcessor.transformToDocument(xmlDoc);
     let resultXml = new XMLSerializer().serializeToString(resultDoc);
     return resultXml;
-  };
+  }
+
+  formatBytes(bytes) {
+    if (bytes === 0) {
+      return "0 B";
+    }
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return (bytes / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
+  }
+
 }
 
 
@@ -327,10 +466,21 @@ class App extends React.Component {
     this.onUpdateBody = this.onUpdateBody.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetEndpoint = this.onSetEndpoint.bind(this);
+    this.onToggleHeadersEditor = this.onToggleHeadersEditor.bind(this);
+    this.onUpdateHeaders = this.onUpdateHeaders.bind(this);
   }
   onSelectEntry(e, list) {
     let {model} = this.props;
-    model.request = list.filter(template => template.key.toString() === e.target.value)[0];
+    const selectedRequest = list.filter(template => template.key.toString() === e.target.value)[0];
+    // Preserve headers editor state and headers if they exist
+    const currentHeaders = model.request.headers || "";
+    const showHeadersEditor = model.showHeadersEditor;
+    model.request = selectedRequest;
+    // Restore headers if they were set, otherwise initialize empty
+    if (!model.request.headers) {
+      model.request.headers = currentHeaders || "";
+    }
+    model.showHeadersEditor = showHeadersEditor;
     this.refs.endpoint.value = model.request.endpoint;
     this.resetRequest(model);
     model.didUpdate();
@@ -430,6 +580,16 @@ class App extends React.Component {
     //replace current endpoint with latest on the have the autocomplete works for all api versions
     let updatedApiEndpoint = e.target.value.replace(/\/data\/v\d+\.0\//, `/data/v${apiVersion}/`);
     model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(updatedApiEndpoint.toLowerCase()));
+    model.didUpdate();
+  }
+  onToggleHeadersEditor() {
+    let {model} = this.props;
+    model.toggleHeadersEditor();
+    model.didUpdate();
+  }
+  onUpdateHeaders(e) {
+    let {model} = this.props;
+    model.request.headers = e.target.value;
     model.didUpdate();
   }
   componentDidMount() {
@@ -593,36 +753,6 @@ class App extends React.Component {
                     )
                   ),
                 )
-                /*
-                h("fieldset", { className: "slds-form-element slds-form-element_compound" },
-                  h("div", { className: "slds-form-element__control" },
-                    h("div", { className: "slds-form-element__row slds-grid_align-end" },
-                      h("div", { className: "slds-size_4-of-12" },
-                        h("div", { className: "slds-grid" },
-                          h("div", { className: "slds-col" },
-                            h("div", { className: "slds-form-element" },
-
-                            )
-                          ),
-                          h("div", { className: "slds-col" },
-                            h("div", { className: "slds-form-element" },
-
-                            )
-                          ),
-                          h("div", { className: "slds-col" },
-                            h("div", { className: "slds-form-element" },
-                              h("div", { className: "slds-form-element__control" },
-                                h("button", { className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Request History" }, "Clear")
-                              )
-                            )
-                          )
-                        )
-                      ),
-
-                      ),
-                    )
-                  )
-                )*/
               )
             ),
             h("div", {className: "slds-card__body slds-card__body_inner"},
@@ -646,7 +776,14 @@ class App extends React.Component {
                   h("input", {ref: "endpoint", className: "slds-input", type: "default", placeholder: "/services/data/v" + apiVersion, onChange: this.onSetEndpoint})
                 ),
                 h("div", {className: "slds-col slds-text-align_right slds-p-left_xx-small"},
-                  h("button", {tabIndex: 1, disabled: !model.canSendRequest, onClick: this.onSend, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand"}, "Send")
+                  h("div", {className: "slds-grid slds-grid_vertical-align-center slds-grid_align-end slds-gutters_xx-small"},
+                    h("div", {className: "slds-col"},
+                      h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: this.onToggleHeadersEditor, title: model.showHeadersEditor ? "Hide Headers" : "Show Headers"}, "Headers")
+                    ),
+                    h("div", {className: "slds-col"},
+                      h("button", {tabIndex: 1, disabled: !model.canSendRequest, onClick: this.onSend, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand slds-button_small"}, "Send")
+                    )
+                  )
                 ),
               ),
               h("div", {className: "slds-m-top_medium"},
@@ -669,6 +806,12 @@ class App extends React.Component {
                       ),
                     ),
                   ) : null
+              ),
+              model.showHeadersEditor && h("div", {className: "slds-m-top_medium"},
+                h("h3", {className: "slds-text-heading_small"}, "Request Headers"),
+                h("div", {className: "slds-m-top_small"},
+                  h("textarea", {className: "slds-textarea", rows: 2, value: model.request.headers || "", onChange: this.onUpdateHeaders, placeholder: "Accept: application/json; charset=UTF-8\nContent-Type: application/json; charset=UTF-8"})
+                )
               ),
               h("div", {className: "slds-m-top_medium"},
                 h("h3", {className: "slds-text-heading_small"}, "Request Body"),
@@ -700,10 +843,11 @@ class App extends React.Component {
               h("div", {className: "slds-size_4-of-12 slds-text-align_right"},
                 h("span", {},
                   model.apiResponse && h("div", {},
-                    h("span", {className: "slds-m-right_small"}, model.totalTime.toFixed(1) + "ms"),
+                    isOptionEnabled("responseSize", model.displayOptions) && model.apiResponse.size > 0 && h("span", {className: "slds-m-right_small"}, model.formatBytes(model.apiResponse.size)),
+                    isOptionEnabled("responseDuration", model.displayOptions) && h("span", {className: "slds-m-right_small"}, model.totalTime.toFixed(1) + "ms"),
                     h("span", {className: "slds-m-right_small slds-badge slds-theme_" + model.resultClass}, "Status: " + model.apiResponse?.code),
                     h("button", {className: "slds-button slds-button_neutral", disabled: !model.apiResponse, onClick: this.onClearResponse, title: "Clear Response"}, "Clear")
-                  ),
+                  )
                 )
               ),
             )

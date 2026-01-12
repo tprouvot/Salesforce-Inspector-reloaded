@@ -573,25 +573,38 @@ class Model {
     }
 
     // 3. AFTER FROM KEYWORD - Suggest object names
+    // If we are just after the "from" keyword, autocomplete the sobject name
     if (query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
       let {globalStatus, globalDescribe} = vm.describeInfo.describeGlobal(useToolingApi);
       if (!globalDescribe) {
         switch (globalStatus) {
           case "loading":
-            vm.autocompleteResults = {sobjectName: "", title: "Loading metadata...", results: []};
+            vm.autocompleteResults = {
+              sobjectName: "",
+              title: "Loading metadata...",
+              results: []
+            };
             return;
           case "loadfailed":
-            vm.autocompleteResults = {sobjectName: "", title: "Loading metadata failed.", results: [{value: "Retry", title: "Retry"}]};
+            vm.autocompleteResults = {
+              sobjectName: "",
+              title: "Loading metadata failed.",
+              results: [{value: "Retry", title: "Retry"}]
+            };
             vm.autocompleteClick = vm.autocompleteReload.bind(vm);
             return;
           default:
-            vm.autocompleteResults = {sobjectName: "", title: "Unexpected error: " + globalStatus, results: []};
+            vm.autocompleteResults = {
+              sobjectName: "",
+              title: "Unexpected error: " + globalStatus,
+              results: []
+            };
             return;
         }
       }
       vm.autocompleteResults = {
         sobjectName: "",
-        title: "Select an object:",
+        title: "Objects suggestions:",
         results: new Enumerable(globalDescribe.sobjects)
           .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
           .map(sobjectDescribe => ({value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: ""}))
@@ -646,17 +659,33 @@ class Model {
     if (!sobjectDescribe) {
       switch (sobjectStatus) {
         case "loading":
-          vm.autocompleteResults = {sobjectName, title: "Loading " + sobjectName + " metadata...", results: []};
+          vm.autocompleteResults = {
+            sobjectName,
+            title: "Loading " + sobjectName + " metadata...",
+            results: []
+          };
           return;
         case "loadfailed":
-          vm.autocompleteResults = {sobjectName, title: "Loading " + sobjectName + " metadata failed.", results: [{value: "Retry", title: "Retry"}]};
+          vm.autocompleteResults = {
+            sobjectName,
+            title: "Loading " + sobjectName + " metadata failed.",
+            results: [{value: "Retry", title: "Retry"}]
+          };
           vm.autocompleteClick = vm.autocompleteReload.bind(vm);
           return;
         case "notfound":
-          vm.autocompleteResults = {sobjectName, title: "Unknown object: " + sobjectName, results: []};
+          vm.autocompleteResults = {
+            sobjectName,
+            title: "Unknown object: " + sobjectName,
+            results: []
+          };
           return;
         default:
-          vm.autocompleteResults = {sobjectName, title: "Unexpected error for object: " + sobjectName + ": " + sobjectStatus, results: []};
+          vm.autocompleteResults = {
+            sobjectName,
+            title: "Unexpected error for object: " + sobjectName + ": " + sobjectStatus,
+            results: []
+          };
           return;
       }
     }
@@ -754,23 +783,43 @@ class Model {
 
     if (!contextSobjectDescribes.some()) {
       if (sobjectStatuses.has("loading")) {
-        vm.autocompleteResults = {sobjectName, title: "Loading " + sobjectStatuses.get("loading") + " metadata...", results: []};
+        vm.autocompleteResults = {
+          sobjectName,
+          title: "Loading " + sobjectStatuses.get("loading") + " metadata...",
+          results: []
+        };
         return;
       }
       if (sobjectStatuses.has("loadfailed")) {
-        vm.autocompleteResults = {sobjectName, title: "Loading " + sobjectStatuses.get("loadfailed") + " metadata failed.", results: [{value: "Retry", title: "Retry"}]};
+        vm.autocompleteResults = {
+          sobjectName,
+          title: "Loading " + sobjectStatuses.get("loadfailed") + " metadata failed.",
+          results: [{value: "Retry", title: "Retry"}]
+        };
         vm.autocompleteClick = vm.autocompleteReload.bind(vm);
         return;
       }
       if (sobjectStatuses.has("notfound")) {
-        vm.autocompleteResults = {sobjectName, title: "Unknown object: " + sobjectStatuses.get("notfound"), results: []};
+        vm.autocompleteResults = {
+          sobjectName,
+          title: "Unknown object: " + sobjectStatuses.get("notfound"),
+          results: []
+        };
         return;
       }
       if (sobjectStatuses.size > 0) {
-        vm.autocompleteResults = {sobjectName, title: "Unexpected error: " + sobjectStatus, results: []};
+        vm.autocompleteResults = {
+          sobjectName,
+          title: "Unexpected error: " + sobjectStatus,
+          results: []
+        };
         return;
       }
-      vm.autocompleteResults = {sobjectName, title: "Unknown field: " + sobjectName + "." + contextPath, results: []};
+      vm.autocompleteResults = {
+        sobjectName,
+        title: "Unknown field: " + sobjectName + "." + contextPath,
+        results: []
+      };
       return;
     }
 
@@ -883,45 +932,53 @@ class Model {
         .toArray();
         
       if (contextValueFields.length == 0) {
-        vm.autocompleteResults = {sobjectName, title: "Unknown field: " + sobjectDescribe.name + "." + contextPath + fieldName, results: []};
+        vm.autocompleteResults = {
+          sobjectName,
+          title: "Unknown field: " + sobjectDescribe.name + "." + contextPath + fieldName,
+          results: []
+        };
         return;
       }
-      
       let fieldNames = contextValueFields.map(contextValueField => contextValueField.sobjectDescribe.name + "." + contextValueField.field.name).join(", ");
-      
       if (ctrlSpace) {
         // Since this performs a Salesforce API call, we ask the user to opt in by pressing Ctrl+Space
         if (contextValueFields.length > 1) {
-          vm.autocompleteResults = {sobjectName, title: "Multiple possible fields: " + fieldNames, results: []};
+          vm.autocompleteResults = {
+            sobjectName,
+            title: "Multiple possible fields: " + fieldNames,
+            results: []
+          };
           return;
         }
-        
         let contextValueField = contextValueFields[0];
         let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
         let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/([\\'])/g, "\\$1") + "%'";
-        
         if (contextValueField.sobjectDescribe.name.toLowerCase() === "recordtype"){
           let sobject = contextPath.split(".")[0];
           sobject = sobject.toLowerCase() === "recordtype" ? vm.autocompleteResults.sobjectName : sobject;
           whereClause += vm.autocompleteResults.sobjectName ? " AND SobjectType = '" + sobject + "'" : "";
         }
-        
         let acQuery = "SELECT " + contextValueField.field.name + " FROM " + contextValueField.sobjectDescribe.name + " WHERE " + whereClause + " GROUP BY " + contextValueField.field.name + " LIMIT 100";
 
         vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(acQuery), {progressHandler: vm.autocompleteProgress})
           .catch(err => {
             if (err.name != "AbortError") {
-              vm.autocompleteResults = {sobjectName, title: "Error: " + err.message, results: []};
+              vm.autocompleteResults = {
+                sobjectName,
+                title: "Error: " + err.message,
+                results: []
+              };
             }
             return null;
           })
           .then(data => {
             vm.autocompleteProgress = {};
-            if (!data) return;
-            
+            if (!data) {
+              return;
+            }
             vm.autocompleteResults = {
               sobjectName,
-              title: fieldNames + " values:",
+              title: fieldNames + " values suggestions:",
               results: new Enumerable(data.records)
                 .map(record => record[contextValueField.field.name])
                 .filter(value => value)
@@ -930,8 +987,11 @@ class Model {
                 .sort(resultsSort)
             };
           }));
-          
-        vm.autocompleteResults = {sobjectName, title: "Loading " + fieldNames + " values...", results: []};
+        vm.autocompleteResults = {
+          sobjectName,
+          title: "Loading " + fieldNames + " values...",
+          results: []
+        };
         return;
       }
       
@@ -961,6 +1021,7 @@ class Model {
               rank: 1
             };
           }
+          // from https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select_dateformats.htm Winter 24
           yield {value: "YESTERDAY", title: "Starts 12:00:00 the day before and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "TODAY", title: "Starts 12:00:00 of the current day and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "TOMORROW", title: "Starts 12:00:00 after the current day and continues for 24 hours.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
@@ -992,6 +1053,13 @@ class Model {
           yield {value: "NEXT_YEAR", title: "Starts 12:00:00 on January 1 of the following year and continues through the end of December 31 of that year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_YEARS:n", title: "Starts 12:00:00 on January 1 of the following year and continues through the end of December 31 of the nth year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "LAST_N_YEARS:n", title: "Starts 12:00:00 on January 1 of the previous year and continues through the end of December 31 of the previous nth year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_YEARS_AGO:n", title: "Starts at 12:00:00 AM on January 1 of the calendar year n years before the current calendar year and continues through the end of December 31 of that year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_FISCAL_QUARTER", title: "Starts 12:00:00 of the current fiscal quarter and continues to the end of the current fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_FISCAL_QUARTER", title: "Starts 12:00:00 of the previous fiscal quarter and continues to the end of that fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_FISCAL_QUARTER", title: "Starts 12:00:00 of the next fiscal quarter and continues to the end of that fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_FISCAL_QUARTERS:n", title: "Starts 12:00:00 on the first day of the next fiscal quarter and continues through the end of the last day of the nth fiscal quarter. The fiscal year is defined in the company profile under Setup atCompany Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_N_FISCAL_QUARTERS:n", title: "Starts 12:00:00 on the first day of the last fiscal quarter and continues through the end of the last day of the previous nth fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "N_FISCAL_QUARTERS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the fiscal quarter n fiscal quarters before the current fiscal quarter and continues through the end of the last day of that fiscal quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "THIS_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the current fiscal year and continues through the end of the last day of the fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "LAST_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the last fiscal year and continues through the end of the last day of that fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_FISCAL_YEAR", title: "Starts 12:00:00 on the first day of the next fiscal year and continues through the end of the last day of that fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
@@ -1017,6 +1085,7 @@ class Model {
     }
 
     // 8. FIELD NAME AUTOCOMPLETE
+    // Autocomplete field names and functions
     if (ctrlSpace) {
       let includeFormula = localStorage.getItem("includeFormulaFieldsFromExportAutocomplete") !== "false";
       let ar = contextSobjectDescribes
@@ -1024,7 +1093,6 @@ class Model {
         .filter(field => (field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase())) && (includeFormula || !field.calculated))
         .map(field => contextPath + field.name)
         .toArray();
-        
       if (ar.length > 0) {
         vm.queryInput.focus();
         vm.queryInput.setRangeText(ar.join(", ") + (isAfterFrom ? " " : ""), selStart - contextPath.length, selEnd, "end");
@@ -1033,10 +1101,9 @@ class Model {
       vm.queryAutocompleteHandler();
       return;
     }
-    
     vm.autocompleteResults = {
       sobjectName,
-      title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " fields:",
+      title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " fields suggestions:",
       results: contextSobjectDescribes
         .flatMap(sobjectDescribe => sobjectDescribe.fields)
         .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -1050,7 +1117,7 @@ class Model {
           new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "toLabel", "convertTimezone", "convertCurrency", "FORMAT", "GROUPING"])
             .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
             .map(fn => {
-              if (fn.includes(")")) {
+              if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
                 return {value: fn, title: fn, suffix: "", rank: 2, autocompleteType: "variable", dataType: ""};
               } else {
                 return {value: fn, title: fn + "()", suffix: "(", rank: 2, autocompleteType: "variable", dataType: ""};

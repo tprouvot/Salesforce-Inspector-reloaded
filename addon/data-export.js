@@ -385,6 +385,9 @@ class Model {
     let selEnd = vm.queryInput.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
 
+    // Always store cursor position for autocompleteClick (before state check)
+    vm.autocompleteInsertPos = {start: selStart, end: selEnd};
+
     // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
     let newAutocompleteState = [useToolingApi, query, selStart, selEnd].join("$");
     if (newAutocompleteState == vm.autocompleteState && !ctrlSpace && !e.newDescribe) {
@@ -402,17 +405,40 @@ class Model {
         window.open(link, "_blank");
       } else {
         vm.queryInput.focus();
-        //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
-        if (suffix.trim() == ",") {
-          let afterCursorText = query.substring(selEnd).trim();
-          // Remove comma suffix if: already has comma, or FROM keyword is next, or reaching end of query before FROM
-          if (afterCursorText.startsWith(",") || afterCursorText.toLowerCase().startsWith("from")) {
-            suffix = "";
+        let currentQuery = vm.queryInput.value;
+
+        // Use stored position (updated each time handler runs)
+        let insertStart = vm.autocompleteInsertPos.start;
+        let insertEnd = vm.autocompleteInsertPos.end;
+
+        // Validate positions are within bounds
+        if (insertStart > currentQuery.length) insertStart = currentQuery.length;
+        if (insertEnd > currentQuery.length) insertEnd = currentQuery.length;
+
+        // Check if we're accidentally in the middle of a word (e.g., inside "FROM")
+        // If so, move insertion point to after the word to prevent corruption
+        let charBefore = insertStart > 0 ? currentQuery.charAt(insertStart - 1) : "";
+        let charAfter = insertEnd < currentQuery.length ? currentQuery.charAt(insertEnd) : "";
+
+        if (/[a-zA-Z0-9_]/.test(charBefore) && /[a-zA-Z0-9_]/.test(charAfter)) {
+          // In middle of word - skip to end of word
+          while (insertEnd < currentQuery.length && /[a-zA-Z0-9_]/.test(currentQuery.charAt(insertEnd))) {
+            insertEnd++;
+          }
+          insertStart = insertEnd;
+          charBefore = insertStart > 0 ? currentQuery.charAt(insertStart - 1) : "";
+        }
+
+        // Add space prefix if inserting after a word
+        let prefix = "";
+        if (insertStart === insertEnd && insertStart > 0) {
+          if (/[a-zA-Z0-9_]/.test(charBefore) && !/^[\s,]/.test(value)) {
+            prefix = " ";
           }
         }
-        vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
+        vm.queryInput.setRangeText(prefix + value + suffix, insertStart, insertEnd, "end");
         //add query suffix if needed
-        if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
+        if (value.startsWith("FIELDS") && !vm.queryInput.value.toLowerCase().includes("limit")) {
           vm.queryInput.value += " LIMIT 200";
         }
         // Persist the updated query to the current tab
@@ -425,7 +451,24 @@ class Model {
     let searchTerm = selStart != selEnd
       ? query.substring(selStart, selEnd)
       : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
-    selStart = selEnd - searchTerm.length;
+
+    // Keywords and common fields that when fully typed should suggest next words instead of replacement
+    const completeKeywords = ["select", "from", "where", "and", "or", "order", "by", "group", "limit", "offset", "having", "find", "in", "returning"];
+    const completeFields = ["id", "name", "createddate", "createdbyid", "lastmodifieddate", "lastmodifiedbyid", "ownerid", "systemmodstamp"];
+
+    // Check if searchTerm is a complete keyword/field - if so, suggest next words instead of replacing
+    let isCompleteWord = completeKeywords.includes(searchTerm.toLowerCase()) || completeFields.includes(searchTerm.toLowerCase());
+
+    // Keep original searchTerm for context, but use empty for filtering when word is complete
+    let originalSearchTerm = searchTerm;
+
+    // If it's a complete word, keep cursor at end and set searchTerm to empty for next-word suggestions
+    if (isCompleteWord) {
+      selStart = selEnd; // Keep cursor position at end, don't move back
+      searchTerm = ""; // Clear searchTerm so all next-word suggestions are shown
+    } else {
+      selStart = selEnd - searchTerm.length;
+    }
 
     function sortRank({value, title}) {
       let i = 0;
@@ -492,8 +535,11 @@ class Model {
     // 2. AFTER SELECT, BEFORE FROM - Suggest common fields or FROM
     let hasSelect = beforeCursor.includes("select");
     let hasFrom = beforeCursor.includes("from") || afterCursor.startsWith("from");
-    
-    if (hasSelect && !hasFrom) {
+    // Check if there's a FROM clause anywhere in the query (even if cursor is in SELECT clause)
+    let hasFromInQuery = /\bfrom\s+[a-z0-9_]+/i.test(query);
+
+    // Only show generic fields if there's no FROM clause with an object - otherwise let object fields be suggested
+    if (hasSelect && !hasFrom && !hasFromInQuery) {
       let afterSelect = query.substring(query.toLowerCase().lastIndexOf("select") + 6, selStart).trim();
       
       // Right after SELECT (no fields yet)
@@ -521,46 +567,62 @@ class Model {
         }
       }
       
-      // After typing some fields, suggest FROM
+      // After typing some fields, suggest FROM and/or other fields
       if (afterSelect.length > 0 && !afterSelect.endsWith(",") && !afterSelect.endsWith(" ")) {
         let suggestions = [
-          {value: ", ", title: "Add another field", suffix: "", rank: 1, autocompleteType: "punctuation", dataType: ""},
-          {value: " FROM", title: "FROM - Specify the object", suffix: " ", rank: 2, autocompleteType: "keyword", dataType: ""}
+          {value: " FROM", title: "FROM - Specify the object", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""}
         ];
-        
-        let filtered = suggestions.filter(s => 
+
+        // When a field is complete, also show other field names as suggestions
+        if (isCompleteWord && completeFields.includes(originalSearchTerm.toLowerCase())) {
+          let otherFields = [
+            {value: "Id", title: "Id - Record identifier", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "id"},
+            {value: "Name", title: "Name - Record name", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "string"},
+            {value: "CreatedDate", title: "CreatedDate - When record was created", suffix: " ", rank: 4, autocompleteType: "fieldName", dataType: "datetime"},
+            {value: "CreatedById", title: "CreatedById - Who created the record", suffix: " ", rank: 4, autocompleteType: "fieldName", dataType: "reference"},
+            {value: "LastModifiedDate", title: "LastModifiedDate - When record was last modified", suffix: " ", rank: 4, autocompleteType: "fieldName", dataType: "datetime"},
+            {value: "LastModifiedById", title: "LastModifiedById - Who last modified the record", suffix: " ", rank: 4, autocompleteType: "fieldName", dataType: "reference"},
+            {value: "OwnerId", title: "OwnerId - Record owner", suffix: " ", rank: 4, autocompleteType: "fieldName", dataType: "reference"},
+            {value: "SystemModstamp", title: "SystemModstamp - System modification timestamp", suffix: " ", rank: 5, autocompleteType: "fieldName", dataType: "datetime"}
+          ];
+          // Filter out the field that was just typed
+          otherFields = otherFields.filter(f => f.value.toLowerCase() !== originalSearchTerm.toLowerCase());
+          suggestions = suggestions.concat(otherFields);
+        }
+
+        let filtered = suggestions.filter(s =>
           s.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
           s.title.toLowerCase().includes(searchTerm.toLowerCase())
         );
-        
+
         if (filtered.length > 0) {
           vm.autocompleteResults = {
             sobjectName: "",
-            title: "Continue query:",
+            title: isCompleteWord ? "Next:" : "Continue query:",
             results: filtered.sort(resultsSort)
           };
           return;
         }
       }
-      
+
       // If typing a field name, show common fields
       if (searchTerm.length > 0) {
         let commonFields = [
-          {value: "Id", title: "Id - Record identifier", suffix: ", ", rank: 1, autocompleteType: "fieldName", dataType: "id"},
-          {value: "Name", title: "Name - Record name", suffix: ", ", rank: 1, autocompleteType: "fieldName", dataType: "string"},
-          {value: "CreatedDate", title: "CreatedDate - When record was created", suffix: ", ", rank: 2, autocompleteType: "fieldName", dataType: "datetime"},
-          {value: "CreatedById", title: "CreatedById - Who created the record", suffix: ", ", rank: 2, autocompleteType: "fieldName", dataType: "reference"},
-          {value: "LastModifiedDate", title: "LastModifiedDate - When record was last modified", suffix: ", ", rank: 2, autocompleteType: "fieldName", dataType: "datetime"},
-          {value: "LastModifiedById", title: "LastModifiedById - Who last modified the record", suffix: ", ", rank: 2, autocompleteType: "fieldName", dataType: "reference"},
-          {value: "OwnerId", title: "OwnerId - Record owner", suffix: ", ", rank: 2, autocompleteType: "fieldName", dataType: "reference"},
-          {value: "SystemModstamp", title: "SystemModstamp - System modification timestamp", suffix: ", ", rank: 3, autocompleteType: "fieldName", dataType: "datetime"}
+          {value: "Id", title: "Id - Record identifier", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "id"},
+          {value: "Name", title: "Name - Record name", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "string"},
+          {value: "CreatedDate", title: "CreatedDate - When record was created", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "datetime"},
+          {value: "CreatedById", title: "CreatedById - Who created the record", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "reference"},
+          {value: "LastModifiedDate", title: "LastModifiedDate - When record was last modified", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "datetime"},
+          {value: "LastModifiedById", title: "LastModifiedById - Who last modified the record", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "reference"},
+          {value: "OwnerId", title: "OwnerId - Record owner", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "reference"},
+          {value: "SystemModstamp", title: "SystemModstamp - System modification timestamp", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "datetime"}
         ];
-        
-        let filtered = commonFields.filter(f => 
+
+        let filtered = commonFields.filter(f =>
           f.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
           f.title.toLowerCase().includes(searchTerm.toLowerCase())
         );
-        
+
         if (filtered.length > 0) {
           vm.autocompleteResults = {
             sobjectName: "",
@@ -1107,8 +1169,10 @@ class Model {
       results: contextSobjectDescribes
         .flatMap(sobjectDescribe => sobjectDescribe.fields)
         .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
+        // Filter out the just-completed field so it's not suggested again
+        .filter(field => !isCompleteWord || field.name.toLowerCase() !== originalSearchTerm.toLowerCase())
         .flatMap(function* (field) {
-          yield {value: field.name, title: field.label, suffix: isAfterFrom ? " " : ", ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
+          yield {value: field.name, title: field.label, suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
           if (field.relationshipName) {
             yield {value: field.relationshipName + ".", title: field.label, suffix: "", rank: 1, autocompleteType: "relationshipName", dataType: ""};
           }

@@ -385,9 +385,6 @@ class Model {
     let selEnd = vm.queryInput.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
 
-    // Always store cursor position for autocompleteClick (before state check)
-    vm.autocompleteInsertPos = {start: selStart, end: selEnd};
-
     // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
     let newAutocompleteState = [useToolingApi, query, selStart, selEnd].join("$");
     if (newAutocompleteState == vm.autocompleteState && !ctrlSpace && !e.newDescribe) {
@@ -415,19 +412,8 @@ class Model {
         if (insertStart > currentQuery.length) insertStart = currentQuery.length;
         if (insertEnd > currentQuery.length) insertEnd = currentQuery.length;
 
-        // Check if we're accidentally in the middle of a word (e.g., inside "FROM")
-        // If so, move insertion point to after the word to prevent corruption
+        // Check character before insertion point for prefix logic
         let charBefore = insertStart > 0 ? currentQuery.charAt(insertStart - 1) : "";
-        let charAfter = insertEnd < currentQuery.length ? currentQuery.charAt(insertEnd) : "";
-
-        if (/[a-zA-Z0-9_]/.test(charBefore) && /[a-zA-Z0-9_]/.test(charAfter)) {
-          // In middle of word - skip to end of word
-          while (insertEnd < currentQuery.length && /[a-zA-Z0-9_]/.test(currentQuery.charAt(insertEnd))) {
-            insertEnd++;
-          }
-          insertStart = insertEnd;
-          charBefore = insertStart > 0 ? currentQuery.charAt(insertStart - 1) : "";
-        }
 
         // Add space prefix if inserting after a word
         let prefix = "";
@@ -469,6 +455,9 @@ class Model {
     } else {
       selStart = selEnd - searchTerm.length;
     }
+
+    // Update stored position to include the word being replaced
+    vm.autocompleteInsertPos = {start: selStart, end: selEnd};
 
     function sortRank({value, title}) {
       let i = 0;
@@ -1194,6 +1183,14 @@ class Model {
   }
 
   removeTypo(query) {
+    // Add commas between space-separated fields in SELECT clause
+    query = query.replace(/\bSELECT\s+(.+?)\s+FROM\b/gi, (match, fields) => {
+      // Replace whitespace between field names with ", " (handles Id Name -> Id, Name)
+      // Captures: word chars, dots (for relationships), closing parens (for functions)
+      // Lookahead: word chars or opening parens (for functions)
+      let result = fields.replace(/([a-zA-Z0-9_.\)]+)\s+(?=[a-zA-Z0-9_(])/g, "$1, ");
+      return "SELECT " + result + " FROM";
+    });
     // Remove double commas
     query = query.replace(/,\s*,/g, ",");
     // Remove comma before FROM

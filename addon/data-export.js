@@ -385,6 +385,21 @@ class Model {
     let selEnd = vm.queryInput.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
 
+    // Automatically normalize double spaces
+    if (/  +/.test(query)) {
+      // Calculate how many extra spaces are before cursor
+      let beforeCursor = query.substring(0, selStart);
+      let normalizedBefore = beforeCursor.replace(/  +/g, " ");
+      let spacesRemoved = beforeCursor.length - normalizedBefore.length;
+      // Normalize the full query
+      query = query.replace(/  +/g, " ");
+      vm.queryInput.value = query;
+      // Adjust cursor position
+      selStart = Math.max(0, selStart - spacesRemoved);
+      selEnd = Math.max(0, selEnd - spacesRemoved);
+      vm.queryInput.setSelectionRange(selStart, selEnd);
+    }
+
     // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
     let newAutocompleteState = [useToolingApi, query, selStart, selEnd].join("$");
     if (newAutocompleteState == vm.autocompleteState && !ctrlSpace && !e.newDescribe) {

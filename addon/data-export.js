@@ -385,21 +385,6 @@ class Model {
     let selEnd = vm.queryInput.selectionEnd;
     let ctrlSpace = e.ctrlSpace;
 
-    // Automatically normalize double spaces
-    if (/  +/.test(query)) {
-      // Calculate how many extra spaces are before cursor
-      let beforeCursor = query.substring(0, selStart);
-      let normalizedBefore = beforeCursor.replace(/  +/g, " ");
-      let spacesRemoved = beforeCursor.length - normalizedBefore.length;
-      // Normalize the full query
-      query = query.replace(/  +/g, " ");
-      vm.queryInput.value = query;
-      // Adjust cursor position
-      selStart = Math.max(0, selStart - spacesRemoved);
-      selEnd = Math.max(0, selEnd - spacesRemoved);
-      vm.queryInput.setSelectionRange(selStart, selEnd);
-    }
-
     // Skip the calculation when no change is made. This improves performance and prevents async operations (Ctrl+Space) from being canceled when they should not be.
     let newAutocompleteState = [useToolingApi, query, selStart, selEnd].join("$");
     if (newAutocompleteState == vm.autocompleteState && !ctrlSpace && !e.newDescribe) {
@@ -426,6 +411,21 @@ class Model {
         // Validate positions are within bounds
         if (insertStart > currentQuery.length) insertStart = currentQuery.length;
         if (insertEnd > currentQuery.length) insertEnd = currentQuery.length;
+
+        // Check if insertion point is in spaces before a SOQL keyword - if so, move before the spaces
+        // This prevents issues when cursor is in whitespace before FROM, WHERE, etc.
+        const soqlKeywords = ["FROM", "WHERE", "AND", "OR", "ORDER", "GROUP", "LIMIT", "OFFSET", "HAVING"];
+        let textAfterCursor = currentQuery.substring(insertStart);
+        let keywordMatch = textAfterCursor.match(/^\s*([a-zA-Z]+)/);
+        if (keywordMatch && soqlKeywords.includes(keywordMatch[1].toUpperCase())) {
+          // Cursor is in spaces before a keyword - find position right after previous word
+          let beforePos = insertStart - 1;
+          while (beforePos >= 0 && /\s/.test(currentQuery.charAt(beforePos))) {
+            beforePos--;
+          }
+          insertStart = beforePos + 1;
+          insertEnd = insertStart;
+        }
 
         // Check character before insertion point for prefix logic
         let charBefore = insertStart > 0 ? currentQuery.charAt(insertStart - 1) : "";

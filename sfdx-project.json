@@ -3,6 +3,9 @@
     {
       "path": "test",
       "default": true
+    },
+    {
+      "path": "force-app"
     }
   ],
   "namespace": "",

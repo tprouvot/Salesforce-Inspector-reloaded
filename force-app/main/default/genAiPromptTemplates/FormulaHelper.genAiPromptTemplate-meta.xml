@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GenAiPromptTemplate xmlns="http://soap.sforce.com/2006/04/metadata">
+    <activeVersionIdentifier>kHV1dE2/3c+Ln69ej5g+TuywC22Qn/hIXhG7gDkb9JA=_1</activeVersionIdentifier>
+    <description>This template is used to provide help to users with formula fields (explain a formula, make some evolution to an existing formula etc.)</description>
+    <developerName>FormulaHelper</developerName>
+    <masterLabel>Formula Helper</masterLabel>
+    <templateVersions>
+        <content>As a Salesforce expert specializing in formula fields and declarative automation, analyze the formula field provided below based on the user&apos;s request.
+
+**User Request:**
+{!$Input:Prompt}
+
+**Formula Field Metadata:**
+{!$Input:FieldMetadata}
+
+**Your Task:**
+Based on the user&apos;s request, provide a comprehensive response that may include:
+
+1. **Plain Language Explanation:** Describe what this formula does in simple, non-technical terms that any user could understand.
+
+2. **Logic Breakdown:** Break down the formula step-by-step, explaining each function, operator, and field reference.
+
+3. **Dependencies:** Identify all referenced fields and their purpose in the calculation.
+
+4. **Edge Cases &amp; Considerations:** Highlight any null handling, division by zero protection, conditional logic, or potential issues.
+
+5. **Best Practices Review:** Evaluate if the formula follows Salesforce best practices and suggest improvements.
+
+6. **Modifications (if requested):** If the user requested changes to the formula, provide:
+  - The updated formula code
+  - Explanation of what changed and why
+  - Any considerations or warnings about the changes
+  - Testing recommendations
+
+7. **Examples:** Provide example scenarios showing how the formula evaluates with sample data.
+
+**Output Format:**
+Output the generated analysis clearly enclosed within &amp;lt;formulaHelper&amp;gt; tags.
+
+Structure your response clearly with appropriate headings. If providing a modified formula, include it in a code block. Be thorough but concise, focusing on what the user specifically asked for in their request.
+
+**Important Guidelines:**
+- Always explain in business terms first, then technical details
+- Point out any potential governor limit concerns
+- Highlight null handling and edge cases
+- If suggesting changes, explain the impact and benefits
+- Provide practical examples with realistic data
+- Consider maintainability and future modifications
+</content>
+        <inputs>
+            <apiName>Prompt</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Prompt</masterLabel>
+            <referenceName>Input:Prompt</referenceName>
+            <required>true</required>
+        </inputs>
+        <inputs>
+            <apiName>FieldMetadata</apiName>
+            <definition>primitive://String</definition>
+            <masterLabel>Field Metadata</masterLabel>
+            <referenceName>Input:FieldMetadata</referenceName>
+            <required>true</required>
+        </inputs>
+        <primaryModel>sfdc_ai__DefaultOpenAIGPT4OmniMini</primaryModel>
+        <status>Published</status>
+        <versionIdentifier>kHV1dE2/3c+Ln69ej5g+TuywC22Qn/hIXhG7gDkb9JA=_1</versionIdentifier>
+    </templateVersions>
+    <type>einstein_gpt__flex</type>
+    <visibility>Global</visibility>
+</GenAiPromptTemplate>

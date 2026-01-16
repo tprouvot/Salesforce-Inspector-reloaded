@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const {execSync} = require("child_process");
-const fs = require("fs-extra");
+const fs = require("fs");
 const path = require("path");
 const os = require("os");
 
@@ -67,15 +67,14 @@ function getLatestTag(cwd) {
   }
 }
 
-// Clone repo and checkout latest tag
-function setupRemoteRepo(tempDir) {
+// Clone repo, checkout tag, and build with pnpm
+function setupAndBuildRepo(tempDir) {
   "use strict";
   const repoUrl = "https://github.com/Flow-Scanner/lightning-flow-scanner";
 
-  logStep("Cloning monorepo and extracting core package");
+  logStep("Cloning monorepo");
 
-  // Clone directly into cloneDir with shallow clone (no history)
-  const cloneDir = path.join(tempDir, ".full-clone");
+  const cloneDir = path.join(tempDir, "repo");
   fs.mkdirSync(cloneDir, {recursive: true});
 
   // Clone the repository (shallow clone for speed)
@@ -101,39 +100,42 @@ function setupRemoteRepo(tempDir) {
     }
   }
 
-  if (tagToCheckout) {
-    try {
-      execSync(`git checkout tags/${tagToCheckout}`, {cwd: cloneDir, stdio: "inherit"});
-      logSuccess(`Checked out tag ${tagToCheckout}`);
-    } catch (e) {
-      logError(`Failed to checkout tag ${tagToCheckout}: ${e.message}`);
-      process.exit(1);
-    }
-  } else {
+  if (!tagToCheckout) {
     logError("No core-v* tags found. Aborting build.");
     process.exit(1);
   }
 
-  // Copy the entire contents of packages/core into tempDir using fs-extra for compatibility
-  const coreSource = path.join(cloneDir, "packages", "core");
-  if (!fs.existsSync(coreSource)) {
+  try {
+    execSync(`git checkout tags/${tagToCheckout}`, {cwd: cloneDir, stdio: "inherit"});
+    logSuccess(`Checked out tag ${tagToCheckout}`);
+  } catch (e) {
+    logError(`Failed to checkout tag ${tagToCheckout}: ${e.message}`);
+    process.exit(1);
+  }
+
+  const coreDir = path.join(cloneDir, "packages", "core");
+  if (!fs.existsSync(coreDir)) {
     logError("packages/core directory not found in repository");
     process.exit(1);
   }
 
-  fs.copySync(coreSource, tempDir, {dereference: true});
+  // Build using pnpm from monorepo root (Turborepo handles workspace deps)
+  logStep("Installing dependencies with pnpm");
+  execSync("pnpm install", {cwd: cloneDir, stdio: "inherit"});
+  logSuccess("Dependencies installed");
 
-  // Clean up the full clone
-  fs.removeSync(cloneDir);
+  logStep("Building project with pnpm");
+  execSync("pnpm dist", {cwd: cloneDir, stdio: "inherit"});
+  logSuccess("Build completed");
 
-  logSuccess("Repository cloned successfully");
+  return coreDir;
 }
 
-function getLibraryNameFromViteConfig(tempDir) {
+function getLibraryNameFromViteConfig(coreDir) {
   "use strict";
   logStep("Reading Vite config to get library name");
   try {
-    const viteConfigPath = path.join(tempDir, "vite.config.ts");
+    const viteConfigPath = path.join(coreDir, "vite.config.ts");
     const viteConfigContent = fs.readFileSync(viteConfigPath, "utf8");
     const match = viteConfigContent.match(/name:\s*"([^"]+)"/);
     if (!match || !match[1]) {
@@ -149,22 +151,10 @@ function getLibraryNameFromViteConfig(tempDir) {
   return null;
 }
 
-function runCommand(command, description, cwd) {
+function readPackageJson(coreDir) {
   "use strict";
   try {
-    logStep(description);
-    execSync(command, {stdio: "inherit", cwd: cwd || process.cwd()});
-    logSuccess(`${description} completed successfully`);
-  } catch {
-    logError(`${description} failed`);
-    process.exit(1);
-  }
-}
-
-function readPackageJson(tempDir) {
-  "use strict";
-  try {
-    const packageJsonPath = path.join(tempDir, "package.json");
+    const packageJsonPath = path.join(coreDir, "package.json");
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
     return packageJson;
   } catch {
@@ -254,29 +244,23 @@ function main() {
   let tempDir;
 
   try {
-    // Step 1: Create temporary directory and setup remote repo
+    // Step 1: Create temporary directory, clone, and build with pnpm
     tempDir = createTempDir();
     logSuccess(`Created temporary directory: ${tempDir}`);
 
-    setupRemoteRepo(tempDir);
+    const coreDir = setupAndBuildRepo(tempDir);
 
     // Step 2: Read package.json to get version
     logStep("Reading package.json");
-    const packageJson = readPackageJson(tempDir);
+    const packageJson = readPackageJson(coreDir);
     const version = packageJson.version;
     logSuccess(`Version found: ${version}`);
 
-    const libraryName = getLibraryNameFromViteConfig(tempDir);
+    const libraryName = getLibraryNameFromViteConfig(coreDir);
 
-    // Step 3: Install dependencies
-    runCommand("npm install", "Installing dependencies", tempDir);
-
-    // Step 4: Build the project
-    runCommand("npm run vite:dist", "Building project with Vite", tempDir);
-
-    // Step 5: Find the UMD file
+    // Step 3: Find the UMD file
     logStep("Locating compiled UMD file");
-    const distDir = path.join(tempDir, "dist");
+    const distDir = path.join(coreDir, "dist");
 
     if (!fs.existsSync(distDir)) {
       logError("Dist directory not found. Build may have failed.");
@@ -286,7 +270,7 @@ function main() {
     const umdFilePath = findUMDFile(distDir);
     logSuccess(`UMD file found: ${path.basename(umdFilePath)}`);
 
-    // Step 6: Inject version and create final output
+    // Step 4: Inject version and create final output
     injectVersion(umdFilePath, version, libraryName);
 
     log("\n🎉 Build completed successfully!", "green");

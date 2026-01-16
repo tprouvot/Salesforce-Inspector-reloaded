@@ -2,6 +2,13 @@
 
 **Run this script from the root of the Chrome extension repo.**
 
+## Prerequisites
+
+**pnpm** must be installed globally:
+```sh
+npm install -g pnpm
+```
+
 ## Quick Steps
 
 ### Build Latest Version (Default)
@@ -27,8 +34,8 @@ This command will:
 1. **Clone** the Lightning Flow Scanner monorepo from GitHub
 2. **Fetch tags** to enable version selection
 3. **Checkout** the specified version (or auto-detect the latest `core-v*` tag)
-4. **Extract** the core package from `packages/core`
-5. **Build** the flow-scanner-core.js in a temporary directory
+4. **Install dependencies** using pnpm (handles workspace dependencies)
+5. **Build** the project using pnpm dist (Turborepo orchestrates the build)
 6. **Install** the compiled file directly to `addon/lib/flow-scanner-core.js`
 7. **Clean up** the temporary build directory
 
@@ -67,17 +74,20 @@ Tag sorting is handled in JavaScript using `localeCompare` with numeric comparis
 2. Clones the Lightning Flow Scanner monorepo (shallow clone for speed)
 3. Fetches all tags explicitly (shallow clones don't include tags by default)
 4. Checks out the target version (specified or latest)
-5. Extracts the `packages/core` directory from the monorepo
-6. Installs dependencies using npm
-7. Builds the project using Vite
-8. Injects version information from `package.json`
-9. Places the final `flow-scanner-core.js` file in `addon/lib/`
-10. Cleans up the temporary directory
+5. Installs dependencies using pnpm from monorepo root
+6. Builds the project using pnpm dist (Turborepo handles workspace dependencies)
+7. Injects version information from `package.json`
+8. Places the final `flow-scanner-core.js` file in `addon/lib/`
+9. Cleans up the temporary directory
+
+### Why pnpm?
+
+The Lightning Flow Scanner monorepo uses pnpm workspaces with Turborepo. The `@flow-scanner/core` package depends on `@flow-scanner/regex-scanner` (a workspace package). Building with pnpm from the monorepo root ensures all workspace dependencies are resolved correctly.
 
 ### Node.js Compatibility
 
-The script uses `fs-extra` for file operations to ensure compatibility with:
-- Node.js 14.x (LTS)
+The script uses native Node.js `fs` module and is compatible with:
 - Node.js 16.x (LTS)
 - Node.js 18.x (LTS)
-- Node.js 20.x (Current)
+- Node.js 20.x (LTS)
+- Node.js 22.x (Current)

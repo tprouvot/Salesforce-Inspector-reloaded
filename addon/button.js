@@ -326,6 +326,9 @@ function initButton(sfHost, inInspector) {
       if (e.data.lightningNavigate) {
         document.dispatchEvent(new CustomEvent("lightningNavigate", {detail: e.data.lightningNavigate}));
       }
+      if (e.data.command === "open-show-all-data") {
+        openShowAllData(sfHost);
+      }
     });
     rootEl.appendChild(popupEl);
     // Function to handle copy action
@@ -389,6 +392,98 @@ function initButton(sfHost, inInspector) {
       if (!rootEl.contains(e.target)) {
         closePopup();
       }
+    }
+
+    function openShowAllData(sfHost) {
+      let recordId = getRecordId(location.href);
+      let sobjectType = getSobject(location.href);
+      if (recordId) {
+        let args = new URLSearchParams();
+        args.set("host", sfHost);
+        if (sobjectType) {
+          args.set("objectType", sobjectType);
+        }
+        args.set("recordId", recordId);
+        let url = chrome.runtime.getURL("inspect.html?" + args);
+        window.open(url, "_blank");
+      }
+    }
+
+    function getRecordId(href) {
+      let url = new URL(href);
+      // Special handling for Flow Builder URLs
+      if (url.pathname.includes("/builder_platform_interaction/flowBuilder.app")) {
+        const flowId = url.searchParams.get("flowId");
+        if (flowId && flowId.startsWith("301")) {
+          return flowId;
+        }
+      }
+      // Salesforce and Console (+ Hyperforce China Lightning & Classic)
+      if (
+        url.hostname.endsWith(".salesforce.com")
+        || url.hostname.endsWith(".salesforce.mil")
+        || url.hostname.endsWith(".sfcrmapps.cn")
+        || url.hostname.endsWith(".sfcrmproducts.cn")
+      ) {
+        let match = url.pathname.match(
+          /\/([a-zA-Z0-9]{3}|[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})(?:\/|$)/
+        );
+        if (match) {
+          let res = match[1];
+          if (res.includes("0000") || res.length == 3) {
+            return match[1];
+          }
+        }
+      }
+      // Lightning Experience
+      const lightningHostnames = [
+        ".lightning.force.com",
+        ".lightning.force.mil",
+        ".lightning.crmforce.mil",
+        ".lightning.force.com.mcas.ms",
+      ];
+      if (lightningHostnames.some((hostname) => url.hostname.endsWith(hostname))) {
+        let match;
+        if (url.pathname == "/one/one.app") {
+          match = url.hash.match(/\/sObject\/([a-zA-Z0-9]+)(?:\/|$)/);
+        } else {
+          match = url.pathname.match(
+            /\/lightning\/[r|o]\/[a-zA-Z0-9_]+\/([a-zA-Z0-9]+)/
+          );
+        }
+        if (match) {
+          return match[1];
+        }
+      }
+      // Visualforce
+      let searchParams = new URLSearchParams(url.search.substring(1));
+      let idParam = searchParams.get("id");
+      if (idParam) {
+        return idParam;
+      }
+      // Visualforce page that does not follow standard Visualforce naming
+      for (let [, p] of searchParams) {
+        if (
+          p.match(/^([a-zA-Z0-9]{3}|[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})$/)
+          && p.includes("0000")
+        ) {
+          return p;
+        }
+      }
+      return null;
+    }
+
+    function getSobject(href) {
+      let url = new URL(href);
+      if (url.pathname) {
+        let match = url.pathname.match(
+          /\/lightning\/[r|o]\/([a-zA-Z0-9_]+)\/[a-zA-Z0-9]+/
+        );
+        if (match) {
+          return match[1];
+        }
+      }
+      return null;
     }
   }
 }

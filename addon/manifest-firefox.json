@@ -80,8 +80,65 @@
     "field-creator.html",
     "options.html",
     "event-monitor.html",
-    "flow-scanner.html"
+    "flow-scanner.html",
+    "debug-log.html"
   ],
   "incognito": "spanning",
-  "manifest_version": 2
+  "manifest_version": 2,
+  "commands": {
+    "open-popup": {
+      "description": "Open popup"
+    },
+    "open-export-autocomplete": {
+      "description": "Fields suggestion in Data Export"
+    },
+    "open-export-execute": {
+      "description": "Run Query in Data Export"
+    },
+    "open-save-modifications": {
+      "description": "Save modifications in Show All Data"
+    },
+    "link-setup": {
+      "description": "Open Setup"
+    },
+    "link-home": {
+      "description": "Open Home Page"
+    },
+    "link-dev": {
+      "description": "Open Developer Console"
+    },
+    "data-export": {
+      "description": "Data Export"
+    },
+    "data-import": {
+      "description": "Data Import"
+    },
+    "options": {
+      "description": "Options"
+    },
+    "metadata-retrieve": {
+      "description": "Retrieve Metadata"
+    },
+    "limits": {
+      "description": "Org Limits"
+    },
+    "field-creator": {
+      "description": "Field Creator"
+    },
+    "explore-api": {
+      "description": "Explore API"
+    },
+    "rest-explore": {
+      "description": "REST Explore"
+    },
+    "event-monitor": {
+      "description": "Event Monitor"
+    },
+    "flow-scanner": {
+      "description": "Flow Scanner"
+    },
+    "debug-log": {
+      "description": "Logs Viewer"
+    }
+  }
 }

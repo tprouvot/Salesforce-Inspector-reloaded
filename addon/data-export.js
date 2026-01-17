@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, getBrowserType} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -1965,7 +1965,12 @@ class App extends React.Component {
               ),
               h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Space to insert all field name autosuggestions or to load suggestions for field values."),
               h("p", {className: "slds-m-bottom_x-small"}, "Press Ctrl+Enter or F5 to execute the export."),
-              h("p", {}, "Those shortcuts can be customized in chrome://extensions/shortcuts"),
+              h("p", {}, "Those shortcuts can be customized in your browser's extension settings.",
+                h("br"),
+                getBrowserType() === "chrome"
+                  ? "Chrome/Edge: chrome://extensions/shortcuts or edge://extensions/shortcuts"
+                  : "Firefox: Add-ons Manager (Ctrl+Shift+A) → gear icon → Manage Extension Shortcuts"
+              ),
               h("p", {className: "slds-m-bottom_x-small"}, "Supports the full SOQL language. The columns in the CSV output depend on the returned data. Using subqueries may cause the output to grow rapidly. Bulk API is not supported. Large data volumes may freeze or crash your browser.")
             ),
             h("div", {hidden: !model.showAI},

@@ -96,7 +96,6 @@ class Model {
   // set available actions based on api type, and set the first one as the default
   updateAvailableActions() {
     this.availableActions = allActions.filter(action => action.supportedApis.includes(this.apiType));
-    // Only reset action if user hasn't manually selected one, or if current action is not available for this API type
     if (!this.importActionSelected || !this.availableActions.some(a => a.value === this.importAction)) {
       this.importAction = this.availableActions[0].value;
       this.importActionName = this.availableActions[0].label;

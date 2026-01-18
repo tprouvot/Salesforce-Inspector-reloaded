@@ -1105,7 +1105,7 @@ class Model {
   }
 
   addQueryTab() {
-    const newTabName = `Query ${this.queryTabs.length + 1}`;
+    const newTabName = `Query ${this.queryTabIndexNumberUpdate()}`;
     this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
     this.activeTabIndex = this.queryTabs.length - 1;
     this.saveQueryTabs();
@@ -1115,6 +1115,7 @@ class Model {
   removeQueryTab(index) {
     if (this.queryTabs.length > 1) {
       this.queryTabs.splice(index, 1);
+      this.queryTabIndexNumberUpdate();
       if (this.activeTabIndex >= index) {
         this.activeTabIndex = Math.max(0, this.activeTabIndex - 1);
       }
@@ -1143,7 +1144,20 @@ class Model {
     this.updatedExportedData();
     this.didUpdate();
   }
+ /*
+  common function that will update the index number of the query tabs
+  */
+  queryTabIndexNumberUpdate() {
+    let queryCount = 1;
 
+    this.queryTabs.forEach(tab => {
+      if (tab.name.startsWith('Query')) {
+        tab.name = `Query ${queryCount}`;
+        queryCount++;
+      }
+    });
+    return queryCount;
+  }
   updateCurrentTabQuery(query) {
     if (this.queryTabs[this.activeTabIndex]) {
       this.queryTabs[this.activeTabIndex].query = query;

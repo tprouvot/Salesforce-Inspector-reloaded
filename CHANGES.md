@@ -2,6 +2,7 @@
 
 ## Version 2.0
 
+- `Data Export` Fix query tab index numbering when adding new tabs after closing existing ones [issue #1059](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1059) (contribution by [mshivakumar2023-debug](https://github.com/mshivakumar2023-debug))
 - `Show All Data` Add `Agentforce Helper` feature for formula fields, allowing users to analyze or use AI to generate some evolutions to current formula.
 - `Popup` Use banner to display success / errors when enabling logs, unfreeze user and enabling debug mode
 - `Data Import` Make attributes property not mandatory for JSON import [feature #1041](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1041) (request by [Devin Schlegel](https://github.com/TachyonicSpace))

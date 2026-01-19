@@ -2,6 +2,7 @@
 
 ## Version 2.0
 
+- `Data Export` Add inline editing feature: edit fields directly in the export table using the "Edit" button on each row. Supports all field types with proper validation and respects field permissions. Changes are saved via Save/Cancel buttons (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
 - `Popup` Use banner to display success / errors when enabling logs, unfreeze user and enabling debug mode
 - `Data Import` Make attributes property not mandatory for JSON import [feature #1041](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1041) (request by [Devin Schlegel](https://github.com/TachyonicSpace))
 - Fix: Line Wrap in Export Does Not Work [issue #1027](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1027) (request by [Andrew Russo](https://github.com/TachyonicSpace))

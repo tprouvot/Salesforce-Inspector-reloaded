@@ -338,9 +338,10 @@ function startInlineEdit(td, currentValue, fieldName, recordId, objectType, fiel
   if (firstCell && colIndex > 0 && !skipButtonCheck) {
     const buttonContainer = document.createElement("div");
     buttonContainer.className = "inline-edit-buttons";
-    buttonContainer.style.display = "flex";
+    buttonContainer.style.display = "inline-flex";
     buttonContainer.style.gap = "4px";
-    buttonContainer.style.marginBottom = "4px";
+    buttonContainer.style.alignItems = "center";
+    buttonContainer.style.verticalAlign = "middle";
     
     // Save button with check icon
     const saveButton = document.createElement("button");
@@ -435,8 +436,10 @@ function startInlineEdit(td, currentValue, fieldName, recordId, objectType, fiel
     
     buttonContainer.appendChild(saveButton);
     buttonContainer.appendChild(cancelButton);
-    // Insert buttons before recordlink to keep recordlink visible below
+    // Insert buttons before recordlink and align them horizontally
     if (recordLinkEl) {
+      // Add margin-right to create 6px gap between buttons and recordlink
+      buttonContainer.style.marginRight = "6px";
       firstCell.insertBefore(buttonContainer, recordLinkEl);
     } else {
       firstCell.appendChild(buttonContainer);
@@ -808,9 +811,10 @@ function restoreEditButton(firstCell, tr, rt, rowIndex) {
       editButton.style.border = "1px solid #706e6b";
       editButton.style.backgroundColor = "#ffffff";
       editButton.style.cursor = "pointer";
-      editButton.style.display = "flex";
+      editButton.style.display = "inline-flex";
       editButton.style.alignItems = "center";
       editButton.style.justifyContent = "center";
+      editButton.style.verticalAlign = "middle";
       editButton.innerHTML = `<svg class="slds-button__icon" aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
         <path fill="#706e6b" d="M8.5 1L11 3.5 4.5 10 2 10 2 7.5 8.5 1zM9.5 2L8 3.5 8.5 4 10 2.5 9.5 2z"/>
       </svg>`;
@@ -830,6 +834,8 @@ function restoreEditButton(firstCell, tr, rt, rowIndex) {
       // Add button at the beginning, preserving existing content (like recordlink)
       // Find recordlink to insert button before it
       const recordLinkEl = firstCell.querySelector('a[title="Show all data"]');
+      // Always apply margin-right to create 6px gap between button and recordlink
+      editButton.style.marginRight = "6px";
       if (recordLinkEl) {
         firstCell.insertBefore(editButton, recordLinkEl);
       } else if (firstCell.hasChildNodes() && firstCell.children.length > 0) {
@@ -899,9 +905,10 @@ function startRowEdit(tr, rt, rowIndex) {
           editButton.style.border = "1px solid #706e6b";
           editButton.style.backgroundColor = "#ffffff";
           editButton.style.cursor = "pointer";
-          editButton.style.display = "flex";
+          editButton.style.display = "inline-flex";
           editButton.style.alignItems = "center";
           editButton.style.justifyContent = "center";
+          editButton.style.verticalAlign = "middle";
           editButton.innerHTML = `<svg class="slds-button__icon" aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
             <path fill="#706e6b" d="M8.5 1L11 3.5 4.5 10 2 10 2 7.5 8.5 1zM9.5 2L8 3.5 8.5 4 10 2.5 9.5 2z"/>
           </svg>`;
@@ -918,6 +925,8 @@ function startRowEdit(tr, rt, rowIndex) {
           
           // Add edit button before recordlink if it exists
           const recordLinkEl = firstCell.querySelector('a[title="Show all data"]');
+          // Always apply margin-right to create 6px gap between button and recordlink
+          editButton.style.marginRight = "6px";
           if (recordLinkEl) {
             firstCell.insertBefore(editButton, recordLinkEl);
           } else {
@@ -999,9 +1008,10 @@ function startRowEdit(tr, rt, rowIndex) {
   // Add save/cancel buttons to first cell
   const buttonContainer = document.createElement("div");
   buttonContainer.className = "inline-edit-buttons";
-  buttonContainer.style.display = "flex";
+  buttonContainer.style.display = "inline-flex";
   buttonContainer.style.gap = "4px";
-  buttonContainer.style.marginBottom = "4px";
+  buttonContainer.style.alignItems = "center";
+  buttonContainer.style.verticalAlign = "middle";
   buttonContainer.style.position = "relative";
   buttonContainer.style.zIndex = "20"; // Higher than recordlink
   
@@ -1336,8 +1346,10 @@ function startRowEdit(tr, rt, rowIndex) {
   // Add save/cancel buttons
   buttonContainer.appendChild(saveButton);
   buttonContainer.appendChild(cancelButton);
-  // Insert buttons before recordlink to keep recordlink visible below
+  // Insert buttons before recordlink and align them horizontally
   if (recordLinkEl) {
+    // Add margin-right to create 6px gap between buttons and recordlink
+    buttonContainer.style.marginRight = "6px";
     firstCell.insertBefore(buttonContainer, recordLinkEl);
   } else {
     firstCell.appendChild(buttonContainer);
@@ -1365,9 +1377,10 @@ function renderCell(rt, cell, td, rowIndex, colIndex) {
         editButton.style.border = "1px solid #706e6b";
         editButton.style.backgroundColor = "#ffffff";
         editButton.style.cursor = "pointer";
-        editButton.style.display = "flex";
+        editButton.style.display = "inline-flex";
         editButton.style.alignItems = "center";
         editButton.style.justifyContent = "center";
+        editButton.style.verticalAlign = "middle";
         editButton.innerHTML = `<svg class="slds-button__icon" aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
           <path fill="#706e6b" d="M8.5 1L11 3.5 4.5 10 2 10 2 7.5 8.5 1zM9.5 2L8 3.5 8.5 4 10 2.5 9.5 2z"/>
         </svg>`;
@@ -1388,7 +1401,13 @@ function renderCell(rt, cell, td, rowIndex, colIndex) {
         });
         
         // Always add button, prepend if there's already content
-        if (td.hasChildNodes() && td.children.length > 0) {
+        // Find recordlink to insert button before it
+        const recordLinkEl = td.querySelector('a[title="Show all data"]');
+        // Always apply margin-right to create 6px gap between button and recordlink
+        editButton.style.marginRight = "6px";
+        if (recordLinkEl) {
+          td.insertBefore(editButton, recordLinkEl);
+        } else if (td.hasChildNodes() && td.children.length > 0) {
           // Check if edit button already exists
           const existingButton = td.querySelector('button[title="Edit all fields"]');
           if (existingButton) {

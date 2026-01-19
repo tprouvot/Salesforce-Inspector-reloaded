@@ -2,6 +2,7 @@
 
 ## Version 2.0
 
+- `Data Import` Only reset action if user hasn't manually selected one [issue #986](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/986) (contribution by [Ruben Halman](https://github.com/RubenHalman))
 - `Data Export` Fix CSV export encoding for non-Latin characters (Hebrew, Arabic, Chinese, etc.) by adding UTF-8 BOM for Excel compatibility (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
 - `Logs Viewer` Allow users to display, filter, delete, share and explain debug logs (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
 - `User Tab` [popup] Add 'Reset Password' button and a new option to hide it. [feature #486](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/486) (contribution by [Phanidra Mangipudi](https://github.com/thephani))

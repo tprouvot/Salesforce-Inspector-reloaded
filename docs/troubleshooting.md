@@ -73,6 +73,23 @@ This error occurs when attempting to deploy a zip file where the `package.xml` f
 1. **Open deployment settings**: Click the cog wheel icon.
 2. **Single Package**: Disable `Single Package` option.
 
+### SDocs Template Editor interference
+
+If you're experiencing issues with the Salesforce Docs (SDocs) Template Editor, where extension code appears to be injecting into IFrame windows (Template Body, Header, Footer), this is caused by a conflict with ad-blocking extensions (such as **AdGuard AdBlocker**).
+
+**Symptoms:**
+
+* Extension code appears in SDocs Template Editor iframes
+* Template Body, Header, or Footer editors not working correctly
+* Unexpected behavior in the SDocs interface
+
+**How to solve it:**
+
+* Disable any ad-blocking extensions (AdGuard AdBlocker etc.) on Salesforce sites
+* You can keep Salesforce Inspector Reloaded enabled
+
+**Related issue:** [#908](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/908)
+
 ### Cache-related issues
 
 The extension caches field permission information to optimize API usage. If you encounter issues related to cached data (such as incorrect field permissions or stale data), you can clear the cache.

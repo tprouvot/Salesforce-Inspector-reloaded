@@ -4,6 +4,7 @@ export class Constants {
   static PromptTemplateSOQL = "GenerateSOQL";
   static PromptTemplateFlow = "DescribeFlow";
   static PromptTemplateDebugLog = "AnalyzeDebugLog";
+  static PromptTemplateFormula = "FormulaHelper";
   // Consumer Key of default connected app
   static DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs";
   static ACCESS_TOKEN = "_access_token";
@@ -24,12 +25,12 @@ export function nullToEmptyString(value) {
   return (value == null) ? "" : value;
 }
 
-export function displayButton(buttonName, hideButtonsOption){
-  const button = hideButtonsOption?.find((element) => element.name == buttonName);
-  if (button){
-    return button.checked;
+export function isOptionEnabled(optionName, optionsArray){
+  const option = optionsArray?.find((element) => element.name == optionName);
+  if (option){
+    return option.checked;
   }
-  //if no option was found, display the button
+  //if no option was found, enable by default
   return true;
 }
 

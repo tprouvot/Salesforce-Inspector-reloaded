@@ -50,13 +50,16 @@ The REST Explorer allows you to interact with Salesforce REST APIs directly from
 
   - JSON responses
   - XML responses
+  - CSV responses
+  - Text/Log responses
 
 - **Response Features**:
 
   - Copy response to clipboard
   - Clear response
-  - Display response time
-  - Show HTTP status code
+  - Display response time (configurable)
+  - Display response size (configurable)
+  - Show HTTP status code with color-coded badges
   - Syntax highlighting for better readability
 
 ### API Discovery
@@ -84,14 +87,47 @@ The REST Explorer allows you to interact with Salesforce REST APIs directly from
 The extension automatically handles:
 
 - Authentication headers
-- Content-Type headers
+- Content-Type headers (when request body is present)
 - API version headers
+- `Accept` header (defaults to `application/json; charset=UTF-8`)
+
+#### Custom Request Headers
+
+You can now customize request headers using the "Headers" button in the request section. This feature allows you to:
+
+- **Override default headers**: Customize the `Accept` header or add additional headers as needed
+- **Set Content-Type**: Specify custom Content-Type headers (e.g., `text/csv; charset=UTF-8` for CSV requests)
+- **Add custom headers**: Include any additional HTTP headers required for your API calls
+
+**Why Custom Headers?**
+
+Custom headers are essential for:
+
+- **API Compatibility**: Some Salesforce APIs require specific headers or header values
+- **Content Negotiation**: Different response formats (CSV, XML, etc.) may require different Accept headers
+- **Integration Requirements**: Third-party integrations or custom endpoints may need specific headers
+- **Testing & Debugging**: Easily test different header combinations without modifying code
 
 ### Performance Metrics
 
-- Response time tracking
+- **Response Time**: Displays request duration in milliseconds
+- **Response Size**: Shows response size in human-readable format (KB/MB)
 - Batch processing statistics (when applicable)
 - Real-time progress indicators
+
+**Configurable Metrics:**
+
+You can customize which metrics are displayed through the Options page:
+
+- Navigate to **Options** → **REST Explorer** tab
+- Toggle **Response Size** and **Response Duration** options
+- Metrics are only calculated when enabled, improving performance when disabled
+
+These options allow you to:
+
+- Reduce visual clutter when metrics aren't needed
+- Improve performance by disabling metric calculations
+- Customize the interface to your preferences
 
 ## Usage Tips
 
@@ -99,12 +135,17 @@ The extension automatically handles:
 2. Use the auto-completion feature to discover available endpoints
 3. Save frequently used queries with descriptive labels
 4. Use the copy feature to share API responses
-5. Monitor response times to optimize your queries
+5. Monitor response times and sizes to optimize your queries
+6. Customize request headers for APIs that require specific headers
+7. Use custom Content-Type headers when working with non-JSON formats (CSV, XML, etc.)
 
 ## Best Practices
 
 1. Always verify the HTTP method before sending requests
 2. Use saved queries for frequently used operations
 3. Clear sensitive data from the response before sharing
-4. Monitor response times for performance optimization
+4. Monitor response times and sizes for performance optimization
 5. Use appropriate HTTP methods for your operations (GET for reading, POST for creating, etc.)
+6. Customize headers only when necessary - default headers work for most use cases
+7. When working with CSV or XML APIs, use custom Content-Type headers as needed
+8. Disable response metrics in Options if you don't need them to improve performance

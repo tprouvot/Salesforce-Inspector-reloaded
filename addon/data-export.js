@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, displayButton, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -68,6 +68,8 @@ class QueryHistory {
 }
 
 class Model {
+  static QUERY_TAB_PREFIX = "Query";
+
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
     this.customFaviconColor = localStorage.getItem(this.sfHost + "_customFavicon") || "";
@@ -90,6 +92,7 @@ class Model {
     this.queryAll = false;
     this.queryTooling = false;
     this.prefHideRelations = localStorage.getItem("hideObjectNameColumnsDataExport") == "true"; // default to false
+    this.prefPreventLineWrap = localStorage.getItem("preventLineWrapDataExport") !== "false"; // default to true (matches v1.27 behavior)
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
@@ -706,7 +709,6 @@ class Model {
         }
         let contextValueField = contextValueFields[0];
         let queryMethod = useToolingApi ? "tooling/query" : vm.queryAll ? "queryAll" : "query";
-        //let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/'/g, "\\'") + "%'";
         let whereClause = contextValueField.field.name + " like '%" + searchTerm.replace(/([\\'])/g, "\\$1") + "%'";
         if (contextValueField.sobjectDescribe.name.toLowerCase() === "recordtype"){
           let sobject = contextPath.split(".")[0];
@@ -1028,11 +1030,8 @@ class Model {
           // Extract SOQL from the result
           const soqlMatch = result.result.match(/<soql>(.*?)<\/soql>/);
           const extractedSoql = soqlMatch ? soqlMatch[1] : result.result;
-          //this.addQueryTab();
           this.updateCurrentTabQuery(extractedSoql);
-          //to resolve sobject and rename current tab
           this.queryAutocompleteHandler();
-          // Update the textarea to show the new query immediately
           if (this.queryInput) {
             this.queryInput.value = extractedSoql;
           }
@@ -1082,7 +1081,7 @@ class Model {
     if (savedTabs) {
       this.queryTabs = JSON.parse(savedTabs);
       if (queryFromUrl) {
-        const newTabName = `Query ${this.queryTabs.length + 1}`;
+        const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.queryTabs.length + 1}`;
         this.queryTabs.push({name: newTabName, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
         this.activeTabIndex = this.queryTabs.length - 1;
         this.saveQueryTabs();
@@ -1090,7 +1089,7 @@ class Model {
         this.activeTabIndex = 0;
       }
     } else {
-      this.queryTabs = [{name: "Query 1", query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
+      this.queryTabs = [{name: `${Model.QUERY_TAB_PREFIX} 1`, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
       this.activeTabIndex = 0;
     }
   }
@@ -1108,7 +1107,7 @@ class Model {
   }
 
   addQueryTab() {
-    const newTabName = `Query ${this.queryTabs.length + 1}`;
+    const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.getNextQueryTabIndex()}`;
     this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
     this.activeTabIndex = this.queryTabs.length - 1;
     this.saveQueryTabs();
@@ -1146,7 +1145,28 @@ class Model {
     this.updatedExportedData();
     this.didUpdate();
   }
+  /*
+  Returns the next available index number for query tabs
+  */
+  getNextQueryTabIndex() {
+    let maxIndex = 0;
+    const prefix = Model.QUERY_TAB_PREFIX;
 
+    this.queryTabs.forEach(tab => {
+      if (tab.name.startsWith(prefix)) {
+        // Extract number from tab name (e.g., "Query 1" -> 1, "Query 2" -> 2)
+        const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const match = tab.name.match(new RegExp(`^${escapedPrefix}\\s+(\\d+)`));
+        if (match) {
+          const index = parseInt(match[1], 10);
+          if (index > maxIndex) {
+            maxIndex = index;
+          }
+        }
+      }
+    });
+    return maxIndex + 1;
+  }
   updateCurrentTabQuery(query) {
     if (this.queryTabs[this.activeTabIndex]) {
       this.queryTabs[this.activeTabIndex].query = query;
@@ -1299,6 +1319,7 @@ function RecordTable(vm) {
     countOfVisibleRecords: null,
     isTooling: false,
     totalSize: -1,
+    preventLineWrap: vm.prefPreventLineWrap,
     addToTable(expRecords) {
       rt.records = rt.records.concat(expRecords);
       if (rt.table.length == 0 && expRecords.length > 0) {
@@ -1741,7 +1762,7 @@ class App extends React.Component {
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
       // Agentforce button (conditional)
-      displayButton("export-agentforce", this.state.hideButtonsOption) && h("div", {
+      isOptionEnabled("export-agentforce", this.state.hideButtonsOption) && h("div", {
         key: "agentforce-btn",
         className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
       },
@@ -1844,7 +1865,6 @@ class App extends React.Component {
                       name: "checkbox-toggle-tooling",
                       value: "checkbox-toggle-tooling",
                       role: "switch",
-                      type: "checkbox",
                       checked: model.queryTooling,
                       onChange: this.onQueryToolingChange,
                       disabled: model.queryAll
@@ -1929,7 +1949,7 @@ class App extends React.Component {
                     h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand"}, "Run Export")
                   ),
                   h("li", {className: "slds-button-group-item"},
-                    displayButton("export-query", this.state.hideButtonsOption) ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "slds-button slds-button_neutral copy-id"}, "Export Query") : null
+                    isOptionEnabled("export-query", this.state.hideButtonsOption) ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "slds-button slds-button_neutral copy-id"}, "Export Query") : null
                   ),
                   h("li", {className: "slds-button-group-item"},
                     h("button", {tabIndex: 3, onClick: this.onQueryPlan, title: "Run Query Plan", className: "slds-button slds-button_neutral"}, "Query Plan")
@@ -2009,7 +2029,7 @@ class App extends React.Component {
                     h("use", {xlinkHref: "symbols.svg#hide"})
                   )
                 ),
-                displayButton("delete", this.state.hideButtonsOption)
+                isOptionEnabled("delete", this.state.hideButtonsOption)
                   ? h("button", {className: "slds-button slds-button_destructive", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
               ),
               model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element"},
@@ -2070,7 +2090,6 @@ class App extends React.Component {
               hidden: model.exportError != null,
               style: {flex: "1 1 0", minHeight: 0, maxHeight: "100%", overflowY: "auto"}
             }
-              /* the scroll table goes here */
             )
           ))
       )
@@ -2099,6 +2118,7 @@ class App extends React.Component {
     if (sfConn.instanceHostname && model.sfHost !== sfConn.instanceHostname) {
       model.sfHost = sfConn.instanceHostname;
       model.sfLink = "https://" + sfConn.instanceHostname;
+      model.orgName = model.sfHost.split(".")[0]?.toUpperCase() || "";
     }
 
     ReactDOM.render(h(App, {model}), root);

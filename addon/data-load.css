@@ -89,3 +89,61 @@
   margin: 102px 232px 0 0;
   z-index: 2;
 }
+
+/* Inline editing styles */
+.editable-cell {
+  cursor: pointer;
+}
+
+.editable-cell:hover {
+  background-color: #f0f8ff !important;
+}
+
+.inline-edit-input {
+  width: 100%;
+  padding: 2px 4px;
+  border: 2px solid #1589ee;
+  border-radius: 2px;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.inline-edit-validation {
+  font-size: 0.75rem;
+  color: #c23934;
+  margin-top: 2px;
+}
+
+.inline-edit-info {
+  font-size: 0.7rem;
+  color: #706e6b;
+  margin-top: 2px;
+}
+
+.inline-edit-buttons {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+  align-items: center;
+}
+
+.inline-edit-buttons button {
+  min-width: 24px;
+  height: 24px;
+  transition: background-color 0.2s ease;
+}
+
+.inline-edit-buttons button:focus {
+  outline: 2px solid #1589ee;
+  outline-offset: 2px;
+}
+
+/* Spinner animation for saving indicator */
+@keyframes slds-spinner-around {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

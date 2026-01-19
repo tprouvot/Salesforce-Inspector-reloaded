@@ -1291,6 +1291,7 @@ function RecordTable(vm) {
   let rt = {
     records: [],
     table: [],
+    header: header,
     rowVisibilities: [],
     colVisibilities: new Array(!vm.prefHideRelations),
     countOfVisibleRecords: null,

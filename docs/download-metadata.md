@@ -10,6 +10,7 @@ This page allows users to retrieve metadata from a Salesforce organization. It p
 * View available metadata components, excluding `InstalledPackage`.
 * Sort metadata components for easier selection (by Name or LastModifiedDate option).
 * Download retrieved metadata as a ZIP file.
+* View metadata content directly in the browser with syntax highlighting.
 
 ### 2. Package.xml Generation
 
@@ -63,6 +64,28 @@ The import button provides multiple ways to load existing metadata configuration
 * Provides real-time status updates for metadata retrieval.
 * Shows logs for debugging errors.
 * Uses checkboxes for easy selection of metadata components.
+
+### 7. Metadata Preview
+
+The metadata preview feature allows you to view the content of individual metadata files directly in your browser without downloading them first. This is particularly useful when you need to quickly inspect metadata content.
+
+<img width="309" height="67" alt="View Metadata Button" src="https://github.com/user-attachments/assets/7ba1350d-842d-49ba-b235-ec345a2451b2" />
+
+#### How to View Metadata
+
+1. After selecting metadata components, click the "View" button next to any metadata file.
+2. The metadata content will open in a modal window with syntax highlighting for better readability.
+3. Use the "Copy" button to copy the entire metadata content to your clipboard.
+4. The preview supports various metadata types including Apex classes, triggers, custom objects, and more.
+
+<img width="678" height="714" alt="Metadata File Preview" src="https://github.com/user-attachments/assets/175f3c92-e450-4118-ade1-2af21320210c" />
+
+#### Key Benefits
+
+* **Quick Inspection:** View metadata without downloading and extracting ZIP files.
+* **Syntax Highlighting:** Code and XML content are displayed with proper syntax highlighting for easier reading.
+* **Copy to Clipboard:** Instantly copy metadata content for use in other tools or documentation.
+* **No File Management:** Avoid cluttering your downloads folder with temporary metadata files.
 
 ## Options Available
 

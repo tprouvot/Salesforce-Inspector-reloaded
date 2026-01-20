@@ -365,6 +365,14 @@ class OptionsTabSelector extends React.Component {
               ]}
           }
         ]
+      },
+      {
+        id: "show-all",
+        tabTitle: "Show All",
+        content: [
+          {option: Option, props: {type: "toggle", title: "Enable Agentforce Helper for formula fields", key: "showAgentforceHelperInspect", default: true, tooltip: "When enabled, shows the 'Agentforce Helper' link in the field actions menu for calculated/formula fields."}},
+          {option: Option, props: {type: "text", title: "Formula Helper Prompt Template Name", key: this.sfHost + "_formulaAgentForcePrompt", default: "FormulaHelper", tooltip: "Developer name of the prompt template to use for Formula Field Analysis in the Inspect page"}},
+        ]
       }
     ];
     this.onTabSelect = this.onTabSelect.bind(this);

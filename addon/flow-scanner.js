@@ -9,7 +9,7 @@
 
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, getUserInfo, isOptionEnabled, Constants, PromptTemplate} from "./utils.js";
+import {getLinkTarget, getUserInfo, isOptionEnabled, Constants, PromptTemplate, getFlowCompareUrl} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {PageHeader} from "./components/PageHeader.js";
 
@@ -1221,7 +1221,7 @@ function calculateVersionCountStyle(totalVersions) {
 }
 
 function FlowInfoSection(props) {
-  const {flow, elements, onPurgeVersions, onToggleDescription, handleMouseDown, shouldIgnoreClick} = props;
+  const {flow, elements, onPurgeVersions, onToggleDescription, handleMouseDown, shouldIgnoreClick, sfHost, flowId} = props;
 
   if (!flow) {
     return h("div", {className: "area"},
@@ -1290,6 +1290,16 @@ function FlowInfoSection(props) {
               ),
               h("div", {className: "detail-value"},
                 h("span", {id: "flow-versions-count", style: versionCountStyle}, flow.versions ? flow.versions.length : "Unknown"),
+                flowId && sfHost && h("a", {
+                  href: getFlowCompareUrl(sfHost, flowId),
+                  target: getLinkTarget(),
+                  className: "slds-button slds-button_icon slds-button_icon-bare slds-m-left_x-small",
+                  title: "Flow Compare"
+                },
+                h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#change_record_type"})
+                )
+                ),
                 (flow.versions && flow.versions.length > 1) && h("button", {
                   className: "slds-button slds-button_icon slds-button_icon-bare slds-m-left_x-small",
                   onClick: onPurgeVersions,
@@ -2049,6 +2059,8 @@ class App extends React.Component {
   renderFlowInfo() {
     const flow = this.flowScanner?.currentFlow;
     const elements = this.flowScanner?.extractFlowElements() || [];
+    const sfHost = this.flowScanner?.sfHost;
+    const flowId = this.flowScanner?.flowId;
 
     return h(FlowInfoSection, {
       flow,
@@ -2056,7 +2068,9 @@ class App extends React.Component {
       onPurgeVersions: this.onPurgeVersions,
       onToggleDescription: this.onToggleDescription,
       handleMouseDown: e => this.handleMouseDown(e),
-      shouldIgnoreClick: e => this.shouldIgnoreClick(e)
+      shouldIgnoreClick: e => this.shouldIgnoreClick(e),
+      sfHost,
+      flowId
     });
   }
 

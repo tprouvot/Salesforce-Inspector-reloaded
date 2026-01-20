@@ -2,6 +2,7 @@
 
 ## Version 2.0
 
+- Add Flow Compare button to quickly access Salesforce's Flow Compare feature (Winter '26) (from `Flow Scanner` and `Popup`)
 - `Data Import` Only reset action if user hasn't manually selected one [issue #986](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/986) (contribution by [Ruben Halman](https://github.com/RubenHalman))
 - `Data Export` Fix query tab index numbering when adding new tabs after closing existing ones [issue #1059](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1059) (contribution by [mshivakumar2023-debug](https://github.com/mshivakumar2023-debug))
 - `Show All Data` Add `Agentforce Helper` feature for formula fields, allowing users to analyze or use AI to generate some evolutions to current formula.

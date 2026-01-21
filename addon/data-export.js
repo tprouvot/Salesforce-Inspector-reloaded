@@ -402,14 +402,44 @@ class Model {
         window.open(link, "_blank");
       } else {
         vm.queryInput.focus();
-        //handle when selected field is the last one before "FROM" keyword, or if an existing comma is present after selection
-        let indexFrom = query.toLowerCase().indexOf("from");
-        if (suffix.trim() == "," && (query.substring(selEnd + 1, indexFrom).trim().length == 0 || query.substring(selEnd).trim().startsWith(",") || query.substring(selEnd).trim().toLowerCase().startsWith("from"))) {
-          suffix = "";
+        let currentQuery = vm.queryInput.value;
+
+        // Use stored position (updated each time handler runs)
+        let insertStart = vm.autocompleteInsertPos.start;
+        let insertEnd = vm.autocompleteInsertPos.end;
+
+        // Validate positions are within bounds
+        if (insertStart > currentQuery.length) insertStart = currentQuery.length;
+        if (insertEnd > currentQuery.length) insertEnd = currentQuery.length;
+
+        // Check if insertion point is in spaces before a SOQL keyword - if so, move before the spaces
+        // This prevents issues when cursor is in whitespace before FROM, WHERE, etc.
+        const soqlKeywords = ["FROM", "WHERE", "AND", "OR", "ORDER", "GROUP", "LIMIT", "OFFSET", "HAVING"];
+        let textAfterCursor = currentQuery.substring(insertStart);
+        let keywordMatch = textAfterCursor.match(/^\s*([a-zA-Z]+)/);
+        if (keywordMatch && soqlKeywords.includes(keywordMatch[1].toUpperCase())) {
+          // Cursor is in spaces before a keyword - find position right after previous word
+          let beforePos = insertStart - 1;
+          while (beforePos >= 0 && /\s/.test(currentQuery.charAt(beforePos))) {
+            beforePos--;
+          }
+          insertStart = beforePos + 1;
+          insertEnd = insertStart;
         }
-        vm.queryInput.setRangeText(value + suffix, selStart, selEnd, "end");
+
+        // Check character before insertion point for prefix logic
+        let charBefore = insertStart > 0 ? currentQuery.charAt(insertStart - 1) : "";
+
+        // Add space prefix if inserting after a word
+        let prefix = "";
+        if (insertStart === insertEnd && insertStart > 0) {
+          if (/[a-zA-Z0-9_]/.test(charBefore) && !/^[\s,]/.test(value)) {
+            prefix = " ";
+          }
+        }
+        vm.queryInput.setRangeText(prefix + value + suffix, insertStart, insertEnd, "end");
         //add query suffix if needed
-        if (value.startsWith("FIELDS") && !query.toLowerCase().includes("limit")) {
+        if (value.startsWith("FIELDS") && !vm.queryInput.value.toLowerCase().includes("limit")) {
           vm.queryInput.value += " LIMIT 200";
         }
         // Persist the updated query to the current tab
@@ -422,7 +452,27 @@ class Model {
     let searchTerm = selStart != selEnd
       ? query.substring(selStart, selEnd)
       : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
-    selStart = selEnd - searchTerm.length;
+
+    // Keywords and common fields that when fully typed should suggest next words instead of replacement
+    const completeKeywords = ["select", "from", "where", "and", "or", "order", "by", "group", "limit", "offset", "having", "find", "in", "returning"];
+    const completeFields = ["id", "name", "createddate", "createdbyid", "lastmodifieddate", "lastmodifiedbyid", "ownerid", "systemmodstamp"];
+
+    // Check if searchTerm is a complete keyword/field - if so, suggest next words instead of replacing
+    let isCompleteWord = completeKeywords.includes(searchTerm.toLowerCase()) || completeFields.includes(searchTerm.toLowerCase());
+
+    // Keep original searchTerm for context, but use empty for filtering when word is complete
+    let originalSearchTerm = searchTerm;
+
+    // If it's a complete word, keep cursor at end and set searchTerm to empty for next-word suggestions
+    if (isCompleteWord) {
+      selStart = selEnd; // Keep cursor position at end, don't move back
+      searchTerm = ""; // Clear searchTerm so all next-word suggestions are shown
+    } else {
+      selStart = selEnd - searchTerm.length;
+    }
+
+    // Update stored position to include the word being replaced
+    vm.autocompleteInsertPos = {start: selStart, end: selEnd};
 
     function sortRank({value, title}) {
       let i = 0;
@@ -456,10 +506,139 @@ class Model {
       i++;
       return i;
     }
+    
     function resultsSort(a, b) {
       return sortRank(a) - sortRank(b) || a.rank - b.rank || a.value.localeCompare(b.value);
     }
 
+    // If we are just after the "from" keyword, autocomplete the sobject name
+    let beforeCursor = query.substring(0, selStart).trim().toLowerCase();
+    let afterCursor = query.substring(selEnd).trim().toLowerCase();
+
+    // 1. EMPTY QUERY - Suggest SELECT or FIND
+    if (beforeCursor === "" || (beforeCursor.length < 10 && !beforeCursor.includes("select") && !beforeCursor.includes("find"))) {
+      let keywords = [
+        {value: "SELECT", title: "SELECT - Start a SOQL query", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+        {value: "FIND", title: "FIND - Start a SOSL search", suffix: " ", rank: 2, autocompleteType: "keyword", dataType: ""}
+      ];
+      
+      let filtered = keywords.filter(kw => 
+        kw.value.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      if (filtered.length > 0) {
+        vm.autocompleteResults = {
+          sobjectName: "",
+          title: "Start your query:",
+          results: filtered
+        };
+        return;
+      }
+    }
+
+    // 2. AFTER SELECT, BEFORE FROM - Suggest common fields or FROM
+    let hasSelect = beforeCursor.includes("select");
+    let hasFrom = beforeCursor.includes("from") || afterCursor.startsWith("from");
+    // Check if there's a FROM clause anywhere in the query (even if cursor is in SELECT clause)
+    let hasFromInQuery = /\bfrom\s+[a-z0-9_]+/i.test(query);
+
+    // Only show generic fields if there's no FROM clause with an object - otherwise let object fields be suggested
+    if (hasSelect && !hasFrom && !hasFromInQuery) {
+      let afterSelect = query.substring(query.toLowerCase().lastIndexOf("select") + 6, selStart).trim();
+      
+      // Right after SELECT (no fields yet)
+      if (afterSelect.length === 0 || afterSelect.match(/^[,\s]*$/)) {
+        let suggestions = [
+          {value: "Id FROM", title: "Id FROM - Quick start (then replace Id with your fields)", suffix: " ", rank: 1, autocompleteType: "pattern", dataType: ""},
+          {value: "Id", title: "Id - Record identifier", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "id"},
+          {value: "Name", title: "Name - Record name", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "string"},
+          {value: "Id, Name FROM", title: "Id, Name FROM - Common starter", suffix: " ", rank: 2, autocompleteType: "pattern", dataType: ""},
+          {value: "FROM", title: "FROM - Will auto-add Id (object first approach)", suffix: " ", rank: 3, autocompleteType: "keyword", dataType: ""}
+        ];
+        
+        let filtered = suggestions.filter(s => 
+          s.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.title.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        if (filtered.length > 0) {
+          vm.autocompleteResults = {
+            sobjectName: "",
+            title: "Select fields or specify object:",
+            results: filtered.sort(resultsSort)
+          };
+          return;
+        }
+      }
+      
+      // After typing some fields, suggest FROM and/or other fields
+      if (afterSelect.length > 0 && !afterSelect.endsWith(",") && !afterSelect.endsWith(" ")) {
+        let suggestions = [
+          {value: " FROM", title: "FROM - Specify the object", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""}
+        ];
+
+        // When a field is complete, also show other field names as suggestions
+        if (isCompleteWord && completeFields.includes(originalSearchTerm.toLowerCase())) {
+          let otherFields = [
+            {value: "Id", title: "Id - Record identifier", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "id"},
+            {value: "Name", title: "Name - Record name", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "string"},
+            {value: "CreatedDate", title: "CreatedDate - When record was created", suffix: " ", rank: 4, autocompleteType: "fieldName", dataType: "datetime"},
+            {value: "CreatedById", title: "CreatedById - Who created the record", suffix: " ", rank: 4, autocompleteType: "fieldName", dataType: "reference"},
+            {value: "LastModifiedDate", title: "LastModifiedDate - When record was last modified", suffix: " ", rank: 4, autocompleteType: "fieldName", dataType: "datetime"},
+            {value: "LastModifiedById", title: "LastModifiedById - Who last modified the record", suffix: " ", rank: 4, autocompleteType: "fieldName", dataType: "reference"},
+            {value: "OwnerId", title: "OwnerId - Record owner", suffix: " ", rank: 4, autocompleteType: "fieldName", dataType: "reference"},
+            {value: "SystemModstamp", title: "SystemModstamp - System modification timestamp", suffix: " ", rank: 5, autocompleteType: "fieldName", dataType: "datetime"}
+          ];
+          // Filter out the field that was just typed
+          otherFields = otherFields.filter(f => f.value.toLowerCase() !== originalSearchTerm.toLowerCase());
+          suggestions = suggestions.concat(otherFields);
+        }
+
+        let filtered = suggestions.filter(s =>
+          s.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.title.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        if (filtered.length > 0) {
+          vm.autocompleteResults = {
+            sobjectName: "",
+            title: isCompleteWord ? "Next:" : "Continue query:",
+            results: filtered.sort(resultsSort)
+          };
+          return;
+        }
+      }
+
+      // If typing a field name, show common fields
+      if (searchTerm.length > 0) {
+        let commonFields = [
+          {value: "Id", title: "Id - Record identifier", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "id"},
+          {value: "Name", title: "Name - Record name", suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: "string"},
+          {value: "CreatedDate", title: "CreatedDate - When record was created", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "datetime"},
+          {value: "CreatedById", title: "CreatedById - Who created the record", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "reference"},
+          {value: "LastModifiedDate", title: "LastModifiedDate - When record was last modified", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "datetime"},
+          {value: "LastModifiedById", title: "LastModifiedById - Who last modified the record", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "reference"},
+          {value: "OwnerId", title: "OwnerId - Record owner", suffix: " ", rank: 2, autocompleteType: "fieldName", dataType: "reference"},
+          {value: "SystemModstamp", title: "SystemModstamp - System modification timestamp", suffix: " ", rank: 3, autocompleteType: "fieldName", dataType: "datetime"}
+        ];
+
+        let filtered = commonFields.filter(f =>
+          f.value.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          f.title.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        if (filtered.length > 0) {
+          vm.autocompleteResults = {
+            sobjectName: "",
+            title: "Common fields (available on most objects):",
+            results: filtered.sort(resultsSort)
+          };
+          return;
+        }
+      }
+    }
+
+    // 3. AFTER FROM KEYWORD - Suggest object names
     // If we are just after the "from" keyword, autocomplete the sobject name
     if (query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
       let {globalStatus, globalDescribe} = vm.describeInfo.describeGlobal(useToolingApi);
@@ -501,12 +680,14 @@ class Model {
       return;
     }
 
+    // Find sobject name
     let sobjectName, isAfterFrom;
     // Find out what sobject we are querying, by using the word after the "from" keyword.
     // Assuming no subqueries in the select clause, we should find the correct sobjectName. There should be only one "from" keyword, and strings (which may contain the word "from") are only allowed after the real "from" keyword.
     let fromKeywordMatch = /(^|\s)from\s+([a-z0-9_]*)/i.exec(query);
     let findKeywordMatch = /(^|\s)find\s+([a-z0-9_]*)/i.exec(query);
     let graphKeywordMatch = /(^|\s)uiapi\s+([a-z0-9_]*)/i.exec(query);
+
     if (fromKeywordMatch) {
       sobjectName = fromKeywordMatch[2];
       isAfterFrom = selStart > fromKeywordMatch.index + 1;
@@ -517,15 +698,16 @@ class Model {
         sobjectName = fromKeywordMatch[1];
         isAfterFrom = false;
       } else {
-        let title = findKeywordMatch || graphKeywordMatch ? "" : "\"from\" keyword not found";
-        vm.autocompleteResults = {
-          sobjectName: "",
-          title,
-          results: []
-        };
+        // No FROM keyword found - don't show error, just show nothing (handled by earlier sections)
+        if (findKeywordMatch || graphKeywordMatch) {
+          vm.autocompleteResults = {sobjectName: "", title: "", results: []};
+        } else {
+          vm.autocompleteResults = {sobjectName: "", title: "", results: []};
+        }
         return;
       }
     }
+
     // If we are in a subquery, try to detect that.
     fromKeywordMatch = /\(\s*select.*\sfrom\s+([a-z0-9_]*)/i.exec(query);
     if (fromKeywordMatch && fromKeywordMatch.index < selStart) {
@@ -536,8 +718,10 @@ class Model {
         isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
       }
     }
+
     vm.updateCurrentTabName(sobjectName);
     let {sobjectStatus, sobjectDescribe} = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
+    
     if (!sobjectDescribe) {
       switch (sobjectStatus) {
         case "loading":
@@ -572,6 +756,30 @@ class Model {
       }
     }
 
+    // 4. AFTER OBJECT NAME - Suggest WHERE, ORDER BY, LIMIT, etc.
+    if (isAfterFrom && beforeCursor.match(/from\s+[a-z0-9_]+\s*$/i)) {
+      let keywords = [
+        {value: "WHERE", title: "WHERE - Filter records", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+        {value: "ORDER BY", title: "ORDER BY - Sort results", suffix: " ", rank: 2, autocompleteType: "keyword", dataType: ""},
+        {value: "LIMIT", title: "LIMIT - Limit number of results", suffix: " ", rank: 2, autocompleteType: "keyword", dataType: ""},
+        {value: "GROUP BY", title: "GROUP BY - Group results", suffix: " ", rank: 3, autocompleteType: "keyword", dataType: ""},
+        {value: "OFFSET", title: "OFFSET - Skip records", suffix: " ", rank: 3, autocompleteType: "keyword", dataType: ""}
+      ];
+      
+      let filtered = keywords.filter(kw => 
+        kw.value.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      if (filtered.length > 0) {
+        vm.autocompleteResults = {
+          sobjectName,
+          title: "Add conditions:",
+          results: filtered.sort(resultsSort)
+        };
+        return;
+      }
+    }
+
     /*
      * The context of a field is used to support queries on relationship fields.
      *
@@ -586,12 +794,12 @@ class Model {
 
     // If we are on the right hand side of a comparison operator, autocomplete field values
     let isFieldValue = query.substring(0, selStart).match(/\s*[<>=!]+\s*('?[^'\s]*)$/);
-
+    
     // In clause on picklist field
     let isInWithValues = query.substring(0, selStart).match(/\s*in\s*\(\s*(?:(?:'[^']*'\s*,\s*)+|')('?[^'\s]*)$/i);
     let inValuesUtilized = "";
     if (isInWithValues){
-      if (isInWithValues[0] && isInWithValues[0].match(/\s*in\s*\(\s*(?:')$/i)){ // extra single quote
+      if (isInWithValues[0] && isInWithValues[0].match(/\s*in\s*\(\s*(?:')$/i)){
         selStart -= 1;
         isInWithValues[0] = isInWithValues[0].substring(0, isInWithValues[0].length - 1);
       }
@@ -616,10 +824,11 @@ class Model {
     */
     let contextSobjectDescribes = new Enumerable([sobjectDescribe]);
     let contextPath = query.substring(0, contextEnd).match(/[a-zA-Z0-9_.]*$/)[0];
-    let sobjectStatuses = new Map(); // Keys are error statuses, values are an object name with that status. Only one object name in the value, since we only show one error message.
+    let sobjectStatuses = new Map();
+
     if (contextPath) {
       let contextFields = contextPath.split(".");
-      contextFields.pop(); // always empty
+      contextFields.pop();
       for (let referenceFieldName of contextFields) {
         let newContextSobjectDescribes = new Set();
         for (let referencedSobjectName of contextSobjectDescribes
@@ -680,6 +889,105 @@ class Model {
       return;
     }
 
+    // 5. AFTER WHERE AND CONDITION - Suggest AND, OR
+    if (beforeCursor.includes("where") && !beforeCursor.match(/\s+(where|and|or|not)\s*$/i)) {
+      // Check if we just completed a condition
+      if (beforeCursor.match(/['\d)]\s*$/i) || beforeCursor.match(/\s+(null|true|false)\s*$/i)) {
+        let logicalOps = [
+          {value: "AND", title: "AND - Both conditions must be true", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+          {value: "OR", title: "OR - Either condition must be true", suffix: " ", rank: 1, autocompleteType: "keyword", dataType: ""},
+          {value: "ORDER BY", title: "ORDER BY - Sort results", suffix: " ", rank: 2, autocompleteType: "keyword", dataType: ""},
+          {value: "LIMIT", title: "LIMIT - Limit results", suffix: " ", rank: 2, autocompleteType: "keyword", dataType: ""}
+        ];
+        
+        let filtered = logicalOps.filter(op => 
+          op.value.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        if (filtered.length > 0) {
+          vm.autocompleteResults = {
+            sobjectName,
+            title: "Continue query:",
+            results: filtered.sort(resultsSort)
+          };
+          return;
+        }
+      }
+    }
+
+    // 6. SUGGEST OPERATORS AFTER FIELD NAME (including INCLUDES/EXCLUDES)
+    if (!isFieldValue && beforeCursor.includes("where")) {
+      // Match field name with OR without trailing space
+      let fieldMatch = query.substring(0, selStart).match(/\s+([a-zA-Z0-9_.]+)\s*$/) || 
+                      query.substring(0, selStart).match(/\s+([a-zA-Z0-9_.]+)$/);
+      
+      if (fieldMatch && !beforeCursor.match(/\s+(and|or|not|includes|excludes|in|like|=|!=|<|>|<=|>=)\s*$/i)) {
+        let potentialFieldName = fieldMatch[1];
+        let fieldParts = potentialFieldName.split('.');
+        let actualFieldName = fieldParts[fieldParts.length - 1];
+        
+        let matchingFields = contextSobjectDescribes
+          .flatMap(sobjectDescribe => sobjectDescribe.fields)
+          .filter(field => field.name.toLowerCase() === actualFieldName.toLowerCase())
+          .toArray();
+        
+        if (matchingFields.length > 0) {
+          let operators = [
+            {value: " =", title: "= equals", suffix: " ", rank: 1, autocompleteType: "operator", dataType: ""},
+            {value: " !=", title: "!= not equals", suffix: " ", rank: 1, autocompleteType: "operator", dataType: ""}
+          ];
+          
+          // Add INCLUDES/EXCLUDES for multipicklist
+          if (matchingFields[0].type === 'multipicklist') {
+            operators.unshift(
+              {value: " INCLUDES", title: "INCLUDES - contains any of these values", suffix: " (", rank: 1, autocompleteType: "operator", dataType: ""},
+              {value: " EXCLUDES", title: "EXCLUDES - does not contain any of these values", suffix: " (", rank: 1, autocompleteType: "operator", dataType: ""}
+            );
+          }
+          
+          operators.push(
+            {value: " <", title: "< less than", suffix: " ", rank: 2, autocompleteType: "operator", dataType: ""},
+            {value: " >", title: "> greater than", suffix: " ", rank: 2, autocompleteType: "operator", dataType: ""},
+            {value: " <=", title: "<= less than or equal", suffix: " ", rank: 2, autocompleteType: "operator", dataType: ""},
+            {value: " >=", title: ">= greater than or equal", suffix: " ", rank: 2, autocompleteType: "operator", dataType: ""},
+            {value: " LIKE", title: "LIKE - pattern matching", suffix: " ", rank: 2, autocompleteType: "operator", dataType: ""},
+            {value: " IN", title: "IN - match any value in list", suffix: " (", rank: 2, autocompleteType: "operator", dataType: ""},
+            {value: " NOT IN", title: "NOT IN - does not match any value", suffix: " (", rank: 2, autocompleteType: "operator", dataType: ""}
+          );
+          
+          let filtered = operators.filter(op => 
+            op.value.trim().toLowerCase().includes(searchTerm.toLowerCase()) ||
+            op.title.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+          
+          if (filtered.length > 0) {
+            // Create a helpful title that includes field type
+            let fieldType = matchingFields[0].type;
+            let fieldLabel = matchingFields[0].label;
+            let titlePrefix = "";
+            
+            if (fieldType === 'multipicklist') {
+              titlePrefix = "Multipicklist field - use INCLUDES/EXCLUDES:";
+            } else if (fieldType === 'picklist') {
+              titlePrefix = `Picklist field (${fieldLabel}) - operators:`;
+            } else if (fieldType === 'reference') {
+              titlePrefix = `Reference field (${fieldLabel}) - operators:`;
+            } else {
+              titlePrefix = `${fieldLabel} (${fieldType}) - operators:`;
+            }
+            
+            vm.autocompleteResults = {
+              sobjectName,
+              title: titlePrefix,
+              results: filtered.sort(resultsSort)
+            };
+            return;
+          }
+        }
+      }
+    }
+
+    // 7. FIELD VALUE AUTOCOMPLETE
     if (isFieldValue) {
       // Autocomplete field values
       let contextValueFields = contextSobjectDescribes
@@ -688,6 +996,7 @@ class Model {
           .map(field => ({sobjectDescribe, field}))
         )
         .toArray();
+        
       if (contextValueFields.length == 0) {
         vm.autocompleteResults = {
           sobjectName,
@@ -751,16 +1060,16 @@ class Model {
         };
         return;
       }
+      
       let ar = new Enumerable(contextValueFields).flatMap(function* ({field}) {
-        yield* field.picklistValues.filter(
-          pickVal => !inValuesUtilized.includes(pickVal.value.toLowerCase())
-        ).map(
-          pickVal => ({value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: ""})
-        );
+        yield* field.picklistValues.filter(pickVal => !inValuesUtilized.includes(pickVal.value.toLowerCase()))
+          .map(pickVal => ({value: "'" + pickVal.value + "'", title: pickVal.label, suffix: " ", rank: 1, autocompleteType: "picklistValue", dataType: ""}));
+        
         if (field.type == "boolean") {
           yield {value: "true", title: "true", suffix: " ", rank: 1};
           yield {value: "false", title: "false", suffix: " ", rank: 1};
         }
+        
         if (field.type == "date" || field.type == "datetime") {
           let pad = (n, d) => ("000" + n).slice(-d);
           let d = new Date();
@@ -792,8 +1101,8 @@ class Model {
           yield {value: "NEXT_90_DAYS", title: "Starts 12:00:00 of the current day and continues for the next 90 days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "LAST_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the last n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_DAYS:n", title: "For the number n provided, starts 12:00:00 of the current day and continues for the next n days.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "NEXT_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next week and continues for the next n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "N_DAYS_AGO:n", title: "Starts at 12:00:00 AM on the day n days before the current day and continues for 24 hours. (The range doesn't include today.)", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next week and continues for the next n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "LAST_N_WEEKS:n", title: "For the number n provided, starts 12:00:00 of the last day of the previous week and continues for the last n weeks.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "N_WEEKS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the month that started n months before the start of the current month and continues for all the days of that month.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_MONTHS:n", title: "For the number n provided, starts 12:00:00 of the first day of the next month and continues for the next n months.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
@@ -811,9 +1120,9 @@ class Model {
           yield {value: "NEXT_N_YEARS:n", title: "Starts 12:00:00 on January 1 of the following year and continues through the end of December 31 of the nth year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "LAST_N_YEARS:n", title: "Starts 12:00:00 on January 1 of the previous year and continues through the end of December 31 of the previous nth year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "N_YEARS_AGO:n", title: "Starts at 12:00:00 AM on January 1 of the calendar year n years before the current calendar year and continues through the end of December 31 of that year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "THIS_FISCAL_QUARTER", title: "Starts 12:00:00 on the first day of the current fiscal quarter and continues through the end of the last day of the fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "LAST_FISCAL_QUARTER", title: "Starts 12:00:00 on the first day of the last fiscal quarter and continues through the end of the last day of that fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
-          yield {value: "NEXT_FISCAL_QUARTER", title: "Starts 12:00:00 on the first day of the next fiscal quarter and continues through the end of the last day of that fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "THIS_FISCAL_QUARTER", title: "Starts 12:00:00 of the current fiscal quarter and continues to the end of the current fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "LAST_FISCAL_QUARTER", title: "Starts 12:00:00 of the previous fiscal quarter and continues to the end of that fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
+          yield {value: "NEXT_FISCAL_QUARTER", title: "Starts 12:00:00 of the next fiscal quarter and continues to the end of that fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "NEXT_N_FISCAL_QUARTERS:n", title: "Starts 12:00:00 on the first day of the next fiscal quarter and continues through the end of the last day of the nth fiscal quarter. The fiscal year is defined in the company profile under Setup atCompany Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "LAST_N_FISCAL_QUARTERS:n", title: "Starts 12:00:00 on the first day of the last fiscal quarter and continues through the end of the last day of the previous nth fiscal quarter. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "N_FISCAL_QUARTERS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the fiscal quarter n fiscal quarters before the current fiscal quarter and continues through the end of the last day of that fiscal quarter.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
@@ -824,6 +1133,7 @@ class Model {
           yield {value: "LAST_N_FISCAL_YEARS:n", title: "Starts 12:00:00 on the first day of the last fiscal year and continues through the end of the last day of the previous nth fiscal year. The fiscal year is defined in the company profile under Setup at Company Profile | Fiscal Year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
           yield {value: "N_FISCAL_YEARS_AGO:n", title: "Starts at 12:00:00 AM on the first day of the fiscal year n fiscal years ago and continues through the end of the last day of that fiscal year.", suffix: " ", rank: 1, autocompleteType: "variable", dataType: ""};
         }
+        
         if (field.nillable) {
           yield {value: "null", title: "null", suffix: " ", rank: 1, autocompleteType: "null", dataType: ""};
         }
@@ -831,59 +1141,71 @@ class Model {
         .filter(res => res.value.toLowerCase().includes(searchTerm.toLowerCase()) || res.title.toLowerCase().includes(searchTerm.toLowerCase()))
         .toArray()
         .sort(resultsSort);
+        
       vm.autocompleteResults = {
         sobjectName,
         title: fieldNames + (ar.length == 0 ? " values (Press Ctrl+Space to load suggestions):" : " values:"),
         results: ar
       };
       return;
-    } else {
-      // Autocomplete field names and functions
-      if (ctrlSpace) {
-        let includeFormula = localStorage.getItem("includeFormulaFieldsFromExportAutocomplete") !== "false";
-        let ar = contextSobjectDescribes
-          .flatMap(sobjectDescribe => sobjectDescribe.fields)
-          .filter(field => (field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase())) && (includeFormula || !field.calculated))
-          .map(field => contextPath + field.name)
-          .toArray();
-        if (ar.length > 0) {
-          vm.queryInput.focus();
-          vm.queryInput.setRangeText(ar.join(", ") + (isAfterFrom ? " " : ""), selStart - contextPath.length, selEnd, "end");
-          vm.updateCurrentTabQuery(vm.queryInput.value);
-        }
-        vm.queryAutocompleteHandler();
-        return;
+    }
+
+    // 8. FIELD NAME AUTOCOMPLETE
+    // Autocomplete field names and functions
+    if (ctrlSpace) {
+      let includeFormula = localStorage.getItem("includeFormulaFieldsFromExportAutocomplete") !== "false";
+      let ar = contextSobjectDescribes
+        .flatMap(sobjectDescribe => sobjectDescribe.fields)
+        .filter(field => (field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase())) && (includeFormula || !field.calculated))
+        .map(field => contextPath + field.name)
+        .toArray();
+      if (ar.length > 0) {
+        vm.queryInput.focus();
+        vm.queryInput.setRangeText(ar.join(", ") + (isAfterFrom ? " " : ""), selStart - contextPath.length, selEnd, "end");
+        vm.updateCurrentTabQuery(vm.queryInput.value);
       }
-      vm.autocompleteResults = {
-        sobjectName,
-        title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " fields suggestions:",
-        results: contextSobjectDescribes
-          .flatMap(sobjectDescribe => sobjectDescribe.fields)
-          .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
-          .flatMap(function* (field) {
-            yield {value: field.name, title: field.label, suffix: isAfterFrom ? " " : ", ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
-            if (field.relationshipName) {
-              yield {value: field.relationshipName + ".", title: field.label, suffix: "", rank: 1, autocompleteType: "relationshipName", dataType: ""};
-            }
-          })
-          .concat(
-            new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "toLabel", "convertTimezone", "convertCurrency", "FORMAT", "GROUPING"])
-              .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
-              .map(fn => {
-                if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
-                  return {value: fn, title: fn, suffix: "", rank: 2, autocompleteType: "variable", dataType: ""};
-                } else {
-                  return {value: fn, title: fn + "()", suffix: "(", rank: 2, autocompleteType: "variable", dataType: ""};
-                }
-              })
-          )
-          .toArray()
-          .sort(resultsSort)
-      };
+      vm.queryAutocompleteHandler();
       return;
     }
+    vm.autocompleteResults = {
+      sobjectName,
+      title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " fields suggestions:",
+      results: contextSobjectDescribes
+        .flatMap(sobjectDescribe => sobjectDescribe.fields)
+        .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
+        // Filter out the just-completed field so it's not suggested again
+        .filter(field => !isCompleteWord || field.name.toLowerCase() !== originalSearchTerm.toLowerCase())
+        .flatMap(function* (field) {
+          yield {value: field.name, title: field.label, suffix: " ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
+          if (field.relationshipName) {
+            yield {value: field.relationshipName + ".", title: field.label, suffix: "", rank: 1, autocompleteType: "relationshipName", dataType: ""};
+          }
+        })
+        .concat(
+          new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "toLabel", "convertTimezone", "convertCurrency", "FORMAT", "GROUPING"])
+            .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
+            .map(fn => {
+              if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
+                return {value: fn, title: fn, suffix: "", rank: 2, autocompleteType: "variable", dataType: ""};
+              } else {
+                return {value: fn, title: fn + "()", suffix: "(", rank: 2, autocompleteType: "variable", dataType: ""};
+              }
+            })
+        )
+        .toArray()
+        .sort(resultsSort)
+    };
   }
+
   removeTypo(query) {
+    // Add commas between space-separated fields in SELECT clause
+    query = query.replace(/\bSELECT\s+(.+?)\s+FROM\b/gi, (match, fields) => {
+      // Replace whitespace between field names with ", " (handles Id Name -> Id, Name)
+      // Captures: word chars, dots (for relationships), closing parens (for functions)
+      // Lookahead: word chars or opening parens (for functions)
+      let result = fields.replace(/([a-zA-Z0-9_.\)]+)\s+(?=[a-zA-Z0-9_(])/g, "$1, ");
+      return "SELECT " + result + " FROM";
+    });
     // Remove double commas
     query = query.replace(/,\s*,/g, ",");
     // Remove comma before FROM
@@ -1693,6 +2015,16 @@ class App extends React.Component {
     // There is no event for when caret is moved without any selection or value change, so use keyup and mouseup for that.
     queryInput.addEventListener("keyup", queryAutocompleteEvent);
     queryInput.addEventListener("mouseup", queryAutocompleteEvent);
+
+    // Remove trailing comma when user leaves the query input
+    queryInput.addEventListener("blur", () => {
+      let query = model.queryInput.value;
+      let cleanedQuery = model.removeTypo(query);
+      if (cleanedQuery !== query) {
+        model.queryInput.value = cleanedQuery;
+        model.updateCurrentTabQuery(cleanedQuery);
+      }
+    });
 
     // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
     // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50

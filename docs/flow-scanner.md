@@ -129,7 +129,27 @@ You can hover over the small **info icon** next to "Versions" to see a short exp
 
 Using the purge feature periodically helps keep your org clean and avoids hitting the maximum number of versions for critical flows.
 
----
+## Comparing Flow Versions
+
+Salesforce Inspector Reloaded provides quick access to Salesforce's Flow Compare feature, which allows you to visually compare different versions of a flow side-by-side in the Flow Builder.
+
+### What is Flow Compare?
+
+Flow Compare is a Salesforce feature that enables you to:
+
+- View two flow versions side-by-side
+- Identify differences between versions
+- Understand what changed between versions
+- Review changes before deploying or activating a flow
+
+For more details, see the [official Salesforce documentation](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_mgmt_compare_versions.htm&release=258&type=5).
+
+### How to Access Flow Compare
+
+1. Open Flow Scanner on any flow
+2. In the **Flow Information** panel, look for the **Versions** section
+3. Click the icon (🔄) next to the version count
+4. This opens Flow Builder with the current flow version set for comparison
 
 ## Accessibility & Shortcuts
 

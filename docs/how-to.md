@@ -135,6 +135,37 @@ Go on a Salesforce flow and check / uncheck the checbox to update navigation scr
 
 ![2023-09-29_16-01-14 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/91845a31-8f53-4ea1-b895-4cb036d1bed0)
 
+## Compare Flow Versions
+
+Salesforce Inspector Reloaded provides quick access to Salesforce's Flow Compare feature, allowing you to visually compare different versions of a flow side-by-side in the Flow Builder.
+
+### What is Flow Compare?
+
+Flow Compare is a Salesforce feature (available from Winter '26) that enables you to:
+
+* View two flow versions side-by-side
+* Identify differences between versions visually
+* Understand what changed between versions
+* Review changes before deploying or activating a flow
+
+For more details, see the [official Salesforce documentation](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_mgmt_compare_versions.htm&release=258&type=5).
+
+### How to Access Flow Compare
+
+1. Open Flow Builder
+2. Open Salesforce Inspector Reloaded popup
+3. Look for the **Flow Compare** button (appears when viewing a flow version)
+4. Click the button to open Flow Builder with the compare view
+
+### Using Flow Compare
+
+Once Flow Builder opens:
+
+1. The current flow version is automatically loaded
+2. Use the version selector dropdown to choose a different version to compare against
+3. Flow Builder will display both versions side-by-side, highlighting differences
+4. Review changes, elements, and logic differences between the versions
+
 ## Add custom links to "Shortcut" tab
 
 <img width="1234" alt="Use custom shortcuts" src="https://github.com/user-attachments/assets/036045b8-133c-46c1-90d0-1db7aa81a190" />

@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, isOptionEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -3825,6 +3825,9 @@ class AllDataSelection extends React.PureComponent {
   getFlowScannerUrl() {
     return `flow-scanner.html?host=${this.props.sfHost}&flowDefId=${this.state.flowDefinitionId}&flowId=${this.props.selectedValue.recordId}`;
   }
+  getFlowCompareUrl() {
+    return getFlowCompareUrl(this.props.sfHost, this.props.selectedValue.recordId);
+  }
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
    */
@@ -4235,6 +4238,18 @@ class AllDataSelection extends React.PureComponent {
                 "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small",
           },
           "Flow Scanner"
+        )
+        : null,
+      flowDefinitionId
+        ? h(
+          "a",
+          {
+            href: this.getFlowCompareUrl(),
+            target: linkTarget,
+            className:
+                "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small",
+          },
+          "Flow Compare"
         )
         : null,
       h(

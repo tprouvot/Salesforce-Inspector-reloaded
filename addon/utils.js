@@ -297,10 +297,21 @@ export function copyToClipboard(value) {
 }
 
 /**
+ * Generates a URL for the Flow Compare page in Salesforce Flow Builder.
+ * @param {string} sfHost - The Salesforce host URL (e.g., "myorg.lightning.force.com").
+ * @param {string} recordId - The flow version record ID (18-character Salesforce ID).
+ * @returns {string} The complete URL for the Flow Compare page.
+ */
+export function getFlowCompareUrl(sfHost, recordId) {
+  return `https://${sfHost}/builder_platform_interaction/flowBuilder.app?flowId=${recordId}&compareTargetFlowId=${recordId}`;
+}
+
+/**
  * Downloads a CSV file with optional UTF-8 BOM for Excel compatibility
  * @param {string} csvContent - The CSV content to download
  * @param {string} filename - The filename for the downloaded file
  */
+
 export function downloadCsvFile(csvContent, filename) {
   // Add UTF-8 BOM for Excel compatibility with Hebrew and other non-Latin characters
   const BOM = localStorage.getItem("useBomForCsvExport") === "true" ? "\uFEFF" : "";

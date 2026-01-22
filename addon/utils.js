@@ -34,6 +34,10 @@ export function isOptionEnabled(optionName, optionsArray){
   return true;
 }
 
+export function isSettingEnabled(settingName){
+  return localStorage.getItem(settingName) === "true";
+}
+
 export async function getLatestApiVersionFromOrg(sfHost) {
   let latestApiVersionFromOrg = sessionStorage.getItem(sfHost + "_latestApiVersionFromOrg");
   if (latestApiVersionFromOrg != null) {

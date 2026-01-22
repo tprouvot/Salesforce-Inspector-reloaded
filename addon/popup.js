@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, isOptionEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -50,28 +50,21 @@ if (typeof browser === "undefined") {
 }
 
 function getFilteredLocalStorage() {
-  const existingFilteredStorage = sessionStorage.getItem("filteredStorage");
-  if (existingFilteredStorage) {
-    return JSON.parse(existingFilteredStorage);
-  }
-
-  let host = new URLSearchParams(window.location.search).get("host");
-
-  let domainStart = host?.split(".")[0];
+  const host = new URLSearchParams(window.location.search).get("host");
+  const domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
   const keysToSend = [
     "scrollOnFlowBuilder",
     "colorizeProdBanner",
     "colorizeSandboxBanner",
-    "popupArrowOrientation",
-    "popupArrowPosition",
     "prodBannerText",
   ];
-  const filteredStorage = Object.fromEntries(
-    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
+  
+  // Always get fresh values for keysToSend from localStorage
+  // to avoid cache issues when these values change in options
+  return Object.fromEntries(
+    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || key.startsWith('hide') || key.startsWith('popup') || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
   );
-  sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
-  return filteredStorage;
 }
 function closePopup() {
   parent.postMessage({insextClosePopup: true}, "*");
@@ -127,11 +120,13 @@ class App extends React.PureComponent {
       contextUrl: null,
       apiVersionInput: apiVersion,
       isFieldsPresent: false,
+      isPopupExpanded: false, // Track if popup is expanded/active
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
       eventMonitorHref: "event-monitor.html?" + hostArg,
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
+      apiStatisticsHref: "api-statistics.html?" + hostArg,
       latestNotesViewed:
         localStorage.getItem("latestReleaseNotesVersionViewed")
           === this.props.addonVersion || browser.extension.inIncognitoContext,
@@ -184,6 +179,7 @@ class App extends React.PureComponent {
       this.setState({
         isInSetup: locationHref.includes("/lightning/setup/"),
         contextUrl: locationHref,
+        isPopupExpanded: true, // Popup is expanded when we receive this message
       });
     }
     this.setState({
@@ -381,6 +377,7 @@ class App extends React.PureComponent {
       eventMonitorHref,
       fieldCreatorHref,
       limitsHref,
+      apiStatisticsHref,
       isFieldsPresent,
       latestNotesViewed,
       useLegacyDownloadMetadata,
@@ -486,6 +483,7 @@ class App extends React.PureComponent {
             isFieldsPresent,
             eventMonitorHref,
             showToast: this.showToast,
+            isPopupExpanded: this.state.isPopupExpanded,
           }),
           h(
             "div",
@@ -760,6 +758,26 @@ class App extends React.PureComponent {
                   h("span", {}, "SIR O", h("u", {}, "p"), "tions")
                 )
               )
+              : null,
+            isSettingEnabled("apiDebugStatisticsMode")
+              ? h(
+                "div",
+                {
+                  className:
+                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+                },
+                h(
+                  "a",
+                  {
+                    ref: "apiStatisticsBtn",
+                    href: apiStatisticsHref,
+                    target: linkTarget,
+                    className:
+                      "slds-col page-button slds-button slds-button_neutral",
+                  },
+                  h("span", {}, "API Debug ", h("u", {}, "S"), "ats")
+                )
+              )
               : null
           )
         ),
@@ -914,6 +932,7 @@ class App extends React.PureComponent {
   }
 }
 
+/** Main tab component */
 class AllDataBox extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -930,7 +949,7 @@ class AllDataBox extends React.PureComponent {
     this.state = {
       activeSearchAspect: this.SearchAspectTypes[defaultTab],
       sobjectsList: null,
-      sobjectsLoading: true,
+      sobjectsLoading: false,
       usersBoxLoading: false,
       contextRecordId: null,
       contextUserId: null,
@@ -944,7 +963,6 @@ class AllDataBox extends React.PureComponent {
 
   componentDidMount() {
     this.ensureKnownBrowserContext();
-    this.loadSobjects();
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -952,10 +970,20 @@ class AllDataBox extends React.PureComponent {
     if (prevProps.contextUrl !== this.props.contextUrl) {
       this.ensureKnownBrowserContext();
     }
+    
+    // Check if popup just became expanded or Objects tab just became active
+    const popupJustExpanded = !prevProps.isPopupExpanded && this.props.isPopupExpanded;
+    const objectsTabJustActivated = prevState.activeSearchAspect !== activeSearchAspect 
+      && activeSearchAspect === this.SearchAspectTypes.sobject;
+    
     if (prevState.activeSearchAspect !== activeSearchAspect) {
       switch (activeSearchAspect) {
         case this.SearchAspectTypes.sobject:
           this.ensureKnownBrowserContext();
+          // Load sobjects if popup is expanded and Objects tab is now active
+          if (this.shouldLoadSobjects()) {
+            this.loadSobjects();
+          }
           break;
         case this.SearchAspectTypes.users:
           this.ensureKnownUserContext();
@@ -968,6 +996,19 @@ class AllDataBox extends React.PureComponent {
           break;
       }
     }
+    
+    // If popup just became expanded and Objects tab is active, load sobjects
+    if (popupJustExpanded && this.shouldLoadSobjects()) {
+      this.loadSobjects();
+    }
+  }
+
+  /**
+   * Check if sobjects should be loaded
+   * @returns {boolean} True if Objects tab is active and popup is expanded
+   */
+  shouldLoadSobjects() {
+    return this.props.isPopupExpanded &&this.state.activeSearchAspect === this.SearchAspectTypes.sobject
   }
 
   ensureKnownBrowserContext() {
@@ -1023,6 +1064,15 @@ class AllDataBox extends React.PureComponent {
   }
 
   loadSobjects() {
+    // Don't load if already loading or already loaded
+    if (this.state.sobjectsLoading || this.state.sobjectsList !== null) {
+      return;
+    }
+    
+    // Set loading state
+    this.setState({sobjectsLoading: true});
+    
+    //we don't have the entity map in the in-memory cache, so we need to fetch it
     let entityMap = new Map();
 
     function addEntity(
@@ -1101,51 +1151,60 @@ class AllDataBox extends React.PureComponent {
     }
 
     function getEntityDefinitions() {
+      let bucket = 0;
+      
+      function fetchNextBatch() {
+        return getEntityDefinitionBatch(bucket)
+          .then((hasMore) => {
+            if (hasMore) {
+              bucket++;
+              return fetchNextBatch();
+            }
+            // All batches fetched
+            return Promise.resolve();
+          });
+      }
+      
+      return fetchNextBatch()
+        .catch((err) => {
+          console.error("fetch entity definitions: ", err);
+        });
+    }
+
+    function getEntityDefinitionBatch(bucket) {
+      //console.log("getEntityDefinitionBatch: " + bucket);
+      let offset = bucket > 0 ? " OFFSET " + bucket * 2000 : "";
+      let query
+        = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000"
+        + offset;
       return sfConn
         .rest(
           "/services/data/v"
             + apiVersion
             + "/tooling/query?q="
-            + encodeURIComponent("SELECT COUNT() FROM EntityDefinition")
+            + encodeURIComponent(query)
         )
-        .then((res) => {
-          let entityNb = res.totalSize;
-          for (let bucket = 0; bucket < Math.ceil(entityNb / 2000); bucket++) {
-            let offset = bucket > 0 ? " OFFSET " + bucket * 2000 : "";
-            let query
-              = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000"
-              + offset;
-            sfConn
-              .rest(
-                "/services/data/v"
-                  + apiVersion
-                  + "/tooling/query?q="
-                  + encodeURIComponent(query)
-              )
-              .then((respEntity) => {
-                for (let record of respEntity.records) {
-                  addEntity(
-                    {
-                      name: record.QualifiedApiName,
-                      label: record.Label,
-                      keyPrefix: record.KeyPrefix,
-                      durableId: record.DurableId,
-                      isCustomSetting: record.IsCustomSetting,
-                      recordTypesSupported: record.RecordTypesSupported,
-                      newUrl: record.NewUrl,
-                      isEverCreatable: record.IsEverCreatable,
-                    },
-                    null
-                  );
-                }
-              })
-              .catch((err) => {
-                console.error("list entity definitions: ", err);
-              });
+        .then((respEntity) => {
+          for (let record of respEntity.records) {
+            addEntity(
+              {
+                name: record.QualifiedApiName,
+                label: record.Label,
+                keyPrefix: record.KeyPrefix,
+                durableId: record.DurableId,
+                isCustomSetting: record.IsCustomSetting,
+                recordTypesSupported: record.RecordTypesSupported,
+                newUrl: record.NewUrl,
+                isEverCreatable: record.IsEverCreatable,
+              },
+              null
+            );
           }
+          return respEntity.records?.length >= 2000; // If the batch has 2000 records, there are more to fetch
         })
         .catch((err) => {
-          console.error("count entity definitions: ", err);
+          console.error("list entity definitions: ", err);
+          throw err; // Re-throw to allow error handling in calling function
         });
     }
 
@@ -1353,6 +1412,7 @@ class AllDataBox extends React.PureComponent {
   }
 }
 
+/** User tab component */
 class AllDataBoxUsers extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -1480,18 +1540,14 @@ class AllDataBoxUsers extends React.PureComponent {
 
     // Build SELECT clause dynamically based on available fields
     // If ProfileId is accessible, Profile.Name should also be accessible
-    let fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    if (hasProfileId) {
-      fullQuerySelect += ", ProfileId, Profile.Name";
-    }
-
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive" + (hasProfileId ? ", ProfileId, Profile.Name" : "") + " FROM User";
     const userSearchWhereClause = await this.getUserSearchWhereClause(escapedUserQuery);
-    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
+    const queryWhere = " WHERE " + userSearchWhereClause + " WITH USER_MODE ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
 
     // Use single query since we're building it dynamically based on accessible fields
     try {
       setIsLoading(true);
-      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom));
+      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + queryWhere));
       return userSearchResult.records || [];
     } catch (err) {
       console.error("Unable to query user details:", err);
@@ -1505,23 +1561,27 @@ class AllDataBoxUsers extends React.PureComponent {
   async getUserSearchWhereClause(escapedUserQuery) {
     const {userSearchFields, excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.state;
 
-    let userSearchWhereClause = "(";
+    //start the where clause
+    let whereClause = [];
+    whereClause.push("(");
+    let userSearchWhereClauseFields = [];
+    //concat to search the users using user.Name field 
     userSearchFields.forEach(field => {
-      userSearchWhereClause += field.name + " LIKE '%" + escapedUserQuery + "%' OR ";
+      userSearchWhereClauseFields.push(field.name + " LIKE '%" + escapedUserQuery + "%'");
     });
-    userSearchWhereClause = userSearchWhereClause.slice(0, -4);
-    userSearchWhereClause += ")";
+    whereClause.push(userSearchWhereClauseFields.join(" OR "));
+    whereClause.push(")")
     if (excludeInactiveUsersFromSearch) {
-      userSearchWhereClause += " AND IsActive = true";
+      whereClause.push("AND IsActive = true");
     }
     if (excludePortalUsersFromSearch) {
       // Check if IsPortalEnabled field is accessible before adding filter
       const hasIsPortalEnabled = await this.hasFieldAccess("IsPortalEnabled");
       if (hasIsPortalEnabled) {
-        userSearchWhereClause += " AND IsPortalEnabled = false";
+        whereClause.push("AND IsPortalEnabled = false");
       }
     }
-    return userSearchWhereClause;
+    return whereClause.join(" ");
   }
 
   async onDataSelect(userRecord) {
@@ -1538,25 +1598,15 @@ class AllDataBoxUsers extends React.PureComponent {
     if (!selectedUserId) {
       return;
     }
-    // Get cached field permissions
+
+    // leverage USER_MODE to get the user details with fields that are not accessible by the regular API
     const hasProfileId = await this.hasFieldAccess("ProfileId");
     const hasIsPortalEnabled = await this.hasFieldAccess("IsPortalEnabled");
-
-    // Build SELECT clause dynamically based on available fields
-    // If ProfileId is accessible, Profile.Name should also be accessible
-    let querySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
-    if (hasProfileId) {
-      querySelect += ", ProfileId, Profile.Name";
-    }
-    if (hasIsPortalEnabled) {
-      querySelect += ", IsPortalEnabled";
-    }
-
-    const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
+    const querySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)" + (hasProfileId ? ", ProfileId, Profile.Name" : "") + (hasIsPortalEnabled ? ", IsPortalEnabled" : "") + " FROM User WHERE Id='" + selectedUserId + "' WITH USER_MODE LIMIT 1";
 
     try {
       setIsLoading(true);
-      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(querySelect + " " + queryFrom));
+      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(querySelect));
       let userDetail = userResult.records[0];
       userDetail.debugModeActionLabel = userDetail.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
       //query NetworkMember only if it is a portal user (display "Login to Experience" button)
@@ -1643,6 +1693,7 @@ class AllDataBoxUsers extends React.PureComponent {
   }
 }
 
+/** ?? tab component */
 class AllDataBoxSObject extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -1699,7 +1750,7 @@ class AllDataBoxSObject extends React.PureComponent {
         "LastModifiedDate",
         "Name",
       ];
-      if (selectedValue.sobject.recordTypesSupported) {
+      if (selectedValue.sobject.recordTypesSupported && selectedValue.sobject.recordTypesSupported.length > 1) {
         fields.push("RecordType.DeveloperName", "RecordType.Id");
       }
       this.restCallForRecordDetails(fields, selectedValue);
@@ -2288,6 +2339,7 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 }
 
+/** Shortcut tab component */
 class AllDataBoxShortcut extends React.PureComponent {
   constructor(props) {
     super(props);

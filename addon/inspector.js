@@ -1,4 +1,5 @@
 import {getRedirectUri, getClientId, Constants} from "./utils.js";
+import {apiStatistics} from "./api-statistics.js";
 
 export let defaultApiVersion = "65.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
@@ -115,6 +116,10 @@ export let sfConn = {
       throw new Error("Instance Hostname not found");
     }
 
+    // Track API call start time for statistics
+    const startTime = performance.now();
+    let isError = false;
+
     let xhr = new XMLHttpRequest();
     if (useCache) {
       url += (url.includes("?") ? "&" : "?") + "cache=" + Math.random();
@@ -180,11 +185,21 @@ export let sfConn = {
       };
       xhr.send(body);
     });
+    
+    // Calculate duration and track statistics
+    const duration = performance.now() - startTime;
+    
     if (rawResponse){
+      // Track successful call
+      apiStatistics.trackApiCall('rest', url, method, duration, false);
       return xhr;
     } else if (xhr.status >= 200 && xhr.status < 300) {
+      // Track successful call
+      apiStatistics.trackApiCall('rest', url, method, duration, false);
       return xhr.response;
     } else if (xhr.status == 0) {
+      // Track error
+      apiStatistics.trackApiCall('rest', url, method, duration, true);
       if (!logErrors) { console.error("Received no response from Salesforce REST API", xhr); }
       let err = new Error();
       err.name = "SalesforceRestError";
@@ -265,6 +280,9 @@ export let sfConn = {
       throw new Error("Session not found");
     }
 
+    // Track API call start time for statistics
+    const startTime = performance.now();
+
     let xhr = new XMLHttpRequest();
     xhr.open("POST", "https://" + this.instanceHostname + wsdl.servicePortAddress + "?cache=" + Math.random(), true);
     xhr.setRequestHeader("Content-Type", "text/xml");
@@ -301,11 +319,19 @@ export let sfConn = {
       };
       xhr.send(requestBody);
     });
+    
+    // Calculate duration and track statistics
+    const duration = performance.now() - startTime;
+    
     if (xhr.status == 200) {
+      // Track successful call
+      apiStatistics.trackApiCall('soap', null, method, duration, false);
       let responseBody = xhr.response.querySelector(method + "Response");
       let parsed = XML.parse(responseBody).result;
       return parsed;
     } else {
+      // Track error
+      apiStatistics.trackApiCall('soap', null, method, duration, true);
       console.error("Received error response from Salesforce SOAP API", xhr);
       let err = new Error();
       err.name = "SalesforceSoapError";

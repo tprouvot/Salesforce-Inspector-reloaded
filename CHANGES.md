@@ -4,6 +4,8 @@
 
 - Increase popup expanded to heigh (enable/disable with `Enable Dynamic Popup Height` setting in User Experience)
 - Reduce number of API calls (do not perform calls if popup not exanpded + remove calls on recordtype issue and entitydef count retrieval) and a new page to track #of api calls (enable/disable with `Enable API Stats Debug Mode` setting in API) [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437)
+- `Metadata` Fix: Checkboxes unselect behavior and indeterminate state [issue #1066](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1066)
+- `Metadata` Fix: ApprovalProcess listMetadata does not return child [issue #1065](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1065)
 - Add Flow Compare button to quickly access Salesforce's Flow Compare feature (Winter '26) (from `Flow Scanner` and `Popup`)
 - `Data Import` Only reset action if user hasn't manually selected one [issue #986](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/986) (contribution by [Ruben Halman](https://github.com/RubenHalman))
 - `Data Export` Fix query tab index numbering when adding new tabs after closing existing ones [issue #1059](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1059) (contribution by [mshivakumar2023-debug](https://github.com/mshivakumar2023-debug))

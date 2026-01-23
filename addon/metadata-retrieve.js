@@ -579,8 +579,16 @@ class App extends React.Component {
     model.allSelected = checked;
     model.metadataObjects.forEach(metadataObject => {
       metadataObject.selected = checked;
+      metadataObject.indeterminate = false;
       metadataObject.childXmlNames.forEach(child => {
         child.selected = checked;
+        child.indeterminate = false;
+        if (child.childXmlNames && child.childXmlNames.length > 0) {
+          child.childXmlNames.forEach(grandchild => {
+            grandchild.selected = checked;
+            grandchild.indeterminate = false;
+          });
+        }
       });
     });
     if (checked){
@@ -1192,9 +1200,20 @@ class ObjectSelector extends React.Component {
   onChange(e) {
     let {metadataObject, model} = this.props;
     metadataObject.selected = e.target.checked;
+    metadataObject.indeterminate = false;
     metadataObject.wildcard = !metadataObject.expanded;
     if (metadataObject.expanded){
-      metadataObject.childXmlNames.forEach(child => child.selected = metadataObject.selected);
+      metadataObject.childXmlNames.forEach(child => {
+        child.selected = metadataObject.selected;
+        child.indeterminate = false;
+        // If child is a folder, update its children too
+        if (child.childXmlNames && child.childXmlNames.length > 0) {
+          child.childXmlNames.forEach(grandchild => {
+            grandchild.selected = metadataObject.selected;
+            grandchild.indeterminate = false;
+          });
+        }
+      });
     }
     model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
     model.didUpdate();
@@ -1202,32 +1221,39 @@ class ObjectSelector extends React.Component {
   onSelectChild(child, e){
     let {model} = this.props;
     if (child.isFolder){
-      this.onSelectMeta(null, child);
+      // If clicking on the checkbox input itself, toggle selection
+      if (e.target.nodeName === "INPUT") {
+        child.selected = !child.selected;
+        child.indeterminate = false;
+
+        // Update all grandchildren
+        if (child.childXmlNames && child.childXmlNames.length > 0) {
+          child.childXmlNames.forEach(grandchild => {
+            grandchild.selected = child.selected;
+            grandchild.indeterminate = false;
+          });
+        }
+
+        // Update grandparent state
+        if (child.parent) {
+          this.updateParentSelectionState(child.parent);
+        }
+
+        model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
+        model.didUpdate();
+      } else {
+        // Clicking elsewhere expands/collapses
+        this.onSelectMeta(null, child);
+      }
     } else {
       child.selected = !child.selected;
 
-      // If selecting, check parent and grandparent
-      if (child.selected) {
-        child.parent.selected = true;
-        if (child.parent.isFolder){
-          child.parent.parent.selected = true;
-        }
-      } else {
-        // If unchecking, check if any siblings are still selected
-        const anySiblingSelected = child.parent.childXmlNames.some(sibling => sibling.selected);
+      // Update parent selection state based on children
+      this.updateParentSelectionState(child.parent);
 
-        if (!anySiblingSelected) {
-          child.parent.selected = false;
-
-          // If parent is a folder, check if any parent siblings are still selected
-          if (child.parent.isFolder && child.parent.parent) {
-            const anyParentSiblingSelected = child.parent.parent.childXmlNames.some(parentSibling => parentSibling.selected);
-
-            if (!anyParentSiblingSelected) {
-              child.parent.parent.selected = false;
-            }
-          }
-        }
+      // If parent is a folder, update grandparent state
+      if (child.parent.isFolder && child.parent.parent) {
+        this.updateParentSelectionState(child.parent.parent);
       }
 
       model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
@@ -1236,6 +1262,34 @@ class ObjectSelector extends React.Component {
 
     if (e.target.nodeName != "INPUT"){
       e.preventDefault();
+    }
+  }
+
+  /**
+   * Updates the selection state of a parent based on its children's selection state
+   * Sets selected, indeterminate, or unchecked based on children
+   */
+  updateParentSelectionState(parent) {
+    if (!parent || !parent.childXmlNames || parent.childXmlNames.length === 0) {
+      return;
+    }
+
+    const selectedChildren = parent.childXmlNames.filter(child => child.selected || child.indeterminate);
+    const allSelected = selectedChildren.length === parent.childXmlNames.length
+                       && parent.childXmlNames.every(child => child.selected && !child.indeterminate);
+
+    if (selectedChildren.length === 0) {
+      // No children selected
+      parent.selected = false;
+      parent.indeterminate = false;
+    } else if (allSelected) {
+      // All children fully selected
+      parent.selected = true;
+      parent.indeterminate = false;
+    } else {
+      // Some children selected or some are indeterminate
+      parent.selected = true;
+      parent.indeterminate = true;
     }
   }
   getMetaFolderProof(metadataObject){
@@ -1411,7 +1465,16 @@ class ObjectSelector extends React.Component {
                   child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
                     h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
                   ) : null,
-                  h("input", {type: "checkbox", className: !child.isFolder ? "margin-grandchild metadata" : "metadata", checked: !!child.selected}),
+                  h("input", {
+                    type: "checkbox",
+                    className: !child.isFolder ? "margin-grandchild metadata" : "metadata",
+                    checked: !!child.selected,
+                    ref: (input) => {
+                      if (input) {
+                        input.indeterminate = !!child.indeterminate;
+                      }
+                    }
+                  }),
                   h("span", {
                     className: "slds-text-body_small slds-accordion__summary-content",
                     title: child.fullName,
@@ -1453,7 +1516,18 @@ class ObjectSelector extends React.Component {
             h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
               h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
             ),
-            h("input", {type: "checkbox", className: "metadata", checked: !!metadataObject.selected, onChange: this.onChange, key: metadataObject.xmlName}),
+            h("input", {
+              type: "checkbox",
+              className: "metadata",
+              checked: !!metadataObject.selected,
+              onChange: this.onChange,
+              key: metadataObject.xmlName,
+              ref: (input) => {
+                if (input) {
+                  input.indeterminate = !!metadataObject.indeterminate;
+                }
+              }
+            }),
             h("span", {
               className: "slds-accordion__summary-content",
               title: metadataObject.xmlName

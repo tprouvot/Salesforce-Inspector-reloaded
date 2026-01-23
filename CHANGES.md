@@ -2,6 +2,7 @@
 
 ## Version 2.0
 
+- `Metadata` Fix: Checkboxes unselect behavior and indeterminate state [issue #1066](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1066)
 - `Metadata` Fix: ApprovalProcess listMetadata does not return child [issue #1065](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1065)
 - Add Flow Compare button to quickly access Salesforce's Flow Compare feature (Winter '26) (from `Flow Scanner` and `Popup`)
 - `Data Import` Only reset action if user hasn't manually selected one [issue #986](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/986) (contribution by [Ruben Halman](https://github.com/RubenHalman))

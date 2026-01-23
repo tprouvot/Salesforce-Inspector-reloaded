@@ -1205,10 +1205,31 @@ class ObjectSelector extends React.Component {
       this.onSelectMeta(null, child);
     } else {
       child.selected = !child.selected;
-      child.parent.selected = true;
-      if (child.parent.isFolder){
-        child.parent.parent.selected = true;
+
+      // If selecting, check parent and grandparent
+      if (child.selected) {
+        child.parent.selected = true;
+        if (child.parent.isFolder){
+          child.parent.parent.selected = true;
+        }
+      } else {
+        // If unchecking, check if any siblings are still selected
+        const anySiblingSelected = child.parent.childXmlNames.some(sibling => sibling.selected);
+
+        if (!anySiblingSelected) {
+          child.parent.selected = false;
+
+          // If parent is a folder, check if any parent siblings are still selected
+          if (child.parent.isFolder && child.parent.parent) {
+            const anyParentSiblingSelected = child.parent.parent.childXmlNames.some(parentSibling => parentSibling.selected);
+
+            if (!anyParentSiblingSelected) {
+              child.parent.parent.selected = false;
+            }
+          }
+        }
       }
+
       model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
       model.didUpdate();
     }

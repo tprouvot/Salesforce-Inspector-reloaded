@@ -167,6 +167,9 @@
     },
     "debug-log": {
       "description": "Logs Viewer"
+    },
+    "api-statistics": {
+      "description": "API Statistics"
     }
   }
 }

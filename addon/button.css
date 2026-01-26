@@ -23,7 +23,7 @@
   #insext .insext-popup {
     box-sizing: border-box;
     width: 280px;
-    height: 450px;
+    min-height: 450px;
     position: absolute;
     background-color: var(--sfir-btn-white);
     border-radius: var(--sfir-btn-radius-sm);
@@ -31,7 +31,7 @@
     border: 1px solid #d8dde6;
     display: none;
   }
-  
+
   #insext .insext-popup-vertical {
     right: 0%;
     border-top-right-radius: 0;
@@ -41,10 +41,10 @@
     border-top-left-radius: var(--sfir-btn-radius);
     border-bottom-left-radius: var(--sfir-btn-radius);
   }
-  
-  #insext .insext-popup-vertical-up {
+
+  #insext .insext-popup-vertical.insext-popup-vertical-up {
     /*bottom: 100%;*/
-    top: calc(100% - 400px) !important;
+    top: calc(100% - 400px);
   }
   
   #insext .insext-popup-horizontal {
@@ -59,7 +59,7 @@
   }
   
   #insext .insext-popup-horizontal-right {
-    left: -200px;
+    left: -160px;
   }
   
   #insext.insext-active .insext-popup {
@@ -106,10 +106,15 @@
       border: none;
       box-shadow: none;
     }
+
     #insext.insext-active .insext-btn-horizontal {
       left: 4px;
       bottom: 416px;
       border-top-right-radius: 0px;
+    }
+    
+    #insext.insext-active .insext-btn-horizontal.insext-btn-dynamic-height {
+      bottom: calc(95vh);
     }
     
   #insext .insext-btn-vertical:hover,

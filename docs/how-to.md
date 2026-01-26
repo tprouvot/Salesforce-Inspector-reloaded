@@ -430,6 +430,10 @@ Because the IsPortalEnabled field does not exist in orgs where there is no porta
    * **Exclude Portal users** - Hides users who have portal access enabled
    * **Exclude Inactive users** - Hides users who are marked as inactive
 
+### Dynamic Popup Height
+
+You can leverage more window height in the popup, to reduce the scroll (Activated by default). To disable this feature, go to User Experience -> Enable Dynamic Popup Height and uncheck it.
+
 ## Generate a package.xml from a deployment
 
 From a DeployRequest record, click on the `Generate package.xml` button to download the package.xml for this deployment.

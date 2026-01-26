@@ -166,6 +166,7 @@ class OptionsTabSelector extends React.Component {
                 }
               }}
           },
+          {option: Option, props: {type: "toggle", title: "Enable Dynamic Popup Height", key: "popupHeighDynamictMode", default: false, tooltip: "When enabled, the popup height will be dynamically adjusted based on the content."}},
         ]
       },
       {

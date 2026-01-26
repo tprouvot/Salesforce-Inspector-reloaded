@@ -50,28 +50,21 @@ if (typeof browser === "undefined") {
 }
 
 function getFilteredLocalStorage() {
-  const existingFilteredStorage = sessionStorage.getItem("filteredStorage");
-  if (existingFilteredStorage) {
-    return JSON.parse(existingFilteredStorage);
-  }
-
-  let host = new URLSearchParams(window.location.search).get("host");
-
-  let domainStart = host?.split(".")[0];
+  const host = new URLSearchParams(window.location.search).get("host");
+  const domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
   const keysToSend = [
     "scrollOnFlowBuilder",
     "colorizeProdBanner",
     "colorizeSandboxBanner",
-    "popupArrowOrientation",
-    "popupArrowPosition",
     "prodBannerText",
   ];
-  const filteredStorage = Object.fromEntries(
-    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
+
+  // Always get fresh values for keysToSend from localStorage
+  // to avoid cache issues when these values change in options
+  return Object.fromEntries(
+    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || key.startsWith("popup") || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
   );
-  sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
-  return filteredStorage;
 }
 function closePopup() {
   parent.postMessage({insextClosePopup: true}, "*");

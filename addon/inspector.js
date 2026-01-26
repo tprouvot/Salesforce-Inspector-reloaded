@@ -187,18 +187,14 @@ export let sfConn = {
 
     // Calculate duration and track statistics
     const duration = performance.now() - startTime;
+    const isError = !rawResponse && (xhr.status < 200 || xhr.status >= 300);
+    apiStatistics.trackApiCall("rest", url, method, duration, isError);
 
     if (rawResponse){
-      // Track successful call
-      apiStatistics.trackApiCall("rest", url, method, duration, false);
       return xhr;
     } else if (xhr.status >= 200 && xhr.status < 300) {
-      // Track successful call
-      apiStatistics.trackApiCall("rest", url, method, duration, false);
       return xhr.response;
     } else if (xhr.status == 0) {
-      // Track error
-      apiStatistics.trackApiCall("rest", url, method, duration, true);
       if (!logErrors) { console.error("Received no response from Salesforce REST API", xhr); }
       let err = new Error();
       err.name = "SalesforceRestError";
@@ -324,14 +320,10 @@ export let sfConn = {
     apiStatistics.trackApiCall("soap", null, method, duration, xhr.status != 200);
 
     if (xhr.status == 200) {
-      // Track successful call
-      apiStatistics.trackApiCall("soap", null, method, duration, false);
       let responseBody = xhr.response.querySelector(method + "Response");
       let parsed = XML.parse(responseBody).result;
       return parsed;
     } else {
-      // Track error
-      apiStatistics.trackApiCall("soap", null, method, duration, true);
       console.error("Received error response from Salesforce SOAP API", xhr);
       let err = new Error();
       err.name = "SalesforceSoapError";

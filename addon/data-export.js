@@ -5,45 +5,27 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 
-/**
- * Formats time duration in milliseconds with appropriate units and locale formatting
- *
- * This function automatically chooses the best time unit based on duration:
- * - Under 1 second (< 1000ms): Shows milliseconds (e.g., "234.5ms")
- * - 1-59 seconds: Shows seconds with decimals (e.g., "12.34s")
- * - Over 1 minute: Shows minutes + seconds (e.g., "2m 34.56s")
- *
- * All numbers respect the user's locale for international support:
- * - English: "1,234.56s"
- * - German: "1.234,56s"
- * - French: "1 234,56s"
- *
- * @param {number} milliseconds - Time duration in milliseconds
- * @returns {string} Formatted time string with appropriate units
- *
- * @example
- * formatDuration(500)     // "500.0ms"
- * formatDuration(1500)    // "1.50s"
- * formatDuration(75000)   // "1m 15.00s"
- */
+// Helper functions to format query time with runtime locale and shorten to seconds or minutes when appropriate
+const formatNumber = (value, decimals) => {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
+  };
+const alwaysShowMs = localStorage.getItem("showExportDurationInMs") === "true";
 function formatDuration(milliseconds) {
-  // Helper function to format numbers with locale and decimal precision
-  const formatNumber = (value, decimals) => value.toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
-  });
+  if (milliseconds == null || isNaN(milliseconds)) {
+    return "0ms";
+  }
 
-  // Time thresholds and their corresponding logic
-  if (milliseconds >= 60000) {
+  if (!alwaysShowMs && milliseconds >= 60000) {
     // Over 1 minute: show "2m 34.56s" format
     const minutes = Math.floor(milliseconds / 60000);
     const seconds = (milliseconds % 60000) / 1000;
     return `${formatNumber(minutes, 0)}m ${formatNumber(seconds, 2)}s`;
-
-  } else if (milliseconds >= 1000) {
+  } else if (!alwaysShowMs && milliseconds >= 1000) {
     // 1-59 seconds: show "12.34s" format
     return `${formatNumber(milliseconds / 1000, 2)}s`;
-
   } else {
     // Under 1 second: show "234.5ms" format
     return `${formatNumber(milliseconds, 1)}ms`;

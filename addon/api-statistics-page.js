@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {sfConn, apiVersion} from "./inspector.js";
+import {sfConn} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, copyToClipboard} from "./utils.js";
 import {apiStatistics, ApiStatistics} from "./api-statistics.js";
@@ -241,7 +241,7 @@ class App extends React.Component {
       .slice(0, 10);
 
     const restMethods = Object.entries(stats.rest.byMethod)
-      .map(([method, data]) => ({method, count:data.count}))
+      .map(([method, data]) => ({method, count: data.count}))
       .sort((a, b) => b.count - a.count);
 
     const sessionDurationText = stats.sessionDurationMinutes > 0
@@ -257,7 +257,7 @@ class App extends React.Component {
         spinnerCount: this.model.spinnerCount,
         ...this.model.userInfoModel.getProps()
       }),
-        h("div", {className: "slds-m-top_xx-large sfir-page-container"},
+      h("div", {className: "slds-m-top_xx-large sfir-page-container"},
         h("div", {className: "slds-card slds-m-around_medium"},
           h("div", {className: "slds-card__header slds-grid slds-grid_vertical-align-center"},
             h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},

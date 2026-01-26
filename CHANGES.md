@@ -2,7 +2,7 @@
 
 ## Version 2.0
 
-- `User Experience` add the capability to have the popup using the available height in the window (Activated by default - Eanble/Disable in User Experience -> Enable Dynamic Popup Height)
+- `User Experience` Add dynamic popup height and option to enable / disable setting (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - Add Flow Compare button to quickly access Salesforce's Flow Compare feature (Winter '26) (from `Flow Scanner` and `Popup`)
 - `Data Import` Only reset action if user hasn't manually selected one [issue #986](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/986) (contribution by [Ruben Halman](https://github.com/RubenHalman))
 - `Data Export` Fix query tab index numbering when adding new tabs after closing existing ones [issue #1059](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1059) (contribution by [mshivakumar2023-debug](https://github.com/mshivakumar2023-debug))

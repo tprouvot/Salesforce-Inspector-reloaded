@@ -1180,7 +1180,6 @@ class AllDataBox extends React.PureComponent {
     }
 
     function getEntityDefinitionBatch(bucket) {
-      //console.log("getEntityDefinitionBatch: " + bucket);
       let offset = bucket > 0 ? " OFFSET " + bucket * 2000 : "";
       let query
         = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000"

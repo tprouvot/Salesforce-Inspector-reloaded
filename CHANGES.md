@@ -3,6 +3,7 @@
 ## Version 2.0
 
 - Reduce number of API calls (do not perform calls if popup not exanpded + remove calls on recordtype issue and entitydef count retrieval) and a new page to track #of api calls (enable/disable with `Enable API Stats Debug Mode` setting in API) [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437)
+- `Field Creator` Fix Currency Field [#1046](https://github.com/RubenHalman/Salesforce-Inspector-reloaded/issues/1046) (contribution by [Ruben Halman](https://github.com/RubenHalman))
 - `Metadata` Fix: Checkboxes unselect behavior and indeterminate state [issue #1066](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1066)
 - `Metadata` Fix: ApprovalProcess listMetadata does not return child [issue #1065](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1065)
 - Add Flow Compare button to quickly access Salesforce's Flow Compare feature (Winter '26) (from `Flow Scanner` and `Popup`)

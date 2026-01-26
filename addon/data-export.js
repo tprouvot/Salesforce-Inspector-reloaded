@@ -6,18 +6,18 @@ import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 
 // Helper functions to format query time with runtime locale and shorten to seconds or minutes when appropriate
-const formatNumber = (value, decimals) => {
-    return value.toLocaleString(undefined, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
-    });
-  };
-const alwaysShowMs = localStorage.getItem("showExportDurationInMs") === "true";
+function formatNumber(value, decimals) {
+  return value.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+};
+
 function formatDuration(milliseconds) {
   if (milliseconds == null || isNaN(milliseconds)) {
     return "0ms";
   }
-
+  const alwaysShowMs = localStorage.getItem("showExportDurationInMs") === "true";
   if (!alwaysShowMs && milliseconds >= 60000) {
     // Over 1 minute: show "2m 34.56s" format
     const minutes = Math.floor(milliseconds / 60000);
@@ -185,6 +185,13 @@ class Model {
   updatedExportedData() {
     this.resultTableCallback(this.exportedData);
   }
+
+  setWorkingState(isWorking, statusText, errorText = null) {
+    this.isWorking = isWorking;
+    this.exportStatus = statusText;
+    this.exportError = errorText;
+  }
+
   setResultsFilter(value) {
     this.resultsFilter = value;
     if (this.exportedData == null) {
@@ -986,7 +993,7 @@ class Model {
         } else {
           vm.updateCurrentTabName(exportedData.records[0].attributes.type);
         }
-        vm.setWorkingState(false, `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`);
+        vm.setWorkingState(false, `Exported ${formatNumber(recs,0)}${recs !== total ? (" of " + total) : ""} record${s(recs)}`);
         vm.exportedData = exportedData;
         vm.markPerf();
         vm.updatedExportedData();

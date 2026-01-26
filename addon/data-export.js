@@ -5,6 +5,51 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
 
+/**
+ * Formats time duration in milliseconds with appropriate units and locale formatting
+ *
+ * This function automatically chooses the best time unit based on duration:
+ * - Under 1 second (< 1000ms): Shows milliseconds (e.g., "234.5ms")
+ * - 1-59 seconds: Shows seconds with decimals (e.g., "12.34s")
+ * - Over 1 minute: Shows minutes + seconds (e.g., "2m 34.56s")
+ *
+ * All numbers respect the user's locale for international support:
+ * - English: "1,234.56s"
+ * - German: "1.234,56s"
+ * - French: "1 234,56s"
+ *
+ * @param {number} milliseconds - Time duration in milliseconds
+ * @returns {string} Formatted time string with appropriate units
+ *
+ * @example
+ * formatDuration(500)     // "500.0ms"
+ * formatDuration(1500)    // "1.50s"
+ * formatDuration(75000)   // "1m 15.00s"
+ */
+function formatDuration(milliseconds) {
+  // Helper function to format numbers with locale and decimal precision
+  const formatNumber = (value, decimals) => value.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+
+  // Time thresholds and their corresponding logic
+  if (milliseconds >= 60000) {
+    // Over 1 minute: show "2m 34.56s" format
+    const minutes = Math.floor(milliseconds / 60000);
+    const seconds = (milliseconds % 60000) / 1000;
+    return `${formatNumber(minutes, 0)}m ${formatNumber(seconds, 2)}s`;
+
+  } else if (milliseconds >= 1000) {
+    // 1-59 seconds: show "12.34s" format
+    return `${formatNumber(milliseconds / 1000, 2)}s`;
+
+  } else {
+    // Under 1 second: show "234.5ms" format
+    return `${formatNumber(milliseconds, 1)}ms`;
+  }
+}
+
 class QueryHistory {
   constructor(storageKey, max) {
     this.storageKey = storageKey;
@@ -272,13 +317,13 @@ class Model {
       const avgTime = this.performancePoints.reduce((a, b) => a + b, 0) / batches;
       const maxTime = Math.max(...this.performancePoints);
       const minTime = Math.min(...this.performancePoints);
-      const avg = `Avg ${avgTime.toFixed(1)}ms`;
-      const max = `Max ${maxTime.toFixed(1)}ms`;
-      const min = `Min ${minTime.toFixed(1)}ms`;
+      const avg = `Avg ${formatDuration(avgTime)}`;
+      const max = `Max ${formatDuration(maxTime)}`;
+      const min = `Min ${formatDuration(minTime)}`;
       batchStats = `Batch Performance: ${avg}, ${min}, ${max}`;
       batchCount = `${batches} Batches / `;
     }
-    return {text: `${batchCount}${this.totalTime.toFixed(1)}ms`, batchStats};
+    return {text: `${batchCount}${formatDuration(this.totalTime)}`, batchStats};
   }
   clearHistory() {
     this.queryHistory.clear();
@@ -901,6 +946,7 @@ class Model {
     exportedData.isTooling = vm.queryTooling;
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
+
     vm.initPerf();
     let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
     vm.queryInput.value = query; // Update the input value with the cleaned query
@@ -942,20 +988,15 @@ class Model {
         }
         if (!data.done && isSoql) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
-          vm.isWorking = true;
-          vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
-          vm.exportError = null;
+          vm.setWorkingState(true, `Exporting... Completed ${recs} of ${total} record${s(total)}.`);
           vm.exportedData = exportedData;
           vm.markPerf();
           vm.updatedExportedData();
-          vm.didUpdate();
           return pr;
         }
         vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
         if (recs == 0) {
-          vm.isWorking = false;
-          vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
-          vm.exportError = null;
+          vm.setWorkingState(false, "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : ""));
           vm.exportedData = exportedData;
           vm.markPerf();
           vm.updatedExportedData();
@@ -963,9 +1004,7 @@ class Model {
         } else {
           vm.updateCurrentTabName(exportedData.records[0].attributes.type);
         }
-        vm.isWorking = false;
-        vm.exportStatus = `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
-        vm.exportError = null;
+        vm.setWorkingState(false, `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`);
         vm.exportedData = exportedData;
         vm.markPerf();
         vm.updatedExportedData();
@@ -982,18 +1021,13 @@ class Model {
         let recs = exportedData.records.length;
         let total = exportedData.totalSize;
         if (total != -1) {
-          // We already got some data. Show it, and indicate that not all data was exported
-          vm.isWorking = false;
-          vm.exportStatus = `Exported ${recs} of ${total} record${s(total)}. Stopped by error.`;
-          vm.exportError = null;
+          vm.setWorkingState(false, `Exported ${recs} of ${total} record${s(total)}. Stopped by error.`);
           vm.exportedData = exportedData;
           vm.updatedExportedData();
           vm.markPerf();
           return null;
         }
-        vm.isWorking = false;
-        vm.exportStatus = "Error";
-        vm.exportError = err.message;
+        vm.setWorkingState(false, "Error", err.message);
         vm.exportedData = null;
         vm.updatedExportedData();
         return null;
@@ -1003,17 +1037,13 @@ class Model {
     vm.spinFor(batchHandler(sfConn.rest(exportedData.endpoint, exportedData.params))
       .catch(error => {
         console.error(error);
-        vm.isWorking = false;
-        vm.exportStatus = "Error";
-        vm.exportError = "UNEXPECTED EXCEPTION:" + error;
+        vm.setWorkingState(false, "Error", "UNEXPECTED EXCEPTION:" + error);
         vm.exportedData = null;
         vm.markPerf();
         vm.updatedExportedData();
       }));
     vm.setResultsFilter("");
-    vm.isWorking = true;
-    vm.exportStatus = "Exporting...";
-    vm.exportError = null;
+    vm.setWorkingState(true, "Exporting...");
     vm.exportedData = exportedData;
     vm.updatedExportedData();
   }

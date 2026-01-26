@@ -1398,14 +1398,15 @@ function LogsTable({model, hideButtonsOption}) {
         h("div", {className: "slds-col slds-grow-none slds-m-right_xx-large"},
           h("div", {className: "slds-form-element"},
             h("div", {className: "slds-form-element__control", style: {display: "flex", alignItems: "center", gap: "0.5rem"}},
-              model.fetchLogBodies && h("div", {className: "slds-input-has-icon slds-input-has-icon_left", style: {flex: "1", minWidth: "200px"}},
+              h("div", {className: "slds-input-has-icon slds-input-has-icon_left", style: {flex: "1", minWidth: "200px"}},
                 h("svg", {className: "slds-input__icon slds-input__icon_left slds-icon-text-default", "aria-hidden": "true"},
                   h("use", {xlinkHref: "symbols.svg#search"})
                 ),
                 h("input", {
                   type: "search",
                   className: "slds-input",
-                  placeholder: "Search in logs...",
+                  placeholder: "Search logs...",
+                  disabled: !model.fetchLogBodies,
                   value: model.fetchBodiesSearchTerm || "",
                   onChange: (e) => {
                     model.fetchBodiesSearchTerm = e.target.value;
@@ -1414,29 +1415,40 @@ function LogsTable({model, hideButtonsOption}) {
                 })
               ),
               h("label", {className: "slds-checkbox_toggle slds-grid", title: model.fetchLogBodies ? "Disable fetching log bodies for action details" : "Enable fetching log bodies for action details"},
-                h("input", {
-                  type: "checkbox",
-                  checked: model.fetchLogBodies,
-                  onChange: () => model.toggleFetchLogBodies(),
-                  "aria-describedby": "fetch-bodies-toggle"
-                }),
-                h("span", {id: "fetch-bodies-toggle", className: "slds-checkbox_faux_container center-label"},
-                  h("span", {className: "slds-checkbox_faux"}),
-                  h("span", {className: "slds-checkbox_on"}, "Fetch Bodies"),
-                  h("span", {className: "slds-checkbox_off"}, "Disabled")
+                  h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Fetch Bodies"),
+                  h("input", {
+                    type: "checkbox",
+                    role: "switch",
+                    checked: model.fetchLogBodies,
+                    onChange: () => model.toggleFetchLogBodies(),
+                    "aria-describedby": "fetch-bodies-toggle"
+                  }),
+                  h("span", {id: "fetch-bodies-toggle", className: "slds-checkbox_faux_container"},
+                    h("span", {className: "slds-checkbox_faux"}),
+                    h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                    h("span", {className: "slds-checkbox_off"}, "Disabled")
+                  )
                 )
-              )
+
             )
           )
         ),
         // Keep actions on the right
         h("div", {className: "slds-no-flex"},
           h("div", {className: "slds-button_group", role: "group"},
+
             h("button", {className: "slds-button slds-button_neutral slds-m-right_x-small", onClick: () => model.refreshAll()},
               h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
                 h("use", {xlinkHref: "symbols.svg#refresh"})
               ),
               "Refresh"
+            ),
+            h("button", {className: "slds-button slds-button_neutral slds-m-right_x-small", title: "Set Debug Trace Flags in the Salesforce Debug Logs Page (New window)",
+                onClick: () => window.open(`https://${model.sfHost}/lightning/setup/ApexDebugLogs/home`, "_blank")},
+              h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+                h("use", {xlinkHref: "symbols.svg#new_window"})
+              ),
+              "Set Flags"
             ),
             h("button", {
               className: "slds-button slds-button_destructive",

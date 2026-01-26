@@ -143,7 +143,7 @@ function initButton(sfHost, inInspector) {
     img.src = p.imgSrc;
     rootElement.style[p.posStyle] = p.pos;
     rootElement.style[p.oStyle] = 0;
-    p.btnClasses.forEach(item => buttonElement.classList.add(item))
+    p.btnClasses.forEach(item => buttonElement.classList.add(item));
     buttonElement.appendChild(img);
   }
 
@@ -279,13 +279,13 @@ function initButton(sfHost, inInspector) {
       return pos >= 55 ? "up" : null;
     }
 
-    function resetPopupClass(source, dynamicHeight, orientation, position = '20', direction = null) {
+    function resetPopupClass(source, dynamicHeight, orientation, position = "20", direction = null) {
       popupEl.className = "insext-popup";
       popupEl.classList.add(`insext-popup-${orientation}`);
 
       //manage dynamic height of popup
-      const intPosition = Number(position)
-      
+      const intPosition = Number(position);
+
       if (dynamicHeight) {
         const height = direction === "up" ? intPosition : (98 - (orientation === "horizontal" ? 0 : intPosition)); //the height is the total height minus the position and the popup margin at the bottom
         popupEl.style.height = `calc(${height}vh)`;
@@ -294,13 +294,12 @@ function initButton(sfHost, inInspector) {
         if (direction === "up") {
           popupEl.style.top = `calc(-${intPosition - 5}vh)`;
         }
-      }
-      else {
+      } else {
         popupEl.style.height = "";
       }
     }
 
-    resetPopupClass("localStorage",  getKeyFromStorage("localStorage", "popupHeighDynamictMode"), getOrientation("localStorage"));
+    resetPopupClass("localStorage", getKeyFromStorage("localStorage", "popupHeighDynamictMode"), getOrientation("localStorage"));
     popupEl.src = popupSrc;
     addEventListener("message", e => {
       if (e.source != popupEl.contentWindow) {

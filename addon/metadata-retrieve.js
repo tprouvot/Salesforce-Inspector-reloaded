@@ -69,6 +69,25 @@ class Model {
     return "Metadata";
   }
 
+  /**
+   * Adds a custom metadata type that is not returned by describeMetadata
+   * @param {string} xmlName - The XML name of the metadata type (e.g., "CustomField", "ValidationRule")
+   * @param {string} suffix - The file suffix for this metadata type (e.g., "field", "validationRule")
+   */
+  addCustomMetadataType(xmlName, suffix) {
+    // Add to metadataTypeMap for suffix lookup
+    this.metadataTypeMap[xmlName] = {xmlName, suffix};
+
+    // Add to metadataObjects array
+    this.metadataObjects.push({
+      xmlName,
+      childXmlNames: [],
+      isFolder: false,
+      selected: false,
+      expanded: false
+    });
+  }
+
   startLoading() {
     let logWait = this.logWait.bind(this);
     (async () => {
@@ -87,20 +106,17 @@ class Model {
         availableMetadataObjects.forEach(obj => {
           this.metadataTypeMap[obj.xmlName] = obj;
         });
-        // Add CustomField with default suffix
-        this.metadataTypeMap["CustomField"] = {xmlName: "CustomField", suffix: "field"};
 
-        this.metadataObjects = availableMetadataObjects;
-        // Add a CustomField metadata to the metadata objects (not returned by describeMetadata)
-        this.metadataObjects.push({
-          xmlName: "CustomField",
-          childXmlNames: [],
-          isFolder: false,
-          selected: false,
-          expanded: false
-        });
-        this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
         this.metadataObjects = availableMetadataObjects.map(obj => ({...obj, isFolder: false}));
+
+        // Add custom metadata types that are not returned by describeMetadata
+        this.addCustomMetadataType("CustomField", "field");
+        this.addCustomMetadataType("ValidationRule", "validationRule");
+        this.addCustomMetadataType("WorkflowRule", "workflow");
+        this.addCustomMetadataType("BusinessProcess", "businessProcess");
+
+        // Sort metadata objects alphabetically
+        this.metadataObjects.sort((a, b) => a.xmlName < b.xmlName ? -1 : a.xmlName > b.xmlName ? 1 : 0);
 
         this.progress = "ready";
         this.generatePackageXml([]);
@@ -563,8 +579,16 @@ class App extends React.Component {
     model.allSelected = checked;
     model.metadataObjects.forEach(metadataObject => {
       metadataObject.selected = checked;
+      metadataObject.indeterminate = false;
       metadataObject.childXmlNames.forEach(child => {
         child.selected = checked;
+        child.indeterminate = false;
+        if (child.childXmlNames && child.childXmlNames.length > 0) {
+          child.childXmlNames.forEach(grandchild => {
+            grandchild.selected = checked;
+            grandchild.indeterminate = false;
+          });
+        }
       });
     });
     if (checked){
@@ -1176,9 +1200,20 @@ class ObjectSelector extends React.Component {
   onChange(e) {
     let {metadataObject, model} = this.props;
     metadataObject.selected = e.target.checked;
+    metadataObject.indeterminate = false;
     metadataObject.wildcard = !metadataObject.expanded;
     if (metadataObject.expanded){
-      metadataObject.childXmlNames.forEach(child => child.selected = metadataObject.selected);
+      metadataObject.childXmlNames.forEach(child => {
+        child.selected = metadataObject.selected;
+        child.indeterminate = false;
+        // If child is a folder, update its children too
+        if (child.childXmlNames && child.childXmlNames.length > 0) {
+          child.childXmlNames.forEach(grandchild => {
+            grandchild.selected = metadataObject.selected;
+            grandchild.indeterminate = false;
+          });
+        }
+      });
     }
     model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
     model.didUpdate();
@@ -1186,13 +1221,41 @@ class ObjectSelector extends React.Component {
   onSelectChild(child, e){
     let {model} = this.props;
     if (child.isFolder){
-      this.onSelectMeta(null, child);
+      // If clicking on the checkbox input itself, toggle selection
+      if (e.target.nodeName === "INPUT") {
+        child.selected = !child.selected;
+        child.indeterminate = false;
+
+        // Update all grandchildren
+        if (child.childXmlNames && child.childXmlNames.length > 0) {
+          child.childXmlNames.forEach(grandchild => {
+            grandchild.selected = child.selected;
+            grandchild.indeterminate = false;
+          });
+        }
+
+        // Update grandparent state
+        if (child.parent) {
+          this.updateParentSelectionState(child.parent);
+        }
+
+        model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
+        model.didUpdate();
+      } else {
+        // Clicking elsewhere expands/collapses
+        this.onSelectMeta(null, child);
+      }
     } else {
       child.selected = !child.selected;
-      child.parent.selected = true;
-      if (child.parent.isFolder){
-        child.parent.parent.selected = true;
+
+      // Update parent selection state based on children
+      this.updateParentSelectionState(child.parent);
+
+      // If parent is a folder, update grandparent state
+      if (child.parent.isFolder && child.parent.parent) {
+        this.updateParentSelectionState(child.parent.parent);
       }
+
       model.generatePackageXml(model.metadataObjects.filter(metadataObject => metadataObject.selected));
       model.didUpdate();
     }
@@ -1201,10 +1264,38 @@ class ObjectSelector extends React.Component {
       e.preventDefault();
     }
   }
+
+  /**
+   * Updates the selection state of a parent based on its children's selection state
+   * Sets selected, indeterminate, or unchecked based on children
+   */
+  updateParentSelectionState(parent) {
+    if (!parent || !parent.childXmlNames || parent.childXmlNames.length === 0) {
+      return;
+    }
+
+    const selectedChildren = parent.childXmlNames.filter(child => child.selected || child.indeterminate);
+    const allSelected = selectedChildren.length === parent.childXmlNames.length
+                       && parent.childXmlNames.every(child => child.selected && !child.indeterminate);
+
+    if (selectedChildren.length === 0) {
+      // No children selected
+      parent.selected = false;
+      parent.indeterminate = false;
+    } else if (allSelected) {
+      // All children fully selected
+      parent.selected = true;
+      parent.indeterminate = false;
+    } else {
+      // Some children selected or some are indeterminate
+      parent.selected = true;
+      parent.indeterminate = true;
+    }
+  }
   getMetaFolderProof(metadataObject){
     if (metadataObject.xmlName == "Report" && !metadataObject.isFolder){
       return {xmlName: "ReportFolder", directoryName: "*"};
-    } else if ((metadataObject.xmlName == "Dashboard" || metadataObject.xmlName == "Document") && !metadataObject.isFolder){
+    } else if ((metadataObject.xmlName == "Dashboard" || metadataObject.xmlName == "Document") && !metadataObject.isFolder){
       return {xmlName: metadataObject.xmlName + "Folder"};
     } else if (metadataObject.xmlName == "EmailTemplate" && !metadataObject.isFolder){
       return {xmlName: "EmailFolder"};
@@ -1212,6 +1303,81 @@ class ObjectSelector extends React.Component {
       return metadataObject;
     }
   }
+
+  /**
+   * Checks if a metadata type should use REST API query instead of listMetadata
+   * @param {string} metaType - The metadata type XML name
+   * @returns {boolean} - True if this metadata type should use REST API query
+   */
+  shouldUseRestApiForList(metaType){
+    // List of metadata types that require REST API query for listing
+    const restApiTypes = ["ApprovalProcess"];
+    return restApiTypes.includes(metaType);
+  }
+
+  /**
+   * Generic method to query REST API for metadata items
+   * @param {Object} params - Query parameters
+   * @param {string} params.metaName - Field name to select for metadata name (e.g., "DeveloperName")
+   * @param {string} params.folderName - Field name to select for folder/object name (e.g., "TableEnumOrId")
+   * @param {string} params.objectName - Object name to query (e.g., "ProcessDefinition")
+   * @returns {Promise<Array>} - Array of metadata items
+   */
+  async queryMetadataViaRest({metaName, folderName, objectName}){
+    const query = `SELECT ${metaName}, ${folderName} FROM ${objectName}`;
+    const allRecords = [];
+    let queryUrl = `/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(query);
+
+    while (queryUrl) {
+      const res = await sfConn.rest(queryUrl);
+      if (res.records) {
+        allRecords.push(...res.records);
+      }
+      queryUrl = res.nextRecordsUrl || null;
+    }
+
+    return allRecords;
+  }
+
+  /**
+   * Builds child metadata objects from REST API records
+   * @param {Object} model - The model instance
+   * @param {Object} meta - The parent metadata object
+   * @param {Array} records - Array of REST API records
+   * @param {string} metaNameField - Field name that contains the metadata name (e.g., "DeveloperName")
+   * @param {string} folderNameField - Field name that contains the folder/object name (e.g., "TableEnumOrId")
+   */
+  buildChildMetadataFromRest(model, meta, records, metaNameField, folderNameField){
+    meta.childXmlNames = []; // Reset children
+
+    records.forEach(record => {
+      // Build fullName: ObjectName.MetadataName or just MetadataName if no folderNameField
+      const metaNameValue = record[metaNameField];
+      const folderNameValue = folderNameField ? record[folderNameField] : null;
+
+      const fullName = folderNameValue && metaNameValue
+        ? `${folderNameValue}.${metaNameValue}`
+        : metaNameValue;
+
+      const childMeta = {
+        fullName,
+        type: meta.xmlName,
+        parent: meta,
+        selected: false,
+        isFolder: false
+      };
+
+      // Apply managed package filter if needed
+      if (model.includeManagedPackage || (!model.includeManagedPackage && !record.NamespacePrefix)) {
+        if (!meta.childXmlNames.some(existingElt => existingElt.fullName === childMeta.fullName)) {
+          meta.childXmlNames.push(childMeta);
+        }
+      }
+    });
+
+    meta.childXmlNames.sort((a, b) => a[model.sortMetadataBy] > b[model.sortMetadataBy] ? 1 : a[model.sortMetadataBy] < b[model.sortMetadataBy] ? -1 : 0);
+  }
+
   onSelectMeta(e, child){
     if (!e || e.target.nodeName !== "INPUT"){
       let {model, metadataObject} = this.props;
@@ -1224,31 +1390,45 @@ class ObjectSelector extends React.Component {
     meta.icon = meta.expanded ? "switch" : "chevronright";
     if (meta.childXmlNames.length == 0 || model.deployRequestId || meta.childXmlNames[0].fullName == "*"){
 
-      let metaFolderProof = this.getMetaFolderProof(meta);
-      model.spinFor(
-        sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metaFolderProof.xmlName, folder: metaFolderProof.directoryName}}).then(res => {
+      // Check if this metadata type should use REST API query
+      if (this.shouldUseRestApiForList(meta.xmlName)) {
+        model.spinFor(
+          this.queryMetadataViaRest({
+            metaName: "DeveloperName",
+            folderName: "TableEnumOrId",
+            objectName: "ProcessDefinition"
+          }).then(records => {
+            this.buildChildMetadataFromRest(model, meta, records, "DeveloperName", "TableEnumOrId");
+          })
+        );
+      } else {
+        // Use standard listMetadata API
+        let metaFolderProof = this.getMetaFolderProof(meta);
+        model.spinFor(
+          sfConn.soap(sfConn.wsdl(apiVersion, "Metadata"), "listMetadata", {queries: {type: metaFolderProof.xmlName, folder: metaFolderProof.directoryName}}).then(res => {
 
-          if (res){
-            meta.childXmlNames = []; //reset tab if wildcard is the only child
-            let resArray = Array.isArray(res) ? res : res ? [res] : []; // only one element can be returned
-            resArray.forEach(elt => {
-              elt.isFolder = elt.type.endsWith("Folder");
-              if (elt.isFolder){
-                elt.xmlName = meta.xmlName;
-                elt.directoryName = elt.fullName;
-                elt.childXmlNames = [];
-              }
-              if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
-                elt.parent = meta;
-                if (!meta.childXmlNames.some(existingElt => existingElt.fullName === elt.fullName)) {
-                  meta.childXmlNames.push(elt);
+            if (res){
+              meta.childXmlNames = []; //reset tab if wildcard is the only child
+              let resArray = Array.isArray(res) ? res : res ? [res] : []; // only one element can be returned
+              resArray.forEach(elt => {
+                elt.isFolder = elt.type.endsWith("Folder");
+                if (elt.isFolder){
+                  elt.xmlName = meta.xmlName;
+                  elt.directoryName = elt.fullName;
+                  elt.childXmlNames = [];
                 }
-              }
-            });
-            meta.childXmlNames.sort((a, b) => a[model.sortMetadataBy] > b[model.sortMetadataBy] ? 1 : a[model.sortMetadataBy] < b[model.sortMetadataBy] ? -1 : 0);
-          }
-        })
-      );
+                if (model.includeManagedPackage || (!model.includeManagedPackage && !elt.namespacePrefix)){
+                  elt.parent = meta;
+                  if (!meta.childXmlNames.some(existingElt => existingElt.fullName === elt.fullName)) {
+                    meta.childXmlNames.push(elt);
+                  }
+                }
+              });
+              meta.childXmlNames.sort((a, b) => a[model.sortMetadataBy] > b[model.sortMetadataBy] ? 1 : a[model.sortMetadataBy] < b[model.sortMetadataBy] ? -1 : 0);
+            }
+          })
+        );
+      }
     } else {
       //call refresh filter
     }
@@ -1285,7 +1465,16 @@ class ObjectSelector extends React.Component {
                   child.isFolder ? h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
                     h("use", {xlinkHref: "symbols.svg#" + (child.icon ? child.icon : "chevronright")})
                   ) : null,
-                  h("input", {type: "checkbox", className: !child.isFolder ? "margin-grandchild metadata" : "metadata", checked: !!child.selected}),
+                  h("input", {
+                    type: "checkbox",
+                    className: !child.isFolder ? "margin-grandchild metadata" : "metadata",
+                    checked: !!child.selected,
+                    ref: (input) => {
+                      if (input) {
+                        input.indeterminate = !!child.indeterminate;
+                      }
+                    }
+                  }),
                   h("span", {
                     className: "slds-text-body_small slds-accordion__summary-content",
                     title: child.fullName,
@@ -1327,7 +1516,18 @@ class ObjectSelector extends React.Component {
             h("svg", {className: "reset-transform slds-accordion__summary-action-icon slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
               h("use", {xlinkHref: "symbols.svg#" + (metadataObject.icon ? metadataObject.icon : "chevronright")})
             ),
-            h("input", {type: "checkbox", className: "metadata", checked: !!metadataObject.selected, onChange: this.onChange, key: metadataObject.xmlName}),
+            h("input", {
+              type: "checkbox",
+              className: "metadata",
+              checked: !!metadataObject.selected,
+              onChange: this.onChange,
+              key: metadataObject.xmlName,
+              ref: (input) => {
+                if (input) {
+                  input.indeterminate = !!metadataObject.indeterminate;
+                }
+              }
+            }),
             h("span", {
               className: "slds-accordion__summary-content",
               title: metadataObject.xmlName

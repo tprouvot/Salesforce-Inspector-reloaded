@@ -215,3 +215,15 @@ select {
   align-items: center;
   justify-content: center;
 }
+
+/* Scrollable columns */
+#result-table .result.slds-grid {
+  height: calc(100vh - 5rem);
+  overflow: hidden;
+}
+
+#result-table .result .slds-col {
+  overflow-y: auto;
+  height: 100%;
+  padding: 0 1rem;
+}

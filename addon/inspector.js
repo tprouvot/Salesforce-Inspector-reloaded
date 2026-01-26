@@ -118,7 +118,6 @@ export let sfConn = {
 
     // Track API call start time for statistics
     const startTime = performance.now();
-    let isError = false;
 
     let xhr = new XMLHttpRequest();
     if (useCache) {
@@ -185,21 +184,21 @@ export let sfConn = {
       };
       xhr.send(body);
     });
-    
+
     // Calculate duration and track statistics
     const duration = performance.now() - startTime;
-    
+
     if (rawResponse){
       // Track successful call
-      apiStatistics.trackApiCall('rest', url, method, duration, false);
+      apiStatistics.trackApiCall("rest", url, method, duration, false);
       return xhr;
     } else if (xhr.status >= 200 && xhr.status < 300) {
       // Track successful call
-      apiStatistics.trackApiCall('rest', url, method, duration, false);
+      apiStatistics.trackApiCall("rest", url, method, duration, false);
       return xhr.response;
     } else if (xhr.status == 0) {
       // Track error
-      apiStatistics.trackApiCall('rest', url, method, duration, true);
+      apiStatistics.trackApiCall("rest", url, method, duration, true);
       if (!logErrors) { console.error("Received no response from Salesforce REST API", xhr); }
       let err = new Error();
       err.name = "SalesforceRestError";
@@ -319,19 +318,20 @@ export let sfConn = {
       };
       xhr.send(requestBody);
     });
-    
+
     // Calculate duration and track statistics
     const duration = performance.now() - startTime;
-    
+    apiStatistics.trackApiCall("soap", null, method, duration, xhr.status != 200);
+
     if (xhr.status == 200) {
       // Track successful call
-      apiStatistics.trackApiCall('soap', null, method, duration, false);
+      apiStatistics.trackApiCall("soap", null, method, duration, false);
       let responseBody = xhr.response.querySelector(method + "Response");
       let parsed = XML.parse(responseBody).result;
       return parsed;
     } else {
       // Track error
-      apiStatistics.trackApiCall('soap', null, method, duration, true);
+      apiStatistics.trackApiCall("soap", null, method, duration, true);
       console.error("Received error response from Salesforce SOAP API", xhr);
       let err = new Error();
       err.name = "SalesforceSoapError";

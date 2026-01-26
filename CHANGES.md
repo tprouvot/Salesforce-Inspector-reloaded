@@ -2,7 +2,6 @@
 
 ## Version 2.0
 
-- Increase popup expanded to heigh (enable/disable with `Enable Dynamic Popup Height` setting in User Experience)
 - Reduce number of API calls (do not perform calls if popup not exanpded + remove calls on recordtype issue and entitydef count retrieval) and a new page to track #of api calls (enable/disable with `Enable API Stats Debug Mode` setting in API) [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437)
 - `Metadata` Fix: Checkboxes unselect behavior and indeterminate state [issue #1066](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1066)
 - `Metadata` Fix: ApprovalProcess listMetadata does not return child [issue #1065](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1065)

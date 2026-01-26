@@ -120,7 +120,8 @@ function initButton(sfHost, inInspector) {
   }
 
   // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
-  function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos, popupHeighDynamictMode: dynamicHeight}) {
+  // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
+  function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos}) {
     o = o || "vertical"; // Default to vertical
     const isVertical = o === "vertical";
     pos = pos ? Math.min(95, pos) + "%" : "122px";
@@ -128,12 +129,8 @@ function initButton(sfHost, inInspector) {
     const imgSrc = isVertical
       ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M14 7l-5 5 5 5' stroke='%230176d3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
       : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M7 10l5 5 5-5' stroke='%230176d3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
-    let btnClasses = [];
-    btnClasses.push(`insext-btn-${o}`);
-    if (dynamicHeight === "true") {
-      btnClasses.push("insext-btn-dynamic-height");
-    }
-    return {pos, posStyle, oStyle, imgSrc, btnClasses};
+    const btnClass = `insext-btn-${o}`;
+    return {pos, posStyle, oStyle, imgSrc, btnClass};
   }
 
   function setRootCSSProperties(rootElement, buttonElement) {
@@ -143,7 +140,7 @@ function initButton(sfHost, inInspector) {
     img.src = p.imgSrc;
     rootElement.style[p.posStyle] = p.pos;
     rootElement.style[p.oStyle] = 0;
-    p.btnClasses.forEach(item => buttonElement.classList.add(item))
+    buttonElement.classList.add(p.btnClass);
     buttonElement.appendChild(img);
   }
 
@@ -261,16 +258,12 @@ function initButton(sfHost, inInspector) {
 
     let popupSrc = chrome.runtime.getURL("popup.html?host=" + sfHost);
     let popupEl = document.createElement("iframe");
-
     function getOrientation(source) {
-      return getKeyFromStorage(source, "popupArrowOrientation", "vertical");
+      const o = (source === "localStorage")
+        ? localStorage.getItem("popupArrowOrientation")
+        : iFrameLocalStorage.popupArrowOrientation;
+      return o || "vertical";
     }
-
-    function getKeyFromStorage(source, key, defaultValue) {
-      const o = (source === "localStorage") ? localStorage.getItem(key) : iFrameLocalStorage?.[key];
-      return o || defaultValue;
-    }
-
     // return a value for direction popup will expand, based on position and orientation
     function calcDirection(pos, o) {
       if (o === "horizontal") {
@@ -278,29 +271,11 @@ function initButton(sfHost, inInspector) {
       }
       return pos >= 55 ? "up" : null;
     }
-
-    function resetPopupClass(source, dynamicHeight, orientation, position = '20', direction = null) {
+    function resetPopupClass(o) {
       popupEl.className = "insext-popup";
-      popupEl.classList.add(`insext-popup-${orientation}`);
-
-      //manage dynamic height of popup
-      const intPosition = Number(position)
-      
-      if (dynamicHeight) {
-        const height = direction === "up" ? intPosition : (98 - (orientation === "horizontal" ? 0 : intPosition)); //the height is the total height minus the position and the popup margin at the bottom
-        popupEl.style.height = `calc(${height}vh)`;
-
-        //in up direction, we need to adjust the top position to keep the popup on screen
-        if (direction === "up") {
-          popupEl.style.top = `calc(-${intPosition - 5}vh)`;
-        }
-      }
-      else {
-        popupEl.style.height = "";
-      }
+      popupEl.classList.add(`insext-popup-${o}`);
     }
-
-    resetPopupClass("localStorage",  getKeyFromStorage("localStorage", "popupHeighDynamictMode"), getOrientation("localStorage"));
+    resetPopupClass(getOrientation("localStorage"));
     popupEl.src = popupSrc;
     addEventListener("message", e => {
       if (e.source != popupEl.contentWindow) {
@@ -311,9 +286,8 @@ function initButton(sfHost, inInspector) {
         iFrameLocalStorage = e.data.iFrameLocalStorage;
         const {popupArrowPosition: pos} = iFrameLocalStorage;
         const o = getOrientation("iframe");
-        const dynamicHeight = getKeyFromStorage("iframe", "popupHeighDynamictMode", "true") === "true";
         const dir = calcDirection(pos, o);
-        resetPopupClass("iframe", dynamicHeight, o, pos, dir);
+        resetPopupClass(o);
         if (dir) {
           popupEl.classList.add(`insext-popup-${o}-${dir}`);
         }

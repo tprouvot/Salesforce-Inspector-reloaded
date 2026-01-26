@@ -63,7 +63,7 @@ function getFilteredLocalStorage() {
   // Always get fresh values for keysToSend from localStorage
   // to avoid cache issues when these values change in options
   return Object.fromEntries(
-    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || key.startsWith("hide") || key.startsWith("popup") || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
+    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || key.startsWith("popup") || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
   );
 }
 function closePopup() {

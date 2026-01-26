@@ -10,6 +10,9 @@ export class Constants {
   static ACCESS_TOKEN = "_access_token";
   static CODE_VERIFIER = "_code_verifier";
   static CLIENT_ID = "_clientId";
+  // API Statistics
+  static API_DEBUG_STATISTICS_MODE = "apiDebugStatisticsMode";
+  static API_DEBUG_STATISTICS = "apiDebugStatistics";
 }
 
 export function getLinkTarget(e = {}) {

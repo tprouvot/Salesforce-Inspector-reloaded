@@ -277,6 +277,7 @@ class App extends React.PureComponent {
       p: ["click", "optionsBtn"],
       m: ["click", "eventMonitorBtn"],
       v: ["click", "logsViewerBtn"],
+      b: ["click", "apiStatisticsBtn"],
       o: ["tab", "objectTab"],
       u: ["tab", "userTab"],
       s: ["tab", "shortcutTab"],
@@ -766,7 +767,7 @@ class App extends React.PureComponent {
                 )
               )
               : null,
-            isSettingEnabled("apiDebugStatisticsMode")
+            isSettingEnabled(Constants.API_DEBUG_STATISTICS_MODE)
               ? h(
                 "div",
                 {
@@ -782,7 +783,7 @@ class App extends React.PureComponent {
                     className:
                       "slds-col page-button slds-button slds-button_neutral",
                   },
-                  h("span", {}, "API Debug ", h("u", {}, "S"), "ats")
+                  h("span", {}, "API De", h("u", {}, "b"), "ug Stats")
                 )
               )
               : null
@@ -977,12 +978,12 @@ class AllDataBox extends React.PureComponent {
     if (prevProps.contextUrl !== this.props.contextUrl) {
       this.ensureKnownBrowserContext();
     }
-    
+
     // Check if popup just became expanded or Objects tab just became active
     const popupJustExpanded = !prevProps.isPopupExpanded && this.props.isPopupExpanded;
-    const objectsTabJustActivated = prevState.activeSearchAspect !== activeSearchAspect 
+    const objectsTabJustActivated = prevState.activeSearchAspect !== activeSearchAspect
       && activeSearchAspect === this.SearchAspectTypes.sobject;
-    
+
     if (prevState.activeSearchAspect !== activeSearchAspect) {
       switch (activeSearchAspect) {
         case this.SearchAspectTypes.sobject:
@@ -1003,7 +1004,7 @@ class AllDataBox extends React.PureComponent {
           break;
       }
     }
-    
+
     // If popup just became expanded and Objects tab is active, load sobjects
     if (popupJustExpanded && this.shouldLoadSobjects()) {
       this.loadSobjects();
@@ -1015,7 +1016,7 @@ class AllDataBox extends React.PureComponent {
    * @returns {boolean} True if Objects tab is active and popup is expanded
    */
   shouldLoadSobjects() {
-    return this.props.isPopupExpanded &&this.state.activeSearchAspect === this.SearchAspectTypes.sobject
+    return this.props.isPopupExpanded && this.state.activeSearchAspect === this.SearchAspectTypes.sobject;
   }
 
   ensureKnownBrowserContext() {
@@ -1075,10 +1076,10 @@ class AllDataBox extends React.PureComponent {
     if (this.state.sobjectsLoading || this.state.sobjectsList !== null) {
       return;
     }
-    
+
     // Set loading state
     this.setState({sobjectsLoading: true});
-    
+
     //we don't have the entity map in the in-memory cache, so we need to fetch it
     let entityMap = new Map();
 
@@ -1159,7 +1160,7 @@ class AllDataBox extends React.PureComponent {
 
     function getEntityDefinitions() {
       let bucket = 0;
-      
+
       function fetchNextBatch() {
         return getEntityDefinitionBatch(bucket)
           .then((hasMore) => {
@@ -1171,7 +1172,7 @@ class AllDataBox extends React.PureComponent {
             return Promise.resolve();
           });
       }
-      
+
       return fetchNextBatch()
         .catch((err) => {
           console.error("fetch entity definitions: ", err);
@@ -1572,12 +1573,12 @@ class AllDataBoxUsers extends React.PureComponent {
     let whereClause = [];
     whereClause.push("(");
     let userSearchWhereClauseFields = [];
-    //concat to search the users using user.Name field 
+    //concat to search the users using user.Name field
     userSearchFields.forEach(field => {
       userSearchWhereClauseFields.push(field.name + " LIKE '%" + escapedUserQuery + "%'");
     });
     whereClause.push(userSearchWhereClauseFields.join(" OR "));
-    whereClause.push(")")
+    whereClause.push(")");
     if (excludeInactiveUsersFromSearch) {
       whereClause.push("AND IsActive = true");
     }
@@ -1700,7 +1701,7 @@ class AllDataBoxUsers extends React.PureComponent {
   }
 }
 
-/** ?? tab component */
+/** Object tab component */
 class AllDataBoxSObject extends React.PureComponent {
   constructor(props) {
     super(props);

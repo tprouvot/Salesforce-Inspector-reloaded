@@ -432,7 +432,7 @@ Because the IsPortalEnabled field does not exist in orgs where there is no porta
 
 ### Dynamic Popup Height
 
-You can leverage more window height in the popup, to reduce the scroll (Activated by default). To disable this feature, go to User Experience -> Enable Dynamic Popup Height and uncheck it.
+You can leverage more window height in the popup, to reduce the scroll. To enable this feature, go to User Experience -> Enable Dynamic Popup Height and check it.
 
 ## Generate a package.xml from a deployment
 

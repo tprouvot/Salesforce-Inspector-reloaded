@@ -977,7 +977,7 @@ class Model {
         }
         if (!data.done && isSoql) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
-          vm.setWorkingState(true, `Exporting... Completed ${recs} of ${total} record${s(total)}.`);
+          vm.setWorkingState(true, `Exporting... Completed ${formatNumber(recs,0)} of ${formatNumber(total,0)} record${s(total)}.`);
           vm.exportedData = exportedData;
           vm.markPerf();
           vm.updatedExportedData();
@@ -985,7 +985,7 @@ class Model {
         }
         vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
         if (recs == 0) {
-          vm.setWorkingState(false, "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : ""));
+          vm.setWorkingState(false, "No data exported." + (total > 0 ? ` ${formatNumber(total,0)} record${s(total)}.` : ""));
           vm.exportedData = exportedData;
           vm.markPerf();
           vm.updatedExportedData();
@@ -993,7 +993,7 @@ class Model {
         } else {
           vm.updateCurrentTabName(exportedData.records[0].attributes.type);
         }
-        vm.setWorkingState(false, `Exported ${formatNumber(recs,0)}${recs !== total ? (" of " + total) : ""} record${s(recs)}`);
+        vm.setWorkingState(false, `Exported ${formatNumber(recs,0)}${recs !== total ? (" of " + formatNumber(total,0)) : ""} record${s(recs)}`);
         vm.exportedData = exportedData;
         vm.markPerf();
         vm.updatedExportedData();
@@ -1010,7 +1010,7 @@ class Model {
         let recs = exportedData.records.length;
         let total = exportedData.totalSize;
         if (total != -1) {
-          vm.setWorkingState(false, `Exported ${recs} of ${total} record${s(total)}. Stopped by error.`);
+          vm.setWorkingState(false, `Exported ${formatNumber(recs,0)} of ${formatNumber(total,0)} record${s(total)}. Stopped by error.`);
           vm.exportedData = exportedData;
           vm.updatedExportedData();
           vm.markPerf();

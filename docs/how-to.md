@@ -49,18 +49,20 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 
     >**Warning**
     >If you don't select the `web` scope, you might not be able to use the Login As Incognito.
-4. Configure Security settings:
+4. Flow Enablement
+   * Check the `Enable Authorization Code and Credentials Flow` and then check `Require user credentials in the POST body for Authorization Code and Credentials Flow`
+5. Configure Security settings:
    * **IMPORTANT: Deselect** (disable) `Require secret for Web Server Flow`.
    * Select (enable) `Require Proof Key for Code Exchange (PKCE) extension for Supported Authorization Flows`.
-5. Get Consumer Key and save it in the Options page
+6. Get Consumer Key and save it in the Options page
 
     <img alt="Option button" width="276" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/14cc8aac-5ffc-4747-9da1-ba892231ace1">
 
-6. Enter the consumer key
+7. Enter the consumer key
 
     <img alt="Client Id" width="849" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/b1edfea1-5a56-4f42-8945-e452a7ab5cf5">
 
-7. Refresh page and generate new token
+8. Refresh page and generate new token
 
     <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
 

@@ -943,8 +943,13 @@ class AllDataBox extends React.PureComponent {
   }
 
   componentDidMount() {
-    this.ensureKnownBrowserContext();
-    this.loadSobjects();
+    if (this.state.activeSearchAspect === this.SearchAspectTypes.users) {
+      this.ensureKnownUserContext();
+    }
+    else {
+      this.ensureKnownBrowserContext();
+      this.loadSobjects();
+    }
   }
 
   componentDidUpdate(prevProps, prevState) {

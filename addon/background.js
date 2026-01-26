@@ -92,11 +92,15 @@ chrome.commands?.onCommand.addListener((command) => {
   }
 });
 
-chrome.runtime.onInstalled.addListener(({reason}) => {
+chrome.runtime.onInstalled.addListener(async ({reason}) => {
   if (reason === "install") {
-    chrome.tabs.create({
-      url: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/welcome/"
-    });
+    // Check if we're running in a test environment
+    const result = await chrome.storage.local.get("skipWelcomePage");
+    if (!result.skipWelcomePage) {
+      chrome.tabs.create({
+        url: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/welcome/"
+      });
+    }
   }
 });
 chrome.runtime.setUninstallURL("https://forms.gle/y7LbTNsFqEqSrtyc6");

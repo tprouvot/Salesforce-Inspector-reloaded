@@ -2655,6 +2655,10 @@ class DetailsBox extends React.Component {
       return false;
     });
 
+    if (parent && parent.isUnitTest) { // for unit tests
+      parent.insextTestLoaded({model});
+    }
+
   });
 
 }

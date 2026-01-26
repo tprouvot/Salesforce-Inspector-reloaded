@@ -15,3 +15,9 @@ venv/
 .vscode/
 .DS_Store
 .cursorrules
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+tests/coverage/

@@ -2,6 +2,8 @@
 
 Track and monitor all REST and SOAP API calls made to Salesforce servers. When enabled, this feature helps you understand API usage patterns, identify performance bottlenecks, and troubleshoot integration issues.
 
+<img width="1437" height="828" alt="API Debug Stats" src="https://github.com/user-attachments/assets/d5877bde-caf3-4750-b630-7173499a4a32" />
+
 ## Features
 
 - **Automatic Tracking**: Tracks all REST and SOAP API calls when debug mode is enabled

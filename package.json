@@ -6,6 +6,7 @@
     "chrome-release-build": "node scripts/release-build.js chrome",
     "build-flow-scanner": "node scripts/build-flow-scanner.js",
     "test:e2e": "playwright test",
+    "test:e2e:one": "npx playwright test data-export.spec.js",
     "test:coverage": "COLLECT_COVERAGE=true playwright test",
     "test:coverage:report": "node tests/e2e/generate-coverage-report.js",
     "test:coverage:all": "npm run test:coverage && npm run test:coverage:report"

@@ -20,7 +20,8 @@ export const TEST_CONSTANTS = {
  * @param {Object} options.additionalSetup - Additional setup function to run
  */
 export async function injectSessionData(context, {host, token, version, additionalSetup = null}) {
-  await context.addInitScript(({host, token, version, additionalSetup}) => {
+  // Define the init script function once to avoid duplication
+  const initScriptFunction = ({host, token, version, additionalSetup}) => {
     const keyPrefix = host;
     window.localStorage.setItem(keyPrefix + "_access_token", token);
     window.localStorage.setItem(keyPrefix + "_isSandbox", "true");
@@ -35,7 +36,36 @@ export async function injectSessionData(context, {host, token, version, addition
     if (additionalSetup && typeof additionalSetup === "function") {
       additionalSetup();
     }
-  }, {host, token, version, additionalSetup});
+  };
+
+  try {
+    // In headless mode with persistent contexts, ensure context is ready before adding init script
+    // Wait a bit for the context to be fully initialized
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Add init script for future pages
+    await context.addInitScript(initScriptFunction, {host, token, version, additionalSetup});
+  } catch (error) {
+    // If addInitScript fails (can happen in headless mode), we'll apply directly to pages
+    console.warn(`addInitScript failed, will apply directly to pages: ${error.message}`);
+  }
+
+  // Apply init script to existing pages (important for persistent contexts in headless mode)
+  // This ensures the script runs even if addInitScript had issues
+  const pages = context.pages();
+  if (pages.length > 0) {
+    for (const page of pages) {
+      try {
+        // Check if page is still attached and ready
+        if (!page.isClosed()) {
+          await page.evaluate(initScriptFunction, {host, token, version, additionalSetup});
+        }
+      } catch (error) {
+        // Page might not be ready yet or might be closed, ignore errors
+        // This is expected for some pages in headless mode
+      }
+    }
+  }
 }
 
 /**

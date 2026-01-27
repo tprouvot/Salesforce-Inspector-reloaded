@@ -19,11 +19,11 @@
     display: block;
     position: fixed;
   }
-  
+
   #insext .insext-popup {
     box-sizing: border-box;
     width: 280px;
-    height: 450px;
+    min-height: 450px;
     position: absolute;
     background-color: var(--sfir-btn-white);
     border-radius: var(--sfir-btn-radius-sm);
@@ -31,7 +31,7 @@
     border: 1px solid #d8dde6;
     display: none;
   }
-  
+
   #insext .insext-popup-vertical {
     right: 0%;
     border-top-right-radius: 0;
@@ -41,27 +41,27 @@
     border-top-left-radius: var(--sfir-btn-radius);
     border-bottom-left-radius: var(--sfir-btn-radius);
   }
-  
-  #insext .insext-popup-vertical-up {
+
+  #insext .insext-popup-vertical.insext-popup-vertical-up {
     /*bottom: 100%;*/
-    top: calc(100% - 400px) !important;
+    top: calc(100% - 400px);
   }
-  
+
   #insext .insext-popup-horizontal {
     bottom: 0;
     box-shadow: 2px 0 2px 0 var(--sfir-btn-shadow-light);
     border-top-left-radius: var(--sfir-btn-radius);
     border-top-right-radius: var(--sfir-btn-radius);
   }
-  
+
   #insext .insext-popup-horizontal-left {
     left: 0%;
   }
-  
+
   #insext .insext-popup-horizontal-right {
-    left: -200px;
+    left: -160px;
   }
-  
+
   #insext.insext-active .insext-popup {
     display: block;
   }
@@ -106,12 +106,17 @@
       border: none;
       box-shadow: none;
     }
+
     #insext.insext-active .insext-btn-horizontal {
       left: 4px;
       bottom: 416px;
       border-top-right-radius: 0px;
     }
-    
+
+    #insext.insext-active .insext-btn-horizontal.insext-btn-dynamic-height {
+      bottom: calc(95vh);
+    }
+
   #insext .insext-btn-vertical:hover,
   #insext.insext-active .insext-btn-vertical {
     opacity: 1;
@@ -125,7 +130,7 @@
     position: absolute;
     border-bottom-left-radius: 0px;
   }
-  
+
   #insext .insext-btn-horizontal:hover,
   #insext.insext-active .insext-btn-horizontal {
     opacity: 1;
@@ -134,17 +139,17 @@
     border-color: var(--sfir-btn-border-active);
     transform: translateY(-2px);
   }
-  
+
   #insext .insext-btn img {
     box-sizing: border-box;
   }
-  
+
     #insext .insext-btn-vertical img {
       width: 24px;
       height: 24px;
       margin: 0 0 0 5px;
     }
-    
+
 #insext.insext-active .insext-btn-vertical img {
   margin-left: 15px;
   margin-top: 5px;
@@ -163,23 +168,23 @@
 #insext.insext-active .insext-btn-horizontal img {
   transform: rotateX(0turn);
 }
-  
+
   #insext .insext-btn:hover img {
     transform: scale(1.1);
   }
-  
+
   #insext.insext-active .insext-btn-vertical:hover img {
     transform: rotateY(0.5turn) scale(1.1);
   }
-  
+
   #insext .insext-btn-horizontal:hover img {
     transform: rotateX(0.5turn) scale(1.1);
   }
-  
+
   #insext.insext-active .insext-btn-horizontal:hover img {
     transform: rotateX(0turn) scale(1.1);
   }
-  
+
   .checkboxScrollSandbox {
     position: fixed;
     top: 10px;
@@ -218,7 +223,7 @@
     vertical-align: middle;
     animation: fadeOut 2s forwards;
   }
-  
+
   @keyframes fadeOut {
     to {
       opacity: 0;

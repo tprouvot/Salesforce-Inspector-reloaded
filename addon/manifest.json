@@ -79,6 +79,7 @@
         "explore-api.html",
         "rest-explore.html",
         "limits.html",
+        "api-statistics.html",
         "inject.js",
         "field-creator.html",
         "options.html",
@@ -166,6 +167,9 @@
     },
     "debug-log": {
       "description": "Logs Viewer"
+    },
+    "api-statistics": {
+      "description": "API Statistics"
     }
   }
 }

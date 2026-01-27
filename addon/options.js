@@ -166,6 +166,7 @@ class OptionsTabSelector extends React.Component {
                 }
               }}
           },
+          {option: Option, props: {type: "toggle", title: "Enable Dynamic Popup Height", key: "popupHeighDynamictMode", default: false, tooltip: "When enabled, the popup height will be dynamically adjusted based on the content."}},
         ]
       },
       {
@@ -188,7 +189,8 @@ class OptionsTabSelector extends React.Component {
                   e.target.disabled = true;
                 }
               }}},
-          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders", inputSize: "6"}}
+          {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders", inputSize: "6"}},
+          {option: Option, props: {type: "toggle", title: "Enable API Stats Debug Mode", key: Constants.API_DEBUG_STATISTICS_MODE, default: false, tooltip: "When enabled, tracks API call statistics (REST and SOAP) to help monitor API usage. Statistics can be viewed on the API Debug Statistics page."}}
         ]
       },
       {
@@ -364,6 +366,14 @@ class OptionsTabSelector extends React.Component {
                 {label: "Response Duration", name: "responseDuration", checked: true}
               ]}
           }
+        ]
+      },
+      {
+        id: "show-all",
+        tabTitle: "Show All",
+        content: [
+          {option: Option, props: {type: "toggle", title: "Enable Agentforce Helper for formula fields", key: "showAgentforceHelperInspect", default: true, tooltip: "When enabled, shows the 'Agentforce Helper' link in the field actions menu for calculated/formula fields."}},
+          {option: Option, props: {type: "text", title: "Formula Helper Prompt Template Name", key: this.sfHost + "_formulaAgentForcePrompt", default: "FormulaHelper", tooltip: "Developer name of the prompt template to use for Formula Field Analysis in the Inspect page"}},
         ]
       }
     ];

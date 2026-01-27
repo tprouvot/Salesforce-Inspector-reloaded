@@ -96,8 +96,10 @@ class Model {
   // set available actions based on api type, and set the first one as the default
   updateAvailableActions() {
     this.availableActions = allActions.filter(action => action.supportedApis.includes(this.apiType));
-    this.importAction = this.availableActions[0].value;
-    this.importActionName = this.availableActions[0].label;
+    if (!this.importActionSelected || !this.availableActions.some(a => a.value === this.importAction)) {
+      this.importAction = this.availableActions[0].value;
+      this.importActionName = this.availableActions[0].label;
+    }
   }
 
   /**

@@ -2,6 +2,16 @@
 
 ## Version 2.0
 
+- Reduce API calls in popup by skipping unnecessary requests when not expanded [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
+- Add API Statistics page to track and monitor REST and SOAP API calls (enable via `Enable API Stats Debug Mode` in Options > API tab) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
+- `User Experience` Add dynamic popup height and option to enable / disable setting (contribution by [Nicolas Greard](https://github.com/ngreardSF))
+- `Field Creator` Fix Currency Field [#1046](https://github.com/RubenHalman/Salesforce-Inspector-reloaded/issues/1046) (contribution by [Ruben Halman](https://github.com/RubenHalman))
+- `Metadata` Fix: Checkboxes unselect behavior and indeterminate state [issue #1066](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1066)
+- `Metadata` Fix: ApprovalProcess listMetadata does not return child [issue #1065](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1065)
+- Add Flow Compare button to quickly access Salesforce's Flow Compare feature (Winter '26) (from `Flow Scanner` and `Popup`)
+- `Data Import` Only reset action if user hasn't manually selected one [issue #986](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/986) (contribution by [Ruben Halman](https://github.com/RubenHalman))
+- `Data Export` Fix query tab index numbering when adding new tabs after closing existing ones [issue #1059](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1059) (contribution by [mshivakumar2023-debug](https://github.com/mshivakumar2023-debug))
+- `Show All Data` Add `Agentforce Helper` feature for formula fields, allowing users to analyze or use AI to generate some evolutions to current formula.
 - `Popup` Use banner to display success / errors when enabling logs, unfreeze user and enabling debug mode
 - `Data Import` Make attributes property not mandatory for JSON import [feature #1041](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1041) (request by [Devin Schlegel](https://github.com/TachyonicSpace))
 - Fix: Line Wrap in Export Does Not Work [issue #1027](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1027) (request by [Andrew Russo](https://github.com/TachyonicSpace))

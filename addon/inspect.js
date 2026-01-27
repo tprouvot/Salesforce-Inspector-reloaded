@@ -4,7 +4,8 @@ import {copyToClipboard, downloadCsvFile} from "./utils.js";
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel} from "./utils.js";
+import {UserInfoModel, PromptTemplate, Constants} from "./utils.js";
+import AgentforceModal from "./components/AgentforceModal.js";
 
 // Constants
 const GET_FIELD_USAGE_LABEL = "Get field usage";
@@ -57,6 +58,15 @@ class Model {
     // Initialize user info model - handles all user-related properties
     // Wrap spinFor to match the expected signature (spinFor in inspect.js takes actionName as first param)
     this.userInfoModel = new UserInfoModel((promise) => this.spinFor("retrieving user info", promise));
+
+    // Agentforce formula analysis state
+    this.showAgentforceFormulaModal = false;
+    this.agentforceFormulaField = null;
+    this.agentforceFormulaAnalysis = "";
+    this.agentforceFormulaError = null;
+    this.agentforceFormulaAnalyzing = false;
+    this.agentforceFormulaCustomInstructions = "";
+    this.agentforceFormulaEditMode = false;
   }
   /**
    * Notify React that we changed something, so it will rerender the view.
@@ -226,6 +236,116 @@ class Model {
       fieldRow.dataEditValue = null;
     }
     this.editMode = null;
+  }
+  openAgentforceFormulaModal(fieldRow) {
+    this.showAgentforceFormulaModal = true;
+    this.agentforceFormulaField = fieldRow;
+    this.agentforceFormulaAnalysis = "";
+    this.agentforceFormulaError = null;
+    this.agentforceFormulaAnalyzing = false;
+    this.agentforceFormulaEditMode = false;
+    // Load custom instructions from localStorage or use default
+    const savedInstructions = localStorage.getItem(this.sfHost + "_formulaAgentforceInstructions");
+    this.agentforceFormulaCustomInstructions = savedInstructions || this.getDefaultFormulaInstructions();
+  }
+  closeAgentforceFormulaModal() {
+    this.showAgentforceFormulaModal = false;
+    this.agentforceFormulaField = null;
+    this.agentforceFormulaAnalysis = "";
+    this.agentforceFormulaError = null;
+    this.agentforceFormulaAnalyzing = false;
+    this.agentforceFormulaEditMode = false;
+  }
+  toggleAgentforceFormulaEditMode() {
+    this.agentforceFormulaEditMode = !this.agentforceFormulaEditMode;
+  }
+  updateAgentforceFormulaInstructions(newInstructions) {
+    this.agentforceFormulaCustomInstructions = newInstructions;
+    localStorage.setItem(this.sfHost + "_formulaAgentforceInstructions", newInstructions);
+  }
+  resetAgentforceFormulaInstructions() {
+    const defaultInstructions = this.getDefaultFormulaInstructions();
+    this.agentforceFormulaCustomInstructions = defaultInstructions;
+    localStorage.removeItem(this.sfHost + "_formulaAgentforceInstructions");
+  }
+  getDefaultFormulaInstructions() {
+    return `Please explain what this formula does and provide a comprehensive analysis including:
+
+- A plain language explanation that business users can understand
+- Step-by-step breakdown of the logic
+- Identification of all referenced fields and their purpose
+- Edge cases and potential issues (null handling, division by zero, etc.)
+- Best practices review and recommendations for improvement
+- Example calculations with sample data
+
+Structure your response clearly with appropriate headings.`;
+  }
+  async sendAgentforceFormulaAnalysis() {
+    const instructions = this.agentforceFormulaCustomInstructions || this.getDefaultFormulaInstructions();
+    const fieldRow = this.agentforceFormulaField;
+
+    this.agentforceFormulaAnalyzing = true;
+    this.agentforceFormulaError = null;
+    this.agentforceFormulaAnalysis = "";
+    this.didUpdate();
+
+    try {
+      const promptTemplateName = localStorage.getItem(this.sfHost + "_formulaAgentForcePrompt");
+      const templateName = promptTemplateName || Constants.PromptTemplateFormula;
+      const promptTemplate = new PromptTemplate(templateName);
+
+      // Gather field information
+      const fieldName = fieldRow.fieldName;
+      const fieldLabel = fieldRow.fieldLabel() || fieldName;
+      const returnType = fieldRow.fieldDescribe?.type || "Unknown";
+      const formulaExpression = fieldRow.fieldDescribe?.calculatedFormula || "";
+
+      // Build comprehensive metadata string
+      const metadataParts = [
+        `Field Name: ${fieldName}`,
+        `Field Label: ${fieldLabel}`,
+        `Object: ${this.objectName()}`,
+        `Return Type: ${returnType}`,
+        `Formula:\n${formulaExpression}`
+      ];
+
+      // Add additional metadata if available
+      if (fieldRow.fieldDescribe?.length) {
+        metadataParts.push(`Length: ${fieldRow.fieldDescribe.length}`);
+      }
+      if (fieldRow.fieldDescribe?.precision) {
+        metadataParts.push(`Precision: ${fieldRow.fieldDescribe.precision}`);
+      }
+      if (fieldRow.fieldDescribe?.scale) {
+        metadataParts.push(`Scale: ${fieldRow.fieldDescribe.scale}`);
+      }
+      if (fieldRow.fieldDescribe?.inlineHelpText) {
+        metadataParts.push(`Help Text: ${fieldRow.fieldDescribe.inlineHelpText}`);
+      }
+      if (fieldRow.fieldDescribe?.defaultValue) {
+        metadataParts.push(`Default Value: ${fieldRow.fieldDescribe.defaultValue}`);
+      }
+
+      const fieldMetadata = metadataParts.join("\n");
+
+      const result = await promptTemplate.generate({
+        Prompt: instructions,
+        FieldMetadata: fieldMetadata
+      });
+
+      if (result.success) {
+        this.agentforceFormulaAnalysis = result.result;
+        this.agentforceFormulaError = null;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      this.agentforceFormulaError = "Agentforce analysis failed: " + error.message;
+      this.agentforceFormulaAnalysis = "";
+    } finally {
+      this.agentforceFormulaAnalyzing = false;
+      this.didUpdate();
+    }
   }
   canView() {
     return this.recordData && this.recordData.Id;
@@ -1202,6 +1322,12 @@ class FieldRow extends TableRow {
       elem.props.onOpenPopup(elem);
     }
   }
+  openAgentforceHelper(e) {
+    e.preventDefault();
+    this.rowList.model.openAgentforceFormulaModal(this);
+    this.fieldActionsOpen = false;
+    this.rowList.model.didUpdate();
+  }
   showFieldMetadata() {
     this.rowList.model.showDetailsBox(this.fieldName, this.rowProperties(), this.rowList);
   }
@@ -1451,6 +1577,59 @@ function addProperties(map, object, prefix, ignore) {
 }
 
 let h = React.createElement;
+
+function AgentforceFormulaModalWrapper({model}) {
+  if (!model.showAgentforceFormulaModal || !model.agentforceFormulaField) return null;
+
+  const fieldRow = model.agentforceFormulaField;
+
+  // Field Information Display for header
+  const headerContent = h("div", {className: "slds-box slds-theme_shade slds-m-bottom_medium"},
+    h("dl", {className: "slds-dl_horizontal"},
+      h("dt", {className: "slds-dl_horizontal__label"}, "Field Name:"),
+      h("dd", {className: "slds-dl_horizontal__detail"}, fieldRow.fieldName),
+      h("dt", {className: "slds-dl_horizontal__label"}, "Type:"),
+      h("dd", {className: "slds-dl_horizontal__detail"}, fieldRow.fieldTypeDesc()),
+      fieldRow.fieldDescribe?.calculatedFormula && h("dt", {className: "slds-dl_horizontal__label"}, "Formula:"),
+      fieldRow.fieldDescribe?.calculatedFormula && h("dd", {className: "slds-dl_horizontal__detail"},
+        h("code", {className: "slds-text-body_small", style: {display: "block", whiteSpace: "pre-wrap", wordBreak: "break-word"}}, fieldRow.fieldDescribe.calculatedFormula)
+      )
+    )
+  );
+
+  return h(AgentforceModal, {
+    isOpen: true,
+    title: `Agentforce Formula Helper: ${fieldRow.fieldLabel() || fieldRow.fieldName}`,
+    onClose: () => {
+      model.closeAgentforceFormulaModal();
+      model.didUpdate();
+    },
+    onAnalyze: () => model.sendAgentforceFormulaAnalysis(),
+    isAnalyzing: model.agentforceFormulaAnalyzing,
+    analysis: model.agentforceFormulaAnalysis,
+    error: model.agentforceFormulaError,
+    instructions: model.agentforceFormulaCustomInstructions || model.getDefaultFormulaInstructions(),
+    defaultInstructions: model.getDefaultFormulaInstructions(),
+    editMode: model.agentforceFormulaEditMode,
+    onToggleEditMode: () => {
+      model.toggleAgentforceFormulaEditMode();
+      model.didUpdate();
+    },
+    onUpdateInstructions: (newInstructions) => {
+      model.updateAgentforceFormulaInstructions(newInstructions);
+      model.didUpdate();
+    },
+    onResetInstructions: () => {
+      model.resetAgentforceFormulaInstructions();
+      model.didUpdate();
+    },
+    headerContent,
+    analyzingMessage: "Agentforce is analyzing the formula...",
+    analyzingSubMessage: "Analyzing logic, dependencies, and providing recommendations",
+    resultTitle: "Agentforce Analysis Results",
+    resultTagName: "formulaHelper"
+  });
+}
 
 class App extends React.Component {
   constructor(props) {
@@ -1777,7 +1956,8 @@ class App extends React.Component {
           : model.editMode == "create" ? "Save new"
           : "???")
         ) : null,
-        model.detailsBox ? h(DetailsBox, {model}) : null
+        model.detailsBox ? h(DetailsBox, {model}) : null,
+        model.showAgentforceFormulaModal ? h(AgentforceFormulaModalWrapper, {model}) : null
       )
     );
   }
@@ -2301,6 +2481,11 @@ class FieldActionsCell extends React.Component {
         h("ul", {className: "slds-dropdown__list"},
           h("li", {className: "slds-dropdown__item"},
             h("a", {href: "about:blank", onClick: this.onOpenDetails}, "All field metadata")
+          ),
+          row.fieldIsCalculated() && (localStorage.getItem("showAgentforceHelperInspect") !== "false") && h("li", {className: "slds-dropdown__item"},
+            h("a", {href: "about:blank", onClick: (e) => row.openAgentforceHelper(e)},
+              "Agentforce Helper"
+            )
           ),
           row.fieldSetupLinks && h("li", {className: "slds-dropdown__item"},
             h("a", {href: row.fieldSetupLinks.lightningSetupLink}, "Field setup (Lightning)")

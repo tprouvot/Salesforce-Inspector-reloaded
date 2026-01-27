@@ -68,6 +68,8 @@ class QueryHistory {
 }
 
 class Model {
+  static QUERY_TAB_PREFIX = "Query";
+
   constructor({sfHost, args}) {
     this.sfHost = sfHost;
     this.customFaviconColor = localStorage.getItem(this.sfHost + "_customFavicon") || "";
@@ -1079,7 +1081,7 @@ class Model {
     if (savedTabs) {
       this.queryTabs = JSON.parse(savedTabs);
       if (queryFromUrl) {
-        const newTabName = `Query ${this.queryTabs.length + 1}`;
+        const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.queryTabs.length + 1}`;
         this.queryTabs.push({name: newTabName, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
         this.activeTabIndex = this.queryTabs.length - 1;
         this.saveQueryTabs();
@@ -1087,7 +1089,7 @@ class Model {
         this.activeTabIndex = 0;
       }
     } else {
-      this.queryTabs = [{name: "Query 1", query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
+      this.queryTabs = [{name: `${Model.QUERY_TAB_PREFIX} 1`, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
       this.activeTabIndex = 0;
     }
   }
@@ -1105,7 +1107,7 @@ class Model {
   }
 
   addQueryTab() {
-    const newTabName = `Query ${this.queryTabs.length + 1}`;
+    const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.getNextQueryTabIndex()}`;
     this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
     this.activeTabIndex = this.queryTabs.length - 1;
     this.saveQueryTabs();
@@ -1143,7 +1145,28 @@ class Model {
     this.updatedExportedData();
     this.didUpdate();
   }
+  /*
+  Returns the next available index number for query tabs
+  */
+  getNextQueryTabIndex() {
+    let maxIndex = 0;
+    const prefix = Model.QUERY_TAB_PREFIX;
 
+    this.queryTabs.forEach(tab => {
+      if (tab.name.startsWith(prefix)) {
+        // Extract number from tab name (e.g., "Query 1" -> 1, "Query 2" -> 2)
+        const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const match = tab.name.match(new RegExp(`^${escapedPrefix}\\s+(\\d+)`));
+        if (match) {
+          const index = parseInt(match[1], 10);
+          if (index > maxIndex) {
+            maxIndex = index;
+          }
+        }
+      }
+    });
+    return maxIndex + 1;
+  }
   updateCurrentTabQuery(query) {
     if (this.queryTabs[this.activeTabIndex]) {
       this.queryTabs[this.activeTabIndex].query = query;

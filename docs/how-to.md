@@ -135,6 +135,37 @@ Go on a Salesforce flow and check / uncheck the checbox to update navigation scr
 
 ![2023-09-29_16-01-14 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/91845a31-8f53-4ea1-b895-4cb036d1bed0)
 
+## Compare Flow Versions
+
+Salesforce Inspector Reloaded provides quick access to Salesforce's Flow Compare feature, allowing you to visually compare different versions of a flow side-by-side in the Flow Builder.
+
+### What is Flow Compare?
+
+Flow Compare is a Salesforce feature (available from Winter '26) that enables you to:
+
+* View two flow versions side-by-side
+* Identify differences between versions visually
+* Understand what changed between versions
+* Review changes before deploying or activating a flow
+
+For more details, see the [official Salesforce documentation](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_mgmt_compare_versions.htm&release=258&type=5).
+
+### How to Access Flow Compare
+
+1. Open Flow Builder
+2. Open Salesforce Inspector Reloaded popup
+3. Look for the **Flow Compare** button (appears when viewing a flow version)
+4. Click the button to open Flow Builder with the compare view
+
+### Using Flow Compare
+
+Once Flow Builder opens:
+
+1. The current flow version is automatically loaded
+2. Use the version selector dropdown to choose a different version to compare against
+3. Flow Builder will display both versions side-by-side, highlighting differences
+4. Review changes, elements, and logic differences between the versions
+
 ## Add custom links to "Shortcut" tab
 
 <img width="1234" alt="Use custom shortcuts" src="https://github.com/user-attachments/assets/036045b8-133c-46c1-90d0-1db7aa81a190" />
@@ -246,6 +277,11 @@ Warning: Salesforce is slower for users who have debug mode enabled.
 
 <img width="278" alt="Enable Debug Mode" src="https://github.com/user-attachments/assets/f4dabb96-6b1d-48a1-828d-cc7d5da92e57" />
 
+## Enable API Call Debug Statistics
+
+Sometimes we may want to know which queries are performed to the Salesforce backend (by type, method, endpoint ...)
+This can help to correlate logs in Salesforce and what is performed by Salesforce Inspector Reloaded extension
+
 ## Customize extension's favicon
 
 From the option page, you can customize the default favicon by:
@@ -274,7 +310,10 @@ From the option page, enable "Use favicon color on sandbox banner"
 
 ## Customize extension's shortcuts
 
-Navigate to [chrome://extensions/shortcut](chrome://extensions/shortcut) and choose dedicated shortcuts for the pages you want.
+Navigate to your browser shortcut menu and choose dedicated shortcuts for the pages you want.
+
+* Chrome: [chrome://extensions/shortcut](chrome://extensions/shortcut)
+* Edge: [edge://extensions/shortcuts](edge://extensions/shortcuts)
 
 <img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">
 
@@ -396,6 +435,10 @@ Because the IsPortalEnabled field does not exist in orgs where there is no porta
    * **Exclude Portal users** - Hides users who have portal access enabled
    * **Exclude Inactive users** - Hides users who are marked as inactive
 
+### Dynamic Popup Height
+
+You can leverage more window height in the popup, to reduce the scroll. To enable this feature, go to User Experience -> Enable Dynamic Popup Height and check it.
+
 ## Generate a package.xml from a deployment
 
 From a DeployRequest record, click on the `Generate package.xml` button to download the package.xml for this deployment.
@@ -443,6 +486,88 @@ This feature is particularly useful for:
 
 ![Smart Field Usage demo](https://github.com/user-attachments/assets/ef93bf3c-8737-4a21-b38b-ce4822f8b573)
 
+## Use Agentforce to analyze formula fields
+
+The Agentforce Helper feature provides AI-powered analysis and explanations for formula fields, helping you understand complex formulas, identify issues, and get recommendations for improvements.
+
+### Prerequisites
+
+> **Prerequisite**
+> Agentforce needs to be enabled.
+> The prompt FormulaHelper needs to be deployed in the org.
+
+> **Note**
+> The standard Salesforce 'Prompt Template User' permission is required to use this feature.
+
+### How to use
+
+1. **Navigate to an SObject**: Select an SObject from the popup or navigate to any SObject page in Salesforce
+2. **Open Show All Data**: Click the "Show all data" button to open the field inspection page
+3. **Access Agentforce Helper**: For any calculated/formula field:
+   * Click the dropdown arrow (⋮) in the Actions column
+   * Select "Agentforce Helper" from the menu
+4. **Review the Analysis**: The modal will display:
+   * Field metadata (name, type, formula expression)
+   * A customizable prompt with your instructions
+   * An "Analyze" button to generate the AI analysis
+5. **Customize Instructions** (optional):
+   * Click "Edit" to modify the prompt instructions
+   * Add specific requirements or questions about the formula
+   * Click "Reset" to restore default instructions
+6. **View Results**: After clicking "Analyze", Agentforce will provide:
+   * Plain language explanation of the formula
+   * Step-by-step logic breakdown
+   * Dependencies and referenced fields
+   * Edge cases and potential issues
+   * Best practices review and recommendations
+   * Example calculations with sample data
+
+### Configuration Options
+
+#### Enable/Disable Agentforce Helper
+
+You can control whether the Agentforce Helper link appears in the field actions menu:
+
+1. Open the extension and click the "Options" button
+2. Navigate to the "Show All" tab
+3. Find the "Enable Agentforce Helper for formula fields" toggle
+4. Enable or disable the feature as needed (enabled by default)
+
+> **Note**
+> When disabled, the "Agentforce Helper" link will not appear in the field actions menu for formula fields.
+
+#### Customize Prompt Template
+
+You can configure which AI prompt template is used for formula analysis:
+
+1. In the same "Show All" tab in Options
+2. Find the "Formula Helper Prompt Template Name" field
+3. Enter the developer name of your custom prompt template (default: "FormulaHelper")
+
+> **Important**
+> The prompt template must exist in your Salesforce org as a GenAI Prompt Template and should be configured to accept two inputs: `Prompt` and `FieldMetadata`.
+
+#### Customize Analysis Instructions
+
+For each formula field analysis, you can customize the instructions:
+
+1. Open the Agentforce Helper modal for any formula field
+2. Click the "Edit" button to modify the instructions
+3. Add or modify the analysis requirements
+4. Your custom instructions are saved per org and will be used for future analyses
+5. Click "Reset" at any time to restore the default instructions
+
+### Use Cases
+
+This feature is particularly useful for:
+
+* **Understanding complex formulas**: Get plain-language explanations of intricate formula logic
+* **Formula reviews**: Identify potential issues, edge cases, and best practice violations
+* **Knowledge transfer**: Document formula behavior for team members
+* **Formula optimization**: Get recommendations for improving formula efficiency
+* **Troubleshooting**: Understand why a formula might not be working as expected
+* **Modification planning**: Get guidance on how to safely modify existing formulas
+
 ## User Tab Toggle Reset Password button
 
 This feature enables a **Reset Password** button on the **User Tab** page in Salesforce Inspector Reloaded. The button can be displayed **on or off** from the extension **Options** page.
@@ -466,4 +591,3 @@ When enabled, the **Reset Password** button appears while inspecting a User reco
 > **Note:** If the current session does not have sufficient permissions to access user information or perform a password reset, Salesforce returns an **INSUFFICIENT_ACCESS** error.
 
 <img width="278" height="161" alt="Reset password error" src="https://github.com/user-attachments/assets/5814e9d5-f037-41af-8f84-1997ab539292" />
-

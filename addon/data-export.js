@@ -105,6 +105,7 @@ class Model {
     this.filterColumn = ""; // Default filter column
     this.initialQuery = "";
     this.spinnerCount = 0;
+    this.queryInputFocused = false;
 
     // Initialize spinFor method early - needed by describeInfo and userInfoModel
     this.spinFor = createSpinForMethod(this);
@@ -1097,18 +1098,20 @@ class Model {
 
   loadQueryTabs(queryFromUrl) {
     const savedTabs = localStorage.getItem(`${this.sfHost}_queryTabs`);
+    const baseName = Model.QUERY_TAB_PREFIX;
     if (savedTabs) {
       this.queryTabs = JSON.parse(savedTabs);
       if (queryFromUrl) {
-        const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.queryTabs.length + 1}`;
-        this.queryTabs.push({name: newTabName, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
+        const nameCount = this.queryTabs.length + 1;
+        const name = `${baseName} ${nameCount}`;
+        this.queryTabs.push({name, basename, nameCount, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
         this.activeTabIndex = this.queryTabs.length - 1;
         this.saveQueryTabs();
       } else {
         this.activeTabIndex = 0;
       }
     } else {
-      this.queryTabs = [{name: `${Model.QUERY_TAB_PREFIX} 1`, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
+      this.queryTabs = [{name: `${baseName} 1`, basename, nameCount: 1, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
       this.activeTabIndex = 0;
     }
   }
@@ -1117,6 +1120,8 @@ class Model {
     // Create a copy of the tabs without the results property
     const tabsToSave = this.queryTabs.map(tab => ({
       name: tab.name,
+      baseName: tab.baseName,
+      nameCount: tab.nameCount,
       query: tab.query,
       queryTooling: tab.queryTooling,
       queryAll: tab.queryAll,
@@ -1126,8 +1131,10 @@ class Model {
   }
 
   addQueryTab() {
-    const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.getNextQueryTabIndex()}`;
-    this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
+    const baseName = Model.QUERY_TAB_PREFIX;
+    const nextIndex = this.getNextTabCount(baseName);
+    const name = `${baseName} ${nextIndex}`;
+    this.queryTabs.push({name, baseName, nameCount: nextIndex, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
     this.activeTabIndex = this.queryTabs.length - 1;
     this.saveQueryTabs();
     this.didUpdate();
@@ -1149,12 +1156,12 @@ class Model {
     this.activeTabIndex = index;
     // Update the query input value to match the current tab's query
     if (this.queryInput) {
-      this.queryInput.value = this.queryTabs[index].query;
+      this.queryInput.value = this.currentTab.query;
     }
-    this.queryTooling = this.queryTabs[index].queryTooling;
-    this.queryAll = this.queryTabs[index].queryAll;
+    this.queryTooling = this.currentTab.queryTooling;
+    this.queryAll = this.currentTab.queryAll;
     // Update the exported data with the tab's results
-    this.exportedData = this.queryTabs[index].results;
+    this.exportedData = this.currentTab.results;
     // Update the UI with the new data
     if (this.exportedData) {
       this.exportStatus = `Loaded ${this.exportedData.records.length} record${s(this.exportedData.records.length)}`;
@@ -1164,70 +1171,61 @@ class Model {
     this.updatedExportedData();
     this.didUpdate();
   }
-  /*
-  Returns the next available index number for query tabs
-  */
-  getNextQueryTabIndex() {
-    let maxIndex = 0;
-    const prefix = Model.QUERY_TAB_PREFIX;
 
-    this.queryTabs.forEach(tab => {
-      if (tab.name.startsWith(prefix)) {
-        // Extract number from tab name (e.g., "Query 1" -> 1, "Query 2" -> 2)
-        const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const match = tab.name.match(new RegExp(`^${escapedPrefix}\\s+(\\d+)`));
-        if (match) {
-          const index = parseInt(match[1], 10);
-          if (index > maxIndex) {
-            maxIndex = index;
-          }
-        }
-      }
-    });
-    return maxIndex + 1;
-  }
   updateCurrentTabQuery(query) {
-    if (this.queryTabs[this.activeTabIndex]) {
-      this.queryTabs[this.activeTabIndex].query = query;
+    if (this.currentTab) {
+      this.currentTab.query = query;
       this.saveQueryTabs();
     }
   }
 
+  updateQueryFocusState(hasFocus) {
+    this.queryTextAreaHasFocus = hasFocus;
+    this.didUpdate();
+  }
+
+  get currentTab() {
+    return this.queryTabs[this.activeTabIndex];
+  }
+
   updateCurrentTabProperty(propertyName, value) {
-    if (this.queryTabs[this.activeTabIndex]) {
-      this.queryTabs[this.activeTabIndex][propertyName] = value;
+    if (this.currentTab) {
+      currentTab[propertyName] = value;
       this.saveQueryTabs();
+    }
+  }
+
+  // Determine the next available count to append to a name
+  getNextTabCount(baseName) {
+    const matchCounts = this.queryTabs
+      .filter(tab => tab.baseName?.toLowerCase() === baseName.toLowerCase())
+      .map(tab => tab.nameCount);
+    if (matchCounts.length > 0) {
+      return Math.max(...matchCounts) + 1;
+    } else {
+      return 1;
     }
   }
 
   updateCurrentTabName(name) {
-    if (this.queryTabs[this.activeTabIndex]
-        && !this.queryTabs[this.activeTabIndex].name.includes(name)
-        && !this.queryTabs[this.activeTabIndex].isManuallyRenamed) {
-      // Check if there are any other tabs with the same name
-      let count = 1;
-      let newName = name;
-      while (this.queryTabs.some(tab => tab.name === newName)) {
-        newName = `${name} (${count})`;
-        count++;
-      }
-      this.queryTabs[this.activeTabIndex].name = newName;
-      this.saveQueryTabs();
-    }
+    this.updateTabName(this.activeTabIndex, name, false);
+    this.currentTab.isManuallyRenamed = false;
   }
 
-  updateTabName(index, newName) {
-    if (this.queryTabs[index] && newName.trim()) {
-      let trimmedName = newName.trim();
-      // Check if there are any other tabs with the same name
-      let count = 1;
-      let finalName = trimmedName;
-      while (this.queryTabs.some((tab, i) => i !== index && tab.name === finalName)) {
-        finalName = `${trimmedName} (${count})`;
-        count++;
-      }
-      this.queryTabs[index].name = finalName;
-      this.queryTabs[index].isManuallyRenamed = true;
+  updateTabName(index, name, manual = true) {
+    const selectedTab = this.queryTabs[index];
+    const newName = name.trim();
+    if (selectedTab
+        && selectedTab?.baseName?.toLowerCase() !== newName.toLowerCase()
+        && selectedTab?.name?.toLowerCase() !== newName.toLowerCase()
+        && !selectedTab.isManuallyRenamed) {
+      // Check if there are any other tabs with the same base name
+      const nextCount = this.getNextTabCount(newName);
+      const countToAppend = nextCount > 1 ? ` ${nextCount}` : "";
+      selectedTab.nameCount = nextCount;
+      selectedTab.name = `${name}${countToAppend}`;
+      selectedTab.baseName = name;
+      selectedTab.isManuallyRenamed = manual;
       this.saveQueryTabs();
       this.didUpdate();
     }
@@ -1253,7 +1251,7 @@ class Model {
   }
 
   getCurrentTabQuery() {
-    return this.queryTabs[this.activeTabIndex]?.query || "";
+    return this.currentTab?.query || "";
   }
 }
 
@@ -1430,6 +1428,8 @@ class App extends React.Component {
     this.onRemoveTab = this.onRemoveTab.bind(this);
     this.onTabClick = this.onTabClick.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
+    this.onQueryInputFocus = this.onQueryInputFocus.bind(this);
+    this.onQueryInputBlur = this.onQueryInputBlur.bind(this);
     this.onTabNameEdit = this.onTabNameEdit.bind(this);
     this.onTabNameSubmit = this.onTabNameSubmit.bind(this);
     this.onTabDragStart = this.onTabDragStart.bind(this);
@@ -1632,6 +1632,19 @@ class App extends React.Component {
     model.updateCurrentTabQuery(e.target.value);
     model.queryAutocompleteHandler();
     model.didUpdate();
+  }
+
+  onQueryInputFocus() {
+    let {model} = this.props;
+    model.updateQueryFocusState(true);
+    console.log("Focus set", model.queryTextAreaHasFocus);
+
+  }
+
+  onQueryInputBlur() {
+    let {model} = this.props;
+    model.updateQueryFocusState(false);
+    console.log("Focus removed",  model.queryTextAreaHasFocus);
   }
 
   onTabNameEdit(e, index) {
@@ -1903,7 +1916,7 @@ class App extends React.Component {
             model.queryTabs.map((tab, index) =>
               h("div", {
                 key: index,
-                className: `query-tab ${index === model.activeTabIndex ? "active" : ""} ${this.state.draggedTabIndex === index ? "dragging" : ""} ${this.state.dropTargetIndex === index ? "drop-target" : ""}`,
+                className: `query-tab ${index === model.activeTabIndex ? "active" : ""} ${model.queryTextAreaHasFocus && (index === model.activeTabIndex) ? "query-tab-input-focused" : ""} ${this.state.draggedTabIndex === index ? "dragging" : ""} ${this.state.dropTargetIndex === index ? "drop-target" : ""}`,
                 onClick: e => this.onTabClick(e, index),
                 draggable: true,
                 onDragStart: e => this.onTabDragStart(e, index),
@@ -1958,7 +1971,9 @@ class App extends React.Component {
               id: "query",
               ref: "query",
               style: {maxHeight: (model.winInnerHeight - 200) + "px"},
-              onChange: this.onQueryInput
+              onChange: this.onQueryInput,
+              onFocus: this.onQueryInputFocus,
+              onBlur: this.onQueryInputBlur
             }),
             h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
               h("div", {className: "autocomplete-header"},

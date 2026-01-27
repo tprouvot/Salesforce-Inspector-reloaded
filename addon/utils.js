@@ -4,11 +4,15 @@ export class Constants {
   static PromptTemplateSOQL = "GenerateSOQL";
   static PromptTemplateFlow = "DescribeFlow";
   static PromptTemplateDebugLog = "AnalyzeDebugLog";
+  static PromptTemplateFormula = "FormulaHelper";
   // Consumer Key of default connected app
   static DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs";
   static ACCESS_TOKEN = "_access_token";
   static CODE_VERIFIER = "_code_verifier";
   static CLIENT_ID = "_clientId";
+  // API Statistics
+  static API_DEBUG_STATISTICS_MODE = "apiDebugStatisticsMode";
+  static API_DEBUG_STATISTICS = "apiDebugStatistics";
 }
 
 export function getLinkTarget(e = {}) {
@@ -31,6 +35,10 @@ export function isOptionEnabled(optionName, optionsArray){
   }
   //if no option was found, enable by default
   return true;
+}
+
+export function isSettingEnabled(settingName){
+  return localStorage.getItem(settingName) === "true";
 }
 
 export async function getLatestApiVersionFromOrg(sfHost) {
@@ -296,10 +304,21 @@ export function copyToClipboard(value) {
 }
 
 /**
+ * Generates a URL for the Flow Compare page in Salesforce Flow Builder.
+ * @param {string} sfHost - The Salesforce host URL (e.g., "myorg.lightning.force.com").
+ * @param {string} recordId - The flow version record ID (18-character Salesforce ID).
+ * @returns {string} The complete URL for the Flow Compare page.
+ */
+export function getFlowCompareUrl(sfHost, recordId) {
+  return `https://${sfHost}/builder_platform_interaction/flowBuilder.app?flowId=${recordId}&compareTargetFlowId=${recordId}`;
+}
+
+/**
  * Downloads a CSV file with optional UTF-8 BOM for Excel compatibility
  * @param {string} csvContent - The CSV content to download
  * @param {string} filename - The filename for the downloaded file
  */
+
 export function downloadCsvFile(csvContent, filename) {
   // Add UTF-8 BOM for Excel compatibility with Hebrew and other non-Latin characters
   const BOM = localStorage.getItem("useBomForCsvExport") === "true" ? "\uFEFF" : "";

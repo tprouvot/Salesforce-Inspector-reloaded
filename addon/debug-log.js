@@ -3,6 +3,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {UserInfoModel, createSpinForMethod, PromptTemplate, Constants, isOptionEnabled} from "./utils.js";
 import {PageHeader} from "./components/PageHeader.js";
 import ConfirmModal from "./components/ConfirmModal.js";
+import AgentforceModal from "./components/AgentforceModal.js";
 import Toast from "./components/Toast.js";
 
 const h = React.createElement;
@@ -1924,195 +1925,53 @@ function PreviewModal({model, hideButtonsOption}) {
   );
 }
 
-function AgentforceModal({model}) {
+function AgentforceModalWrapper({model}) {
   if (!model.showAgentforceModal) return null;
 
-  const defaultPrompt = model.getDefaultInstructions();
-  const currentInstructions = model.agentforceCustomInstructions || defaultPrompt;
-  const isCustomized = currentInstructions !== defaultPrompt;
-  const isEditMode = model.agentforceEditMode;
+  // Footer content to show what Agentforce will analyze (only in view mode, not edit mode)
+  const footerContent = !model.agentforceEditMode && !(model.agentforceAnalysis || model.agentforceError)
+    ? h("div", {className: "slds-form-element__help slds-m-top_small"},
+      h("div", {className: "slds-text-body_small"},
+        "Agentforce will provide a detailed analysis covering:",
+        h("ul", {className: "slds-list_dotted slds-m-top_xx-small slds-m-left_medium"},
+          h("li", {}, "Executive Summary & Execution Flow"),
+          h("li", {}, "Data Operations (SOQL/DML)"),
+          h("li", {}, "Errors & Performance Issues"),
+          h("li", {}, "Governor Limits Usage"),
+          h("li", {}, "Best Practices & Recommendations")
+        )
+      )
+    )
+    : null;
 
-  const isAnalyzing = model.agentforceAnalyzing || false;
-  const hasResults = model.agentforceAnalysis || model.agentforceError;
+  // Custom copy handler that also shows a toast
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    model.showToast("success", "Copied", "Analysis copied to clipboard");
+  };
 
-  return h(ConfirmModal, {
+  return h(AgentforceModal, {
     isOpen: true,
-    title: h("div", {className: "slds-grid slds-grid_vertical-align-center"},
-      h("span", {className: "slds-icon_container slds-icon-utility-einstein slds-m-right_small"},
-        h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
-          h("use", {xlinkHref: "symbols.svg#einstein"})
-        )
-      ),
-      h("span", {}, "Agentforce Debug Log Analysis")
-    ),
-    onConfirm: isAnalyzing ? null : () => model.sendAgentforceAnalysis(),
-    onCancel: () => model.closeAgentforce(),
-    confirmLabel: isAnalyzing ? "Analyzing..." : (hasResults ? "Analyze Again" : "Analyze"),
-    cancelLabel: hasResults ? "Close" : (model.previewLog ? "Back" : "Cancel"),
-    confirmVariant: "brand",
-    cancelVariant: "neutral",
-    confirmDisabled: isAnalyzing,
-    containerClassName: "modalContainer"
-  },
-  // Instructions Section with Edit/View toggle
-  !hasResults && h("div", {className: "slds-form-element slds-m-bottom_medium"},
-    h("div", {className: "slds-grid slds-grid_align-spread slds-m-bottom_x-small"},
-      h("label", {className: "slds-form-element__label slds-text-heading_small"},
-        h("span", {}, "Analysis Instructions"),
-        isCustomized && h("span", {
-          className: "slds-theme_info slds-badge slds-m-left_x-small",
-          style: {fontSize: "0.75rem"}
-        }, "Customized")
-      ),
-      h("div", {className: "slds-button-group", role: "group"},
-        h("button", {
-          className: `slds-button slds-button_${isEditMode ? "brand" : "neutral"}`,
-          title: "Edit instructions",
-          onClick: () => model.toggleAgentforceEditMode(),
-          disabled: isAnalyzing
-        },
-        h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-          h("use", {xlinkHref: "symbols.svg#edit"})
-        ),
-        "Edit"
-        ),
-        isCustomized && h("button", {
-          className: "slds-button slds-button_neutral",
-          title: "Reset to default instructions",
-          onClick: () => {
-            model.resetAgentforceInstructions();
-          },
-          disabled: isAnalyzing
-        },
-        h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
-          h("use", {xlinkHref: "symbols.svg#refresh"})
-        ),
-        "Reset"
-        )
-      )
-    ),
-
-    // Edit Mode - Editable textarea
-    isEditMode ? h("div", {},
-      h("textarea", {
-        className: "slds-textarea sfir-agentforce-textarea",
-        value: currentInstructions,
-        onInput: (e) => model.updateAgentforceInstructions(e.target.value),
-        placeholder: "Enter your custom analysis instructions...",
-        disabled: isAnalyzing
-      }),
-      h("div", {className: "slds-form-element__help slds-m-top_small"},
-        h("div", {className: "slds-text-body_small slds-text-color_weak"},
-          "💡 Tip: Customize these instructions to focus on specific aspects of your debug logs. Changes are automatically saved."
-        )
-      )
-    ) : h("div", {},
-      // View Mode - Read-only display
-      h("div", {
-        className: "slds-box slds-theme_shade slds-m-top_x-small sfir-agentforce-instructions-container"
-      },
-      h("div", {
-        className: "slds-text-body_small sfir-agentforce-instructions-content"
-      }, currentInstructions)
-      ),
-      h("div", {className: "slds-form-element__help slds-m-top_small"},
-        h("div", {className: "slds-text-body_small"},
-          "Agentforce will provide a detailed analysis covering:",
-          h("ul", {className: "slds-list_dotted slds-m-top_xx-small slds-m-left_medium"},
-            h("li", {}, "Executive Summary & Execution Flow"),
-            h("li", {}, "Data Operations (SOQL/DML)"),
-            h("li", {}, "Errors & Performance Issues"),
-            h("li", {}, "Governor Limits Usage"),
-            h("li", {}, "Best Practices & Recommendations")
-          )
-        )
-      )
-    )
-  ),
-
-  // Analyzing State
-  isAnalyzing && h("div", {className: "slds-align_absolute-center slds-m-vertical_large sfir-agentforce-analyzing-container"},
-    h("div", {className: "slds-spinner_container"},
-      h("div", {role: "status", className: "slds-spinner slds-spinner_medium slds-spinner_brand"},
-        h("span", {className: "slds-assistive-text"}, "Analyzing log..."),
-        h("div", {className: "slds-spinner__dot-a"}),
-        h("div", {className: "slds-spinner__dot-b"})
-      )
-    ),
-    h("div", {className: "slds-text-heading_small slds-m-top_medium slds-text-align_center"},
-      h("div", {}, "Agentforce is performing a comprehensive analysis..."),
-      h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_x-small"},
-        "Analyzing execution flow, data operations, performance, and governor limits"
-      ),
-      h("div", {className: "slds-text-body_small slds-text-color_weak slds-m-top_xx-small"},
-        "This may take 30-60 seconds for detailed insights"
-      )
-    )
-  ),
-
-  // Error State
-  model.agentforceError && h("div", {className: "slds-m-top_medium"},
-    h("div", {className: "slds-notify slds-notify_alert slds-alert_error", role: "alert"},
-      h("span", {className: "slds-icon_container slds-icon-utility-error slds-m-right_small"},
-        h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-          h("use", {xlinkHref: "symbols.svg#error"})
-        )
-      ),
-      h("h2", {},
-        h("span", {className: "slds-text-heading_small"}, "Analysis Failed")
-      )
-    ),
-    h("div", {className: "slds-box slds-box_small slds-theme_error slds-m-top_small"},
-      h("div", {className: "slds-text-body_regular sfir-agentforce-error-content"},
-        model.agentforceError
-      )
-    )
-  ),
-
-  // Success State with Results
-  model.agentforceAnalysis && h("div", {className: "slds-m-top_medium"},
-    h("div", {className: "slds-notify slds-notify_alert slds-alert_success slds-m-bottom_small", role: "alert"},
-      h("span", {className: "slds-icon_container slds-icon-utility-success slds-m-right_small"},
-        h("svg", {className: "slds-icon slds-icon_x-small", "aria-hidden": "true"},
-          h("use", {xlinkHref: "symbols.svg#success"})
-        )
-      ),
-      h("h2", {},
-        h("span", {className: "slds-text-heading_small"}, "Analysis Complete")
-      )
-    ),
-    h("div", {className: "slds-card"},
-      h("div", {className: "slds-card__header slds-grid"},
-        h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
-          h("div", {className: "slds-media__body"},
-            h("h2", {className: "slds-card__header-title"},
-              h("span", {}, "Agentforce Analysis Results")
-            )
-          ),
-          h("div", {className: "slds-no-flex"},
-            h("button", {
-              className: "slds-button slds-button_icon slds-button_icon-border-filled",
-              title: "Copy to clipboard",
-              onClick: () => {
-                navigator.clipboard.writeText(model.agentforceAnalysis);
-                model.showToast("success", "Copied", "Analysis copied to clipboard");
-              }
-            },
-            h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
-              h("use", {xlinkHref: "symbols.svg#copy"})
-            )
-            )
-          )
-        )
-      ),
-      h("div", {className: "slds-card__body slds-card__body_inner"},
-        h("div", {
-          className: "slds-text-body_regular sfir-agentforce-results"
-        }, model.agentforceAnalysis)
-      )
-    )
-  )
-  );
+    title: "Agentforce Debug Log Analysis",
+    onClose: () => model.closeAgentforce(),
+    onAnalyze: () => model.sendAgentforceAnalysis(),
+    isAnalyzing: model.agentforceAnalyzing,
+    analysis: model.agentforceAnalysis,
+    error: model.agentforceError,
+    instructions: model.agentforceCustomInstructions || model.getDefaultInstructions(),
+    defaultInstructions: model.getDefaultInstructions(),
+    editMode: model.agentforceEditMode,
+    onToggleEditMode: () => model.toggleAgentforceEditMode(),
+    onUpdateInstructions: (newInstructions) => model.updateAgentforceInstructions(newInstructions),
+    onResetInstructions: () => model.resetAgentforceInstructions(),
+    footerContent,
+    analyzingMessage: "Agentforce is performing a comprehensive analysis...",
+    analyzingSubMessage: "Analyzing execution flow, data operations, performance, and governor limits. This may take 30-60 seconds for detailed insights",
+    resultTitle: "Agentforce Analysis Results",
+    resultTagName: "logAnalysis",
+    // Override copy handler to show toast
+    onCopy: handleCopy
+  });
 }
 
 class App extends React.Component {
@@ -2167,7 +2026,7 @@ class App extends React.Component {
         message: model.toast.message,
         onClose: () => model.closeToast()
       }) : null,
-      h(AgentforceModal, {model})
+      h(AgentforceModalWrapper, {model})
     );
   }
 }

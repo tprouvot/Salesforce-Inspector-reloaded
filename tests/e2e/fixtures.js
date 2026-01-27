@@ -8,7 +8,7 @@ export const test = base.extend({
     // eslint-disable-next-line no-undef
     const pathToExtension = path.join(process.cwd(), "addon");
     const context = await chromium.launchPersistentContext("", {
-      headless: false,
+      headless: true,
       channel: 'chromium',
       args: [
         `--disable-extensions-except=${pathToExtension}`,

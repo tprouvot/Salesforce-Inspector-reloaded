@@ -24,6 +24,12 @@ test.describe("Inspect", () => {
 
     // Mock Salesforce API calls
     await context.route("**/*", async route => {
+      //if mock is disabled, continue with the request
+      if(!TEST_CONSTANTS.mockEnabled) {
+        await route.continue();
+        return;
+      }
+
       const request = route.request();
       const url = request.url();
       const method = request.method();
@@ -289,13 +295,25 @@ test.describe("Inspect", () => {
     });
   });
 
-  test("Load Inspect Page - Object Only", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
-
-    // Wait for page to load
+  /** @description Initializes the inspect page
+   * @param {Object} page - Playwright page object
+   * @param {Object} extensionId - Extension ID
+   * @param {string} recordId - Record ID
+   * @returns {Promise<void>}
+   */
+  async function initInspectPage(page, extensionId, recordId = null, useToolingApi = false) {
+    await page.goto(`chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account${recordId ? `&recordId=${recordId}` : ""}${useToolingApi ? "&useToolingApi=1" : ""}`);
     await page.waitForSelector("#root", {timeout: 10000});
     await page.waitForSelector("text=Inspect", {timeout: 10000});
+  }
+
+  async function initInspectPageWaitRecordName(page, extensionId, recordName) {
+    await initInspectPage(page, extensionId, TEST_CONSTANTS.accountRecordId);
+    await page.waitForSelector(`td:has-text('${TEST_CONSTANTS.accountRecordId}')`, {timeout: 10000});
+  }
+
+  test("Load Inspect Page - Object Only", async ({page, extensionId}) => {
+    await initInspectPage(page, extensionId);
 
     // Verify page subtitle contains Account (more specific selector)
     await expect(page.locator("span.slds-truncate:has-text('Account')").first()).toBeVisible();
@@ -307,42 +325,29 @@ test.describe("Inspect", () => {
   });
 
   test("Load Inspect Page - With Record ID", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account&recordId=001000000000000AAA`;
-    await page.goto(inspectUrl);
-
-    // Wait for page to load
-    await page.waitForSelector("#root", {timeout: 10000});
-    await page.waitForSelector("text=Inspect", {timeout: 10000});
-
-    // Wait for data to load
-    await page.waitForTimeout(2000);
+    await initInspectPageWaitRecordName(page, extensionId, 'Test Account');
 
     // Verify record name appears in table (more specific)
     await expect(page.locator("td:has-text('Test Account')").first()).toBeVisible();
   });
 
   test("Switch Tabs", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
+    await initInspectPage(page, extensionId);
 
-    await page.waitForSelector("text=Fields", {timeout: 10000});
+    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 10000});
 
     // Click Fields tab
-    await page.locator("text=Fields").click();
-    await page.waitForTimeout(500);
+    await page.locator(".slds-builder-header_container li span[title=Fields]").click();
 
     // Click Relationships tab
-    await page.locator("text=Relationships").click();
-    await page.waitForTimeout(500);
+    await page.locator(".slds-builder-header_container li span[title=Relationships]").click();
 
     // Click All tab
-    await page.locator("text=All").click();
-    await page.waitForTimeout(500);
+    await page.locator(".slds-builder-header_container li span[title=All]").click();
   });
 
   test("Filter Fields", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
+    await initInspectPage(page, extensionId);
 
     await page.waitForSelector("input[placeholder='Filter']", {timeout: 10000});
 
@@ -358,17 +363,16 @@ test.describe("Inspect", () => {
   });
 
   test("Toggle Column Visibility", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
+    await initInspectPage(page, extensionId);
 
-    await page.waitForSelector("text=Fields", {timeout: 10000});
+    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 10000});
 
     // Click Fields tab to open column visibility menu
-    await page.locator("text=Fields").click();
+    await page.locator(".slds-builder-header_container li span[title=Fields]").click();
     await page.waitForTimeout(500);
 
     // Click the chevron to open column visibility menu
-    const chevron = page.locator("text=Fields").locator("..").locator("svg").first();
+    const chevron = page.locator(".slds-builder-header_container li span[title=Fields]").locator("..").locator("svg").first();
     await chevron.click();
     await page.waitForTimeout(500);
 
@@ -385,14 +389,12 @@ test.describe("Inspect", () => {
   });
 
   test("Calculate Field Usage", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
+    await initInspectPage(page, extensionId);
 
-    await page.waitForSelector("text=Fields", {timeout: 10000});
+    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 10000});
 
     // Click Fields tab
-    await page.locator("text=Fields").click();
-    await page.waitForTimeout(1000);
+    await page.locator(".slds-builder-header_container li span[title=Fields]").click();
 
     // Wait for Usage column header with action button
     await page.waitForSelector("text=Usage (%)", {timeout: 10000});
@@ -418,10 +420,7 @@ test.describe("Inspect", () => {
   });
 
   test("Enter Edit Mode - Update", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account&recordId=001000000000000AAA`;
-    await page.goto(inspectUrl);
-
-    await page.waitForSelector("text=Test Account", {timeout: 10000});
+    await initInspectPageWaitRecordName(page, extensionId, 'Test Account');
 
     // Click Edit button
     const editButton = page.locator("button:has-text('Edit')");
@@ -436,10 +435,7 @@ test.describe("Inspect", () => {
   });
 
   test("Edit Field Value", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account&recordId=001000000000000AAA`;
-    await page.goto(inspectUrl);
-
-    await page.waitForSelector("text=Test Account", {timeout: 10000});
+    await initInspectPageWaitRecordName(page, extensionId, 'Test Account');
 
     // Enter edit mode
     await page.locator("button:has-text('Edit')").click();
@@ -461,10 +457,7 @@ test.describe("Inspect", () => {
   });
 
   test("Cancel Edit", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account&recordId=001000000000000AAA`;
-    await page.goto(inspectUrl);
-
-    await page.waitForSelector("text=Test Account", {timeout: 10000});
+    await initInspectPageWaitRecordName(page, extensionId, 'Test Account');
 
     // Enter edit mode
     await page.locator("button:has-text('Edit')").click();
@@ -479,10 +472,7 @@ test.describe("Inspect", () => {
   });
 
   test("Enter Delete Mode", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account&recordId=001000000000000AAA`;
-    await page.goto(inspectUrl);
-
-    await page.waitForSelector("text=Test Account", {timeout: 10000});
+    await initInspectPageWaitRecordName(page, extensionId, 'Test Account');
 
     // Click Delete button
     const deleteButton = page.locator("button:has-text('Delete')");
@@ -496,10 +486,7 @@ test.describe("Inspect", () => {
   });
 
   test("Enter Create Mode", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
-
-    await page.waitForSelector("button:has-text('New')", {timeout: 10000});
+    await initInspectPage(page, extensionId);
 
     // Click New button
     const newButton = page.locator("button:has-text('New')");
@@ -512,9 +499,10 @@ test.describe("Inspect", () => {
     await expect(page.locator("button:has-text('Save new')")).toBeVisible();
   });
 
-  test("Export Table - Copy", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
+  test("Export Table - Copy", async ({page, context, extensionId}) => {
+    // Grant clipboard permissions to browser context
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await initInspectPage(page, extensionId);
 
     await page.waitForSelector("table.slds-table", {timeout: 10000});
     await page.waitForTimeout(2000); // Wait for table to fully render
@@ -531,14 +519,13 @@ test.describe("Inspect", () => {
     await page.waitForTimeout(500);
 
     // Verify clipboard was set (in test mode)
-    const clipboardValue = await page.evaluate(() => window.testClipboardValue);
-    expect(clipboardValue).toBeTruthy();
-    expect(clipboardValue).toContain("Field API Name");
+    const clipboardValue = await page.evaluate(() => navigator.clipboard.readText());
+    await expect(clipboardValue).toBeTruthy();
+    await expect(clipboardValue).toContain("Field API Name");
   });
 
   test("Export Table - Download CSV", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
+    await initInspectPage(page, extensionId);
 
     await page.waitForSelector("table.slds-table", {timeout: 10000});
     await page.waitForTimeout(2000); // Wait for table to fully render
@@ -561,8 +548,7 @@ test.describe("Inspect", () => {
   });
 
   test("Toggle Table Borders", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
+    await initInspectPage(page, extensionId);
 
     await page.waitForSelector("table.slds-table", {timeout: 10000});
     await page.waitForTimeout(2000); // Wait for table to fully render
@@ -588,8 +574,7 @@ test.describe("Inspect", () => {
   });
 
   test("Show Object Metadata", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
+    await initInspectPage(page, extensionId);
 
     await page.waitForSelector("a:has-text('More')", {timeout: 10000});
 
@@ -603,8 +588,7 @@ test.describe("Inspect", () => {
   });
 
   test("Field Actions Menu", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
+    await initInspectPage(page, extensionId);
 
     await page.waitForSelector("table.slds-table", {timeout: 10000});
 
@@ -622,8 +606,7 @@ test.describe("Inspect", () => {
   });
 
   test("Relationship Actions Menu", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
+    await initInspectPage(page, extensionId);
 
     await page.waitForSelector("text=Relationships", {timeout: 10000});
 
@@ -645,11 +628,7 @@ test.describe("Inspect", () => {
   });
 
   test("Object Actions Menu", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account&recordId=001000000000000AAA`;
-    await page.goto(inspectUrl);
-
-    await page.waitForSelector("td:has-text('Test Account')", {timeout: 10000});
-    await page.waitForTimeout(2000); // Wait for data to load
+    await initInspectPageWaitRecordName(page, extensionId, 'Test Account');
 
     // Find object actions dropdown button - look in utility items area
     const objectActionsContainer = page.locator(".object-actions").first();
@@ -665,25 +644,17 @@ test.describe("Inspect", () => {
   });
 
   test("Tooling API Support", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account&useToolingApi=1`;
-    await page.goto(inspectUrl);
-
-    // Wait for page to load
-    await page.waitForSelector("#root", {timeout: 10000});
-    await page.waitForSelector("text=Inspect", {timeout: 10000});
+    await initInspectPage(page, extensionId, null, true);
 
     // Verify Tooling API indicator appears
     await expect(page.locator("text=Tooling API")).toBeVisible();
   });
 
   test("Record ID Popup", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account&recordId=001000000000000AAA`;
-    await page.goto(inspectUrl);
-
-    await page.waitForSelector("text=Test Account", {timeout: 10000});
+    await initInspectPageWaitRecordName(page, extensionId, 'Test Account');
 
     // Find a reference field value (ID) and click it
-    const idLink = page.locator("a:has-text('001000000000000AAA')").first();
+    const idLink = page.locator("a:has-text('"+TEST_CONSTANTS.accountRecordId+"')").first();
     if (await idLink.isVisible()) {
       await idLink.click();
       await page.waitForTimeout(500);
@@ -695,13 +666,12 @@ test.describe("Inspect", () => {
   });
 
   test("Column Filtering", async ({page, extensionId}) => {
-    const inspectUrl = `chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account`;
-    await page.goto(inspectUrl);
+    await initInspectPage(page, extensionId);
 
-    await page.waitForSelector("text=Fields", {timeout: 10000});
+    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 10000});
 
     // Switch to Fields tab (enables column filtering)
-    await page.locator("text=Fields").click();
+    await page.locator(".slds-builder-header_container li span[title=Fields]").click();
     await page.waitForTimeout(1000);
 
     // Find a column filter input

@@ -25,7 +25,7 @@ jobs:
       run: npx playwright install --with-deps chromium
 
     - name: Run Playwright tests
-      run: npm run test:e2e:one
+      run: npm run test:e2e
 
 #    - uses: actions/upload-artifact@v4
 #      if: always()

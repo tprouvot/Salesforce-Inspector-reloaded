@@ -1,13 +1,15 @@
 import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
+  TEST_GUID,
   injectSessionData,
   createSuccessResponse,
   createSoapSuccessResponse,
   handleGetUserInfoSoap,
   createModelExposureSetup,
   fulfillSuccess,
-  fulfillSoapSuccess
+  fulfillSoapSuccess,
+  pasteData,
 } from "./test-helpers";
 
 test.describe("Data Import", () => {
@@ -24,6 +26,12 @@ test.describe("Data Import", () => {
 
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
+      //if mock is disabled, continue with the request
+      if(!TEST_CONSTANTS.mockEnabled) {
+        await route.continue();
+        return;
+      }
+
       const request = route.request();
       const url = request.url();
       const method = request.method();
@@ -235,63 +243,64 @@ test.describe("Data Import", () => {
     });
   });
 
-  // Helper function to paste data using the model
-  async function pasteData(page, data) {
-    // Wait for model to be exposed
-    await page.waitForFunction(() => window.insextTestModel !== undefined, {timeout: 10000});
+/**
+ * Initializes the import page
+ * @param {Object} page - Playwright page object
+ * @param {Object} context - Playwright browser context
+ * @param {string} extensionId - Extension ID
+ * @returns {Promise<void>}
+ */
+  async function initImportPage(page, context, extensionId) {
+    // Grant clipboard permissions to browser context
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page.goto(`chrome-extension://${extensionId}/data-import.html?host=${mockHost}`);
 
-    // Access model and call setData directly
-    await page.evaluate((data) => {
-      if (window.insextTestModel) {
-        window.insextTestModel.setData(data);
-        // Refresh columns to ensure they're validated against the current action's columnList
-        window.insextTestModel.refreshColumn();
-        window.insextTestModel.didUpdate();
+    // Inject localStorage data after page loads (init script might fail due to security restrictions)
+    await page.evaluate(({host, token, version}) => {
+      try {
+        if (typeof Storage !== "undefined" && window.localStorage) {
+          const keyPrefix = host;
+          window.localStorage.setItem(keyPrefix + "_access_token", token);
+          window.localStorage.setItem(keyPrefix + "_isSandbox", "true");
+          window.localStorage.setItem(keyPrefix + "_orgInstance", "FRA12S");
+          window.localStorage.setItem("apiVersion", version);
+        }
+      } catch (e) {
+        console.warn("Failed to set localStorage:", e.message);
       }
-    }, data);
-  }
-
-  test("Load Page and Verify Autocomplete Lists", async ({page, extensionId}) => {
-    const importUrl = `chrome-extension://${extensionId}/data-import.html?host=${mockHost}`;
-    await page.goto(importUrl);
-
-    // Wait for page to load
-    await page.waitForSelector("#form-search-object");
-
-    // Set import type to Inspector_Test__c
-    const objectInput = page.locator("#form-search-object");
-    await objectInput.fill("Inspector_Test__c");
-    await objectInput.press("Enter");
-
-    // Wait for spinner to finish
-    await page.waitForTimeout(1000);
-
-    // Verify the object input has the value
-    await expect(objectInput).toHaveValue("Inspector_Test__c");
-  });
-
-  test("Create Records from CSV", async ({page, extensionId}) => {
-    const importUrl = `chrome-extension://${extensionId}/data-import.html?host=${mockHost}`;
-    await page.goto(importUrl);
+    }, {host: mockHost, token: mockToken, version: apiVersion});
 
     await page.waitForSelector("#form-search-object");
 
     // Set object type
-    await page.locator("#form-search-object").fill("Inspector_Test__c");
-    await page.locator("#form-search-object").press("Enter");
+    const objectInput = page.locator("#form-search-object");
+    await objectInput.fill("Inspector_Test__c");
+    await objectInput.press("Enter");
+
     // Wait for SObject describe to load (spinner to finish)
     await page.waitForFunction(() => {
       const spinner = document.querySelector(".slds-spinner");
       return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
     }, {timeout: 10000});
-    await page.waitForTimeout(500); // Additional wait for React to update
 
+    return objectInput;
+  }
+
+
+  /**
+   * Creates records from CSV
+   * @param {Object} page - Playwright page object
+   * @returns {Promise<void>} recordIds
+   */
+  async function createRecords(page) {
     // Set action to Insert
     await page.locator("#form-import-action").selectOption("create");
 
-    // Paste CSV data using helper
-    const csvData = '"Name","Checkbox__c","Number__c"\r\ntest3,false,300.03\r\ntest4,true,400.04';
-    await pasteData(page, csvData);
+    //Paste CSV data - trigger onDataPaste handler by dispatching paste event with clipboardData
+    const csvData = '"Name","Checkbox__c","Number__c"\r\ntest3-' + TEST_GUID + ',false,300.03\r\ntest4-' + TEST_GUID + ',true,400.04';
+    
+    // Trigger paste event with clipboardData to call onDataPaste handler
+    await pasteData(page, "#data-paste", csvData);
 
     // Wait for data to be parsed and field mapping to be validated
     // First wait for the field mapping section to appear (indicates data was parsed)
@@ -310,118 +319,35 @@ test.describe("Data Import", () => {
     await page.locator(".slds-modal button:has-text('Insert')").click();
 
     // Wait for import to complete
-    await page.waitForTimeout(3000);
+    //TODO: better way to wait for import to complete
+    await page.waitForTimeout(1000);
 
     // Verify status counts
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
-  });
+    await expect(page.locator("text=/\\d+ Succeeded/")).toContainText("2 Succeeded");
 
-  test("Update Records from CSV", async ({page, extensionId}) => {
-    const importUrl = `chrome-extension://${extensionId}/data-import.html?host=${mockHost}`;
-    await page.goto(importUrl);
+    // Extract the record IDs from the result table
+    return await page.locator("table.slds-table tr:not(:first-child) td:nth-child(5)").allTextContents();;
+  }
 
-    await page.waitForSelector("#form-search-object");
+  /**
+   * Updates records from CSV
+   * @param {Object} page - Playwright page object
+   * @returns {Promise<void>}
+   */
+  async function updateRecords(page, recordIds = []) {
+    //Now update the record
+    const csvData = "Id,Name,Number__c\r\n" + recordIds.map(id => `${id},test5update-' + TEST_GUID + ',500.50`).join("\r\n");
+    await pasteData(page, "#data-paste", csvData);
 
-    // Set object type
-    await page.locator("#form-search-object").fill("Inspector_Test__c");
-    await page.locator("#form-search-object").press("Enter");
-    // Wait for SObject describe to load (spinner to finish)
-    await page.waitForFunction(() => {
-      const spinner = document.querySelector(".slds-spinner");
-      return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
-    }, {timeout: 10000});
-    await page.waitForTimeout(500); // Additional wait for React to update
-
-    // Set action to Update - update model first, then sync select element
-    // IMPORTANT: Set importActionSelected = true to prevent setData from auto-changing the action
-    await page.evaluate(() => {
-      if (window.insextTestModel) {
-        const model = window.insextTestModel;
-        model.importAction = "update";
-        model.importActionName = "Update";
-        model.importActionSelected = true; // This prevents setData from auto-changing action
-        model.didUpdate();
-      }
-    });
     // Now update the select element to match
-    const actionSelect = page.locator("#form-import-action");
-    await actionSelect.selectOption("update");
-    // Wait for React to sync and verify model is still "update"
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      const model = window.insextTestModel;
-      return model.importAction === "update" && model.importActionSelected === true;
-    }, {timeout: 5000});
-    // Wait for React to re-render and columnList to be recalculated
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      const model = window.insextTestModel;
-      // Check that columnList includes "Id" for update action
-      const columnList = Array.from(model.columnList());
-      return columnList.includes("Id");
-    }, {timeout: 10000});
-    await page.waitForTimeout(500);
-
-    // Paste CSV data with Id column
-    const csvData = "Id,Name,Number__c\r\na00000000000001AAA,test5update,500.50";
-    await pasteData(page, csvData);
-    // Ensure action is still "update" after pasting (setData might have changed it)
-    await page.evaluate(() => {
-      if (window.insextTestModel) {
-        const model = window.insextTestModel;
-        if (model.importAction !== "update") {
-          model.importAction = "update";
-          model.importActionName = "Update";
-          model.importActionSelected = true;
-          model.refreshColumn(); // Refresh columns to recalculate columnList
-          model.didUpdate();
-        }
-      }
-    });
-    // Wait for columnList to include "Id" for update action
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      const model = window.insextTestModel;
-      const columnList = Array.from(model.columnList());
-      return model.importAction === "update" && columnList.includes("Id");
-    }, {timeout: 5000});
-    await page.waitForTimeout(500);
-    // Wait for React to process the data
-    await page.waitForTimeout(500);
+    await page.locator("#form-import-action").selectOption("update");
 
     // Wait for data to be parsed and field mapping to appear
     await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 5000});
 
     // Wait for button to be enabled - with debugging info
-    try {
-      await page.waitForSelector("button:has-text('Run Update'):not([disabled])", {timeout: 15000});
-    } catch (e) {
-      // If it fails, log the model state for debugging
-      const debugInfo = await page.evaluate(() => {
-        if (!window.insextTestModel) return {error: "Model not found"};
-        const model = window.insextTestModel;
-        const columnList = Array.from(model.columnList());
-        return {
-          importAction: model.importAction,
-          invalidInput: model.invalidInput(),
-          isWorking: model.isWorking(),
-          queued: model.importCounts().Queued,
-          hasData: !!model.importData?.importTable,
-          columnList,
-          columnListIncludesId: columnList.some(col => col.toLowerCase() === "id"),
-          columns: model.importData?.importTable?.header?.map(col => ({
-            name: col.columnValue,
-            originalName: col.columnOriginalValue,
-            ignored: col.columnIgnore(),
-            valid: col.columnValid(),
-            error: col.columnError(),
-            inColumnList: columnList.some(cl => cl.toLowerCase() === col.columnValue.toLowerCase())
-          })) || []
-        };
-      });
-      console.log("Debug info:", JSON.stringify(debugInfo, null, 2));
-      throw e;
-    }
+    await page.waitForSelector("button:has-text('Run Update'):not([disabled])", {timeout: 5000});
 
     // Click Run Update button
     await page.click("button:has-text('Run Update')");
@@ -431,149 +357,14 @@ test.describe("Data Import", () => {
     await page.locator(".slds-modal button:has-text('Update')").click();
 
     // Wait for import to complete
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1000);
 
-    // Verify status
+    // Verify status success count is greater than 0
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
-  });
+    await expect(page.locator("text=/\\d+ Succeeded/")).toContainText("1 Succeeded");
+  }
 
-  test("Delete Records from CSV", async ({page, extensionId}) => {
-    const importUrl = `chrome-extension://${extensionId}/data-import.html?host=${mockHost}`;
-    await page.goto(importUrl);
-
-    await page.waitForSelector("#form-search-object");
-
-    // Set object type
-    await page.locator("#form-search-object").fill("Inspector_Test__c");
-    await page.locator("#form-search-object").press("Enter");
-    // Wait for SObject describe to load (spinner to finish)
-    await page.waitForFunction(() => {
-      const spinner = document.querySelector(".slds-spinner");
-      return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
-    }, {timeout: 10000});
-    await page.waitForTimeout(500); // Additional wait for React to update
-
-    // Set action to Delete - update model first, then sync select element
-    // IMPORTANT: Set importActionSelected = true to prevent setData from auto-changing the action
-    await page.evaluate(() => {
-      if (window.insextTestModel) {
-        const model = window.insextTestModel;
-        model.importAction = "delete";
-        model.importActionName = "Delete";
-        model.importActionSelected = true; // This prevents setData from auto-changing action
-        model.didUpdate();
-      }
-    });
-    // Now update the select element to match
-    const actionSelect = page.locator("#form-import-action");
-    await actionSelect.selectOption("delete");
-    // Wait for React to sync and verify model is still "delete"
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      const model = window.insextTestModel;
-      return model.importAction === "delete" && model.importActionSelected === true;
-    }, {timeout: 5000});
-    // Wait for React to re-render and columnList to be recalculated
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      const model = window.insextTestModel;
-      // Check that columnList includes "Id" for delete action
-      const columnList = Array.from(model.columnList());
-      return columnList.includes("Id");
-    }, {timeout: 10000});
-    await page.waitForTimeout(500);
-
-    // Paste CSV data with Id column and ignored column
-    const csvData = "Id,_foo*\r\na00000000000001AAA,foo";
-    await pasteData(page, csvData);
-    // Ensure action is still "delete" after pasting (setData might have changed it to "update" because of Id column)
-    await page.evaluate(() => {
-      if (window.insextTestModel) {
-        const model = window.insextTestModel;
-        if (model.importAction !== "delete") {
-          model.importAction = "delete";
-          model.importActionName = "Delete";
-          model.importActionSelected = true;
-          model.refreshColumn(); // Refresh columns to recalculate columnList
-          model.didUpdate();
-        }
-      }
-    });
-    // Wait for columnList to include "Id" for delete action
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      const model = window.insextTestModel;
-      const columnList = Array.from(model.columnList());
-      return model.importAction === "delete" && columnList.includes("Id");
-    }, {timeout: 5000});
-    await page.waitForTimeout(500);
-    // Wait for React to process the data
-    await page.waitForTimeout(500);
-
-    // Wait for data to be parsed and field mapping to appear
-    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 5000});
-
-    // Wait for button to be enabled - with debugging info
-    try {
-      await page.waitForSelector("button:has-text('Run Delete'):not([disabled])", {timeout: 15000});
-    } catch (e) {
-      // If it fails, log the model state for debugging
-      const debugInfo = await page.evaluate(() => {
-        if (!window.insextTestModel) return {error: "Model not found"};
-        const model = window.insextTestModel;
-        const columnList = Array.from(model.columnList());
-        return {
-          importAction: model.importAction,
-          invalidInput: model.invalidInput(),
-          isWorking: model.isWorking(),
-          queued: model.importCounts().Queued,
-          hasData: !!model.importData?.importTable,
-          columnList,
-          columnListIncludesId: columnList.some(col => col.toLowerCase() === "id"),
-          columns: model.importData?.importTable?.header?.map(col => ({
-            name: col.columnValue,
-            originalName: col.columnOriginalValue,
-            ignored: col.columnIgnore(),
-            valid: col.columnValid(),
-            error: col.columnError(),
-            inColumnList: columnList.some(cl => cl.toLowerCase() === col.columnValue.toLowerCase())
-          })) || []
-        };
-      });
-      console.log("Debug info:", JSON.stringify(debugInfo, null, 2));
-      throw e;
-    }
-
-    // Click Run Delete button
-    await page.click("button:has-text('Run Delete')");
-
-    // Confirm and execute
-    await expect(page.locator(".slds-modal")).toBeVisible();
-    await page.locator(".slds-modal button:has-text('Delete')").click();
-
-    // Wait for import to complete
-    await page.waitForTimeout(3000);
-
-    // Verify status
-    await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
-  });
-
-  test("Upsert Records from CSV", async ({page, extensionId}) => {
-    const importUrl = `chrome-extension://${extensionId}/data-import.html?host=${mockHost}`;
-    await page.goto(importUrl);
-
-    await page.waitForSelector("#form-search-object");
-
-    // Set object type
-    await page.locator("#form-search-object").fill("Inspector_Test__c");
-    await page.locator("#form-search-object").press("Enter");
-    // Wait for SObject describe to load (spinner to finish)
-    await page.waitForFunction(() => {
-      const spinner = document.querySelector(".slds-spinner");
-      return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
-    }, {timeout: 10000});
-    await page.waitForTimeout(500); // Additional wait for React to update
-
+  async function upsertRecords(page, recordIds = []) {
     // Set action to Upsert
     await page.locator("#form-import-action").selectOption("upsert");
 
@@ -587,8 +378,8 @@ test.describe("Data Import", () => {
     await page.waitForTimeout(1000); // Wait for validation
 
     // Paste CSV data
-    const csvData = "Name,Number__c\r\ntest2,222\r\ntest6,666";
-    await pasteData(page, csvData);
+    const csvData = "Name,Number__c\r\ntest2-" + TEST_GUID + ",222\r\ntest6-" + TEST_GUID + ",666";
+    await pasteData(page, "#data-paste", csvData);
 
     // Wait for data to be parsed
     await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 5000});
@@ -607,47 +398,69 @@ test.describe("Data Import", () => {
 
     // Verify status
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
-  });
+    await expect(page.locator("text=/\\d+ Succeeded/")).toContainText("2 Succeeded");
 
-  test("Create Records from Excel Format", async ({page, extensionId}) => {
-    const importUrl = `chrome-extension://${extensionId}/data-import.html?host=${mockHost}`;
-    await page.goto(importUrl);
+    return await page.locator("table.slds-table tr:not(:first-child) td:nth-child(4)").allTextContents();;
 
-    await page.waitForSelector("#form-search-object");
+  }
 
-    // Set object type
-    await page.locator("#form-search-object").fill("Inspector_Test__c");
-    await page.locator("#form-search-object").press("Enter");
-    // Wait for SObject describe to load (spinner to finish)
-    await page.waitForFunction(() => {
-      const spinner = document.querySelector(".slds-spinner");
-      return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
-    }, {timeout: 10000});
-    await page.waitForTimeout(500); // Additional wait for React to update
+  async function deleteRecords(page, recordIds = []) {
+    // Now update the select element to match
+    await page.locator("#form-import-action").selectOption("delete");
 
-    // Set action to Insert
-    await page.locator("#form-import-action").selectOption("create");
-    await page.waitForTimeout(500);
-
-    // Paste Excel data (tab-separated) - make sure tabs are actual tab characters
-    const excelData = '"Name"\t"Number__c"\r\ntest6\t600.06\r\ntest7\t700.07';
-    await pasteData(page, excelData);
-    // Wait for React to process the data
-    await page.waitForTimeout(500);
+    // Paste CSV data with Id column and ignored column
+    const csvData = "Id,_foo*\r\n" + recordIds.map(id => `${id},foo`).join("\r\n");
+    await pasteData(page, "#data-paste", csvData);
 
     // Wait for data to be parsed and field mapping to appear
     await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 5000});
 
-    // Wait for field validation to complete
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel || !window.insextTestModel.importData || !window.insextTestModel.importData.importTable) {
-        return false;
-      }
-      const model = window.insextTestModel;
-      const allValid = model.importData.importTable.header.every(col => col.columnIgnore() || col.columnValid());
-      const noMissingFields = model.getRequiredMissingFields().length === 0;
-      return allValid && noMissingFields && !model.invalidInput();
-    }, {timeout: 10000});
+    // Wait for button to be enabled - with debugging info
+    await page.waitForSelector("button:has-text('Run Delete'):not([disabled])", {timeout: 5000});
+
+    // Click Run Delete button
+    await page.click("button:has-text('Run Delete')");
+
+    // Confirm and execute
+    await expect(page.locator(".slds-modal")).toBeVisible();
+    await page.locator(".slds-modal button:has-text('Delete')").click();
+
+    // Wait for import to complete
+    await page.waitForTimeout(1000);
+
+    // Verify status
+    await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
+    await expect(page.locator("text=/\\d+ Succeeded/")).toContainText("4 Succeeded");
+  }
+
+  test("Load Page and Verify Autocomplete Lists", async ({page, context, extensionId}) => {
+    const objectInput = await initImportPage(page, context, extensionId);
+
+    // Verify the object input has the value
+    await expect(objectInput).toHaveValue("Inspector_Test__c");
+  });
+
+  test("All Records Operations from CSV", async ({page, context, extensionId}) => {
+    await initImportPage(page, context, extensionId);
+    //create records and get the record ids
+    const createdRecordIds = await createRecords(page, "create");
+    await updateRecords(page, new Array(createdRecordIds[0]));
+    const upsertedRecordIds = await upsertRecords(page, createdRecordIds);
+    await deleteRecords(page,createdRecordIds.concat(upsertedRecordIds));
+  });
+
+  test("Create Records from Excel Format", async ({page, context, extensionId}) => {
+    await initImportPage(page, context, extensionId);
+
+    // Set action to Insert
+    await page.locator("#form-import-action").selectOption("create");
+
+    // Paste Excel data (tab-separated) - make sure tabs are actual tab characters
+    const excelData = '"Name"\t"Number__c"\r\ntest6-' + TEST_GUID + '\t600.06\r\ntest7-' + TEST_GUID + '\t700.07';
+    await pasteData(page, "#data-paste", excelData);
+
+    // Wait for data to be parsed and field mapping to appear
+    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 5000});
 
     // Wait for button to be enabled
     await page.waitForSelector("button:has-text('Run Insert'):not([disabled])", {timeout: 5000});
@@ -660,27 +473,14 @@ test.describe("Data Import", () => {
     await page.locator(".slds-modal button:has-text('Insert')").click();
 
     // Wait for import to complete
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1000);
 
     // Verify status
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
   });
 
-  test("Copy Options", async ({page, extensionId}) => {
-    const importUrl = `chrome-extension://${extensionId}/data-import.html?host=${mockHost}`;
-    await page.goto(importUrl);
-
-    await page.waitForSelector("#form-search-object");
-
-    // Set object type
-    await page.locator("#form-search-object").fill("Inspector_Test__c");
-    await page.locator("#form-search-object").press("Enter");
-    // Wait for SObject describe to load (spinner to finish)
-    await page.waitForFunction(() => {
-      const spinner = document.querySelector(".slds-spinner");
-      return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
-    }, {timeout: 10000});
-    await page.waitForTimeout(500); // Additional wait for React to update
+  test("Copy Options", async ({page, context, extensionId}) => {
+    await initImportPage(page, context, extensionId);
 
     // Set action to Update
     await page.locator("#form-import-action").selectOption("update");
@@ -689,65 +489,36 @@ test.describe("Data Import", () => {
     await page.click("button:has-text('Copy Options')");
 
     // Verify clipboard content
-    const clipboardContent = await page.evaluate(() => window.testClipboardValue);
-    expect(clipboardContent).toContain("salesforce-inspector-import-options");
-    expect(clipboardContent).toContain("apiType=Enterprise");
-    expect(clipboardContent).toContain("action=update");
-    expect(clipboardContent).toContain("object=Inspector_Test__c");
+    const clipboardContent = await page.evaluate(() => navigator.clipboard.readText());
+    await expect(clipboardContent).toContain("salesforce-inspector-import-options");
+    await expect(clipboardContent).toContain("apiType=Enterprise");
+    await expect(clipboardContent).toContain("action=update");
+    await expect(clipboardContent).toContain("object=Inspector_Test__c");
   });
 
-  test("Validation Errors - Empty Data", async ({page, extensionId}) => {
-    const importUrl = `chrome-extension://${extensionId}/data-import.html?host=${mockHost}`;
-    await page.goto(importUrl);
-
-    await page.waitForSelector("#form-search-object");
-
-    // Set object type
-    await page.locator("#form-search-object").fill("Inspector_Test__c");
-    await page.locator("#form-search-object").press("Enter");
-    // Wait for SObject describe to load (spinner to finish)
-    await page.waitForFunction(() => {
-      const spinner = document.querySelector(".slds-spinner");
-      return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
-    }, {timeout: 10000});
-    await page.waitForTimeout(500); // Additional wait for React to update
+  test("Validation Errors - Empty Data", async ({page, context, extensionId}) => {
+    await initImportPage(page, context, extensionId);
 
     // Try to paste empty data
-    await pasteData(page, "");
-
-    await page.waitForTimeout(500);
+    await pasteData(page, "#data-paste", "");
+    await page.waitForTimeout(300);
 
     // Verify error message appears (check if error div is visible or contains text)
     const errorDiv = page.locator("#error-data-paste");
     await expect(errorDiv).not.toHaveAttribute("hidden", "");
   });
 
-  test("Validation Errors - Invalid Field Name", async ({page, extensionId}) => {
-    const importUrl = `chrome-extension://${extensionId}/data-import.html?host=${mockHost}`;
-    await page.goto(importUrl);
-
-    await page.waitForSelector("#form-search-object");
-
-    // Set object type
-    await page.locator("#form-search-object").fill("Inspector_Test__c");
-    await page.locator("#form-search-object").press("Enter");
-    // Wait for SObject describe to load (spinner to finish)
-    await page.waitForFunction(() => {
-      const spinner = document.querySelector(".slds-spinner");
-      return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
-    }, {timeout: 10000});
-    await page.waitForTimeout(500); // Additional wait for React to update
+  test("Validation Errors - Invalid Field Name", async ({page, context, extensionId}) => {
+    await initImportPage(page, context, extensionId);
 
     // Paste data with invalid field name
     const csvData = "Na*me\r\ntest0";
-    await pasteData(page, csvData);
+    await pasteData(page, "#data-paste", csvData);
 
-    await page.waitForTimeout(1000);
 
     // Verify field mapping shows error (check in the field mapping section)
     // The error should appear next to the field input
     await expect(page.locator(".slds-text-color_error:has-text('Invalid field name')")).toBeVisible();
   });
-
 });
 

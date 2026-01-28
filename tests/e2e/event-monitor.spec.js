@@ -246,22 +246,12 @@ test.describe("Event Monitor", () => {
 
     await page.waitForSelector("select.slds-select");
 
-    // Wait for model to be exposed and channels to be loaded
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      return window.insextTestModel.channels && window.insextTestModel.channels.length > 0;
-    }, {timeout: 15000});
-
-    // Wait a bit more for React to render
-    await page.waitForTimeout(1000);
-
     // Verify channel dropdown has options
-    const channelSelects = page.locator("select.slds-select");
-    const channelSelect = channelSelects.nth(1); // Second select is the channel dropdown
+    const channelSelect = page.locator("select.slds-select").nth(1); // Second select is the channel dropdown
 
     // Verify LoginEvent is available (check all options)
     const options = await channelSelect.locator("option").allTextContents();
-    expect(options.some(text => text.includes("Login Event"))).toBeTruthy();
+    await expect(options.some(text => text.includes("Login Event"))).toBeTruthy();
   });
 
   test("Change Channel Type to Custom Platform Event", async ({page, extensionId}) => {
@@ -271,24 +261,13 @@ test.describe("Event Monitor", () => {
     await page.waitForSelector("select.slds-select");
 
     // Select "Custom Platform Event" channel type
-    const channelTypeSelect = page.locator("select.slds-select").first();
-    await channelTypeSelect.selectOption("platformEvent");
-
-    // Wait for channels to load
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      return window.insextTestModel.channels && window.insextTestModel.channels.length > 0;
-    }, {timeout: 10000});
-
-    // Wait a bit more for React to render
-    await page.waitForTimeout(500);
+    await  page.locator("select.slds-select").first().selectOption("platformEvent");
 
     // Verify channel dropdown shows custom events (check for the option text)
-    const channelSelects = page.locator("select.slds-select");
-    const channelSelect = channelSelects.nth(1);
+    const channelSelect = page.locator("select.slds-select").nth(1);
     // The label should be "Custom Event" based on the mock
     const options = await channelSelect.locator("option").allTextContents();
-    expect(options.some(text => text.includes("Custom Event"))).toBeTruthy();
+    await expect(options.some(text => text.includes("Custom Event"))).toBeTruthy();
   });
 
   test("Change Channel Type to Change Event", async ({page, extensionId}) => {
@@ -298,18 +277,10 @@ test.describe("Event Monitor", () => {
     await page.waitForSelector("select.slds-select");
 
     // Select "Change Event" channel type
-    const channelTypeSelect = page.locator("select.slds-select").first();
-    await channelTypeSelect.selectOption("changeEvent");
-
-    // Wait for channels to load
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      return window.insextTestModel.channels && window.insextTestModel.channels.length > 0;
-    }, {timeout: 10000});
+    await page.locator("select.slds-select").first().selectOption("changeEvent");
 
     // Verify "All Change Events" option appears first
-    const channelSelects = page.locator("select.slds-select");
-    const channelSelect = channelSelects.nth(1);
+    const channelSelect = await page.locator("select.slds-select").nth(1);
     await expect(channelSelect.locator("option").first()).toContainText("All Change Events");
   });
 
@@ -346,12 +317,6 @@ test.describe("Event Monitor", () => {
     await page.goto(monitorUrl);
 
     await page.waitForSelector("button[title='Subscribe to channel']");
-
-    // Wait for channels to load
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      return window.insextTestModel.channels && window.insextTestModel.channels.length > 0;
-    }, {timeout: 10000});
 
     // Subscribe button should be enabled if channel is selected
     const subscribeButton = page.locator("button[title='Subscribe to channel']");
@@ -430,30 +395,19 @@ test.describe("Event Monitor", () => {
     const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
     await page.goto(monitorUrl);
 
-    // Wait for model to be exposed
-    await page.waitForFunction(() => window.insextTestModel !== undefined, {timeout: 10000});
 
-    // Add mock events to the model
-    await page.evaluate(() => {
-      if (window.insextTestModel) {
-        window.insextTestModel.events = [
-          {
-            event: {
-              replayId: 1,
-              type: "TestEvent"
-            },
-            data: {
-              field1: "value1",
-              field2: "value2"
-            }
-          }
-        ];
-        window.insextTestModel.didUpdate();
-      }
-    });
+    //to have the button enabled, we need to subscribe first
+    // Select "Change Event" channel type
+    await page.locator("select.slds-select").first().selectOption("changeEvent");
 
-    // Wait for React to update
-    await page.waitForTimeout(500);
+    // Verify "All Change Events" option appears first
+    const channelSelect = await page.locator("select.slds-select").nth(1);
+    await expect(channelSelect.locator("option").first()).toContainText("All Change Events");
+
+    //subscribe the all channels
+    await page.locator("button[title='Subscribe to channel']").click();
+
+    //we need to insert a new record to the inspector__c object
 
     // Copy button should now be enabled
     const copyButton = page.locator("button:has-text('Copy')");
@@ -463,35 +417,17 @@ test.describe("Event Monitor", () => {
     await copyButton.click();
 
     // Verify clipboard content
-    const clipboardContent = await page.evaluate(() => window.testClipboardValue);
-    expect(clipboardContent).toContain("replayId");
-    expect(clipboardContent).toContain("TestEvent");
+    const clipboardContent = await page.evaluate(() => window.clipboardData.getData("text/plain"));
+    await expect(clipboardContent).toContain("replayId");
+    await expect(clipboardContent).toContain("TestEvent");
   });
 
   test("Clear Events", async ({page, extensionId}) => {
     const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
     await page.goto(monitorUrl);
 
-    // Wait for model to be exposed
-    await page.waitForFunction(() => window.insextTestModel !== undefined, {timeout: 10000});
-
-    // Add mock events to the model
-    await page.evaluate(() => {
-      if (window.insextTestModel) {
-        window.insextTestModel.events = [
-          {
-            event: {
-              replayId: 1,
-              type: "TestEvent"
-            }
-          }
-        ];
-        window.insextTestModel.didUpdate();
-      }
-    });
-
-    // Wait for React to update
-    await page.waitForTimeout(500);
+    //to have the button enabled, we need to subscribe first
+    //TODO: subscribe first
 
     // Clear button should be enabled
     const clearButton = page.locator("button:has-text('Clear')");
@@ -499,12 +435,6 @@ test.describe("Event Monitor", () => {
 
     // Click clear button
     await clearButton.click();
-
-    // Verify events are cleared
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      return window.insextTestModel.events.length === 0;
-    }, {timeout: 5000});
 
     // Copy and Clear buttons should be disabled again
     await expect(page.locator("button:has-text('Copy')")).toBeDisabled();
@@ -517,24 +447,8 @@ test.describe("Event Monitor", () => {
 
     await page.waitForSelector("input[type='number']");
 
-    // Wait for channels to load first (so Subscribe button is enabled)
-    await page.waitForFunction(() => {
-      if (!window.insextTestModel) return false;
-      return window.insextTestModel.channels && window.insextTestModel.channels.length > 0
-             && window.insextTestModel.selectedChannel !== null;
-    }, {timeout: 15000});
-
     // Set replay ID to -2
-    const replayIdInput = page.locator("input[type='number']");
-    await replayIdInput.fill("-2");
-
-    // Wait for model to update (replayId is a string initially, then converted)
-    await page.waitForTimeout(500);
-    await page.evaluate(() => {
-      if (window.insextTestModel) {
-        window.insextTestModel.didUpdate();
-      }
-    });
+    await page.locator("input[type='number']").fill("-2");
 
     // Click Subscribe button (use title to distinguish from modal button)
     const subscribeButton = page.locator("button[title='Subscribe to channel']");
@@ -544,10 +458,10 @@ test.describe("Event Monitor", () => {
     // Verify confirmation popup appears
     await expect(page.locator("text=Important")).toBeVisible({timeout: 5000});
     await expect(page.locator("text=Use this option sparingly")).toBeVisible();
-    // Use more specific selector for modal buttons
-    await expect(page.locator(".slds-modal button:has-text('Subscribe')")).toBeVisible();
-    await expect(page.locator(".slds-modal button:has-text('Cancel')")).toBeVisible();
+    // Use more specific selector for modal buttons (footer)
+    await expect(page.locator(".slds-modal .slds-modal__footer button:has-text('Subscribe')")).toBeVisible();
+    await expect(page.locator(".slds-modal .slds-modal__footer button:has-text('Cancel')")).toBeVisible();
+    //cancel is also in the modal as close button
+    await expect(page.locator(".slds-modal button:has-text('Cancel').slds-modal__close")).toBeEnabled();
   });
-
 });
-

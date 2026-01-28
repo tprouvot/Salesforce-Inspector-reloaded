@@ -1,9 +1,11 @@
 import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
+  TEST_GUID,
   injectSessionData,
   createSuccessResponse,
-  handleGetUserInfoSoap
+  handleGetUserInfoSoap,
+  waitSuccessfulHttpResponse
 } from "./test-helpers";
 
 test.describe("REST Explore", () => {
@@ -19,6 +21,12 @@ test.describe("REST Explore", () => {
 
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
+      //if mock is disabled, continue with the request
+      if(!TEST_CONSTANTS.mockEnabled) {
+        await route.continue();
+        return;
+      }
+
       const request = route.request();
       const url = request.url();
       const method = request.method();
@@ -104,8 +112,7 @@ test.describe("REST Explore", () => {
   });
 
   test("Execute SOQL Query (GET)", async ({page, extensionId}) => {
-    const exploreUrl = `chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`;
-    await page.goto(exploreUrl);
+    await page.goto(`chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`);
 
     // Wait for app load
     await page.waitForSelector("select.slds-select", {timeout: 10000});
@@ -114,22 +121,23 @@ test.describe("REST Explore", () => {
     await page.locator('select.slds-select:has(option[value="GET"])').selectOption("GET");
 
     // Fill Query
-    const endpointInput = page.locator('input[placeholder*="/services/data/v"]');
-    await endpointInput.fill(`/services/data/v${apiVersion}/query/?q=SELECT+Id,Name+FROM+Account+LIMIT+1`);
+    await page.locator('input[placeholder*="/services/data/v"]').fill(`/services/data/v${apiVersion}/query/?q=SELECT+Id,Name+FROM+Account+WHERE+Name+like+'Test Account%'+LIMIT+1`);
 
     // Send
     await page.click('button:has-text("Send")');
+
+    await waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name+FROM+Account+WHERE+Name+like+'Test Account%'+LIMIT+1");
 
     // Verify
     const responseCode = page.locator("code.language-json");
     await expect(responseCode).toBeVisible();
     await expect(responseCode).toContainText('"totalSize": 1');
-    await expect(responseCode).toContainText('"Name": "Test Account"');
+    await expect(responseCode).toContainText('"Name": "Test Account');
   });
 
   test("CRUD Flow (POST, PATCH, GET, DELETE)", async ({page, extensionId}) => {
-    const exploreUrl = `chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`;
-    await page.goto(exploreUrl);
+    await page.goto(`chrome-extension://${extensionId}/rest-explore.html?host=${mockHost}`);
+    // Wait for app load
     await page.waitForSelector("select.slds-select", {timeout: 10000});
 
     const methodSelect = page.locator('select.slds-select:has(option[value="GET"])');
@@ -141,22 +149,30 @@ test.describe("REST Explore", () => {
     // 1. POST (Create)
     await methodSelect.selectOption("POST");
     await endpointInput.fill(`/services/data/v${apiVersion}/sobjects/Inspector_Test__c/`);
-    await bodyInput.fill('{ "Name" : "SFIR" }');
+    await bodyInput.fill('{ "Name" : "SFIR-' + TEST_GUID + '" }');
     await sendBtn.click();
 
+    await waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/sobjects/Inspector_Test__c/");
+
     await expect(responseCode).toBeVisible();
-    await expect(responseCode).toContainText('"id": "a00000000000001AAA"');
+    await expect(responseCode).toContainText('"id": "');
     await expect(responseCode).toContainText('"success": true');
 
     // The inspector shows status in a badge
     const statusBadge = page.locator('.slds-badge:has-text("Status:")');
     await expect(statusBadge).toContainText("Status: 201");
 
+    //extract the id from the response code
+    const id = await responseCode.evaluate(el => el.textContent.match(/"id": "([^"]+)"/)[1]);
+    console.log("id: " + id);
+
     // 2. PATCH (Update)
     await methodSelect.selectOption("PATCH");
-    await endpointInput.fill(`/services/data/v${apiVersion}/sobjects/Inspector_Test__c/a00000000000001AAA`);
-    await bodyInput.fill('{ "Name" : "SFIR Updated" }');
+    await endpointInput.fill(`/services/data/v${apiVersion}/sobjects/Inspector_Test__c/${id}`);
+    await bodyInput.fill('{ "Name" : "SFIR Updated-' + TEST_GUID + '" }');
     await sendBtn.click();
+
+    await waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/sobjects/Inspector_Test__c/" + id);
 
     // Wait for status 204 (No Content) or success indication
     await expect(statusBadge).toContainText("Status: 204");
@@ -165,15 +181,18 @@ test.describe("REST Explore", () => {
     await methodSelect.selectOption("GET");
     await sendBtn.click();
 
+    await waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/sobjects/Inspector_Test__c/" + id);
+
     await expect(responseCode).toBeVisible();
-    await expect(responseCode).toContainText('"Name": "SFIR Updated"');
+    await expect(responseCode).toContainText('"Name": "SFIR Updated-' + TEST_GUID + '"');
     await expect(statusBadge).toContainText("Status: 200");
 
     // 4. DELETE (Delete)
     await methodSelect.selectOption("DELETE");
     await sendBtn.click();
 
+    await waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/sobjects/Inspector_Test__c/" + id);
+
     await expect(statusBadge).toContainText("Status: 204");
   });
-
 });

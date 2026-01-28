@@ -2482,9 +2482,5 @@ const SEVERITY_ICONS = {
 
     // eslint-disable-next-line react/no-deprecated
     ReactDOM.render(h(App), root);
-
-    if (parent && parent.isUnitTest) {
-      parent.insextTestLoaded({sfConn});
-    }
   }
 }

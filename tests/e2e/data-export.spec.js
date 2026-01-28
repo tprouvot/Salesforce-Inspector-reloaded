@@ -3,7 +3,8 @@ import {
   TEST_CONSTANTS,
   injectSessionData,
   createSuccessResponse,
-  handleGetUserInfoSoap
+  handleGetUserInfoSoap,
+  waitSuccessfulHttpResponse
 } from "./test-helpers";
 
 test.describe("Data Export", () => {
@@ -19,6 +20,12 @@ test.describe("Data Export", () => {
 
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
+      //if mock is disabled, continue with the request
+      if(!TEST_CONSTANTS.mockEnabled) {
+        await route.continue();
+        return;
+      }
+
       const request = route.request();
       const url = request.url();
 
@@ -101,19 +108,20 @@ test.describe("Data Export", () => {
     });
   });
 
-  test("Execute Simple Export", async ({page, extensionId}) => {
-    const exportUrl = `chrome-extension://${extensionId}/data-export.html?host=${mockHost}`;
-    await page.goto(exportUrl);
+  test("Execute Simple Export", async ({page, context, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
 
     // Wait for the query box to appear
     await page.waitForSelector("textarea#query");
 
     // Enter Query
     const queryInput = page.locator("textarea#query");
-    await queryInput.fill("SELECT Id, Name, Type FROM Account");
+    await queryInput.fill("SELECT Id, Name, Type FROM Account WHERE Name like 'Test Account%'");
 
     // Click Export
     await page.click("button:has-text('Run Export')");
+    //Wait that the response is successful
+    await waitSuccessfulHttpResponse(page, mockHost);
 
     // Verify Results
     // Wait for the status to show completion
@@ -133,13 +141,12 @@ test.describe("Data Export", () => {
     // Check Data
     // The data rows follow the header row
     const firstDataRow = resultTable.locator("tr").nth(1);
-    await expect(firstDataRow.locator("td").nth(1)).toContainText("001000000000001AAA");
+    await expect(firstDataRow.locator("td").nth(1)).toHaveText(/^001/);
     await expect(firstDataRow.locator("td").nth(2)).toContainText("Test Account 1");
   });
 
-  test("Autocomplete Suggestions", async ({page, extensionId}) => {
-    const exportUrl = `chrome-extension://${extensionId}/data-export.html?host=${mockHost}`;
-    await page.goto(exportUrl);
+  test("Autocomplete Suggestions", async ({page, context, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query");
 
     const queryInput = page.locator("textarea#query");
@@ -151,8 +158,8 @@ test.describe("Data Export", () => {
     await expect(page.locator(".autocomplete-box")).toBeVisible();
     await expect(page.locator(".autocomplete-results")).toContainText("Account");
 
-    // Click suggestion - target the link element specifically
-    await page.locator(".autocomplete-results a").filter({hasText: "Account"}).click();
+    // Click suggestion - target the link element specifically with title="Account"
+    await page.locator(".autocomplete-results a[title='Account']").first().click();
 
     // Autocomplete adds a trailing space
     await expect(queryInput).toHaveValue("SELECT Id FROM Account ");
@@ -194,26 +201,38 @@ test.describe("Data Export", () => {
     await expect(queryInput).toHaveValue("SELECT Id, Name FROM Account");
   });
 
-  test("Copy as CSV", async ({page, extensionId}) => {
-    const exportUrl = `chrome-extension://${extensionId}/data-export.html?host=${mockHost}`;
-    await page.goto(exportUrl);
+  test("Copy as CSV", async ({page, context, extensionId}) => {
+    // Grant clipboard permissions to browser context
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query");
 
     // Run a query first
     const queryInput = page.locator("textarea#query");
-    await queryInput.fill("SELECT Id, Name FROM Account");
+    await queryInput.fill("SELECT Id, Name FROM Account WHERE Name like 'Test Account%' ORDER BY Name");
     await page.click("button:has-text('Run Export')");
     await expect(page.locator(".result-status")).toContainText("Exported 2 records");
+
+    // Wait for the table to appear (it's inside #result-area)
+    const resultTable = page.locator("#result-area table");
+    await expect(resultTable).toBeVisible();
+
+    //in the result table extract the first row and get the values of id
+    const firstRow = resultTable.locator("tr").nth(1);
+    const id = await firstRow.locator("td").nth(1).textContent();
+    const name = await firstRow.locator("td").nth(2).textContent();
 
     // Click Copy CSV
     await page.click("button:has-text('Copy (CSV)')");
 
     // Verify Clipboard Content
-    // We access the window.testClipboardValue variable we injected
-    const clipboardContent = await page.evaluate(() => window.testClipboardValue);
+    // Get clipboard content after the link/button has been clicked
+    const handle = await page.evaluateHandle(() => navigator.clipboard.readText());
+    const clipboardContent = await handle.jsonValue();
 
     expect(clipboardContent).toContain('"Id","Name"');
-    expect(clipboardContent).toContain('"001000000000001AAA","Test Account 1"');
+    expect(clipboardContent).toContain('"' + id + '","' + name + '"');
   });
 
 });

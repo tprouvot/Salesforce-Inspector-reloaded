@@ -6,7 +6,7 @@ import AlertBanner from "./components/AlertBanner.js";
 
 let p = parent;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
-const isExtensionPage = document.location.ancestorOrigins?.[0].includes(getExtensionId());
+const isExtensionPage = document.location.ancestorOrigins?.[0]?.includes(getExtensionId()) ?? false;
 
 let h = React.createElement;
 if (typeof browser === "undefined") {

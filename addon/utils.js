@@ -263,16 +263,6 @@ export async function getPKCEParameters(sfHost) {
 
 // Copy text to the clipboard, without rendering it, since rendering is slow.
 export function copyToClipboard(value) {
-  // Check for unit tests - wrap in try-catch to handle SecurityError in popup mode
-  try {
-    if (parent && parent.isUnitTest) {
-      parent.testClipboardValue = value;
-      return;
-    }
-  } catch (error) {
-    // SecurityError occurs in popup mode when accessing parent frame
-    console.error("Error copying to clipboard:", error);
-  }
   // Use execCommand to trigger an oncopy event and use an event handler to copy the text to the clipboard.
   // The oncopy event only works on editable elements, e.g. an input field.
   let temp = document.createElement("input");

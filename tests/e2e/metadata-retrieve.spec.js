@@ -6,7 +6,8 @@ import {
   createSoapSuccessResponse,
   handleGetUserInfoSoap,
   fulfillSuccess,
-  fulfillSoapSuccess
+  fulfillSoapSuccess,
+  waitSuccessfulHttpResponse
 } from "./test-helpers";
 
 test.describe("Metadata Retrieve", () => {
@@ -22,6 +23,12 @@ test.describe("Metadata Retrieve", () => {
 
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
+      //if mock is disabled, continue with the request
+      if(!TEST_CONSTANTS.mockEnabled) {
+        await route.continue();
+        return;
+      }
+
       const request = route.request();
       const url = request.url();
       const method = request.method();
@@ -193,12 +200,16 @@ test.describe("Metadata Retrieve", () => {
     });
   });
 
-  test("Load Page and Verify Initial State", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
-
-    // Wait for page to load and metadata to be fetched
+  async function initMetadataRetrievePage(page, extensionId) {
+    await page.goto(`chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`);
+    
+    // Wait for metadata objects to load
     await page.waitForSelector(".filter-input", {timeout: 10000});
+    await page.waitForSelector(".slds-accordion__list-item", {timeout: 10000});
+  }
+
+  test("Load Page and Verify Initial State", async ({page, extensionId}) => {
+    await initMetadataRetrievePage(page, extensionId);
 
     // Verify filter input exists
     const filterInput = page.locator(".filter-input");
@@ -213,11 +224,7 @@ test.describe("Metadata Retrieve", () => {
   });
 
   test("Load Metadata Objects", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
-
-    // Wait for metadata objects to load
-    await page.waitForSelector(".slds-accordion__list-item", {timeout: 10000});
+    await initMetadataRetrievePage(page, extensionId);
 
     // Verify metadata objects are displayed
     const metadataItems = page.locator(".slds-accordion__list-item");
@@ -228,11 +235,7 @@ test.describe("Metadata Retrieve", () => {
   });
 
   test("Filter Metadata Objects", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
-
-    // Wait for metadata objects to load
-    await page.waitForSelector(".filter-input", {timeout: 10000});
+    await initMetadataRetrievePage(page, extensionId);
 
     // Type in filter
     const filterInput = page.locator(".filter-input");
@@ -251,11 +254,7 @@ test.describe("Metadata Retrieve", () => {
   });
 
   test("Clear Filter", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
-
-    // Wait for metadata objects to load
-    await page.waitForSelector(".filter-input", {timeout: 10000});
+    await initMetadataRetrievePage(page, extensionId);
 
     // Type in filter
     const filterInput = page.locator(".filter-input");
@@ -270,11 +269,7 @@ test.describe("Metadata Retrieve", () => {
   });
 
   test("Select All Metadata Objects", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
-
-    // Wait for metadata objects to load
-    await page.waitForSelector(".slds-accordion__list-item", {timeout: 10000});
+    await initMetadataRetrievePage(page, extensionId);
 
     // Find and click Select All label (click on label instead of checkbox to avoid interception)
     const selectAllLabel = page.locator("label.slds-checkbox_toggle").first();
@@ -290,11 +285,7 @@ test.describe("Metadata Retrieve", () => {
   });
 
   test("Select Individual Metadata Object", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
-
-    // Wait for metadata objects to load
-    await page.waitForSelector(".slds-accordion__list-item", {timeout: 10000});
+    await initMetadataRetrievePage(page, extensionId);
 
     // Find first metadata object checkbox
     const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
@@ -310,11 +301,7 @@ test.describe("Metadata Retrieve", () => {
   });
 
   test("Expand Metadata Object to List Children", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
-
-    // Wait for metadata objects to load
-    await page.waitForSelector(".slds-accordion__list-item", {timeout: 10000});
+    await initMetadataRetrievePage(page, extensionId);
 
     // Click on ApexClass to expand
     const apexClassItem = page.locator(".slds-accordion__list-item:has-text('ApexClass')");
@@ -329,11 +316,7 @@ test.describe("Metadata Retrieve", () => {
   });
 
   test("Toggle Managed Packages Filter", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
-
-    // Wait for page to load
-    await page.waitForSelector(".filter-input", {timeout: 10000});
+    await initMetadataRetrievePage(page, extensionId);
 
     // Find managed packages toggle (second checkbox toggle)
     const managedToggle = page.locator("label.slds-checkbox_toggle").nth(1);
@@ -350,11 +333,7 @@ test.describe("Metadata Retrieve", () => {
   });
 
   test("Generate Package XML", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
-
-    // Wait for metadata objects to load
-    await page.waitForSelector(".slds-accordion__list-item", {timeout: 10000});
+    await initMetadataRetrievePage(page, extensionId);
 
     // Select a metadata object
     const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
@@ -370,12 +349,10 @@ test.describe("Metadata Retrieve", () => {
     expect(packageXml).toContain("</Package>");
   });
 
-  test("Copy Package XML", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
-
-    // Wait for metadata objects to load
-    await page.waitForSelector(".slds-accordion__list-item", {timeout: 10000});
+  test("Copy Package XML", async ({page, context, extensionId}) => {
+    // Grant clipboard permissions to browser context
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await initMetadataRetrievePage(page, extensionId);
 
     // Select a metadata object
     const firstCheckbox = page.locator(".slds-accordion__list-item").first().locator("input.metadata");
@@ -385,17 +362,16 @@ test.describe("Metadata Retrieve", () => {
     await page.waitForSelector("#packageXml", {timeout: 5000});
 
     // Click copy button
-    const copyButton = page.locator("button[title='Copy package.xml']");
-    await copyButton.click();
+    await page.locator("button[title='Copy package.xml']").click();
 
     // Verify clipboard content
-    const clipboardContent = await page.evaluate(() => window.testClipboardValue);
-    expect(clipboardContent).toContain("<Package");
+    const clipboardContent = await page.evaluate(() => navigator.clipboard.readText());
+    console.log("Clipboard content:", clipboardContent);
+    await expect(clipboardContent).toContain("<Package");
   });
 
   test("Show Deployment Options", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
+    await initMetadataRetrievePage(page, extensionId);
 
     // Wait for page to load
     await page.waitForSelector("button[title='Display Deployment Settings']", {timeout: 10000});
@@ -413,8 +389,7 @@ test.describe("Metadata Retrieve", () => {
   });
 
   test("Change Test Level", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
+    await initMetadataRetrievePage(page, extensionId);
 
     // Wait for page to load
     await page.waitForSelector("button[title='Display Deployment Settings']", {timeout: 10000});
@@ -435,11 +410,7 @@ test.describe("Metadata Retrieve", () => {
   });
 
   test("Retrieve Metadata Button Disabled When Nothing Selected", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
-
-    // Wait for metadata objects to load
-    await page.waitForSelector("button:has-text('Retrieve Metadata')", {timeout: 10000});
+    await initMetadataRetrievePage(page, extensionId);
 
     // Verify Retrieve Metadata button is disabled initially
     const retrieveButton = page.locator("button:has-text('Retrieve Metadata')");
@@ -447,8 +418,7 @@ test.describe("Metadata Retrieve", () => {
   });
 
   test("Import Package XML", async ({page, extensionId}) => {
-    const retrieveUrl = `chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`;
-    await page.goto(retrieveUrl);
+    await initMetadataRetrievePage(page, extensionId);
 
     // Wait for page to load
     await page.waitForSelector("button[title='Import package.xml or package zip file']", {timeout: 10000});
@@ -478,6 +448,4 @@ test.describe("Metadata Retrieve", () => {
     // Verify success toast appears
     await expect(page.locator("text=imported successfully")).toBeVisible({timeout: 5000});
   });
-
 });
-

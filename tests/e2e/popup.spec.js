@@ -86,6 +86,12 @@ test.describe("Popup", () => {
 
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
+      //if mock is disabled, continue with the request
+      if(!TEST_CONSTANTS.mockEnabled) {
+        await route.continue();
+        return;
+      }
+
       const request = route.request();
       const url = request.url();
       const method = request.method();
@@ -459,9 +465,8 @@ test.describe("Popup", () => {
     });
   });
 
-  test("Load Popup Page", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
+  async function initPopupPage(page, extensionId) {
+    await page.goto(`chrome-extension://${extensionId}/popup.html?host=${mockHost}`);
 
     // Wait for root element to exist
     await page.waitForSelector("#root", {timeout: 10000});
@@ -490,34 +495,27 @@ test.describe("Popup", () => {
       window.dispatchEvent(event);
     }, {host: mockHost});
 
-    // Wait a bit for potential initialization
-    await page.waitForTimeout(1000);
+    // Wait for React to potentially render (may not work due to e.source == parent check)
+    try {
+      await page.waitForSelector(".popup-header", {timeout: 2000});
+    } catch {
+      // If React didn't render, that's expected due to iframe architecture limitations
+      // The page structure should still be loadable
+      await page.waitForSelector("#root", {timeout: 1000});
+    }
+  }
+
+  test("Load Popup Page", async ({page, extensionId}) => {
+    await initPopupPage(page, extensionId);
 
     // Verify basic page structure (may not have React content if init didn't work)
     const rootContent = await page.locator("#root").textContent();
     // Root should exist even if React hasn't rendered yet
-    expect(rootContent !== null).toBeTruthy();
+    await expect(rootContent !== null).toBeTruthy();
   });
 
   test("Verify Main Sections Exist", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    // Simulate parent window sending insextInitResponse
-    await page.evaluate(({host}) => {
-      window.dispatchEvent(new MessageEvent("message", {
-        data: {
-          insextInitResponse: true,
-          sfHost: host,
-          inDevConsole: false,
-          inLightning: false,
-          inInspector: false
-        },
-        source: window.parent
-      }));
-    }, {host: mockHost});
-
-    await page.waitForSelector(".popup-header", {timeout: 15000});
+    await initPopupPage(page, extensionId);
 
     // Verify Data & Metadata section
     await expect(page.locator("text=Data & Metadata")).toBeVisible();
@@ -532,39 +530,8 @@ test.describe("Popup", () => {
     await expect(page.locator("a:has-text('Event Monitor')")).toBeVisible();
   });
 
-  async function initializePopup(page, mockHost) {
-    // Wait for root element
-    await page.waitForSelector("#root", {timeout: 10000});
-
-    // Try to trigger initialization
-    await page.evaluate(({host}) => {
-      const event = new MessageEvent("message", {
-        data: {
-          insextInitResponse: true,
-          sfHost: host,
-          inDevConsole: false,
-          inLightning: false,
-          inInspector: false
-        }
-      });
-      window.dispatchEvent(event);
-    }, {host: mockHost});
-
-    // Wait for React to potentially render (may not work due to e.source == parent check)
-    try {
-      await page.waitForSelector(".popup-header", {timeout: 5000});
-    } catch {
-      // If React didn't render, that's expected due to iframe architecture limitations
-      // The page structure should still be loadable
-      await page.waitForSelector("#root", {timeout: 1000});
-    }
-  }
-
   test("Objects Tab - Search and Select Object", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Wait for Objects tab to load
     await page.waitForSelector("input[placeholder*='Record id']", {timeout: 15000});
@@ -588,10 +555,7 @@ test.describe("Popup", () => {
   });
 
   test("Objects Tab - Select Record ID", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Wait for Objects tab to load
     await page.waitForSelector("input[placeholder*='Record id']", {timeout: 15000});
@@ -611,10 +575,7 @@ test.describe("Popup", () => {
   });
 
   test("Switch to Users Tab", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Click Users tab
     const usersTab = page.locator(".slds-tabs_scoped__item:has-text('Users')");
@@ -628,10 +589,7 @@ test.describe("Popup", () => {
   });
 
   test("Users Tab - Search User", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Click Users tab
     await page.locator(".slds-tabs_scoped__item:has-text('Users')").click();
@@ -651,10 +609,7 @@ test.describe("Popup", () => {
   });
 
   test("Users Tab - Select User and View Details", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Click Users tab
     await page.locator(".slds-tabs_scoped__item:has-text('Users')").click();
@@ -681,10 +636,7 @@ test.describe("Popup", () => {
   });
 
   test("Switch to Shortcuts Tab", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Click Shortcuts tab
     const shortcutsTab = page.locator(".slds-tabs_scoped__item:has-text('Shortcuts')");
@@ -698,10 +650,7 @@ test.describe("Popup", () => {
   });
 
   test("Shortcuts Tab - Search Shortcut", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Click Shortcuts tab
     await page.locator(".slds-tabs_scoped__item:has-text('Shortcuts')").click();
@@ -722,10 +671,7 @@ test.describe("Popup", () => {
   });
 
   test("Switch to Org Tab", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Click Org tab
     const orgTab = page.locator(".slds-tabs_scoped__item:has-text('Org')");
@@ -739,10 +685,7 @@ test.describe("Popup", () => {
   });
 
   test("Change API Version", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Find API version input
     const apiInput = page.locator("input#idApiInput");
@@ -757,10 +700,7 @@ test.describe("Popup", () => {
   });
 
   test("Click Data Export Link", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Find Data Export link
     const exportLink = page.locator("a:has-text('Data Export')");
@@ -772,10 +712,7 @@ test.describe("Popup", () => {
   });
 
   test("Click Data Import Link", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Find Data Import link
     const importLink = page.locator("a:has-text('Data Import')");
@@ -787,10 +724,7 @@ test.describe("Popup", () => {
   });
 
   test("Click REST Explorer Link", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Find REST Explorer link
     const restLink = page.locator("a:has-text('REST Explorer')");
@@ -802,10 +736,7 @@ test.describe("Popup", () => {
   });
 
   test("Click Event Monitor Link", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Find Event Monitor link
     const eventLink = page.locator("a:has-text('Event Monitor')");
@@ -817,10 +748,7 @@ test.describe("Popup", () => {
   });
 
   test("Objects Tab - Show All Data Button", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Wait for Objects tab to load
     await page.waitForSelector("input[placeholder*='Record id']", {timeout: 15000});
@@ -839,10 +767,7 @@ test.describe("Popup", () => {
   });
 
   test("Objects Tab - Object Links (Fields, List, etc.)", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Wait for Objects tab to load
     await page.waitForSelector("input[placeholder*='Record id']", {timeout: 15000});
@@ -862,10 +787,7 @@ test.describe("Popup", () => {
   });
 
   test("Users Tab - User Action Buttons", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Click Users tab
     await page.locator(".slds-tabs_scoped__item:has-text('Users')").click();
@@ -888,10 +810,7 @@ test.describe("Popup", () => {
   });
 
   test("Users Tab - Enable Debug Logs", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Click Users tab
     await page.locator(".slds-tabs_scoped__item:has-text('Users')").click();
@@ -917,10 +836,7 @@ test.describe("Popup", () => {
   });
 
   test("Org Tab - Delete Apex Logs Button", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Click Org tab
     await page.locator(".slds-tabs_scoped__item:has-text('Org')").click();
@@ -933,16 +849,11 @@ test.describe("Popup", () => {
   });
 
   test("Footer Links Exist", async ({page, extensionId}) => {
-    const popupUrl = `chrome-extension://${extensionId}/popup.html?host=${mockHost}`;
-    await page.goto(popupUrl);
-
-    await initializePopup(page, mockHost);
+    await initPopupPage(page, extensionId);
 
     // Verify footer links exist
     await expect(page.locator("a[href*='release-note']")).toBeVisible();
     await expect(page.locator("a[href*='donate']")).toBeVisible();
     await expect(page.locator("a[href*='Salesforce-Inspector-reloaded']")).toBeVisible();
   });
-
 });
-

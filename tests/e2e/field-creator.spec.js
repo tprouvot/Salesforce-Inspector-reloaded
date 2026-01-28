@@ -1,13 +1,36 @@
 import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
+  TEST_GUID,
   injectSessionData,
   handleGetUserInfoSoap,
-  fulfillSuccess
+  fulfillSuccess,
+  waitSuccessfulHttpResponse
 } from "./test-helpers";
 
 test.describe("Field Creator", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
+
+  /** @desc Initializes the field creator page, waits for objects to load and selects an object */
+  async function initPage(page, extensionId, objectName){
+    await page.goto(`chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`);
+    await page.waitForSelector("#object_select");
+
+    // Wait for objects, entity definitions and permission sets to load
+    await Promise.all([
+      waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/sobjects/"),
+      waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/tooling/sobjects/"),
+      waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable, NamespacePrefix FROM EntityDefinition ORDER BY QualifiedApiName ASC")),
+      waitSuccessfulHttpResponse(page, "PermissionSet"),
+    ]);
+
+    // Select an object first
+    await page.locator("#object_select").focus();
+    await page.keyboard.type(objectName, {delay: 50});
+
+    await page.waitForSelector(".ulItem li", {timeout: 5000});
+    await page.locator(".ulItem li:has-text('" + objectName + "')").first().click();
+  }
 
   test.beforeEach(async ({context}) => {
     // 1. Inject Fake Session Data
@@ -19,6 +42,12 @@ test.describe("Field Creator", () => {
 
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
+      //if mock is disabled, continue with the request
+      if(!TEST_CONSTANTS.mockEnabled) {
+        await route.continue();
+        return;
+      }
+
       const request = route.request();
       const url = request.url();
       const method = request.method();
@@ -199,26 +228,10 @@ test.describe("Field Creator", () => {
   });
 
   test("Search and Select Object", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
-    await page.goto(creatorUrl);
-
-    await page.waitForSelector("#object_select");
-
-    // Wait for objects to load
-    await page.waitForTimeout(2000);
-
-    // Type in object search
-    const objectInput = page.locator("#object_select");
-    await objectInput.fill("Account");
-
-    // Wait for filtered objects to appear
-    await page.waitForSelector(".ulItem li", {timeout: 5000});
-
-    // Click on Account object
-    await page.locator(".ulItem li:has-text('Account')").first().click();
+    await initPage(page, extensionId, "Account");
 
     // Verify object is selected
-    await expect(objectInput).toHaveValue("Account");
+    await expect(page.locator("#object_select")).toHaveValue("Account");
 
     // Verify Fields link appears
     await expect(page.locator("a:has-text('(Fields)')")).toBeVisible();
@@ -255,19 +268,7 @@ test.describe("Field Creator", () => {
   });
 
   test("Change Field Type", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
-    await page.goto(creatorUrl);
-
-    await page.waitForSelector("#fields_table tbody tr");
-
-    // Wait for objects to load
-    await page.waitForTimeout(2000);
-
-    // Select an object first
-    const objectInput = page.locator("#object_select");
-    await objectInput.fill("Account");
-    await page.waitForSelector(".ulItem li", {timeout: 5000});
-    await page.locator(".ulItem li:has-text('Account')").first().click();
+    await initPage(page, extensionId, "Account");
 
     // Find the type select in the first row
     const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.form-control");
@@ -278,19 +279,7 @@ test.describe("Field Creator", () => {
   });
 
   test("Open Field Options Modal", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
-    await page.goto(creatorUrl);
-
-    await page.waitForSelector("#fields_table tbody tr");
-
-    // Wait for objects to load
-    await page.waitForTimeout(2000);
-
-    // Select an object first
-    const objectInput = page.locator("#object_select");
-    await objectInput.fill("Account");
-    await page.waitForSelector(".ulItem li", {timeout: 5000});
-    await page.locator(".ulItem li:has-text('Account')").first().click();
+    await initPage(page, extensionId, "Account");
 
     // Set field label and type
     const labelInput = page.locator("#fields_table tbody tr").first().locator("input[placeholder='Field label...']");
@@ -309,19 +298,7 @@ test.describe("Field Creator", () => {
   });
 
   test("Field Options Modal - Text Field", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
-    await page.goto(creatorUrl);
-
-    await page.waitForSelector("#fields_table tbody tr");
-
-    // Wait for objects to load
-    await page.waitForTimeout(2000);
-
-    // Select an object first
-    const objectInput = page.locator("#object_select");
-    await objectInput.fill("Account");
-    await page.waitForSelector(".ulItem li", {timeout: 5000});
-    await page.locator(".ulItem li:has-text('Account')").first().click();
+    await initPage(page, extensionId, "Account");
 
     // Set field type to Text
     const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.form-control");
@@ -340,19 +317,7 @@ test.describe("Field Creator", () => {
   });
 
   test("Field Options Modal - Picklist Field", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
-    await page.goto(creatorUrl);
-
-    await page.waitForSelector("#fields_table tbody tr");
-
-    // Wait for objects to load
-    await page.waitForTimeout(2000);
-
-    // Select an object first
-    const objectInput = page.locator("#object_select");
-    await objectInput.fill("Account");
-    await page.waitForSelector(".ulItem li", {timeout: 5000});
-    await page.locator(".ulItem li:has-text('Account')").first().click();
+    await initPage(page, extensionId, "Account");
 
     // Set field type to Picklist
     const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.form-control");
@@ -370,19 +335,7 @@ test.describe("Field Creator", () => {
   });
 
   test("Save Field Options", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
-    await page.goto(creatorUrl);
-
-    await page.waitForSelector("#fields_table tbody tr");
-
-    // Wait for objects to load
-    await page.waitForTimeout(2000);
-
-    // Select an object first
-    const objectInput = page.locator("#object_select");
-    await objectInput.fill("Account");
-    await page.waitForSelector(".ulItem li", {timeout: 5000});
-    await page.locator(".ulItem li:has-text('Account')").first().click();
+    await initPage(page, extensionId, "Account");
 
     // Set field label and type
     const labelInput = page.locator("#fields_table tbody tr").first().locator("input[placeholder='Field label...']");
@@ -411,17 +364,10 @@ test.describe("Field Creator", () => {
   });
 
   test("Open Field Permissions Modal", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
-    await page.goto(creatorUrl);
-
-    await page.waitForSelector("#fields_table tbody tr");
-
-    // Wait for objects and permission sets to load
-    await page.waitForTimeout(3000);
+    await initPage(page, extensionId, "Account");
 
     // Click Permissions button
-    const permissionsButton = page.locator("#fields_table tbody tr").first().locator("button:has-text('Permissions')");
-    await permissionsButton.click();
+    await page.locator("#fields_table tbody tr").first().locator("button:has-text('Permissions')").click();
 
     // Verify modal appears
     await expect(page.locator("text=Set Field Permissions")).toBeVisible();
@@ -429,13 +375,7 @@ test.describe("Field Creator", () => {
   });
 
   test("Field Permissions Modal - Search", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
-    await page.goto(creatorUrl);
-
-    await page.waitForSelector("#fields_table tbody tr");
-
-    // Wait for objects and permission sets to load
-    await page.waitForTimeout(3000);
+    await initPage(page, extensionId, "Account");
 
     // Click Permissions button
     const permissionsButton = page.locator("#fields_table tbody tr").first().locator("button:has-text('Permissions')");
@@ -581,26 +521,11 @@ test.describe("Field Creator", () => {
   });
 
   test("Deploy Fields - Success", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
-    await page.goto(creatorUrl);
-
-    await page.waitForSelector("#object_select");
-
-    // Wait for objects to load
-    await page.waitForTimeout(2000);
-
-    // Select an object first
-    const objectInput = page.locator("#object_select");
-    await objectInput.fill("Account");
-    await page.waitForSelector(".ulItem li", {timeout: 5000});
-    await page.locator(".ulItem li:has-text('Account')").first().click();
+    await initPage(page, extensionId, "Account");
 
     // Set field label and name
-    const labelInput = page.locator("#fields_table tbody tr").first().locator("input[placeholder='Field label...']");
-    await labelInput.fill("Test Field");
-
-    // Wait for permission sets to load
-    await page.waitForTimeout(2000);
+    await page.locator("#fields_table tbody tr").first().locator("input[placeholder='Field label...']").focus();
+    await page.keyboard.type("Test Field", {delay: 50});
 
     // Set permissions
     const permissionsButton = page.locator("#fields_table tbody tr").first().locator("button:has-text('Permissions')");
@@ -615,8 +540,8 @@ test.describe("Field Creator", () => {
       return tables.length > 0;
     }, {timeout: 10000});
 
-    const editCheckbox = page.locator(".modal-dialog table.slds-table tbody tr").first().locator("td").nth(1).locator("input[type='checkbox']");
-    await editCheckbox.click();
+    //editCheckbox
+    await page.locator(".modal-dialog table.slds-table tbody tr").first().locator("td").nth(1).locator("input[type='checkbox']").click();
     await page.locator(".modal-footer button:has-text('Save')").click();
 
     // Verify Deploy button is enabled
@@ -626,19 +551,15 @@ test.describe("Field Creator", () => {
     // Click Deploy Fields button
     await deployButton.click();
 
-    // Wait for pending status (clock icon) - this indicates deployment started
-    // This verifies that clicking Deploy triggers the deployment process
-    await page.waitForSelector("#fields_table tbody tr svg use[xlinkHref='symbols.svg#clock']", {timeout: 10000});
+    // normal test will be successful, but here we will test that it has failed (because the field already exists)
+    await page.waitForSelector("#fields_table tbody tr .cursorPointer svg use.fillRed", {timeout: 10000});
+    await page.locator("#fields_table tbody tr .cursorPointer svg use.fillRed").first().click();
+
+    await expect(page.locator(".notificationContent")).toContainText("DUPLICATE_DEVELOPER_NAME");
   });
 
   test("Toggle Managed Package Filter", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
-    await page.goto(creatorUrl);
-
-    await page.waitForSelector("#object_select");
-
-    // Wait for objects to load
-    await page.waitForTimeout(2000);
+    await initPage(page, extensionId, "Account");
 
     // Find the managed package toggle label (click on the label instead of checkbox)
     const managedToggleLabel = page.locator("label.slds-checkbox_toggle");
@@ -666,13 +587,7 @@ test.describe("Field Creator", () => {
   });
 
   test("Field Type Validation for Platform Events", async ({page, extensionId}) => {
-    const creatorUrl = `chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`;
-    await page.goto(creatorUrl);
-
-    await page.waitForSelector("#object_select");
-
-    // Wait for objects to load
-    await page.waitForTimeout(2000);
+    await initPage(page, extensionId, "Account");
 
     // Note: We would need to mock a platform event object for this test
     // For now, we'll test that the field type dropdown exists and works
@@ -685,6 +600,4 @@ test.describe("Field Creator", () => {
     await typeSelect.selectOption("Text");
     await expect(typeSelect).toHaveValue("Text");
   });
-
 });
-

@@ -7,8 +7,29 @@
 export const TEST_CONSTANTS = {
   mockHost: "mock-host.salesforce.com",
   mockToken: "mock-access-token",
-  apiVersion: "65.0"
+  apiVersion: "65.0",
+  accountRecordId: "001000000000001AAA",
+  mockEnabled: false
 };
+
+/**
+ * Generates a unique GUID that can be reused across all tests
+ * Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx (RFC 4122 version 4)
+ * @returns {string} A unique GUID string
+ */
+export function generateTestGuid() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === "x" ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+/**
+ * A pre-generated GUID that can be reused across all tests in a test run
+ * This ensures consistency when the same GUID is needed across multiple test files
+ */
+export const TEST_GUID = generateTestGuid();
 
 /**
  * Injects fake session data into localStorage
@@ -22,15 +43,20 @@ export const TEST_CONSTANTS = {
 export async function injectSessionData(context, {host, token, version, additionalSetup = null}) {
   // Define the init script function once to avoid duplication
   const initScriptFunction = ({host, token, version, additionalSetup}) => {
-    const keyPrefix = host;
-    window.localStorage.setItem(keyPrefix + "_access_token", token);
-    window.localStorage.setItem(keyPrefix + "_isSandbox", "true");
-    window.localStorage.setItem(keyPrefix + "_orgInstance", "NA1");
-    window.localStorage.setItem("apiVersion", version);
-
-    // Enable unit test mode for clipboard interception
-    window.isUnitTest = true;
-    window.testClipboardValue = null;
+    try {
+      // Check if localStorage is available (may not be in some contexts)
+      if (typeof Storage !== "undefined" && window.localStorage) {
+        const keyPrefix = host;
+        window.localStorage.setItem(keyPrefix + "_access_token", token);
+        window.localStorage.setItem(keyPrefix + "_isSandbox", "true");
+        window.localStorage.setItem(keyPrefix + "_orgInstance", "FRA12S");
+        window.localStorage.setItem(keyPrefix + "_trialExpirationDate", "2026-01-01");
+        window.localStorage.setItem("apiVersion", version);
+      }
+    } catch (e) {
+      // localStorage might not be accessible in this context, continue anyway
+      console.warn("localStorage access failed:", e.message);
+    }
 
     // Run additional setup if provided
     if (additionalSetup && typeof additionalSetup === "function") {
@@ -178,43 +204,6 @@ export function createModelExposureSetup() {
       };
       checkAndPatch();
     }
-
-    // Set up handler to capture model when page calls parent.insextTestLoaded({model})
-    // For pages that check parent.isUnitTest (like options.js), we need to set up parent as well
-    if (window.parent === window) {
-      // Not in an iframe, so parent is the same as window
-      window.parent.isUnitTest = true;
-      window.parent.insextTestLoaded = function(result) {
-        // Handle both {model} and {sfConn} cases
-        if (result.model) {
-          window.insextTestModel = result.model;
-        }
-        if (result.sfConn) {
-          window.insextTestSfConn = result.sfConn;
-        }
-      };
-    } else {
-      // In an iframe, parent is different
-      window.parent.isUnitTest = true;
-      window.parent.insextTestLoaded = function(result) {
-        // Handle both {model} and {sfConn} cases
-        if (result.model) {
-          window.insextTestModel = result.model;
-        }
-        if (result.sfConn) {
-          window.insextTestSfConn = result.sfConn;
-        }
-      };
-    }
-    // Also set up window.insextTestLoaded for compatibility
-    window.insextTestLoaded = function(result) {
-      if (result.model) {
-        window.insextTestModel = result.model;
-      }
-      if (result.sfConn) {
-        window.insextTestSfConn = result.sfConn;
-      }
-    };
   };
 }
 
@@ -261,3 +250,70 @@ export async function setupCommonRouteHandlers(route, request, mockHost) {
   return false; // Not handled by common handlers
 }
 
+/**
+ * Waits for the spinner to finish
+ * @param {Object} page - Playwright page object
+ */
+export async function waitForSpinner(page, timeout = 10000) {
+  await page.waitForFunction(() => {
+    const spinner = document.querySelector(".slds-spinner");
+    return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
+  }, {timeout: 10000});
+}
+
+/**
+ * Pastes data into a textarea element
+ * @param {Object} page - Playwright page object
+ * @param {string} itemSelector - Selector for the textarea element
+ * @param {string} rawData - Raw data to paste
+ */
+export async function pasteData(page, itemSelector, rawData) {
+  // Focus the textarea first
+  const item = page.locator(itemSelector);
+  await item.focus();
+  
+  // Trigger paste event with clipboardData to call onDataPaste handler
+  await page.evaluate(({itemSelector, data}) => {
+    const textarea = document.querySelector(itemSelector);
+    if (!textarea) return;
+    
+    // Create a paste event with mock clipboardData
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    
+    // Create clipboardData object that matches the ClipboardEvent interface
+    const clipboardDataObj = {
+      getData: function(type) {
+        return type === "text/plain" ? data : "";
+      },
+      items: [],
+      types: ["text/plain"]
+    };
+    
+    // Attach clipboardData to the event
+    Object.defineProperty(event, "clipboardData", {
+      value: clipboardDataObj,
+      enumerable: true
+    });
+    
+    // Also set target to textarea
+    Object.defineProperty(event, "target", {
+      value: textarea,
+      enumerable: true
+    });
+    
+    // Dispatch the event
+    textarea.dispatchEvent(event);
+  }, {itemSelector, data: rawData});
+}
+
+/**
+ * @description Waits for a successful HTTP response from the given Salesforce host
+ * @param {*} page - Playwright page object 
+ * @param {*} urlPart - Salesforce host or part of the url to wait for
+ * @returns {Promise<Response>} A promise that resolves to the response
+ */
+export async function waitSuccessfulHttpResponse(page, urlPart) {
+  return page.waitForResponse(response =>
+    response.url().includes(urlPart) && (response.status() >= 200 || response.status() < 400)
+  );
+}

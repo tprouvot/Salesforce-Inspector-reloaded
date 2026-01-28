@@ -1247,7 +1247,7 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-import-data"}, "Data"),
                             h("div", {className: "slds-form-element__control"},
-                              h("textarea", {id: "data-paste", ariaDescribedby: "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
+                              h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
                               h("div", {id: "error-data-paste", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.dataError}, model.dataError)
                             )
                           )
@@ -1504,11 +1504,6 @@ class StatusBox extends React.Component {
       ReactDOM.render(h(App, {model}), root, cb);
     };
     ReactDOM.render(h(App, {model}), root);
-
-    if (parent && parent.isUnitTest) { // for unit tests
-      parent.insextTestLoaded({model});
-    }
-
   });
 }
 

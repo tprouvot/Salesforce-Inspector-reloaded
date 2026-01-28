@@ -2,9 +2,9 @@ import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
   injectSessionData,
-  createModelExposureSetup,
   handleGetUserInfoSoap,
-  fulfillSuccess
+  fulfillSuccess,
+  waitSuccessfulHttpResponse
 } from "./test-helpers";
 
 test.describe("Flow Scanner", () => {
@@ -87,6 +87,12 @@ test.describe("Flow Scanner", () => {
 
     // Mock Salesforce API calls
     await context.route("**/*", async route => {
+      //if mock is disabled, continue with the request
+      if(!TEST_CONSTANTS.mockEnabled) {
+        await route.continue();
+        return;
+      }
+
       const request = route.request();
       const url = request.url();
       const method = request.method();
@@ -223,13 +229,15 @@ test.describe("Flow Scanner", () => {
     });
   });
 
-  test("Load Flow Scanner Page", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for page to load
+  async function initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId = null, mockFlowId = null) {
+    await page.goto(`chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}${mockFlowDefId ? `&flowDefId=${mockFlowDefId}` : ""}${mockFlowId ? `&flowId=${mockFlowId}` : ""}`);
     await page.waitForSelector("#root", {timeout: 10000});
     await page.waitForSelector("text=Flow Scanner", {timeout: 10000});
+
+    //if mockFlowDefId and mockFlowId are provided, wait for the flow info section to be visible
+    if (mockFlowDefId && mockFlowId) {
+      await waitSuccessfulHttpResponse(page, "FlowDefinitionView");
+    }
 
     // Wait for loading to complete
     await page.waitForFunction(
@@ -239,26 +247,19 @@ test.describe("Flow Scanner", () => {
       },
       {timeout: 15000}
     );
+    //add some delay to ensure the page is loaded
+    await page.waitForTimeout(500);
+  }
+
+  test("Load Flow Scanner Page", async ({page, extensionId}) => {
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Verify Flow Information section appears (use more specific selector)
     await expect(page.locator("h2:has-text('Flow Information')").first()).toBeVisible();
   });
 
   test("Display Flow Information", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for loading to complete
-    await page.waitForFunction(
-      () => {
-        const loadingOverlay = document.querySelector(".loading-overlay");
-        return !loadingOverlay || loadingOverlay.style.display === "none";
-      },
-      {timeout: 15000}
-    );
-
-    // Wait a bit more for data to render
-    await page.waitForTimeout(2000);
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Verify flow information section exists
     const flowInfoSection = page.locator(".flow-info-section");
@@ -269,111 +270,54 @@ test.describe("Flow Scanner", () => {
       const bodyText = document.body.textContent || "";
       return bodyText.includes("Flow") || bodyText.includes("Test");
     });
-    expect(hasFlowContent).toBe(true);
+    await expect(hasFlowContent).toBe(true);
   });
 
   test("Display Scan Results", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for loading to complete
-    await page.waitForFunction(
-      () => {
-        const loadingOverlay = document.querySelector(".loading-overlay");
-        return !loadingOverlay || loadingOverlay.style.display === "none";
-      },
-      {timeout: 15000}
-    );
-
-    // Wait a bit more for scan results to render
-    await page.waitForTimeout(2000);
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Verify Scan Results section appears (check for results area)
-    const scanResultsArea = page.locator(".scan-results-area, .summary-body");
-    await expect(scanResultsArea.first()).toBeVisible({timeout: 5000});
+    await expect(page.locator(".scan-results-area, .summary-body").first()).toBeVisible({timeout: 5000});
   });
 
   test("Expand All Results", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for loading to complete
-    await page.waitForFunction(
-      () => {
-        const loadingOverlay = document.querySelector(".loading-overlay");
-        return !loadingOverlay || loadingOverlay.style.display === "none";
-      },
-      {timeout: 15000}
-    );
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Click Expand All button
     const expandAllButton = page.locator("button:has-text('Expand All')");
     if (await expandAllButton.isVisible()) {
       await expandAllButton.click();
-      await page.waitForTimeout(500);
     }
   });
 
   test("Collapse All Results", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for loading to complete
-    await page.waitForFunction(
-      () => {
-        const loadingOverlay = document.querySelector(".loading-overlay");
-        return !loadingOverlay || loadingOverlay.style.display === "none";
-      },
-      {timeout: 15000}
-    );
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Click Collapse All button
     const collapseAllButton = page.locator("button:has-text('Collapse All')");
     if (await collapseAllButton.isVisible()) {
       await collapseAllButton.click();
-      await page.waitForTimeout(500);
     }
   });
 
   test("Toggle Severity Group", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for loading to complete
-    await page.waitForFunction(
-      () => {
-        const loadingOverlay = document.querySelector(".loading-overlay");
-        return !loadingOverlay || loadingOverlay.style.display === "none";
-      },
-      {timeout: 15000}
-    );
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Find and click a severity group header (e.g., Errors)
     const errorHeader = page.locator(".severity-title-left:has-text('Errors')").first();
     if (await errorHeader.isVisible()) {
       await errorHeader.click();
-      await page.waitForTimeout(500);
     }
   });
 
   test("Export Results", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for loading to complete
-    await page.waitForFunction(
-      () => {
-        const loadingOverlay = document.querySelector(".loading-overlay");
-        return !loadingOverlay || loadingOverlay.style.display === "none";
-      },
-      {timeout: 15000}
-    );
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Click Export button
     const exportButton = page.locator("button:has-text('Export')");
-    if (await exportButton.isVisible() && !(await exportButton.isDisabled())) {
+    await exportButton.isVisible();
+    if (!(await exportButton.isDisabled())) {
       await exportButton.click();
-      await page.waitForTimeout(500);
 
       // Verify download was triggered (in test mode, we can't verify actual download)
       // But we can verify the button was clicked successfully
@@ -381,116 +325,55 @@ test.describe("Flow Scanner", () => {
   });
 
   test("Toggle Flow Description", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for loading to complete
-    await page.waitForFunction(
-      () => {
-        const loadingOverlay = document.querySelector(".loading-overlay");
-        return !loadingOverlay || loadingOverlay.style.display === "none";
-      },
-      {timeout: 15000}
-    );
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Find and click description toggle button
     const descriptionToggle = page.locator("button.description-toggle-btn, button:has-text('Show description'), button:has-text('Hide description')").first();
-    if (await descriptionToggle.isVisible()) {
-      await descriptionToggle.click();
-      await page.waitForTimeout(500);
-    }
+    await descriptionToggle.isVisible();
+    await descriptionToggle.click();
   });
 
   test("Open Purge Versions Modal", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for loading to complete
-    await page.waitForFunction(
-      () => {
-        const loadingOverlay = document.querySelector(".loading-overlay");
-        return !loadingOverlay || loadingOverlay.style.display === "none";
-      },
-      {timeout: 15000}
-    );
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Find purge button (trash icon next to versions count)
     const purgeButton = page.locator("button[title='Purge old versions'], button:has(svg use[xlinkHref*='delete'])").first();
-    if (await purgeButton.isVisible()) {
-      await purgeButton.click();
-      await page.waitForTimeout(500);
+    await purgeButton.isVisible();
+    await purgeButton.click();
 
-      // Verify purge modal appears
-      await expect(page.locator("text=Purge Old Versions")).toBeVisible();
-    }
+    // Verify purge modal appears
+    await expect(page.locator("text=Purge Old Versions")).toBeVisible();
   });
 
   test("Open Agentforce Modal", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for loading to complete
-    await page.waitForFunction(
-      () => {
-        const loadingOverlay = document.querySelector(".loading-overlay");
-        return !loadingOverlay || loadingOverlay.style.display === "none";
-      },
-      {timeout: 15000}
-    );
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Find Agentforce button (Einstein icon)
     const agentforceButton = page.locator("button[title='Open Agentforce Flow Scanner'], button:has(svg use[xlinkHref*='einstein'])").first();
-    if (await agentforceButton.isVisible()) {
-      await agentforceButton.click();
-      await page.waitForTimeout(500);
+    await agentforceButton.isVisible();
+    await agentforceButton.click();
 
-      // Verify Agentforce modal appears
-      await expect(page.locator("text=Agentforce Flow Scanner")).toBeVisible();
-    }
+    // Verify Agentforce modal appears
+    await expect(page.locator("text=Agentforce Flow Scanner")).toBeVisible();
   });
 
   test("Open Help/Settings", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for loading to complete
-    await page.waitForFunction(
-      () => {
-        const loadingOverlay = document.querySelector(".loading-overlay");
-        return !loadingOverlay || loadingOverlay.style.display === "none";
-      },
-      {timeout: 15000}
-    );
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Find settings/help button
     const settingsButton = page.locator("button[title='Open Flow Scanner Options'], button:has(svg use[xlinkHref*='settings'])").first();
-    if (await settingsButton.isVisible()) {
-      await settingsButton.click();
-      await page.waitForTimeout(500);
+    await settingsButton.isVisible();
+    await settingsButton.click();
 
-      // Verify new tab/window opens (we can't verify this in E2E, but we can verify click works)
-    }
+    // Verify new tab/window opens (we can't verify this in E2E, but we can verify click works)
+
   });
 
   test("Display Flow Versions", async ({page, extensionId}) => {
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}&flowDefId=${mockFlowDefId}&flowId=${mockFlowId}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for loading to complete
-    await page.waitForFunction(
-      () => {
-        const loadingOverlay = document.querySelector(".loading-overlay");
-        return !loadingOverlay || loadingOverlay.style.display === "none";
-      },
-      {timeout: 15000}
-    );
-
-    // Wait a bit more for data to render
-    await page.waitForTimeout(2000);
+    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
 
     // Verify flow info section loaded successfully (which includes versions)
-    const flowInfoSection = page.locator(".flow-info-section");
-    await expect(flowInfoSection).toBeVisible({timeout: 5000});
+    await expect(page.locator(".flow-info-section")).toBeVisible({timeout: 5000});
 
     // Verify that flow data was loaded (check for flow label or API name)
     // This confirms that flow metadata including versions was fetched
@@ -504,14 +387,7 @@ test.describe("Flow Scanner", () => {
   test.skip("Error Handling - Missing Parameters", async ({page, extensionId}) => {
     // Skip this test as it requires specific error handling that may not work in test environment
     // The error occurs during initialization before React renders
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for page to load (root might be hidden, so check for any content)
-    await page.waitForFunction(
-      () => document.body && document.body.textContent,
-      {timeout: 10000}
-    );
+    await initFlowScannerPage(page, extensionId, mockHost);
 
     // Wait for error to appear - check for error text anywhere on page
     await page.waitForFunction(
@@ -529,14 +405,7 @@ test.describe("Flow Scanner", () => {
   test.skip("Retry After Error", async ({page, extensionId}) => {
     // Skip this test as it requires specific error handling that may not work in test environment
     // The error occurs during initialization before React renders
-    const flowScannerUrl = `chrome-extension://${extensionId}/flow-scanner.html?host=${mockHost}`;
-    await page.goto(flowScannerUrl);
-
-    // Wait for page to load (root might be hidden, so check for any content)
-    await page.waitForFunction(
-      () => document.body && document.body.textContent,
-      {timeout: 10000}
-    );
+    await initFlowScannerPage(page, extensionId, mockHost);
 
     // Wait for error - check for error text anywhere on page
     await page.waitForFunction(
@@ -555,4 +424,3 @@ test.describe("Flow Scanner", () => {
     }
   });
 });
-

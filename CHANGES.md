@@ -3,6 +3,10 @@
 ## Version 2.0
 - `Data Export` add outline to tabs when query is in focus, add case insensitive match on tab name for adding count to duplicate names (e.g., Contact, Contact 2) (contribution by [Nathan Shulman](https://github.com/nshulman))
 - `Log Viewer` Modified UI elements for consistency with `Data Export` behavior, added trace flags in new window (contribution by [Nathan Shulman](https://github.com/nshulman))
+- Reduce API calls in popup by skipping unnecessary requests when not expanded [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
+- Add API Statistics page to track and monitor REST and SOAP API calls (enable via `Enable API Stats Debug Mode` in Options > API tab) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
+- `User Experience` Add dynamic popup height and option to enable / disable setting (contribution by [Nicolas Greard](https://github.com/ngreardSF))
+- `Field Creator` Fix Currency Field [#1046](https://github.com/RubenHalman/Salesforce-Inspector-reloaded/issues/1046) (contribution by [Ruben Halman](https://github.com/RubenHalman))
 - `Metadata` Fix: Checkboxes unselect behavior and indeterminate state [issue #1066](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1066)
 - `Metadata` Fix: ApprovalProcess listMetadata does not return child [issue #1065](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1065)
 - Add Flow Compare button to quickly access Salesforce's Flow Compare feature (Winter '26) (from `Flow Scanner` and `Popup`)

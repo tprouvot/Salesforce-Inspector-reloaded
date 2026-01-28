@@ -1143,10 +1143,13 @@ class App extends React.Component {
 
       case "Currency":
       case "Number":
-      case "Percent":
-        newField.Metadata.precision = parseInt(field.precision) || 18;
-        newField.Metadata.scale = parseInt(field.decimal) || 0;
+      case "Percent": {
+        const scale = parseInt(field.decimal) || 0;
+        const length = parseInt(field.precision) || 18;
+        newField.Metadata.precision = length + scale;
+        newField.Metadata.scale = scale;
         break;
+      }
 
       case "Date":
       case "DateTime":

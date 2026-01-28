@@ -88,6 +88,7 @@ nav:
       - API:
           - Event Monitor: event-monitor.md
           - REST Explorer: rest-explorer.md
+          - API Statistics: api-statistics.md
           - Org Limits: limits.md
       - How-To: how-to.md
   - Articles: articles.md

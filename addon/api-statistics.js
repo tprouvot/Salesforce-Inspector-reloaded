@@ -22,7 +22,7 @@ export class ApiStatistics {
       },
       startTime: Date.now()
     };
-    this.loadStats();
+    this._statsLoaded = false;
   }
 
   /**
@@ -37,6 +37,10 @@ export class ApiStatistics {
    * Load statistics from localStorage
    */
   loadStats() {
+    // Lazy load to avoid circular dependency issues
+    if (!this._statsLoaded) {
+      this._statsLoaded = true;
+    }
     const stored = localStorage.getItem(Constants.API_DEBUG_STATISTICS);
     if (stored) {
       try {
@@ -94,6 +98,11 @@ export class ApiStatistics {
   trackApiCall(mode, url, method, duration, isError = false){
     if (!ApiStatistics.isDebugModeEnabled()) {
       return;
+    }
+
+    // Ensure stats are loaded before tracking
+    if (!this._statsLoaded) {
+      this.loadStats();
     }
 
     // Load current stats from localStorage to ensure synchronization across instances
@@ -237,6 +246,10 @@ export class ApiStatistics {
    * @returns {Object} Statistics object
    */
   getStats() {
+    // Ensure stats are loaded before getting
+    if (!this._statsLoaded) {
+      this.loadStats();
+    }
     //retrieve stats in the localStorage
     this.getStatsFromLocalStorage();
 
@@ -311,5 +324,21 @@ export class ApiStatistics {
   }
 }
 
-// Singleton instance
-export const apiStatistics = new ApiStatistics();
+// Singleton instance - lazy initialization to avoid circular dependency issues
+let apiStatisticsInstance = null;
+
+function getApiStatistics() {
+  if (!apiStatisticsInstance) {
+    apiStatisticsInstance = new ApiStatistics();
+  }
+  return apiStatisticsInstance;
+}
+
+// Export a proxy object that lazily initializes the instance
+export const apiStatistics = new Proxy({}, {
+  get(target, prop) {
+    const instance = getApiStatistics();
+    const value = instance[prop];
+    return typeof value === "function" ? value.bind(instance) : value;
+  }
+});

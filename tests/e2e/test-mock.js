@@ -43,9 +43,6 @@ export async function routeMock(route, host) {
     }
 
     const apiVersion = TEST_CONSTANTS.apiVersion;
-    console.log("url: " + url);
-    console.log("path: " + path);
-    console.log("method: " + method);
 
     /* SOAP API */
     if(path.includes("/services/Soap/")){
@@ -657,7 +654,6 @@ async function handleSoapRequest(route) {
     // SOAP DML Operations (create, update, delete, upsert)
     if (method === "POST") {
         const requestBody = await request.postData();
-        console.log("requestBody: " + requestBody);
 
         //Metadata API
         if(requestBody && url.includes("/services/Soap/m/")){

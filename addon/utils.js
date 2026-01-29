@@ -445,7 +445,7 @@ export async function fetchAndMergeSobjects() {
   /**
    * Add or merge an entity into the entityMap
    * @param {Object} entity - Entity data
-   * @param {string} api - API source identifier (e.g., "regularApi", "toolingApi", "EntityDef")
+   * @param {string} api - API source identifier (e.g., "regularApi", "toolingApi")
    */
   const addEntity = (entity, api) => {
     // Handle __MISSING label error case
@@ -554,7 +554,7 @@ export async function fetchAndMergeSobjects() {
           isEverCreatable: record.IsEverCreatable,
           namespacePrefix: record.NamespacePrefix,
           // Don't set layoutable here, as it should come from describe calls
-        }, "EntityDef");
+        }, null);
       }
       return respEntity.records?.length >= batchSize; // If the batch has batchSize records, there might be more
     } catch (err) {

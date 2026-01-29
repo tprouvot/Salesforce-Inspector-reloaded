@@ -1604,7 +1604,7 @@ class AllDataBoxSObject extends React.PureComponent {
         "LastModifiedDate",
         "Name",
       ];
-      if (selectedValue.sobject.recordTypesSupported && selectedValue.sobject.recordTypesSupported.length > 1) {
+      if (selectedValue.sobject.recordTypesSupported && selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 1) {
         fields.push("RecordType.DeveloperName", "RecordType.Id");
       }
       this.restCallForRecordDetails(fields, selectedValue);

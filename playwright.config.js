@@ -11,7 +11,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  reporter: [
+    ["list"], // Shows progress in terminal with test names
+    ["html"], // Generates HTML report
+  ],
   globalSetup: "./tests/e2e/global-setup.js",
   globalTeardown: "./tests/e2e/global-teardown.js",
   use: {

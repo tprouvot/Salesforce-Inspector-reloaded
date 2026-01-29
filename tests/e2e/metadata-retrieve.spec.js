@@ -35,10 +35,12 @@ test.describe("Metadata Retrieve", () => {
 
   async function initMetadataRetrievePage(page, extensionId) {
     await page.goto(`chrome-extension://${extensionId}/metadata-retrieve.html?host=${mockHost}`);
-    
+
     // Wait for metadata objects to load
     await page.waitForSelector(".filter-input", {timeout: 10000});
     await page.waitForSelector(".slds-accordion__list-item", {timeout: 10000});
+
+    await page.waitForTimeout(500);
   }
 
   test("Load Page and Verify Initial State", async ({page, extensionId}) => {
@@ -199,7 +201,6 @@ test.describe("Metadata Retrieve", () => {
 
     // Verify clipboard content
     const clipboardContent = await page.evaluate(() => navigator.clipboard.readText());
-    console.log("Clipboard content:", clipboardContent);
     await expect(clipboardContent).toContain("<Package");
   });
 

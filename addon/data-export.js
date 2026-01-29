@@ -1739,7 +1739,7 @@ class App extends React.Component {
       contextMenu: {
         x: e.clientX,
         y: e.clientY,
-        index: index
+        index
       }
     });
   }
@@ -2208,7 +2208,7 @@ class App extends React.Component {
           ),
           h("li", {className: "slds-dropdown__item", role: "presentation"},
             h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onRemoveOtherTabs(); }},
-              h("span", {className: "slds-truncate", title: "Close Other"}, "Close Other")
+              h("span", {className: "slds-truncate", title: "Close Others"}, "Close Others")
             )
           ),
           h("li", {className: "slds-dropdown__item", role: "presentation"},

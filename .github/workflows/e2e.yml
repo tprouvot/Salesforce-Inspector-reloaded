@@ -24,6 +24,80 @@ jobs:
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium
 
+    - name: Setup Salesforce CLI and authenticate
+      if: ${{ vars.SF_TEST_MOCKENABLED != 'true' }}
+      env:
+        SF_CLI_URL: ${{ vars.SF_CLI_URL }}
+        SF_API_VERSION: ${{ vars.SF_API_VERSION }}
+        SF_TEST_MOCKENABLED: ${{ vars.SF_TEST_MOCKENABLED }}
+        SF_TEST_ACCOUNTID: ${{ vars.SF_TEST_ACCOUNT_RECORD_ID }}
+        SF_TEST_FLOWID: ${{ vars.SF_TEST_FLOW_ID }}
+        SF_TEST_FLOWDEFID: ${{ vars.SF_TEST_FLOW_DEF_ID }}
+        SF_AUTH_URL: ${{ secrets.SF_AUTH_URL }}
+      run: |
+        # Install Salesforce CLI
+        echo "Installing Salesforce CLI from $SF_CLI_URL"
+        curl -L "$SF_CLI_URL" -o sf-cli.tar.gz
+        mkdir -p sf-cli
+        tar -xzf sf-cli.tar.gz -C sf-cli --strip-components=1
+        export PATH="$PWD/sf-cli/bin:$PATH"
+        sf --version
+        
+        # Authenticate and get access token
+        echo "Authenticating to Salesforce org using SF_AUTH_URL..."
+        AUTH_RESPONSE=$(curl -s "$SF_AUTH_URL")
+        
+        # Try to extract access_token from JSON response
+        ACCESS_TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.access_token // .accessToken // .token // empty' 2>/dev/null)
+        INSTANCE_URL=$(echo "$AUTH_RESPONSE" | jq -r '.instance_url // .instanceUrl // .instance // empty' 2>/dev/null)
+        
+        # If SF_AUTH_URL is a JWT auth URL (sfdx-url format), authenticate with sf CLI
+        if [ -z "$ACCESS_TOKEN" ] && echo "$SF_AUTH_URL" | grep -q "force://"; then
+          echo "Detected JWT auth URL, authenticating with sf CLI..."
+          sf org login sfdx-url "$SF_AUTH_URL" --alias test-org --set-default
+          ORG_INFO=$(sf org display --json)
+          ACCESS_TOKEN=$(echo "$ORG_INFO" | jq -r '.result.accessToken // empty')
+          INSTANCE_URL=$(echo "$ORG_INFO" | jq -r '.result.instanceUrl // empty')
+        fi
+        
+        if [ -z "$ACCESS_TOKEN" ]; then
+          echo "Error: Could not extract access_token from auth response"
+          echo "Response: $AUTH_RESPONSE"
+          exit 1
+        fi
+        
+        # Extract hostname from instance URL
+        if [ -n "$INSTANCE_URL" ]; then
+          SF_HOST=$(echo "$INSTANCE_URL" | sed 's|https\?://||' | sed 's|/.*||')
+        else
+          echo "Error: Could not determine Salesforce instance URL"
+          exit 1
+        fi
+        
+        if [ -z "$SF_HOST" ]; then
+          echo "Error: Could not determine Salesforce hostname"
+          exit 1
+        fi
+        
+        echo "Successfully authenticated. Host: $SF_HOST"
+        echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+        echo "SF_HOST=$SF_HOST" >> $GITHUB_ENV
+        
+        # Update test-helpers.js with real credentials
+        echo "Updating test-helpers.js with real credentials..."
+        # Use perl for more robust string replacement (perl handles special chars better than sed)
+        perl -i -pe "s/mockHost: \".*\"/mockHost: \"\Q$SF_HOST\E\"/" tests/e2e/test-helpers.js
+        perl -i -pe "s/mockToken: \".*\"/mockToken: \"\Q$ACCESS_TOKEN\E\"/" tests/e2e/test-helpers.js
+        perl -i -pe "s/accountRecordId: \".*\"/accountRecordId: \"\Q$SF_TEST_ACCOUNTID\E\"/" tests/e2e/test-helpers.js
+        perl -i -pe "s/flowId: \".*\"/flowId: \"\Q$SF_TEST_FLOWID\E\"/" tests/e2e/test-helpers.js
+        perl -i -pe "s/flowDefId: \".*\"/flowDefId: \"\Q$SF_TEST_FLOWDEFID\E\"/" tests/e2e/test-helpers.js
+        perl -i -pe "s/apiVersion: \".*\"/apiVersion: \"\Q$SF_API_VERSION\E\"/" tests/e2e/test-helpers.js
+        perl -i -pe "s/mockEnabled: \".*\"/mockEnabled: \"\Q$SF_TEST_MOCKENABLED\E\"/" tests/e2e/test-helpers.js
+        
+        # Display the updated test-helpers.js file to verify replacements
+        echo "=== Updated test-helpers.js (first 15 lines) ==="
+        head -n 15 tests/e2e/test-helpers.js
+
     - name: Run Playwright tests
       run: npm run test:e2e
 

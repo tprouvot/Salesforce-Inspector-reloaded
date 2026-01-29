@@ -3,10 +3,9 @@ import {
   TEST_CONSTANTS,
   TEST_GUID,
   injectSessionData,
-  createSuccessResponse,
-  handleGetUserInfoSoap,
   waitSuccessfulHttpResponse
 } from "./test-helpers";
+import { routeMock } from "./test-mock";
 
 test.describe("REST Explore", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -27,83 +26,8 @@ test.describe("REST Explore", () => {
         return;
       }
 
-      const request = route.request();
-      const url = request.url();
-      const method = request.method();
-
-      // Handle getUserInfo SOAP call (common handler)
-      const getUserInfoHandled = await handleGetUserInfoSoap(route, request);
-      if (getUserInfoHandled) {
-        return;
-      }
-
-      if (url.includes(mockHost)) {
-        const success = (body = {}, status = 200) => route.fulfill(createSuccessResponse(body, status));
-
-        // Handle REST calls
-        if (url.includes("/services/data/")) {
-          // POST (Create)
-          if (method === "POST" && url.includes("sobjects/Inspector_Test__c")) {
-            await success({id: "a00000000000001AAA", success: true, errors: []}, 201);
-            return;
-          }
-
-          // PATCH (Update)
-          if (method === "PATCH" && url.includes("sobjects/Inspector_Test__c/")) {
-            await success(undefined, 204);
-            return;
-          }
-
-          // DELETE (Delete)
-          if (method === "DELETE" && url.includes("sobjects/Inspector_Test__c/")) {
-            await success(undefined, 204);
-            return;
-          }
-
-          // GET (Retrieve specific record)
-          if (method === "GET" && url.includes("sobjects/Inspector_Test__c/") && !url.includes("/describe")) {
-            await success({
-              attributes: {type: "Inspector_Test__c", url: `/services/data/v${apiVersion}/sobjects/Inspector_Test__c/a00000000000001AAA`},
-              Id: "a00000000000001AAA",
-              Name: "SFIR Updated"
-            });
-            return;
-          }
-
-          // SOQL Query
-          if (url.includes("/query/?q=")) {
-            await success({
-              totalSize: 1,
-              done: true,
-              records: [
-                {
-                  attributes: {type: "Account", url: `/services/data/v${apiVersion}/sobjects/Account/001000000000001AAA`},
-                  Id: "001000000000001AAA",
-                  Name: "Test Account"
-                }
-              ]
-            });
-            return;
-          }
-
-          // Versions / Discovery
-          if (url.includes(`/services/data/v${apiVersion}/`)) {
-            await success({
-              tooling: `/services/data/v${apiVersion}/tooling`,
-              query: `/services/data/v${apiVersion}/query`
-            });
-            return;
-          }
-
-          // SObjects Global Describe
-          if (url.includes("/sobjects/")) {
-            await success({sobjects: []});
-            return;
-          }
-        }
-
-        // Generic Fallback
-        await route.fulfill(createSuccessResponse({}));
+      //we check if we have a mock for this request
+      if (await routeMock(route, mockHost)) {
         return;
       }
 
@@ -121,17 +45,18 @@ test.describe("REST Explore", () => {
     await page.locator('select.slds-select:has(option[value="GET"])').selectOption("GET");
 
     // Fill Query
-    await page.locator('input[placeholder*="/services/data/v"]').fill(`/services/data/v${apiVersion}/query/?q=SELECT+Id,Name+FROM+Account+WHERE+Name+like+'Test Account%'+LIMIT+1`);
+    const query = `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name+FROM+Account+WHERE+Name+like+'Test%20Account%25'+LIMIT+2`;
+    await page.locator('input[placeholder*="/services/data/v"]').fill(query);
 
     // Send
     await page.click('button:has-text("Send")');
-
-    await waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/query/?q=SELECT+Id,Name+FROM+Account+WHERE+Name+like+'Test Account%'+LIMIT+1");
+    console.log("query: " + query);
+    await waitSuccessfulHttpResponse(page, query);
 
     // Verify
     const responseCode = page.locator("code.language-json");
     await expect(responseCode).toBeVisible();
-    await expect(responseCode).toContainText('"totalSize": 1');
+    await expect(responseCode).toContainText('"totalSize": 2');
     await expect(responseCode).toContainText('"Name": "Test Account');
   });
 

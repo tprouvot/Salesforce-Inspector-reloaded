@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, fetchAndMergeSobjects} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -760,7 +760,7 @@ class App extends React.PureComponent {
                 )
               )
               : null,
-            isSettingEnabled(Constants.API_DEBUG_STATISTICS_MODE)
+            isSettingEnabled("apiDebugStatisticsMode")
               ? h(
                 "div",
                 {
@@ -793,6 +793,7 @@ class App extends React.PureComponent {
             {
               className:
               "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small",
+              id: "footer"
             },
             h(
               "a",
@@ -1073,156 +1074,9 @@ class AllDataBox extends React.PureComponent {
     // Set loading state
     this.setState({sobjectsLoading: true});
 
-    //we don't have the entity map in the in-memory cache, so we need to fetch it
-    let entityMap = new Map();
-
-    function addEntity(
-      {
-        name,
-        label,
-        keyPrefix,
-        durableId,
-        isCustomSetting,
-        recordTypesSupported,
-        isEverCreatable,
-        newUrl,
-      },
-      api
-    ) {
-      label = label.match("__MISSING") ? "" : label; //Error is added to the label if no label exists
-      let entity = entityMap.get(name);
-      // Each API call enhances the data, only the Name fields are present for each call.
-      if (entity) {
-        if (!entity.keyPrefix) {
-          entity.keyPrefix = keyPrefix;
-        }
-        if (!entity.durableId) {
-          entity.durableId = durableId;
-        }
-        if (!entity.isCustomSetting) {
-          entity.isCustomSetting = isCustomSetting;
-        }
-        if (!entity.newUrl) {
-          entity.newUrl = newUrl;
-        }
-        if (!entity.recordTypesSupported) {
-          entity.recordTypesSupported = recordTypesSupported;
-        }
-        if (!entity.isEverCreatable) {
-          entity.isEverCreatable = isEverCreatable;
-        }
-      } else {
-        entity = {
-          availableApis: [],
-          name,
-          label,
-          keyPrefix,
-          durableId,
-          isCustomSetting,
-          availableKeyPrefix: null,
-          recordTypesSupported,
-          isEverCreatable,
-          newUrl,
-        };
-        entityMap.set(name, entity);
-      }
-      if (api) {
-        entity.availableApis.push(api);
-        if (keyPrefix) {
-          entity.availableKeyPrefix = keyPrefix;
-        }
-      }
-    }
-
-    function getObjects(url, api) {
-      return sfConn
-        .rest(url)
-        .then((describe) => {
-          for (let sobject of describe.sobjects) {
-            // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
-            addEntity(
-              {...sobject, isCustomSetting: sobject.customSetting},
-              api
-            );
-          }
-        })
-        .catch((err) => {
-          console.error("list " + api + " sobjects", err);
-        });
-    }
-
-    function getEntityDefinitions() {
-      let bucket = 0;
-
-      function fetchNextBatch() {
-        return getEntityDefinitionBatch(bucket)
-          .then((hasMore) => {
-            if (hasMore) {
-              bucket++;
-              return fetchNextBatch();
-            }
-            // All batches fetched
-            return Promise.resolve();
-          });
-      }
-
-      return fetchNextBatch()
-        .catch((err) => {
-          console.error("fetch entity definitions: ", err);
-        });
-    }
-
-    function getEntityDefinitionBatch(bucket) {
-      let offset = bucket > 0 ? " OFFSET " + bucket * 2000 : "";
-      let query
-        = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000"
-        + offset;
-      return sfConn
-        .rest(
-          "/services/data/v"
-            + apiVersion
-            + "/tooling/query?q="
-            + encodeURIComponent(query)
-        )
-        .then((respEntity) => {
-          for (let record of respEntity.records) {
-            addEntity(
-              {
-                name: record.QualifiedApiName,
-                label: record.Label,
-                keyPrefix: record.KeyPrefix,
-                durableId: record.DurableId,
-                isCustomSetting: record.IsCustomSetting,
-                recordTypesSupported: record.RecordTypesSupported,
-                newUrl: record.NewUrl,
-                isEverCreatable: record.IsEverCreatable,
-              },
-              null
-            );
-          }
-          return respEntity.records?.length >= 2000; // If the batch has 2000 records, there are more to fetch
-        })
-        .catch((err) => {
-          console.error("list entity definitions: ", err);
-          throw err; // Re-throw to allow error handling in calling function
-        });
-    }
-
-    Promise.all([
-      // Get objects the user can access from the regular API
-      getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
-      // Get objects the user can access from the tooling API
-      getObjects(
-        "/services/data/v" + apiVersion + "/tooling/sobjects/",
-        "toolingApi"
-      ),
-      // Get all objects, even the ones the user cannot access from any API
-      // These records are less interesting than the ones the user has access to, but still interesting since we can get information about them using the tooling API
-      // If there are too many records, we get "EXCEEDED_ID_LIMIT: EntityDefinition does not support queryMore(), use LIMIT to restrict the results to a single batch"
-      // Even if documentation mention that LIMIT and OFFSET are not supported, we use it to split the EntityDefinition queries into 2000 buckets
-      getEntityDefinitions(),
-    ])
-      .then(() => {
+    // Use shared utility function with recursive batching (original popup.js behavior)
+    fetchAndMergeSobjects()
+      .then((entityMap) => {
         // TODO progressively display data as each of the three responses becomes available
         this.setState({
           sobjectsLoading: false,
@@ -2648,10 +2502,8 @@ class AllDataBoxOrg extends React.PureComponent {
 
   async componentDidMount() {
     let {sfHost} = this.props;
-    let orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo"));
-    if (!orgInfo) {
-      orgInfo = await setOrgInfo(sfHost);
-    }
+    //this will retrieve the orgInfo from sessionStorage if it exists, otherwise it will fetch it from the API and store it in sessionStorage
+    let orgInfo = await setOrgInfo(sfHost); 
     this.setInstanceStatus(orgInfo.InstanceName, sfHost);
   }
 

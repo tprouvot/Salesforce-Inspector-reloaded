@@ -1,6 +1,7 @@
 import {test as base, chromium} from "@playwright/test";
 import path from "path";
 import {addCoverageData} from "./coverage-storage.js";
+import {initializeResponseTracking} from "./test-helpers.js";
 
 export const test = base.extend({
   // eslint-disable-next-line no-empty-pattern
@@ -48,6 +49,10 @@ export const test = base.extend({
     await use(extensionId);
   },
   page: async ({page}, use) => {
+    // Initialize response tracking early to catch responses that complete
+    // before waitSuccessfulHttpResponse is called
+    initializeResponseTracking(page);
+    
     // Start coverage collection if enabled
     // eslint-disable-next-line no-undef
     const collectCoverage = process.env.COLLECT_COVERAGE === "true";

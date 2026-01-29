@@ -2,15 +2,12 @@ import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
   injectSessionData,
-  handleGetUserInfoSoap,
-  fulfillSuccess,
   waitSuccessfulHttpResponse
 } from "./test-helpers";
+import { routeMock } from "./test-mock";
 
 test.describe("Flow Scanner", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
-  const mockFlowDefId = "301000000000000AAA";
-  const mockFlowId = "301000000000001AAA";
 
   test.beforeEach(async ({context, extensionId}) => {
     TEST_CONSTANTS.extensionId = extensionId;
@@ -97,132 +94,9 @@ test.describe("Flow Scanner", () => {
       const url = request.url();
       const method = request.method();
 
-      // Handle getUserInfo SOAP call
-      const getUserInfoHandled = await handleGetUserInfoSoap(route, request);
-      if (getUserInfoHandled) {
+      //we check if we have a mock for this request
+      if (await routeMock(route, mockHost)) {
         return;
-      }
-
-      if (url.includes(mockHost)) {
-        // Mock Tooling API Composite query for Flow metadata and versions
-        if (url.includes("/tooling/composite") && method === "POST") {
-          const body = await request.postDataJSON();
-          if (body.compositeRequest && Array.isArray(body.compositeRequest)) {
-            const responses = body.compositeRequest.map(req => {
-              if (req.referenceId === "flow") {
-                return {
-                  referenceId: "flow",
-                  httpStatusCode: 200,
-                  body: {
-                    records: [{
-                      Id: mockFlowId,
-                      Metadata: {
-                        apiVersion: 58,
-                        label: "Test Flow",
-                        processType: "Flow",
-                        status: "Active"
-                      }
-                    }]
-                  }
-                };
-              } else if (req.referenceId === "versions") {
-                return {
-                  referenceId: "versions",
-                  httpStatusCode: 200,
-                  body: {
-                    records: [
-                      {
-                        Id: mockFlowId,
-                        VersionNumber: 1,
-                        Status: "Active"
-                      },
-                      {
-                        Id: "301000000000002AAA",
-                        VersionNumber: 2,
-                        Status: "Obsolete"
-                      }
-                    ]
-                  }
-                };
-              }
-              return {
-                referenceId: req.referenceId,
-                httpStatusCode: 200,
-                body: {}
-              };
-            });
-
-            await fulfillSuccess(route, {
-              compositeResponse: responses
-            });
-            return;
-          }
-        }
-
-        // Mock FlowDefinitionView query (standard API, not tooling)
-        if (url.includes("/query") && !url.includes("/tooling/") && url.includes("FlowDefinitionView") && url.includes(`DurableId='${mockFlowDefId}'`)) {
-          await fulfillSuccess(route, {
-            records: [{
-              Label: "Test Flow",
-              ApiName: "Test_Flow",
-              ProcessType: "Flow",
-              TriggerType: "Autopilot",
-              TriggerObjectOrEventLabel: "Account",
-              DurableId: mockFlowDefId
-            }]
-          });
-          return;
-        }
-
-        // Mock Flow versions query
-        if (url.includes("/tooling/query") && url.includes("SELECT+Id,VersionNumber,Status+FROM+Flow") && url.includes(`DefinitionId='${mockFlowDefId}'`)) {
-          await fulfillSuccess(route, {
-            records: [
-              {
-                Id: mockFlowId,
-                VersionNumber: 1,
-                Status: "Active"
-              },
-              {
-                Id: "301000000000002AAA",
-                VersionNumber: 2,
-                Status: "Obsolete"
-              }
-            ]
-          });
-          return;
-        }
-
-        // Mock FlowInterview query (for purge)
-        if (url.includes("/query") && url.includes("FlowInterview") && url.includes("FlowVersionViewId")) {
-          await fulfillSuccess(route, {
-            records: []
-          });
-          return;
-        }
-
-        // Mock Composite DELETE for purge (check after the main composite handler)
-        // This is handled above in the composite POST handler
-
-        // Mock DELETE FlowInterview
-        if (url.includes("/sobjects/FlowInterview/") && method === "DELETE") {
-          await fulfillSuccess(route, {}, 204);
-          return;
-        }
-
-        // Mock DELETE Flow (Tooling API)
-        if (url.includes("/tooling/sobjects/Flow/") && method === "DELETE") {
-          await fulfillSuccess(route, {}, 204);
-          return;
-        }
-
-        // Mock Organization query
-        if (url.includes("SELECT+IsSandbox,+InstanceName+,TrialExpirationDate+FROM+Organization")) {
-          await fulfillSuccess(route, {
-            records: [{IsSandbox: true, InstanceName: "NA1", TrialExpirationDate: null}]
-          });
-          return;
-        }
       }
 
       await route.continue();
@@ -252,14 +126,14 @@ test.describe("Flow Scanner", () => {
   }
 
   test("Load Flow Scanner Page", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Verify Flow Information section appears (use more specific selector)
     await expect(page.locator("h2:has-text('Flow Information')").first()).toBeVisible();
   });
 
   test("Display Flow Information", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Verify flow information section exists
     const flowInfoSection = page.locator(".flow-info-section");
@@ -274,14 +148,14 @@ test.describe("Flow Scanner", () => {
   });
 
   test("Display Scan Results", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Verify Scan Results section appears (check for results area)
     await expect(page.locator(".scan-results-area, .summary-body").first()).toBeVisible({timeout: 5000});
   });
 
   test("Expand All Results", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Click Expand All button
     const expandAllButton = page.locator("button:has-text('Expand All')");
@@ -291,7 +165,7 @@ test.describe("Flow Scanner", () => {
   });
 
   test("Collapse All Results", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Click Collapse All button
     const collapseAllButton = page.locator("button:has-text('Collapse All')");
@@ -301,7 +175,7 @@ test.describe("Flow Scanner", () => {
   });
 
   test("Toggle Severity Group", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Find and click a severity group header (e.g., Errors)
     const errorHeader = page.locator(".severity-title-left:has-text('Errors')").first();
@@ -311,7 +185,7 @@ test.describe("Flow Scanner", () => {
   });
 
   test("Export Results", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Click Export button
     const exportButton = page.locator("button:has-text('Export')");
@@ -325,7 +199,7 @@ test.describe("Flow Scanner", () => {
   });
 
   test("Toggle Flow Description", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Find and click description toggle button
     const descriptionToggle = page.locator("button.description-toggle-btn, button:has-text('Show description'), button:has-text('Hide description')").first();
@@ -334,7 +208,7 @@ test.describe("Flow Scanner", () => {
   });
 
   test("Open Purge Versions Modal", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Find purge button (trash icon next to versions count)
     const purgeButton = page.locator("button[title='Purge old versions'], button:has(svg use[xlinkHref*='delete'])").first();
@@ -346,7 +220,7 @@ test.describe("Flow Scanner", () => {
   });
 
   test("Open Agentforce Modal", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Find Agentforce button (Einstein icon)
     const agentforceButton = page.locator("button[title='Open Agentforce Flow Scanner'], button:has(svg use[xlinkHref*='einstein'])").first();
@@ -358,7 +232,7 @@ test.describe("Flow Scanner", () => {
   });
 
   test("Open Help/Settings", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Find settings/help button
     const settingsButton = page.locator("button[title='Open Flow Scanner Options'], button:has(svg use[xlinkHref*='settings'])").first();
@@ -370,7 +244,7 @@ test.describe("Flow Scanner", () => {
   });
 
   test("Display Flow Versions", async ({page, extensionId}) => {
-    await initFlowScannerPage(page, extensionId, mockHost, mockFlowDefId, mockFlowId);
+    await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
     // Verify flow info section loaded successfully (which includes versions)
     await expect(page.locator(".flow-info-section")).toBeVisible({timeout: 5000});

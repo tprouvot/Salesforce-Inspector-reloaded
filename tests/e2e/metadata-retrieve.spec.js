@@ -1,14 +1,9 @@
 import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
-  injectSessionData,
-  createSuccessResponse,
-  createSoapSuccessResponse,
-  handleGetUserInfoSoap,
-  fulfillSuccess,
-  fulfillSoapSuccess,
-  waitSuccessfulHttpResponse
+  injectSessionData
 } from "./test-helpers";
+import { routeMock } from "./test-mock";
 
 test.describe("Metadata Retrieve", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -29,170 +24,8 @@ test.describe("Metadata Retrieve", () => {
         return;
       }
 
-      const request = route.request();
-      const url = request.url();
-      const method = request.method();
-
-      // Handle getUserInfo SOAP call (common handler)
-      const getUserInfoHandled = await handleGetUserInfoSoap(route, request);
-      if (getUserInfoHandled) {
-        return;
-      }
-
-      if (url.includes(mockHost)) {
-        const success = (body = {}, status = 200) => route.fulfill(createSuccessResponse(body, status));
-        const soapSuccess = (soapBody) => route.fulfill(createSoapSuccessResponse(soapBody));
-
-        // SOAP Metadata API - describeMetadata
-        if (url.includes("/services/Soap/m/") && method === "POST") {
-          const requestBody = await request.postData();
-          if (requestBody && requestBody.includes("describeMetadata")) {
-            await fulfillSoapSuccess(route, `
-              <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:met="http://soap.sforce.com/2006/04/metadata">
-                <soapenv:Body>
-                  <met:describeMetadataResponse>
-                    <met:result>
-                      <met:metadataObjects>
-                        <met:xmlName>ApexClass</met:xmlName>
-                      </met:metadataObjects>
-                      <met:metadataObjects>
-                        <met:xmlName>ApexPage</met:xmlName>
-                      </met:metadataObjects>
-                      <met:metadataObjects>
-                        <met:xmlName>CustomObject</met:xmlName>
-                      </met:metadataObjects>
-                    </met:result>
-                  </met:describeMetadataResponse>
-                </soapenv:Body>
-              </soapenv:Envelope>
-            `);
-            return;
-          }
-
-          // SOAP Metadata API - listMetadata
-          if (requestBody && requestBody.includes("listMetadata")) {
-            await fulfillSoapSuccess(route, `
-              <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:met="http://soap.sforce.com/2006/04/metadata">
-                <soapenv:Body>
-                  <met:listMetadataResponse>
-                    <met:result>
-                      <met:fullName>TestClass</met:fullName>
-                      <met:type>ApexClass</met:type>
-                    </met:result>
-                    <met:result>
-                      <met:fullName>TestPage</met:fullName>
-                      <met:type>ApexPage</met:type>
-                    </met:result>
-                  </met:listMetadataResponse>
-                </soapenv:Body>
-              </soapenv:Envelope>
-            `);
-            return;
-          }
-
-          // SOAP Metadata API - retrieve
-          if (requestBody && requestBody.includes("retrieve") && !requestBody.includes("checkRetrieveStatus")) {
-            await fulfillSoapSuccess(route, `
-              <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:met="http://soap.sforce.com/2006/04/metadata">
-                <soapenv:Body>
-                  <met:retrieveResponse>
-                    <met:result>
-                      <met:id>09S000000000001AAA</met:id>
-                      <met:done>false</met:done>
-                    </met:result>
-                  </met:retrieveResponse>
-                </soapenv:Body>
-              </soapenv:Envelope>
-            `);
-            return;
-          }
-
-          // SOAP Metadata API - checkRetrieveStatus
-          if (requestBody && requestBody.includes("checkRetrieveStatus")) {
-            await fulfillSoapSuccess(route, `
-              <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:met="http://soap.sforce.com/2006/04/metadata">
-                <soapenv:Body>
-                  <met:checkRetrieveStatusResponse>
-                    <met:result>
-                      <met:id>09S000000000001AAA</met:id>
-                      <met:done>true</met:done>
-                      <met:success>true</met:success>
-                      <met:zipFile>UEsDBBQAAAAIAF</met:zipFile>
-                      <met:fileProperties>
-                        <met:fullName>TestClass</met:fullName>
-                        <met:type>ApexClass</met:type>
-                        <met:fileName>classes/TestClass.cls</met:fileName>
-                      </met:fileProperties>
-                    </met:result>
-                  </met:checkRetrieveStatusResponse>
-                </soapenv:Body>
-              </soapenv:Envelope>
-            `);
-            return;
-          }
-
-          // SOAP Metadata API - deploy
-          if (requestBody && requestBody.includes("deploy") && !requestBody.includes("checkDeployStatus")) {
-            await fulfillSoapSuccess(route, `
-              <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:met="http://soap.sforce.com/2006/04/metadata">
-                <soapenv:Body>
-                  <met:deployResponse>
-                    <met:result>
-                      <met:id>0Af000000000001AAA</met:id>
-                      <met:done>false</met:done>
-                    </met:result>
-                  </met:deployResponse>
-                </soapenv:Body>
-              </soapenv:Envelope>
-            `);
-          }
-
-          // SOAP Metadata API - checkDeployStatus
-          if (requestBody && requestBody.includes("checkDeployStatus")) {
-            await fulfillSoapSuccess(route, `
-              <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:met="http://soap.sforce.com/2006/04/metadata">
-                <soapenv:Body>
-                  <met:checkDeployStatusResponse>
-                    <met:result>
-                      <met:id>0Af000000000001AAA</met:id>
-                      <met:done>true</met:done>
-                      <met:success>true</met:success>
-                      <met:details>
-                        <met:componentSuccesses>
-                          <met:fullName>TestClass</met:fullName>
-                          <met:componentType>ApexClass</met:componentType>
-                        </met:componentSuccesses>
-                      </met:details>
-                    </met:result>
-                  </met:checkDeployStatusResponse>
-                </soapenv:Body>
-              </soapenv:Envelope>
-            `);
-            return;
-          }
-        }
-
-        // REST API - Deploy Request Details
-        if (url.includes("/metadata/deployRequest/") && method === "GET") {
-          await fulfillSuccess(route, {
-            deployResult: {
-              id: "0Af000000000001AAA",
-              success: true,
-              details: {
-                componentSuccesses: [
-                  {
-                    componentType: "ApexClass",
-                    fullName: "TestClass",
-                    fileName: "classes/TestClass.cls"
-                  }
-                ]
-              }
-            }
-          });
-        }
-
-        // Fallback
-        await fulfillSuccess(route, {});
+      //we check if we have a mock for this request
+      if (await routeMock(route, mockHost)) {
         return;
       }
 

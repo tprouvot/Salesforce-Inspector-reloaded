@@ -2,10 +2,9 @@ import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
   injectSessionData,
-  createSuccessResponse,
-  handleGetUserInfoSoap,
   waitSuccessfulHttpResponse
 } from "./test-helpers";
+import { routeMock } from "./test-mock";
 
 test.describe("Data Export", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -26,81 +25,8 @@ test.describe("Data Export", () => {
         return;
       }
 
-      const request = route.request();
-      const url = request.url();
-
-      // Handle getUserInfo SOAP call (common handler)
-      const getUserInfoHandled = await handleGetUserInfoSoap(route, request);
-      if (getUserInfoHandled) {
-        return;
-      }
-
-      if (url.includes(mockHost)) {
-        const success = (body = {}, status = 200) => route.fulfill(createSuccessResponse(body, status));
-
-        // Global Describe (SObjects)
-        if (url.includes("/sobjects/") && !url.includes("sobjects/Account")) {
-          await success({
-            sobjects: [
-              {name: "Account", label: "Account", keyPrefix: "001", queryable: true, urls: {describe: `/services/data/v${apiVersion}/sobjects/Account/describe`}},
-              {name: "Contact", label: "Contact", keyPrefix: "003", queryable: true, urls: {describe: `/services/data/v${apiVersion}/sobjects/Contact/describe`}},
-              {name: "Inspector_Test__c", label: "Inspector Test", keyPrefix: "a00", queryable: true, urls: {describe: `/services/data/v${apiVersion}/sobjects/Inspector_Test__c/describe`}}
-            ]
-          });
-          return;
-        }
-
-        // Account Describe (Fields)
-        if (url.includes("/sobjects/Account/describe")) {
-          await success({
-            name: "Account",
-            fields: [
-              {name: "Id", label: "Account ID", type: "id"},
-              {name: "Name", label: "Account Name", type: "string"},
-              {name: "Type",
-                label: "Account Type",
-                type: "picklist",
-                picklistValues: [
-                  {value: "Customer - Channel", label: "Customer - Channel", active: true},
-                  {value: "Customer - Direct", label: "Customer - Direct", active: true}
-                ]}
-            ]
-          });
-          return;
-        }
-
-        // SOQL Query
-        if (url.includes("/query/?q=")) {
-          const query = decodeURIComponent(url.split("q=")[1]);
-
-          if (query.toLowerCase().includes("from account")) {
-            await success({
-              totalSize: 2,
-              done: true,
-              records: [
-                {
-                  attributes: {type: "Account", url: `/services/data/v${apiVersion}/sobjects/Account/001000000000001AAA`},
-                  Id: "001000000000001AAA",
-                  Name: "Test Account 1",
-                  Type: "Customer - Direct"
-                },
-                {
-                  attributes: {type: "Account", url: `/services/data/v${apiVersion}/sobjects/Account/001000000000002AAA`},
-                  Id: "001000000000002AAA",
-                  Name: "Test Account 2",
-                  Type: "Customer - Channel"
-                }
-              ]
-            });
-            return;
-          }
-
-          await success({totalSize: 0, done: true, records: []});
-          return;
-        }
-
-        // Fallback
-        await success({});
+      //we check if we have a mock for this request
+      if (await routeMock(route, mockHost)) {
         return;
       }
 

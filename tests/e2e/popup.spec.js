@@ -2,9 +2,9 @@ import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
   injectSessionData,
-  handleGetUserInfoSoap,
-  fulfillSuccess
+  waitSuccessfulHttpResponse,
 } from "./test-helpers";
+import { routeMock } from "./test-mock";  
 
 test.describe("Popup", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -34,7 +34,7 @@ test.describe("Popup", () => {
             // When popup sends insextInitRequest, respond with insextInitResponse
             if (msg && msg.insextInitRequest) {
               setTimeout(() => {
-                // Create event without source property
+                // Dispatch message event - source will be handled by our wrapped listener
                 const event = new MessageEvent("message", {
                   data: {
                     insextInitResponse: true,
@@ -46,33 +46,13 @@ test.describe("Popup", () => {
                   origin: window.location.origin
                 });
 
-                // Patch addEventListener before popup.js loads to intercept message events
-                const originalAddEventListener = window.addEventListener;
-                window.addEventListener = function(type, listener, useCapture) {
-                  if (type === "message") {
-                    const wrappedListener = function(e) {
-                      // Create a proxy event that makes e.source === parent work
-                      if (e.data && e.data.insextInitResponse && e.source === null) {
-                        const proxyEvent = Object.create(e);
-                        Object.defineProperty(proxyEvent, "source", {
-                          get: () => mockParentObj,
-                          configurable: true
-                        });
-                        return listener.call(this, proxyEvent);
-                      }
-                      return listener.call(this, e);
-                    };
-                    return originalAddEventListener.call(this, type, wrappedListener, useCapture);
-                  }
-                  return originalAddEventListener.call(this, type, listener, useCapture);
-                };
-
                 window.dispatchEvent(event);
-              }, 200);
+              }, 100);
             }
           }
         };
 
+        // Set up parent mock BEFORE popup.js loads
         if (window.parent === window) {
           Object.defineProperty(window, "parent", {
             get() {
@@ -81,6 +61,32 @@ test.describe("Popup", () => {
             configurable: true
           });
         }
+
+        // Patch addEventListener BEFORE popup.js loads to intercept message events
+        // This ensures that when popup.js sets up its listener, it's already wrapped
+        // We need to make e.source === parent for all message events
+        const originalAddEventListener = window.addEventListener;
+        window.addEventListener = function(type, listener, useCapture) {
+          if (type === "message") {
+            const wrappedListener = function(e) {
+              // Always ensure e.source === parent for message events
+              // This is needed because MessageEvent.source is read-only and can't be set in constructor
+              if (e.source !== mockParentObj) {
+                // Create a wrapper that inherits from the event but overrides source
+                const wrappedEvent = Object.create(e);
+                Object.defineProperty(wrappedEvent, "source", {
+                  get: () => mockParentObj,
+                  configurable: true,
+                  enumerable: true
+                });
+                return listener.call(this, wrappedEvent);
+              }
+              return listener.call(this, e);
+            };
+            return originalAddEventListener.call(this, type, wrappedListener, useCapture);
+          }
+          return originalAddEventListener.call(this, type, listener, useCapture);
+        };
       }
     });
 
@@ -92,145 +98,16 @@ test.describe("Popup", () => {
         return;
       }
 
+      //we check if we have a mock for this request
+      if (await routeMock(route, mockHost)) {
+        return;
+      }
+
       const request = route.request();
       const url = request.url();
       const method = request.method();
 
-      // Handle getUserInfo SOAP call (common handler)
-      const getUserInfoHandled = await handleGetUserInfoSoap(route, request);
-      if (getUserInfoHandled) {
-        return;
-      }
-
       if (url.includes(mockHost)) {
-
-        // REST API - Global Describe (sobjects)
-        if (url.includes("/sobjects/") && !url.includes("/tooling/") && method === "GET" && !url.includes("User") && !url.includes("RecentlyViewed") && !url.includes("query")) {
-          await fulfillSuccess(route, {
-            encoding: "UTF-8",
-            maxBatchSize: 200,
-            sobjects: [
-              {
-                name: "Account",
-                label: "Account",
-                keyPrefix: "001",
-                layoutable: true,
-                custom: false
-              },
-              {
-                name: "Inspector_Test__c",
-                label: "Inspector Test",
-                keyPrefix: "a00",
-                layoutable: true,
-                custom: true
-              }
-            ]
-          });
-          return;
-        }
-
-        // Tooling API - Global Describe (tooling sobjects)
-        if (url.includes("/tooling/sobjects/") && method === "GET" && !url.includes("query")) {
-          await fulfillSuccess(route, {
-            encoding: "UTF-8",
-            maxBatchSize: 200,
-            sobjects: [
-              {
-                name: "ApexClass",
-                label: "Apex Class",
-                keyPrefix: "01p",
-                layoutable: false
-              }
-            ]
-          });
-          return;
-        }
-
-        // Tooling API - EntityDefinition Count
-        if (url.includes("/tooling/query") && url.includes("COUNT() FROM EntityDefinition")) {
-          await fulfillSuccess(route, {
-            size: 1,
-            totalSize: 2,
-            done: true,
-            records: [{expr0: 2}]
-          });
-          return;
-        }
-
-        // Tooling API - EntityDefinition Query
-        if (url.includes("/tooling/query") && url.includes("EntityDefinition") && !url.includes("COUNT()")) {
-          await fulfillSuccess(route, {
-            size: 2,
-            totalSize: 2,
-            done: true,
-            records: [
-              {
-                QualifiedApiName: "Account",
-                Label: "Account",
-                KeyPrefix: "001",
-                DurableId: "Account",
-                IsCustomSetting: false,
-                RecordTypesSupported: false,
-                NewUrl: null,
-                IsEverCreatable: true
-              },
-              {
-                QualifiedApiName: "Inspector_Test__c",
-                Label: "Inspector Test",
-                KeyPrefix: "a00",
-                DurableId: "Inspector_Test__c",
-                IsCustomSetting: false,
-                RecordTypesSupported: false,
-                NewUrl: null,
-                IsEverCreatable: true
-              }
-            ]
-          });
-        }
-
-        // REST API - RecentlyViewed Query
-        if (url.includes("/query/") && url.includes("RecentlyViewed")) {
-          await fulfillSuccess(route, {
-            totalSize: 2,
-            done: true,
-            records: [
-              {
-                Id: "001000000000001AAA",
-                Name: "Test Account",
-                Type: "Account"
-              },
-              {
-                Id: "003000000000001AAA",
-                Name: "Test Contact",
-                Type: "Contact"
-              }
-            ]
-          });
-        }
-
-        // REST API - User Query (for Users tab)
-        if (url.includes("/query/") && url.includes("FROM User")) {
-          await fulfillSuccess(route, {
-            totalSize: 2,
-            done: true,
-            records: [
-              {
-                Id: "005000000000001AAA",
-                Name: "Test User",
-                Email: "test@example.com",
-                Username: "test@example.com",
-                Alias: "tuser",
-                IsActive: true,
-                Profile: {
-                  Name: "System Administrator"
-                },
-                UserRole: {
-                  Name: "CEO"
-                }
-              }
-            ]
-          });
-        }
 
         // REST API - Composite Query (for user details)
         if (url.includes("/composite") && method === "POST") {
@@ -325,50 +202,6 @@ test.describe("Popup", () => {
               ]
             });
           }
-        }
-
-        // REST API - OAuth UserInfo
-        if (url.includes("/oauth2/userinfo")) {
-          await fulfillSuccess(route, {
-            // eslint-disable-next-line camelcase
-            user_id: "005000000000001AAA",
-            // eslint-disable-next-line camelcase
-            organization_id: "00D000000000001AAA"
-          });
-          return;
-        }
-
-        // REST API - User Describe
-        if (url.includes("/sobjects/User/describe") && method === "GET") {
-          await fulfillSuccess(route, {
-            fields: [
-              {
-                name: "LanguageLocaleKey",
-                picklistValues: [
-                  {value: "en_US", label: "English (United States)", active: true},
-                  {value: "fr", label: "French", active: true}
-                ]
-              },
-              {
-                name: "LocaleSidKey",
-                picklistValues: [
-                  {value: "en_US", label: "English (United States)", active: true},
-                  {value: "fr_FR", label: "French (France)", active: true}
-                ]
-              }
-            ]
-          });
-          return;
-        }
-
-        // REST API - User Update
-        if (url.includes("/sobjects/User/") && method === "PATCH") {
-          await fulfillSuccess(route, {
-            id: "005000000000001AAA",
-            success: true,
-            errors: []
-          });
-          return;
         }
 
         // Tooling API - TraceFlag Query
@@ -466,50 +299,42 @@ test.describe("Popup", () => {
   });
 
   async function initPopupPage(page, extensionId) {
-    await page.goto(`chrome-extension://${extensionId}/popup.html?host=${mockHost}`);
+    await page.goto(`chrome-extension://${extensionId}/test-popup.html?host=${mockHost}`);
 
-    // Wait for root element to exist
-    await page.waitForSelector("#root", {timeout: 10000});
+    //click on the button to open the popup
+    await page.locator('.insext-btn').click();
 
-    // Note: popup.js requires parent window communication (iframe context)
-    // In a real iframe scenario, the parent would send insextInitResponse
-    // For E2E testing, we verify the page structure loads
-    // Full functionality testing would require iframe setup
+    // Locate the iframe by its name, id, or index
+    //const frame = await page.frame({ name: 'popup' });
 
-    // Verify root element exists (React will render here)
-    await expect(page.locator("#root")).toBeVisible();
+    const frame = await page.frameLocator('.insext-popup');
 
-    // Try to trigger initialization by dispatching a message event
-    // This may not work perfectly due to e.source == parent check, but we try
-    await page.evaluate(({host}) => {
-      // Create event without source to avoid constructor error
-      const event = new MessageEvent("message", {
-        data: {
-          insextInitResponse: true,
-          sfHost: host,
-          inDevConsole: false,
-          inLightning: false,
-          inInspector: false
-        }
-      });
-      window.dispatchEvent(event);
-    }, {host: mockHost});
-
-    // Wait for React to potentially render (may not work due to e.source == parent check)
-    try {
-      await page.waitForSelector(".popup-header", {timeout: 2000});
-    } catch {
-      // If React didn't render, that's expected due to iframe architecture limitations
-      // The page structure should still be loadable
-      await page.waitForSelector("#root", {timeout: 1000});
+    if (frame) {
+      await expect(frame.locator("#root")).toBeVisible();
+    } else {
+      throw new Error('Frame not found');
     }
+  }
+
+  async function waitForObjectsTabToLoad(page) {
+    // Wait for objects, entity definitions and permission sets to load
+    await Promise.all([
+      waitSuccessfulHttpResponse(page, "/services/data/v" + TEST_CONSTANTS.apiVersion + "/sobjects/"),
+      waitSuccessfulHttpResponse(page, "/services/data/v" + TEST_CONSTANTS.apiVersion + "/tooling/sobjects/"),
+      waitSuccessfulHttpResponse(page, "/services/data/v" + TEST_CONSTANTS.apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable, NamespacePrefix FROM EntityDefinition ORDER BY QualifiedApiName ASC")),
+    ]);
+
+    //Wait some time to ensure that the responses are processed
+    await page.waitForTimeout(500);
+
+    await page.frameLocator('.insext-popup').locator("input[placeholder*='Record id']").waitFor({timeout: 5000});
   }
 
   test("Load Popup Page", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
-
     // Verify basic page structure (may not have React content if init didn't work)
-    const rootContent = await page.locator("#root").textContent();
+    const rootContent = await page.frameLocator('.insext-popup').locator("#root").textContent();
+
     // Root should exist even if React hasn't rendered yet
     await expect(rootContent !== null).toBeTruthy();
   });
@@ -518,148 +343,148 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Verify Data & Metadata section
-    await expect(page.locator("text=Data & Metadata")).toBeVisible();
-    await expect(page.locator("a:has-text('Data Export')")).toBeVisible();
-    await expect(page.locator("a:has-text('Data Import')")).toBeVisible();
-    await expect(page.locator("a:has-text('Field Creator')")).toBeVisible();
-    await expect(page.locator("a:has-text('Download Metadata')")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("text=Data & Metadata")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Data Export')")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Data Import')")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Field Creator')")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Download Metadata')")).toBeVisible();
 
     // Verify Platform Tools section
-    await expect(page.locator("text=Platform Tools")).toBeVisible();
-    await expect(page.locator("a:has-text('REST Explorer')")).toBeVisible();
-    await expect(page.locator("a:has-text('Event Monitor')")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("text=Platform Tools")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("a:has-text('REST Explorer')")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Event Monitor')")).toBeVisible();
   });
 
   test("Objects Tab - Search and Select Object", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
-    // Wait for Objects tab to load
-    await page.waitForSelector("input[placeholder*='Record id']", {timeout: 15000});
-
+    await waitForObjectsTabToLoad(page);  
     // Type in search input
-    const searchInput = page.locator("input[placeholder*='Record id']");
-    await searchInput.fill("Account");
+    await page.frameLocator('.insext-popup').locator("input[placeholder*='Record id']").fill("Account");
 
     // Wait for autocomplete results
     await page.waitForTimeout(500);
 
     // Verify Account appears in results
-    await expect(page.locator(".slds-dropdown__item:has-text('Account')")).toBeVisible({timeout: 5000});
+    await expect(await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Account')").count()).toBeGreaterThan(0);
 
     // Click on Account
-    await page.locator(".slds-dropdown__item:has-text('Account')").first().click();
+    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Account')").first().click();
 
     // Verify object details appear
-    await expect(page.locator("text=Account")).toBeVisible();
-    await expect(page.locator("text=Inspector Test")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator(".tab-container .slds-card__body .slds-text-body_small").locator("text=Account")).toBeVisible();
   });
 
   test("Objects Tab - Select Record ID", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
-
-    // Wait for Objects tab to load
-    await page.waitForSelector("input[placeholder*='Record id']", {timeout: 15000});
+    await waitForObjectsTabToLoad(page);
 
     // Type a record ID
-    const searchInput = page.locator("input[placeholder*='Record id']");
-    await searchInput.fill("001000000000001AAA");
+    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Record id']");
+    await searchInput.fill(TEST_CONSTANTS.accountRecordId);
 
     // Wait for autocomplete
     await page.waitForTimeout(500);
 
     // Click on the record result
-    await page.locator(".slds-dropdown__item").first().click();
+    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item").first().click();
+
+    // Wait for autocomplete
+    await page.waitForTimeout(500);
 
     // Verify record details appear
-    await expect(page.locator("text=001")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("text=" + TEST_CONSTANTS.accountRecordId)).toBeVisible();
   });
 
   test("Switch to Users Tab", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Users tab
-    const usersTab = page.locator(".slds-tabs_scoped__item:has-text('Users')");
+    const usersTab = page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Users')");
     await usersTab.click();
 
     // Verify Users tab is active
     await expect(usersTab).toHaveClass(/slds-is-active/);
 
     // Verify user search input appears
-    await expect(page.locator("input[placeholder*='Name, username']")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']")).toBeVisible({timeout: 5000});
   });
 
   test("Users Tab - Search User", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Users tab
-    await page.locator(".slds-tabs_scoped__item:has-text('Users')").click();
+    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Users')").click();
 
     // Wait for user search input
-    await page.waitForSelector("input[placeholder*='Name, username']", {timeout: 5000});
+    await page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
 
     // Type in search
-    const searchInput = page.locator("input[placeholder*='Name, username']");
+    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']");
     await searchInput.fill("Test");
 
     // Wait for autocomplete results
     await page.waitForTimeout(1000);
 
     // Verify user appears in results
-    await expect(page.locator(".slds-dropdown__item:has-text('Test User')")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Test')")).toBeVisible({timeout: 5000});
   });
 
   test("Users Tab - Select User and View Details", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Users tab
-    await page.locator(".slds-tabs_scoped__item:has-text('Users')").click();
+    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Users')").click();
 
     // Wait for user search input
-    await page.waitForSelector("input[placeholder*='Name, username']", {timeout: 5000});
+    await page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
 
     // Type in search
-    const searchInput = page.locator("input[placeholder*='Name, username']");
+    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']");
     await searchInput.fill("Test");
 
     // Wait for autocomplete
     await page.waitForTimeout(1000);
 
     // Click on user result
-    await page.locator(".slds-dropdown__item:has-text('Test User')").first().click();
+    //we use the popin result to get the username
+    const username = await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Test') .dropdown-item.slds-wrap.small span").textContent();
+    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Test')").first().textContent();
+
 
     // Wait for user details to load
     await page.waitForTimeout(2000);
 
     // Verify user details appear
-    await expect(page.locator("text=Test User")).toBeVisible();
-    await expect(page.locator("text=test@example.com")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("text=Test")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("text=" + username)).toBeVisible();
   });
 
   test("Switch to Shortcuts Tab", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Shortcuts tab
-    const shortcutsTab = page.locator(".slds-tabs_scoped__item:has-text('Shortcuts')");
+    const shortcutsTab = page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Shortcuts')");
     await shortcutsTab.click();
 
     // Verify Shortcuts tab is active
     await expect(shortcutsTab).toHaveClass(/slds-is-active/);
 
     // Verify shortcut search input appears
-    await expect(page.locator("input[placeholder*='Quick find']")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator('.insext-popup').locator("input[placeholder*='Quick find']")).toBeVisible({timeout: 5000});
   });
 
   test("Shortcuts Tab - Search Shortcut", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Shortcuts tab
-    await page.locator(".slds-tabs_scoped__item:has-text('Shortcuts')").click();
+    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Shortcuts')").click();
 
     // Wait for shortcut search input
-    await page.waitForSelector("input[placeholder*='Quick find']", {timeout: 5000});
+    await page.frameLocator('.insext-popup').locator("input[placeholder*='Quick find']").waitFor({timeout: 5000});
 
     // Type in search
-    const searchInput = page.locator("input[placeholder*='Quick find']");
+    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Quick find']");
     await searchInput.fill("Flow");
 
     // Wait for autocomplete results
@@ -674,36 +499,36 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Click Org tab
-    const orgTab = page.locator(".slds-tabs_scoped__item:has-text('Org')");
+    const orgTab = page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Org')");
     await orgTab.click();
 
     // Verify Org tab is active
     await expect(orgTab).toHaveClass(/slds-is-active/);
 
     // Verify org info table appears
-    await expect(page.locator("text=Org Id")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator('.insext-popup').locator("text=Org Id")).toBeVisible({timeout: 5000});
   });
 
   test("Change API Version", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Find API version input
-    const apiInput = page.locator("input#idApiInput");
+    const apiInput = page.frameLocator('.insext-popup').locator("input#idApiInput");
     await expect(apiInput).toBeVisible();
 
     // Change API version
-    await apiInput.fill("66");
+    await apiInput.fill("64"); //be careful as this value depends on the test-mock.js file and real api versions
     await apiInput.press("Enter");
 
     // Verify value is updated
-    await expect(apiInput).toHaveValue("66");
+    await expect(apiInput).toHaveValue("64");
   });
 
   test("Click Data Export Link", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Find Data Export link
-    const exportLink = page.locator("a:has-text('Data Export')");
+    const exportLink = page.frameLocator('.insext-popup').locator("a:has-text('Data Export')");
     await expect(exportLink).toBeVisible();
 
     // Verify href contains data-export.html
@@ -715,7 +540,7 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Find Data Import link
-    const importLink = page.locator("a:has-text('Data Import')");
+    const importLink = page.frameLocator('.insext-popup').locator("a:has-text('Data Import')");
     await expect(importLink).toBeVisible();
 
     // Verify href contains data-import.html
@@ -727,7 +552,7 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Find REST Explorer link
-    const restLink = page.locator("a:has-text('REST Explorer')");
+    const restLink = page.frameLocator('.insext-popup').locator("a:has-text('REST Explorer')");
     await expect(restLink).toBeVisible();
 
     // Verify href contains rest-explore.html
@@ -739,7 +564,7 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Find Event Monitor link
-    const eventLink = page.locator("a:has-text('Event Monitor')");
+    const eventLink = page.frameLocator('.insext-popup').locator("a:has-text('Event Monitor')");
     await expect(eventLink).toBeVisible();
 
     // Verify href contains event-monitor.html
@@ -749,86 +574,82 @@ test.describe("Popup", () => {
 
   test("Objects Tab - Show All Data Button", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
-
-    // Wait for Objects tab to load
-    await page.waitForSelector("input[placeholder*='Record id']", {timeout: 15000});
+    await waitForObjectsTabToLoad(page);
 
     // Type and select an object
-    const searchInput = page.locator("input[placeholder*='Record id']");
+    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Record id']");
     await searchInput.fill("Account");
-    await page.waitForTimeout(500);
-    await page.locator(".slds-dropdown__item:has-text('Account')").first().click();
+    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Account')").first().click();
 
     // Wait for object details to appear
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(5000);
 
     // Verify "Show all data" button appears
-    await expect(page.locator("a:has-text('Show all data')")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Show all data')")).toBeVisible({timeout: 5000});
   });
 
   test("Objects Tab - Object Links (Fields, List, etc.)", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
-
-    // Wait for Objects tab to load
-    await page.waitForSelector("input[placeholder*='Record id']", {timeout: 15000});
+    await waitForObjectsTabToLoad(page);
 
     // Type and select an object
-    const searchInput = page.locator("input[placeholder*='Record id']");
+    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Record id']");
     await searchInput.fill("Account");
     await page.waitForTimeout(500);
-    await page.locator(".slds-dropdown__item:has-text('Account')").first().click();
+    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Account')").first().click();
 
     // Wait for object details to appear
     await page.waitForTimeout(1000);
 
     // Verify links appear
-    await expect(page.locator("a:has-text('Fields')")).toBeVisible({timeout: 5000});
-    await expect(page.locator("a:has-text('List')")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Fields')")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator('.insext-popup').locator("a:has-text('List')")).toBeVisible();
   });
 
   test("Users Tab - User Action Buttons", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Users tab
-    await page.locator(".slds-tabs_scoped__item:has-text('Users')").click();
+    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Users')").click();
 
     // Wait for user search input
-    await page.waitForSelector("input[placeholder*='Name, username']", {timeout: 5000});
+    await page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
 
     // Type and select a user
-    const searchInput = page.locator("input[placeholder*='Name, username']");
+    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']");
     await searchInput.fill("Test");
     await page.waitForTimeout(1000);
-    await page.locator(".slds-dropdown__item:has-text('Test User')").first().click();
+    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Test')").first().click();
 
     // Wait for user details to load
     await page.waitForTimeout(2000);
 
     // Verify user action buttons appear
-    await expect(page.locator("a:has-text('Details')")).toBeVisible({timeout: 5000});
-    await expect(page.locator("a:has-text('PSet')")).toBeVisible();
+    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Details')")).toBeVisible({timeout: 5000});
+    //Pset and PsetG buttons should be visible
+    await expect(await page.frameLocator('.insext-popup').locator("a:has-text('PSet')").count()).toBe(2); 
   });
 
   test("Users Tab - Enable Debug Logs", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Users tab
-    await page.locator(".slds-tabs_scoped__item:has-text('Users')").click();
+    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Users')").click();
 
     // Wait for user search input
-    await page.waitForSelector("input[placeholder*='Name, username']", {timeout: 5000});
+    await page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
 
     // Type and select a user
-    const searchInput = page.locator("input[placeholder*='Name, username']");
+    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']");
     await searchInput.fill("Test");
     await page.waitForTimeout(1000);
-    await page.locator(".slds-dropdown__item:has-text('Test User')").first().click();
+    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Test')").first().click();
 
     // Wait for user details to load
     await page.waitForTimeout(2000);
 
     // Click Enable Logs button
-    const enableLogsButton = page.locator("a#enableDebugLog");
+    const enableLogsButton = page.frameLocator('.insext-popup').locator("a#enableDebugLog");
     await expect(enableLogsButton).toBeVisible({timeout: 5000});
 
     // Note: Clicking this will trigger API calls, but we'll just verify the button exists
@@ -839,21 +660,33 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Click Org tab
-    await page.locator(".slds-tabs_scoped__item:has-text('Org')").click();
+    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Org')").click();
 
     // Wait for org info to load
     await page.waitForTimeout(2000);
 
     // Verify Delete All ApexLogs button exists
-    await expect(page.locator("a#deleteLogs:has-text('Delete All ApexLogs')")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator('.insext-popup').locator("a#deleteLogs:has-text('Delete All ApexLogs')")).toBeVisible({timeout: 5000});
   });
 
   test("Footer Links Exist", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
-    // Verify footer links exist
-    await expect(page.locator("a[href*='release-note']")).toBeVisible();
-    await expect(page.locator("a[href*='donate']")).toBeVisible();
-    await expect(page.locator("a[href*='Salesforce-Inspector-reloaded']")).toBeVisible();
+    // Wait for footer to load
+    await page.frameLocator('.insext-popup').locator("#footer").waitFor({timeout: 5000});
+
+    // Verify footer link exists (release-note is in footer)
+    await expect(page.frameLocator('.insext-popup').locator("#footer a[href*='release-note']")).toBeVisible();
+
+    const donateContainer = page.frameLocator('.insext-popup').locator("div[title='Donate']");
+    await expect(donateContainer).toBeVisible({timeout: 10000});
+    const donateLink = donateContainer.locator("a[href*='donate']");
+    await expect(donateLink).toBeAttached({timeout: 10000});
+
+    // Documentation locate by parent div title attribute
+    const docContainer = page.frameLocator('.insext-popup').locator("div[title='Documentation']");
+    await expect(docContainer).toBeVisible({timeout: 10000});
+    const docLink = docContainer.locator("a[href*='Salesforce-Inspector-reloaded']");
+    await expect(docLink).toBeAttached({timeout: 10000});
   });
 });

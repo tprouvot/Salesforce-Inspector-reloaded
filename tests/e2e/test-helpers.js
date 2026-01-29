@@ -9,6 +9,8 @@ export const TEST_CONSTANTS = {
   mockToken: "mock-access-token",
   apiVersion: "65.0",
   accountRecordId: "001000000000001AAA",
+  flowId: "301000000000000AAA",
+  flowDefId: "300000000000000AAA",
   mockEnabled: false
 };
 
@@ -133,26 +135,6 @@ export async function fulfillSoapSuccess(route, soapBody) {
 }
 
 /**
- * Creates a mock getUserInfo SOAP response
- * Note: getUserInfo is imported from utils.js, so we only need to mock it once
- */
-export function createGetUserInfoSoapResponse() {
-  return `
-    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-      <soapenv:Body>
-        <getUserInfoResponse>
-          <result>
-            <userFullName>Test User</userFullName>
-            <userName>test@example.com</userName>
-            <organizationName>Test Org</organizationName>
-          </result>
-        </getUserInfoResponse>
-      </soapenv:Body>
-    </soapenv:Envelope>
-  `;
-}
-
-/**
  * Sets up model exposure for pages that use insextTestLoaded
  * This function is meant to be passed as additionalSetup to injectSessionData
  * @returns {Function} A function that sets up model exposure in the browser context
@@ -205,49 +187,6 @@ export function createModelExposureSetup() {
       checkAndPatch();
     }
   };
-}
-
-/**
- * Common route handler for getUserInfo SOAP calls
- * This should be used in all test files to avoid duplication
- * @returns {Promise<boolean>} - True if request was handled, false otherwise
- */
-export async function handleGetUserInfoSoap(route, request) {
-  const url = request.url();
-  const method = request.method();
-
-  if (url.includes("/services/Soap/") && method === "POST") {
-    const requestBody = await request.postData();
-    if (requestBody && requestBody.includes("getUserInfo")) {
-      await route.fulfill(createSoapSuccessResponse(createGetUserInfoSoapResponse()));
-      return true;
-    }
-  }
-  return false; // Not handled, continue to next handler
-}
-
-/**
- * Sets up common route handlers that are used across multiple test files
- * @param {Object} route - Playwright route object
- * @param {Object} request - Playwright request object
- * @param {string} mockHost - Mock Salesforce host
- * @param {string} apiVersion - API version
- * @returns {boolean} - True if request was handled, false otherwise
- */
-export async function setupCommonRouteHandlers(route, request, mockHost) {
-  const url = request.url();
-
-  if (!url.includes(mockHost)) {
-    return false;
-  }
-
-  // Handle getUserInfo SOAP call (common across all tests)
-  const getUserInfoHandled = await handleGetUserInfoSoap(route, request);
-  if (getUserInfoHandled !== null) {
-    return true;
-  }
-
-  return false; // Not handled by common handlers
 }
 
 /**
@@ -307,13 +246,233 @@ export async function pasteData(page, itemSelector, rawData) {
 }
 
 /**
+ * Global response tracker that maintains response queues per page
+ * This allows tracking responses that complete before waitSuccessfulHttpResponse is called
+ */
+const responseTracker = new Map();
+
+/**
+ * Helper function to check if a URL matches the urlPart
+ * Handles encoding differences and partial matches
+ * @param {string} responseUrl - The response URL to check
+ * @param {string} searchPart - The URL part to search for
+ * @returns {boolean} True if the URL matches
+ */
+function urlMatches(responseUrl, searchPart) {
+  try {
+    // Try exact match first
+    if (responseUrl.includes(searchPart)) {
+      return true;
+    }
+    
+    // Try normalized comparison (decode both)
+    const normalizedResponse = decodeURIComponent(responseUrl);
+    const normalizedSearch = decodeURIComponent(searchPart);
+    if (normalizedResponse.includes(normalizedSearch)) {
+      return true;
+    }
+    
+    // Try matching just the path part (ignore protocol/host)
+    const responsePath = responseUrl.split('?')[0]; // Get path without query
+    const searchPath = searchPart.split('?')[0];
+    if (responsePath.includes(searchPath) || searchPath.includes(responsePath)) {
+      // If paths match, check if query params are similar
+      const responseQuery = responseUrl.includes('?') ? responseUrl.split('?')[1] : '';
+      const searchQuery = searchPart.includes('?') ? searchPart.split('?')[1] : '';
+      if (!searchQuery || responseQuery.includes(searchQuery) || searchQuery.includes(responseQuery)) {
+        return true;
+      }
+    }
+    
+    return false;
+  } catch (e) {
+    // Fallback to simple includes
+    return responseUrl.includes(searchPart);
+  }
+}
+
+/**
+ * Initializes response tracking for a page
+ * This should be called early (e.g., in beforeEach) to start tracking responses
+ * @param {Object} page - Playwright page object
+ */
+export function initializeResponseTracking(page) {
+  // Skip if already tracking this page
+  if (responseTracker.has(page)) {
+    return;
+  }
+  
+  const tracker = {
+    responses: [],
+    resolvers: new Map(), // Map of urlPart -> resolver functions
+    handler: null
+  };
+  
+  // Set up a global response handler for this page
+  tracker.handler = (response) => {
+    try {
+      const url = response.url();
+      const status = response.status();
+      
+      // Store all successful responses
+      if (status >= 200 && status < 400) {
+        tracker.responses.push(response);
+        
+        // Check if any waiting resolvers match this response
+        for (const [urlPart, resolver] of tracker.resolvers.entries()) {
+          try {
+            // Use the same matching logic as checkTracker
+            if (urlMatches(url, urlPart)) {
+              resolver(response);
+              tracker.resolvers.delete(urlPart);
+            }
+          } catch (e) {
+            // Fallback to simple includes if matching fails
+            if (url.includes(urlPart)) {
+              resolver(response);
+              tracker.resolvers.delete(urlPart);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore errors (response might be disposed)
+    }
+  };
+  
+  // Start tracking responses immediately
+  page.on('response', tracker.handler);
+  
+  // Clean up when page closes
+  page.once('close', () => {
+    responseTracker.delete(page);
+  });
+  
+  responseTracker.set(page, tracker);
+}
+
+/**
+ * Cleans up response tracking for a page
+ * @param {Object} page - Playwright page object
+ */
+export function cleanupResponseTracking(page) {
+  const tracker = responseTracker.get(page);
+  if (tracker && tracker.handler) {
+    page.off('response', tracker.handler);
+    responseTracker.delete(page);
+  }
+}
+
+/**
  * @description Waits for a successful HTTP response from the given Salesforce host
+ * This function handles both responses that have already completed and responses that are in-flight
+ * by checking a global response tracker that starts tracking as soon as the page is available
  * @param {*} page - Playwright page object 
  * @param {*} urlPart - Salesforce host or part of the url to wait for
+ * @param {*} timeout - Optional timeout in milliseconds (default: 30000)
  * @returns {Promise<Response>} A promise that resolves to the response
  */
-export async function waitSuccessfulHttpResponse(page, urlPart) {
-  return page.waitForResponse(response =>
-    response.url().includes(urlPart) && (response.status() >= 200 || response.status() < 400)
-  );
+export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000) {
+  // Ensure tracking is initialized for this page
+  if (!responseTracker.has(page)) {
+    initializeResponseTracking(page);
+  }
+  
+  const tracker = responseTracker.get(page);
+  
+  const checkTracker = () => {
+    if (tracker.responses.length > 0) {
+      const matchingResponse = tracker.responses.find(r => {
+        try {
+          const responseUrl = r.url();
+          const matches = urlMatches(responseUrl, urlPart) && r.status() >= 200 && r.status() < 400;
+          return matches;
+        } catch (e) {
+          return false;
+        }
+      });
+      return matchingResponse;
+    }
+    return null;
+  };
+  
+  try {
+    // First, check if we already have a matching response in the tracker
+    // This handles responses that completed before this function was called
+    const existingResponse = checkTracker();
+    if (existingResponse) {
+      return existingResponse;
+    }
+    
+    // Create promise that resolves when tracker gets a matching response
+    // Add timeout to prevent hanging indefinitely
+    let trackerResolver = null;
+    let timeoutId = null;
+    const trackerPromise = new Promise((resolve, reject) => {
+      // Check again in case response arrived between checkTracker and this promise
+      const existing = checkTracker();
+      if (existing) {
+        resolve(existing);
+        return;
+      }
+      
+      // Store resolver so handler can resolve when matching response arrives
+      trackerResolver = resolve;
+      tracker.resolvers.set(urlPart, resolve);
+      
+      // Set timeout to prevent hanging - reject if no response comes
+      // This ensures Promise.race doesn't hang if waitForResponse also fails
+      timeoutId = setTimeout(() => {
+        if (tracker.resolvers.has(urlPart) && tracker.resolvers.get(urlPart) === resolve) {
+          tracker.resolvers.delete(urlPart);
+          // Reject with timeout error - waitForResponse will handle the actual timeout
+          reject(new Error(`Timeout waiting for response matching: ${urlPart}`));
+        }
+      }, timeout + 100); // Slightly longer than waitForResponse timeout to let it handle timeout first
+    });
+    
+    // Race between tracker check and waitForResponse
+    // waitForResponse catches in-flight and future requests
+    // trackerPromise catches responses that complete during setup or before this call
+    const response = await Promise.race([
+      trackerPromise,
+      page.waitForResponse(
+        response => {
+          try {
+            const url = response.url();
+            const status = response.status();
+            return urlMatches(url, urlPart) && status >= 200 && status < 400;
+          } catch (e) {
+            return false;
+          }
+        },
+        { timeout }
+      )
+    ]);
+    
+    // Cleanup resolver and timeout
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    if (trackerResolver && tracker.resolvers.get(urlPart) === trackerResolver) {
+      tracker.resolvers.delete(urlPart);
+    }
+    return response;
+  } catch (error) {
+    // Cleanup resolver and timeout
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    if (tracker.resolvers.has(urlPart)) {
+      tracker.resolvers.delete(urlPart);
+    }
+    
+    // Final check of tracker in case response arrived during error handling
+    const matchingResponse = checkTracker();
+    if (matchingResponse) {
+      return matchingResponse;
+    }
+    
+    throw error;
+  }
 }

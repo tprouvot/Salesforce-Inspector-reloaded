@@ -2,8 +2,6 @@
  * API Debug Statistics Module
  * Tracks API calls made to Salesforce server when debug mode is enabled
  */
-import {Constants} from "./utils.js";
-
 export class ApiStatistics {
   constructor() {
     this.stats = {
@@ -22,6 +20,7 @@ export class ApiStatistics {
       },
       startTime: Date.now()
     };
+    this.API_DEBUG_STATISTICS = "apiDebugStatistics";
     this.loadStats();
   }
 
@@ -30,14 +29,14 @@ export class ApiStatistics {
    * @returns {boolean}
    */
   static isDebugModeEnabled() {
-    return localStorage.getItem(Constants.API_DEBUG_STATISTICS_MODE) === "true";
+    return localStorage.getItem("apiDebugStatisticsMode") === "true";
   }
 
   /**
    * Load statistics from localStorage
    */
   loadStats() {
-    const stored = localStorage.getItem(Constants.API_DEBUG_STATISTICS);
+    const stored = localStorage.getItem(this.API_DEBUG_STATISTICS);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -74,7 +73,7 @@ export class ApiStatistics {
   saveStats(stats = null) {
     try {
       const statsToSave = stats || this.stats;
-      localStorage.setItem(Constants.API_DEBUG_STATISTICS, JSON.stringify(statsToSave));
+      localStorage.setItem(this.API_DEBUG_STATISTICS, JSON.stringify(statsToSave));
       // Update instance stats for consistency
       if (stats) {
         this.stats = stats;
@@ -97,7 +96,7 @@ export class ApiStatistics {
     }
 
     // Load current stats from localStorage to ensure synchronization across instances
-    const stored = localStorage.getItem(Constants.API_DEBUG_STATISTICS);
+    const stored = localStorage.getItem(this.API_DEBUG_STATISTICS);
     let stats;
     if (stored) {
       try {
@@ -269,7 +268,7 @@ export class ApiStatistics {
 
   /** @description Get stats from localStorage */
   getStatsFromLocalStorage() {
-    const stored = localStorage.getItem(Constants.API_DEBUG_STATISTICS);
+    const stored = localStorage.getItem(this.API_DEBUG_STATISTICS);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -284,7 +283,7 @@ export class ApiStatistics {
   }
 
   setStatsToLocalStorage(stats) {
-    localStorage.setItem(Constants.API_DEBUG_STATISTICS, JSON.stringify(stats));
+    localStorage.setItem(this.API_DEBUG_STATISTICS, JSON.stringify(stats));
   }
 
   /**

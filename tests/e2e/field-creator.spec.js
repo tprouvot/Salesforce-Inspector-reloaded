@@ -1,12 +1,10 @@
 import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
-  TEST_GUID,
   injectSessionData,
-  handleGetUserInfoSoap,
-  fulfillSuccess,
   waitSuccessfulHttpResponse
 } from "./test-helpers";
+import { routeMock } from "./test-mock";
 
 test.describe("Field Creator", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -23,6 +21,9 @@ test.describe("Field Creator", () => {
       waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable, NamespacePrefix FROM EntityDefinition ORDER BY QualifiedApiName ASC")),
       waitSuccessfulHttpResponse(page, "PermissionSet"),
     ]);
+
+    //Wait some time to ensure that the responses are processed
+    await page.waitForTimeout(500);
 
     // Select an object first
     await page.locator("#object_select").focus();
@@ -48,155 +49,9 @@ test.describe("Field Creator", () => {
         return;
       }
 
-      const request = route.request();
-      const url = request.url();
-      const method = request.method();
 
-      // Handle getUserInfo SOAP call (common handler)
-      const getUserInfoHandled = await handleGetUserInfoSoap(route, request);
-      if (getUserInfoHandled) {
-        return;
-      }
-
-      if (url.includes(mockHost)) {
-
-        // REST API - Global Describe (sobjects)
-        if (url.includes("/sobjects/") && !url.includes("/tooling/") && method === "GET" && !url.includes("CustomField") && !url.includes("FieldPermissions")) {
-          await fulfillSuccess(route, {
-            encoding: "UTF-8",
-            maxBatchSize: 200,
-            sobjects: [
-              {
-                name: "Account",
-                label: "Account",
-                keyPrefix: "001",
-                layoutable: true,
-                custom: false
-              },
-              {
-                name: "Inspector_Test__c",
-                label: "Inspector Test",
-                keyPrefix: "a00",
-                layoutable: true,
-                custom: true
-              }
-            ]
-          });
-        }
-
-        // Tooling API - Global Describe (tooling sobjects)
-        if (url.includes("/tooling/sobjects/") && method === "GET" && !url.includes("CustomField") && !url.includes("query")) {
-          await fulfillSuccess(route, {
-            encoding: "UTF-8",
-            maxBatchSize: 200,
-            sobjects: [
-              {
-                name: "CustomField",
-                label: "Custom Field",
-                keyPrefix: "00D",
-                layoutable: false
-              }
-            ]
-          });
-          return;
-        }
-
-        // Tooling API - EntityDefinition Count
-        if (url.includes("/tooling/query") && url.includes("COUNT() FROM EntityDefinition")) {
-          await fulfillSuccess(route, {
-            size: 1,
-            totalSize: 2,
-            done: true,
-            records: [{expr0: 2}]
-          });
-          return;
-        }
-
-        // Tooling API - EntityDefinition Query
-        if (url.includes("/tooling/query") && url.includes("EntityDefinition") && !url.includes("COUNT()")) {
-          await fulfillSuccess(route, {
-            size: 2,
-            totalSize: 2,
-            done: true,
-            records: [
-              {
-                QualifiedApiName: "Account",
-                Label: "Account",
-                KeyPrefix: "001",
-                DurableId: "Account",
-                IsCustomSetting: false,
-                RecordTypesSupported: false,
-                NewUrl: null,
-                IsEverCreatable: true,
-                NamespacePrefix: null
-              },
-              {
-                QualifiedApiName: "Inspector_Test__c",
-                Label: "Inspector Test",
-                KeyPrefix: "a00",
-                DurableId: "Inspector_Test__c",
-                IsCustomSetting: false,
-                RecordTypesSupported: false,
-                NewUrl: null,
-                IsEverCreatable: true,
-                NamespacePrefix: null
-              }
-            ]
-          });
-          return;
-        }
-
-        // REST API - PermissionSet Query
-        if (url.includes("/query/") && url.includes("PermissionSet")) {
-          await fulfillSuccess(route, {
-            totalSize: 3,
-            done: true,
-            records: [
-              {
-                Id: "0PS000000000001AAA",
-                Name: "TestPermissionSet",
-                Profile: null
-              },
-              {
-                Id: "0PS000000000002AAA",
-                Name: "AdminPermissionSet",
-                Profile: {
-                  Name: "System Administrator"
-                }
-              },
-              {
-                Id: "0PS000000000003AAA",
-                Name: "StandardPermissionSet",
-                Profile: {
-                  Name: "Standard User"
-                }
-              }
-            ]
-          });
-          return;
-        }
-
-        // Tooling API - Create CustomField
-        if (url.includes("/tooling/sobjects/CustomField") && method === "POST") {
-          await fulfillSuccess(route, {
-            id: "00N000000000001AAA",
-            success: true,
-            errors: []
-          });
-          return;
-        }
-
-        // REST API - Create FieldPermissions
-        if (url.includes("/sobjects/FieldPermissions/") && method === "POST") {
-          await fulfillSuccess(route, {
-            id: "0PS000000000001AAA",
-            success: true,
-            errors: []
-          });
-        }
-
-        // Fallback
-        await fulfillSuccess(route, {});
+      //we check if we have a mock for this request
+      if (await routeMock(route, mockHost)) {
         return;
       }
 
@@ -282,15 +137,12 @@ test.describe("Field Creator", () => {
     await initPage(page, extensionId, "Account");
 
     // Set field label and type
-    const labelInput = page.locator("#fields_table tbody tr").first().locator("input[placeholder='Field label...']");
-    await labelInput.fill("Test Field");
+    await page.locator("#fields_table tbody tr").first().locator("input[placeholder='Field label...']").fill("Test Field");
 
-    const typeSelect = page.locator("#fields_table tbody tr").first().locator("select.form-control");
-    await typeSelect.selectOption("Text");
+    await page.locator("#fields_table tbody tr").first().locator("select.form-control").selectOption("Text");
 
     // Click Options button
-    const optionsButton = page.locator("#fields_table tbody tr").first().locator("button:has-text('Options')");
-    await optionsButton.click();
+    await page.locator("#fields_table tbody tr").first().locator("button:has-text('Options')").click();
 
     // Verify modal appears
     await expect(page.locator("text=Set Field Options")).toBeVisible();
@@ -551,11 +403,20 @@ test.describe("Field Creator", () => {
     // Click Deploy Fields button
     await deployButton.click();
 
-    // normal test will be successful, but here we will test that it has failed (because the field already exists)
-    await page.waitForSelector("#fields_table tbody tr .cursorPointer svg use.fillRed", {timeout: 10000});
-    await page.locator("#fields_table tbody tr .cursorPointer svg use.fillRed").first().click();
+    //if mock is enabled, the test must successfully deploy the fields
+    if(TEST_CONSTANTS.mockEnabled) {
+      // Wait for pending status (clock icon) - this indicates deployment started
+      // This verifies that clicking Deploy triggers the deployment process
+      await page.waitForSelector("#fields_table tbody tr .cursorPointer svg use.fillGreen", {timeout: 10000});
+    }
+    else{
+      // in real test; the deploy will be successful, but here we will test that it has failed (because the field already exists)
+      // so we are checking the error message
+      await page.waitForSelector("#fields_table tbody tr .cursorPointer svg use.fillRed", {timeout: 10000});
+      await page.locator("#fields_table tbody tr .cursorPointer svg use.fillRed").first().click();
 
-    await expect(page.locator(".notificationContent")).toContainText("DUPLICATE_DEVELOPER_NAME");
+      await expect(page.locator(".notificationContent")).toContainText("DUPLICATE_DEVELOPER_NAME");
+    }
   });
 
   test("Toggle Managed Package Filter", async ({page, extensionId}) => {

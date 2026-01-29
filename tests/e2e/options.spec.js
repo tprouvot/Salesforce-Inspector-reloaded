@@ -2,10 +2,9 @@ import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
   injectSessionData,
-  handleGetUserInfoSoap,
-  fulfillSuccess,
   createModelExposureSetup
 } from "./test-helpers";
+import { routeMock } from "./test-mock";
 
 test.describe("Options", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -21,50 +20,8 @@ test.describe("Options", () => {
 
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
-      const request = route.request();
-      const url = request.url();
-      const method = request.method();
-
-      // Handle getUserInfo SOAP call (common handler)
-      const getUserInfoHandled = await handleGetUserInfoSoap(route, request);
-      if (getUserInfoHandled) {
-        return;
-      }
-
-      if (url.includes(mockHost)) {
-        // REST API - Get latest API version (used by getLatestApiVersionFromOrg)
-        if (url.includes("/services/data/") && !url.includes("/query") && !url.includes("/sobjects/") && !url.includes("/tooling/")) {
-          await fulfillSuccess(route, [
-            {version: "60.0", label: "Spring '24"},
-            {version: "61.0", label: "Summer '24"},
-            {version: "62.0", label: "Winter '25"},
-            {version: "63.0", label: "Spring '25"},
-            {version: "64.0", label: "Summer '25"},
-            {version: "65.0", label: "Winter '26"}
-          ]);
-          return;
-        }
-
-        // Global Describe (for DescribeInfo)
-        if (url.includes("/sobjects/") && !url.includes("/tooling/") && method === "GET" && !url.includes("describe")) {
-          await fulfillSuccess(route, {
-            encoding: "UTF-8",
-            maxBatchSize: 200,
-            sobjects: [
-              {
-                name: "Account",
-                label: "Account",
-                keyPrefix: "001",
-                layoutable: true,
-                custom: false
-              }
-            ]
-          });
-          return;
-        }
-
-        // Fallback
-        await fulfillSuccess(route, {});
+      //we check if we have a mock for this request
+      if (await routeMock(route, mockHost)) {
         return;
       }
 
@@ -72,9 +29,20 @@ test.describe("Options", () => {
     });
   });
 
-  test("Load Options Page", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
+  async function initOptionsPage(page, extensionId, selectedTab = null, gotoTab = null) {
+    await page.goto(`chrome-extension://${extensionId}/options.html?host=${mockHost}${selectedTab ? `&selectedTab=${selectedTab}` : ""}`);
+    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
+    if (gotoTab) {
+      await page.locator(`a[role='tab']:has-text('${gotoTab}')`).click();
+    }
 
+    // Ensure we're on the gotoTab / selectedTab or User Experience tab (default)
+    await page.waitForSelector("a[role='tab']:has-text('" + (gotoTab || selectedTab || "User Experience") + "')", {timeout: 5000});
+    //check if the related tab is active
+    await expect(page.locator(".options-tab:has-text('" + (gotoTab || selectedTab || "User Experience") + "')")).toHaveClass(/slds-is-active/);
+  }
+
+  test("Load Options Page", async ({page, extensionId}) => {
     // Set up console error listener to debug
     const consoleErrors = [];
     page.on("console", msg => {
@@ -83,8 +51,7 @@ test.describe("Options", () => {
       }
     });
 
-    // Navigate to page
-    await page.goto(optionsUrl, {waitUntil: "networkidle"});
+    await initOptionsPage(page, extensionId);
 
     // Wait for root element to exist
     await page.waitForSelector("#root", {timeout: 10000});
@@ -94,16 +61,10 @@ test.describe("Options", () => {
 
     // Verify header exists (use more specific selector to avoid multiple matches)
     await expect(page.locator(".slds-text-heading_small:has-text('Options')").first()).toBeVisible();
-
-    // Wait a bit for any async initialization to complete
-    await page.waitForTimeout(1000);
   });
 
   test("Verify Tabs Exist", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
+    await initOptionsPage(page, extensionId);
 
     // Verify all main tabs are present (use role="tab" to be specific)
     await expect(page.locator("a[role='tab']:has-text('User Experience')")).toBeVisible();
@@ -118,13 +79,7 @@ test.describe("Options", () => {
   });
 
   test("Switch to API Tab", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Click API tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('API')").click();
+    await initOptionsPage(page, extensionId, null, "API");
 
     // Verify API tab is active
     await expect(page.locator(".options-tab:has-text('API')")).toHaveClass(/slds-is-active/);
@@ -134,19 +89,13 @@ test.describe("Options", () => {
   });
 
   test("Change API Version", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to API tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('API')").click();
+    await initOptionsPage(page, extensionId, null, "API");
 
     // Wait for API version input
-    await page.waitForSelector("input[type='number']", {timeout: 5000});
+    await page.waitForSelector("#api input[type='number']", {timeout: 5000});
 
     // Find API version input
-    const apiVersionInput = page.locator("input[type='number']").first();
+    const apiVersionInput = page.locator("#api input[type='number']").first();
     await expect(apiVersionInput).toBeVisible();
 
     // Change API version
@@ -158,17 +107,11 @@ test.describe("Options", () => {
 
     // Verify value is updated (or restored if invalid)
     const value = await apiVersionInput.inputValue();
-    expect(parseInt(value)).toBeGreaterThanOrEqual(60);
+    await expect(parseInt(value)).toBeGreaterThanOrEqual(60);
   });
 
   test("Toggle Option - Flow Scrollability", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Ensure we're on User Experience tab (default)
-    await page.waitForSelector("a[role='tab']:has-text('User Experience')", {timeout: 5000});
+    await initOptionsPage(page, extensionId);
 
     // Find Flow Scrollability checkbox by ID
     const checkbox = page.locator("input#scrollOnFlowBuilder");
@@ -187,17 +130,11 @@ test.describe("Options", () => {
 
     // Verify state changed
     const newChecked = await checkbox.isChecked();
-    expect(newChecked).toBe(!initialChecked);
+    await expect(newChecked).toBe(!initialChecked);
   });
 
   test("Toggle Option - Popup Dark Theme", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Ensure we're on User Experience tab (default)
-    await page.waitForSelector("a[role='tab']:has-text('User Experience')", {timeout: 5000});
+    await initOptionsPage(page, extensionId);
 
     // Find Popup Dark theme checkbox by key
     const checkbox = page.locator("input#popupDarkTheme");
@@ -216,17 +153,11 @@ test.describe("Options", () => {
 
     // Verify state changed
     const newChecked = await checkbox.isChecked();
-    expect(newChecked).toBe(!initialChecked);
+    await expect(newChecked).toBe(!initialChecked);
   });
 
   test("MultiCheckboxButtonGroup - Show Buttons", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Ensure we're on User Experience tab (default)
-    await page.waitForSelector("a[role='tab']:has-text('User Experience')", {timeout: 5000});
+    await initOptionsPage(page, extensionId);
 
     // Find "Show buttons" checkbox group - use first occurrence (User Experience tab)
     const showButtonsText = page.locator("text=Show buttons").first();
@@ -250,33 +181,17 @@ test.describe("Options", () => {
 
     // Verify state changed
     const newChecked = await newCheckbox.isChecked();
-    expect(newChecked).toBe(!initialChecked);
+    await expect(newChecked).toBe(!initialChecked);
   });
 
   test("Switch to Data Export Tab", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Click Data Export tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Data Export')").click();
-
-    // Verify Data Export tab is active
-    await expect(page.locator(".options-tab:has-text('Data Export')")).toHaveClass(/slds-is-active/);
-
+    await initOptionsPage(page, extensionId, null, "Data Export");
     // Verify CSV Separator option is visible
     await expect(page.locator("text=CSV Separator")).toBeVisible();
   });
 
   test("Change CSV Separator", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to Data Export tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Data Export')").click();
+    await initOptionsPage(page, extensionId, null, "Data Export");
 
     // Wait for CSV Separator input
     await page.waitForSelector("input#csvSeparatorInput", {timeout: 5000});
@@ -293,29 +208,14 @@ test.describe("Options", () => {
   });
 
   test("Switch to Data Import Tab", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Click Data Import tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Data Import')").click();
-
-    // Verify Data Import tab is active
-    await expect(page.locator(".options-tab:has-text('Data Import')")).toHaveClass(/slds-is-active/);
+    await initOptionsPage(page, extensionId, null, "Data Import");
 
     // Verify Default batch size option is visible
     await expect(page.locator("text=Default batch size")).toBeVisible();
   });
 
   test("Change Default Batch Size", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to Data Import tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Data Import')").click();
+    await initOptionsPage(page, extensionId, null, "Data Import");
 
     // Wait for batch size input
     await page.waitForSelector("input[placeholder='200']", {timeout: 5000});
@@ -332,29 +232,14 @@ test.describe("Options", () => {
   });
 
   test("Switch to Field Creator Tab", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Click Field Creator tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Field Creator')").click();
-
-    // Verify Field Creator tab is active
-    await expect(page.locator(".options-tab:has-text('Field Creator')")).toHaveClass(/slds-is-active/);
+    await initOptionsPage(page, extensionId, null, "Field Creator");
 
     // Verify Field Naming Convention option is visible
     await expect(page.locator("text=Field Naming Convention")).toBeVisible();
   });
 
   test("Change Field Naming Convention", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to Field Creator tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Field Creator')").click();
+    await initOptionsPage(page, extensionId, null, "Field Creator");
 
     // Wait for Field Naming Convention select (find by looking for the text first)
     await page.waitForSelector("text=Field Naming Convention", {timeout: 5000});
@@ -372,29 +257,14 @@ test.describe("Options", () => {
   });
 
   test("Switch to Custom Shortcuts Tab", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Click Custom Shortcuts tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Custom Shortcuts')").click();
-
-    // Verify Custom Shortcuts tab is active
-    await expect(page.locator(".options-tab:has-text('Custom Shortcuts')")).toHaveClass(/slds-is-active/);
+    await initOptionsPage(page, extensionId, null, "Custom Shortcuts");
 
     // Verify search input is visible
     await expect(page.locator("input[placeholder='Search shortcuts...']")).toBeVisible();
   });
 
   test("Add Custom Shortcut", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to Custom Shortcuts tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Custom Shortcuts')").click();
+    await initOptionsPage(page, extensionId, null, "Custom Shortcuts");
 
     // Wait for shortcuts table
     await page.waitForSelector("table.slds-table", {timeout: 5000});
@@ -431,13 +301,7 @@ test.describe("Options", () => {
   });
 
   test("Edit Custom Shortcut", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to Custom Shortcuts tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Custom Shortcuts')").click();
+    await initOptionsPage(page, extensionId, null, "Custom Shortcuts");
 
     // Wait for shortcuts table
     await page.waitForSelector("table.slds-table", {timeout: 5000});
@@ -479,13 +343,7 @@ test.describe("Options", () => {
   });
 
   test("Delete Custom Shortcut", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to Custom Shortcuts tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Custom Shortcuts')").click();
+    await initOptionsPage(page, extensionId, null, "Custom Shortcuts");
 
     // Wait for shortcuts table
     await page.waitForSelector("table.slds-table", {timeout: 5000});
@@ -521,13 +379,7 @@ test.describe("Options", () => {
   });
 
   test("Search Custom Shortcuts", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to Custom Shortcuts tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Custom Shortcuts')").click();
+    await initOptionsPage(page, extensionId, null, "Custom Shortcuts");
 
     // Wait for search input
     await page.waitForSelector("input[placeholder='Search shortcuts...']", {timeout: 5000});
@@ -563,8 +415,7 @@ test.describe("Options", () => {
   });
 
   test("Export Options", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
+    await page.goto(`chrome-extension://${extensionId}/options.html?host=${mockHost}`);
 
     await page.waitForSelector("button[title='Export Options']", {timeout: 10000});
 
@@ -582,8 +433,7 @@ test.describe("Options", () => {
   });
 
   test("Import Options", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
+    await page.goto(`chrome-extension://${extensionId}/options.html?host=${mockHost}`);
 
     await page.waitForSelector("button[title='Import Options']", {timeout: 10000});
 
@@ -634,13 +484,7 @@ test.describe("Options", () => {
   });
 
   test("Toggle Include Managed Packages Metadata", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to Metadata tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Metadata')").click();
+    await initOptionsPage(page, extensionId, null, "Metadata");
 
     // Find Include managed packages metadata checkbox by key
     const checkbox = page.locator("input#includeManagedMetadata");
@@ -663,13 +507,7 @@ test.describe("Options", () => {
   });
 
   test("Change Sort Metadata By", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to Metadata tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Metadata')").click();
+    await initOptionsPage(page, extensionId, null, "Metadata");
 
     // Wait for Sort metadata components text
     await page.waitForSelector("text=Sort metadata components", {timeout: 5000});
@@ -687,13 +525,7 @@ test.describe("Options", () => {
   });
 
   test("Switch to Enable Logs Tab", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Click Enable Logs tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('Enable Logs')").click();
+    await initOptionsPage(page, extensionId, null, "Enable Logs");
 
     // Verify Enable Logs tab is active
     await expect(page.locator(".options-tab:has-text('Enable Logs')")).toHaveClass(/slds-is-active/);
@@ -703,13 +535,7 @@ test.describe("Options", () => {
   });
 
   test("Change Debug Level", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to Enable Logs tab
-    await page.locator("text=Enable Logs").click();
+    await initOptionsPage(page, extensionId, null, "Enable Logs");
 
     // Wait for debug level input
     await page.waitForSelector("input#debugLogDebugLevel", {timeout: 5000});
@@ -726,13 +552,7 @@ test.describe("Options", () => {
   });
 
   test("Change Debug Log Time", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to Enable Logs tab
-    await page.locator("text=Enable Logs").click();
+    await initOptionsPage(page, extensionId, null, "Enable Logs");
 
     // Wait for debug log time input
     await page.waitForSelector("input#debugLogTimeMinutes", {timeout: 5000});
@@ -749,30 +569,20 @@ test.describe("Options", () => {
   });
 
   test("URL Parameter - Select Tab", async ({page, extensionId}) => {
-    // Navigate with selectedTab parameter
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}&selectedTab=api`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
+    await initOptionsPage(page, extensionId, "api");
 
     // Verify API tab is active by default
     await expect(page.locator(".options-tab:has-text('API')")).toHaveClass(/slds-is-active/);
   });
 
   test("Restore Default API Version", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to API tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('API')").click();
+    await initOptionsPage(page, extensionId, null, "API");
 
     // Wait for API version input
-    await page.waitForSelector("input[type='number']", {timeout: 5000});
+    await page.waitForSelector("#api input[type='number']", {timeout: 5000});
 
     // Change API version to non-default
-    const apiVersionInput = page.locator("input[type='number']").first();
+    const apiVersionInput = page.locator("#api input[type='number']").first();
     await apiVersionInput.fill("66");
     await apiVersionInput.press("Enter");
     await page.waitForTimeout(1000);
@@ -791,13 +601,7 @@ test.describe("Options", () => {
   });
 
   test("Delete Token Button", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
-
-    // Switch to API tab (use role="tab" to be specific)
-    await page.locator("a[role='tab']:has-text('API')").click();
+    await initOptionsPage(page, extensionId, null, "API");
 
     // Wait for Delete Token button
     await page.waitForSelector("button:has-text('Delete Token')", {timeout: 5000});
@@ -810,10 +614,7 @@ test.describe("Options", () => {
   });
 
   test("MultiCheckboxButtonGroup - Metadata Shortcut Search Options", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
+    await initOptionsPage(page, extensionId);
 
     // Find "Searchable metadata from Shortcut tab" checkbox group
     const metadataGroup = page.locator("text=Searchable metadata from Shortcut tab").locator("..").locator("..");
@@ -839,10 +640,7 @@ test.describe("Options", () => {
   });
 
   test("Arrow Button Orientation and Position", async ({page, extensionId}) => {
-    const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
-    await page.goto(optionsUrl);
-
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 10000});
+    await initOptionsPage(page, extensionId);
 
     // Find arrow orientation select
     await page.waitForSelector("select[name='arrowPosition']", {timeout: 5000});

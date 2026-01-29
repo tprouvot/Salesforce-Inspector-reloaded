@@ -10,9 +10,6 @@ export class Constants {
   static ACCESS_TOKEN = "_access_token";
   static CODE_VERIFIER = "_code_verifier";
   static CLIENT_ID = "_clientId";
-  // API Statistics
-  static API_DEBUG_STATISTICS_MODE = "apiDebugStatisticsMode";
-  static API_DEBUG_STATISTICS = "apiDebugStatistics";
 }
 
 export function getLinkTarget(e = {}) {
@@ -435,4 +432,161 @@ export class DataCache {
     // Remove all matching keys
     keysToRemove.forEach(key => localStorage.removeItem(key));
   }
+}
+
+/**
+ * Shared utility function to fetch and merge sobjects from multiple sources
+ * Used by both field-creator.js and popup.js
+ * @returns {Promise<Map>} Promise that resolves to a Map of entity names to entity objects
+ */
+export async function fetchAndMergeSobjects() {
+  const entityMap = new Map();
+
+  /**
+   * Add or merge an entity into the entityMap
+   * @param {Object} entity - Entity data
+   * @param {string} api - API source identifier (e.g., "regularApi", "toolingApi", "EntityDef")
+   */
+  const addEntity = (entity, api) => {
+    // Handle __MISSING label error case
+    const label = entity.label && entity.label.match("__MISSING") ? "" : entity.label;
+    const processedEntity = {...entity, label};
+
+    let existingEntity = entityMap.get(processedEntity.name);
+
+    if (existingEntity) {
+      // Merge existing entity - preserve existing values, only update if new value is truthy
+      if (!existingEntity.keyPrefix && processedEntity.keyPrefix) {
+        existingEntity.keyPrefix = processedEntity.keyPrefix;
+      }
+      if (!existingEntity.durableId && processedEntity.durableId) {
+        existingEntity.durableId = processedEntity.durableId;
+      }
+      if (!existingEntity.isCustomSetting && processedEntity.isCustomSetting) {
+        existingEntity.isCustomSetting = processedEntity.isCustomSetting;
+      }
+      if (!existingEntity.newUrl && processedEntity.newUrl) {
+        existingEntity.newUrl = processedEntity.newUrl;
+      }
+      if (!existingEntity.recordTypesSupported && processedEntity.recordTypesSupported) {
+        existingEntity.recordTypesSupported = processedEntity.recordTypesSupported;
+      }
+      if (!existingEntity.isEverCreatable && processedEntity.isEverCreatable) {
+        existingEntity.isEverCreatable = processedEntity.isEverCreatable;
+      }
+      if (!existingEntity.namespacePrefix && processedEntity.namespacePrefix) {
+        existingEntity.namespacePrefix = processedEntity.namespacePrefix;
+      }
+      // Handle layoutable - keep true if it was true in either call
+      if (processedEntity.layoutable !== undefined) {
+        existingEntity.layoutable = existingEntity.layoutable || processedEntity.layoutable;
+      }
+      // Merge availableApis
+      if (api && !existingEntity.availableApis.includes(api)) {
+        existingEntity.availableApis.push(api);
+      }
+      // Update availableKeyPrefix if we have a keyPrefix
+      if (processedEntity.keyPrefix && api) {
+        existingEntity.availableKeyPrefix = processedEntity.keyPrefix;
+      }
+    } else {
+      // Create new entity
+      const newEntity = {
+        availableApis: api ? [api] : [],
+        name: processedEntity.name,
+        label: processedEntity.label,
+        keyPrefix: processedEntity.keyPrefix,
+        durableId: processedEntity.durableId,
+        isCustomSetting: processedEntity.isCustomSetting,
+        availableKeyPrefix: processedEntity.keyPrefix || null,
+        recordTypesSupported: processedEntity.recordTypesSupported,
+        isEverCreatable: processedEntity.isEverCreatable,
+        newUrl: processedEntity.newUrl,
+        namespacePrefix: processedEntity.namespacePrefix,
+        layoutable: processedEntity.layoutable || false
+      };
+      entityMap.set(processedEntity.name, newEntity);
+    }
+  };
+
+  /**
+   * Fetch objects from a describe endpoint
+   * @param {string} url - API endpoint URL
+   * @param {string} api - API identifier
+   */
+  const getObjects = async (url, api) => {
+    try {
+      const describe = await sfConn.rest(url);
+      for (const sobject of describe.sobjects) {
+        // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
+        addEntity({
+          ...sobject,
+          isCustomSetting: sobject.customSetting !== undefined ? sobject.customSetting : sobject.isCustomSetting,
+          layoutable: sobject.layoutable || false
+        }, api);
+      }
+    } catch (err) {
+      console.error("list " + api + " sobjects", err);
+    }
+  };
+
+  /**
+   * Fetch a single batch of EntityDefinitions
+   * @param {number} bucket - Batch number (0-indexed)
+   * @returns {Promise<boolean>} True if there are more batches to fetch
+   */
+  const getEntityDefinitionBatch = async (bucket) => {
+    const batchSize = 2000;
+    const offset = bucket > 0 ? " OFFSET " + (bucket * batchSize) : "";
+    const query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable, NamespacePrefix FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT ${batchSize}${offset}`;
+
+    try {
+      const respEntity = await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query));
+      for (const record of respEntity.records) {
+        addEntity({
+          name: record.QualifiedApiName,
+          label: record.Label,
+          keyPrefix: record.KeyPrefix,
+          durableId: record.DurableId,
+          isCustomSetting: record.IsCustomSetting,
+          recordTypesSupported: record.RecordTypesSupported,
+          newUrl: record.NewUrl,
+          isEverCreatable: record.IsEverCreatable,
+          namespacePrefix: record.NamespacePrefix,
+          // Don't set layoutable here, as it should come from describe calls
+        }, "EntityDef");
+      }
+      return respEntity.records?.length >= batchSize; // If the batch has batchSize records, there might be more
+    } catch (err) {
+      console.error("list entity definitions: ", err);
+      throw err;
+    }
+  };
+
+  /** Fetch all EntityDefinitions using recursive sequential batching */
+  const getEntityDefinitions = async () => {
+    let bucket = 0;
+
+    const fetchNextBatch = async () => {
+      const hasMore = await getEntityDefinitionBatch(bucket);
+      if (hasMore) {
+        bucket++;
+        return fetchNextBatch();
+      }
+      return Promise.resolve();
+    };
+
+    return fetchNextBatch().catch(err => {
+      console.error("fetch entity definitions: ", err);
+    });
+  };
+
+  // Fetch objects from different APIs
+  await Promise.all([
+    getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
+    getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi"),
+    getEntityDefinitions(),
+  ]);
+
+  return entityMap;
 }

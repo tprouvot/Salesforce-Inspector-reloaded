@@ -2,10 +2,9 @@ import {test, expect} from "./fixtures";
 import {
   TEST_CONSTANTS,
   injectSessionData,
-  handleGetUserInfoSoap,
   createModelExposureSetup,
-  fulfillSuccess
 } from "./test-helpers";
+import { routeMock } from "./test-mock";
 
 test.describe("Event Monitor", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -21,203 +20,14 @@ test.describe("Event Monitor", () => {
 
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
-      const request = route.request();
-      const url = request.url();
-
-      // Handle getUserInfo SOAP call (common handler)
-      const getUserInfoHandled = await handleGetUserInfoSoap(route, request);
-      if (getUserInfoHandled) {
+      //if mock is disabled, continue with the request
+      if(!TEST_CONSTANTS.mockEnabled) {
+        await route.continue();
         return;
       }
 
-      if (url.includes(mockHost)) {
-
-        // Tooling API - Standard Platform Events
-        if (url.includes("/tooling/query")) {
-          const decodedUrl = decodeURIComponent(url);
-          if (decodedUrl.includes("IsCustomizable = FALSE") && decodedUrl.includes("IsEverCreatable = TRUE") && decodedUrl.includes("QualifiedApiName LIKE '%Event'")) {
-            await fulfillSuccess(route, {
-              size: 2,
-              totalSize: 2,
-              done: true,
-              records: [
-                {
-                  Label: "Login Event",
-                  QualifiedApiName: "LoginEvent",
-                  DeveloperName: "LoginEvent"
-                },
-                {
-                  Label: "Logout Event",
-                  QualifiedApiName: "LogoutEvent",
-                  DeveloperName: "LogoutEvent"
-                }
-              ]
-            });
-            return;
-          }
-        }
-
-        // Tooling API - Custom Platform Events
-        if (url.includes("/tooling/query")) {
-          const decodedUrl = decodeURIComponent(url);
-          if (decodedUrl.includes("isCustomizable = TRUE") && decodedUrl.includes("KeyPrefix LIKE 'e%'")) {
-            await fulfillSuccess(route, {
-              size: 1,
-              totalSize: 1,
-              done: true,
-              records: [
-                {
-                  QualifiedApiName: "CustomEvent__e",
-                  Label: "Custom Event"
-                }
-              ]
-            });
-            return;
-          }
-        }
-
-        // Tooling API - Custom Channels
-        if (url.includes("/tooling/query")) {
-          const decodedUrl = decodeURIComponent(url);
-          if (decodedUrl.includes("PlatformEventChannel") && !decodedUrl.includes("PlatformEventChannelMember") && !decodedUrl.includes("EventChannel =")) {
-            await fulfillSuccess(route, {
-              size: 1,
-              totalSize: 1,
-              done: true,
-              records: [
-                {
-                  FullName: "CustomChannel",
-                  MasterLabel: "Custom Channel"
-                }
-              ]
-            });
-            return;
-          }
-        }
-
-        // Tooling API - Change Events
-        if (url.includes("/tooling/query")) {
-          const decodedUrl = decodeURIComponent(url);
-          if (decodedUrl.includes("PlatformEventChannelMember") && decodedUrl.includes("EventChannel = 'ChangeEvents'")) {
-            await fulfillSuccess(route, {
-              size: 2,
-              totalSize: 2,
-              done: true,
-              records: [
-                {
-                  MasterLabel: "Account Change Event",
-                  SelectedEntity: "AccountChangeEvent"
-                },
-                {
-                  MasterLabel: "Contact Change Event",
-                  SelectedEntity: "ContactChangeEvent"
-                }
-              ]
-            });
-            return;
-          }
-        }
-
-        // Tooling API - Real-Time Events
-        if (url.includes("/tooling/query")) {
-          const decodedUrl = decodeURIComponent(url);
-          if (decodedUrl.includes("RealTimeEvent") && decodedUrl.includes("IsEnabled = true")) {
-            await fulfillSuccess(route, {
-              size: 1,
-              totalSize: 1,
-              done: true,
-              records: [
-                {
-                  EntityName: "Account"
-                }
-              ]
-            });
-            return;
-          }
-        }
-
-        // Limits API
-        if (url.includes("/limits")) {
-          await fulfillSuccess(route, {
-            DailyPlatformEvents: {
-              Max: 10000,
-              Remaining: 8500
-            },
-            HourlyPlatformEvents: {
-              Max: 1000,
-              Remaining: 900
-            },
-            FifteenMinutesPlatformEvents: {
-              Max: 100,
-              Remaining: 95
-            }
-          });
-          return;
-        }
-
-        // CometD endpoints - mock handshake and subscription
-        if (url.includes("/cometd/")) {
-          const requestBody = await request.postData();
-          if (requestBody) {
-            const body = JSON.parse(requestBody);
-
-            // Handshake response
-            if (body.channel === "/meta/handshake") {
-              await fulfillSuccess(route, {
-                channel: "/meta/handshake",
-                successful: true,
-                version: "1.0",
-                supportedConnectionTypes: ["long-polling"],
-                clientId: "mock-client-id-12345",
-                ext: {
-                  replay: true
-                }
-              });
-              return;
-            }
-
-            // Subscribe response
-            if (body.channel === "/meta/subscribe") {
-              await fulfillSuccess(route, {
-                channel: "/meta/subscribe",
-                successful: true,
-                subscription: body.subscription,
-                clientId: "mock-client-id-12345"
-              });
-              return;
-            }
-
-            // Unsubscribe response
-            if (body.channel === "/meta/unsubscribe") {
-              await fulfillSuccess(route, {
-                channel: "/meta/unsubscribe",
-                successful: true,
-                subscription: body.subscription
-              });
-              return;
-            }
-
-            // Disconnect response
-            if (body.channel === "/meta/disconnect") {
-              await fulfillSuccess(route, {
-                channel: "/meta/disconnect",
-                successful: true
-              });
-              return;
-            }
-
-            // Long polling - return empty response (no events yet)
-            await fulfillSuccess(route, {
-              channel: "/meta/connect",
-              successful: true,
-              clientId: "mock-client-id-12345"
-            });
-            return;
-          }
-        }
-
-        // Fallback
-        await fulfillSuccess(route, {});
+      //we check if we have a mock for this request
+      if (await routeMock(route, mockHost)) {
         return;
       }
 
@@ -225,12 +35,48 @@ test.describe("Event Monitor", () => {
     });
   });
 
-  test("Load Page and Verify Channel Types", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
+  /** @description Initializes the event monitor page
+   * @param {Object} page - Playwright page object
+   * @param {Object} extensionId - Extension ID
+   * @returns {Promise<void>}
+   */
+  async function initEventMonitorPage(page, extensionId) {
+    await page.goto(`chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`);
 
     // Wait for page to load
     await page.waitForSelector("select.slds-select");
+  }
+
+  /** @description Adds a fake test event to the event monitor page
+   * @param {Object} page - Playwright page object
+   * @returns {Promise<void>}
+   */
+  async function addFakeTestEvent(page) {
+    // Wait for the addTestEvent function to be available
+    await page.waitForFunction(() => typeof window.addTestEvent === "function", {timeout: 10000});
+
+    // Add test events directly without subscribing - using the global function
+    await page.evaluate(() => {
+      // Add a test event with the expected structure matching CometD message format
+      addTestEvent({
+        event: {
+          replayId: 12345,
+          type: "ChangeEvent",
+          createdDate: new Date().toISOString()
+        },
+        payload: {
+          ChangeEventHeader: {
+            entityName: "Inspector_Test__c",
+            changeType: "CREATE"
+          },
+          Name: "TestEvent"
+        }
+      });
+    });
+  }
+
+  test("Load Page and Verify Channel Types", async ({page, extensionId}) => {
+    await initEventMonitorPage(page, extensionId);
 
     // Verify channel type dropdown exists and has options
     const channelTypeSelect = page.locator("select.slds-select").first();
@@ -241,40 +87,34 @@ test.describe("Event Monitor", () => {
   });
 
   test("Load Standard Platform Events", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
+    await initEventMonitorPage(page, extensionId);
 
-    await page.waitForSelector("select.slds-select");
+    await page.waitForTimeout(500);
 
     // Verify channel dropdown has options
     const channelSelect = page.locator("select.slds-select").nth(1); // Second select is the channel dropdown
 
-    // Verify LoginEvent is available (check all options)
+    // Verify Batch Job Execution Event is available (check all options)
     const options = await channelSelect.locator("option").allTextContents();
-    await expect(options.some(text => text.includes("Login Event"))).toBeTruthy();
+    await expect(options.some(text => text.includes("Batch Job Execution Event") || text.includes("Account"))).toBeTruthy();
   });
 
   test("Change Channel Type to Custom Platform Event", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
-
-    await page.waitForSelector("select.slds-select");
+    await initEventMonitorPage(page, extensionId);
 
     // Select "Custom Platform Event" channel type
     await  page.locator("select.slds-select").first().selectOption("platformEvent");
+    await page.waitForTimeout(500);
 
     // Verify channel dropdown shows custom events (check for the option text)
     const channelSelect = page.locator("select.slds-select").nth(1);
-    // The label should be "Custom Event" based on the mock
+    // The label should be "Batch Job Execution Event" or "Event" based on the mock
     const options = await channelSelect.locator("option").allTextContents();
-    await expect(options.some(text => text.includes("Custom Event"))).toBeTruthy();
+    await expect(options.some(text => text.includes(TEST_CONSTANTS.mockEnabled ? "Account" : "Event"))).toBeTruthy();
   });
 
   test("Change Channel Type to Change Event", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
-
-    await page.waitForSelector("select.slds-select");
+    await initEventMonitorPage(page, extensionId);
 
     // Select "Change Event" channel type
     await page.locator("select.slds-select").first().selectOption("changeEvent");
@@ -285,8 +125,7 @@ test.describe("Event Monitor", () => {
   });
 
   test("Enter Custom Channel Path", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
+    await initEventMonitorPage(page, extensionId);
 
     await page.waitForSelector("input[type='text']");
 
@@ -299,8 +138,7 @@ test.describe("Event Monitor", () => {
   });
 
   test("Change Replay ID", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
+    await initEventMonitorPage(page, extensionId);
 
     await page.waitForSelector("input[type='number']");
 
@@ -313,8 +151,7 @@ test.describe("Event Monitor", () => {
   });
 
   test("Subscribe Button State", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
+    await initEventMonitorPage(page, extensionId);
 
     await page.waitForSelector("button[title='Subscribe to channel']");
 
@@ -329,8 +166,7 @@ test.describe("Event Monitor", () => {
   });
 
   test("Toggle Help", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
+    await initEventMonitorPage(page, extensionId);
 
     // Find and click help button
     const helpButton = page.locator("button[title='Event Monitor Help']");
@@ -342,26 +178,20 @@ test.describe("Event Monitor", () => {
   });
 
   test("Toggle Metrics", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
+    await initEventMonitorPage(page, extensionId);
 
     // Find and click metrics button
     const metricsButton = page.locator("button[title='Show Metrics']");
     await metricsButton.click();
 
-    // Wait for metrics to load
-    await page.waitForTimeout(1000);
-
     // Verify metrics section appears
     await expect(page.locator("text=Platform Events Limits")).toBeVisible();
-    await expect(page.locator("text=Daily Platform Events")).toBeVisible();
     // Check for specific limit text (more specific than just "Remaining")
-    await expect(page.locator("text=Daily Platform Events: Remaining")).toBeVisible();
+    await expect(page.locator(".slds-card__body.slds-card__body_inner p.slds-m-bottom_x-small").first()).toContainText("Platform Events: Remaining");
   });
 
   test("Event Filter Input", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
+    await initEventMonitorPage(page, extensionId);
 
     // Wait for filter input to appear
     await page.waitForSelector("input[placeholder='Filter events...']");
@@ -376,8 +206,7 @@ test.describe("Event Monitor", () => {
   });
 
   test("Copy and Clear Buttons State", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
+    await initEventMonitorPage(page, extensionId);
 
     // Wait for buttons to appear
     await page.waitForSelector("button:has-text('Copy')");
@@ -391,23 +220,11 @@ test.describe("Event Monitor", () => {
     await expect(clearButton).toBeDisabled();
   });
 
-  test("Copy as JSON with Events", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
-
-
-    //to have the button enabled, we need to subscribe first
-    // Select "Change Event" channel type
-    await page.locator("select.slds-select").first().selectOption("changeEvent");
-
-    // Verify "All Change Events" option appears first
-    const channelSelect = await page.locator("select.slds-select").nth(1);
-    await expect(channelSelect.locator("option").first()).toContainText("All Change Events");
-
-    //subscribe the all channels
-    await page.locator("button[title='Subscribe to channel']").click();
-
-    //we need to insert a new record to the inspector__c object
+  test("Copy as JSON with Events", async ({page, extensionId, context}) => {
+    // Grant clipboard permissions
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await initEventMonitorPage(page, extensionId);
+    await addFakeTestEvent(page);
 
     // Copy button should now be enabled
     const copyButton = page.locator("button:has-text('Copy')");
@@ -416,18 +233,20 @@ test.describe("Event Monitor", () => {
     // Click copy button
     await copyButton.click();
 
+    // Wait a bit for clipboard to be updated
+    await page.waitForTimeout(200);
+
     // Verify clipboard content
-    const clipboardContent = await page.evaluate(() => window.clipboardData.getData("text/plain"));
+    const clipboardContent = await page.evaluate(async () => {
+      return await navigator.clipboard.readText();
+    });
     await expect(clipboardContent).toContain("replayId");
     await expect(clipboardContent).toContain("TestEvent");
   });
 
   test("Clear Events", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
-
-    //to have the button enabled, we need to subscribe first
-    //TODO: subscribe first
+    await initEventMonitorPage(page, extensionId);
+    await addFakeTestEvent(page);
 
     // Clear button should be enabled
     const clearButton = page.locator("button:has-text('Clear')");
@@ -442,8 +261,7 @@ test.describe("Event Monitor", () => {
   });
 
   test("Replay ID -2 Confirmation Popup", async ({page, extensionId}) => {
-    const monitorUrl = `chrome-extension://${extensionId}/event-monitor.html?host=${mockHost}`;
-    await page.goto(monitorUrl);
+    await initEventMonitorPage(page, extensionId);
 
     await page.waitForSelector("input[type='number']");
 

@@ -105,6 +105,29 @@ class Model {
     }
   }
 
+  /**
+   * Add a test event to the events array
+   * Useful for testing without subscribing to channels
+   * @param {Object} eventData - Event data object (should match CometD message.data format)
+   */
+  addTestEvent(eventData) {
+    // Ensure eventData has the expected structure
+    const event = {
+      event: {
+        replayId: eventData.event?.replayId || Date.now(),
+        ...eventData.event
+      },
+      ...eventData
+    };
+    
+    // Check if event already exists (by replayId)
+    const eventExists = this.events.some(e => e.event?.replayId === event.event.replayId);
+    if (!eventExists) {
+      this.events.unshift(event);
+      this.didUpdate();
+    }
+  }
+
 
 
   toggleHelp() {
@@ -792,6 +815,17 @@ class App extends React.Component {
     model.reactCallback = cb => {
       ReactDOM.render(h(App, {model}), root, cb);
     };
+    // Expose model and addTestEvent to window for testing
+    if (typeof window !== "undefined") {
+      // Expose addTestEvent as a global function for easier test access
+      window.addTestEvent = (eventData) => {
+        if (model) {
+          model.addTestEvent(eventData);
+        } else {
+          console.warn("Event Monitor model not available");
+        }
+      };
+    }
     ReactDOM.render(h(App, {model}), root);
   });
 }

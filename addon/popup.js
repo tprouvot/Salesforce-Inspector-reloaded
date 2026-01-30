@@ -964,6 +964,25 @@ class AllDataBox extends React.PureComponent {
 
   componentDidMount() {
     this.ensureKnownBrowserContext();
+
+    // Try to load sobjects from cache for instant context detection
+    this.loadSobjectsFromCache();
+  }
+
+  async loadSobjectsFromCache() {
+    const {sfHost} = this.props;
+
+    // Check cache using browser.storage.local for large data
+    // DataCache will check sfHost match internally and return null if different
+    // useSfHostPrefix=false since sobjectsList doesn't use sfHost in storage key
+    const cachedSobjects = await DataCache.getCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, true, false);
+
+    if (cachedSobjects && Array.isArray(cachedSobjects)) {
+      this.setState({
+        sobjectsList: cachedSobjects,
+        sobjectsLoading: false
+      });
+    }
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -1222,11 +1241,41 @@ class AllDataBox extends React.PureComponent {
       // Even if documentation mention that LIMIT and OFFSET are not supported, we use it to split the EntityDefinition queries into 2000 buckets
       getEntityDefinitions(),
     ])
-      .then(() => {
+      .then(async () => {
         // TODO progressively display data as each of the three responses becomes available
+        const sobjectsList = Array.from(entityMap.values());
+
+        // Store in cache for future use (using browser.storage.local for large data)
+        const {sfHost} = this.props;
+
+        // Create optimized version with only essential fields to reduce cache size
+        const optimizedList = sobjectsList.map(obj => ({
+          name: obj.name,
+          label: obj.label,
+          keyPrefix: obj.keyPrefix,
+          availableApis: obj.availableApis,
+          availableKeyPrefix: obj.availableKeyPrefix,
+          durableId: obj.durableId,
+          isCustomSetting: obj.isCustomSetting,
+          recordTypesSupported: obj.recordTypesSupported,
+          newUrl: obj.newUrl,
+          isEverCreatable: obj.isEverCreatable
+        }));
+
+        // Store in cache using browser.storage.local (async - don't await, let it happen in background)
+        // DataCache will handle clearing old org cache asynchronously
+        // useSfHostPrefix=false since sobjectsList doesn't use sfHost in storage key
+        DataCache.setCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, optimizedList, true, false)
+          .then(async (success) => {
+            if (success) {
+              const verify = await DataCache.getCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, true, false);
+            }
+          })
+          .catch(err => console.error("Cache storage error:", err));
+
         this.setState({
           sobjectsLoading: false,
-          sobjectsList: Array.from(entityMap.values()),
+          sobjectsList,
         });
         // Only call getMatchesDelayed if the showAllDataBoxSObject component is rendered (i.e., user is on Objects tab)
         this.refs.showAllDataBoxSObject?.refs?.allDataSearch?.getMatchesDelayed(

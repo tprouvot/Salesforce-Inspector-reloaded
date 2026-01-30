@@ -141,31 +141,6 @@ class OptionsTabSelector extends React.Component {
                 {label: "Org", name: "org"}
               ]}
           },
-          {option: Option,
-            props: {type: "number",
-              title: "API cache period (days)",
-              key: "cachePeriodDays",
-              default: 7,
-              min: 1,
-              inputSize: "3",
-              tooltip: "Some API request are redundant, to limit the number of calls, we implemented a cache. This option allows you to configure the cache period.",
-              actionButton: {
-                label: "Clear Reloaded Cache",
-                title: "Clear extension Cache",
-                onClick: (e, model, appRef) => {
-                  DataCache.clearCache("userFieldNames", model.sfHost);
-                  if (appRef) {
-                    appRef.setState({
-                      showToast: true,
-                      toastMessage: "User describe cache cleared successfully.",
-                      toastVariant: "success",
-                      toastTitle: "Success"
-                    });
-                    setTimeout(() => appRef.hideToast(), 3000);
-                  }
-                }
-              }}
-          },
           {option: Option, props: {type: "toggle", title: "Enable Dynamic Popup Height", key: "popupHeighDynamictMode", default: false, tooltip: "When enabled, the popup height will be dynamically adjusted based on the content."}},
         ]
       },
@@ -374,6 +349,92 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: Option, props: {type: "toggle", title: "Enable Agentforce Helper for formula fields", key: "showAgentforceHelperInspect", default: true, tooltip: "When enabled, shows the 'Agentforce Helper' link in the field actions menu for calculated/formula fields."}},
           {option: Option, props: {type: "text", title: "Formula Helper Prompt Template Name", key: this.sfHost + "_formulaAgentForcePrompt", default: "FormulaHelper", tooltip: "Developer name of the prompt template to use for Formula Field Analysis in the Inspect page"}},
+        ]
+      },
+      {
+        id: "cache",
+        tabTitle: "Cache",
+        content: [
+          {option: Option,
+            props: {
+              type: "button",
+              title: "Clear All Extension Cache",
+              key: "clearAllCache",
+              tooltip: "Clear all cache entries from both localStorage and browser.storage.local. This will remove all cached data including User Field Names, SObjects List, and any other cached information.",
+              actionButtonVariant: "destructive",
+              actionButton: {
+                label: "Clear All Cache",
+                title: "Clear all extension cache",
+                onClick: async (e, model, appRef) => {
+                  await DataCache.clearAllExtensionCache();
+                  if (appRef) {
+                    appRef.setState({
+                      showToast: true,
+                      toastMessage: "All extension cache cleared successfully.",
+                      toastVariant: "success",
+                      toastTitle: "Success"
+                    });
+                    setTimeout(() => appRef.hideToast(), 3000);
+                  }
+                }
+              }
+            }
+          },
+          {option: Option,
+            props: {
+              type: "number",
+              title: "User Field Names Cache Duration (hours)",
+              key: "cacheDuration_userFieldNames",
+              default: 168,
+              min: 1,
+              inputSize: "3",
+              tooltip: "Duration in hours for caching User field names. This cache stores User object field metadata to improve performance.",
+              actionButton: {
+                label: "Clear Cache",
+                title: "Clear User Field Names cache",
+                onClick: async (e, model, appRef) => {
+                  await DataCache.clearCache("userFieldNames", model.sfHost, false, false);
+                  if (appRef) {
+                    appRef.setState({
+                      showToast: true,
+                      toastMessage: "User Field Names cache cleared successfully.",
+                      toastVariant: "success",
+                      toastTitle: "Success"
+                    });
+                    setTimeout(() => appRef.hideToast(), 3000);
+                  }
+                }
+              }
+            }
+          },
+          {option: Option,
+            props: {
+              type: "number",
+              title: "SObjects List Cache Duration (hours)",
+              key: "cacheDuration_" + Constants.CACHE_SOBJECTS_LIST,
+              default: 8,
+              min: 1,
+              inputSize: "3",
+              tooltip: "Duration in hours for caching the SObjects list. This cache stores object metadata to improve popup loading performance. Only one org's cache is stored at a time.",
+              actionButton: {
+                label: "Clear Cache",
+                title: "Clear SObjects List cache",
+                onClick: async (e, model, appRef) => {
+                  // useSfHostPrefix=false since sobjectsList doesn't use sfHost in storage key
+                  await DataCache.clearCache(Constants.CACHE_SOBJECTS_LIST, model.sfHost, true, false);
+                  if (appRef) {
+                    appRef.setState({
+                      showToast: true,
+                      toastMessage: "SObjects List cache cleared successfully.",
+                      toastVariant: "success",
+                      toastTitle: "Success"
+                    });
+                    setTimeout(() => appRef.hideToast(), 3000);
+                  }
+                }
+              }
+            }
+          }
         ]
       }
     ];
@@ -668,8 +729,10 @@ class Option extends React.Component {
     this.tooltip = props.tooltip;
     this.placeholder = props.placeholder;
     this.actionButton = props.actionButton;
+    this.actionButtonVariant = props.actionButtonVariant || "brand"; // Default to "brand" variant (blue button)
     this.inputSize = props.inputSize || "3";
     this.min = props.min; // Minimum value for number input type (sets HTML min attribute)
+    this.readOnly = props.readOnly || false;
 
     // Enhanced properties
     this.enhancedTitle = props.enhancedTitle;
@@ -793,6 +856,7 @@ class Option extends React.Component {
       placeholder: this.placeholder,
       value: nullToEmptyString(this.state[this.key]),
       onChange: this.onChange,
+      readOnly: this.readOnly,
       ...(this.type === "number" && this.min !== undefined ? {min: this.min} : {})
     })
       : isTextArea ? h("textarea", {
@@ -800,7 +864,8 @@ class Option extends React.Component {
         className: isEnhanced ? "slds-input enhanced-option-input" : "slds-input",
         placeholder: this.placeholder,
         value: nullToEmptyString(this.state[this.key]),
-        onChange: this.onChange
+        onChange: this.onChange,
+        readOnly: this.readOnly
       })
       : isSelect ? h("select", {
         className: isEnhanced ? "slds-select enhanced-option-input" : "slds-select slds-m-right_small",
@@ -847,6 +912,7 @@ class Option extends React.Component {
   render() {
     const id = this.key;
     const isToggle = this.type == "toggle";
+    const isButton = this.type == "button";
     const isEnhanced = this.enhancedTitle || this.badge || this.severity || this.description;
 
     if (isEnhanced) {
@@ -921,8 +987,8 @@ class Option extends React.Component {
             )
           ),
 
-          // Input controls for non-toggle types
-          !isToggle && this.renderInputControl(id, true)
+          // Input controls for non-toggle and non-button types
+          !isToggle && !isButton && this.renderInputControl(id, true)
         )
       );
     } else {
@@ -935,15 +1001,15 @@ class Option extends React.Component {
         ),
         h("div", {className: "slds-col slds-size_9-of-12"},
           h("div", {className: "slds-grid slds-grid_vertical-align-center slds-gutters_small"},
-            // Input field container with configurable size
-            !isToggle && h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12"},
+            // Input field container with configurable size (not for toggle or button types)
+            !isToggle && !isButton && h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12"},
               this.renderInputControl(id, false)
             ),
             // Action button (if present)
             // appRef is passed to allow actionButton handlers to show toast notifications via appRef.setState()
             this.actionButton && h("div", {className: "slds-col"},
               h("button", {
-                className: "slds-button slds-button_brand",
+                className: `slds-button slds-button_${this.actionButtonVariant}`,
                 onClick: (e) => this.actionButton.onClick(e, this.props.model, this.props.appRef),
                 title: this.actionButton.title || "Action"
               }, this.actionButton.label || "Action")

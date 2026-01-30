@@ -305,14 +305,48 @@ export function initializeResponseTracking(page) {
   const tracker = {
     responses: [],
     resolvers: new Map(), // Map of urlPart -> resolver functions
+    unauthorizedResponses: [], // Track 401 responses
     handler: null
   };
   
   // Set up a global response handler for this page
-  tracker.handler = (response) => {
+  tracker.handler = async (response) => {
     try {
       const url = response.url();
       const status = response.status();
+      
+      // Check for 401 Unauthorized responses
+      if (status === 401) {
+        tracker.unauthorizedResponses.push(response);
+        
+        // Try to get response body for detailed error info
+        let responseBody = '';
+        let errorDetails = {};
+        try {
+          responseBody = await response.text();
+          try {
+            errorDetails = JSON.parse(responseBody);
+          } catch (e) {
+            // Response body is not JSON, use as-is
+            errorDetails = { rawBody: responseBody };
+          }
+        } catch (e) {
+          // Could not read response body
+          errorDetails = { error: 'Could not read response body' };
+        }
+        
+        // Log detailed 401 information to console
+        console.error('❌ HTTP 401 Unauthorized detected!','URL:', url, 'Status:', status);
+        
+        // Store error details for test failure message
+        response._unauthorizedDetails = {
+          url,
+          status,
+          statusText: response.statusText(),
+          headers: response.headers(),
+          body: errorDetails
+        };
+      }
       
       // Store all successful responses
       if (status >= 200 && status < 400) {
@@ -371,6 +405,7 @@ export function cleanupResponseTracking(page) {
  * @param {*} urlPart - Salesforce host or part of the url to wait for
  * @param {*} timeout - Optional timeout in milliseconds (default: 30000)
  * @returns {Promise<Response>} A promise that resolves to the response
+ * @throws {Error} Throws an error if a 401 Unauthorized response is detected
  */
 export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000) {
   // Ensure tracking is initialized for this page
@@ -379,6 +414,22 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
   }
   
   const tracker = responseTracker.get(page);
+  
+  // Helper function to check for 401 responses matching the urlPart
+  const checkForUnauthorized = () => {
+    if (tracker.unauthorizedResponses.length > 0) {
+      const matchingUnauthorized = tracker.unauthorizedResponses.find(r => {
+        try {
+          const responseUrl = r.url();
+          return urlMatches(responseUrl, urlPart);
+        } catch (e) {
+          return false;
+        }
+      });
+      return matchingUnauthorized;
+    }
+    return null;
+  };
   
   const checkTracker = () => {
     if (tracker.responses.length > 0) {
@@ -396,6 +447,32 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
     return null;
   };
   
+  // Check for existing 401 responses before waiting
+  const existingUnauthorized = checkForUnauthorized();
+  if (existingUnauthorized) {
+    const details = existingUnauthorized._unauthorizedDetails || {
+      url: existingUnauthorized.url(),
+      status: 401,
+      statusText: existingUnauthorized.statusText(),
+      headers: existingUnauthorized.headers(),
+      body: {}
+    };
+    
+    const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n` +
+      `URL: ${details.url}\n` +
+      `Status: ${details.status} ${details.statusText}\n` +
+      `Response Body: ${JSON.stringify(details.body, null, 2)}`;
+    
+    throw new Error(errorMessage);
+  }
+  
+  // Declare variables outside try block so they're accessible in catch
+  let trackerResolver = null;
+  let unauthorizedResolver = null;
+  let timeoutId = null;
+  let unauthorizedCheckInterval = null;
+  let unauthorizedHandler = null;
+  
   try {
     // First, check if we already have a matching response in the tracker
     // This handles responses that completed before this function was called
@@ -406,8 +483,7 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
     
     // Create promise that resolves when tracker gets a matching response
     // Add timeout to prevent hanging indefinitely
-    let trackerResolver = null;
-    let timeoutId = null;
+    
     const trackerPromise = new Promise((resolve, reject) => {
       // Check again in case response arrived between checkTracker and this promise
       const existing = checkTracker();
@@ -420,9 +496,38 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
       trackerResolver = resolve;
       tracker.resolvers.set(urlPart, resolve);
       
+      // Set up periodic check for 401 responses
+      unauthorizedResolver = reject;
+      unauthorizedCheckInterval = setInterval(() => {
+        const unauthorized = checkForUnauthorized();
+        if (unauthorized) {
+          const details = unauthorized._unauthorizedDetails || {
+            url: unauthorized.url(),
+            status: 401,
+            statusText: unauthorized.statusText(),
+            headers: unauthorized.headers(),
+            body: {}
+          };
+          
+          const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n` +
+            `URL: ${details.url}\n` +
+            `Status: ${details.status} ${details.statusText}\n` +
+            `Response Body: ${JSON.stringify(details.body, null, 2)}`;
+          
+          clearInterval(unauthorizedCheckInterval);
+          if (tracker.resolvers.has(urlPart) && tracker.resolvers.get(urlPart) === resolve) {
+            tracker.resolvers.delete(urlPart);
+          }
+          reject(new Error(errorMessage));
+        }
+      }, 100); // Check every 100ms for 401 responses
+      
       // Set timeout to prevent hanging - reject if no response comes
       // This ensures Promise.race doesn't hang if waitForResponse also fails
       timeoutId = setTimeout(() => {
+        if (unauthorizedCheckInterval) {
+          clearInterval(unauthorizedCheckInterval);
+        }
         if (tracker.resolvers.has(urlPart) && tracker.resolvers.get(urlPart) === resolve) {
           tracker.resolvers.delete(urlPart);
           // Reject with timeout error - waitForResponse will handle the actual timeout
@@ -431,18 +536,95 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
       }, timeout + 100); // Slightly longer than waitForResponse timeout to let it handle timeout first
     });
     
-    // Race between tracker check and waitForResponse
+    // Create promise that rejects on 401 responses
+    const unauthorizedPromise = new Promise((resolve, reject) => {
+      // Set up a one-time response listener for 401s
+      unauthorizedHandler = async (response) => {
+        try {
+          const url = response.url();
+          const status = response.status();
+          if (status === 401 && urlMatches(url, urlPart)) {
+            let responseBody = '';
+            let errorDetails = {};
+            try {
+              responseBody = await response.text();
+              try {
+                errorDetails = JSON.parse(responseBody);
+              } catch (e) {
+                errorDetails = { rawBody: responseBody };
+              }
+            } catch (e) {
+              errorDetails = { error: 'Could not read response body' };
+            }
+            
+            const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n` +
+              `URL: ${url}\n` +
+              `Status: ${status} ${response.statusText()}\n` +
+              `Response Body: ${JSON.stringify(errorDetails, null, 2)}`;
+            
+            page.off('response', unauthorizedHandler);
+            reject(new Error(errorMessage));
+          }
+        } catch (e) {
+          // Ignore errors
+        }
+      };
+      
+      page.on('response', unauthorizedHandler);
+      // Note: Handler cleanup is done in the main cleanup section
+    });
+    
+    // Race between tracker check, waitForResponse, and unauthorized detection
     // waitForResponse catches in-flight and future requests
     // trackerPromise catches responses that complete during setup or before this call
+    // unauthorizedPromise fails immediately if a 401 is detected
     const response = await Promise.race([
       trackerPromise,
+      unauthorizedPromise.catch(error => {
+        // Clean up interval and handler if unauthorized was detected
+        if (unauthorizedCheckInterval) {
+          clearInterval(unauthorizedCheckInterval);
+        }
+        if (unauthorizedHandler) {
+          page.off('response', unauthorizedHandler);
+        }
+        throw error;
+      }),
       page.waitForResponse(
-        response => {
+        async response => {
           try {
             const url = response.url();
             const status = response.status();
+            
+            // Fail immediately if we see a 401 matching our urlPart
+            if (status === 401 && urlMatches(url, urlPart)) {
+              let responseBody = '';
+              let errorDetails = {};
+              try {
+                responseBody = await response.text();
+                try {
+                  errorDetails = JSON.parse(responseBody);
+                } catch (e) {
+                  errorDetails = { rawBody: responseBody };
+                }
+              } catch (e) {
+                errorDetails = { error: 'Could not read response body' };
+              }
+              
+              const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n` +
+                `URL: ${url}\n` +
+                `Status: ${status} ${response.statusText()}\n` +
+                `Response Body: ${JSON.stringify(errorDetails, null, 2)}`;
+              
+              throw new Error(errorMessage);
+            }
+            
             return urlMatches(url, urlPart) && status >= 200 && status < 400;
           } catch (e) {
+            // If it's our 401 error, rethrow it
+            if (e.message && e.message.includes('401 Unauthorized')) {
+              throw e;
+            }
             return false;
           }
         },
@@ -450,7 +632,13 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
       )
     ]);
     
-    // Cleanup resolver and timeout
+    // Cleanup resolver, interval, timeout, and handler
+    if (unauthorizedCheckInterval) {
+      clearInterval(unauthorizedCheckInterval);
+    }
+    if (unauthorizedHandler) {
+      page.off('response', unauthorizedHandler);
+    }
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
@@ -459,7 +647,13 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
     }
     return response;
   } catch (error) {
-    // Cleanup resolver and timeout
+    // Cleanup resolver, interval, timeout, and handler
+    if (unauthorizedCheckInterval) {
+      clearInterval(unauthorizedCheckInterval);
+    }
+    if (unauthorizedHandler) {
+      page.off('response', unauthorizedHandler);
+    }
     if (timeoutId) {
       clearTimeout(timeoutId);
     }

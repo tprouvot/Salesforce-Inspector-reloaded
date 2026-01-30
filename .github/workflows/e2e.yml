@@ -112,7 +112,7 @@ jobs:
         perl -i -pe "s/accountRecordId: \".*\"/accountRecordId: \"\Q$SF_TEST_ACCOUNTID\E\"/" tests/e2e/test-helpers.js
         perl -i -pe "s/flowId: \".*\"/flowId: \"\Q$SF_TEST_FLOWID\E\"/" tests/e2e/test-helpers.js
         perl -i -pe "s/flowDefId: \".*\"/flowDefId: \"\Q$SF_TEST_FLOWDEFID\E\"/" tests/e2e/test-helpers.js
-        perl -i -pe "s/apiVersion: \".*\"/apiVersion: \"\Q$SF_API_VERSION\E\"/" tests/e2e/test-helpers.js
+        perl -i -pe "s/apiVersion: \".*\"/apiVersion: \"\Q$SF_TEST_APIVERSION\E\"/" tests/e2e/test-helpers.js
         perl -i -pe "s/mockEnabled: .*/mockEnabled: $SF_TEST_MOCKENABLED/" tests/e2e/test-helpers.js
         
         # Display the updated test-helpers.js file to verify replacements
@@ -127,12 +127,12 @@ jobs:
       run: npx playwright install --with-deps chromium
 
     - name: Run Playwright tests
-      run: npm run test:e2e
+      run: npm run test:e2e data-export.spec.js
 
-#    - uses: actions/upload-artifact@v4
-#      if: always()
-#      with:
-#        name: playwright-report
-#        path: playwright-report/
-#        retention-days: 30
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
 

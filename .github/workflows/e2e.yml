@@ -58,20 +58,13 @@ jobs:
         
         # Authenticate and get access token
         echo "Authenticating to Salesforce org using SF_AUTH_URL..."
-        AUTH_RESPONSE=$(curl -s "$SF_AUTH_URL")
-        
-        # Try to extract access_token from JSON response
-        ACCESS_TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.access_token // .accessToken // .token // empty' 2>/dev/null)
-        INSTANCE_URL=$(echo "$AUTH_RESPONSE" | jq -r '.instance_url // .instanceUrl // .instance // empty' 2>/dev/null)
-        
-        # If SF_AUTH_URL is a JWT auth URL (sfdx-url format), authenticate with sf CLI
-        if [ -z "$ACCESS_TOKEN" ] && echo "$SF_AUTH_URL" | grep -q "force://"; then
-          echo "Detected JWT auth URL, authenticating with sf CLI..."
-          sf org login sfdx-url "$SF_AUTH_URL" --alias test-org --set-default
-          ORG_INFO=$(sf org display --json)
-          ACCESS_TOKEN=$(echo "$ORG_INFO" | jq -r '.result.accessToken // empty')
-          INSTANCE_URL=$(echo "$ORG_INFO" | jq -r '.result.instanceUrl // empty')
-        fi
+        echo $SF_AUTH_URL > ./SFDX_AUTH_URL.txt
+        sf org login sfdx-url -f ./SFDX_AUTH_URL.txt -a cicdorg -d
+
+        # Display the authenticated org and extract the access token and instance url
+        ORG_INFO=$(sf org display --json)
+        ACCESS_TOKEN=$(echo "$ORG_INFO" | jq -r '.result.accessToken // empty')
+        INSTANCE_URL=$(echo "$ORG_INFO" | jq -r '.result.instanceUrl // empty')
         
         if [ -z "$ACCESS_TOKEN" ]; then
           echo "Error: Could not extract access_token from auth response"

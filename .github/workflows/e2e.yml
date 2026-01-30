@@ -58,15 +58,18 @@ jobs:
 
         # Display the authenticated org and extract the access token and instance url
         echo "Extracting authentication information..."
+        sf org display --json -o cicdorg
+        echo "Continue to the next step..."
         
         # Run command and capture both output and exit code
-        ORG_INFO=$(sf org display --json 2>/dev/null)
+        # Specify the org alias to ensure we get the right org info
+        ORG_INFO=$(sf org display --json -o cicdorg 2>/dev/null)
         SF_EXIT_CODE=$?
         
         if [ $SF_EXIT_CODE -ne 0 ]; then
           echo "Error: sf org display failed with exit code $SF_EXIT_CODE"
           # Try again without suppressing stderr to see the error
-          sf org display --json
+          sf org display --json -o cicdorg
           exit 1
         fi
         
@@ -76,23 +79,45 @@ jobs:
           exit 1
         fi
         
+        # Debug: Show first 500 chars of output
+        echo "DEBUG: First 500 chars of ORG_INFO:"
+        echo "$ORG_INFO" | head -c 500
+        echo ""
+        
         # Validate JSON and extract values
         if ! echo "$ORG_INFO" | jq empty 2>/dev/null; then
           echo "Error: Invalid JSON returned from sf org display"
-          echo "Output: $ORG_INFO"
+          echo "Full output: $ORG_INFO"
           exit 1
         fi
+        
+        # Check if the command returned an error status
+        JSON_STATUS=$(echo "$ORG_INFO" | jq -r '.status // empty' 2>/dev/null)
+        if [ -n "$JSON_STATUS" ] && [ "$JSON_STATUS" != "0" ]; then
+          echo "Error: sf org display returned error status: $JSON_STATUS"
+          echo "Error message:"
+          echo "$ORG_INFO" | jq -r '.message // .message[] // empty' 2>/dev/null
+          echo "Full JSON:"
+          echo "$ORG_INFO" | jq '.' 2>/dev/null
+          exit 1
+        fi
+        
+        # Debug: Show JSON structure
+        echo "DEBUG: JSON structure:"
+        echo "$ORG_INFO" | jq '.' 2>/dev/null || echo "$ORG_INFO"
         
         ACCESS_TOKEN=$(echo "$ORG_INFO" | jq -r '.result.accessToken // empty' 2>/dev/null)
         INSTANCE_URL=$(echo "$ORG_INFO" | jq -r '.result.instanceUrl // empty' 2>/dev/null)
         
-        echo "ACCESS_TOKEN extracted: ${ACCESS_TOKEN:0:20}..."
-        echo "INSTANCE_URL: $INSTANCE_URL"
+        echo "DEBUG: ACCESS_TOKEN extracted: ${ACCESS_TOKEN:0:20}..."
+        echo "DEBUG: INSTANCE_URL: $INSTANCE_URL"
         
         if [ -z "$ACCESS_TOKEN" ]; then
           echo "Error: Could not extract access_token from auth response"
-          echo "JSON structure:"
-          echo "$ORG_INFO" | jq '.' 2>/dev/null || echo "$ORG_INFO"
+          echo "Available JSON keys:"
+          echo "$ORG_INFO" | jq 'keys' 2>/dev/null || echo "Could not parse JSON"
+          echo "Result keys (if exists):"
+          echo "$ORG_INFO" | jq '.result | keys' 2>/dev/null || echo "No result object"
           exit 1
         fi
         

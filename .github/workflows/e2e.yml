@@ -65,8 +65,11 @@ jobs:
         # Display the authenticated org and extract the access token and instance url
         echo "Extracting authentication information..."
         ORG_INFO=$(sf org display --json 2>/dev/null)
+        echo $ORG_INFO
         ACCESS_TOKEN=$(echo -E "$ORG_INFO" | jq -r '.result.accessToken // empty' 2>/dev/null || echo "")
+        echo $ACCESS_TOKEN
         INSTANCE_URL=$(echo -E "$ORG_INFO" | jq -r '.result.instanceUrl // empty' 2>/dev/null || echo "")
+        echo $INSTANCE_URL
         
         if [ -z "$ACCESS_TOKEN" ]; then
           echo "Error: Could not extract access_token from auth response"

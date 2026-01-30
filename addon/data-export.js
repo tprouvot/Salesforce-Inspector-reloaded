@@ -1746,23 +1746,16 @@ class App extends React.Component {
 
   onOverlayContextMenu(e) {
     e.preventDefault();
-    e.target.style.visibility = "hidden";
-    let target = document.elementFromPoint(e.clientX, e.clientY);
-    e.target.style.visibility = "visible";
+    e.stopPropagation();
+    const target = document.elementsFromPoint(e.clientX, e.clientY).find(el => el !== e.currentTarget);
+
+    this.onCloseContextMenu();
 
     if (target) {
-      let event = new MouseEvent("contextmenu", {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        clientX: e.clientX,
-        clientY: e.clientY
-      });
-      if (!target.dispatchEvent(event)) {
-        return;
-      }
+      const { bubbles, cancelable, view, clientX, clientY, buttons, ctrlKey, shiftKey, altKey, metaKey } = e.nativeEvent;
+      const event = new MouseEvent("contextmenu", { bubbles, cancelable, view, clientX, clientY, buttons, ctrlKey, shiftKey, altKey, metaKey });
+      setTimeout(() => target.dispatchEvent(event), 0);
     }
-    this.onCloseContextMenu();
   }
 
   onCloseContextMenu() {

@@ -35,11 +35,11 @@ jobs:
       if: ${{ vars.SF_TEST_MOCKENABLED == 'false' }}
       env:
         SF_CLI_URL: ${{ vars.SF_CLI_URL }}
-        SF_API_VERSION: ${{ vars.SF_API_VERSION }}
+        SF_TEST_APIVERSION: ${{ vars.SF_TEST_APIVERSION }}
         SF_TEST_MOCKENABLED: ${{ vars.SF_TEST_MOCKENABLED }}
-        SF_TEST_ACCOUNTID: ${{ vars.SF_TEST_ACCOUNT_RECORD_ID }}
-        SF_TEST_FLOWID: ${{ vars.SF_TEST_FLOW_ID }}
-        SF_TEST_FLOWDEFID: ${{ vars.SF_TEST_FLOW_DEF_ID }}
+        SF_TEST_ACCOUNTID: ${{ vars.SF_TEST_ACCOUNTID }}
+        SF_TEST_FLOWID: ${{ vars.SF_TEST_FLOWID }}
+        SF_TEST_FLOWDEFID: ${{ vars.SF_TEST_FLOWDEFID }}
         SF_AUTH_URL: ${{ secrets.SF_AUTH_URL }}
       run: |
         # Install Salesforce CLI
@@ -58,11 +58,6 @@ jobs:
 
         # Display the authenticated org and extract the access token and instance url
         echo "Extracting authentication information..."
-        sf org display --json -o cicdorg
-        echo "Continue to the next step..."
-        
-        # Run command and capture both output and exit code
-        # Specify the org alias to ensure we get the right org info
         ORG_INFO=$(sf org display --json -o cicdorg 2>/dev/null)
         SF_EXIT_CODE=$?
         
@@ -79,38 +74,8 @@ jobs:
           exit 1
         fi
         
-        # Debug: Show first 500 chars of output
-        echo "DEBUG: First 500 chars of ORG_INFO:"
-        echo "$ORG_INFO" | head -c 500
-        echo ""
-        
-        # Validate JSON and extract values
-        if ! echo "$ORG_INFO" | jq empty 2>/dev/null; then
-          echo "Error: Invalid JSON returned from sf org display"
-          echo "Full output: $ORG_INFO"
-          exit 1
-        fi
-        
-        # Check if the command returned an error status
-        JSON_STATUS=$(echo "$ORG_INFO" | jq -r '.status // empty' 2>/dev/null)
-        if [ -n "$JSON_STATUS" ] && [ "$JSON_STATUS" != "0" ]; then
-          echo "Error: sf org display returned error status: $JSON_STATUS"
-          echo "Error message:"
-          echo "$ORG_INFO" | jq -r '.message // .message[] // empty' 2>/dev/null
-          echo "Full JSON:"
-          echo "$ORG_INFO" | jq '.' 2>/dev/null
-          exit 1
-        fi
-        
-        # Debug: Show JSON structure
-        echo "DEBUG: JSON structure:"
-        echo "$ORG_INFO" | jq '.' 2>/dev/null || echo "$ORG_INFO"
-        
         ACCESS_TOKEN=$(echo "$ORG_INFO" | jq -r '.result.accessToken // empty' 2>/dev/null)
         INSTANCE_URL=$(echo "$ORG_INFO" | jq -r '.result.instanceUrl // empty' 2>/dev/null)
-        
-        echo "DEBUG: ACCESS_TOKEN extracted: ${ACCESS_TOKEN:0:20}..."
-        echo "DEBUG: INSTANCE_URL: $INSTANCE_URL"
         
         if [ -z "$ACCESS_TOKEN" ]; then
           echo "Error: Could not extract access_token from auth response"
@@ -141,15 +106,17 @@ jobs:
         # Update test-helpers.js with real credentials
         echo "Updating test-helpers.js with real credentials..."
         # Use perl for more robust string replacement (perl handles special chars better than sed)
+        # Escape special regex characters in replacement values using quotemeta
         perl -i -pe "s/mockHost: \".*\"/mockHost: \"\Q$SF_HOST\E\"/" tests/e2e/test-helpers.js
         perl -i -pe "s/mockToken: \".*\"/mockToken: \"\Q$ACCESS_TOKEN\E\"/" tests/e2e/test-helpers.js
         perl -i -pe "s/accountRecordId: \".*\"/accountRecordId: \"\Q$SF_TEST_ACCOUNTID\E\"/" tests/e2e/test-helpers.js
         perl -i -pe "s/flowId: \".*\"/flowId: \"\Q$SF_TEST_FLOWID\E\"/" tests/e2e/test-helpers.js
         perl -i -pe "s/flowDefId: \".*\"/flowDefId: \"\Q$SF_TEST_FLOWDEFID\E\"/" tests/e2e/test-helpers.js
         perl -i -pe "s/apiVersion: \".*\"/apiVersion: \"\Q$SF_API_VERSION\E\"/" tests/e2e/test-helpers.js
-        perl -i -pe "s/mockEnabled: \".*\"/mockEnabled: \"\Q$SF_TEST_MOCKENABLED\E\"/" tests/e2e/test-helpers.js
+        perl -i -pe "s/mockEnabled: .*/mockEnabled: $SF_TEST_MOCKENABLED/" tests/e2e/test-helpers.js
         
         # Display the updated test-helpers.js file to verify replacements
+        # Use cat without -A to avoid showing control characters as backslashes
         echo "=== Updated test-helpers.js (first 15 lines) ==="
         head -n 15 tests/e2e/test-helpers.js
 

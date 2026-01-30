@@ -50,7 +50,7 @@ jobs:
       run: |
         # Install Salesforce CLI
         echo "Installing Salesforce CLI from $SF_CLI_URL"
-        curl -L "$SF_CLI_URL" -o sf-cli.tar.gz
+        wget $SF_CLI_URL -O sf-cli.tar.xz
         mkdir -p sf-cli
         tar -xzf sf-cli.tar.gz -C sf-cli --strip-components=1
         export PATH="$PWD/sf-cli/bin:$PATH"

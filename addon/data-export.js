@@ -1110,8 +1110,8 @@ class Model {
     const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.getNextQueryTabIndex()}`;
     this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
     this.activeTabIndex = this.queryTabs.length - 1;
+    this.setActiveTab(this.activeTabIndex);
     this.saveQueryTabs();
-    this.didUpdate();
   }
 
   removeQueryTab(index) {

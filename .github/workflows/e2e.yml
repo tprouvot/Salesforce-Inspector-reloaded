@@ -99,10 +99,6 @@ jobs:
           exit 1
         fi
         
-        echo "Successfully authenticated. Host: $SF_HOST"
-        echo "ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
-        echo "SF_HOST=$SF_HOST" >> $GITHUB_ENV
-        
         # Update test-helpers.js with real credentials
         echo "Updating test-helpers.js with real credentials..."
         # Use perl for more robust string replacement (perl handles special chars better than sed)

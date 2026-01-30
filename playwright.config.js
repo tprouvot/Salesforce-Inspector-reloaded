@@ -13,6 +13,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI
     ? [
+        ["line"], // Shows synthetic progress
         ["github"], // GitHub Actions annotations for better error visibility
         ["html"], // Generates HTML report
       ]

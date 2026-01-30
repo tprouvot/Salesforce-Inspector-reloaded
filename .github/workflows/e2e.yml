@@ -25,7 +25,7 @@ jobs:
       run: npx playwright install --with-deps chromium
 
     - name: Setup Salesforce CLI and authenticate
-      if: ${{ vars.SF_TEST_MOCKENABLED == 'true' }}
+      if: ${{ vars.SF_TEST_MOCKENABLED == 'false' }}
       env:
         SF_CLI_URL: ${{ vars.SF_CLI_URL }}
         SF_API_VERSION: ${{ vars.SF_API_VERSION }}

@@ -114,11 +114,6 @@ jobs:
         perl -i -pe "s/flowDefId: \".*\"/flowDefId: \"\Q$SF_TEST_FLOWDEFID\E\"/" tests/e2e/test-helpers.js
         perl -i -pe "s/apiVersion: \".*\"/apiVersion: \"\Q$SF_TEST_APIVERSION\E\"/" tests/e2e/test-helpers.js
         perl -i -pe "s/mockEnabled: .*/mockEnabled: $SF_TEST_MOCKENABLED/" tests/e2e/test-helpers.js
-        
-        # Display the updated test-helpers.js file to verify replacements
-        # Use cat without -A to avoid showing control characters as backslashes
-        echo "=== Updated test-helpers.js (first 15 lines) ==="
-        head -n 15 tests/e2e/test-helpers.js
 
     - name: Install dependencies
       run: npm ci

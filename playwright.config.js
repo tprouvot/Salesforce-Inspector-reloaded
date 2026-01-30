@@ -12,7 +12,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [
-    ["list"], // Shows progress in terminal with test names
+    ["list"], // Shows progress with error details
     ["html"], // Generates HTML report
   ],
   globalSetup: "./tests/e2e/global-setup.js",

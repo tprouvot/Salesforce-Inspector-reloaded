@@ -53,6 +53,7 @@ jobs:
         wget $SF_CLI_URL -O sf-cli.tar.xz
         mkdir -p sf-cli
         tar xJf sf-cli.tar.xz -C sf-cli --strip-components=1
+        echo "$PWD/sf-cli/bin" >> $GITHUB_PATH
         export PATH="$PWD/sf-cli/bin:$PATH"
         sf --version
         

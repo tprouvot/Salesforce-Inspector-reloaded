@@ -31,12 +31,6 @@ jobs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
 
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps chromium
-
     - name: Setup Salesforce CLI and authenticate
       if: ${{ vars.SF_TEST_MOCKENABLED == 'false' }}
       env:
@@ -64,16 +58,41 @@ jobs:
 
         # Display the authenticated org and extract the access token and instance url
         echo "Extracting authentication information..."
+        
+        # Run command and capture both output and exit code
         ORG_INFO=$(sf org display --json 2>/dev/null)
-        echo $ORG_INFO
-        ACCESS_TOKEN=$(echo -E "$ORG_INFO" | jq -r '.result.accessToken // empty' 2>/dev/null || echo "")
-        echo $ACCESS_TOKEN
-        INSTANCE_URL=$(echo -E "$ORG_INFO" | jq -r '.result.instanceUrl // empty' 2>/dev/null || echo "")
-        echo $INSTANCE_URL
+        SF_EXIT_CODE=$?
+        
+        if [ $SF_EXIT_CODE -ne 0 ]; then
+          echo "Error: sf org display failed with exit code $SF_EXIT_CODE"
+          # Try again without suppressing stderr to see the error
+          sf org display --json
+          exit 1
+        fi
+        
+        # Check if we got valid JSON
+        if [ -z "$ORG_INFO" ]; then
+          echo "Error: sf org display returned empty output"
+          exit 1
+        fi
+        
+        # Validate JSON and extract values
+        if ! echo "$ORG_INFO" | jq empty 2>/dev/null; then
+          echo "Error: Invalid JSON returned from sf org display"
+          echo "Output: $ORG_INFO"
+          exit 1
+        fi
+        
+        ACCESS_TOKEN=$(echo "$ORG_INFO" | jq -r '.result.accessToken // empty' 2>/dev/null)
+        INSTANCE_URL=$(echo "$ORG_INFO" | jq -r '.result.instanceUrl // empty' 2>/dev/null)
+        
+        echo "ACCESS_TOKEN extracted: ${ACCESS_TOKEN:0:20}..."
+        echo "INSTANCE_URL: $INSTANCE_URL"
         
         if [ -z "$ACCESS_TOKEN" ]; then
           echo "Error: Could not extract access_token from auth response"
-          echo "Response: $AUTH_RESPONSE"
+          echo "JSON structure:"
+          echo "$ORG_INFO" | jq '.' 2>/dev/null || echo "$ORG_INFO"
           exit 1
         fi
         
@@ -108,6 +127,12 @@ jobs:
         # Display the updated test-helpers.js file to verify replacements
         echo "=== Updated test-helpers.js (first 15 lines) ==="
         head -n 15 tests/e2e/test-helpers.js
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps chromium
 
     - name: Run Playwright tests
       run: npm run test:e2e

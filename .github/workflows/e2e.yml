@@ -63,6 +63,7 @@ jobs:
         sf org login sfdx-url -f ./SFDX_AUTH_URL.txt -a cicdorg -d
 
         # Display the authenticated org and extract the access token and instance url
+        echo "Extracting authentication information..."
         ORG_INFO=echo $(sf org display --json) 2>/dev/null
         ACCESS_TOKEN=$(echo -E "$ORG_INFO" | jq -r '.result.accessToken // empty' 2>/dev/null || echo "")
         INSTANCE_URL=$(echo -E "$ORG_INFO" | jq -r '.result.instanceUrl // empty' 2>/dev/null || echo "")

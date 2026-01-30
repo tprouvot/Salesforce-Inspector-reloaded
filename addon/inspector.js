@@ -1,4 +1,5 @@
 import {getRedirectUri, getClientId, Constants} from "./utils.js";
+import {apiStatistics} from "./api-statistics.js";
 
 export let defaultApiVersion = "65.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
@@ -115,6 +116,9 @@ export let sfConn = {
       throw new Error("Instance Hostname not found");
     }
 
+    // Track API call start time for statistics
+    const startTime = performance.now();
+
     let xhr = new XMLHttpRequest();
     if (useCache) {
       url += (url.includes("?") ? "&" : "?") + "cache=" + Math.random();
@@ -180,6 +184,12 @@ export let sfConn = {
       };
       xhr.send(body);
     });
+
+    // Calculate duration and track statistics
+    const duration = performance.now() - startTime;
+    const isError = !rawResponse && (xhr.status < 200 || xhr.status >= 300);
+    apiStatistics.trackApiCall("rest", url, method, duration, isError);
+
     if (rawResponse){
       return xhr;
     } else if (xhr.status >= 200 && xhr.status < 300) {
@@ -265,6 +275,9 @@ export let sfConn = {
       throw new Error("Session not found");
     }
 
+    // Track API call start time for statistics
+    const startTime = performance.now();
+
     let xhr = new XMLHttpRequest();
     xhr.open("POST", "https://" + this.instanceHostname + wsdl.servicePortAddress + "?cache=" + Math.random(), true);
     xhr.setRequestHeader("Content-Type", "text/xml");
@@ -301,6 +314,11 @@ export let sfConn = {
       };
       xhr.send(requestBody);
     });
+
+    // Calculate duration and track statistics
+    const duration = performance.now() - startTime;
+    apiStatistics.trackApiCall("soap", null, method, duration, xhr.status != 200);
+
     if (xhr.status == 200) {
       let responseBody = xhr.response.querySelector(method + "Response");
       let parsed = XML.parse(responseBody).result;

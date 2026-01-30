@@ -279,6 +279,11 @@ Warning: Salesforce is slower for users who have debug mode enabled.
 
 <img width="278" alt="Enable Debug Mode" src="https://github.com/user-attachments/assets/f4dabb96-6b1d-48a1-828d-cc7d5da92e57" />
 
+## Enable API Call Debug Statistics
+
+Sometimes we may want to know which queries are performed to the Salesforce backend (by type, method, endpoint ...)
+This can help to correlate logs in Salesforce and what is performed by Salesforce Inspector Reloaded extension
+
 ## Customize extension's favicon
 
 From the option page, you can customize the default favicon by:
@@ -431,6 +436,10 @@ Because the IsPortalEnabled field does not exist in orgs where there is no porta
 3. Enable the filters you want to apply:
    * **Exclude Portal users** - Hides users who have portal access enabled
    * **Exclude Inactive users** - Hides users who are marked as inactive
+
+### Dynamic Popup Height
+
+You can leverage more window height in the popup, to reduce the scroll. To enable this feature, go to User Experience -> Enable Dynamic Popup Height and check it.
 
 ## Generate a package.xml from a deployment
 

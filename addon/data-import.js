@@ -4,7 +4,8 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard} from "./utils.js";
+import {ProgressRing} from "./components/ProgressRing.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, formatNumber} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -441,7 +442,19 @@ class Model {
   }
 
   importCounts() {
+    // FORMAT DATA HERE
     return this.importData.counts;
+  }
+
+  // Returns import counts with properties compatible with ProgressRing
+  get importCountProgress() {
+    let counts = this.importCounts();
+    return {
+      queued: counts.Queued,
+      processing: counts.Processing,
+      success: counts.Succeeded,
+      failed: counts.Failed
+    }
   }
 
   // Must be called whenever any of its inputs changes.
@@ -546,8 +559,8 @@ class Model {
     let skippedRecords = this.importAction != "undelete" ? this.importData.counts.Succeeded + this.importData.counts.Failed : 0;
     let actionVerb = this.getActionVerb(this.importAction);
     this.confirmPopup = {
-      text: importedRecords + " records will be " + actionVerb + "."
-        + (skippedRecords > 0 ? " " + skippedRecords + " records will be skipped because they have __Status Succeeded or Failed." : "")
+      text: formatNumber(importedRecords) + " records will be " + actionVerb + "."
+        + (skippedRecords > 0 ? " " + formatNumber(skippedRecords) + " records will be skipped because they have __Status Succeeded or Failed." : "")
     };
   }
 
@@ -1315,11 +1328,12 @@ class App extends React.Component {
               ),
             ),
             h("div", {className: "slds-col"},
-              h("div", {className: "slds-grid slds-grid_align-spread"},
-                h(StatusBox, {model, name: "Queued"}),
-                h(StatusBox, {model, name: "Processing"}),
-                h(StatusBox, {model, name: "Succeeded"}),
-                h(StatusBox, {model, name: "Failed"})
+              h("div", {className: "slds-grid"},
+                h("div", {className: "slds-m-right_small"}, h(StatusBox, {model, name: "Queued"})),
+                h("div", {className: "slds-m-right_small"}, h(StatusBox, {model, name: "Processing"})),
+                h("div", {className: "slds-m-right_small"}, h(StatusBox, {model, name: "Succeeded"})),
+                h("div", {className: "slds-m-right_small"}, h(StatusBox, {model, name: "Failed"})),
+                h(ProgressRing, model.importCountProgress)
               ),
             ),
             h("div", {className: "slds-col slds-text-align_right"},
@@ -1486,7 +1500,7 @@ class StatusBox extends React.Component {
       h("input", {id: `status-${name}`, type: "checkbox", checked: model.showStatus[name], onChange: this.onShowStatusChange}),
       h("label", {className: "slds-checkbox__label", htmlFor: `status-${name}`},
         h("span", {className: "slds-checkbox_faux slds-m-right_xx-small"}, ""),
-        h("span", {className: model.importCounts()[name] == 0 ? "slds-form-element__label sfir-lightgray-color" : "slds-form-element__label"}, model.importCounts()[name] + " " + name)
+        h("span", {className: model.importCounts()[name] == 0 ? "slds-form-element__label sfir-lightgray-color" : "slds-form-element__label"}, formatNumber(model.importCounts()[name]) + " " + name)
       )
     );
   }

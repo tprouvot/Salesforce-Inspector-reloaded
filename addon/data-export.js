@@ -1,36 +1,10 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants,
+  UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, formatNumber, formatDuration} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-
-// Helper functions to format query time with runtime locale and shorten to seconds or minutes when appropriate
-function formatNumber(value, decimals) {
-  return value.toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
-  });
-};
-
-function formatDuration(milliseconds) {
-  if (milliseconds == null || isNaN(milliseconds)) {
-    return "0ms";
-  }
-  const alwaysShowMs = localStorage.getItem("showExportDurationInMs") === "true";
-  if (!alwaysShowMs && milliseconds >= 60000) {
-    // Over 1 minute: show "2m 34.56s" format
-    const minutes = Math.floor(milliseconds / 60000);
-    const seconds = (milliseconds % 60000) / 1000;
-    return `${formatNumber(minutes, 0)}m ${formatNumber(seconds, 2)}s`;
-  } else if (!alwaysShowMs && milliseconds >= 1000) {
-    // 1-59 seconds: show "12.34s" format
-    return `${formatNumber(milliseconds / 1000, 2)}s`;
-  } else {
-    // Under 1 second: show "234.5ms" format
-    return `${formatNumber(milliseconds, 1)}ms`;
-  }
-}
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -1104,14 +1078,14 @@ class Model {
       if (queryFromUrl) {
         const nameCount = this.queryTabs.length + 1;
         const name = `${baseName} ${nameCount}`;
-        this.queryTabs.push({name, basename, nameCount, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
+        this.queryTabs.push({name, baseName, nameCount, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
         this.activeTabIndex = this.queryTabs.length - 1;
         this.saveQueryTabs();
       } else {
         this.activeTabIndex = 0;
       }
     } else {
-      this.queryTabs = [{name: `${baseName} 1`, basename, nameCount: 1, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
+      this.queryTabs = [{name: `${baseName} 1`, baseName, nameCount: 1, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
       this.activeTabIndex = 0;
     }
   }

@@ -54,7 +54,6 @@ function getFilteredLocalStorage() {
   const domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
   const keysToSend = [
-    "scrollOnFlowBuilder",
     "colorizeProdBanner",
     "colorizeSandboxBanner",
     "prodBannerText",

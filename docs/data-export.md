@@ -9,6 +9,28 @@ The search is made on the field label and name.
 
 ![2024-04-16_08-53-32 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/ef7ba7a0-c9c4-4573-9aaa-b72e64430f64)
 
+## SOQL Query Formatting
+
+You can now format your SOQL queries directly in the Data Export page to improve readability.
+
+### Usage
+
+- **Button**: Click the **"Format"** button in the query control panel.
+- **Keyboard Shortcut**: Press `Alt (⌥) + Shift (⇧) + F` to format the query instantly.
+
+### Configuration
+
+Formatting options can be customized in **Options -> Data Export -> Query Formatting**:
+
+- **Number of tab characters to indent**: Set the indentation level for nested parts of the query.
+- **Number of characters before wrapping to a new line**: Control when long field lists are wrapped.
+- **Place subquery parentheses on their own line**: Improve the readability of nested queries.
+- **Place new line after keywords**: Force keywords like `SELECT`, `FROM`, `WHERE` to start on a new line.
+
+### Built on SOQL Parser JS
+
+Formatting is powered by the [SOQL Parser JS](https://soql-parser-js.getjetstream.app/) library, ensuring robust handling of standard and complex SOQL syntax.
+
 ## Multiple Query Tabs
 
 <img width="1428" alt="Multiple Query tabs" src="https://github.com/user-attachments/assets/2e48a0b9-998e-436e-87cf-5a28fba3db58" />

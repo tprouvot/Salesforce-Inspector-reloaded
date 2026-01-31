@@ -197,6 +197,7 @@ class OptionsTabSelector extends React.Component {
         id: "data-export",
         tabTitle: "Data Export",
         content: [
+          {option: SectionHeader, props: {title: "General"}},
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
@@ -221,7 +222,12 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Enable Query Typo Fix", key: "enableQueryTypoFix", default: false, tooltip: "Enable automation that removes typos from query input"}},
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}},
           //This option is created to disable BOM for CSV in case of errors appearing during export, created in v2.0.0, can be deleted in two releases if no issues are reported
-          {option: Option, props: {type: "toggle", default: true, title: "Use BOM for CSV export", key: "useBomForCsvExport", tooltip: "Add UTF-8 BOM (Byte Order Mark) for Excel compatibility with non-Latin characters."}}
+          {option: Option, props: {type: "toggle", default: true, title: "Use BOM for CSV export", key: "useBomForCsvExport", tooltip: "Add UTF-8 BOM (Byte Order Mark) for Excel compatibility with non-Latin characters."}},
+          {option: SectionHeader, props: {title: "Query Formatting"}},
+          {option: Option, props: {type: "number", title: "Number of tab characters to indent on new lines", key: "formatNumIndent", default: 1, inputSize: "1"}},
+          {option: Option, props: {type: "number", title: "Number of characters before wrapping to a new line", key: "formatFieldMaxLineLength", default: 60, inputSize: "1"}},
+          {option: Option, props: {type: "toggle", default: false, title: "Place subquery parentheses on their own line", key: "formatFieldSubqueryParensOnOwnLine", tooltip: "If true and the query includes a subquery, the subquery parentheses will start and end on new lines"}},
+          {option: Option, props: {type: "toggle", default: false, title: "Place new line after keywords", key: "formatNewLineAfterKeywords", tooltip: "Adds a new line and indent after each keyword (e.g., SELECT, FROM, WHERE, ORDER BY)"}}
         ]
       },
       {
@@ -649,6 +655,12 @@ class APIVersionOption extends React.Component {
         )
       )
     );
+  }
+}
+
+class SectionHeader extends React.Component {
+  render() {
+    return h("h3", {className: "slds-section-title--divider slds-m-top_medium slds-m-bottom_medium"}, this.props.title);
   }
 }
 

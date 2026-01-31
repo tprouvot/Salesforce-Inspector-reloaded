@@ -4,6 +4,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {formatQuery} from "./lib/soql-parser-js/index.mjs";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -129,6 +130,12 @@ class Model {
     this.separator = getSeparator();
     this.soqlPrompt = "";
     this.enableQueryTypoFix = localStorage.getItem("enableQueryTypoFix") == "true";
+    this.queryFormatOptions = {
+      numIndent: Number(localStorage.getItem("formatNumIndent")) || 1,
+      fieldMaxLineLength: Number(localStorage.getItem("formatFieldMaxLineLength")) || 60,
+      fieldSubqueryParensOnOwnLine: localStorage.getItem("formatFieldSubqueryParensOnOwnLine") == "true",
+      newLineAfterKeywords: localStorage.getItem("formatNewLineAfterKeywords") == "true",
+    };
 
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
@@ -1017,6 +1024,15 @@ class Model {
     vm.exportedData = exportedData;
     vm.updatedExportedData();
   }
+  doFormatQuery() {
+    try {
+      const formatted = formatQuery(this.queryInput.value, this.queryFormatOptions);
+      this.queryInput.value = formatted;
+      this.updateCurrentTabQuery(formatted);
+    } catch (e) {
+      //console.error("Format query failed", e);
+    }
+  }
   async generateSoql() {
     this.isWorking = true;
     let promptTemplateName = localStorage.getItem(this.sfHost + "_exportAgentForcePrompt");
@@ -1425,6 +1441,7 @@ class App extends React.Component {
     this.onGenerateSoql = this.onGenerateSoql.bind(this);
     this.onCopyQuery = this.onCopyQuery.bind(this);
     this.onQueryPlan = this.onQueryPlan.bind(this);
+    this.onQueryFormat = this.onQueryFormat.bind(this);
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
     this.onDownloadAsCsv = this.onDownloadAsCsv.bind(this);
@@ -1581,6 +1598,11 @@ class App extends React.Component {
   onQueryPlan(){
     let {model} = this.props;
     model.doQueryPlan();
+    model.didUpdate();
+  }
+  onQueryFormat() {
+    let {model} = this.props;
+    model.doFormatQuery();
     model.didUpdate();
   }
   onCopyAsExcel() {
@@ -1813,6 +1835,11 @@ class App extends React.Component {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
         model.doExport();
+        model.didUpdate();
+      }
+      if (e.altKey && e.shiftKey && (e.key == "f" || e.key == "F")) {
+        e.preventDefault();
+        model.doFormatQuery();
         model.didUpdate();
       }
     });
@@ -2061,8 +2088,11 @@ class App extends React.Component {
                     h("a", {tabIndex: 4, className: "slds-button slds-button_neutral", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info")
                   ),
                   h("li", {className: "slds-button-group-item"},
+                    h("button", {tabIndex: 5, onClick: this.onQueryFormat, title: "Format Query", className: "slds-button slds-button_neutral"}, "Format")
+                  ),
+                  h("li", {className: "slds-button-group-item"},
                     h("div", {className: "slds-dropdown-trigger"},
-                      h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "slds-button slds-button_icon slds-button_icon-more toggle contract" : "slds-button slds-button_icon slds-button_icon-more toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
+                      h("button", {tabIndex: 6, href: "#", className: model.expandAutocomplete ? "slds-button slds-button_icon slds-button_icon-more toggle contract" : "slds-button slds-button_icon slds-button_icon-more toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
                         h("div", {className: "button-icon"}),
                         h("div", {className: "button-toggle-icon"})
                       )

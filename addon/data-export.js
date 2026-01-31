@@ -2088,7 +2088,7 @@ class App extends React.Component {
                     h("a", {tabIndex: 4, className: "slds-button slds-button_neutral", hidden: !model.autocompleteResults.sobjectName, href: model.showDescribeUrl(), target: "_blank", title: "Show field info for the " + model.autocompleteResults.sobjectName + " object"}, model.autocompleteResults.sobjectName + " Field Info")
                   ),
                   h("li", {className: "slds-button-group-item"},
-                    h("button", {tabIndex: 5, onClick: this.onQueryFormat, title: "Format Query", className: "slds-button slds-button_neutral"}, "Format")
+                    isOptionEnabled("format-query", this.state.hideButtonsOption) ? h("button", {tabIndex: 5, onClick: this.onQueryFormat, title: "Format Query", className: "slds-button slds-button_neutral"}, "Format") : null
                   ),
                   h("li", {className: "slds-button-group-item"},
                     h("div", {className: "slds-dropdown-trigger"},

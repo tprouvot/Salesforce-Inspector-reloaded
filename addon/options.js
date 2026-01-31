@@ -209,6 +209,7 @@ class OptionsTabSelector extends React.Component {
               checkboxes: [
                 {label: "Delete Records", name: "delete", checked: true},
                 {label: "Export Query", name: "export-query", checked: false},
+                {label: "Format Query", name: "format-query", checked: true},
                 {label: "Agentforce", name: "export-agentforce", checked: false}
               ]}
           },

@@ -96,6 +96,7 @@ Since the extension offers more features, the number of button is increasing.
 Some of the users may don't need some of those, to make the UI lighter some of the buttons can be hidden:
 - Delete Records
 - Export Query
+- Format Query
 - Agentforce icon
 
 ## Generate SOQL queries with Agentforce

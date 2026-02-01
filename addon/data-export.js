@@ -1,7 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants,
-  UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, formatNumber, formatDuration} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -79,7 +78,6 @@ class Model {
     this.filterColumn = ""; // Default filter column
     this.initialQuery = "";
     this.spinnerCount = 0;
-    this.queryInputFocused = false;
 
     // Initialize spinFor method early - needed by describeInfo and userInfoModel
     this.spinFor = createSpinForMethod(this);
@@ -160,14 +158,6 @@ class Model {
   updatedExportedData() {
     this.resultTableCallback(this.exportedData);
   }
-
-  // Helper for a common operation
-  setWorkingState(isWorking, statusText, errorText = null) {
-    this.isWorking = isWorking;
-    this.exportStatus = statusText;
-    this.exportError = errorText;
-  }
-
   setResultsFilter(value) {
     this.resultsFilter = value;
     if (this.exportedData == null) {
@@ -282,13 +272,13 @@ class Model {
       const avgTime = this.performancePoints.reduce((a, b) => a + b, 0) / batches;
       const maxTime = Math.max(...this.performancePoints);
       const minTime = Math.min(...this.performancePoints);
-      const avg = `Avg ${formatDuration(avgTime)}`;
-      const max = `Max ${formatDuration(maxTime)}`;
-      const min = `Min ${formatDuration(minTime)}`;
+      const avg = `Avg ${avgTime.toFixed(1)}ms`;
+      const max = `Max ${maxTime.toFixed(1)}ms`;
+      const min = `Min ${minTime.toFixed(1)}ms`;
       batchStats = `Batch Performance: ${avg}, ${min}, ${max}`;
-      batchCount = `${formatNumber(batches)} Batches / `;
+      batchCount = `${batches} Batches / `;
     }
-    return {text: `${formatNumber(batchCount)} ${formatDuration(this.totalTime)}`, batchStats};
+    return {text: `${batchCount}${this.totalTime.toFixed(1)}ms`, batchStats};
   }
   clearHistory() {
     this.queryHistory.clear();
@@ -952,15 +942,20 @@ class Model {
         }
         if (!data.done && isSoql) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
-          vm.setWorkingState(true, `Exporting... Completed ${formatNumber(recs,0)} of ${formatNumber(total,0)} record${s(total)}.`);
+          vm.isWorking = true;
+          vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
+          vm.exportError = null;
           vm.exportedData = exportedData;
           vm.markPerf();
           vm.updatedExportedData();
+          vm.didUpdate();
           return pr;
         }
         vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
         if (recs == 0) {
-          vm.setWorkingState(false, "No data exported." + (total > 0 ? ` ${formatNumber(total,0)} record${s(total)}.` : ""));
+          vm.isWorking = false;
+          vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
+          vm.exportError = null;
           vm.exportedData = exportedData;
           vm.markPerf();
           vm.updatedExportedData();
@@ -968,7 +963,9 @@ class Model {
         } else {
           vm.updateCurrentTabName(exportedData.records[0].attributes.type);
         }
-        vm.setWorkingState(false, `Exported ${formatNumber(recs,0)}${recs !== total ? (" of " + formatNumber(total,0)) : ""} record${s(recs)}`);
+        vm.isWorking = false;
+        vm.exportStatus = `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
+        vm.exportError = null;
         vm.exportedData = exportedData;
         vm.markPerf();
         vm.updatedExportedData();
@@ -985,13 +982,18 @@ class Model {
         let recs = exportedData.records.length;
         let total = exportedData.totalSize;
         if (total != -1) {
-          vm.setWorkingState(false, `Exported ${formatNumber(recs,0)} of ${formatNumber(total,0)} record${s(total)}. Stopped by error.`);
+          // We already got some data. Show it, and indicate that not all data was exported
+          vm.isWorking = false;
+          vm.exportStatus = `Exported ${recs} of ${total} record${s(total)}. Stopped by error.`;
+          vm.exportError = null;
           vm.exportedData = exportedData;
           vm.updatedExportedData();
           vm.markPerf();
           return null;
         }
-        vm.setWorkingState(false, "Error", err.message);
+        vm.isWorking = false;
+        vm.exportStatus = "Error";
+        vm.exportError = err.message;
         vm.exportedData = null;
         vm.updatedExportedData();
         return null;
@@ -1001,13 +1003,17 @@ class Model {
     vm.spinFor(batchHandler(sfConn.rest(exportedData.endpoint, exportedData.params))
       .catch(error => {
         console.error(error);
-        vm.setWorkingState(false, "Error", "UNEXPECTED EXCEPTION:" + error);
+        vm.isWorking = false;
+        vm.exportStatus = "Error";
+        vm.exportError = "UNEXPECTED EXCEPTION:" + error;
         vm.exportedData = null;
         vm.markPerf();
         vm.updatedExportedData();
       }));
     vm.setResultsFilter("");
-    vm.setWorkingState(true, "Exporting...");
+    vm.isWorking = true;
+    vm.exportStatus = "Exporting...";
+    vm.exportError = null;
     vm.exportedData = exportedData;
     vm.updatedExportedData();
   }
@@ -1072,20 +1078,18 @@ class Model {
 
   loadQueryTabs(queryFromUrl) {
     const savedTabs = localStorage.getItem(`${this.sfHost}_queryTabs`);
-    const baseName = Model.QUERY_TAB_PREFIX;
     if (savedTabs) {
       this.queryTabs = JSON.parse(savedTabs);
       if (queryFromUrl) {
-        const nameCount = this.queryTabs.length + 1;
-        const name = `${baseName} ${nameCount}`;
-        this.queryTabs.push({name, baseName, nameCount, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
+        const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.queryTabs.length + 1}`;
+        this.queryTabs.push({name: newTabName, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false});
         this.activeTabIndex = this.queryTabs.length - 1;
         this.saveQueryTabs();
       } else {
         this.activeTabIndex = 0;
       }
     } else {
-      this.queryTabs = [{name: `${baseName} 1`, baseName, nameCount: 1, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
+      this.queryTabs = [{name: `${Model.QUERY_TAB_PREFIX} 1`, query: this.initialQuery, queryTooling: this.queryTooling, queryAll: this.queryAll, results: null, isManuallyRenamed: false}];
       this.activeTabIndex = 0;
     }
   }
@@ -1094,8 +1098,6 @@ class Model {
     // Create a copy of the tabs without the results property
     const tabsToSave = this.queryTabs.map(tab => ({
       name: tab.name,
-      baseName: tab.baseName,
-      nameCount: tab.nameCount,
       query: tab.query,
       queryTooling: tab.queryTooling,
       queryAll: tab.queryAll,
@@ -1105,10 +1107,8 @@ class Model {
   }
 
   addQueryTab() {
-    const baseName = Model.QUERY_TAB_PREFIX;
-    const nextIndex = this.getNextTabCount(baseName);
-    const name = `${baseName} ${nextIndex}`;
-    this.queryTabs.push({name, baseName, nameCount: nextIndex, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
+    const newTabName = `${Model.QUERY_TAB_PREFIX} ${this.getNextQueryTabIndex()}`;
+    this.queryTabs.push({name: newTabName, query: "", queryTooling: false, queryAll: false, results: null, isManuallyRenamed: false});
     this.activeTabIndex = this.queryTabs.length - 1;
     this.setActiveTab(this.activeTabIndex);
     this.saveQueryTabs();
@@ -1154,20 +1154,16 @@ class Model {
     this.addQueryTab();
   }
 
-  get currentTab() {
-    return this.queryTabs[this.activeTabIndex];
-  }
-
   setActiveTab(index) {
     this.activeTabIndex = index;
     // Update the query input value to match the current tab's query
     if (this.queryInput) {
-      this.queryInput.value = this.currentTab.query;
+      this.queryInput.value = this.queryTabs[index].query;
     }
-    this.queryTooling = this.currentTab.queryTooling;
-    this.queryAll = this.currentTab.queryAll;
+    this.queryTooling = this.queryTabs[index].queryTooling;
+    this.queryAll = this.queryTabs[index].queryAll;
     // Update the exported data with the tab's results
-    this.exportedData = this.currentTab.results;
+    this.exportedData = this.queryTabs[index].results;
     // Update the UI with the new data
     if (this.exportedData) {
       this.exportStatus = `Loaded ${this.exportedData.records.length} record${s(this.exportedData.records.length)}`;
@@ -1177,60 +1173,70 @@ class Model {
     this.updatedExportedData();
     this.didUpdate();
   }
+  /*
+  Returns the next available index number for query tabs
+  */
+  getNextQueryTabIndex() {
+    let maxIndex = 0;
+    const prefix = Model.QUERY_TAB_PREFIX;
 
+    this.queryTabs.forEach(tab => {
+      if (tab.name.startsWith(prefix)) {
+        // Extract number from tab name (e.g., "Query 1" -> 1, "Query 2" -> 2)
+        const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const match = tab.name.match(new RegExp(`^${escapedPrefix}\\s+(\\d+)`));
+        if (match) {
+          const index = parseInt(match[1], 10);
+          if (index > maxIndex) {
+            maxIndex = index;
+          }
+        }
+      }
+    });
+    return maxIndex + 1;
+  }
   updateCurrentTabQuery(query) {
-    if (this.currentTab) {
-      this.currentTab.query = query;
+    if (this.queryTabs[this.activeTabIndex]) {
+      this.queryTabs[this.activeTabIndex].query = query;
       this.saveQueryTabs();
     }
-  }
-
-  updateQueryFocusState(hasFocus) {
-    this.queryTextAreaHasFocus = hasFocus;
-    this.didUpdate();
   }
 
   updateCurrentTabProperty(propertyName, value) {
-    if (this.currentTab) {
-      currentTab[propertyName] = value;
+    if (this.queryTabs[this.activeTabIndex]) {
+      this.queryTabs[this.activeTabIndex][propertyName] = value;
       this.saveQueryTabs();
-    }
-  }
-
-  // Determine the next available count to append to a baseName
-  getNextTabCount(baseName) {
-    const matchCounts = this.queryTabs
-      .filter(tab => tab.baseName?.toLowerCase() === baseName.toLowerCase())
-      .map(tab => tab.nameCount);
-    if (matchCounts.length > 0) {
-      return Math.max(...matchCounts) + 1;
-    } else {
-      return 1;
     }
   }
 
   updateCurrentTabName(name) {
-    if (!this.currentTab || this.currentTab.isManuallyRenamed) {
-      return;
+    if (this.queryTabs[this.activeTabIndex]
+        && !this.queryTabs[this.activeTabIndex].name.includes(name)
+        && !this.queryTabs[this.activeTabIndex].isManuallyRenamed) {
+      // Check if there are any other tabs with the same name
+      let count = 1;
+      let newName = name;
+      while (this.queryTabs.some(tab => tab.name === newName)) {
+        newName = `${name} (${count})`;
+        count++;
+      }
+      this.queryTabs[this.activeTabIndex].name = newName;
+      this.saveQueryTabs();
     }
-    this.updateTabName(this.activeTabIndex, name, false);
-    this.currentTab.isManuallyRenamed = false;
   }
 
-  updateTabName(index, name, manualRename = true) {
-    const selectedTab = this.queryTabs[index];
-    const newName = name.trim();
-    if (selectedTab
-        && selectedTab?.baseName?.toLowerCase() !== newName.toLowerCase()
-        && selectedTab?.name?.toLowerCase() !== newName.toLowerCase()
-        && !selectedTab.isManuallyRenamed) {
-      // Check if there are any other tabs with the same base name
-      const nextCount = this.getNextTabCount(newName);
-      const countToAppend = nextCount > 1 ? ` ${nextCount}` : "";
-      selectedTab.nameCount = nextCount;
-      selectedTab.name = `${name}${countToAppend}`;
-      selectedTab.baseName = name;
-      selectedTab.isManuallyRenamed = manualRename;
+  updateTabName(index, newName) {
+    if (this.queryTabs[index] && newName.trim()) {
+      let trimmedName = newName.trim();
+      // Check if there are any other tabs with the same name
+      let count = 1;
+      let finalName = trimmedName;
+      while (this.queryTabs.some((tab, i) => i !== index && tab.name === finalName)) {
+        finalName = `${trimmedName} (${count})`;
+        count++;
+      }
+      this.queryTabs[index].name = finalName;
+      this.queryTabs[index].isManuallyRenamed = true;
       this.saveQueryTabs();
       this.didUpdate();
     }
@@ -1256,7 +1262,7 @@ class Model {
   }
 
   getCurrentTabQuery() {
-    return this.currentTab?.query || "";
+    return this.queryTabs[this.activeTabIndex]?.query || "";
   }
 }
 
@@ -1434,11 +1440,8 @@ class App extends React.Component {
     this.onRemoveOtherTabs = this.onRemoveOtherTabs.bind(this);
     this.onRemoveRightTabs = this.onRemoveRightTabs.bind(this);
     this.onRemoveAllTabs = this.onRemoveAllTabs.bind(this);
-    this.onDuplicateTab = this.onDuplicateTab.bind(this);
     this.onTabClick = this.onTabClick.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
-    this.onQueryInputFocus = this.onQueryInputFocus.bind(this);
-    this.onQueryInputBlur = this.onQueryInputBlur.bind(this);
     this.onTabNameEdit = this.onTabNameEdit.bind(this);
     this.onTabNameSubmit = this.onTabNameSubmit.bind(this);
     this.onTabDragStart = this.onTabDragStart.bind(this);
@@ -1657,23 +1660,6 @@ class App extends React.Component {
     this.onCloseContextMenu();
   }
 
-  onDuplicateTab() {
-    let {model} = this.props;
-    if (this.state.contextMenu) {
-      const tabCopy = {...model.queryTabs[this.state.contextMenu.index]};
-      const baseName = tabCopy.baseName || Model.QUERY_TAB_PREFIX;
-      const nextIndex = model.getNextTabCount(baseName);
-      const name = `${baseName} ${nextIndex}`;
-      tabCopy.name = name;
-      tabCopy.nameCount = nextIndex;
-      model.queryTabs.push(tabCopy);
-      model.activeTabIndex = model.queryTabs.length - 1;
-      model.setActiveTab(model.activeTabIndex);
-      model.saveQueryTabs();
-      this.onCloseContextMenu();
-    }
-  }
-
   onTabClick(e, index) {
     e.preventDefault();
     let {model} = this.props;
@@ -1685,17 +1671,6 @@ class App extends React.Component {
     model.updateCurrentTabQuery(e.target.value);
     model.queryAutocompleteHandler();
     model.didUpdate();
-  }
-
-  onQueryInputFocus() {
-    let {model} = this.props;
-    model.updateQueryFocusState(true);
-
-  }
-
-  onQueryInputBlur() {
-    let {model} = this.props;
-    model.updateQueryFocusState(false);
   }
 
   onTabNameEdit(e, index) {
@@ -2011,7 +1986,7 @@ class App extends React.Component {
             model.queryTabs.map((tab, index) =>
               h("div", {
                 key: index,
-                className: `query-tab ${index === model.activeTabIndex ? "active" : ""} ${model.queryTextAreaHasFocus && (index === model.activeTabIndex) ? "query-tab-input-focused" : ""} ${this.state.draggedTabIndex === index ? "dragging" : ""} ${this.state.dropTargetIndex === index ? "drop-target" : ""}`,
+                className: `query-tab ${index === model.activeTabIndex ? "active" : ""} ${this.state.draggedTabIndex === index ? "dragging" : ""} ${this.state.dropTargetIndex === index ? "drop-target" : ""}`,
                 onClick: e => this.onTabClick(e, index),
                 draggable: true,
                 onDragStart: e => this.onTabDragStart(e, index),
@@ -2067,9 +2042,7 @@ class App extends React.Component {
               id: "query",
               ref: "query",
               style: {maxHeight: (model.winInnerHeight - 200) + "px"},
-              onChange: this.onQueryInput,
-              onFocus: this.onQueryInputFocus,
-              onBlur: this.onQueryInputBlur
+              onChange: this.onQueryInput
             }),
             h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
               h("div", {className: "autocomplete-header"},
@@ -2252,11 +2225,6 @@ class App extends React.Component {
           h("li", {className: "slds-dropdown__item", role: "presentation"},
             h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onRemoveAllTabs(); }},
               h("span", {className: "slds-truncate", title: "Close All"}, "Close All")
-            )
-          ),
-          h("li", {className: "slds-dropdown__item", role: "presentation"},
-            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onDuplicateTab(); }},
-              h("span", {className: "slds-truncate", title: "Duplicate"}, "Duplicate")
             )
           )
         )

@@ -442,7 +442,6 @@ class Model {
   }
 
   importCounts() {
-    // FORMAT DATA HERE
     return this.importData.counts;
   }
 

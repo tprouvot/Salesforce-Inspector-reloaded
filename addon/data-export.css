@@ -758,13 +758,6 @@ svg.icon:hover {
   color: #c23934;
 }
 
-.query-tab-input-focused {
-  border-top-color:  #1489ef !important;
-  border-left-color: #1489ef !important;
-  border-right-color: #1489ef !important;
-  box-shadow: -3.5px 0px 3px -3px rgba(0, 0, 0, 0.6);
-}
-
 .add-tab-button {
   padding: 8px;
   cursor: pointer;

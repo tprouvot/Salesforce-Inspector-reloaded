@@ -1690,14 +1690,12 @@ class App extends React.Component {
   onQueryInputFocus() {
     let {model} = this.props;
     model.updateQueryFocusState(true);
-    console.log("Focus set", model.queryTextAreaHasFocus);
 
   }
 
   onQueryInputBlur() {
     let {model} = this.props;
     model.updateQueryFocusState(false);
-    console.log("Focus removed",  model.queryTextAreaHasFocus);
   }
 
   onTabNameEdit(e, index) {

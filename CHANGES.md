@@ -1,7 +1,7 @@
 # Release Notes
 
 ## Version 2.0
-- `Data Export` add outline to current tab when query input is in focus, add case insensitive match on tab name for adding count to duplicate names (e.g., Contact, Contact 2) add context menu item to duplicate tabs, add number formatting and shorter, dynamic duraction formatting for performance, add option to always view duration in ms (contribution by [Nathan Shulman](https://github.com/nshulman))
+- `Data Export` add outline to current tab when query input is in focus, duplicate tab to context menu, case insensitive match on tab name for adding count to duplicate names (e.g., Contact, Contact 2). Add number formatting and shorter, dynamic duration formatting for execution time, with option to always view duration in ms (contribution by [Nathan Shulman](https://github.com/nshulman))
 - `Data Export` Data export new tab context [issue #1080](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1080)(contribution by [Maral Zakarian](https://github.com/MaralZak))
 - `Data Export` Add context menu (Close All, Close Others) for query tabs (contribution by [Idan Damari](https://github.com/iDamari))
 - `Data Export` Fix Save Query Menu with SLDS Styling (contribution by [Idan Damari](https://github.com/iDamari))

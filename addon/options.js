@@ -167,6 +167,7 @@ class OptionsTabSelector extends React.Component {
               }}
           },
           {option: Option, props: {type: "toggle", title: "Enable Dynamic Popup Height", key: "popupHeighDynamictMode", default: false, tooltip: "When enabled, the popup height will be dynamically adjusted based on the content."}},
+          {option: Option, props: {type: "toggle", default: false, title: "Always show duration in ms", key: "showFormattedDurationInMs", tooltip: "Always display duration in ms (for example, export data execution time). When disabled, duration will be shortened by using ms, seconds, or minutes."}}
         ]
       },
       {
@@ -221,8 +222,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Enable Query Typo Fix", key: "enableQueryTypoFix", default: false, tooltip: "Enable automation that removes typos from query input"}},
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}},
           //This option is created to disable BOM for CSV in case of errors appearing during export, created in v2.0.0, can be deleted in two releases if no issues are reported
-          {option: Option, props: {type: "toggle", default: true, title: "Use BOM for CSV export", key: "useBomForCsvExport", tooltip: "Add UTF-8 BOM (Byte Order Mark) for Excel compatibility with non-Latin characters."}},
-          {option: Option, props: {type: "toggle", default: false, title: "Always show query time in ms", key: "showExportDurationInMs", tooltip: "Always display query execution time in ms. When disabled, duration will be shortened using ms, seconds, and minutes."}}
+          {option: Option, props: {type: "toggle", default: true, title: "Use BOM for CSV export", key: "useBomForCsvExport", tooltip: "Add UTF-8 BOM (Byte Order Mark) for Excel compatibility with non-Latin characters."}}
         ]
       },
       {

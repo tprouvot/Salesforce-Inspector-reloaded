@@ -161,6 +161,7 @@ class Model {
     this.resultTableCallback(this.exportedData);
   }
 
+  // Helper for a common operation
   setWorkingState(isWorking, statusText, errorText = null) {
     this.isWorking = isWorking;
     this.exportStatus = statusText;
@@ -285,9 +286,9 @@ class Model {
       const max = `Max ${formatDuration(maxTime)}`;
       const min = `Min ${formatDuration(minTime)}`;
       batchStats = `Batch Performance: ${avg}, ${min}, ${max}`;
-      batchCount = `${batches} Batches / `;
+      batchCount = `${formatNumber(batches)} Batches / `;
     }
-    return {text: `${batchCount}${formatDuration(this.totalTime)}`, batchStats};
+    return {text: `${formatNumber(batchCount)} ${formatDuration(this.totalTime)}`, batchStats};
   }
   clearHistory() {
     this.queryHistory.clear();
@@ -910,7 +911,6 @@ class Model {
     exportedData.isTooling = vm.queryTooling;
     exportedData.describeInfo = vm.describeInfo;
     exportedData.sfHost = vm.sfHost;
-
     vm.initPerf();
     let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
     vm.queryInput.value = query; // Update the input value with the cleaned query
@@ -1154,6 +1154,10 @@ class Model {
     this.addQueryTab();
   }
 
+  get currentTab() {
+    return this.queryTabs[this.activeTabIndex];
+  }
+
   setActiveTab(index) {
     this.activeTabIndex = index;
     // Update the query input value to match the current tab's query
@@ -1186,10 +1190,6 @@ class Model {
     this.didUpdate();
   }
 
-  get currentTab() {
-    return this.queryTabs[this.activeTabIndex];
-  }
-
   updateCurrentTabProperty(propertyName, value) {
     if (this.currentTab) {
       currentTab[propertyName] = value;
@@ -1197,7 +1197,7 @@ class Model {
     }
   }
 
-  // Determine the next available count to append to a name
+  // Determine the next available count to append to a baseName
   getNextTabCount(baseName) {
     const matchCounts = this.queryTabs
       .filter(tab => tab.baseName?.toLowerCase() === baseName.toLowerCase())
@@ -1210,11 +1210,14 @@ class Model {
   }
 
   updateCurrentTabName(name) {
+    if (!this.currentTab || this.currentTab.isManuallyRenamed) {
+      return;
+    }
     this.updateTabName(this.activeTabIndex, name, false);
     this.currentTab.isManuallyRenamed = false;
   }
 
-  updateTabName(index, name, manual = true) {
+  updateTabName(index, name, manualRename = true) {
     const selectedTab = this.queryTabs[index];
     const newName = name.trim();
     if (selectedTab
@@ -1227,7 +1230,7 @@ class Model {
       selectedTab.nameCount = nextCount;
       selectedTab.name = `${name}${countToAppend}`;
       selectedTab.baseName = name;
-      selectedTab.isManuallyRenamed = manual;
+      selectedTab.isManuallyRenamed = manualRename;
       this.saveQueryTabs();
       this.didUpdate();
     }
@@ -1431,6 +1434,7 @@ class App extends React.Component {
     this.onRemoveOtherTabs = this.onRemoveOtherTabs.bind(this);
     this.onRemoveRightTabs = this.onRemoveRightTabs.bind(this);
     this.onRemoveAllTabs = this.onRemoveAllTabs.bind(this);
+    this.onDuplicateTab = this.onDuplicateTab.bind(this);
     this.onTabClick = this.onTabClick.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
     this.onQueryInputFocus = this.onQueryInputFocus.bind(this);
@@ -1651,6 +1655,23 @@ class App extends React.Component {
     let {model} = this.props;
     model.removeAllQueryTabs();
     this.onCloseContextMenu();
+  }
+
+  onDuplicateTab() {
+    let {model} = this.props;
+    if (this.state.contextMenu) {
+      const tabCopy = {...model.queryTabs[this.state.contextMenu.index]};
+      const baseName = tabCopy.baseName || Model.QUERY_TAB_PREFIX;
+      const nextIndex = model.getNextTabCount(baseName);
+      const name = `${baseName} ${nextIndex}`;
+      tabCopy.name = name;
+      tabCopy.nameCount = nextIndex;
+      model.queryTabs.push(tabCopy);
+      model.activeTabIndex = model.queryTabs.length - 1;
+      model.setActiveTab(model.activeTabIndex);
+      model.saveQueryTabs();
+      this.onCloseContextMenu();
+    }
   }
 
   onTabClick(e, index) {
@@ -2233,6 +2254,11 @@ class App extends React.Component {
           h("li", {className: "slds-dropdown__item", role: "presentation"},
             h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onRemoveAllTabs(); }},
               h("span", {className: "slds-truncate", title: "Close All"}, "Close All")
+            )
+          ),
+          h("li", {className: "slds-dropdown__item", role: "presentation"},
+            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onDuplicateTab(); }},
+              h("span", {className: "slds-truncate", title: "Duplicate"}, "Duplicate")
             )
           )
         )

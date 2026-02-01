@@ -22,13 +22,18 @@ The Data Export page now supports multiple query tabs, allowing you to work on s
 - **Drag & Drop Reordering**: Click and drag tabs to reorder them according to your preference. The tab positions are automatically saved.
 - **Handling Duplicate Names**: If you open a new tab for an SObject that already has a tab, or if you manually create tabs with duplicate names, a number will be appended to keep them unique (e.g., "Account (1)", "Account (2)").
 - **Preserved Context**: Each tab remembers its own query and the results from the last time it was run. When you switch between tabs, the query and its results are instantly restored.
+- **Context Menu Actions**: **Right-click** on any tab to access the context menu with quick actions:
+  - **Close tab**: Close the selected tab
+  - **Close other tabs**: Close all tabs except the selected one
+  - **Close tabs to the right**: Close all tabs to the right of the selected tab
+  - **Close all tabs**: Close all tabs (creates a new empty tab if all are closed)
 
 ### How to Use
 
 - **Create a new tab**: Click the `+` button in the tab bar
 - **Edit tab names**: Double-click on any tab name, type your custom name, and press Enter
 - **Reorder tabs**: Click and drag any tab to move it to your preferred position
-- **Close tabs**: Click the `×` button on any tab (except when only one tab remains)
+- **Close tabs**: Click the `×` button on any tab (except when only one tab remains), or right-click to access more closing options via the context menu
 
 All tab names and positions are automatically saved and will persist between browser sessions.
 

@@ -3,6 +3,9 @@
 ## Version 2.0
 - `Data Export` add outline to tabs when query is in focus, add case insensitive match on tab name for adding count to duplicate names (e.g., Contact, Contact 2) (contribution by [Nathan Shulman](https://github.com/nshulman))
 - `Log Viewer` Modified UI elements for consistency with `Data Export` behavior, added trace flags in new window (contribution by [Nathan Shulman](https://github.com/nshulman))
+- `Data Export` Data export new tab context [issue #1080](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1080)(contribution by [Maral Zakarian](https://github.com/MaralZak))
+- `Data Export` Add context menu (Close All, Close Others) for query tabs (contribution by [Idan Damari](https://github.com/iDamari))
+- `Data Export` Fix Save Query Menu with SLDS Styling (contribution by [Idan Damari](https://github.com/iDamari))
 - Reduce API calls in popup by skipping unnecessary requests when not expanded [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - Add API Statistics page to track and monitor REST and SOAP API calls (enable via `Enable API Stats Debug Mode` in Options > API tab) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - `User Experience` Add dynamic popup height and option to enable / disable setting (contribution by [Nicolas Greard](https://github.com/ngreardSF))

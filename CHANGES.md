@@ -1,7 +1,7 @@
 # Release Notes
 
 ## Version 2.0
-
+- `Data Import` use new component, ProgressRing to show status for imports [issue #1093](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1093). Add locale-based number formatting for record counts using common format (contribution by [Nathan Shulman](https://github.com/nshulman))
 - `Data Export` Data export new tab context [issue #1080](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1080)(contribution by [Maral Zakarian](https://github.com/MaralZak))
 - `Data Export` Add context menu (Close All, Close Others) for query tabs (contribution by [Idan Damari](https://github.com/iDamari))
 - `Data Export` Fix Save Query Menu with SLDS Styling (contribution by [Idan Damari](https://github.com/iDamari))

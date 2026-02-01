@@ -446,3 +446,31 @@ export class DataCache {
     keysToRemove.forEach(key => localStorage.removeItem(key));
   }
 }
+
+// Utility function to format number using runtime locale
+export function formatNumber(value, decimals) {
+  return value.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+};
+
+// Utility function to format duration using runtime locale and shorten to seconds or minutes when appropriate
+export function formatDuration(ms) {
+  if (ms == null || isNaN(ms)) {
+    return "0ms";
+  }
+  const alwaysShowMs = localStorage.getItem("showFormattedDurationInMs") === "true";
+  if (alwaysShowMs || ms < 1000) {
+    // Always show in ms format
+    return `${formatNumber(ms, 1)}ms`;
+  } else if (ms < 60000) {
+    // 1-59 seconds: show "12.34s" format
+    return `${formatNumber(ms / 1000, 2)}s`;
+  } else if (ms >= 60000) {
+    // Over 1 minute: show "2m 34.56s" format
+    const minutes = Math.floor(ms / 60000);
+    const seconds = (ms % 60000) / 1000;
+    return `${formatNumber(minutes, 0)}m ${formatNumber(seconds, 2)}s`;
+  }
+}

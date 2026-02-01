@@ -1025,12 +1025,19 @@ class Model {
     vm.updatedExportedData();
   }
   doFormatQuery() {
+    const { value: query } = this.queryInput;
+    if (!query || !query.trim()) return;
+
     try {
-      const formatted = formatQuery(this.queryInput.value, this.queryFormatOptions);
-      this.queryInput.value = formatted;
-      this.updateCurrentTabQuery(formatted);
+      const cleanedQuery = this.removeTypo(query);
+      const formatted = formatQuery(cleanedQuery, this.queryFormatOptions);
+      
+      if (formatted !== query) {
+        this.queryInput.value = formatted;
+        this.updateCurrentTabQuery(formatted);
+      }
     } catch (e) {
-      //console.error("Format query failed", e);
+      console.warn("SOQL Formatting failed. The query might have syntax errors.", e);
     }
   }
   async generateSoql() {

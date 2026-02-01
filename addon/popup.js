@@ -101,7 +101,12 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
 
 function initLinks({sfHost}) {
   //add custom links to setupLink
-  setupLinks.push(...(JSON.parse(localStorage.getItem(sfHost + "_orgLinks")) || []));
+  if (localStorage.getItem(sfHost + "_orgLinks")) {
+    let links = JSON.parse(localStorage.getItem(sfHost + "_orgLinks"));
+    links.forEach((link) => {
+      setupLinks.push(link);
+    });
+  }
 }
 
 class App extends React.PureComponent {

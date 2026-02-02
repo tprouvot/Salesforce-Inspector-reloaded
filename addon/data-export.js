@@ -1338,7 +1338,7 @@ function RecordTable(vm) {
     records: [],
     table: [],
     rowVisibilities: [],
-    colVisibilities: [true],
+    colVisibilities: [!vm.prefHideRelations],
     countOfVisibleRecords: null,
     isTooling: false,
     totalSize: -1,

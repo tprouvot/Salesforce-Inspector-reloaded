@@ -2,7 +2,7 @@
 
 ## Version 2.0
 
-- `Data Export` Optimize "Hide Object Columns" feature and fix bug where object columns weren't hidden on initial load when preference was already enabled (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
+- `Data Export` Refactor "Hide Object Columns" toggle to update UI instantly without re-querying Salesforce (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - `Data Export` Data export new tab context [issue #1080](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1080)(contribution by [Maral Zakarian](https://github.com/MaralZak))
 - `Data Export` Add context menu (Close All, Close Others) for query tabs (contribution by [Idan Damari](https://github.com/iDamari))
 - `Data Export` Fix Save Query Menu with SLDS Styling (contribution by [Idan Damari](https://github.com/iDamari))

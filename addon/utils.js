@@ -21,6 +21,9 @@ export class Constants {
   static API_DEBUG_STATISTICS = "apiDebugStatistics";
   // Cache Keys
   static CACHE_SOBJECTS_LIST = "sobjectsList";
+  // Options
+  static PRELOAD_SOBJECTS_BEFORE_POPUP = "preloadSobjectsBeforePopup";
+  static ENABLE_SOBJECTS_LIST_CACHE = "enableSobjectsListCache";
 }
 
 export function getLinkTarget(e = {}) {
@@ -355,7 +358,7 @@ export class DataCache {
     const cacheDurationHours = localStorage.getItem(`cacheDuration_${cacheKey}`);
     if (cacheDurationHours !== null && cacheDurationHours !== undefined) {
       const hours = parseInt(cacheDurationHours, 10);
-      if (!isNaN(hours) && hours > 0) {
+      if (!isNaN(hours) && hours >= 0) {
         return hours;
       }
     }
@@ -373,12 +376,12 @@ export class DataCache {
     if (!cacheEntry || !cacheEntry.timestamp) {
       return false;
     }
-    const now = Date.now();
-    const cacheAge = now - cacheEntry.timestamp;
     // Use durationHours from cache entry if available, otherwise fallback to current setting
     const cacheDurationHours = cacheEntry.durationHours !== undefined
       ? cacheEntry.durationHours
       : this.getCacheDurationHours(cacheKey);
+    const now = Date.now();
+    const cacheAge = now - cacheEntry.timestamp;
     const maxAge = cacheDurationHours * 60 * 60 * 1000; // Convert hours to milliseconds
     return cacheAge < maxAge;
   }
@@ -494,11 +497,12 @@ export class DataCache {
    * @returns {Promise<boolean>|void} Promise with success boolean if isLarge=true, void otherwise
    */
   static setCachedData(cacheKey, sfHost, data, isLarge = false, useSfHostPrefix = true) {
+    // Get current duration setting
+    const durationHours = this.getCacheDurationHours(cacheKey);
+
     const storageKey = useSfHostPrefix
       ? `${sfHost}_cache_${cacheKey}`
       : `cache_${cacheKey}`;
-    // Get current duration setting and store it in cache entry
-    const durationHours = this.getCacheDurationHours(cacheKey);
     const cacheEntry = {
       data,
       timestamp: Date.now(),
@@ -576,12 +580,8 @@ export class DataCache {
     }
 
     try {
-      const serialized = JSON.stringify(cacheEntry);
-      const sizeInMB = (serialized.length / (1024 * 1024)).toFixed(2);
-      console.log(`Attempting to cache ${cacheKey}: ${sizeInMB}MB (using browser.storage.local)`);
 
       await browser.storage.local.set({[storageKey]: cacheEntry});
-      console.log(`Successfully cached ${cacheKey} in browser.storage.local`);
       return true;
     } catch (e) {
       console.error(`Error storing large data cache for ${cacheKey}:`, e);
@@ -676,4 +676,203 @@ export class DataCache {
     }
   }
 
+}
+
+/**
+ * Get sobjects list - returns cached data if available, otherwise fetches from API
+ * @param {string} sfHost - Salesforce host (for cache validation)
+ * @returns {Promise<Array>} Sobjects list (from cache or fetched from API)
+ */
+export async function getSobjectsList(sfHost) {
+  // Check if caching is enabled
+  const cacheEnabled = isSettingEnabled(Constants.ENABLE_SOBJECTS_LIST_CACHE);
+
+  // Check cache first (only if caching is enabled)
+  if (cacheEnabled) {
+    const cachedSobjects = await DataCache.getCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, true, false);
+
+    if (cachedSobjects && Array.isArray(cachedSobjects)) {
+      // Return cached optimized list (callers handle this format)
+      return cachedSobjects;
+    }
+  }
+
+  // Cache miss - fetch from API
+  const entityMap = new Map();
+
+  function addEntity(
+    {
+      name,
+      label,
+      keyPrefix,
+      durableId,
+      isCustomSetting,
+      recordTypesSupported,
+      isEverCreatable,
+      newUrl,
+      layoutable,
+    },
+    api
+  ) {
+    label = label && label.match("__MISSING") ? "" : label; // Error is added to the label if no label exists
+    let entity = entityMap.get(name);
+    // Each API call enhances the data, only the Name fields are present for each call.
+    if (entity) {
+      if (!entity.keyPrefix) {
+        entity.keyPrefix = keyPrefix;
+      }
+      if (!entity.durableId) {
+        entity.durableId = durableId;
+      }
+      if (!entity.isCustomSetting) {
+        entity.isCustomSetting = isCustomSetting;
+      }
+      if (!entity.newUrl) {
+        entity.newUrl = newUrl;
+      }
+      if (!entity.recordTypesSupported) {
+        entity.recordTypesSupported = recordTypesSupported;
+      }
+      if (!entity.isEverCreatable) {
+        entity.isEverCreatable = isEverCreatable;
+      }
+      // Keep layoutable true if it was true in either call
+      if (layoutable) {
+        entity.layoutable = true;
+      }
+    } else {
+      entity = {
+        availableApis: [],
+        name,
+        label,
+        keyPrefix,
+        durableId,
+        isCustomSetting,
+        availableKeyPrefix: null,
+        recordTypesSupported,
+        isEverCreatable,
+        newUrl,
+        layoutable: layoutable || false,
+      };
+      entityMap.set(name, entity);
+    }
+    if (api) {
+      if (!entity.availableApis.includes(api)) {
+        entity.availableApis.push(api);
+      }
+      if (keyPrefix) {
+        entity.availableKeyPrefix = keyPrefix;
+      }
+    }
+  }
+
+  async function getObjects(url, api) {
+    try {
+      const describe = await sfConn.rest(url);
+      for (const sobject of describe.sobjects) {
+        // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
+        addEntity(
+          {...sobject, isCustomSetting: sobject.customSetting || sobject.isCustomSetting, layoutable: sobject.layoutable || false},
+          api
+        );
+      }
+    } catch (err) {
+      console.error("list " + api + " sobjects", err);
+    }
+  }
+
+  // Fetch objects from different APIs
+  await Promise.all([
+    getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
+    getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi"),
+    fetchEntityDefinitions(addEntity, null),
+  ]);
+
+  const sobjectsList = Array.from(entityMap.values());
+
+  // Store in cache for future use (using browser.storage.local for large data)
+  // Create optimized version with only essential fields to reduce cache size
+  // Include layoutable for field-creator.js to avoid unnecessary describe API calls
+  const optimizedList = sobjectsList.map(obj => ({
+    name: obj.name,
+    label: obj.label,
+    keyPrefix: obj.keyPrefix,
+    availableApis: obj.availableApis,
+    availableKeyPrefix: obj.availableKeyPrefix,
+    durableId: obj.durableId,
+    isCustomSetting: obj.isCustomSetting,
+    recordTypesSupported: obj.recordTypesSupported,
+    newUrl: obj.newUrl,
+    isEverCreatable: obj.isEverCreatable,
+    layoutable: obj.layoutable || false
+  }));
+
+  // Store in cache using browser.storage.local (async - don't await, let it happen in background)
+  // DataCache will handle clearing old org cache asynchronously
+  // useSfHostPrefix=false since sobjectsList doesn't use sfHost in storage key
+  // Only store if caching is enabled
+  if (cacheEnabled) {
+    DataCache.setCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, optimizedList, true, false)
+      .catch(err => console.error("Cache storage error:", err));
+  }
+
+  // Return full list (not optimized) for consistency with what callers expect
+  return sobjectsList;
+}
+
+/**
+ * Fetch EntityDefinition records from Salesforce Tooling API
+ * Uses recursive batching to fetch all records (2000 per batch)
+ * @param {Function} addEntityCallback - Callback function called for each entity record
+ *                                        Receives: (entityObject, apiIdentifier)
+ * @param {string} apiIdentifier - Identifier to pass to addEntityCallback (e.g., "EntityDef" or null)
+ * @returns {Promise<void>} Resolves when all batches are fetched
+ */
+export async function fetchEntityDefinitions(addEntityCallback, apiIdentifier = null) {
+  const batchSize = 2000;
+  let bucket = 0;
+
+  async function fetchNextBatch() {
+    const offset = bucket > 0 ? ` OFFSET ${bucket * batchSize}` : "";
+    const query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable, NamespacePrefix FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT ${batchSize}${offset}`;
+
+    try {
+      const respEntity = await sfConn.rest(
+        `/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent(query)}`
+      );
+
+      for (const record of respEntity.records) {
+        addEntityCallback(
+          {
+            name: record.QualifiedApiName,
+            label: record.Label,
+            keyPrefix: record.KeyPrefix,
+            durableId: record.DurableId,
+            isCustomSetting: record.IsCustomSetting,
+            recordTypesSupported: record.RecordTypesSupported,
+            newUrl: record.NewUrl,
+            isEverCreatable: record.IsEverCreatable,
+            namespacePrefix: record.NamespacePrefix
+          },
+          apiIdentifier
+        );
+      }
+
+      // If the batch has batchSize records, there are more to fetch
+      const hasMore = respEntity.records?.length >= batchSize;
+      if (hasMore) {
+        bucket++;
+        return fetchNextBatch();
+      }
+      // All batches fetched
+      return Promise.resolve();
+    } catch (err) {
+      console.error("list entity definitions: ", err);
+      throw err;
+    }
+  }
+
+  return fetchNextBatch().catch((err) => {
+    console.error("fetch entity definitions: ", err);
+  });
 }

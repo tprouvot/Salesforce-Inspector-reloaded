@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, getSobjectsList} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -966,23 +966,19 @@ class AllDataBox extends React.PureComponent {
     this.ensureKnownBrowserContext();
 
     // Try to load sobjects from cache for instant context detection
-    this.loadSobjectsFromCache();
-  }
-
-  async loadSobjectsFromCache() {
     const {sfHost} = this.props;
-
-    // Check cache using browser.storage.local for large data
-    // DataCache will check sfHost match internally and return null if different
-    // useSfHostPrefix=false since sobjectsList doesn't use sfHost in storage key
-    const cachedSobjects = await DataCache.getCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, true, false);
-
-    if (cachedSobjects && Array.isArray(cachedSobjects)) {
-      this.setState({
-        sobjectsList: cachedSobjects,
-        sobjectsLoading: false
+    getSobjectsList(sfHost)
+      .then((sobjectsList) => {
+        if (sobjectsList && Array.isArray(sobjectsList)) {
+          this.setState({
+            sobjectsList,
+            sobjectsLoading: false
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading sobjects from cache:", err);
       });
-    }
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -1025,10 +1021,18 @@ class AllDataBox extends React.PureComponent {
 
   /**
    * Check if sobjects should be loaded
-   * @returns {boolean} True if Objects tab is active and popup is expanded
+   * @returns {boolean} True if Objects tab is active and popup is expanded, or if preload option is enabled and popup is not yet expanded
    */
   shouldLoadSobjects() {
-    return this.props.isPopupExpanded && this.state.activeSearchAspect === this.SearchAspectTypes.sobject;
+    // Normal loading: when popup is expanded and Objects tab is active
+    if (this.props.isPopupExpanded && this.state.activeSearchAspect === this.SearchAspectTypes.sobject) {
+      return true;
+    }
+    // Preload before popup opens: only if option is enabled
+    if (!this.props.isPopupExpanded) {
+      return isSettingEnabled(Constants.PRELOAD_SOBJECTS_BEFORE_POPUP);
+    }
+    return false;
   }
 
   ensureKnownBrowserContext() {
@@ -1092,187 +1096,11 @@ class AllDataBox extends React.PureComponent {
     // Set loading state
     this.setState({sobjectsLoading: true});
 
-    //we don't have the entity map in the in-memory cache, so we need to fetch it
-    let entityMap = new Map();
+    const {sfHost} = this.props;
 
-    function addEntity(
-      {
-        name,
-        label,
-        keyPrefix,
-        durableId,
-        isCustomSetting,
-        recordTypesSupported,
-        isEverCreatable,
-        newUrl,
-      },
-      api
-    ) {
-      label = label.match("__MISSING") ? "" : label; //Error is added to the label if no label exists
-      let entity = entityMap.get(name);
-      // Each API call enhances the data, only the Name fields are present for each call.
-      if (entity) {
-        if (!entity.keyPrefix) {
-          entity.keyPrefix = keyPrefix;
-        }
-        if (!entity.durableId) {
-          entity.durableId = durableId;
-        }
-        if (!entity.isCustomSetting) {
-          entity.isCustomSetting = isCustomSetting;
-        }
-        if (!entity.newUrl) {
-          entity.newUrl = newUrl;
-        }
-        if (!entity.recordTypesSupported) {
-          entity.recordTypesSupported = recordTypesSupported;
-        }
-        if (!entity.isEverCreatable) {
-          entity.isEverCreatable = isEverCreatable;
-        }
-      } else {
-        entity = {
-          availableApis: [],
-          name,
-          label,
-          keyPrefix,
-          durableId,
-          isCustomSetting,
-          availableKeyPrefix: null,
-          recordTypesSupported,
-          isEverCreatable,
-          newUrl,
-        };
-        entityMap.set(name, entity);
-      }
-      if (api) {
-        entity.availableApis.push(api);
-        if (keyPrefix) {
-          entity.availableKeyPrefix = keyPrefix;
-        }
-      }
-    }
-
-    function getObjects(url, api) {
-      return sfConn
-        .rest(url)
-        .then((describe) => {
-          for (let sobject of describe.sobjects) {
-            // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
-            addEntity(
-              {...sobject, isCustomSetting: sobject.customSetting},
-              api
-            );
-          }
-        })
-        .catch((err) => {
-          console.error("list " + api + " sobjects", err);
-        });
-    }
-
-    function getEntityDefinitions() {
-      let bucket = 0;
-
-      function fetchNextBatch() {
-        return getEntityDefinitionBatch(bucket)
-          .then((hasMore) => {
-            if (hasMore) {
-              bucket++;
-              return fetchNextBatch();
-            }
-            // All batches fetched
-            return Promise.resolve();
-          });
-      }
-
-      return fetchNextBatch()
-        .catch((err) => {
-          console.error("fetch entity definitions: ", err);
-        });
-    }
-
-    function getEntityDefinitionBatch(bucket) {
-      let offset = bucket > 0 ? " OFFSET " + bucket * 2000 : "";
-      let query
-        = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000"
-        + offset;
-      return sfConn
-        .rest(
-          "/services/data/v"
-            + apiVersion
-            + "/tooling/query?q="
-            + encodeURIComponent(query)
-        )
-        .then((respEntity) => {
-          for (let record of respEntity.records) {
-            addEntity(
-              {
-                name: record.QualifiedApiName,
-                label: record.Label,
-                keyPrefix: record.KeyPrefix,
-                durableId: record.DurableId,
-                isCustomSetting: record.IsCustomSetting,
-                recordTypesSupported: record.RecordTypesSupported,
-                newUrl: record.NewUrl,
-                isEverCreatable: record.IsEverCreatable,
-              },
-              null
-            );
-          }
-          return respEntity.records?.length >= 2000; // If the batch has 2000 records, there are more to fetch
-        })
-        .catch((err) => {
-          console.error("list entity definitions: ", err);
-          throw err; // Re-throw to allow error handling in calling function
-        });
-    }
-
-    Promise.all([
-      // Get objects the user can access from the regular API
-      getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
-      // Get objects the user can access from the tooling API
-      getObjects(
-        "/services/data/v" + apiVersion + "/tooling/sobjects/",
-        "toolingApi"
-      ),
-      // Get all objects, even the ones the user cannot access from any API
-      // These records are less interesting than the ones the user has access to, but still interesting since we can get information about them using the tooling API
-      // If there are too many records, we get "EXCEEDED_ID_LIMIT: EntityDefinition does not support queryMore(), use LIMIT to restrict the results to a single batch"
-      // Even if documentation mention that LIMIT and OFFSET are not supported, we use it to split the EntityDefinition queries into 2000 buckets
-      getEntityDefinitions(),
-    ])
-      .then(async () => {
-        // TODO progressively display data as each of the three responses becomes available
-        const sobjectsList = Array.from(entityMap.values());
-
-        // Store in cache for future use (using browser.storage.local for large data)
-        const {sfHost} = this.props;
-
-        // Create optimized version with only essential fields to reduce cache size
-        const optimizedList = sobjectsList.map(obj => ({
-          name: obj.name,
-          label: obj.label,
-          keyPrefix: obj.keyPrefix,
-          availableApis: obj.availableApis,
-          availableKeyPrefix: obj.availableKeyPrefix,
-          durableId: obj.durableId,
-          isCustomSetting: obj.isCustomSetting,
-          recordTypesSupported: obj.recordTypesSupported,
-          newUrl: obj.newUrl,
-          isEverCreatable: obj.isEverCreatable
-        }));
-
-        // Store in cache using browser.storage.local (async - don't await, let it happen in background)
-        // DataCache will handle clearing old org cache asynchronously
-        // useSfHostPrefix=false since sobjectsList doesn't use sfHost in storage key
-        DataCache.setCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, optimizedList, true, false)
-          .then(async (success) => {
-            if (success) {
-              const verify = await DataCache.getCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, true, false);
-            }
-          })
-          .catch(err => console.error("Cache storage error:", err));
-
+    // Get sobjects list (from cache or fetched from API)
+    getSobjectsList(sfHost)
+      .then((sobjectsList) => {
         this.setState({
           sobjectsLoading: false,
           sobjectsList,

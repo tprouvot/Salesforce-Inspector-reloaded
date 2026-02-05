@@ -211,7 +211,7 @@ class OptionsTabSelector extends React.Component {
                 {label: "Agentforce", name: "export-agentforce", checked: false}
               ]}
           },
-          {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
+          {option: Option, props: {type: "toggle", title: "Hide Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
           {option: Option, props: {type: "toggle", title: "Prevent line wrap in Data Export table cells", key: "preventLineWrapDataExport", default: true, tooltip: "When enabled, prevents text from wrapping in table cells (matches v1.27 behavior)"}},
           {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},

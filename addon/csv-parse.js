@@ -26,7 +26,7 @@ export function csvParse(csv, separator) {
         next = csv.indexOf("\"", offset + 1);
       }
       // After closing quote, check if next character is separator, line break, or EOF
-      // If not, this might be malformed CSV (like "Hello"world). 
+      // If not, this might be malformed CSV (like "Hello"world).
       // We'll be lenient: treat the quote as part of an unquoted field and reparse from the start
       if (offset < csv.length && csv[offset] != separator && csv[offset] != "\n" && csv[offset] != "\r") {
         // There's content after the closing quote that's not a separator or line break

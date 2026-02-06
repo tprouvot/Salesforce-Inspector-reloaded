@@ -4172,6 +4172,8 @@ class AllDataSelection extends React.PureComponent {
       eventMonitorHref,
     } = this.props;
     let {flowDefinitionId} = this.state;
+    const actionWrapperClass = "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small";
+    const actionControlClass = "page-button slds-button slds-button_neutral";
     // Show buttons for the available APIs.
     let buttons = selectedValue.sobject.availableApis
       ? Array.from(selectedValue.sobject.availableApis)
@@ -4379,128 +4381,158 @@ class AllDataSelection extends React.PureComponent {
           linkTarget,
         })
       ),
-      selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-        ? h(
-          "a",
-          {
-            href: this.getDeployStatusUrl(),
-            target: linkTarget,
-            className:
-                "button page-button slds-button slds-button_neutral slds-m-top_xx-small",
-          },
-          "Check Deploy Status"
-        )
-        : null,
-      selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
-        ? h(
-          "a",
-          {
-            href: this.getGeneratePackageUrl(),
-            target: linkTarget,
-            className:
-                "button page-button slds-button slds-button_neutral slds-m-top_xx-small",
-          },
-          "Generate package.xml"
-        )
-        : null,
-      flowDefinitionId
-        ? h(
-          "a",
-          {
-            href: this.redirectToFlowVersions(),
-            target: linkTarget,
-            className:
-                "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small",
-          },
-          "Flow Versions"
-        )
-        : null,
-      flowDefinitionId
-        ? h(
-          "a",
-          {
-            href: this.getFlowScannerUrl(),
-            target: linkTarget,
-            className:
-                "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small",
-          },
-          "Flow Scanner"
-        )
-        : null,
-      flowDefinitionId
-        ? h(
-          "a",
-          {
-            href: this.getFlowCompareUrl(),
-            target: linkTarget,
-            className:
-                "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small",
-          },
-          "Flow Compare"
-        )
-        : null,
       h(
-        "div", {},
-        buttons.map((button, index) =>
-          h(
-            "a",
-            {
-              key: button,
-              // If buttons for both APIs are shown, the keyboard shortcut should open the first button.
-              ref: index == 0 ? "showAllDataBtn" : null,
-              href: this.getAllDataUrl(button == "toolingApi"),
-              target: linkTarget,
-              className:
-                "slds-button slds-button_neutral slds-m-top_xx-small page-button slds-button slds-button_neutral slds-m-top_xx-small",
-            },
-            index == 0
-              ? h("span", {}, "Show ", h("u", {}, "a"), "ll data")
-              : "Show all data",
-            button == "regularApi"
-              ? ""
-              : button == "toolingApi"
-                ? " (Tooling API)"
-                : " (Not readable)"
+        "div",
+        {className: "sfir-all-data-actions"},
+        selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
+          ? h(
+            "div",
+            {className: actionWrapperClass},
+            h(
+              "a",
+              {
+                href: this.getDeployStatusUrl(),
+                target: linkTarget,
+                className: actionControlClass,
+              },
+              "Check Deploy Status"
+            )
           )
-        )
-      ),
-      isFieldsPresent
-        ? h(
-          "button",
-          {
-            ref: "showFieldApiNameBtn",
-            onClick: showApiName,
-            "data-target-link": linkTarget,
-            className:
-                "slds-button slds-button_neutral slds-m-top_xx-small page-button slds-button slds-button_neutral slds-m-top_xx-small",
-          },
-          h("span", {}, "Show ", h("u", {}, "f"), "ields API names")
-        )
-        : null,
-      selectedValue.sobject.name.endsWith("__e")
-        ? h(
-          "div",
-          {className: "slds-button-group slds-m-top_xx-small", role: "group"},
-          h(
-            "a",
-            {
-              href: this.getSubscribeUrl(selectedValue.sobject.name),
-              target: linkTarget,
-              className: "slds-button slds-button_neutral page-button",
-            },
-            h("span", {}, h("u", {}), "Subscribe Event")
-          ),
-          h(
-            "a",
-            {
-              href: this.getGenerateEventUrl(selectedValue.sobject.name),
-              target: linkTarget,
-              className: "slds-button slds-button_neutral page-button",
-            },
-            h("span", {}, "Generate Event")
+          : null,
+        selectedValue.recordId && selectedValue.recordId.startsWith("0Af")
+          ? h(
+            "div",
+            {className: actionWrapperClass},
+            h(
+              "a",
+              {
+                href: this.getGeneratePackageUrl(),
+                target: linkTarget,
+                className: actionControlClass,
+              },
+              "Generate package.xml"
+            )
           )
-        )
-        : null
+          : null,
+        flowDefinitionId
+          ? h(
+            "div",
+            {className: actionWrapperClass},
+            h(
+              "a",
+              {
+                href: this.redirectToFlowVersions(),
+                target: linkTarget,
+                className: actionControlClass,
+              },
+              "Flow Versions"
+            )
+          )
+          : null,
+        flowDefinitionId
+          ? h(
+            "div",
+            {className: actionWrapperClass},
+            h(
+              "a",
+              {
+                href: this.getFlowScannerUrl(),
+                target: linkTarget,
+                className: actionControlClass,
+              },
+              "Flow Scanner"
+            )
+          )
+          : null,
+        flowDefinitionId
+          ? h(
+            "div",
+            {className: actionWrapperClass},
+            h(
+              "a",
+              {
+                href: this.getFlowCompareUrl(),
+                target: linkTarget,
+                className: actionControlClass,
+              },
+              "Flow Compare"
+            )
+          )
+          : null,
+        h(
+          "div", {},
+          buttons.map((button, index) =>
+            h(
+              "div",
+              {className: actionWrapperClass, key: button},
+              h(
+                "a",
+                {
+                  // If buttons for both APIs are shown, the keyboard shortcut should open the first button.
+                  ...(index == 0 ? {ref: "showAllDataBtn"} : {}),
+                  href: this.getAllDataUrl(button == "toolingApi"),
+                  target: linkTarget,
+                  className: actionControlClass,
+                },
+                index == 0
+                  ? h("span", {}, "Show ", h("u", {}, "a"), "ll data")
+                  : "Show all data",
+                button == "regularApi"
+                  ? ""
+                  : button == "toolingApi"
+                    ? " (Tooling API)"
+                    : " (Not readable)"
+              )
+            )
+          )
+        ),
+        isFieldsPresent
+          ? h(
+            "div",
+            {className: actionWrapperClass},
+            h(
+              "button",
+              {
+                ref: "showFieldApiNameBtn",
+                onClick: showApiName,
+                "data-target-link": linkTarget,
+                className: actionControlClass,
+              },
+              h("span", {}, "Show ", h("u", {}, "f"), "ields API names")
+            )
+          )
+          : null,
+        selectedValue.sobject.name.endsWith("__e")
+          ? h(
+            "div",
+            {className: actionWrapperClass},
+            h(
+              "a",
+              {
+                href: this.getSubscribeUrl(selectedValue.sobject.name),
+                target: linkTarget,
+                className: actionControlClass,
+              },
+              h("span", {}, h("u", {}), "Subscribe Event")
+            )
+          )
+          : null,
+        selectedValue.sobject.name.endsWith("__e")
+          ? h(
+            "div",
+            {className: actionWrapperClass},
+            h(
+              "a",
+              {
+                href: this.getGenerateEventUrl(selectedValue.sobject.name),
+                target: linkTarget,
+                className: actionControlClass,
+              },
+              h("span", {}, "Generate Event")
+            )
+          )
+          : null
+      )
     );
   }
 }

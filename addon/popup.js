@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, getSobjectsList} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, isRecordId, getSobjectsList} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -963,22 +963,11 @@ class AllDataBox extends React.PureComponent {
   }
 
   componentDidMount() {
-    this.ensureKnownBrowserContext();
-
-    // Try to load sobjects from cache for instant context detection
-    const {sfHost} = this.props;
-    getSobjectsList(sfHost)
-      .then((sobjectsList) => {
-        if (sobjectsList && Array.isArray(sobjectsList)) {
-          this.setState({
-            sobjectsList,
-            sobjectsLoading: false
-          });
-        }
-      })
-      .catch((err) => {
-        console.error("Error loading sobjects from cache:", err);
-      });
+    if (this.state.activeSearchAspect === this.SearchAspectTypes.users) {
+      this.ensureKnownUserContext();
+    } else {
+      this.ensureKnownBrowserContext();
+    }
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -4782,6 +4771,24 @@ function getRecordId(href) {
     const flowId = url.searchParams.get("flowId");
     if (flowId && flowId.startsWith("301")) {
       return flowId;
+    }
+  }
+
+  // Lightning Setup pages with address parameter
+  if (url.pathname.startsWith("/lightning/setup/")) {
+    const addressParam = url.searchParams.get("address");
+    if (addressParam) {
+      try {
+        // Decode the URL-encoded address parameter
+        const decodedAddress = decodeURIComponent(addressParam);
+        const match = decodedAddress.match(/^\/([a-zA-Z0-9]{15,18})(?:\?|$)/);
+        if (match && isRecordId(match[1])) {
+          return match[1];
+        }
+      } catch (e) {
+        // If decoding fails, continue to other checks
+        console.warn("Failed to decode address parameter:", e);
+      }
     }
   }
 

@@ -1368,3 +1368,101 @@ export function formatDuration(minutes) {
 
   return parts.length > 0 ? parts.join(" ") : "Less than a minute";
 }
+const RX_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+const RX_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+export const isDateTimeFormat = s => typeof s === "string" && RX_DATETIME.test(s);
+export const isDateFormat = s => typeof s === "string" && RX_DATE.test(s);
+
+export function getDateFormatOptions() {
+  let format = localStorage.getItem("dateTimeFormat") || "iso8601";
+  if (format.startsWith("[")) {
+    try {
+      format = JSON.parse(format).find(o => o.checked)?.name || "iso8601";
+    } catch {
+      format = "iso8601";
+    }
+  }
+  return {
+    format,
+    showLocalTime: localStorage.getItem("showLocalTime") === "true",
+    displayTimezone: localStorage.getItem("displayTimezone") === "true"
+  };
+}
+
+export const formatDateCell = (cell, opts) => {
+  if (typeof cell !== "string") return null;
+  if (RX_DATE.test(cell)) return formatDateTime(cell, opts, true);
+  if (RX_DATETIME.test(cell)) return formatDateTime(cell, opts, false);
+  return null;
+};
+
+const pad = (n, w = 2) => String(n).padStart(w, "0");
+
+const getOffset = d => {
+  const off = -d.getTimezoneOffset();
+  const abs = Math.abs(off);
+  return `${off >= 0 ? "+" : "-"}${pad((abs / 60) | 0)}${pad(abs % 60)}`;
+};
+
+const getTz = (d, utc, show) => {
+  if (!show) return "";
+  if (utc) return " UTC";
+  try {
+    return " " + (new Intl.DateTimeFormat("en-US", {timeZoneName: "short"}).formatToParts(d).find(p => p.type === "timeZoneName")?.value || `UTC${getOffset(d)}`);
+  } catch {
+    return ` UTC${getOffset(d)}`;
+  }
+};
+
+export function formatDateTime(str, {format = "iso8601", showLocalTime = false, displayTimezone = false} = {}, dateOnly = false) {
+  if (!str) return "";
+
+  // Date-only optimization
+  if (dateOnly) {
+    const [Y, M, D] = str.split("-");
+    if (!Y) return str;
+    switch (format) {
+      case "us": return `${M}/${D}/${Y}`;
+      case "european": return `${D}/${M}/${Y}`;
+      case "asian": return `${Y}/${M}/${D}`;
+      default: return str; // iso8601
+    }
+  }
+
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return str;
+
+  const utc = !showLocalTime;
+  // fast path for ISO8601 UTC which is common
+  if (format === "iso8601" && utc) {
+    return displayTimezone ? `${str} UTC` : str;
+  }
+
+  const g = k => d[`get${utc ? "UTC" : ""}${k}`]();
+  const Y = g("FullYear");
+  const M = g("Month") + 1;
+  const D = g("Date");
+  const h = g("Hours");
+  const m = g("Minutes");
+  const s = g("Seconds");
+  const tz = getTz(d, utc, displayTimezone);
+
+  switch (format) {
+    case "iso8601": {
+      const ms = g("Milliseconds");
+      return `${Y}-${pad(M)}-${pad(D)}T${pad(h)}:${pad(m)}:${pad(s)}.${pad(ms, 3)}${utc ? "+0000" : getOffset(d)}${tz}`;
+    }
+    case "us": {
+      const hr = h % 12 || 12;
+      const ampm = h < 12 ? "AM" : "PM";
+      return `${pad(M)}/${pad(D)}/${Y} ${pad(hr)}:${pad(m)}:${pad(s)} ${ampm}${tz}`;
+    }
+    case "european":
+      return `${pad(D)}/${pad(M)}/${Y} ${pad(h)}:${pad(m)}:${pad(s)}${tz}`;
+    case "asian":
+      return `${Y}/${pad(M)}/${pad(D)} ${pad(h)}:${pad(m)}:${pad(s)}${tz}`;
+    default:
+      return str;
+  }
+}

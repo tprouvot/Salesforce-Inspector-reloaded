@@ -968,6 +968,10 @@ class AllDataBox extends React.PureComponent {
     } else {
       this.ensureKnownBrowserContext();
     }
+
+    if (this.shouldLoadSobjects()) {
+      this.loadSobjects();
+    }
   }
 
   componentDidUpdate(prevProps, prevState) {

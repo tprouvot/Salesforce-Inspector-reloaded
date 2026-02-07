@@ -5,6 +5,7 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {ProgressRing} from "./components/ProgressRing.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -80,6 +81,7 @@ class Model {
     this.initialQuery = "";
     this.spinnerCount = 0;
     this.queryInputFocused = false;
+    this.counts = {queued: 0, processing: 0, success: 0, failed: 0, isComplete: false, isFailed: false};
 
     // Initialize spinFor method early - needed by describeInfo and userInfoModel
     this.spinFor = createSpinForMethod(this);
@@ -161,11 +163,24 @@ class Model {
     this.resultTableCallback(this.exportedData);
   }
 
-  // Helper for a common operation
-  setWorkingState(isWorking, statusText, errorText = null) {
+  // Helper for status updates during export
+  setWorkingState(isWorking, statusText, status, errorText = null) {
+    // Update counts for progress ring with default values if not set
+    this.counts = {queued: status?.queued ?? 0, processing: status?.processing ?? 0,
+      success: status?.success ?? 0, failed: status?.failed ?? 0, isSuccess: status?.isSuccess, isFailed: status?.isFailed};
     this.isWorking = isWorking;
-    this.exportStatus = statusText;
+    const appendItems = [];
+    // Dynamically build the status text based on available counts
+    if (this.counts.success > 0) {
+      appendItems.push(formatNumber(this.counts.success,0));
+    }
+    const total = this.counts.queued + this.counts.processing + this.counts.success + this.counts.failed;
+    if (total > 0) {
+      appendItems.push(`${formatNumber(total,0)} record${s(total)}`);
+    }
+    this.exportStatus = `${statusText} ${appendItems.join(" of ")}`;
     this.exportError = errorText;
+    this.didUpdate();
   }
 
   setResultsFilter(value) {
@@ -952,7 +967,8 @@ class Model {
         }
         if (!data.done && isSoql) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
-          vm.setWorkingState(true, `Exporting... Completed ${formatNumber(recs,0)} of ${formatNumber(total,0)} record${s(total)}.`);
+          // Force complete state, even for no results
+          vm.setWorkingState(true, "Exporting... Completed", {processing:total-recs, success:recs, queued: 0, failed: 0});
           vm.exportedData = exportedData;
           vm.markPerf();
           vm.updatedExportedData();
@@ -960,7 +976,7 @@ class Model {
         }
         vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
         if (recs == 0) {
-          vm.setWorkingState(false, "No data exported." + (total > 0 ? ` ${formatNumber(total,0)} record${s(total)}.` : ""));
+          vm.setWorkingState(false, "Export Complete - No data found for query", {isSuccess: true});
           vm.exportedData = exportedData;
           vm.markPerf();
           vm.updatedExportedData();
@@ -968,7 +984,7 @@ class Model {
         } else {
           vm.updateCurrentTabName(exportedData.records[0].attributes.type);
         }
-        vm.setWorkingState(false, `Exported ${formatNumber(recs,0)}${recs !== total ? (" of " + formatNumber(total,0)) : ""} record${s(recs)}`);
+        vm.setWorkingState(false, "Exported", {processing: total-recs, success: recs});
         vm.exportedData = exportedData;
         vm.markPerf();
         vm.updatedExportedData();
@@ -985,13 +1001,13 @@ class Model {
         let recs = exportedData.records.length;
         let total = exportedData.totalSize;
         if (total != -1) {
-          vm.setWorkingState(false, `Exported ${formatNumber(recs,0)} of ${formatNumber(total,0)} record${s(total)}. Stopped by error.`);
+          vm.setWorkingState(false, "Exported with Errors", {processing:total-recs, success:recs, queued: 0, failed:total-recs});
           vm.exportedData = exportedData;
           vm.updatedExportedData();
           vm.markPerf();
           return null;
         }
-        vm.setWorkingState(false, "Error", err.message);
+        vm.setWorkingState(false, "Error - Export Failed", {isFailed: true}, err.message);
         vm.exportedData = null;
         vm.updatedExportedData();
         return null;
@@ -1001,16 +1017,17 @@ class Model {
     vm.spinFor(batchHandler(sfConn.rest(exportedData.endpoint, exportedData.params))
       .catch(error => {
         console.error(error);
-        vm.setWorkingState(false, "Error", "UNEXPECTED EXCEPTION:" + error);
+        vm.setWorkingState(false, "Error - Export Failed", {isFailed: true}, "UNEXPECTED EXCEPTION:" + error);
         vm.exportedData = null;
         vm.markPerf();
         vm.updatedExportedData();
       }));
     vm.setResultsFilter("");
-    vm.setWorkingState(true, "Exporting...");
+    vm.setWorkingState(true, "Exporting...", {processing: 0, success: 0, queued: 0, failed: 0});
     vm.exportedData = exportedData;
     vm.updatedExportedData();
   }
+
   async generateSoql() {
     this.isWorking = true;
     let promptTemplateName = localStorage.getItem(this.sfHost + "_exportAgentForcePrompt");
@@ -2205,6 +2222,8 @@ class App extends React.Component {
               h("span", {className: "result-status flex-right"},
                 h("span", {className: `slds-badge slds-theme_${model.exportError ? "error" : "success"}`}, model.exportStatus),
                 perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
+                h("span", {className: "slds-m-left_x-small"},
+                  h(ProgressRing, model.counts)),
                 h("button", {className: "slds-button slds-button_destructive slds-m-left_small", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop")
               ),
             ),

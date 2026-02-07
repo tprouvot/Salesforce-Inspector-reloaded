@@ -1,7 +1,7 @@
 # Release Notes
 
 ## Version 2.0
-- `Data Export` add new common ProgressRing component based on SLDS2, outline to current tab when query input is in focus, duplicate tab to context menu, case insensitive match on tab name for adding count to duplicate names (e.g., Contact, Contact 2). Add number formatting and shorter, dynamic duration formatting for execution time, with option to always view duration in ms  [issue #1091](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1091)(contribution by [Nathan Shulman](https://github.com/nshulman))
+- `Data Export` add new common ProgressRing component based on SLDS2, outline current tab for query text focus, add "duplicate tab" option to context menu, case insensitive match on tab name for adding count to duplicate names (e.g., Contact, Contact 2). Add common number formatting to util for shorter, dynamic duration format for execution time and record counts, with option to always view duration in ms [issue #1091](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1091)(contribution by [Nathan Shulman](https://github.com/nshulman))
 - Introduce SObjectList cache to prevent request to Salesforce requests to be sent each time the popup opens [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437)
 - `Popup` Support record ID detection in Lightning Setup URLs with address parameter [feature 1099](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1099)
 - `Data Export` Fix Incorrect SOSL Query stamping when selected from Saved Queries [issue #1075](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1075) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist)

@@ -3,6 +3,8 @@ let h = React.createElement;
 
 /**
  * Reusable SLDS Progress Ring Component - based on the SLDS blueprint
+ * Will automatically update, show completion or failure based on queued/processing/success/failed
+ * But can be overridden with isSuccess and isFailed for cases where counts aren't available, or results were 0 but still successful
  *
  * @param {Object} props - Component properties
  * @param {number} [props.queued=0] - Number of items queued for processing
@@ -20,14 +22,28 @@ let h = React.createElement;
  *
  * // Counter-clockwise drain direction
  * h(ProgressRing, {direction: "drain", processing: 3, success: 7})
+ *
+ * // Force success icon
+ * h(ProgressRing, {isSuccess: true})
+ *
  */
 export class ProgressRing extends React.Component {
+
   constructor(props) {
     super(props);
+    this.resetProgressRing();
+
+    // Bind ref callbacks once
+    this.setHeadRef = this.setHeadRef.bind(this);
+    this.setArcRef = this.setArcRef.bind(this);
+    this.setContentRef = this.setContentRef.bind(this);
+  }
+
+  resetProgressRing() {
     this.state = {
       centerX: 0,
       centerY: 0
-    };
+    }
 
     this.progressContainerHeight = {
       head: 0,
@@ -43,35 +59,28 @@ export class ProgressRing extends React.Component {
 
     this.hasCalculated = false;
     this.pendingCalculation = false;
-    this.calcs = null;
     this.isSuccess = false;
     this.isFailed = false;
+  }
 
-    // Bind ref callbacks once
-    this.setHeadRef = this.setHeadRef.bind(this);
-    this.setArcRef = this.setArcRef.bind(this);
-    this.setContentRef = this.setContentRef.bind(this);
+  // Helper to set refs and trigger calculation when all refs are available
+  setRef(ref, propName) {
+    if (ref && ref !== this.progressContainerRef[propName]) {
+      this.progressContainerRef[propName] = ref;
+      this.tryCalculateProgressHead();
+    }
   }
 
   setHeadRef(ref) {
-    if (ref && ref !== this.progressContainerRef.head) {
-      this.progressContainerRef.head = ref;
-      this.tryCalculateProgressHead();
-    }
+    this.setRef(ref, 'head');
   }
 
   setArcRef(ref) {
-    if (ref && ref !== this.progressContainerRef.arc) {
-      this.progressContainerRef.arc = ref;
-      this.tryCalculateProgressHead();
-    }
+    this.setRef(ref, 'arc');
   }
 
   setContentRef(ref) {
-    if (ref && ref !== this.progressContainerRef.content) {
-      this.progressContainerRef.content = ref;
-      this.tryCalculateProgressHead();
-    }
+    this.setRef(ref, 'content');
   }
 
   tryCalculateProgressHead() {
@@ -79,8 +88,8 @@ export class ProgressRing extends React.Component {
     if (this.hasCalculated || this.pendingCalculation) {
       return;
     }
-
-    if (this.progressContainerRef.head && this.progressContainerRef.arc && this.progressContainerRef.content) {
+    const {head, arc, content} = this.progressContainerRef;
+    if (head && arc && content) {
       this.pendingCalculation = true;
       // Use requestAnimationFrame for better performance
       requestAnimationFrame(() => {
@@ -92,29 +101,40 @@ export class ProgressRing extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    // Recalculate if progress values change
-    const {queued, processing, success, failed} = this.props;
-    const {queued: prevQueued, processing: prevProcessing, success: prevSuccess, failed: prevFailed} = prevProps;
-
-    if (queued !== prevQueued || processing !== prevProcessing || success !== prevSuccess || failed !== prevFailed) {
-      this.calcs = null;
-      this.hasCalculated = false;
-      this.tryCalculateProgressHead();
+    // Check for changes in any props that affect progress calculations
+    const propNames = ['queued', 'processing', 'success', 'failed', 'isSuccess', 'isFailed'];
+    const changesFound = propNames.some(name => this.props[name] !== prevProps[name]);
+    if (!changesFound) {
+      return;
     }
+    this.hasCalculated = false;
+    this.tryCalculateProgressHead();
+  }
+
+  setHeightFromContainer(propName) {
+    try {
+      const ref = this.progressContainerRef?.[propName];
+      if (!ref) {
+        return false;
+      }
+      const height = parseFloat(getComputedStyle(ref).height) || 0;
+      this.progressContainerHeight[propName] = height;
+    } catch (error) {
+      console.error(`Error getting height for ${propName}:`, error);
+      return false;
+    }
+    // Successfully found height and set it
+    return true;
   }
 
   calculateProgressHeadRadius() {
     try {
-      if (!this.progressContainerRef.head || !this.progressContainerRef.arc || !this.progressContainerRef.content) {
+      const propNames = ['head', 'arc', 'content'];
+      if (!propNames.every(name => this.setHeightFromContainer(name))) {
         return;
       }
 
-      this.progressContainerHeight.head = parseFloat(getComputedStyle(this.progressContainerRef.head).height);
-      this.progressContainerHeight.arc = parseFloat(getComputedStyle(this.progressContainerRef.arc).height);
-      this.progressContainerHeight.content = parseFloat(getComputedStyle(this.progressContainerRef.content).height);
-
       const {arcX, arcY} = this.getProgressCalculations();
-
       const scale = 2 / this.progressContainerHeight.head; // 2 is SVG viewbox height
       const radiusArcPixels = this.progressContainerHeight.arc / 2;
       const radiusOfArc = radiusArcPixels * scale;
@@ -124,9 +144,11 @@ export class ProgressRing extends React.Component {
       const radiusOfProgressHead = radiusOfArc + (widthOfArc / 2);
       const centerX = arcX === 0 ? 0 :radiusOfProgressHead * arcX;
       const centerY = arcY === 0 ? 0 :radiusOfProgressHead * arcY;
-
+      if (isNaN(centerX) || isNaN(centerY) || !isFinite(centerX) || !isFinite(centerY)) {
+        return;
+      }
       // Only update state if values actually changed to prevent re-renders
-      if ((this.state.centerX !== centerX || this.state.centerY !== centerY) && !isNaN(centerX) && !isNaN(centerY)) {
+      if ((this.state.centerX !== centerX || this.state.centerY !== centerY)) {
         this.setState({centerX, centerY});
       }
     } catch (error) {
@@ -138,18 +160,13 @@ export class ProgressRing extends React.Component {
 
   getProgressCalculations() {
     try {
-      if (this.calcs) {
-        // cached calcs are available
-        return this.calcs;
-      }
       const {queued = 0, processing = 0, success = 0, failed = 0, direction = "fill"} = this.props;
       const total = queued + processing + success + failed;
       const fillPercent = total === 0 ? 0 : (success + failed) / total;
       const invert = direction === "drain" ? 1 : -1;
       const arcX = Math.cos(2 * Math.PI * fillPercent);
       const arcY = Math.sin(2 * Math.PI * fillPercent) * invert;
-      this.calcs = {total, fillPercent, invert, arcX, arcY};
-      return this.calcs;
+      return {total, fillPercent, invert, arcX, arcY};
     } catch (error) {
       console.error('ProgressRing calculations error:', error);
       // Return safe defaults on error
@@ -157,7 +174,6 @@ export class ProgressRing extends React.Component {
     }
   }
 
-  // Helper to render an icon
   getIconFromValues(symbol, title) {
     return h("span", {className: `slds-icon_container slds-icon-utility-${symbol}`, title},
       h("svg", {className: "slds-icon", "aria-hidden": "true"},
@@ -177,35 +193,30 @@ export class ProgressRing extends React.Component {
         isSuccess = false,
         isFailed = false
       } = this.props;
-
       const {centerX, centerY} = this.state;
+      const {total, fillPercent, arcX, arcY} = this.getProgressCalculations();
+      const isComplete = total > 0 && (success + failed) === total;
+      const showSuccess = isSuccess || (total > 0 && success === total);
+      const hasFailures = isFailed || failed > 0;
+      const fillPercentValue = Math.round(fillPercent * 100);
 
-    // Get common progress calculations
-    const {total, fillPercent, arcX, arcY} = this.getProgressCalculations();
-    const isComplete = total > 0 && (success + failed) === total;
-    const showSuccess = isSuccess || (total > 0 && success === total);
-    const hasFailures = isFailed || failed > 0;
+      // Calculate arc path parameters
+      const isLong = fillPercent > 0.5 ? 1 : 0;
+      const drain = direction === "drain" ? 1 : 0;
 
-    // Calculate values for rendering
-    const fillPercentValue = Math.round(fillPercent * 100);
+      // Calculate progresshead visibility, radius and center (x and y)
+      const showProgressHead = fillPercent > 0 && fillPercent < 1 && !isSuccess && !isFailed;
 
-    // Calculate arc path parameters
-    const isLong = fillPercent > 0.5 ? 1 : 0;
-    const drain = direction === "drain" ? 1 : 0;
+      // Build the d attribute for the path
+      const pathD = `M 1 0 A 1 1 0 ${isLong} ${drain} ${arcX} ${arcY} L 0 0`;
 
-    // Calculate progresshead visibility, radius and center (x and y)
-    const showProgressHead = fillPercent > 0 && fillPercent < 1;
-
-    // Build the d attribute for the path
-    const pathD = `M 1 0 A 1 1 0 ${isLong} ${drain} ${arcX} ${arcY} L 0 0`;
-
-    let statusClassArray = ["slds-progress-ring"];
-    if (showSuccess) {
-      statusClassArray.push("slds-progress-ring_complete");
-    } else if (hasFailures) {
-      statusClassArray.push("slds-progress-ring_warning");
-    }
-    const progressRingClasses = statusClassArray.join(" ");
+      let statusClassArray = ["slds-progress-ring"];
+      if (showSuccess) {
+        statusClassArray.push("slds-progress-ring_complete");
+      } else if (hasFailures) {
+        statusClassArray.push("slds-progress-ring_warning");
+      }
+      const progressRingClasses = statusClassArray.join(" ");
 
     // Determine icon and tooltip based on status
     let tooltipText = "Progress";

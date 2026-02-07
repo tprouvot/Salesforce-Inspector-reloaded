@@ -170,7 +170,8 @@ class Model {
   setWorkingState(isWorking, statusText, status, errorText = null) {
     // Update counts for progress ring with default values if not set
     this.counts = {queued: status?.queued ?? 0, processing: status?.processing ?? 0,
-      success: status?.success ?? 0, failed: status?.failed ?? 0, isSuccess: status?.isSuccess, isFailed: status?.isFailed};
+      success: status?.success ?? 0, failed: status?.failed ?? 0, isSuccess: status?.isSuccess,
+      isFailed: status?.isFailed};
     this.isWorking = isWorking;
     const appendItems = [];
     // Dynamically build the status text based on available counts
@@ -1018,7 +1019,7 @@ class Model {
         vm.updatedExportedData();
       }));
     vm.setResultsFilter("");
-    vm.setWorkingState(true, "Exporting...", {processing: 0, success: 0, queued: 0, failed: 0});
+    vm.setWorkingState(true, "Exporting...", {});
     vm.exportedData = exportedData;
     vm.updatedExportedData();
   }

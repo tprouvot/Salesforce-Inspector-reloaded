@@ -1,7 +1,13 @@
 # Release Notes
 
 ## Version 2.0
-- `Data Export` add outline to current tab when query input is in focus, duplicate tab to context menu, case insensitive match on tab name for adding count to duplicate names (e.g., Contact, Contact 2). Add number formatting and shorter, dynamic duration formatting for execution time, with option to always view duration in ms  [issue #1091](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1091)(contribution by [Nathan Shulman](https://github.com/nshulman))
+- `Data Export` add new common ProgressRing component based on SLDS2, outline to current tab when query input is in focus, duplicate tab to context menu, case insensitive match on tab name for adding count to duplicate names (e.g., Contact, Contact 2). Add number formatting and shorter, dynamic duration formatting for execution time, with option to always view duration in ms  [issue #1091](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1091)(contribution by [Nathan Shulman](https://github.com/nshulman))
+- Introduce SObjectList cache to prevent request to Salesforce requests to be sent each time the popup opens [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437)
+- `Popup` Support record ID detection in Lightning Setup URLs with address parameter [feature 1099](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1099)
+- `Data Export` Fix Incorrect SOSL Query stamping when selected from Saved Queries [issue #1075](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1075) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist)
+- `Data Import` Fix data import issue with quoted words [issue #748](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/748) (contribution by [Maral Zakarian](https://github.com/MaralZak)
+- `Data Export` Refactor "Hide Object Columns" toggle to update UI instantly without re-querying Salesforce (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
+- Fix Popup issue when User tab is configured as default one [issue #974](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/974) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - `Data Export` Data export new tab context [issue #1080](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1080)(contribution by [Maral Zakarian](https://github.com/MaralZak))
 - `Data Export` Add context menu (Close All, Close Others) for query tabs (contribution by [Idan Damari](https://github.com/iDamari))
 - `Data Export` Fix Save Query Menu with SLDS Styling (contribution by [Idan Damari](https://github.com/iDamari))

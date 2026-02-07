@@ -320,9 +320,9 @@ export async function dataImportTest(test) {
   assertEquals({Queued: 0, Processing: 0, Succeeded: 0, Failed: 0}, vm.importCounts());
 
   vm.setData('"foo","bar"\r\n"foo","bar"text after quote');
-  assertEquals(true, vm.invalidInput());
-  assertEquals("Error: unexpected token 't'", vm.dataError);
-  assertEquals({Queued: 0, Processing: 0, Succeeded: 0, Failed: 0}, vm.importCounts());
+  assertEquals(false, vm.invalidInput());
+  assertEquals("", vm.dataError);
+  assertEquals({Queued: 1, Processing: 0, Succeeded: 0, Failed: 0}, vm.importCounts());
 
   vm.setData("a,b\r\nc,d\r\ne");
   assertEquals(true, vm.invalidInput());

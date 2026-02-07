@@ -160,6 +160,9 @@ class Model {
   }
 
   updatedExportedData() {
+    if (this.exportedData) {
+      this.exportedData.updateColumnsVisibility();
+    }
     this.resultTableCallback(this.exportedData);
   }
 
@@ -190,14 +193,6 @@ class Model {
     }
     // Recalculate visibility
     this.exportedData.updateVisibility();
-    this.updatedExportedData();
-  }
-  refreshColumnsVisibility() {
-    if (this.exportedData == null || this.exportedData.totalSize == 0) {
-      return;
-    }
-    // Recalculate visibility
-    this.exportedData.updateColumnsVisibility();
     this.updatedExportedData();
   }
   setQueryMethod(data, query, vm){
@@ -312,7 +307,7 @@ class Model {
     let delimiter = ":";
     if (this.selectedSavedEntry != null) {
       let queryStr = "";
-      if (this.selectedSavedEntry.query.includes(delimiter) && this.selectedSavedEntry.query.toLowerCase().indexOf(":select") >= 0) {
+      if (this.selectedSavedEntry.query.includes(delimiter) && (this.selectedSavedEntry.query.toLowerCase().indexOf(":select") >= 0 || this.selectedSavedEntry.query.toLowerCase().indexOf(":find") >= 0)) {
         let query = this.selectedSavedEntry.query.split(delimiter);
         this.queryName = query[0];
         queryStr = this.selectedSavedEntry.query.substring(this.selectedSavedEntry.query.indexOf(delimiter) + 1);
@@ -1354,7 +1349,7 @@ function RecordTable(vm) {
     records: [],
     table: [],
     rowVisibilities: [],
-    colVisibilities: new Array(!vm.prefHideRelations),
+    colVisibilities: [!vm.prefHideRelations],
     countOfVisibleRecords: null,
     isTooling: false,
     totalSize: -1,
@@ -1390,13 +1385,9 @@ function RecordTable(vm) {
       return filteredArray;
     },
     updateColumnsVisibility() {
-      let newColVisibilities = [];
-      for (const [el] of rt.table[1].entries()) {
-        if (typeof el == "object" && el !== null && vm.prefHideRelations){
-          newColVisibilities.push(false);
-        } else { newColVisibilities.push(true); }
+      if (rt.table.length > 1) {
+        rt.colVisibilities = rt.table[1].map(cell => !(typeof cell == "object" && cell !== null && vm.prefHideRelations));
       }
-      rt.colVisibilities = newColVisibilities;
     },
     getVisibleTable() {
       if (vm.resultsFilter) {
@@ -1493,7 +1484,8 @@ class App extends React.Component {
   onPrefHideRelationsChange() {
     let {model} = this.props;
     model.prefHideRelations = !model.prefHideRelations;
-    this.onExport();
+    model.updatedExportedData();
+    model.didUpdate();
   }
   onSelectHistoryEntry(e) {
     let {model} = this.props;

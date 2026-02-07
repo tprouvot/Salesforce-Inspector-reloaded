@@ -141,31 +141,6 @@ class OptionsTabSelector extends React.Component {
                 {label: "Org", name: "org"}
               ]}
           },
-          {option: Option,
-            props: {type: "number",
-              title: "API cache period (days)",
-              key: "cachePeriodDays",
-              default: 7,
-              min: 1,
-              inputSize: "3",
-              tooltip: "Some API request are redundant, to limit the number of calls, we implemented a cache. This option allows you to configure the cache period.",
-              actionButton: {
-                label: "Clear Reloaded Cache",
-                title: "Clear extension Cache",
-                onClick: (e, model, appRef) => {
-                  DataCache.clearCache("userFieldNames", model.sfHost);
-                  if (appRef) {
-                    appRef.setState({
-                      showToast: true,
-                      toastMessage: "User describe cache cleared successfully.",
-                      toastVariant: "success",
-                      toastTitle: "Success"
-                    });
-                    setTimeout(() => appRef.hideToast(), 3000);
-                  }
-                }
-              }}
-          },
           {option: Option, props: {type: "toggle", title: "Enable Dynamic Popup Height", key: "popupHeighDynamictMode", default: false, tooltip: "When enabled, the popup height will be dynamically adjusted based on the content."}},
           {option: Option, props: {type: "toggle", default: false, title: "Always show duration in ms", key: "showFormattedDurationInMs", tooltip: "Always display duration in ms (for example, export data execution time). When disabled, duration will be shortened by using ms, seconds, or minutes."}}
         ]
@@ -191,7 +166,67 @@ class OptionsTabSelector extends React.Component {
                 }
               }}},
           {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders", inputSize: "6"}},
-          {option: Option, props: {type: "toggle", title: "Enable API Stats Debug Mode", key: Constants.API_DEBUG_STATISTICS_MODE, default: false, tooltip: "When enabled, tracks API call statistics (REST and SOAP) to help monitor API usage. Statistics can be viewed on the API Debug Statistics page."}}
+          {option: Option, props: {type: "toggle", title: "Enable API Stats Debug Mode", key: Constants.API_DEBUG_STATISTICS_MODE, default: false, tooltip: "When enabled, tracks API call statistics (REST and SOAP) to help monitor API usage. Statistics can be viewed on the API Debug Statistics page."}},
+          {option: Option, props: {type: "toggle", title: "Preload SObjects before popup opens", key: Constants.PRELOAD_SOBJECTS_BEFORE_POPUP, default: true, tooltip: "When enabled, loads the SObjects list from cache before the popup is opened for faster context detection. Disable to reduce initial load time and only load when the Objects tab is accessed."}},
+        ]
+      },
+      {
+        id: "cache",
+        tabTitle: "Cache",
+        content: [
+          {option: Option,
+            props: {
+              type: "button",
+              title: "Clear All Extension Cache",
+              key: "clearAllCache",
+              tooltip: "Clear all cache entries from both localStorage and browser.storage.local. This will remove all cached data including User Field Names, SObjects List, and any other cached information.",
+              actionButtonVariant: "destructive",
+              actionButton: {
+                label: "Clear All Cache",
+                title: "Clear all extension cache",
+                onClick: async (e, model, appRef) => {
+                  await DataCache.clearAllExtensionCache();
+                  if (appRef) {
+                    appRef.setState({
+                      showToast: true,
+                      toastMessage: "All extension cache cleared successfully.",
+                      toastVariant: "success",
+                      toastTitle: "Success"
+                    });
+                    setTimeout(() => appRef.hideToast(), 3000);
+                  }
+                }
+              }
+            }
+          },
+          {option: Option,
+            props: {
+              type: "number",
+              title: "User Field Names Cache Duration (hours)",
+              key: "cacheDuration_userFieldNames",
+              default: 168,
+              min: 1,
+              inputSize: "3",
+              tooltip: "Duration in hours for caching User field names. This cache stores User object field metadata to improve performance.",
+              actionButton: {
+                label: "Clear Cache",
+                title: "Clear User Field Names cache",
+                onClick: async (e, model, appRef) => {
+                  await DataCache.clearCache("userFieldNames", model.sfHost, false, false);
+                  if (appRef) {
+                    appRef.setState({
+                      showToast: true,
+                      toastMessage: "User Field Names cache cleared successfully.",
+                      toastVariant: "success",
+                      toastTitle: "Success"
+                    });
+                    setTimeout(() => appRef.hideToast(), 3000);
+                  }
+                }
+              }
+            }
+          },
+          {option: SObjectsCacheOptions, props: {key: "sobjectsCacheOptions"}}
         ]
       },
       {
@@ -212,7 +247,7 @@ class OptionsTabSelector extends React.Component {
                 {label: "Agentforce", name: "export-agentforce", checked: false}
               ]}
           },
-          {option: Option, props: {type: "toggle", title: "Hide additional Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
+          {option: Option, props: {type: "toggle", title: "Hide Object columns by default on Data Export", key: "hideObjectNameColumnsDataExport", default: false}},
           {option: Option, props: {type: "toggle", title: "Prevent line wrap in Data Export table cells", key: "preventLineWrapDataExport", default: true, tooltip: "When enabled, prevents text from wrapping in table cells (matches v1.27 behavior)"}},
           {option: Option, props: {type: "toggle", title: "Include formula fields from suggestion", key: "includeFormulaFieldsFromExportAutocomplete", default: true}},
           {option: Option, props: {type: "toggle", title: "Disable query input autofocus", key: "disableQueryInputAutoFocus"}},
@@ -669,8 +704,10 @@ class Option extends React.Component {
     this.tooltip = props.tooltip;
     this.placeholder = props.placeholder;
     this.actionButton = props.actionButton;
+    this.actionButtonVariant = props.actionButtonVariant || "brand"; // Default to "brand" variant (blue button)
     this.inputSize = props.inputSize || "3";
     this.min = props.min; // Minimum value for number input type (sets HTML min attribute)
+    this.readOnly = props.readOnly || false;
 
     // Enhanced properties
     this.enhancedTitle = props.enhancedTitle;
@@ -794,6 +831,7 @@ class Option extends React.Component {
       placeholder: this.placeholder,
       value: nullToEmptyString(this.state[this.key]),
       onChange: this.onChange,
+      readOnly: this.readOnly,
       ...(this.type === "number" && this.min !== undefined ? {min: this.min} : {})
     })
       : isTextArea ? h("textarea", {
@@ -801,7 +839,8 @@ class Option extends React.Component {
         className: isEnhanced ? "slds-input enhanced-option-input" : "slds-input",
         placeholder: this.placeholder,
         value: nullToEmptyString(this.state[this.key]),
-        onChange: this.onChange
+        onChange: this.onChange,
+        readOnly: this.readOnly
       })
       : isSelect ? h("select", {
         className: isEnhanced ? "slds-select enhanced-option-input" : "slds-select slds-m-right_small",
@@ -848,6 +887,7 @@ class Option extends React.Component {
   render() {
     const id = this.key;
     const isToggle = this.type == "toggle";
+    const isButton = this.type == "button";
     const isEnhanced = this.enhancedTitle || this.badge || this.severity || this.description;
 
     if (isEnhanced) {
@@ -922,8 +962,8 @@ class Option extends React.Component {
             )
           ),
 
-          // Input controls for non-toggle types
-          !isToggle && this.renderInputControl(id, true)
+          // Input controls for non-toggle and non-button types
+          !isToggle && !isButton && this.renderInputControl(id, true)
         )
       );
     } else {
@@ -936,15 +976,15 @@ class Option extends React.Component {
         ),
         h("div", {className: "slds-col slds-size_9-of-12"},
           h("div", {className: "slds-grid slds-grid_vertical-align-center slds-gutters_small"},
-            // Input field container with configurable size
-            !isToggle && h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12"},
+            // Input field container with configurable size (not for toggle or button types)
+            !isToggle && !isButton && h("div", {className: "slds-col slds-size_" + this.inputSize + "-of-12"},
               this.renderInputControl(id, false)
             ),
             // Action button (if present)
             // appRef is passed to allow actionButton handlers to show toast notifications via appRef.setState()
             this.actionButton && h("div", {className: "slds-col"},
               h("button", {
-                className: "slds-button slds-button_brand",
+                className: `slds-button slds-button_${this.actionButtonVariant}`,
                 onClick: (e) => this.actionButton.onClick(e, this.props.model, this.props.appRef),
                 title: this.actionButton.title || "Action"
               }, this.actionButton.label || "Action")
@@ -1260,6 +1300,113 @@ class MultiCheckboxButtonGroup extends React.Component {
   }
 }
 
+class SObjectsCacheOptions extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.model = props.model;
+    this.appRef = props.appRef;
+    this.onChangeCacheEnabled = this.onChangeCacheEnabled.bind(this);
+    this.onChangeCacheDuration = this.onChangeCacheDuration.bind(this);
+    this.onClearCache = this.onClearCache.bind(this);
+
+    const cacheEnabledKey = Constants.ENABLE_SOBJECTS_LIST_CACHE;
+    const cacheDurationKey = "cacheDuration_" + Constants.CACHE_SOBJECTS_LIST;
+
+    const cacheEnabled = localStorage.getItem(cacheEnabledKey);
+    const cacheDuration = localStorage.getItem(cacheDurationKey);
+
+    this.state = {
+      cacheEnabled: cacheEnabled !== null ? JSON.parse(cacheEnabled) : true,
+      cacheDuration: cacheDuration !== null ? cacheDuration : "8"
+    };
+  }
+
+  onChangeCacheEnabled(e) {
+    const enabled = e.target.checked;
+    this.setState({cacheEnabled: enabled});
+    localStorage.setItem(Constants.ENABLE_SOBJECTS_LIST_CACHE, JSON.stringify(enabled));
+  }
+
+  onChangeCacheDuration(e) {
+    const duration = e.target.value;
+    this.setState({cacheDuration: duration});
+    localStorage.setItem("cacheDuration_" + Constants.CACHE_SOBJECTS_LIST, duration);
+  }
+
+  async onClearCache() {
+    await DataCache.clearCache(Constants.CACHE_SOBJECTS_LIST, this.model.sfHost, true, false);
+    if (this.appRef) {
+      this.appRef.setState({
+        showToast: true,
+        toastMessage: "SObjects List cache cleared successfully.",
+        toastVariant: "success",
+        toastTitle: "Success"
+      });
+      setTimeout(() => this.appRef.hideToast(), 3000);
+    }
+  }
+
+  render() {
+    return h("div", {className: "slds-grid slds-border_bottom slds-p-horizontal_small slds-p-vertical_xx-small"},
+      h("div", {className: "slds-col slds-size_3-of-12 text-align-middle"},
+        h("span", {}, "SObjects List Cache",
+          h(Tooltip, {tooltip: "Enable caching of the SObjects list to improve popup loading performance.", idKey: "sobjectsCacheOption"})
+        )
+      ),
+      h("div", {className: "slds-col slds-size_9-of-12"},
+        h("div", {className: "slds-grid slds-grid_vertical-align-center slds-gutters_small"},
+          h("div", {className: "slds-col slds-size_1-of-2"},
+            h("div", {dir: "ltr", className: "slds-form-element__control"},
+              h("label", {className: "slds-checkbox_toggle slds-grid"},
+                h("input", {
+                  type: "checkbox",
+                  required: true,
+                  id: "enableSobjectsCache",
+                  "aria-describedby": "enableSobjectsCache",
+                  className: "slds-input",
+                  checked: this.state.cacheEnabled,
+                  onChange: this.onChangeCacheEnabled
+                }),
+                h("span", {id: "enableSobjectsCache", className: "slds-checkbox_faux_container center-label"},
+                  h("span", {className: "slds-checkbox_faux"}),
+                  h("span", {className: "slds-checkbox_on"}, "Enabled"),
+                  h("span", {className: "slds-checkbox_off"}, "Disabled")
+                )
+              )
+            )
+          ),
+          h("div", {className: "slds-col slds-size_1-of-2"},
+            h("div", {className: "slds-grid slds-grid_vertical-align-center slds-gutters_small"},
+              h("div", {className: "slds-col slds-size_4-of-12"},
+                h("label", {className: "slds-form-element__label", htmlFor: "sobjectsCacheDuration"}, "Duration (hours):")
+              ),
+              h("div", {className: "slds-col slds-size_3-of-12"},
+                h("div", {className: "slds-form-element__control"},
+                  h("input", {
+                    type: "number",
+                    id: "sobjectsCacheDuration",
+                    className: "slds-input",
+                    value: nullToEmptyString(this.state.cacheDuration),
+                    onChange: this.onChangeCacheDuration,
+                    min: 1
+                  })
+                )
+              ),
+              h("div", {className: "slds-col"},
+                h("button", {
+                  className: "slds-button slds-button_brand",
+                  onClick: this.onClearCache,
+                  title: "Clear SObjects List cache"
+                }, "Clear Cache")
+              )
+            )
+          )
+        )
+      )
+    );
+  }
+}
 
 class CSVSeparatorOption extends React.Component {
 

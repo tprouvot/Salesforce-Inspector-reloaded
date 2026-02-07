@@ -112,3 +112,31 @@ The extension caches field permission information to optimize API usage. If you 
 * The extension will fetch fresh field permission data on the next user search
 * Queries will be rebuilt based on current field permissions
 * Cache will be repopulated automatically with the new data
+
+### Newly Created Objects Not Appearing
+
+If you create a new custom object in Salesforce and don't see it immediately in the extension's object list, this is likely due to caching.
+
+**Why this happens:**
+
+The extension caches the SObjects list to improve popup loading performance. This cache stores object metadata to avoid making API calls every time you open the popup.
+
+**Symptoms:**
+
+* A newly created custom object doesn't appear in the extension's object search
+* Object appears in Salesforce Setup but not in the extension
+
+**How to solve it:**
+
+1. **Clear the SObjects List cache** (recommended for immediate results):
+   * Open the extension and click the "Options" button
+   * Navigate to the "Cache" tab
+   * Find the "SObjects List Cache Duration (hours)" setting
+   * Click the "Clear Cache" button next to it
+   * A success message will confirm the cache has been cleared
+
+2. **Wait for cache expiration**:
+   * The cache will automatically expire based on the configured duration (default: 168 hours / 7 days)
+   * After expiration, the extension will fetch fresh data on the next popup open
+
+**Note:** The extension only caches one org's SObjects list at a time. If you switch between orgs, the cache is automatically cleared and refreshed for the new org.

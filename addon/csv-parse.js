@@ -5,6 +5,7 @@ export function csvParse(csv, separator) {
   for (;;) { // for each value. Each iteration parses a cell value including following cell ceparator or line ceparator
     // parse cell value
     if (offset != csv.length && csv[offset] == "\"") { // quoted value
+      let quoteStart = offset;
       let next = csv.indexOf("\"", offset + 1);
       let text = "";
       for (;;) {
@@ -23,6 +24,31 @@ export function csvParse(csv, separator) {
         }
         text += "\"";
         next = csv.indexOf("\"", offset + 1);
+      }
+      // After closing quote, check if next character is separator, line break, or EOF
+      // If not, this might be malformed CSV (like "Hello"world).
+      // We'll be lenient: treat the quote as part of an unquoted field and reparse from the start
+      if (offset < csv.length && csv[offset] != separator && csv[offset] != "\n" && csv[offset] != "\r") {
+        // There's content after the closing quote that's not a separator or line break
+        // This is malformed CSV, but we'll be lenient and treat it as an unquoted field
+        // Reset to the original quote position and parse as unquoted
+        offset = quoteStart;
+        // find the first EOF, separator, "\r" or "\n" from the quote position
+        let unquotedNext = csv.length;
+        let i = csv.indexOf(separator, offset);
+        if (i != -1 && i < unquotedNext) {
+          unquotedNext = i;
+        }
+        i = csv.indexOf("\n", offset);
+        if (i != -1 && i < unquotedNext) {
+          unquotedNext = i;
+        }
+        i = csv.indexOf("\r", offset);
+        if (i != -1 && i < unquotedNext) {
+          unquotedNext = i;
+        }
+        text = csv.substring(offset, unquotedNext);
+        offset = unquotedNext;
       }
       row.push(text);
     } else { // unquoted value

@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
 import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod, DataCache} from "./utils.js";
-import {getFlowScannerRules} from "./flow-scanner.js";
+import {getFlowScannerRules, FLOW_SCANNER_RULES_STORAGE_KEY} from "./flow-scanner-rules.js";
 /* global initButton, lightningflowscanner */
 import {DescribeInfo} from "./data-load.js";
 import Toast from "./components/Toast.js";
@@ -438,7 +438,7 @@ class OptionsTabSelector extends React.Component {
 
   handleExportRules() {
     // Export only Flow Scanner related localStorage keys
-    const flowScannerFilters = ["flowScannerRules"];
+    const flowScannerFilters = [FLOW_SCANNER_RULES_STORAGE_KEY];
     // Get reference to App component to call its exportOptions method
     if (this.appRef) {
       this.appRef.exportOptions(flowScannerFilters);
@@ -447,7 +447,7 @@ class OptionsTabSelector extends React.Component {
 
   handleImportRules() {
     if (this.appRef) {
-      this.appRef.pendingImportFilters = ["flowScannerRules"];
+      this.appRef.pendingImportFilters = [FLOW_SCANNER_RULES_STORAGE_KEY];
       this.appRef.refs.fileInput.click();
     }
   }
@@ -1854,7 +1854,7 @@ class FlowScannerRules extends React.Component {
       rules: updatedRules,
       resetCounter: prevState.resetCounter + 1
     }));
-    localStorage.setItem("flowScannerRules", JSON.stringify(updatedRules));
+    localStorage.setItem(FLOW_SCANNER_RULES_STORAGE_KEY, JSON.stringify(updatedRules));
   }
 
   checkAllRules() {
@@ -1867,7 +1867,7 @@ class FlowScannerRules extends React.Component {
 
   resetToDefaults() {
     // Remove stored rules to force reload with defaults
-    localStorage.removeItem("flowScannerRules");
+    localStorage.removeItem(FLOW_SCANNER_RULES_STORAGE_KEY);
 
     // Increment reset counter to force component recreation
     this.setState(prevState => ({
@@ -1914,7 +1914,7 @@ class FlowScannerRules extends React.Component {
       });
 
       // Save to localStorage
-      localStorage.setItem("flowScannerRules", JSON.stringify(updatedRules));
+      localStorage.setItem(FLOW_SCANNER_RULES_STORAGE_KEY, JSON.stringify(updatedRules));
 
       return {rules: updatedRules};
     });
@@ -2028,7 +2028,7 @@ class App extends React.Component {
           localStorageData[key] = localStorage.getItem(key);
         }
       }
-      filename = "flowScannerRules.json";
+      filename = `${FLOW_SCANNER_RULES_STORAGE_KEY}.json`;
     } else {
       // Export all localStorage
       localStorageData = {...localStorage};

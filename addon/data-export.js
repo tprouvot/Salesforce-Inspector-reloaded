@@ -1168,19 +1168,20 @@ class Model {
   }
 
   get currentTab() {
-    return this.queryTabs[this.activeTabIndex];
+    console.log ('huh currenttab');
+    return this.queryTabs?.[this.activeTabIndex];
   }
 
   setActiveTab(index) {
     this.activeTabIndex = index;
     // Update the query input value to match the current tab's query
     if (this.queryInput) {
-      this.queryInput.value = this.currentTab.query;
+      this.queryInput.value = this.currentTab?.query;
     }
-    this.queryTooling = this.currentTab.queryTooling;
-    this.queryAll = this.currentTab.queryAll;
+    this.queryTooling = this.currentTab?.queryTooling;
+    this.queryAll = this.currentTab?.queryAll;
     // Update the exported data with the tab's results
-    this.exportedData = this.currentTab.results;
+    this.exportedData = this.currentTab?.results;
     // Update the UI with the new data
     if (this.exportedData) {
       this.exportStatus = `Loaded ${this.exportedData.records.length} record${s(this.exportedData.records.length)}`;
@@ -1204,8 +1205,9 @@ class Model {
   }
 
   updateCurrentTabProperty(propertyName, value) {
+    console.log('update huh', propertyName, value, this.currentTab);
     if (this.currentTab) {
-      currentTab[propertyName] = value;
+      this.currentTab[propertyName] = value;
       this.saveQueryTabs();
     }
   }
@@ -1886,6 +1888,8 @@ class App extends React.Component {
     this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
   }
 
+
+
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
@@ -1924,6 +1928,77 @@ class App extends React.Component {
       )
     ].filter(Boolean); // Remove null items
 
+    function renderTitle(title) {
+      return h("h3", {className: "slds-text-heading_small"}, title);
+    }
+
+    // Query History Control Block: Templates / Query History / Clear Button Group
+    const historyControls = h("div", {},
+      h("select", {value: "", onChange: this.onSelectQueryTemplate, className: "", title: "Check documentation to customize templates"},
+        h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
+        model.queryTemplates.map(q => h("option", {key: q, value: q}, q))
+      ),
+      h("div", {className: "slds-button-group"},
+        h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: ""},
+          h("option", {value: JSON.stringify(null), disabled: true}, "Query History"),
+          model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+        ),
+        h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
+      ),
+    );
+
+    // Saved Query Control Block: Saved Queries Dropdown / Label Input / Save Query Button / Dropdown
+    const savedQueryControls = h("div", {},
+        h("div", {className: "slds-button-group"},
+          h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: ""},
+            h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
+          model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+        ),
+        h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
+        h("button", {className: "slds-button slds-button_neutral", onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save"),
+        h("button", {className: model.expandSavedOptions ? "slds-button slds-button_neutral toggle contract" : "slds-button slds-button_neutral toggle expand",   title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"}))
+        ),
+        h("div", {className: "slds-dropdown-trigger slds-dropdown-trigger_click " + (model.expandSavedOptions ? "slds-is-open" : "slds-is-closed")},
+          h("div", {className: "slds-dropdown slds-dropdown_right"},
+            h("div", {className: "slds-dropdown__item"},
+              h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
+            ),
+            h("div", {className: "slds-dropdown__item"},
+              h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+            )
+          )
+        ),
+      );
+
+    function renderToggle(title, checked, onChange, disabled, label = "") {
+      return h("div", {},
+        h("label", {className: "slds-checkbox_toggle slds-grid", title:label },
+          h("span", {className: "slds-form-element__label slds-m-bottom_none"}, title),
+          h("input", {
+            type: "checkbox",
+            name: "checkbox-toggle-tooling",
+            value: "checkbox-toggle-tooling",
+            role: "switch",
+            checked,
+            onChange,
+            disabled
+          }),
+          h("span", {id: "checkbox-toggle-tooling", className: "slds-checkbox_faux_container"},
+            h("span", {className: "slds-checkbox_faux"}),
+            h("span", {className: "slds-checkbox_on"}, "Enabled"),
+            h("span", {className: "slds-checkbox_off"}, "Disabled")
+          )
+        ));
+    }
+
+    const optionToggles = h("div", {className: "slds-grid slds-wrap"},
+        h("div", {className: "slds-col slds-small-size_1-of-1 slds-medium-size_1-of-1 slds-large-size_5-of-12"},
+          renderToggle("Deleted/Archived Records", model.queryAll, this.onQueryAllChange, model.queryTooling)
+        ),
+        h("div", {className: "slds-col slds-small-size_1-of-1 slds-medium-size_1-of-1 slds-large-size_7-of-12"},
+          renderToggle("Tooling API", model.queryTooling, this.onQueryToolingChange, false, "With the tooling API you can query more metadata, but you cannot query regular data")
+      ));
+
     return h("div", {},
       h(PageHeader, {
         pageTitle: "Data Export",
@@ -1938,80 +2013,19 @@ class App extends React.Component {
       h("div", {className: "slds-m-top_xx-large sfir-page-container"},
         h("div", {className: "slds-card slds-m-around_medium"},
           h("div", {className: "slds-card__body slds-card__body_inner"},
-            h("div", {},
-            ),
-            h("div", {className: "query-controls"},
-              h("h3", {className: "slds-text-heading_small slds-m-bottom_xx-small slds-m-left_xxx-small"}, "Export Query"),
-              h("div", {className: "query-history-controls"},
-                h("select", {value: "", onChange: this.onSelectQueryTemplate, className: "query-history", title: "Check documentation to customize templates"},
-                  h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
-                  model.queryTemplates.map(q => h("option", {key: q, value: q}, q))
-                ),
-                h("div", {className: "slds-button-group"},
-                  h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
-                    h("option", {value: JSON.stringify(null), disabled: true}, "Query History"),
-                    model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
-                  ),
-                  h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
-                ),
-                h("div", {className: "slds-button-group slds-m-left_small"},
-                  h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
-                    h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
-                    model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
-                  ),
-                  h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
-                  h("button", {className: "slds-button slds-button_neutral", onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
-                  h("button", {className: model.expandSavedOptions ? "slds-button slds-button_neutral toggle contract" : "slds-button slds-button_neutral toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"}))
-                ),
-                h("div", {className: "slds-dropdown-trigger slds-dropdown-trigger_click " + (model.expandSavedOptions ? "slds-is-open" : "slds-is-closed")},
-                  h("div", {className: "slds-dropdown slds-dropdown_right"},
-                    h("div", {className: "slds-dropdown__item"},
-                      h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
-                    ),
-                    h("div", {className: "slds-dropdown__item"},
-                      h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
-                    )
-                  )
-                ),
+            // Responsive grid for header options - title, button groups, and options
+            h("div", {className: "slds-grid slds-wrap slds-grid_align-spread slds-m-bottom_medium"},
+              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-1 slds-large-size_1-of-12 slds-p-around_xx-small"},
+                renderTitle("Export Query")
               ),
-              h("div", {className: "slds-grid slds-grid_align-spread"},
-                h("div", {className: "slds-col slds-size_7-of-12"},
-                  h("label", {className: "slds-checkbox_toggle slds-grid slds-m-right_x-large"},
-                    h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Deleted/Archived Records"),
-                    h("input", {
-                      type: "checkbox",
-                      name: "checkbox-toggle-queryAll",
-                      value: "checkbox-toggle-queryAll",
-                      role: "switch",
-                      checked: model.queryAll,
-                      onChange: this.onQueryAllChange,
-                      disabled: model.queryTooling
-                    }),
-                    h("span", {id: "checkbox-toggle-queryAll", className: "slds-checkbox_faux_container"},
-                      h("span", {className: "slds-checkbox_faux"}),
-                      h("span", {className: "slds-checkbox_on"}, "Enabled"),
-                      h("span", {className: "slds-checkbox_off"}, "Disabled")
-                    )
-                  )
-                ),
-                h("div", {className: "slds-col slds-col-size_5-of-12"},
-                  h("label", {className: "slds-checkbox_toggle slds-grid slds-grid_align-end", title: "With the tooling API you can query more metadata, but you cannot query regular data"},
-                    h("span", {className: "slds-form-element__label slds-m-bottom_none"}, "Tooling API"),
-                    h("input", {
-                      type: "checkbox",
-                      name: "checkbox-toggle-tooling",
-                      value: "checkbox-toggle-tooling",
-                      role: "switch",
-                      checked: model.queryTooling,
-                      onChange: this.onQueryToolingChange,
-                      disabled: model.queryAll
-                    }),
-                    h("span", {id: "checkbox-toggle-tooling", className: "slds-checkbox_faux_container"},
-                      h("span", {className: "slds-checkbox_faux"}),
-                      h("span", {className: "slds-checkbox_on"}, "Enabled"),
-                      h("span", {className: "slds-checkbox_off"}, "Disabled")
-                    )
-                  )),
+              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_3-of-12 slds-p-around_xx-small"},
+                historyControls
+              ),
+              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_3-of-12 slds-p-around_xx-small"},
+                savedQueryControls
+              ),
+              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-1 slds-large-size_4-of-12 slds-p-around_xx-small slds-col_bump-left"},
+                optionToggles
               ),
             ),
             h("div", {

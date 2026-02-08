@@ -914,7 +914,7 @@ export function formatDuration(ms) {
     const alwaysShowMs = localStorage.getItem("showFormattedDurationInMs") === "true";
     if (alwaysShowMs || ms < 1000) {
       // Always show in ms format
-      return `${formatNumber(ms, 1)}ms`;
+      return `${formatNumber(ms, 0)}ms`;
     } else if (ms < 60000) {
       // 1-59 seconds: show "12.34s" format
       return `${formatNumber(ms / 1000, 2)}s`;

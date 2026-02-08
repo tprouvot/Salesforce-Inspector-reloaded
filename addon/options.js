@@ -232,9 +232,10 @@ class OptionsTabSelector extends React.Component {
               title: "Date/Time Display Format",
               key: "dateTimeFormat",
               unique: true,
+              requireSelection: true,
               tooltip: "Choose how date and time values are displayed in the data export table",
               checkboxes: [
-                {label: "ISO 8601 (Salesforce)", name: "iso8601", checked: true, tooltip: "YYYY-MM-DDTHH:MM:SS.sss+0000"},
+                {label: "Salesforce Default (ISO 8601)", name: "iso8601", checked: true, tooltip: "YYYY-MM-DDTHH:MM:SS.sss+0000"},
                 {label: "American", name: "us", tooltip: "MM/DD/YYYY HH:MM:SS AM/PM"},
                 {label: "European", name: "european", tooltip: "DD/MM/YYYY HH:MM:SS"},
                 {label: "Asian", name: "asian", tooltip: "YYYY/MM/DD HH:MM:SS"}
@@ -1252,6 +1253,7 @@ class MultiCheckboxButtonGroup extends React.Component {
     this.title = props.title;
     this.key = props.storageKey;
     this.unique = props.unique || false;
+    this.requireSelection = props.requireSelection || false;
     this.length = props.length || 6;
     this.tooltip = props.tooltip;
 
@@ -1276,8 +1278,15 @@ class MultiCheckboxButtonGroup extends React.Component {
 
   handleCheckboxChange = (event) => {
     const {name, checked} = event.target;
+
+    // Prevent unchecking the last item if selection is required
+    if (this.requireSelection && !checked && !this.state.checkboxes.some(cb => cb.name !== name && cb.checked)) {
+      return;
+    }
+
     const updatedCheckboxes = this.state.checkboxes.map((checkbox) => ({
       ...checkbox,
+      // Unique mode: uncheck others if selecting this one. Otherwise standard toggle.
       checked: this.unique && checked ? checkbox.name === name : checkbox.name === name ? checked : checkbox.checked
     }));
 

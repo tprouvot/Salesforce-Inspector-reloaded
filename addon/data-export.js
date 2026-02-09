@@ -1170,6 +1170,9 @@ class Model {
     this.queryAll = this.currentTab?.queryAll;
     // Update the exported data with the tab's results
     this.exportedData = this.currentTab?.results;
+    this.performancePoints = [];
+    // Reset performance counters and progress bar
+    this.setWorkingState(false,"",{});
     // Update the UI with the new data
     if (this.exportedData) {
       this.exportStatus = `Loaded ${formatNumber(this.exportedData.records.length)} record${s(this.exportedData.records.length)}`;

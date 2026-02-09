@@ -3,6 +3,7 @@ import {sfConn} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, copyToClipboard} from "./utils.js";
 import {apiStatistics, ApiStatistics} from "./api-statistics.js";
+import ConfirmModal from "./components/ConfirmModal.js";
 /* global initButton */
 
 class Model {
@@ -15,6 +16,8 @@ class Model {
     this.title = "API Debug Stats";
     this.stats = null;
     this.debugModeEnabled = ApiStatistics.isDebugModeEnabled();
+    this.showErrorModal = false;
+    this.errorMessages = [];
 
     // Initialize user info model
     this.userInfoModel = new UserInfoModel((promise) => {
@@ -54,6 +57,17 @@ class Model {
   copyAsJson() {
     copyToClipboard(JSON.stringify(this.stats, null, 2));
   }
+
+  showErrors() {
+    this.errorMessages = apiStatistics.getLastErrors();
+    this.showErrorModal = true;
+    this.didUpdate();
+  }
+
+  hideErrors() {
+    this.showErrorModal = false;
+    this.didUpdate();
+  }
 }
 
 let h = React.createElement;
@@ -73,7 +87,7 @@ class StatsCard extends React.Component {
 
 class EndpointTable extends React.Component {
   render() {
-    const {endpoints, title} = this.props;
+    const {endpoints, title, onErrorClick} = this.props;
     if (!endpoints || endpoints.length === 0) {
       return null;
     }
@@ -97,7 +111,11 @@ class EndpointTable extends React.Component {
               h("tr", {key: index},
                 h("td", {}, endpoint.endpoint),
                 h("td", {className: "slds-text-align_right"}, endpoint.count.toLocaleString()),
-                h("td", {className: "slds-text-align_right"}, endpoint.errors > 0 ? h("span", {className: "slds-text-color_error"}, endpoint.errors) : "0"),
+                h("td", {className: "slds-text-align_right"}, endpoint.errors > 0 ? h("span", {
+                  className: "slds-text-color_error sfir-error-link",
+                  onClick: onErrorClick,
+                  title: "Click to view error details"
+                }, endpoint.errors) : "0"),
                 h("td", {className: "slds-text-align_right"}, endpoint.averageDuration.toLocaleString())
               )
             )
@@ -110,7 +128,7 @@ class EndpointTable extends React.Component {
 
 class MethodTable extends React.Component {
   render() {
-    const {methods, title} = this.props;
+    const {methods, title, onErrorClick} = this.props;
     if (!methods || methods.length === 0) {
       return null;
     }
@@ -134,7 +152,11 @@ class MethodTable extends React.Component {
               h("tr", {key: index},
                 h("td", {}, method.method),
                 h("td", {className: "slds-text-align_right"}, method.count.toLocaleString()),
-                h("td", {className: "slds-text-align_right"}, method.errors > 0 ? h("span", {className: "slds-text-color_error"}, method.errors) : "0"),
+                h("td", {className: "slds-text-align_right"}, method.errors > 0 ? h("span", {
+                  className: "slds-text-color_error sfir-error-link",
+                  onClick: onErrorClick,
+                  title: "Click to view error details"
+                }, method.errors) : "0"),
                 h("td", {className: "slds-text-align_right"}, method.averageDuration.toLocaleString())
               )
             )
@@ -151,6 +173,8 @@ class App extends React.Component {
     this.model = this.props.vm;
     this.onResetStats = this.onResetStats.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
+    this.onErrorClick = this.onErrorClick.bind(this);
+    this.onCloseErrorModal = this.onCloseErrorModal.bind(this);
   }
 
   onResetStats() {
@@ -161,6 +185,14 @@ class App extends React.Component {
 
   onCopyAsJson() {
     this.model.copyAsJson();
+  }
+
+  onErrorClick() {
+    this.model.showErrors();
+  }
+
+  onCloseErrorModal() {
+    this.model.hideErrors();
   }
 
   render() {
@@ -329,8 +361,60 @@ class App extends React.Component {
             )
           )
         ),
-        h(EndpointTable, {endpoints: filteredEndpoints, title: "Top REST Endpoints"}),
-        h(MethodTable, {methods: filteredSoapMethods, title: "Top SOAP Methods"})
+        h(EndpointTable, {
+          endpoints: filteredEndpoints,
+          title: "Top REST Endpoints",
+          onErrorClick: this.onErrorClick
+        }),
+        h(MethodTable, {
+          methods: filteredSoapMethods,
+          title: "Top SOAP Methods",
+          onErrorClick: this.onErrorClick
+        }),
+        h(ConfirmModal, {
+          isOpen: this.model.showErrorModal,
+          title: "Last 10 API Errors",
+          onCancel: this.onCloseErrorModal,
+          confirmLabel: "Close",
+          confirmVariant: "brand",
+          cancelLabel: null,
+          onConfirm: this.onCloseErrorModal,
+          containerClassName: "slds-modal_large"
+        },
+        this.model.errorMessages.length > 0 ? h("div", {},
+          h("div", {className: "slds-scrollable_y sfir-error-modal-content"},
+            this.model.errorMessages.map((error, index) =>
+              h("div", {
+                key: index,
+                className: "slds-box slds-m-bottom_small"
+              },
+              h("div", {className: "slds-grid slds-grid_vertical-align-center slds-m-bottom_x-small"},
+                h("div", {className: "slds-col slds-text-heading_small"},
+                  h("span", {className: "slds-badge slds-badge_inverse"}, error.mode.toUpperCase())
+                ),
+                h("div", {className: "slds-col slds-text-body_small slds-text-color_weak"},
+                  new Date(error.timestamp).toLocaleString()
+                )
+              ),
+              error.url && h("div", {className: "slds-text-body_small slds-m-bottom_x-small"},
+                h("strong", {}, "URL: "),
+                error.url
+              ),
+              error.method && h("div", {className: "slds-text-body_small slds-m-bottom_x-small"},
+                h("strong", {}, "Method: "),
+                error.method
+              ),
+              h("div", {className: "slds-text-body_regular"},
+                h("strong", {}, "Error: "),
+                h("span", {className: "slds-text-color_error"}, error.message)
+              )
+              )
+            )
+          )
+        ) : h("div", {className: "slds-text-align_center slds-p-vertical_large"},
+          h("p", {}, "No errors recorded.")
+        )
+        )
       )
     );
   }

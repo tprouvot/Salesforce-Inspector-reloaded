@@ -2,6 +2,7 @@
 
 ## Version 2.0
 - `Data Export` Add ProgressRing component, outline current tab for query text focus, "duplicate tab" in context menu, case insensitive match on tab rename, improve responsive rendering for different screen sizes. Add number formatting for duration and record counts, with option to always show ms [issue #1091](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1091) (contribution by [Nathan Shulman](https://github.com/nshulman))
+- `Flow Scanner` Extract Flow Scanner rules logic into shared module (fixes the Flow Scanner import flash on the Options page) contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - Introduce SObjectList cache to prevent request to Salesforce requests to be sent each time the popup opens [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437)
 - `Popup` Support record ID detection in Lightning Setup URLs with address parameter [feature 1099](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1099)
 - `Data Export` Fix Incorrect SOSL Query stamping when selected from Saved Queries [issue #1075](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1075) (contribution by [Divyanshu Bist](https://github.com/DivyanshuBist)

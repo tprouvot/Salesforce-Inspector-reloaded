@@ -68,7 +68,6 @@ class QueryHistory {
     this.list = history;
   }
 }
-
 class Model {
   static QUERY_TAB_PREFIX = "Query";
 
@@ -158,14 +157,12 @@ class Model {
     this.activeTabIndex = 0;
     this.loadQueryTabs(queryFromUrl);
   }
-
   updatedExportedData() {
     if (this.exportedData) {
       this.exportedData.updateColumnsVisibility();
     }
     this.resultTableCallback(this.exportedData);
   }
-
   // Helper for status updates during export
   setWorkingState(isWorking, statusText, status, errorText = null) {
     // Update counts for progress ring with default values if not set
@@ -186,7 +183,6 @@ class Model {
     this.exportError = errorText;
     this.didUpdate();
   }
-
   setResultsFilter(value) {
     this.resultsFilter = value;
     if (this.exportedData == null) {
@@ -1082,7 +1078,6 @@ class Model {
       ]
     };
   }
-
   loadQueryTabs(queryFromUrl) {
     const savedTabs = localStorage.getItem(`${this.sfHost}_queryTabs`);
     const baseName = Model.QUERY_TAB_PREFIX;
@@ -1102,7 +1097,6 @@ class Model {
       this.activeTabIndex = 0;
     }
   }
-
   saveQueryTabs() {
     // Create a copy of the tabs without the results property
     const tabsToSave = this.queryTabs.map(tab => ({
@@ -1116,7 +1110,6 @@ class Model {
     }));
     localStorage.setItem(`${this.sfHost}_queryTabs`, JSON.stringify(tabsToSave));
   }
-
   addQueryTab() {
     const baseName = Model.QUERY_TAB_PREFIX;
     const nextIndex = this.getNextTabCount(baseName);
@@ -1126,7 +1119,6 @@ class Model {
     this.setActiveTab(this.activeTabIndex);
     this.saveQueryTabs();
   }
-
   removeQueryTab(index) {
     if (this.queryTabs.length > 1) {
       this.queryTabs.splice(index, 1);
@@ -1138,7 +1130,6 @@ class Model {
       this.didUpdate();
     }
   }
-
   removeOtherQueryTabs(index) {
     if (this.queryTabs.length > 1) {
       const tabToKeep = this.queryTabs[index];
@@ -1149,7 +1140,6 @@ class Model {
       this.didUpdate();
     }
   }
-
   removeRightQueryTabs(index) {
     if (this.queryTabs.length > index + 1) {
       this.queryTabs.splice(index + 1);
@@ -1161,17 +1151,13 @@ class Model {
       this.didUpdate();
     }
   }
-
   removeAllQueryTabs() {
     this.queryTabs = [];
     this.addQueryTab();
   }
-
   get currentTab() {
-    console.log ('huh currenttab');
     return this.queryTabs?.[this.activeTabIndex];
   }
-
   setActiveTab(index) {
     this.activeTabIndex = index;
     // Update the query input value to match the current tab's query
@@ -1191,27 +1177,22 @@ class Model {
     this.updatedExportedData();
     this.didUpdate();
   }
-
   updateCurrentTabQuery(query) {
     if (this.currentTab) {
       this.currentTab.query = query;
       this.saveQueryTabs();
     }
   }
-
   updateQueryFocusState(hasFocus) {
     this.queryTextAreaHasFocus = hasFocus;
     this.didUpdate();
   }
-
   updateCurrentTabProperty(propertyName, value) {
-    console.log('update huh', propertyName, value, this.currentTab);
     if (this.currentTab) {
       this.currentTab[propertyName] = value;
       this.saveQueryTabs();
     }
   }
-
   // Determine the next available count to append to a baseName
   getNextTabCount(baseName) {
     const matchCounts = this.queryTabs
@@ -1223,7 +1204,6 @@ class Model {
       return 1;
     }
   }
-
   updateCurrentTabName(name) {
     if (!this.currentTab || this.currentTab.isManuallyRenamed) {
       return;
@@ -1231,7 +1211,6 @@ class Model {
     this.updateTabName(this.activeTabIndex, name, false);
     this.currentTab.isManuallyRenamed = false;
   }
-
   updateTabName(index, name, manualRename = true) {
     const selectedTab = this.queryTabs[index];
     const newName = name.trim();
@@ -1250,7 +1229,6 @@ class Model {
       this.didUpdate();
     }
   }
-
   reorderTabs(fromIndex, toIndex) {
     if (fromIndex >= 0 && toIndex >= 0 && fromIndex < this.queryTabs.length && toIndex < this.queryTabs.length && fromIndex !== toIndex) {
       const [movedTab] = this.queryTabs.splice(fromIndex, 1);
@@ -1381,7 +1359,8 @@ function RecordTable(vm) {
         if (isVisible(rt.table[r], filter)) countOfVisibleRecords++;
       }
       this.countOfVisibleRecords = countOfVisibleRecords;
-      vm.exportStatus = "Filtered " + countOfVisibleRecords + " records out of " + rt.records.length + " records";
+      const statusText = vm.resultsFilter ? "Filtered" : "Exported";
+      vm.exportStatus = `${statusText} ${formatNumber(countOfVisibleRecords)} of ${formatNumber(rt.records.length)} record${s(rt.records.length)}`;
     },
     filterColumns(table, colVis) {
       let filteredArray = table.map(row => row.filter((_, index) => colVis[index]));
@@ -1408,7 +1387,6 @@ function RecordTable(vm) {
 }
 
 let h = React.createElement;
-
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -1471,111 +1449,88 @@ class App extends React.Component {
       contextMenu: null
     };
   }
+  get model() {
+    return this.props.model;
+  }
+  // Helper to support common events and method calls
+  modelEventHelper(e, method, options = {}) {
+    const {prevent, confirmText, confirmMethod} = options;
+    if (e?.preventDefault && prevent) {
+      e.preventDefault();
+    }
+    if (confirmText && confirmMethod) {
+      let r = confirm(confirmText);
+      if (r != true) {
+        return;
+      }
+      confirmMethod.call(this.model);
+    }
+    if (method) {
+      method.call(this.model);
+    }
+    this.model.didUpdate();
+  }
   onQueryAllChange(e) {
-    let {model} = this.props;
-    model.queryAll = e.target.checked;
-    model.updateCurrentTabProperty("queryAll", model.queryAll);
-    model.didUpdate();
+    this.model.queryAll = e.target.checked;
+    this.model.updateCurrentTabProperty("queryAll", this.model.queryAll, {prevent: true});
+    this.model.didUpdate();
   }
   onQueryToolingChange(e) {
-    let {model} = this.props;
-    model.queryTooling = e.target.checked;
-    model.updateCurrentTabProperty("queryTooling", model.queryTooling);
-    model.queryAutocompleteHandler();
-    model.didUpdate();
+    this.model.queryTooling = e.target.checked;
+    this.model.updateCurrentTabProperty("queryTooling", this.model.queryTooling);
+    this.modelEventHelper(e, this.model.queryAutocompleteHandler, {prevent: true});
   }
-  onPrefHideRelationsChange() {
-    let {model} = this.props;
-    model.prefHideRelations = !model.prefHideRelations;
-    model.updatedExportedData();
-    model.didUpdate();
+  onPrefHideRelationsChange(e) {
+    this.model.prefHideRelations = !this.model.prefHideRelations;
+    this.modelEventHelper(e, this.model.updatedExportedData);
   }
   onSelectHistoryEntry(e) {
-    let {model} = this.props;
-    model.selectedHistoryEntry = JSON.parse(e.target.value);
-    model.selectHistoryEntry();
-    model.didUpdate();
+    this.model.selectedHistoryEntry = JSON.parse(e.target.value);
+    this.modelEventHelper(e, this.model.selectHistoryEntry);
   }
   onSelectQueryTemplate(e) {
-    let {model} = this.props;
-    model.selectedQueryTemplate = e.target.value;
-    model.selectQueryTemplate();
-    model.didUpdate();
+    this.model.selectedQueryTemplate = e.target.value;
+    this.modelEventHelper(e, this.model.selectQueryTemplate);
   }
   onClearHistory(e) {
-    e.preventDefault();
-    let r = confirm("Are you sure you want to clear the query history?");
-    if (r == true) {
-      let {model} = this.props;
-      model.clearHistory();
-      model.didUpdate();
-    }
+    const confirmText = "Are you sure you want to clear the query history?";
+    const options = {confirmText, confirmMethod: this.model.removeFromHistory, prevent: true};
+    this.modelEventHelper(e, null, options);
   }
   onSelectSavedEntry(e) {
-    let {model} = this.props;
-    model.selectedSavedEntry = JSON.parse(e.target.value);
-    model.selectSavedEntry();
-    model.didUpdate();
+    this.model.selectedSavedEntry = JSON.parse(e.target.value);
+    this.modelEventHelper(e, this.model.selectSavedEntry);
   }
   onAddToHistory(e) {
-    e.preventDefault();
-    let {model} = this.props;
-    model.addToHistory();
-    model.didUpdate();
+    this.modelEventHelper(e, this.model.addToHistory, {prevent: true});
   }
   onRemoveFromHistory(e) {
-    e.preventDefault();
-    let r = confirm("Are you sure you want to remove this saved query?");
-    let {model} = this.props;
-    if (r == true) {
-      model.removeFromHistory();
-    }
-    model.toggleSavedOptions();
-    model.didUpdate();
+    const confirmText = "Are you sure you want to remove this saved query?";
+    const options = {confirmText, confirmMethod: this.model.removeFromHistory, prevent: true};
+    this.modelEventHelper(e, this.model.toggleSavedOptions, options);
   }
   onClearSavedHistory(e) {
-    e.preventDefault();
-    let r = confirm("Are you sure you want to remove all saved queries?");
-    let {model} = this.props;
-    if (r == true) {
-      model.clearSavedHistory();
-    }
-    model.toggleSavedOptions();
-    model.didUpdate();
+    const confirmText = "Are you sure you want to remove all saved queries?";
+    const options = {confirmText, confirmMethod: this.model.clearSavedHistory, prevent: true};
+    this.modelEventHelper(e, this.model.toggleSavedOptions, options);
   }
   onToggleHelp(e) {
-    e.preventDefault();
-    let {model} = this.props;
-    model.toggleHelp();
-    model.didUpdate();
+    this.modelEventHelper(e, this.model.toggleHelp, {prevent: true});
   }
   onToggleAI(e) {
-    e.preventDefault();
-    let {model} = this.props;
-    model.toggleAI();
-    model.didUpdate();
+    this.modelEventHelper(e, this.model.toggleAI, {prevent: true});
   }
   onToggleExpand(e) {
-    e.preventDefault();
-    let {model} = this.props;
-    model.toggleExpand();
-    model.didUpdate();
+    this.modelEventHelper(e, this.model.toggleExpand, {prevent: true});
   }
   onToggleSavedOptions(e) {
-    e.preventDefault();
-    let {model} = this.props;
-    model.toggleSavedOptions();
-    model.didUpdate();
+    this.modelEventHelper(e, this.model.toggleSavedOptions, {prevent: true});
   }
-  onExport() {
-    let {model} = this.props;
-    model.doExport();
-    model.didUpdate();
+  onExport(e) {
+    this.modelEventHelper(e, this.model.doExport, {prevent: true});
   }
-  onGenerateSoql() {
-    let {model} = this.props;
-    model.generateSoql();
-    model.didUpdate();
+  onGenerateSoql(e) {
+    this.modelEventHelper(e, this.model.generateSoql);
   }
   onCopyQuery() {
     let {model} = this.props;
@@ -1587,90 +1542,63 @@ class App extends React.Component {
     navigator.clipboard.writeText(url.toString());
     model.didUpdate();
   }
-  onQueryPlan(){
-    let {model} = this.props;
-    model.doQueryPlan();
-    model.didUpdate();
+  onQueryPlan(e) {
+    this.modelEventHelper(e, this.model.doQueryPlan);
   }
-  onCopyAsExcel() {
-    let {model} = this.props;
-    model.copyAsExcel();
-    model.didUpdate();
+  onCopyAsExcel(e) {
+    this.modelEventHelper(e, this.model.copyAsExcel);
   }
-  onCopyAsCsv() {
-    let {model} = this.props;
-    model.copyAsCsv();
-    model.didUpdate();
+  onCopyAsCsv(e) {
+    this.modelEventHelper(e, this.model.copyAsCsv);
   }
-  onDownloadAsCsv(){
-    let {model} = this.props;
-    model.downloadAsCsv();
-    model.didUpdate();
+  onDownloadAsCsv(e){
+    this.modelEventHelper(e, this.model.downloadAsCsv);
   }
-  onCopyAsJson() {
-    let {model} = this.props;
-    model.copyAsJson();
-    model.didUpdate();
+  onCopyAsJson(e) {
+    this.modelEventHelper(e, this.model.copyAsJson);
   }
   onDeleteRecords(e) {
-    let {model} = this.props;
-    model.deleteRecords(e);
-    model.didUpdate();
+    this.modelEventHelper(e, this.model.deleteRecords);
   }
   onResultsFilterInput(e) {
-    let {model} = this.props;
-    model.setResultsFilter(e.target.value);
+    this.model.setResultsFilter(e.target.value);
     if (e.target.value.length == 0){
       this.setState({isDropdownOpen: false});
     }
-    model.didUpdate();
+    this.model.didUpdate();
   }
   onSetQueryName(e) {
-    let {model} = this.props;
-    model.setQueryName(e.target.value);
-    model.didUpdate();
+    this.modelEventHelper(e, this.model.setQueryName);
   }
-  onStopExport() {
-    let {model} = this.props;
-    model.stopExport();
-    model.didUpdate();
+  onStopExport(e) {
+    this.modelEventHelper(e, this.model.stopExport);
   }
   onAddTab(e) {
-    e.preventDefault();
-    let {model} = this.props;
-    model.addQueryTab();
+    this.modelEventHelper(e, this.model.addQueryTab, {prevent: true});
   }
   onRemoveTab(e, index) {
     e.preventDefault();
     e.stopPropagation();
-    let {model} = this.props;
-    model.removeQueryTab(index);
+    this.model.removeQueryTab(index);
   }
-
   onRemoveOtherTabs() {
-    let {model} = this.props;
     if (this.state.contextMenu) {
-      model.removeOtherQueryTabs(this.state.contextMenu.index);
+      this.model.removeOtherQueryTabs(this.state.contextMenu.index);
     }
     this.onCloseContextMenu();
   }
-
   onRemoveRightTabs() {
-    let {model} = this.props;
     if (this.state.contextMenu) {
-      model.removeRightQueryTabs(this.state.contextMenu.index);
+      this.model.removeRightQueryTabs(this.state.contextMenu.index);
     }
     this.onCloseContextMenu();
   }
-
   onRemoveAllTabs() {
-    let {model} = this.props;
-    model.removeAllQueryTabs();
+    this.model.removeAllQueryTabs();
     this.onCloseContextMenu();
   }
-
   onDuplicateTab() {
-    let {model} = this.props;
+    const model = this.model
     if (this.state.contextMenu) {
       const tabCopy = {...model.queryTabs[this.state.contextMenu.index]};
       const baseName = tabCopy.baseName || Model.QUERY_TAB_PREFIX;
@@ -1685,59 +1613,43 @@ class App extends React.Component {
       this.onCloseContextMenu();
     }
   }
-
   onTabClick(e, index) {
     e.preventDefault();
-    let {model} = this.props;
-    model.setActiveTab(index);
+    this.model.setActiveTab(index);
   }
-
   onQueryInput(e) {
-    let {model} = this.props;
-    model.updateCurrentTabQuery(e.target.value);
-    model.queryAutocompleteHandler();
-    model.didUpdate();
+    this.model.updateCurrentTabQuery(e.target.value);
+    this.modelEventHelper(e, this.model.queryAutocompleteHandler);
   }
-
   onQueryInputFocus() {
-    let {model} = this.props;
-    model.updateQueryFocusState(true);
-
+    this.model.updateQueryFocusState(true);
   }
-
   onQueryInputBlur() {
-    let {model} = this.props;
-    model.updateQueryFocusState(false);
+    this.model.updateQueryFocusState(false);
   }
-
   onTabNameEdit(e, index) {
     e.stopPropagation();
-    let {model} = this.props;
     this.setState({
       editingTabIndex: index,
-      editingTabName: model.queryTabs[index].name
+      editingTabName: this.model.queryTabs[index].name
     });
   }
-
   onTabNameSubmit(e, index) {
     e.preventDefault();
     e.stopPropagation();
-    let {model} = this.props;
     if (this.state.editingTabName.trim()) {
-      model.updateTabName(index, this.state.editingTabName);
+      this.model.updateTabName(index, this.state.editingTabName);
     }
     this.setState({
       editingTabIndex: -1,
       editingTabName: ""
     });
   }
-
   onTabDragStart(e, index) {
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/html", e.target);
     this.setState({draggedTabIndex: index, dropTargetIndex: -1});
   }
-
   onTabDragOver(e, index) {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
@@ -1746,29 +1658,24 @@ class App extends React.Component {
       this.setState({dropTargetIndex: index});
     }
   }
-
   onTabDragLeave(e) {
     // Only clear if we're leaving the tabs container entirely
     if (!e.currentTarget.contains(e.relatedTarget)) {
       this.setState({dropTargetIndex: -1});
     }
   }
-
   onTabDrop(e, index) {
     e.preventDefault();
-    let {model} = this.props;
     const fromIndex = this.state.draggedTabIndex;
     if (fromIndex !== -1 && fromIndex !== index) {
-      model.reorderTabs(fromIndex, index);
+      this.model.reorderTabs(fromIndex, index);
     }
     this.setState({draggedTabIndex: -1, dropTargetIndex: -1});
   }
-
   onTabDragEnd() {
     // Reset drag state when drag operation ends
     this.setState({draggedTabIndex: -1, dropTargetIndex: -1});
   }
-
   onTabContextMenu(e, index) {
     e.preventDefault();
     e.stopPropagation();
@@ -1780,13 +1687,12 @@ class App extends React.Component {
       }
     });
   }
-
   onOverlayContextMenu(e) {
     e.preventDefault();
+    e.stopPropagation();
     e.target.style.visibility = "hidden";
     let target = document.elementFromPoint(e.clientX, e.clientY);
     e.target.style.visibility = "visible";
-
     if (target) {
       let event = new MouseEvent("contextmenu", {
         bubbles: true,
@@ -1801,13 +1707,11 @@ class App extends React.Component {
     }
     this.onCloseContextMenu();
   }
-
   onCloseContextMenu() {
     this.setState({contextMenu: null});
   }
-
   componentDidMount() {
-    let {model} = this.props;
+    const model = this.model;
     let queryInput = this.refs.query;
     model.setQueryInput(queryInput);
     model.soqlPrompt = this.refs.prompt;
@@ -1845,7 +1749,6 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
-
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
@@ -1863,7 +1766,6 @@ class App extends React.Component {
       // Firefox does not fire a resize event. The next best thing is to listen to when the browser changes the style.height attribute.
       new MutationObserver(recalculateHeight).observe(queryInput, {attributes: true});
     } else {
-      // Chrome
       // Chrome does not fire a resize event and does not allow us to get notified when the browser changes the style.height attribute.
       // Instead we listen to a few events which are often fired at the same time.
       // This is not required in Firefox, and Mozilla reviewers don't like it for performance reasons, so we only do this in Chrome via browser detection.
@@ -1888,11 +1790,9 @@ class App extends React.Component {
     this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
   }
 
-
-
   render() {
-    let {model} = this.props;
-    const perf = model.perfStatus();
+    const model = this.model;
+    const perfDetails = model.perfStatus();
 
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
@@ -1923,32 +1823,34 @@ class App extends React.Component {
       },
       h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
         h("use", {xlinkHref: "symbols.svg#help"})
-      )
-      )
-      )
+      )))
     ].filter(Boolean); // Remove null items
 
+    // Helper functions for rendering different sections of the UI
     function renderTitle(title) {
-      return h("h3", {className: "slds-text-heading_small"}, title);
+      return h("h3", {className: "slds-text-heading_small slds-p-left_x-small"}, title);
     }
 
     // Query History Control Block: Templates / Query History / Clear Button Group
-    const historyControls = h("div", {},
-      h("select", {value: "", onChange: this.onSelectQueryTemplate, className: "", title: "Check documentation to customize templates"},
-        h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
-        model.queryTemplates.map(q => h("option", {key: q, value: q}, q))
-      ),
-      h("div", {className: "slds-button-group"},
-        h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: ""},
-          h("option", {value: JSON.stringify(null), disabled: true}, "Query History"),
-          model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+    // Use arrow functions for the render helpers so we don't need to add .call(this) or .bind(this) to make it context aware
+    const renderHistoryControls = () => {
+      return h("div", {},
+        h("select", {value: "", onChange: this.onSelectQueryTemplate, className: "", title: "Check documentation to customize templates"},
+          h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
+          model.queryTemplates.map(q => h("option", {key: q, value: q}, q))
         ),
-        h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
-      ),
-    );
+        h("div", {className: "slds-button-group"},
+          h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: ""},
+            h("option", {value: JSON.stringify(null), disabled: true}, "Query History"),
+            model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
+          ),
+          h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
+        ));
+    }
 
     // Saved Query Control Block: Saved Queries Dropdown / Label Input / Save Query Button / Dropdown
-    const savedQueryControls = h("div", {},
+    const renderSaveControls = () => {
+      return h("div", {},
         h("div", {className: "slds-button-group"},
           h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: ""},
             h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
@@ -1967,13 +1869,14 @@ class App extends React.Component {
               h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
             )
           )
-        ),
+        )
       );
+    }
 
     function renderToggle(title, checked, onChange, disabled, label = "") {
-      return h("div", {},
+      return h("div", {className: "slds-p-left_x-small"},
         h("label", {className: "slds-checkbox_toggle slds-grid", title:label },
-          h("span", {className: "slds-form-element__label slds-m-bottom_none"}, title),
+          h("span", {className: "slds-form-element__label slds-m-bottom_none slds-truncate"}, title),
           h("input", {
             type: "checkbox",
             name: "checkbox-toggle-tooling",
@@ -1988,16 +1891,118 @@ class App extends React.Component {
             h("span", {className: "slds-checkbox_on"}, "Enabled"),
             h("span", {className: "slds-checkbox_off"}, "Disabled")
           )
-        ));
+        )
+      );
     }
 
-    const optionToggles = h("div", {className: "slds-grid slds-wrap"},
-        h("div", {className: "slds-col slds-small-size_1-of-1 slds-medium-size_1-of-1 slds-large-size_5-of-12"},
+    const renderOptionToggles = () => {
+      return h("div", {className: "slds-grid slds-wrap"},
+        h("div", {className: "slds-col slds-small-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_7-of-12"},
           renderToggle("Deleted/Archived Records", model.queryAll, this.onQueryAllChange, model.queryTooling)
         ),
-        h("div", {className: "slds-col slds-small-size_1-of-1 slds-medium-size_1-of-1 slds-large-size_7-of-12"},
+        h("div", {className: "slds-col slds-small-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_5-of-12"},
           renderToggle("Tooling API", model.queryTooling, this.onQueryToolingChange, false, "With the tooling API you can query more metadata, but you cannot query regular data")
-      ));
+        )
+      );
+    }
+
+    const actionButtonItems = [
+      {onClick: this.onCopyAsExcel, label: "XLS", title: "Copy exported data to clipboard for pasting into Excel or similar", symbolName: "copy", key: "copy-excel"},
+      {onClick: this.onCopyAsCsv, label: "CSV", title: "Copy exported data to clipboard for saving as a CSV file", symbolName: "copy", key: "copy-csv"},
+      {onClick: this.onCopyAsJson, label: "JSON", title: "Copy raw API output to clipboard", symbolName: "copy", key: "copy-json"},
+      {onClick: this.onDownloadAsCsv, label: "CSV", title: "Download exported data as a CSV file", symbolName: "download", key: "download-csv"},
+      {onClick: this.onPrefHideRelationsChange, label: "", title: model.prefHideRelations ? "Show Object Columns" : "Hide Object Columns", symbolName: "hide", addClass: model.pref, key: "toggle-relations"}
+    ];
+
+    const renderActionButtons = () => {
+      return actionButtonItems.map(ai => h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: ai.onClick, title: ai.title, key: ai.key},
+        h("svg", {className: `slds-button__icon ${ai.addClass || ""}`},
+          h("use", {xlinkHref: `symbols.svg#${ai.symbolName}`})
+        ),
+          h("div", {className: "slds-m-left_xx-small slds-text-title"}, ai.label )
+        )
+      );
+    }
+
+    const contextItems = [
+        {label: "Close", onClick: (e) => { e.preventDefault(); this.onCloseContextMenu(); this.onRemoveTab(e, this.state.contextMenu.index); }},
+        {label: "Close Others", onClick: (e) => { e.preventDefault(); this.onRemoveOtherTabs(); }},
+        {label: "Close to the Right", onClick: (e) => { e.preventDefault(); this.onRemoveRightTabs(); }},
+        {label: "Close All", onClick: (e) => { e.preventDefault(); this.onRemoveAllTabs(); }},
+        {label: "Duplicate", onClick: (e) => { e.preventDefault(); this.onDuplicateTab(); }}
+      ]
+
+    const renderContextMenuItems = () => {
+      return h("ul", {className: "slds-dropdown__list", role: "menu",},
+        contextItems.map(ci =>
+          h("li", {className: "slds-dropdown__item", role: "presentation", key: ci.label},
+            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: ci.onClick},
+              h("span", {className: "slds-truncate", title: ci.label}, ci.label)
+            )
+          )
+        )
+      );
+    }
+
+    const renderResultButtonsAndFilter = () => {
+      return [
+        h("div", {className: "slds-button-group slds-m-left_small", key:"actionButtons"},
+                renderActionButtons(),
+                isOptionEnabled("delete", this.state.hideButtonsOption)
+                  ? h("button", {className: "slds-button slds-button_destructive", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (enabled only < 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
+              ),
+        model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element", key:"filter"},
+                h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},
+                  h("input", {
+                    className: "slds-input slds-button slds-m-around_none",
+                    placeholder: model.filterColumns?.length > 0
+                      ? `Filter by (${model.filterColumns.length})`
+                      : "Filter",
+                    type: "search",
+                    value: model.resultsFilter,
+                    onInput: this.onResultsFilterInput
+                  }),
+                  h("button", {className: "toggle expand slds-button slds-button_neutral" + (this.state.isDropdownOpen ? " contract" : " expand"), title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
+                  this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
+                    model.exportedData?.table[0]
+                      ?.filter(column => column !== "_")
+                      .map(column =>
+                        h("div", {
+                          key: column,
+                          className: `dropdown-item ${model.filterColumns?.includes(column) ? "selected" : ""}`,
+                          onClick: () => {
+                            if (model.filterColumns?.includes(column)) {
+                              model.filterColumns = model.filterColumns.filter(c => c !== column);
+                            } else {
+                              model.filterColumns = [...(model.filterColumns || []), column];
+                            }
+                            model.setResultsFilter(model.resultsFilter);
+                            this.setState({}); // Trigger re-render
+                          }
+                        },
+                        h("input", {
+                          type: "checkbox",
+                          checked: model.filterColumns?.includes(column) || false,
+                          readOnly: true
+                        }),
+                        column
+                        )
+                      )
+                  )
+                )
+              ) : null,
+      ]
+    }
+
+    const renderExportStatus = () => {
+      return h("div", {className: "result-status flex-right", style: {display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center"}},
+                h("span", {className: `slds-badge slds-theme_${model.exportError ? "error" : "success"}`}, model.exportStatus),
+                perfDetails && h("span", {className: "result-info", title: perfDetails.batchStats}, perfDetails.text),
+                h("span", {},
+                  h(ProgressRing, model.counts)),
+                h("button", {className: "slds-button slds-button_destructive", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop")
+              );
+    }
 
     return h("div", {},
       h(PageHeader, {
@@ -2014,18 +2019,18 @@ class App extends React.Component {
         h("div", {className: "slds-card slds-m-around_medium"},
           h("div", {className: "slds-card__body slds-card__body_inner"},
             // Responsive grid for header options - title, button groups, and options
-            h("div", {className: "slds-grid slds-wrap slds-grid_align-spread slds-m-bottom_medium"},
-              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-1 slds-large-size_1-of-12 slds-p-around_xx-small"},
+            h("div", {className: "slds-grid slds-wrap"},
+              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-1 slds-large-size_1-of-12 slds-p-top_xx-small"},
                 renderTitle("Export Query")
               ),
-              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_3-of-12 slds-p-around_xx-small"},
-                historyControls
+              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_4-of-12"},
+                renderHistoryControls()
               ),
-              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_3-of-12 slds-p-around_xx-small"},
-                savedQueryControls
+              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_4-of-12"},
+                renderSaveControls()
               ),
-              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-1 slds-large-size_4-of-12 slds-p-around_xx-small slds-col_bump-left"},
-                optionToggles
+              h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-1 slds-large-size_3-of-12 slds-col_bump-left"},
+                renderOptionToggles()
               ),
             ),
             h("div", {
@@ -2154,8 +2159,7 @@ class App extends React.Component {
               )
             )
           )),
-        h(
-          "div",
+        h("div",
           {
             className: "slds-card slds-m-horizontal_medium slds-m-bottom_medium",
             id: "result-area",
@@ -2167,72 +2171,10 @@ class App extends React.Component {
             }
           },
           h("div", {className: "slds-card__body slds-card__body_inner", style: {flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column"}},
-            h("div", {className: "result-bar"},
-              h("h3", {className: "slds-text-heading_small"}, "Export Result"),
-              h("div", {className: "slds-button-group slds-m-left_small"},
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onCopyAsExcel, title: "Copy exported data to clipboard for pasting into Excel or similar"}, "Copy (Excel)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
-                  h("svg", {className: "slds-button__icon"},
-                    h("use", {xlinkHref: "symbols.svg#download"})
-                  )
-                ),
-                h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onPrefHideRelationsChange, title: `${model.prefHideRelations ? "Show" : "Hide"} Object Columns`},
-                  h("svg", {className: `slds-button__icon ${model.prefHideRelations ? "" : "disabled"}`},
-                    h("use", {xlinkHref: "symbols.svg#hide"})
-                  )
-                ),
-                isOptionEnabled("delete", this.state.hideButtonsOption)
-                  ? h("button", {className: "slds-button slds-button_destructive", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
-              ),
-              model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element"},
-                h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},
-                  h("input", {
-                    className: "slds-input slds-button slds-m-around_none",
-                    placeholder: model.filterColumns?.length > 0
-                      ? `Filter by (${model.filterColumns.length})`
-                      : "Filter",
-                    type: "search",
-                    value: model.resultsFilter,
-                    onInput: this.onResultsFilterInput
-                  }),
-                  h("button", {className: "toggle expand slds-button slds-button_neutral" + (this.state.isDropdownOpen ? " contract" : " expand"), title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
-                  this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
-                    model.exportedData?.table[0]
-                      ?.filter(column => column !== "_")
-                      .map(column =>
-                        h("div", {
-                          key: column,
-                          className: `dropdown-item ${model.filterColumns?.includes(column) ? "selected" : ""}`,
-                          onClick: () => {
-                            if (model.filterColumns?.includes(column)) {
-                              model.filterColumns = model.filterColumns.filter(c => c !== column);
-                            } else {
-                              model.filterColumns = [...(model.filterColumns || []), column];
-                            }
-                            model.setResultsFilter(model.resultsFilter);
-                            this.setState({}); // Trigger re-render
-                          }
-                        },
-                        h("input", {
-                          type: "checkbox",
-                          checked: model.filterColumns?.includes(column) || false,
-                          readOnly: true
-                        }),
-                        column
-                        )
-                      )
-                  )
-                )
-              ) : null,
-              h("span", {className: "result-status flex-right"},
-                h("span", {className: `slds-badge slds-theme_${model.exportError ? "error" : "success"}`}, model.exportStatus),
-                perf && h("span", {className: "result-info", title: perf.batchStats}, perf.text),
-                h("span", {className: "slds-m-left_x-small"},
-                  h(ProgressRing, model.counts)),
-                h("button", {className: "slds-button slds-button_destructive slds-m-left_small", disabled: !model.isWorking, onClick: this.onStopExport}, "Stop")
-              ),
+            h("div", {className: "result-bar", style: {display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center"}},
+              renderTitle("Export Result"),
+              renderResultButtonsAndFilter(),
+              renderExportStatus()
             ),
             h("textarea", {
               className: "slds-box slds-theme_error",
@@ -2259,35 +2201,8 @@ class App extends React.Component {
           className: "slds-dropdown slds-dropdown_left slds-dropdown_small",
           style: {position: "fixed", top: this.state.contextMenu.y, left: this.state.contextMenu.x, zIndex: 3000}
         },
-        h("ul", {className: "slds-dropdown__list", role: "menu"},
-          h("li", {className: "slds-dropdown__item", role: "presentation"},
-            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onRemoveTab(e, this.state.contextMenu.index); this.onCloseContextMenu(); }},
-              h("span", {className: "slds-truncate", title: "Close"}, "Close")
-            )
-          ),
-          h("li", {className: "slds-dropdown__item", role: "presentation"},
-            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onRemoveOtherTabs(); }},
-              h("span", {className: "slds-truncate", title: "Close Others"}, "Close Others")
-            )
-          ),
-          h("li", {className: "slds-dropdown__item", role: "presentation"},
-            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onRemoveRightTabs(); }},
-              h("span", {className: "slds-truncate", title: "Close to the Right"}, "Close to the Right")
-            )
-          ),
-          h("li", {className: "slds-dropdown__item", role: "presentation"},
-            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onRemoveAllTabs(); }},
-              h("span", {className: "slds-truncate", title: "Close All"}, "Close All")
-            )
-          ),
-          h("li", {className: "slds-dropdown__item", role: "presentation"},
-            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onDuplicateTab(); }},
-              h("span", {className: "slds-truncate", title: "Duplicate"}, "Duplicate")
-            )
-          )
-        )
-        )
-      )
+        renderContextMenuItems()
+      ))
     );
   }
 }

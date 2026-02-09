@@ -1474,13 +1474,13 @@ class App extends React.Component {
   }
   onQueryAllChange(e) {
     this.model.queryAll = e.target.checked;
-    this.model.updateCurrentTabProperty("queryAll", this.model.queryAll, {prevent: true});
+    this.model.updateCurrentTabProperty("queryAll", this.model.queryAll);
     this.model.didUpdate();
   }
   onQueryToolingChange(e) {
     this.model.queryTooling = e.target.checked;
     this.model.updateCurrentTabProperty("queryTooling", this.model.queryTooling);
-    this.modelEventHelper(e, this.model.queryAutocompleteHandler, {prevent: true});
+    this.modelEventHelper(e, this.model.queryAutocompleteHandler);
   }
   onPrefHideRelationsChange(e) {
     this.model.prefHideRelations = !this.model.prefHideRelations;
@@ -1529,20 +1529,19 @@ class App extends React.Component {
     this.modelEventHelper(e, this.model.toggleSavedOptions, {prevent: true});
   }
   onExport(e) {
-    this.modelEventHelper(e, this.model.doExport, {prevent: true});
+    this.modelEventHelper(e, this.model.doExport);
   }
   onGenerateSoql(e) {
     this.modelEventHelper(e, this.model.generateSoql);
   }
   onCopyQuery() {
-    let {model} = this.props;
     let url = new URL(window.location.href);
     let searchParams = url.searchParams;
     searchParams.set("query", model.queryInput.value);
     url.search = searchParams.toString();
     navigator.clipboard.writeText(url.toString());
     navigator.clipboard.writeText(url.toString());
-    model.didUpdate();
+    this.model.didUpdate();
   }
   onQueryPlan(e) {
     this.modelEventHelper(e, this.model.doQueryPlan);
@@ -1570,7 +1569,8 @@ class App extends React.Component {
     this.model.didUpdate();
   }
   onSetQueryName(e) {
-    this.modelEventHelper(e, this.model.setQueryName);
+    this.model.setQueryName(e.target.value);
+    this.model.didUpdate();
   }
   onStopExport(e) {
     this.modelEventHelper(e, this.model.stopExport);

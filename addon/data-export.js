@@ -1537,7 +1537,7 @@ class App extends React.Component {
   onCopyQuery() {
     let url = new URL(window.location.href);
     let searchParams = url.searchParams;
-    searchParams.set("query", model.queryInput.value);
+    searchParams.set("query", this.model.queryInput.value);
     url.search = searchParams.toString();
     navigator.clipboard.writeText(url.toString());
     navigator.clipboard.writeText(url.toString());

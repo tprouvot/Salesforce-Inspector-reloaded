@@ -126,6 +126,7 @@
     }
 
   #insext .insext-btn-vertical:hover,
+  #insext .insext-btn-vertical.insext-btn-linked-hover,
   #insext.insext-active .insext-btn-vertical {
     opacity: 1;
     width: 22px;
@@ -140,6 +141,7 @@
   }
 
   #insext .insext-btn-horizontal:hover,
+  #insext .insext-btn-horizontal.insext-btn-linked-hover,
   #insext.insext-active .insext-btn-horizontal {
     opacity: 1;
     height: 22px;
@@ -177,19 +179,23 @@
   transform: rotateX(0turn);
 }
 
-  #insext .insext-btn:hover img {
+  #insext .insext-btn:hover img,
+  #insext .insext-btn.insext-btn-linked-hover img {
     transform: scale(1.1);
   }
 
-  #insext.insext-active .insext-btn-vertical:hover img {
+  #insext.insext-active .insext-btn-vertical:hover img,
+  #insext.insext-active .insext-btn-vertical.insext-btn-linked-hover img {
     transform: rotateY(0.5turn) scale(1.1);
   }
 
-  #insext .insext-btn-horizontal:hover img {
+  #insext .insext-btn-horizontal:hover img,
+  #insext .insext-btn-horizontal.insext-btn-linked-hover img {
     transform: rotateX(0.5turn) scale(1.1);
   }
 
-  #insext.insext-active .insext-btn-horizontal:hover img {
+  #insext.insext-active .insext-btn-horizontal:hover img,
+  #insext.insext-active .insext-btn-horizontal.insext-btn-linked-hover img {
     transform: rotateX(0turn) scale(1.1);
   }
 

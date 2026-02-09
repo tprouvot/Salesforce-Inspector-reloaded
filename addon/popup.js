@@ -142,6 +142,7 @@ class App extends React.PureComponent {
       ),
       toastConfig: null, // Will hold the complete toast configuration
       showToast: false,
+      isHeaderHovered: false,
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
@@ -181,6 +182,10 @@ class App extends React.PureComponent {
     });
   }
   onContextUrlMessage(e) {
+    if (e.source == parent && e.data.insextHeaderHover !== undefined) {
+      this.setState({isHeaderHovered: e.data.insextHeaderHover});
+      return;
+    }
     if (e.source == parent && e.data.insextUpdateRecordId) {
       let {locationHref} = e.data;
       this.setState({
@@ -405,7 +410,12 @@ class App extends React.PureComponent {
     const popupTheme = localStorage.getItem("popupDarkTheme") == "true" ? " header-dark" : " header-light";
     return (
       h("div", {},
-        h("div", {className: "slds-page-header slds-theme_shade popup-header" + popupTheme},
+        h("div", {
+          className: "slds-page-header slds-theme_shade popup-header" + popupTheme + (this.state.isHeaderHovered ? " popup-header-linked-hover" : ""),
+          onClick: closePopup,
+          onMouseEnter: () => { this.setState({isHeaderHovered: true}); parent.postMessage({insextBtnHover: true}, "*"); },
+          onMouseLeave: () => { this.setState({isHeaderHovered: false}); parent.postMessage({insextBtnHover: false}, "*"); }
+        },
           h("div", {className: "slds-page-header__row"},
             h("div", {className: "slds-page-header__col-title"},
               h("div", {className: "slds-media"},

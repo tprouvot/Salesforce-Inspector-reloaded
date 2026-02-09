@@ -239,7 +239,14 @@ function initButton(sfHost, inInspector) {
         }, "*");
       }
 
-      togglePopup(e.data.insextOpenPopup, e.data.insextClosePopup);
+      if (e.data.insextBtnHover === true) {
+        btn.classList.add("insext-btn-linked-hover");
+      } else if (e.data.insextBtnHover === false) {
+        btn.classList.remove("insext-btn-linked-hover");
+      }
+      if (e.data.insextOpenPopup !== undefined || e.data.insextClosePopup !== undefined) {
+        togglePopup(e.data.insextOpenPopup, e.data.insextClosePopup);
+      }
       if (e.data.insextShowApiName) {
         let apiNamesClass = "field-api-name";
         if (e.data.btnLabel.startsWith("Show")){
@@ -264,6 +271,12 @@ function initButton(sfHost, inInspector) {
       }
     });
     rootEl.appendChild(popupEl);
+    btn.addEventListener("mouseenter", () => {
+      popupEl.contentWindow?.postMessage({insextHeaderHover: true}, "*");
+    });
+    btn.addEventListener("mouseleave", () => {
+      popupEl.contentWindow?.postMessage({insextHeaderHover: false}, "*");
+    });
     // Function to handle copy action
     function copy(e) {
       // Retrieve the text content of the target element triggered by the event
@@ -310,6 +323,7 @@ function initButton(sfHost, inInspector) {
     }
     function closePopup() {
       rootEl.classList.remove("insext-active");
+      btn.classList.remove("insext-btn-linked-hover");
       removeEventListener("click", outsidePopupClick);
       popupEl.blur();
     }

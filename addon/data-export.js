@@ -333,13 +333,15 @@ class Model {
     this.describeInfo.reloadAll();
   }
   canCopy() {
-    return !this.isWorking && this.exportedData != null;
+    // Allow copy if export has completed, at least one record, and if filtered, at least one record in filter results
+    return !this.isWorking && this.exportedData?.records?.length > 0 &&
+      (this.exportedData.countOfVisibleRecords === null || this.exportedData.countOfVisibleRecords > 0);
   }
   canDelete() {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
     return !this.isWorking && this.exportedData
           && (this.exportedData.countOfVisibleRecords === null /* no filtering has been done yet*/ || this.exportedData.countOfVisibleRecords > 0)
-          && this.exportedData.records.length < 20001 && !this.exportStatus.includes("Exporting") && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
+          && this.exportedData.records.length < 20001 && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
   }
   copyAsExcel() {
     copyToClipboard(this.exportedData.csvSerialize("\t"));

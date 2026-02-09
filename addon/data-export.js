@@ -1064,8 +1064,7 @@ class Model {
 
     vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(vm.queryInput.value)).then(res => {
       exportedData.addToTable(res.plans);
-      vm.exportStatus = "";
-      vm.performancePoints = [];
+      vm.setWorkingState(false,"",{}); // resets status, performance, and progress bar
       vm.exportedData = exportedData;
       vm.updatedExportedData();
       vm.didUpdate();

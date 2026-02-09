@@ -1206,13 +1206,6 @@ class Model {
       return 1;
     }
   }
-  updateCurrentTabName(name) {
-    if (!this.currentTab || this.currentTab.isManuallyRenamed) {
-      return;
-    }
-    this.updateTabName(this.activeTabIndex, name, false);
-    this.currentTab.isManuallyRenamed = false;
-  }
   updateTabName(index, name, manualRename = true) {
     const selectedTab = this.queryTabs[index];
     const newName = name.trim();
@@ -1230,6 +1223,13 @@ class Model {
       this.saveQueryTabs();
       this.didUpdate();
     }
+  }
+  updateCurrentTabName(name) {
+    if (!this.currentTab || this.currentTab.isManuallyRenamed) {
+      return;
+    }
+    this.updateTabName(this.activeTabIndex, name, false);
+    this.currentTab.isManuallyRenamed = false;
   }
   reorderTabs(fromIndex, toIndex) {
     if (fromIndex >= 0 && toIndex >= 0 && fromIndex < this.queryTabs.length && toIndex < this.queryTabs.length && fromIndex !== toIndex) {

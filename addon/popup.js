@@ -239,8 +239,8 @@ class App extends React.PureComponent {
         type: config.type || "info",
         bannerText: config.bannerText || "Action completed",
         iconName: config.iconName || "info",
-        assistiveTest:
-          config.assistiveTest || config.bannerText || "Notification",
+        assistiveText:
+          config.assistiveText || config.bannerText || "Notification",
         link: config.link || null,
         onClose: config.onClose || this.hideToast,
         ...config, // Allow any additional AlertBanner props
@@ -416,7 +416,7 @@ class App extends React.PureComponent {
           bannerText: `Current Version: ${addonVersion}`,
           iconName: "notification",
           iconTitle: "Notification",
-          assistiveTest: "Version Update Notification",
+          assistiveText: "Version Update Notification",
           onClose: () => this.updateReleaseNotesViewed(addonVersion),
           link: {
             text: "See What's New",
@@ -433,7 +433,7 @@ class App extends React.PureComponent {
           h(AlertBanner, {type: bannerUrlAction.type,
             bannerText: bannerUrlAction.text,
             iconName: bannerUrlAction.icon,
-            assistiveTest: bannerUrlAction.text,
+            assistiveText: bannerUrlAction.text,
             onClose: null,
             link: {
               text: bannerUrlAction.title,
@@ -450,7 +450,7 @@ class App extends React.PureComponent {
             type: this.state.toastConfig.type,
             bannerText: this.state.toastConfig.bannerText,
             iconName: this.state.toastConfig.iconName,
-            assistiveTest: this.state.toastConfig.assistiveTest,
+            assistiveText: this.state.toastConfig.assistiveText,
             onClose: this.state.toastConfig.onClose,
             link: this.state.toastConfig.link,
             // Spread any additional props
@@ -461,7 +461,7 @@ class App extends React.PureComponent {
                     "type",
                     "bannerText",
                     "iconName",
-                    "assistiveTest",
+                    "assistiveText",
                     "onClose",
                     "link",
                   ].includes(key)
@@ -2822,7 +2822,7 @@ class UserDetails extends React.PureComponent {
         type: "success",
         bannerText: operation,
         iconName: "success",
-        assistiveTest: `${operation} completed successfully`,
+        assistiveText: `${operation} completed successfully`,
         link: link || {
           text: message || `${operation} completed successfully`,
         },
@@ -2837,7 +2837,7 @@ class UserDetails extends React.PureComponent {
         type: "error",
         bannerText: `${operation} Failed`,
         iconName: "error",
-        assistiveTest: `Failed to ${operation.toLowerCase()}`,
+        assistiveText: `Failed to ${operation.toLowerCase()}`,
         link: message ? {
           text: message,
         } : {

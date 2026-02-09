@@ -333,11 +333,11 @@ class Model {
     this.describeInfo.reloadAll();
   }
   canCopy() {
-    return this.exportedData != null;
+    return !this.isWorking && this.exportedData != null;
   }
   canDelete() {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
-    return this.exportedData
+    return !this.isWorking && this.exportedData
           && (this.exportedData.countOfVisibleRecords === null /* no filtering has been done yet*/ || this.exportedData.countOfVisibleRecords > 0)
           && this.exportedData.records.length < 20001 && !this.exportStatus.includes("Exporting") && this.exportedData?.table?.at(0)?.find(header => header.toLowerCase() === "id");
   }
@@ -1873,6 +1873,7 @@ class App extends React.Component {
       );
     }
 
+    // Common Toggle Render
     function renderToggle(title, checked, onChange, disabled, label = "") {
       return h("div", {className: "slds-p-left_x-small"},
         h("label", {className: "slds-checkbox_toggle slds-grid", title:label },
@@ -1895,6 +1896,7 @@ class App extends React.Component {
       );
     }
 
+    // Toggles - Deleted/Archived Records and Tooling API
     const renderOptionToggles = () => {
       return h("div", {className: "slds-grid slds-wrap"},
         h("div", {className: "slds-col slds-small-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_7-of-12"},
@@ -1925,12 +1927,12 @@ class App extends React.Component {
     }
 
     const contextItems = [
-        {label: "Close", onClick: (e) => { e.preventDefault(); this.onCloseContextMenu(); this.onRemoveTab(e, this.state.contextMenu.index); }},
-        {label: "Close Others", onClick: (e) => { e.preventDefault(); this.onRemoveOtherTabs(); }},
-        {label: "Close to the Right", onClick: (e) => { e.preventDefault(); this.onRemoveRightTabs(); }},
-        {label: "Close All", onClick: (e) => { e.preventDefault(); this.onRemoveAllTabs(); }},
-        {label: "Duplicate", onClick: (e) => { e.preventDefault(); this.onDuplicateTab(); }}
-      ]
+      {label: "Close", onClick: (e) => { e.preventDefault(); this.onCloseContextMenu(); this.onRemoveTab(e, this.state.contextMenu.index); }},
+      {label: "Close Others", onClick: (e) => { e.preventDefault(); this.onRemoveOtherTabs(); }},
+      {label: "Close to the Right", onClick: (e) => { e.preventDefault(); this.onRemoveRightTabs(); }},
+      {label: "Close All", onClick: (e) => { e.preventDefault(); this.onRemoveAllTabs(); }},
+      {label: "Duplicate", onClick: (e) => { e.preventDefault(); this.onDuplicateTab(); }}
+    ];
 
     const renderContextMenuItems = () => {
       return h("ul", {className: "slds-dropdown__list", role: "menu",},
@@ -1947,50 +1949,50 @@ class App extends React.Component {
     const renderResultButtonsAndFilter = () => {
       return [
         h("div", {className: "slds-button-group slds-m-left_small", key:"actionButtons"},
-                renderActionButtons(),
-                isOptionEnabled("delete", this.state.hideButtonsOption)
-                  ? h("button", {className: "slds-button slds-button_destructive", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (enabled only < 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
-              ),
-        model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element", key:"filter"},
-                h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},
+          renderActionButtons(),
+          isOptionEnabled("delete", this.state.hideButtonsOption)
+            ? h("button", {className: "slds-button slds-button_destructive", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (enabled only < 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
+        ),
+        !model.isWorking && model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element", key:"filter"},
+          h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},
+            h("input", {
+              className: "slds-input slds-button slds-m-around_none",
+              placeholder: model.filterColumns?.length > 0
+                ? `Filter by (${model.filterColumns.length})`
+                : "Filter",
+              type: "search",
+              value: model.resultsFilter,
+              onInput: this.onResultsFilterInput
+            }),
+            h("button", {className: "toggle expand slds-button slds-button_neutral" + (this.state.isDropdownOpen ? " contract" : " expand"), title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
+            this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
+              model.exportedData?.table[0]
+                ?.filter(column => column !== "_")
+                .map(column =>
+                  h("div", {
+                    key: column,
+                    className: `dropdown-item ${model.filterColumns?.includes(column) ? "selected" : ""}`,
+                    onClick: () => {
+                      if (model.filterColumns?.includes(column)) {
+                        model.filterColumns = model.filterColumns.filter(c => c !== column);
+                      } else {
+                        model.filterColumns = [...(model.filterColumns || []), column];
+                      }
+                      model.setResultsFilter(model.resultsFilter);
+                      this.setState({}); // Trigger re-render
+                    }
+                  },
                   h("input", {
-                    className: "slds-input slds-button slds-m-around_none",
-                    placeholder: model.filterColumns?.length > 0
-                      ? `Filter by (${model.filterColumns.length})`
-                      : "Filter",
-                    type: "search",
-                    value: model.resultsFilter,
-                    onInput: this.onResultsFilterInput
+                    type: "checkbox",
+                    checked: model.filterColumns?.includes(column) || false,
+                    readOnly: true
                   }),
-                  h("button", {className: "toggle expand slds-button slds-button_neutral" + (this.state.isDropdownOpen ? " contract" : " expand"), title: "Show More Filters", disabled: !model.exportedData, onClick: () => this.setState({isDropdownOpen: !this.state.isDropdownOpen})}, h("div", {className: "button-toggle-icon"})),
-                  this.state.isDropdownOpen && h("div", {className: "dropdown-menu"},
-                    model.exportedData?.table[0]
-                      ?.filter(column => column !== "_")
-                      .map(column =>
-                        h("div", {
-                          key: column,
-                          className: `dropdown-item ${model.filterColumns?.includes(column) ? "selected" : ""}`,
-                          onClick: () => {
-                            if (model.filterColumns?.includes(column)) {
-                              model.filterColumns = model.filterColumns.filter(c => c !== column);
-                            } else {
-                              model.filterColumns = [...(model.filterColumns || []), column];
-                            }
-                            model.setResultsFilter(model.resultsFilter);
-                            this.setState({}); // Trigger re-render
-                          }
-                        },
-                        h("input", {
-                          type: "checkbox",
-                          checked: model.filterColumns?.includes(column) || false,
-                          readOnly: true
-                        }),
-                        column
-                        )
-                      )
+                  column
                   )
                 )
-              ) : null,
+            )
+          )
+        ) : null,
       ]
     }
 

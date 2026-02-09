@@ -1172,7 +1172,7 @@ class Model {
     this.exportedData = this.currentTab?.results;
     // Update the UI with the new data
     if (this.exportedData) {
-      this.exportStatus = `Loaded ${this.exportedData.records.length} record${s(this.exportedData.records.length)}`;
+      this.exportStatus = `Loaded ${formatNumber(this.exportedData.records.length)} record${s(this.exportedData.records.length)}`;
     } else {
       this.exportStatus = "";
     }
@@ -1496,7 +1496,7 @@ class App extends React.Component {
   }
   onClearHistory(e) {
     const confirmText = "Are you sure you want to clear the query history?";
-    const options = {confirmText, confirmMethod: this.model.removeFromHistory, prevent: true};
+    const options = {confirmText, confirmMethod: this.model.clearHistory, prevent: true};
     this.modelEventHelper(e, null, options);
   }
   onSelectSavedEntry(e) {

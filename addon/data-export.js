@@ -1573,8 +1573,10 @@ class App extends React.Component {
     model.addQueryTab();
   }
   onRemoveTab(e, index) {
-    e.preventDefault();
-    e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     let {model} = this.props;
     model.removeQueryTab(index);
   }
@@ -1872,10 +1874,10 @@ class App extends React.Component {
                 h("div", {className: "slds-dropdown-trigger slds-dropdown-trigger_click " + (model.expandSavedOptions ? "slds-is-open" : "slds-is-closed")},
                   h("div", {className: "slds-dropdown slds-dropdown_right"},
                     h("div", {className: "slds-dropdown__item"},
-                      h("a", {href: "#", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
+                      h("button", {type: "button", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
                     ),
                     h("div", {className: "slds-dropdown__item"},
-                      h("a", {href: "#", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+                      h("button", {type: "button", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
                     )
                   )
                 ),
@@ -2003,7 +2005,7 @@ class App extends React.Component {
                   ),
                   h("li", {className: "slds-button-group-item"},
                     h("div", {className: "slds-dropdown-trigger"},
-                      h("button", {tabIndex: 5, href: "#", className: model.expandAutocomplete ? "slds-button slds-button_icon slds-button_icon-more toggle contract" : "slds-button slds-button_icon slds-button_icon-more toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
+                      h("button", {tabIndex: 5, className: model.expandAutocomplete ? "slds-button slds-button_icon slds-button_icon-more toggle contract" : "slds-button slds-button_icon slds-button_icon-more toggle expand", onClick: this.onToggleExpand, title: "Show all suggestions or only the first line"},
                         h("div", {className: "button-icon"}),
                         h("div", {className: "button-toggle-icon"})
                       )
@@ -2016,7 +2018,7 @@ class App extends React.Component {
                     h("span", {className: "slds-pill__icon_container " + r.autocompleteType + " " + r.dataType},
                       h("span", {className: "sfir-autocomplete-icon"})
                     ),
-                    h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: "slds-pill__action slds-p-right_x-small"},
+                    h("button", {type: "button", tabIndex: 0, title: r.title, onClick: () => { model.autocompleteClick(r); model.didUpdate(); }, className: "slds-pill__action slds-p-right_x-small"},
                       h("span", {className: "slds-pill__label"}, r.value)
                     )
                   )))
@@ -2149,22 +2151,22 @@ class App extends React.Component {
         },
         h("ul", {className: "slds-dropdown__list", role: "menu"},
           h("li", {className: "slds-dropdown__item", role: "presentation"},
-            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onRemoveTab(e, this.state.contextMenu.index); this.onCloseContextMenu(); }},
+            h("button", {type: "button", role: "menuitem", tabIndex: "-1", onClick: () => { this.onRemoveTab(null, this.state.contextMenu.index); this.onCloseContextMenu(); }},
               h("span", {className: "slds-truncate", title: "Close"}, "Close")
             )
           ),
           h("li", {className: "slds-dropdown__item", role: "presentation"},
-            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onRemoveOtherTabs(); }},
+            h("button", {type: "button", role: "menuitem", tabIndex: "-1", onClick: () => { this.onRemoveOtherTabs(); }},
               h("span", {className: "slds-truncate", title: "Close Others"}, "Close Others")
             )
           ),
           h("li", {className: "slds-dropdown__item", role: "presentation"},
-            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onRemoveRightTabs(); }},
+            h("button", {type: "button", role: "menuitem", tabIndex: "-1", onClick: () => { this.onRemoveRightTabs(); }},
               h("span", {className: "slds-truncate", title: "Close to the Right"}, "Close to the Right")
             )
           ),
           h("li", {className: "slds-dropdown__item", role: "presentation"},
-            h("a", {href: "#", role: "menuitem", tabIndex: "-1", onClick: (e) => { e.preventDefault(); this.onRemoveAllTabs(); }},
+            h("button", {type: "button", role: "menuitem", tabIndex: "-1", onClick: () => { this.onRemoveAllTabs(); }},
               h("span", {className: "slds-truncate", title: "Close All"}, "Close All")
             )
           )

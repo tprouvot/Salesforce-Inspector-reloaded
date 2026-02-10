@@ -1739,15 +1739,14 @@ class App extends React.Component {
           ),
           h("span", {className: "slds-text-heading_small"},
             this.state.fieldErrorMessage,
-            this.state.errorMessageClickable && h("a", {
-              href: "#",
-              onClick: (e) => {
-                e.preventDefault();
+            this.state.errorMessageClickable && h("button", {
+              type: "button",
+              onClick: () => {
                 localStorage.setItem("enableEntityDefinitionCaching", true);
                 this.setState({fieldErrorMessage: null, errorMessageClickable: false});
                 this.fetchObjects();
               },
-              style: {color: "inherit", textDecoration: "underline"}
+              style: {color: "inherit", textDecoration: "underline", background: "none", border: "none", padding: 0, font: "inherit", cursor: "pointer"}
             }, "Click here to enable")
           ),
           h("a", {

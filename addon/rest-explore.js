@@ -694,14 +694,10 @@ class App extends React.Component {
                             h("div", {className: "slds-dropdown slds-dropdown_right slds-dropdown_actions"},
                               h("ul", {className: "slds-dropdown__list", role: "menu"},
                                 h("li", {className: "slds-dropdown__item", role: "presentation"},
-                                  h("a", {href: "#", role: "menuitem", tabIndex: "0", target: "_blank"},
-                                    h("span", {onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
-                                  )
+                                  h("button", {type: "button", role: "menuitem", tabIndex: "0", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
                                 ),
                                 h("li", {className: "slds-dropdown__item", role: "presentation"},
-                                  h("a", {href: "#", role: "menuitem", tabIndex: "0", target: "_blank"},
-                                    h("span", {onClick: this.onClearSavedHistory, title: "Clear Saved Queries"}, "Clear Saved Queries")
-                                  )
+                                  h("button", {type: "button", role: "menuitem", tabIndex: "0", onClick: this.onClearSavedHistory, title: "Clear Saved Queries"}, "Clear Saved Queries")
                                 ),
                               )
                             )
@@ -755,10 +751,10 @@ class App extends React.Component {
                           ),
                         )
                       ),
-                      h("a", {
-                        href: "#",
+                      h("button", {
+                        type: "button",
                         className: "slds-pill__action",
-                        onClick: e => { e.preventDefault(); this.autocompleteClick(r); model.didUpdate(); }
+                        onClick: () => { this.autocompleteClick(r); model.didUpdate(); }
                       },
                       h("span", {className: "slds-pill__label"}, r.key)
                       ),

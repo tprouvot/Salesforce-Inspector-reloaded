@@ -55,12 +55,32 @@ body{
 }
 
 /* Dropdown menu styles */
-.slds-dropdown__item.sfir-justify-left > a {
+.slds-dropdown__item.sfir-justify-left > a,
+.slds-dropdown__item.sfir-justify-left > button {
     justify-content: left;
 }
 
+/* Button elements in dropdown items need same layout as <a> (SLDS only targets > a) */
+.slds-dropdown__item > button {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-block: var(--slds-g-spacing-2, 0.25rem);
+    padding-inline: var(--slds-g-spacing-3, 0.75rem);
+    white-space: nowrap;
+    cursor: pointer;
+    background: none;
+    border: none;
+    width: 100%;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+}
+
 /* Custom icon styles for dropdown menu actions */
-a .icon {
+a .icon,
+button .icon {
     display: inline-block;
     width: 1rem;
     height: 1rem;
@@ -91,7 +111,8 @@ a.query-record .icon {
     background-color: #706E6B;
 }
 
-a.copy-id .icon {
+a.copy-id .icon,
+button.copy-id .icon {
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-size: 1rem;
     -webkit-mask-image: url(../images/copy.svg);
@@ -108,6 +129,7 @@ a.download-salesforce .icon {
 }
 
 a.copy-id,
+button.copy-id,
 a.download-salesforce {
     cursor: pointer;
 }

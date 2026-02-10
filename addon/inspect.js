@@ -1494,7 +1494,7 @@ class FieldRow extends TableRow {
       links = [];
     }
     links.push({href: this.idLink(), text: "View in Salesforce", className: "view-salesforce"});
-    links.push({href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
+    links.push({href: null, text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
     this.recordIdPop = links;
     elem.props.onOpenPopup(elem);
   }
@@ -2367,11 +2367,12 @@ class FieldValueCell extends React.Component {
           row.recordIdPop == null ? null : h("div", {className: "slds-dropdown slds-dropdown_left slds-dropdown_actions pop-menu"},
             h("ul", {className: "slds-dropdown__list"},
               row.recordIdPop.map(link =>
-                h("li", {key: link.href, className: "slds-dropdown__item sfir-justify-left"},
-                  h("a", {href: link.href, className: link.className, id: link.id, onClick: this.onLinkClick},
-                    h("div", {className: "icon"}),
-                    link.text
-                  )
+                h("li", {key: link.text, className: "slds-dropdown__item sfir-justify-left"},
+                  link.href
+                    ? h("a", {href: link.href, className: link.className, id: link.id, onClick: this.onLinkClick},
+                        h("div", {className: "icon"}), link.text)
+                    : h("button", {type: "button", className: link.className, id: link.id, onClick: this.onLinkClick},
+                        h("div", {className: "icon"}), link.text)
                 )
               )
             )

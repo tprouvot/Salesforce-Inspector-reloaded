@@ -5,6 +5,9 @@ class AlertBanner extends React.PureComponent {
 
   render() {
     let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
+    let linkProps = link && link.props;
+    let linkText = link && link.text;
+    let hasHref = linkProps && linkProps.href;
     return (
       h("div", {className: `slds-notify slds-notify_alert slds-theme_${type}`, role: "alert"},
         h("span", {className: "slds-assistive-text"}, assistiveText || "Notification"),
@@ -15,7 +18,8 @@ class AlertBanner extends React.PureComponent {
         ),
         h("h2", {}, bannerText,
           h("p", {}, ""),
-          link && link.props ? h("a", link.props, link.text) : (link ? link.text : null)
+          // Render <button> when no href (actions), <a> when href present (links), else just text or null
+          link ? (linkProps ? (hasHref ? h("a", linkProps, linkText) : h("button", Object.assign({type: "button"}, linkProps), linkText)) : linkText) : null
         ),
         onClose && h("div", {className: "slds-notify__close"},
           h("button", {className: "slds-button slds-button_icon slds-button_icon-small slds-button_icon-inverse", title: "Close", onClick: onClose},

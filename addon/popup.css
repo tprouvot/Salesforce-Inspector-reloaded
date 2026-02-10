@@ -70,7 +70,9 @@ body {
 a,
 a:visited,
 .slds-button,
-a > span {
+/* Buttons inherit same color as links for visual consistency */
+a > span,
+button > span {
   color: var(--sfir-blue-color);
 }
 
@@ -95,6 +97,7 @@ a > span {
   fill: var(--sfir-light-gray);
 }
 
+/* Buttons and button-type inputs fill container width for consistent layout */
 button,
 input {
   width: 100%;
@@ -375,7 +378,9 @@ input.api-input {
   font-size: var(--sfir-font-lg);
 }
 
-.small-font a {
+/* Buttons need same compact padding as links in small-font context */
+.small-font a,
+.small-font button {
   padding-left: 6px;
   padding-right: 6px;
 }
@@ -509,11 +514,17 @@ a.icon-url {
 /* end of TAB CONTAINER */
 
 .slds-dropdown__item a,
+.slds-dropdown__item > span,
 .slds-dropdown__item .dropdown-item {
   display: block !important;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* <span> lacks default pointer cursor; explicit cursor needed for clickable behavior */
+.slds-dropdown__item > span {
+  cursor: pointer;
 }
 
 /* OBJECTS INFO */
@@ -535,7 +546,9 @@ a.icon-url {
   max-width: 50px;
 }
 
+/* Prevents buttons from stretching to 100% (existing CSS sets button width:100%) */
 .slds-button {
+  width: auto;
   line-height: 1.2rem;
   min-height: 30px;
   font-weight: 500;

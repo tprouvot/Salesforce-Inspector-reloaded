@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, copyToClipboard} from "./utils.js";
+import {UserInfoModel, copyToClipboard, formatDuration} from "./utils.js";
 import {apiStatistics, ApiStatistics} from "./api-statistics.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 /* global initButton */
@@ -74,8 +74,8 @@ let h = React.createElement;
 
 class StatsCard extends React.Component {
   render() {
-    const {title, value, subtitle, className = ""} = this.props;
-    return h("div", {className: `slds-card slds-m-around_small ${className}`},
+    const {title, value, subtitle, className = "", titleAttr} = this.props;
+    return h("div", {className: `slds-card slds-m-around_small ${className}`, title: titleAttr},
       h("div", {className: "slds-card__body slds-card__body_inner"},
         h("h3", {className: "slds-text-heading_small slds-m-bottom_x-small"}, title),
         h("div", {className: "slds-text-heading_large slds-text-color_success"}, value),
@@ -276,9 +276,10 @@ class App extends React.Component {
       .map(([method, data]) => ({method, count: data.count}))
       .sort((a, b) => b.count - a.count);
 
-    const sessionDurationText = stats.sessionDurationMinutes > 0
-      ? `${stats.sessionDurationMinutes} minute${stats.sessionDurationMinutes > 1 ? "s" : ""}`
-      : "Less than a minute";
+    const sessionDurationFull = formatDuration(stats.sessionDurationMinutes);
+    // Truncate to first 2 units (each unit is 2 words: number + unit name)
+    const sessionDurationParts = sessionDurationFull.split(" ");
+    const sessionDurationText = sessionDurationParts.slice(0, 4).join(" ");
 
     return h("div", {},
       h(PageHeader, {
@@ -326,7 +327,8 @@ class App extends React.Component {
               h(StatsCard, {
                 title: "Session Duration",
                 value: sessionDurationText,
-                subtitle: `Started: ${new Date(stats.startTime).toLocaleString()}`
+                subtitle: `Started: ${new Date(stats.startTime).toLocaleString()}`,
+                titleAttr: sessionDurationFull
               }),
               h(StatsCard, {
                 title: "Average Response Time",

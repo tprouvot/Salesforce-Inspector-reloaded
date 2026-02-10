@@ -2,6 +2,7 @@
 
 ## Version 2.0
 - `Data Export` Add ProgressRing component, outline current tab for query text focus, "duplicate tab" in context menu, case insensitive match on tab rename, improve responsive rendering for different screen sizes. Add number formatting for duration and record counts, with option to always show ms [issue #1091](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1091) (contribution by [Nathan Shulman](https://github.com/nshulman))
+- `Accessibility` Improve screen reader support: fix AlertBanner silent announcements, convert inspector button and tooltip trigger to semantic elements, add popup iframe title issues [#1107](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1107) & [#1108](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1108) (contribution by [akj](https://github.com/akj))
 - `Dependencies Explorer` (contribution by [Georgi Dobrishinov](https://github.com/dobrishinov))
 - `Flow Scanner` Extract Flow Scanner rules logic into shared module (fixes the Flow Scanner import flash on the Options page) contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - Introduce SObjectList cache to prevent request to Salesforce requests to be sent each time the popup opens [issue #437](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/437)

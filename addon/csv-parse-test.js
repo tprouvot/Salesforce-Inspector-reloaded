@@ -10,7 +10,8 @@ export async function csvParseTest(test) {
   assertThrows({name: 'CSVParseError', message: 'Quote not closed', offsetStart: 4, offsetEnd: 5}, () => csvParse('"a","b\nc,d', ',')); // unclosed quote
   assertEquals([['aa', 'b"b'], ['c""c', 'dd"']], csvParse('aa,b"b\nc""c,dd"', ',')); // unquoted values may contain quotes, as long as they are not at the beginning of the value. These should not be unescaped.
   assertEquals([['a"a', 'bb'], ['c""c', 'dd']], csvParse('"a""a","bb"\n"c""""c","dd"', ',')); // quoted values may contain escaped quotes. These should be unescaped (by replacing each pair of quotes with a single quote).
-  assertThrows({name: 'CSVParseError', message: "unexpected token 'c'", offsetStart: 15, offsetEnd: 16}, () => csvParse('"a""a","bb"\n"c"c","dd"', ',')); // quoted values cannot contain unescaped quotes
+  assertEquals([['a"a', 'bb'], ['"c"c"', 'dd']], csvParse('"a""a","bb"\n"c"c","dd"', ',')); // quoted values with unescaped quotes are now treated leniently as unquoted fields to handle user data with quotes
+  assertEquals([['foo', 'bar'], ['foo', '"bar"text after quote']], csvParse('"foo","bar"\r\n"foo","bar"text after quote', ',')); // text after closing quote is handled gracefully (fixes issue with quotes in imported data)
   // Line breaks
   assertEquals([['a', 'b'], ['c', 'd']], csvParse('a,b\nc,d', ',')); // LF
   assertEquals([['a', 'b'], ['c', 'd']], csvParse('a,b\r\nc,d', ',')); // CRLF

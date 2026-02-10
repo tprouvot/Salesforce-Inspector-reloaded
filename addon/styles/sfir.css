@@ -180,3 +180,18 @@ a.download-salesforce {
   font-size: 0.9375rem;
   color: #181818;
 }
+
+/* API Statistics Error Link Styles */
+.sfir-error-link {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.sfir-error-link:hover {
+  text-decoration: none;
+}
+
+/* API Statistics Error Modal Styles */
+.sfir-error-modal-content {
+  max-height: 400px;
+}

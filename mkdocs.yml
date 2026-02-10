@@ -82,6 +82,7 @@ nav:
       - Debugging:
           - Debug Logs Viewer: logs-viewer.md
       - Metadata:
+          - Dependencies Explorer: dependencies-explorer.md
           - Download Metadata: download-metadata.md
           - Field Creator: field-creator.md
           - Flow Scanner: flow-scanner.md

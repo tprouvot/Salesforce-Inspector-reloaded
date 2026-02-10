@@ -19,10 +19,10 @@ if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #s
 function initButton(sfHost, inInspector) {
   let rootEl = document.createElement("div");
   rootEl.id = "insext";
-  let btn = document.createElement("div");
+  let btn = document.createElement("button");
   let iFrameLocalStorage = {};
+  btn.type = "button";
   btn.className = "insext-btn";
-  btn.tabIndex = 0;
   btn.accessKey = "i";
   btn.title = "Show Salesforce details (Alt+I / Shift+Alt+I)";
   rootEl.appendChild(btn);
@@ -261,6 +261,7 @@ function initButton(sfHost, inInspector) {
 
     let popupSrc = chrome.runtime.getURL("popup.html?host=" + sfHost);
     let popupEl = document.createElement("iframe");
+    popupEl.title = "Salesforce Inspector Reloaded";
 
     function getOrientation(source) {
       return getKeyFromStorage(source, "popupArrowOrientation", "vertical");

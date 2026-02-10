@@ -20,7 +20,8 @@ export class ApiStatistics {
         errors: 0,
         totalDuration: 0
       },
-      startTime: Date.now()
+      startTime: Date.now(),
+      errorMessages: []
     };
     this._statsLoaded = false;
   }
@@ -63,7 +64,8 @@ export class ApiStatistics {
         this.stats = {
           ...this.stats,
           ...parsed,
-          startTime: parsed.startTime || Date.now()
+          startTime: parsed.startTime || Date.now(),
+          errorMessages: parsed.errorMessages || []
         };
       } catch (e) {
         console.error("Error loading API debug statistics:", e);
@@ -94,8 +96,9 @@ export class ApiStatistics {
    * @param {string} method - Method name
    * @param {number} duration - Duration in milliseconds
    * @param {boolean} isError - Whether the call resulted in an error
+   * @param {string} errorMessage - Error message if isError is true
   */
-  trackApiCall(mode, url, method, duration, isError = false){
+  trackApiCall(mode, url, method, duration, isError = false, errorMessage = null){
     if (!ApiStatistics.isDebugModeEnabled()) {
       return;
     }
@@ -125,7 +128,8 @@ export class ApiStatistics {
             errors: parsed.soap?.errors || 0,
             totalDuration: parsed.soap?.totalDuration || 0
           },
-          startTime: parsed.startTime || Date.now()
+          startTime: parsed.startTime || Date.now(),
+          errorMessages: parsed.errorMessages || []
         };
       } catch (e) {
         console.error("Error loading API debug statistics:", e);
@@ -135,12 +139,29 @@ export class ApiStatistics {
       stats = this._getDefaultStats();
     }
 
-    this.handleStatsUpdates(mode, stats[mode], url, method, duration, isError);
+    this.handleStatsUpdates(mode, stats[mode], url, method, duration, isError, errorMessage);
+    // Store error message if this is an error
+    if (isError && errorMessage) {
+      if (!stats.errorMessages) {
+        stats.errorMessages = [];
+      }
+      const errorEntry = {
+        timestamp: Date.now(),
+        mode,
+        url,
+        method,
+        message: errorMessage
+      };
+      stats.errorMessages.push(errorEntry);
+      // Keep only the last 10 errors
+      if (stats.errorMessages.length > 10) {
+        stats.errorMessages = stats.errorMessages.slice(-10);
+      }
+    }
     this.saveStats(stats);
   }
 
   handleStatsUpdates(mode, statsType, url, method, duration, isError){
-    const timestamp = Date.now();
     statsType.total++;
     statsType.totalDuration += duration;
 
@@ -208,7 +229,8 @@ export class ApiStatistics {
         errors: 0,
         totalDuration: 0
       },
-      startTime: Date.now()
+      startTime: Date.now(),
+      errorMessages: []
     };
   }
 
@@ -236,7 +258,7 @@ export class ApiStatistics {
       simplified = simplified.replace(/[a-zA-Z0-9]{18}/g, "{id}");
 
       return simplified;
-    } catch (e) {
+    } catch {
       return url;
     }
   }
@@ -301,6 +323,18 @@ export class ApiStatistics {
   }
 
   /**
+   * Get the last 10 error messages
+   * @returns {Array} Array of error objects with timestamp, mode, url, method, and message
+   */
+  getLastErrors() {
+    if (!this._statsLoaded) {
+      this.loadStats();
+    }
+    this.getStatsFromLocalStorage();
+    return (this.stats.errorMessages || []).slice(-10);
+  }
+
+  /**
    * Reset statistics
    */
   reset() {
@@ -318,7 +352,8 @@ export class ApiStatistics {
         errors: 0,
         totalDuration: 0
       },
-      startTime: Date.now()
+      startTime: Date.now(),
+      errorMessages: []
     };
     this.saveStats();
   }

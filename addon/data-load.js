@@ -1,4 +1,5 @@
 import {sfConn, apiVersion} from "./inspector.js";
+import {isRecordId} from "./utils.js";
 
 const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true" && !window.location.href.includes("data-export");
 // Inspired by C# System.Linq.Enumerable
@@ -299,14 +300,6 @@ function renderCell(rt, cell, td) {
     });
     a.textContent = label;
     td.appendChild(a);
-  }
-  function isRecordId(recordId) {
-    return typeof recordId === "string"
-         && /^[a-zA-Z0-9]{15,18}$/.test(recordId)
-         && /^[0-9a-zA-Z]{3}/.test(recordId)
-         && !recordId.startsWith("000")
-         && !/[^a-zA-Z0-9]/.test(recordId)
-         && /[0-9]/.test(recordId.slice(0, 5));
   }
   function isEventLogFile(text) {
     // test the text to identify if this is a path to an eventLogFile

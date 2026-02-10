@@ -1,7 +1,7 @@
 import {sfConn, apiVersion, XML} from "./inspector.js";
 import Toast from "./components/Toast.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, generatePackageXml} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {Spinner} from "./components/Spinner.js";
 
@@ -326,18 +326,12 @@ class Model {
         });
       }
     });
-    this.packageXml = "<Package xmlns=\"http://soap.sforce.com/2006/04/metadata\">\n";
-
-    Object.entries(groupedComponents).forEach(([type, members]) => {
-      this.packageXml += "    <types>\n";
-      [...members].sort().forEach(member => {
-        this.packageXml += `        <members>${member}</members>\n`;
-      });
-      this.packageXml += `        <name>${type}</name>\n`;
-      this.packageXml += "    </types>\n";
+    // Generate the package.xml using shared utility
+    this.packageXml = generatePackageXml(groupedComponents, {
+      includeXmlDeclaration: false,
+      sortTypes: false,
+      skipEmptyTypes: false
     });
-    this.packageXml += `    <version>${apiVersion}</version>\n`;
-    this.packageXml += "</Package>";
   }
 
   formatXml(xmlString) {

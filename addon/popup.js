@@ -271,6 +271,7 @@ class App extends React.PureComponent {
       m: ["click", "eventMonitorBtn"],
       v: ["click", "logsViewerBtn"],
       b: ["click", "apiStatisticsBtn"],
+      c: ["click", "dependenciesExplorerBtn"],
       o: ["tab", "objectTab"],
       u: ["tab", "userTab"],
       s: ["tab", "shortcutTab"],
@@ -556,23 +557,14 @@ class App extends React.PureComponent {
                 h("span", {}, "Field Crea", h("u", {}, "t"), "or")
               )
             ),
-            h(
-              "div",
-              {
-                className:
-                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
-              },
-              h(
-                "a",
-                {
-                  ref: "metaRetrieveBtn",
-                  href: `metadata-retrieve${
-                    useLegacyDownloadMetadata ? "-legacy" : ""
-                  }.html?${hostArg}`,
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral",
-                },
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+              h("a", {ref: "metaRetrieveBtn", href: `metadata-retrieve${useLegacyDownloadMetadata ? "-legacy" : ""}.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
                 h("span", {}, h("u", {}, "D"), "ownload Metadata")
+              )
+            ),
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+              h("a", {ref: "dependenciesExplorerBtn", href: `dependencies-explorer.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
+                h("span", {}, "Depen", h("u", {}, "c"), "encies Explorer")
               )
             )
           ),
@@ -3746,6 +3738,7 @@ class AllDataSelection extends React.PureComponent {
   }
   getFlowScannerUrl() {
     return `flow-scanner.html?host=${this.props.sfHost}&flowDefId=${this.state.flowDefinitionId}&flowId=${this.props.selectedValue.recordId}`;
+
   }
   getFlowCompareUrl() {
     return getFlowCompareUrl(this.props.sfHost, this.props.selectedValue.recordId);

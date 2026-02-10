@@ -891,6 +891,134 @@ export function isRecordId(recordId) {
        && /[0-9]/.test(recordId.slice(0, 5));
 }
 
+/**
+ * Generates a package.xml string from grouped metadata components
+ * @param {Map|Object} groupedComponents - Map or Object where keys are metadata types and values are Set or Array of member names
+ * @param {Object} [options] - Optional configuration
+ * @param {boolean} [options.includeXmlDeclaration=true] - Whether to include XML declaration
+ * @param {boolean} [options.sortTypes=true] - Whether to sort types alphabetically
+ * @param {boolean} [options.skipEmptyTypes=true] - Whether to skip types with no members
+ * @returns {string} The generated package.xml string
+ */
+export function generatePackageXml(groupedComponents, options = {}) {
+  const {
+    includeXmlDeclaration = true,
+    sortTypes = true,
+    skipEmptyTypes = true
+  } = options;
+
+  let packageXml = "";
+
+  if (includeXmlDeclaration) {
+    packageXml += '<?xml version="1.0" encoding="UTF-8"?>\n';
+  }
+
+  packageXml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
+
+  // Convert Map to entries if needed, and handle both Set and Array members
+  let entries;
+  if (groupedComponents instanceof Map) {
+    entries = Array.from(groupedComponents.entries());
+  } else {
+    entries = Object.entries(groupedComponents);
+  }
+
+  // Sort types alphabetically if requested
+  if (sortTypes) {
+    entries.sort(([typeA], [typeB]) => typeA.localeCompare(typeB));
+  }
+
+  entries.forEach(([type, members]) => {
+    // Convert Set to Array if needed
+    const membersArray = members instanceof Set ? Array.from(members) : members;
+
+    // Skip empty types if requested
+    if (skipEmptyTypes && membersArray.length === 0) {
+      return;
+    }
+
+    packageXml += "    <types>\n";
+
+    // Sort members alphabetically
+    const sortedMembers = [...membersArray].sort();
+    sortedMembers.forEach(member => {
+      packageXml += `        <members>${member}</members>\n`;
+    });
+
+    packageXml += `        <name>${type}</name>\n`;
+    packageXml += "    </types>\n";
+  });
+
+  packageXml += `    <version>${apiVersion}</version>\n`;
+  packageXml += "</Package>";
+
+  return packageXml;
+}
+
+/**
+ * Generates a package.xml string from grouped metadata components
+ * @param {Map|Object} groupedComponents - Map or Object where keys are metadata types and values are Set or Array of member names
+ * @param {Object} [options] - Optional configuration
+ * @param {boolean} [options.includeXmlDeclaration=true] - Whether to include XML declaration
+ * @param {boolean} [options.sortTypes=true] - Whether to sort types alphabetically
+ * @param {boolean} [options.skipEmptyTypes=true] - Whether to skip types with no members
+ * @returns {string} The generated package.xml string
+ */
+export function generatePackageXml(groupedComponents, options = {}) {
+  const {
+    includeXmlDeclaration = true,
+    sortTypes = true,
+    skipEmptyTypes = true
+  } = options;
+
+  let packageXml = "";
+
+  if (includeXmlDeclaration) {
+    packageXml += '<?xml version="1.0" encoding="UTF-8"?>\n';
+  }
+
+  packageXml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
+
+  // Convert Map to entries if needed, and handle both Set and Array members
+  let entries;
+  if (groupedComponents instanceof Map) {
+    entries = Array.from(groupedComponents.entries());
+  } else {
+    entries = Object.entries(groupedComponents);
+  }
+
+  // Sort types alphabetically if requested
+  if (sortTypes) {
+    entries.sort(([typeA], [typeB]) => typeA.localeCompare(typeB));
+  }
+
+  entries.forEach(([type, members]) => {
+    // Convert Set to Array if needed
+    const membersArray = members instanceof Set ? Array.from(members) : members;
+
+    // Skip empty types if requested
+    if (skipEmptyTypes && membersArray.length === 0) {
+      return;
+    }
+
+    packageXml += "    <types>\n";
+
+    // Sort members alphabetically
+    const sortedMembers = [...membersArray].sort();
+    sortedMembers.forEach(member => {
+      packageXml += `        <members>${member}</members>\n`;
+    });
+
+    packageXml += `        <name>${type}</name>\n`;
+    packageXml += "    </types>\n";
+  });
+
+  packageXml += `    <version>${apiVersion}</version>\n`;
+  packageXml += "</Package>";
+
+  return packageXml;
+}
+
 // Utility function to format number using runtime locale
 export function formatNumber(value, decimals) {
   try {

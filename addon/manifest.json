@@ -79,6 +79,7 @@
         "metadata-retrieve.html",
         "metadata-retrieve-legacy.html",
         "explore-api.html",
+        "dependencies-explorer.html",
         "rest-explore.html",
         "limits.html",
         "api-statistics.html",
@@ -142,6 +143,9 @@
     },
     "data-import": {
       "description": "Data Import"
+    },
+    "dependencies-explorer": {
+      "description": "Dependencies Explorer"
     },
     "options": {
       "description": "Options"

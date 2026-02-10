@@ -558,8 +558,8 @@ class Model {
     let skippedRecords = this.importAction != "undelete" ? this.importData.counts.Succeeded + this.importData.counts.Failed : 0;
     let actionVerb = this.getActionVerb(this.importAction);
     this.confirmPopup = {
-      text: formatNumber(importedRecords) + " records will be " + actionVerb + "."
-        + (skippedRecords > 0 ? " " + formatNumber(skippedRecords) + " records will be skipped because they have __Status Succeeded or Failed." : "")
+      text: formatNumber(importedRecords,0) + " records will be " + actionVerb + "."
+        + (skippedRecords > 0 ? " " + formatNumber(skippedRecords,0) + " records will be skipped because they have __Status Succeeded or Failed." : "")
     };
   }
 
@@ -1499,7 +1499,7 @@ class StatusBox extends React.Component {
       h("input", {id: `status-${name}`, type: "checkbox", checked: model.showStatus[name], onChange: this.onShowStatusChange}),
       h("label", {className: "slds-checkbox__label", htmlFor: `status-${name}`},
         h("span", {className: "slds-checkbox_faux slds-m-right_xx-small"}, ""),
-        h("span", {className: model.importCounts()[name] == 0 ? "slds-form-element__label sfir-lightgray-color" : "slds-form-element__label"}, formatNumber(model.importCounts()[name]) + " " + name)
+        h("span", {className: model.importCounts()[name] == 0 ? "slds-form-element__label sfir-lightgray-color" : "slds-form-element__label"}, formatNumber(model.importCounts()[name],0) + " " + name)
       )
     );
   }

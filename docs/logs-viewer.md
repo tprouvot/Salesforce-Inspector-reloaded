@@ -1,5 +1,20 @@
 # Debug Logs Viewer
 
+> **Prerequisite**
+> Agentforce needs to be enabled.
+> The prompt PromptTemplateDebugLog needs to be deployed in the org. ([AnalyzeDebugLog prompt template](https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/releaseCandidate/force-app/main/default/genAiPromptTemplates/AnalyzeDebugLog.genAiPromptTemplate-meta.xml))
+
+You can use Agentforce to generate detailed log analysis. This feature leverages Salesforce's Prompt Templates to help you understand the log details.
+
+> **Note**
+> The standard Salesforce 'Prompt Template User' permission is required to use this feature.
+
+By default, the Agentforce button is hidden. To enable it:
+
+1. Go to Options -> Log Viewer
+2. Enable "Agentforce" button
+3. Optionally, you can customize the prompt template name that will be used for generating log analysis
+
 ## Overview
 
 The Debug Logs Viewer allows you to view, filter, analyze, and manage Salesforce debug logs directly from the extension. With advanced features like Agentforce-powered analysis, grep-like filtering, and smart pagination, it transforms the debug log experience into a productive workflow.

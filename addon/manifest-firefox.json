@@ -26,7 +26,9 @@
     "https://*.visualforce.mil/*",
     "https://*.crmforce.mil/*",
     "https://*.force.com.mcas.ms/*",
-    "cookies"
+    "cookies",
+    "storage",
+    "unlimitedStorage"
   ],
   "content_scripts": [
     {
@@ -76,6 +78,7 @@
     "explore-api.html",
     "rest-explore.html",
     "limits.html",
+    "api-statistics.html",
     "inject.js",
     "field-creator.html",
     "options.html",

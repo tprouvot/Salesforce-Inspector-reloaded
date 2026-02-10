@@ -8,8 +8,9 @@
  */
 
 /* global React ReactDOM */
+import {getFlowScannerRules, normalizeSeverity, CORE_SEVERITY_TO_UI} from "./flow-scanner-rules.js";
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, getUserInfo, isOptionEnabled, Constants, PromptTemplate} from "./utils.js";
+import {getLinkTarget, getUserInfo, isOptionEnabled, Constants, PromptTemplate, getFlowCompareUrl} from "./utils.js";
 import ConfirmModal from "./components/ConfirmModal.js";
 import {PageHeader} from "./components/PageHeader.js";
 
@@ -17,137 +18,7 @@ import {PageHeader} from "./components/PageHeader.js";
 const DEFAULT_HISTORY_SIZE = 5;
 const MAX_COMPOSITE_BATCH_SIZE = 25;
 const MAX_QUERY_CHUNK_SIZE = 200;
-const FLOW_SCANNER_RULES_STORAGE_KEY = "flowScannerRules";
 const FLOW_SCANNER_HISTORY_SIZE_KEY = "flowScannerHistorySize";
-
-// Severity level mappings
-const SEVERITY_MAPPING = {
-  ui: {
-    note: "info"
-  },
-  storage: {
-    info: "note"
-  }
-};
-
-const CORE_SEVERITY_TO_UI = {
-  error: "error",
-  critical: "error",
-  warning: "warning",
-  info: "info",
-  information: "info"
-};
-
-// Flow Scanner Rules Configuration
-export const flowScannerKnownConfigurableRules = {
-  APIVersion: {configType: "threshold", defaultValue: 50},
-  FlowName: {configType: "expression", defaultValue: "[A-Za-z0-9]+_[A-Za-z0-9]+"},
-  CyclomaticComplexity: {configType: "threshold", defaultValue: 25},
-};
-
-/**
- * Checks if a configuration object has any valid (non-empty, non-null) values.
- * @param {Object} config - The configuration object to validate.
- * @returns {boolean} True if at least one valid value exists.
- */
-function hasValidConfig(config) {
-  if (!config) {
-    return false;
-  }
-  return Object.values(config).some(value =>
-    value !== "" && value !== null && value !== undefined && value !== false
-  );
-}
-
-export function getFlowScannerRules(flowScannerCore) {
-  // Retrieve core and beta rules from the scanner library
-  const coreRules = typeof flowScannerCore.getRules === "function"
-    ? flowScannerCore.getRules()
-    : [];
-  const betaRules = typeof flowScannerCore.getBetaRules === "function"
-    ? flowScannerCore.getBetaRules().map(r => ({...r, isBeta: true}))
-    : [];
-
-  // Build the default rule list for merging
-  const defaultRules = [...coreRules, ...betaRules].map(rule => {
-    const def = {
-      name: rule.name,
-      label: rule.label || rule.name,
-      description: rule.description,
-      isBeta: rule.isBeta || false,
-      // Default checked state can be customized here if needed
-      checked: true,
-      // Extract config details from the rule definition
-      configType: rule.configType,
-      defaultValue: rule.defaultValue,
-      isConfigurable: rule.isConfigurable,
-      // Default severity
-      severity: rule.defaultSeverity || rule.severity || "error"
-    };
-    // For some rules, config is on the instance not the definition.
-    if (rule.defaultThreshold) {
-      def.configType = "threshold";
-      def.defaultValue = rule.defaultThreshold;
-      def.isConfigurable = true;
-    }
-    return def;
-  });
-
-  // Stored overrides from Options page
-  const storedRules = JSON.parse(localStorage.getItem(FLOW_SCANNER_RULES_STORAGE_KEY) || "[]");
-
-  // Merge defaults with stored overrides
-  const merged = [];
-
-  for (const def of defaultRules) {
-    const stored = storedRules.find(r => r.name === def.name);
-    const known = flowScannerKnownConfigurableRules[def.name];
-    let config = {};
-    let configType = def.configType;
-    let configurable = def.configurable;
-
-    // Apply stored override config
-    if (stored && hasValidConfig(stored.config)) {
-      config = stored.config;
-    } else if (known) {
-      config = {[known.configType]: known.defaultValue};
-      configType = known.configType;
-      configurable = true;
-    } else if (def.defaultValue != null) {
-      config = {[def.configType]: def.defaultValue};
-    }
-
-    if (known) {
-      configurable = true;
-      configType = configType || known.configType;
-    }
-
-    merged.push({
-      ...def,
-      checked: stored?.checked ?? def.checked,
-      config,
-      configType,
-      configurable,
-      configValue: stored?.configValue,
-      severity: stored?.severity || def.severity
-    });
-  }
-
-  return merged;
-}
-
-/**
- * Normalizes severity levels between the UI display format ("info") and
- * the storage format ("note") used by the core scanner library.
- *
- * @param {string} sev - The severity level to normalize.
- * @param {string} [direction="ui"] - The direction of normalization ('ui' or 'storage').
- * @returns {string} The normalized severity level.
- */
-const normalizeSeverity = (sev, direction = "ui") => {
-  const mapping = SEVERITY_MAPPING[direction];
-  return mapping?.[sev] || sev;
-};
 
 /**
  * Extracts the primary affected element from a scan result.
@@ -168,26 +39,26 @@ function getFlowVersionPurgePlan(versions, historySize) {
   // We want to keep the 'historySize' most recent versions + the active version (if it's not already in that set)
   // So 'keepCount' isn't just historySize + 1, it depends on where the active version falls.
 
-  const sortedVersions = versions.sort((a, b) => b.VersionNumber - a.VersionNumber);
+  // Create a copy to avoid mutating the original array
+  const sortedVersions = [...versions].sort((a, b) => b.VersionNumber - a.VersionNumber);
   const activeVersion = sortedVersions.find(v => v.Status === "Active");
-  const activeVersionId = activeVersion ? activeVersion.Id : null;
 
   // 1. Identify the "recent" set (latest N + 1, where N is historySize)
   // The user says "keep 5 previous versions", meaning keep Current + 5 previous = 6 total from the top.
   const recentLimit = historySize + 1;
   const recentVersions = sortedVersions.slice(0, recentLimit);
-  const recentVersionIds = new Set(recentVersions.map(v => v.Id));
 
-  // 2. Identify versions to delete
-  // Delete everything that is NOT in the recent set AND is NOT the active version
-  const versionsToDelete = sortedVersions.filter(v => !recentVersionIds.has(v.Id) && v.Id !== activeVersionId);
+  // 2. Build a set of all versions to keep (recent + active if not already included)
+  const versionsToKeep = new Set(recentVersions.map(v => v.Id));
+  if (activeVersion && !versionsToKeep.has(activeVersion.Id)) {
+    versionsToKeep.add(activeVersion.Id);
+  }
 
-  // 3. Calculate the actual number of versions we are keeping
-  // Total versions - versions we are deleting
-  const actualKeepCount = versions.length - versionsToDelete.length;
+  // 3. Identify versions to delete (everything not in the keep set)
+  const versionsToDelete = sortedVersions.filter(v => !versionsToKeep.has(v.Id));
 
   return {
-    keepCount: actualKeepCount,
+    keepCount: versionsToKeep.size,
     versionsToDelete
   };
 }
@@ -844,7 +715,8 @@ class FlowScanner {
       if (this.flowScannerCore?.FlowType) {
         // Use the core library's FlowType definitions
         const FlowType = this.flowScannerCore.FlowType;
-        // Deduplicate the array to fix the duplicate "ContactRequestFlow" issue in core library
+        // DEFENSIVE: Deduplicate the array as a safeguard against potential duplicate entries
+        // in future core library versions (previous issue with "ContactRequestFlow" has been fixed)
         supportedFlowTypes = [...new Set(FlowType.allTypes())];
         supportedFlowTypesSet = new Set(supportedFlowTypes);
         const unsupportedFlowTypes = FlowType.unsupportedTypes || [];
@@ -1105,13 +977,15 @@ class FlowScanner {
             } else {
               // Flow-level violation
               const rawCondition = detail.expression || detail.details?.expression || detail.violation?.expression || "";
-              const condition = rawCondition.replace(/([<>=!]+)/g, "$1 ");
+              const condition = rawCondition ? rawCondition.replace(/([<>=!]+)/g, "$1 ") : "";
+              const detailName = detail.name || "";
+              const expression = detailName && condition ? `${detailName} ${condition}` : detailName || condition;
               elementData = {
                 elementName: this.currentFlow.apiName,
                 elementLabel: this.currentFlow.label,
                 elementType: "Flow",
                 apiName: this.currentFlow.apiName,
-                expression: `${detail.name || ""} ${condition}`.trim()
+                expression
               };
             }
 
@@ -1221,7 +1095,7 @@ function calculateVersionCountStyle(totalVersions) {
 }
 
 function FlowInfoSection(props) {
-  const {flow, elements, onPurgeVersions, onToggleDescription, handleMouseDown, shouldIgnoreClick} = props;
+  const {flow, elements, onPurgeVersions, onToggleDescription, handleMouseDown, shouldIgnoreClick, sfHost, flowId} = props;
 
   if (!flow) {
     return h("div", {className: "area"},
@@ -1290,6 +1164,16 @@ function FlowInfoSection(props) {
               ),
               h("div", {className: "detail-value"},
                 h("span", {id: "flow-versions-count", style: versionCountStyle}, flow.versions ? flow.versions.length : "Unknown"),
+                flowId && sfHost && h("a", {
+                  href: getFlowCompareUrl(sfHost, flowId),
+                  target: getLinkTarget(),
+                  className: "slds-button slds-button_icon slds-button_icon-bare slds-m-left_x-small",
+                  title: "Flow Compare"
+                },
+                h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#change_record_type"})
+                )
+                ),
                 (flow.versions && flow.versions.length > 1) && h("button", {
                   className: "slds-button slds-button_icon slds-button_icon-bare slds-m-left_x-small",
                   onClick: onPurgeVersions,
@@ -2049,6 +1933,8 @@ class App extends React.Component {
   renderFlowInfo() {
     const flow = this.flowScanner?.currentFlow;
     const elements = this.flowScanner?.extractFlowElements() || [];
+    const sfHost = this.flowScanner?.sfHost;
+    const flowId = this.flowScanner?.flowId;
 
     return h(FlowInfoSection, {
       flow,
@@ -2056,7 +1942,9 @@ class App extends React.Component {
       onPurgeVersions: this.onPurgeVersions,
       onToggleDescription: this.onToggleDescription,
       handleMouseDown: e => this.handleMouseDown(e),
-      shouldIgnoreClick: e => this.shouldIgnoreClick(e)
+      shouldIgnoreClick: e => this.shouldIgnoreClick(e),
+      sfHost,
+      flowId
     });
   }
 

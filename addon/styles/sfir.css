@@ -111,3 +111,87 @@ a.copy-id,
 a.download-salesforce {
     cursor: pointer;
 }
+
+/* Modal Container - shared across pages */
+.modalContainer {
+  max-width: 100rem;
+  width: 90%;
+  min-width: 60vw;
+  position: relative;
+  z-index: 9001; /* Above backdrop */
+}
+
+/* Backdrop for modals */
+.slds-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9000;
+}
+
+.slds-backdrop_open {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.2s linear;
+}
+
+/* Agentforce Modal Styles - shared across pages */
+.sfir-agentforce-textarea {
+  min-height: 60vh;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  font-family: monospace;
+}
+
+.sfir-agentforce-instructions-container {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.sfir-agentforce-instructions-content {
+  white-space: pre-wrap;
+  line-height: 1.7;
+  color: #3e3e3c;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.sfir-agentforce-analyzing-container {
+  min-height: 60vh;
+}
+
+.sfir-agentforce-error-content {
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+}
+
+.sfir-agentforce-results {
+  white-space: pre-wrap;
+  line-height: 1.8;
+  max-height: 60vh;
+  overflow-y: auto;
+  background-color: #fafaf9;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.25rem;
+  padding: 1.25rem;
+  font-size: 0.9375rem;
+  color: #181818;
+}
+
+/* API Statistics Error Link Styles */
+.sfir-error-link {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.sfir-error-link:hover {
+  text-decoration: none;
+}
+
+/* API Statistics Error Modal Styles */
+.sfir-error-modal-content {
+  max-height: 400px;
+}

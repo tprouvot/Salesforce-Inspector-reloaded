@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, isOptionEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, isRecordId, getSobjectsList} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -50,28 +50,21 @@ if (typeof browser === "undefined") {
 }
 
 function getFilteredLocalStorage() {
-  const existingFilteredStorage = sessionStorage.getItem("filteredStorage");
-  if (existingFilteredStorage) {
-    return JSON.parse(existingFilteredStorage);
-  }
-
-  let host = new URLSearchParams(window.location.search).get("host");
-
-  let domainStart = host?.split(".")[0];
+  const host = new URLSearchParams(window.location.search).get("host");
+  const domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
   const keysToSend = [
     "scrollOnFlowBuilder",
     "colorizeProdBanner",
     "colorizeSandboxBanner",
-    "popupArrowOrientation",
-    "popupArrowPosition",
     "prodBannerText",
   ];
-  const filteredStorage = Object.fromEntries(
-    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
+
+  // Always get fresh values for keysToSend from localStorage
+  // to avoid cache issues when these values change in options
+  return Object.fromEntries(
+    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || key.startsWith("popup") || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
   );
-  sessionStorage.setItem("filteredStorage", JSON.stringify(filteredStorage));
-  return filteredStorage;
 }
 function closePopup() {
   parent.postMessage({insextClosePopup: true}, "*");
@@ -127,11 +120,13 @@ class App extends React.PureComponent {
       contextUrl: null,
       apiVersionInput: apiVersion,
       isFieldsPresent: false,
+      isPopupExpanded: false, // Track if popup is expanded/active
       exportHref: "data-export.html?" + hostArg,
       importHref: "data-import.html?" + hostArg,
       eventMonitorHref: "event-monitor.html?" + hostArg,
       fieldCreatorHref: "field-creator.html?" + hostArg,
       limitsHref: "limits.html?" + hostArg,
+      apiStatisticsHref: "api-statistics.html?" + hostArg,
       latestNotesViewed:
         localStorage.getItem("latestReleaseNotesVersionViewed")
           === this.props.addonVersion || browser.extension.inIncognitoContext,
@@ -184,6 +179,7 @@ class App extends React.PureComponent {
       this.setState({
         isInSetup: locationHref.includes("/lightning/setup/"),
         contextUrl: locationHref,
+        isPopupExpanded: true, // Popup is expanded when we receive this message
       });
     }
     this.setState({
@@ -243,8 +239,8 @@ class App extends React.PureComponent {
         type: config.type || "info",
         bannerText: config.bannerText || "Action completed",
         iconName: config.iconName || "info",
-        assistiveTest:
-          config.assistiveTest || config.bannerText || "Notification",
+        assistiveText:
+          config.assistiveText || config.bannerText || "Notification",
         link: config.link || null,
         onClose: config.onClose || this.hideToast,
         ...config, // Allow any additional AlertBanner props
@@ -274,6 +270,8 @@ class App extends React.PureComponent {
       p: ["click", "optionsBtn"],
       m: ["click", "eventMonitorBtn"],
       v: ["click", "logsViewerBtn"],
+      b: ["click", "apiStatisticsBtn"],
+      c: ["click", "dependenciesExplorerBtn"],
       o: ["tab", "objectTab"],
       u: ["tab", "userTab"],
       s: ["tab", "shortcutTab"],
@@ -381,6 +379,7 @@ class App extends React.PureComponent {
       eventMonitorHref,
       fieldCreatorHref,
       limitsHref,
+      apiStatisticsHref,
       isFieldsPresent,
       latestNotesViewed,
       useLegacyDownloadMetadata,
@@ -417,7 +416,7 @@ class App extends React.PureComponent {
           bannerText: `Current Version: ${addonVersion}`,
           iconName: "notification",
           iconTitle: "Notification",
-          assistiveTest: "Version Update Notification",
+          assistiveText: "Version Update Notification",
           onClose: () => this.updateReleaseNotesViewed(addonVersion),
           link: {
             text: "See What's New",
@@ -434,7 +433,7 @@ class App extends React.PureComponent {
           h(AlertBanner, {type: bannerUrlAction.type,
             bannerText: bannerUrlAction.text,
             iconName: bannerUrlAction.icon,
-            assistiveTest: bannerUrlAction.text,
+            assistiveText: bannerUrlAction.text,
             onClose: null,
             link: {
               text: bannerUrlAction.title,
@@ -451,7 +450,7 @@ class App extends React.PureComponent {
             type: this.state.toastConfig.type,
             bannerText: this.state.toastConfig.bannerText,
             iconName: this.state.toastConfig.iconName,
-            assistiveTest: this.state.toastConfig.assistiveTest,
+            assistiveText: this.state.toastConfig.assistiveText,
             onClose: this.state.toastConfig.onClose,
             link: this.state.toastConfig.link,
             // Spread any additional props
@@ -462,7 +461,7 @@ class App extends React.PureComponent {
                     "type",
                     "bannerText",
                     "iconName",
-                    "assistiveTest",
+                    "assistiveText",
                     "onClose",
                     "link",
                   ].includes(key)
@@ -486,6 +485,7 @@ class App extends React.PureComponent {
             isFieldsPresent,
             eventMonitorHref,
             showToast: this.showToast,
+            isPopupExpanded: this.state.isPopupExpanded,
           }),
           h(
             "div",
@@ -557,23 +557,14 @@ class App extends React.PureComponent {
                 h("span", {}, "Field Crea", h("u", {}, "t"), "or")
               )
             ),
-            h(
-              "div",
-              {
-                className:
-                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
-              },
-              h(
-                "a",
-                {
-                  ref: "metaRetrieveBtn",
-                  href: `metadata-retrieve${
-                    useLegacyDownloadMetadata ? "-legacy" : ""
-                  }.html?${hostArg}`,
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral",
-                },
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+              h("a", {ref: "metaRetrieveBtn", href: `metadata-retrieve${useLegacyDownloadMetadata ? "-legacy" : ""}.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
                 h("span", {}, h("u", {}, "D"), "ownload Metadata")
+              )
+            ),
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+              h("a", {ref: "dependenciesExplorerBtn", href: `dependencies-explorer.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
+                h("span", {}, "Depen", h("u", {}, "c"), "encies Explorer")
               )
             )
           ),
@@ -760,6 +751,26 @@ class App extends React.PureComponent {
                   h("span", {}, "SIR O", h("u", {}, "p"), "tions")
                 )
               )
+              : null,
+            isSettingEnabled(Constants.API_DEBUG_STATISTICS_MODE)
+              ? h(
+                "div",
+                {
+                  className:
+                    "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small slds-m-bottom_xx-small",
+                },
+                h(
+                  "a",
+                  {
+                    ref: "apiStatisticsBtn",
+                    href: apiStatisticsHref,
+                    target: linkTarget,
+                    className:
+                      "slds-col page-button slds-button slds-button_neutral",
+                  },
+                  h("span", {}, "API De", h("u", {}, "b"), "ug Stats")
+                )
+              )
               : null
           )
         ),
@@ -914,6 +925,7 @@ class App extends React.PureComponent {
   }
 }
 
+/** Main tab component */
 class AllDataBox extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -930,7 +942,7 @@ class AllDataBox extends React.PureComponent {
     this.state = {
       activeSearchAspect: this.SearchAspectTypes[defaultTab],
       sobjectsList: null,
-      sobjectsLoading: true,
+      sobjectsLoading: false,
       usersBoxLoading: false,
       contextRecordId: null,
       contextUserId: null,
@@ -943,8 +955,15 @@ class AllDataBox extends React.PureComponent {
   }
 
   componentDidMount() {
-    this.ensureKnownBrowserContext();
-    this.loadSobjects();
+    if (this.state.activeSearchAspect === this.SearchAspectTypes.users) {
+      this.ensureKnownUserContext();
+    } else {
+      this.ensureKnownBrowserContext();
+    }
+
+    if (this.shouldLoadSobjects()) {
+      this.loadSobjects();
+    }
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -952,10 +971,20 @@ class AllDataBox extends React.PureComponent {
     if (prevProps.contextUrl !== this.props.contextUrl) {
       this.ensureKnownBrowserContext();
     }
+
+    // Check if popup just became expanded or Objects tab just became active
+    const popupJustExpanded = !prevProps.isPopupExpanded && this.props.isPopupExpanded;
+    const objectsTabJustActivated = prevState.activeSearchAspect !== activeSearchAspect
+      && activeSearchAspect === this.SearchAspectTypes.sobject;
+
     if (prevState.activeSearchAspect !== activeSearchAspect) {
       switch (activeSearchAspect) {
         case this.SearchAspectTypes.sobject:
           this.ensureKnownBrowserContext();
+          // Load sobjects if popup is expanded and Objects tab is now active
+          if (this.shouldLoadSobjects()) {
+            this.loadSobjects();
+          }
           break;
         case this.SearchAspectTypes.users:
           this.ensureKnownUserContext();
@@ -968,6 +997,27 @@ class AllDataBox extends React.PureComponent {
           break;
       }
     }
+
+    // If popup just became expanded and Objects tab is active, load sobjects
+    if (popupJustExpanded && this.shouldLoadSobjects()) {
+      this.loadSobjects();
+    }
+  }
+
+  /**
+   * Check if sobjects should be loaded
+   * @returns {boolean} True if Objects tab is active and popup is expanded, or if preload option is enabled and popup is not yet expanded
+   */
+  shouldLoadSobjects() {
+    // Normal loading: when popup is expanded and Objects tab is active
+    if (this.props.isPopupExpanded && this.state.activeSearchAspect === this.SearchAspectTypes.sobject) {
+      return true;
+    }
+    // Preload before popup opens: only if option is enabled
+    if (!this.props.isPopupExpanded) {
+      return isSettingEnabled(Constants.PRELOAD_SOBJECTS_BEFORE_POPUP);
+    }
+    return false;
   }
 
   ensureKnownBrowserContext() {
@@ -1023,151 +1073,22 @@ class AllDataBox extends React.PureComponent {
   }
 
   loadSobjects() {
-    let entityMap = new Map();
-
-    function addEntity(
-      {
-        name,
-        label,
-        keyPrefix,
-        durableId,
-        isCustomSetting,
-        recordTypesSupported,
-        isEverCreatable,
-        newUrl,
-      },
-      api
-    ) {
-      label = label.match("__MISSING") ? "" : label; //Error is added to the label if no label exists
-      let entity = entityMap.get(name);
-      // Each API call enhances the data, only the Name fields are present for each call.
-      if (entity) {
-        if (!entity.keyPrefix) {
-          entity.keyPrefix = keyPrefix;
-        }
-        if (!entity.durableId) {
-          entity.durableId = durableId;
-        }
-        if (!entity.isCustomSetting) {
-          entity.isCustomSetting = isCustomSetting;
-        }
-        if (!entity.newUrl) {
-          entity.newUrl = newUrl;
-        }
-        if (!entity.recordTypesSupported) {
-          entity.recordTypesSupported = recordTypesSupported;
-        }
-        if (!entity.isEverCreatable) {
-          entity.isEverCreatable = isEverCreatable;
-        }
-      } else {
-        entity = {
-          availableApis: [],
-          name,
-          label,
-          keyPrefix,
-          durableId,
-          isCustomSetting,
-          availableKeyPrefix: null,
-          recordTypesSupported,
-          isEverCreatable,
-          newUrl,
-        };
-        entityMap.set(name, entity);
-      }
-      if (api) {
-        entity.availableApis.push(api);
-        if (keyPrefix) {
-          entity.availableKeyPrefix = keyPrefix;
-        }
-      }
+    // Don't load if already loading or already loaded
+    if (this.state.sobjectsLoading || this.state.sobjectsList !== null) {
+      return;
     }
 
-    function getObjects(url, api) {
-      return sfConn
-        .rest(url)
-        .then((describe) => {
-          for (let sobject of describe.sobjects) {
-            // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
-            addEntity(
-              {...sobject, isCustomSetting: sobject.customSetting},
-              api
-            );
-          }
-        })
-        .catch((err) => {
-          console.error("list " + api + " sobjects", err);
-        });
-    }
+    // Set loading state
+    this.setState({sobjectsLoading: true});
 
-    function getEntityDefinitions() {
-      return sfConn
-        .rest(
-          "/services/data/v"
-            + apiVersion
-            + "/tooling/query?q="
-            + encodeURIComponent("SELECT COUNT() FROM EntityDefinition")
-        )
-        .then((res) => {
-          let entityNb = res.totalSize;
-          for (let bucket = 0; bucket < Math.ceil(entityNb / 2000); bucket++) {
-            let offset = bucket > 0 ? " OFFSET " + bucket * 2000 : "";
-            let query
-              = "SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT 2000"
-              + offset;
-            sfConn
-              .rest(
-                "/services/data/v"
-                  + apiVersion
-                  + "/tooling/query?q="
-                  + encodeURIComponent(query)
-              )
-              .then((respEntity) => {
-                for (let record of respEntity.records) {
-                  addEntity(
-                    {
-                      name: record.QualifiedApiName,
-                      label: record.Label,
-                      keyPrefix: record.KeyPrefix,
-                      durableId: record.DurableId,
-                      isCustomSetting: record.IsCustomSetting,
-                      recordTypesSupported: record.RecordTypesSupported,
-                      newUrl: record.NewUrl,
-                      isEverCreatable: record.IsEverCreatable,
-                    },
-                    null
-                  );
-                }
-              })
-              .catch((err) => {
-                console.error("list entity definitions: ", err);
-              });
-          }
-        })
-        .catch((err) => {
-          console.error("count entity definitions: ", err);
-        });
-    }
+    const {sfHost} = this.props;
 
-    Promise.all([
-      // Get objects the user can access from the regular API
-      getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
-      // Get objects the user can access from the tooling API
-      getObjects(
-        "/services/data/v" + apiVersion + "/tooling/sobjects/",
-        "toolingApi"
-      ),
-      // Get all objects, even the ones the user cannot access from any API
-      // These records are less interesting than the ones the user has access to, but still interesting since we can get information about them using the tooling API
-      // If there are too many records, we get "EXCEEDED_ID_LIMIT: EntityDefinition does not support queryMore(), use LIMIT to restrict the results to a single batch"
-      // Even if documentation mention that LIMIT and OFFSET are not supported, we use it to split the EntityDefinition queries into 2000 buckets
-      getEntityDefinitions(),
-    ])
-      .then(() => {
-        // TODO progressively display data as each of the three responses becomes available
+    // Get sobjects list (from cache or fetched from API)
+    getSobjectsList(sfHost)
+      .then((sobjectsList) => {
         this.setState({
           sobjectsLoading: false,
-          sobjectsList: Array.from(entityMap.values()),
+          sobjectsList,
         });
         // Only call getMatchesDelayed if the showAllDataBoxSObject component is rendered (i.e., user is on Objects tab)
         this.refs.showAllDataBoxSObject?.refs?.allDataSearch?.getMatchesDelayed(
@@ -1353,6 +1274,7 @@ class AllDataBox extends React.PureComponent {
   }
 }
 
+/** User tab component */
 class AllDataBoxUsers extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -1480,18 +1402,14 @@ class AllDataBoxUsers extends React.PureComponent {
 
     // Build SELECT clause dynamically based on available fields
     // If ProfileId is accessible, Profile.Name should also be accessible
-    let fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive";
-    if (hasProfileId) {
-      fullQuerySelect += ", ProfileId, Profile.Name";
-    }
-
+    const fullQuerySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive" + (hasProfileId ? ", ProfileId, Profile.Name" : "") + " FROM User";
     const userSearchWhereClause = await this.getUserSearchWhereClause(escapedUserQuery);
-    const queryFrom = "FROM User WHERE " + userSearchWhereClause + " ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
+    const queryWhere = " WHERE " + userSearchWhereClause + " WITH USER_MODE ORDER BY IsActive DESC, LastLoginDate LIMIT 100";
 
     // Use single query since we're building it dynamically based on accessible fields
     try {
       setIsLoading(true);
-      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + " " + queryFrom));
+      const userSearchResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(fullQuerySelect + queryWhere));
       return userSearchResult.records || [];
     } catch (err) {
       console.error("Unable to query user details:", err);
@@ -1505,23 +1423,27 @@ class AllDataBoxUsers extends React.PureComponent {
   async getUserSearchWhereClause(escapedUserQuery) {
     const {userSearchFields, excludeInactiveUsersFromSearch, excludePortalUsersFromSearch} = this.state;
 
-    let userSearchWhereClause = "(";
+    //start the where clause
+    let whereClause = [];
+    whereClause.push("(");
+    let userSearchWhereClauseFields = [];
+    //concat to search the users using user.Name field
     userSearchFields.forEach(field => {
-      userSearchWhereClause += field.name + " LIKE '%" + escapedUserQuery + "%' OR ";
+      userSearchWhereClauseFields.push(field.name + " LIKE '%" + escapedUserQuery + "%'");
     });
-    userSearchWhereClause = userSearchWhereClause.slice(0, -4);
-    userSearchWhereClause += ")";
+    whereClause.push(userSearchWhereClauseFields.join(" OR "));
+    whereClause.push(")");
     if (excludeInactiveUsersFromSearch) {
-      userSearchWhereClause += " AND IsActive = true";
+      whereClause.push("AND IsActive = true");
     }
     if (excludePortalUsersFromSearch) {
       // Check if IsPortalEnabled field is accessible before adding filter
       const hasIsPortalEnabled = await this.hasFieldAccess("IsPortalEnabled");
       if (hasIsPortalEnabled) {
-        userSearchWhereClause += " AND IsPortalEnabled = false";
+        whereClause.push("AND IsPortalEnabled = false");
       }
     }
-    return userSearchWhereClause;
+    return whereClause.join(" ");
   }
 
   async onDataSelect(userRecord) {
@@ -1538,25 +1460,15 @@ class AllDataBoxUsers extends React.PureComponent {
     if (!selectedUserId) {
       return;
     }
-    // Get cached field permissions
+
+    // leverage USER_MODE to get the user details with fields that are not accessible by the regular API
     const hasProfileId = await this.hasFieldAccess("ProfileId");
     const hasIsPortalEnabled = await this.hasFieldAccess("IsPortalEnabled");
-
-    // Build SELECT clause dynamically based on available fields
-    // If ProfileId is accessible, Profile.Name should also be accessible
-    let querySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)";
-    if (hasProfileId) {
-      querySelect += ", ProfileId, Profile.Name";
-    }
-    if (hasIsPortalEnabled) {
-      querySelect += ", IsPortalEnabled";
-    }
-
-    const queryFrom = "FROM User WHERE Id='" + selectedUserId + "' LIMIT 1";
+    const querySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)" + (hasProfileId ? ", ProfileId, Profile.Name" : "") + (hasIsPortalEnabled ? ", IsPortalEnabled" : "") + " FROM User WHERE Id='" + selectedUserId + "' WITH USER_MODE LIMIT 1";
 
     try {
       setIsLoading(true);
-      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(querySelect + " " + queryFrom));
+      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(querySelect));
       let userDetail = userResult.records[0];
       userDetail.debugModeActionLabel = userDetail.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
       //query NetworkMember only if it is a portal user (display "Login to Experience" button)
@@ -1643,6 +1555,7 @@ class AllDataBoxUsers extends React.PureComponent {
   }
 }
 
+/** Object tab component */
 class AllDataBoxSObject extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -1699,7 +1612,7 @@ class AllDataBoxSObject extends React.PureComponent {
         "LastModifiedDate",
         "Name",
       ];
-      if (selectedValue.sobject.recordTypesSupported) {
+      if (selectedValue.sobject.recordTypesSupported && selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 1) {
         fields.push("RecordType.DeveloperName", "RecordType.Id");
       }
       this.restCallForRecordDetails(fields, selectedValue);
@@ -2288,6 +2201,7 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 }
 
+/** Shortcut tab component */
 class AllDataBoxShortcut extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -2901,29 +2815,32 @@ class UserDetails extends React.PureComponent {
     this.state = {};
   }
 
-  showSuccessToast(operation, message) {
+  showSuccessToast(operation, message, link) {
     const {showToast} = this.props;
     if (showToast) {
       showToast({
         type: "success",
         bannerText: operation,
         iconName: "success",
-        assistiveTest: `${operation} completed successfully`,
-        link: {
+        assistiveText: `${operation} completed successfully`,
+        link: link || {
           text: message || `${operation} completed successfully`,
         },
       });
     }
   }
 
-  showErrorToast(operation) {
+  showErrorToast(operation, message) {
     const {showToast} = this.props;
     if (showToast) {
       showToast({
         type: "error",
         bannerText: `${operation} Failed`,
         iconName: "error",
-        link: {
+        assistiveText: `Failed to ${operation.toLowerCase()}`,
+        link: message ? {
+          text: message,
+        } : {
           text: null,
         },
       });
@@ -2942,57 +2859,90 @@ class UserDetails extends React.PureComponent {
     let {user} = this.props;
     const DTnow = new Date(Date.now());
 
-    //Enable debug level and expiration time (minutes) as default parameters.
-    let debugLogDebugLevel = localStorage.getItem(
-      this.sfHost + "_debugLogDebugLevel"
-    );
-    if (debugLogDebugLevel == null) {
-      localStorage.setItem(
-        this.sfHost + "_debugLogDebugLevel",
-        "SFDC_DevConsole"
+    // Disable the button immediately
+    this.setState({
+      [`enableDebugLogDisabled_${user.Id}`]: true
+    });
+
+    try {
+      //Enable debug level and expiration time (minutes) as default parameters.
+      let debugLogDebugLevel = localStorage.getItem(
+        this.sfHost + "_debugLogDebugLevel"
       );
-    }
-
-    let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");
-    if (debugLogTimeMinutes == null) {
-      localStorage.setItem("debugLogTimeMinutes", 15);
-    }
-    let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
-
-    let traceFlags = await this.getTraceFlags(
-      user.Id,
-      DTnow,
-      debugLogDebugLevel,
-      debugTimeInMs
-    );
-    /*If an old trace flag is found on the user and with this debug level
-     *Update the trace flag extending the experiation date.
-     */
-    if (traceFlags.size > 0) {
-      this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
-      //Else create new trace flag
-    } else {
-      let debugLog = await this.getDebugLog(debugLogDebugLevel);
-
-      if (debugLog && debugLog.size > 0) {
-        this.insertTraceFlag(
-          user.Id,
-          debugLog.records[0].Id,
-          DTnow,
-          debugTimeInMs
-        );
-      } else {
-        throw new Error(
-          'Debug Level with developerName = "'
-            + debugLogDebugLevel
-            + '" not found'
+      if (debugLogDebugLevel == null) {
+        localStorage.setItem(
+          this.sfHost + "_debugLogDebugLevel",
+          "SFDC_DevConsole"
         );
       }
+
+      let debugLogTimeMinutes = localStorage.getItem("debugLogTimeMinutes");
+      if (debugLogTimeMinutes == null) {
+        localStorage.setItem("debugLogTimeMinutes", 15);
+      }
+      let debugTimeInMs = this.getDebugTimeInMs(debugLogTimeMinutes);
+
+      let traceFlags = await this.getTraceFlags(
+        user.Id,
+        DTnow,
+        debugLogDebugLevel,
+        debugTimeInMs
+      );
+      /*If an old trace flag is found on the user and with this debug level
+       *Update the trace flag extending the experiation date.
+       */
+      if (traceFlags.size > 0) {
+        await this.extendTraceFlag(traceFlags.records[0].Id, DTnow, debugTimeInMs);
+        //Else create new trace flag
+      } else {
+        let debugLog = await this.getDebugLog(debugLogDebugLevel);
+
+        if (debugLog && debugLog.size > 0) {
+          await this.insertTraceFlag(
+            user.Id,
+            debugLog.records[0].Id,
+            DTnow,
+            debugTimeInMs
+          );
+        } else {
+          throw new Error(
+            'Debug Level with developerName = "'
+              + debugLogDebugLevel
+              + '" not found'
+          );
+        }
+      }
+      // Update button state to show it's enabled
+      this.setState({
+        [`enableDebugLogEnabled_${user.Id}`]: true,
+        [`enableDebugLogDisabled_${user.Id}`]: false
+      });
+      this.showSuccessToast(
+        "Debug logs enabled successfully",
+        null,
+        {
+          props: {
+            href: "#",
+            onClick: (e) => {
+              e.preventDefault();
+              browser.runtime.sendMessage({message: "reloadPage"});
+            },
+            className: "slds-text-link",
+          },
+          text: "Reload page",
+        }
+      );
+    } catch (err) {
+      console.log("Error during debug log activation", err);
+      // Re-enable button on error so user can retry
+      this.setState({
+        [`enableDebugLogDisabled_${user.Id}`]: false
+      });
+      this.showErrorToast(
+        "Enable Debug Log",
+        err.message || "An error occurred"
+      );
     }
-    //Disable button after executing.
-    const element = document.querySelector("#enableDebugLog");
-    element.setAttribute("disabled", true);
-    element.text = "Logs Enabled";
   }
 
   toggleDisplay(event, refKey) {
@@ -3249,21 +3199,64 @@ class UserDetails extends React.PureComponent {
   }
 
   enableDebugMode(user) {
+    const currentDebugMode = this.state[`userDebugMode_${user.Id}`] !== undefined
+      ? this.state[`userDebugMode_${user.Id}`]
+      : user.UserPreferencesUserDebugModePref;
+    const action = currentDebugMode ? "Disable" : "Enable";
+
+    // Disable the button immediately
+    this.setState({
+      [`enableDebugModeDisabled_${user.Id}`]: true
+    });
+
     sfConn
       .rest("/services/data/v" + apiVersion + "/sobjects/User/" + user.Id, {
         method: "PATCH",
         body: {
-          UserPreferencesUserDebugModePref:
-            !user.UserPreferencesUserDebugModePref,
+          UserPreferencesUserDebugModePref: !currentDebugMode,
         },
       })
-      .then(() => browser.runtime.sendMessage({message: "reloadPage"}))
-      .catch((err) =>
-        console.log("Error during user debug mode activation", err)
-      );
+      .then(() => {
+        // Update local state to reflect the new debug mode status
+        this.setState({
+          [`userDebugMode_${user.Id}`]: !currentDebugMode,
+          [`enableDebugModeDisabled_${user.Id}`]: false
+        });
+        this.showSuccessToast(
+          `Debug mode ${action.toLowerCase()}d successfully`,
+          null,
+          {
+            props: {
+              href: "#",
+              onClick: (e) => {
+                e.preventDefault();
+                browser.runtime.sendMessage({message: "reloadPage"});
+              },
+              className: "slds-text-link",
+            },
+            text: "Reload page",
+          }
+        );
+      })
+      .catch((err) => {
+        console.log("Error during user debug mode activation", err);
+        // Re-enable button on error so user can retry
+        this.setState({
+          [`enableDebugModeDisabled_${user.Id}`]: false
+        });
+        this.showErrorToast(
+          `${action} Debug Mode`,
+          err.message || "An error occurred"
+        );
+      });
   }
 
   unfreezeUser(user) {
+    // Disable the button immediately
+    this.setState({
+      [`unfreezeUserDisabled_${user.Id}`]: true
+    });
+
     sfConn
       .rest(
         "/services/data/v" + apiVersion + "/sobjects/UserLogin/" + user.UserLogins?.records?.[0]?.Id,
@@ -3274,12 +3267,36 @@ class UserDetails extends React.PureComponent {
       )
       .then(() => {
         this.showSuccessToast(
-          "User Unfreeze",
-          `User ${user.Name} has been unfrozen successfully`
+          `User ${user.Name} has been unfrozen successfully`,
+          null,
+          {
+            props: {
+              href: "#",
+              onClick: (e) => {
+                e.preventDefault();
+                browser.runtime.sendMessage({message: "reloadPage"});
+              },
+              className: "slds-text-link",
+            },
+            text: "Reload page",
+          }
         );
-        browser.runtime.sendMessage({message: "reloadPage"});
+        // Re-enable button after success
+        this.setState({
+          [`unfreezeUserDisabled_${user.Id}`]: false
+        });
       })
-      .catch((err) => this.showErrorToast("User Unfreeze", err));
+      .catch((err) => {
+        console.log("Error during user unfreeze", err);
+        // Re-enable button on error so user can retry
+        this.setState({
+          [`unfreezeUserDisabled_${user.Id}`]: false
+        });
+        this.showErrorToast(
+          "User Unfreeze",
+          err.message || "An error occurred"
+        );
+      });
   }
 
   async resetUserPassword(user) {
@@ -3543,8 +3560,21 @@ class UserDetails extends React.PureComponent {
       //TODO check for using icons instead of text https://www.lightningdesignsystem.com/components/button-groups/#Button-Icon-Group
       user.UserLogins?.records?.[0]?.IsFrozen
         ? h("div", {className: "user-buttons center small-font slds-m-top_x-small"},
-          h("a", {id: "unfreezeUser", className: "slds-button slds-button_neutral", onClick: () => this.unfreezeUser(user)},
-            h("span", {className: "slds-truncate", title: "Unfreeze User Login"}, "Unfreeze")
+          h("a", {
+            href: "#",
+            id: "unfreezeUser",
+            className: "slds-button slds-button_neutral",
+            disabled: this.state[`unfreezeUserDisabled_${user.Id}`] || false,
+            onClick: (e) => {
+              if (this.state[`unfreezeUserDisabled_${user.Id}`]) {
+                e.preventDefault();
+                return;
+              }
+              this.unfreezeUser(user);
+            },
+            title: "Unfreeze User Login"
+          },
+          h("span", {className: "slds-truncate"}, "Unfreeze")
           )
         )
         : h(
@@ -3559,24 +3589,48 @@ class UserDetails extends React.PureComponent {
             {
               href: "#",
               id: "enableDebugLog",
-              disabled: false,
-              onClick: this.enableDebugLog,
+              onClick: (e) => {
+                if (this.state[`enableDebugLogDisabled_${user.Id}`]) {
+                  e.preventDefault();
+                  return;
+                }
+                this.enableDebugLog();
+              },
               className: "slds-button slds-button_neutral",
-              title: "Enable user debug log",
+              disabled: this.state[`enableDebugLogDisabled_${user.Id}`] || false,
+              title: this.state[`enableDebugLogEnabled_${user.Id}`] ? "Logs enabled" : "Enable user debug log",
             },
-            "Enable Logs"
+            this.state[`enableDebugLogEnabled_${user.Id}`] ? "Logs Enabled" : "Enable Logs"
           ),
           h(
             "a",
             {
+              href: "#",
               id: "enableDebugMode",
-              onClick: () => this.enableDebugMode(user),
+              onClick: (e) => {
+                if (this.state[`enableDebugModeDisabled_${user.Id}`]) {
+                  e.preventDefault();
+                  return;
+                }
+                this.enableDebugMode(user);
+              },
               className: "slds-button slds-button_neutral",
-              title:
-                  user.debugModeActionLabel
-                  + " Debug Mode for Lightning Components",
+              disabled: this.state[`enableDebugModeDisabled_${user.Id}`] || false,
+              title: (() => {
+                const currentDebugMode = this.state[`userDebugMode_${user.Id}`] !== undefined
+                  ? this.state[`userDebugMode_${user.Id}`]
+                  : user.UserPreferencesUserDebugModePref;
+                const actionLabel = currentDebugMode ? "Disable" : "Enable";
+                return actionLabel + " Debug Mode for Lightning Components";
+              })(),
             },
-            user.debugModeActionLabel + " Debug Mode"
+            (() => {
+              const currentDebugMode = this.state[`userDebugMode_${user.Id}`] !== undefined
+                ? this.state[`userDebugMode_${user.Id}`]
+                : user.UserPreferencesUserDebugModePref;
+              const actionLabel = currentDebugMode ? "Disable" : "Enable";
+              return actionLabel + " Debug Mode";
+            })()
           )
         ),
       this.doSupportLoginAs(user)
@@ -3684,6 +3738,10 @@ class AllDataSelection extends React.PureComponent {
   }
   getFlowScannerUrl() {
     return `flow-scanner.html?host=${this.props.sfHost}&flowDefId=${this.state.flowDefinitionId}&flowId=${this.props.selectedValue.recordId}`;
+
+  }
+  getFlowCompareUrl() {
+    return getFlowCompareUrl(this.props.sfHost, this.props.selectedValue.recordId);
   }
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
@@ -4095,6 +4153,18 @@ class AllDataSelection extends React.PureComponent {
                 "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small",
           },
           "Flow Scanner"
+        )
+        : null,
+      flowDefinitionId
+        ? h(
+          "a",
+          {
+            href: this.getFlowCompareUrl(),
+            target: linkTarget,
+            className:
+                "button page-button slds-button slds-button_neutral slds-m-top_xx-small slds-m-bottom_xx-small",
+          },
+          "Flow Compare"
         )
         : null,
       h(
@@ -4698,6 +4768,24 @@ function getRecordId(href) {
     const flowId = url.searchParams.get("flowId");
     if (flowId && flowId.startsWith("301")) {
       return flowId;
+    }
+  }
+
+  // Lightning Setup pages with address parameter
+  if (url.pathname.startsWith("/lightning/setup/")) {
+    const addressParam = url.searchParams.get("address");
+    if (addressParam) {
+      try {
+        // Decode the URL-encoded address parameter
+        const decodedAddress = decodeURIComponent(addressParam);
+        const match = decodedAddress.match(/^\/([a-zA-Z0-9]{15,18})(?:\?|$)/);
+        if (match && isRecordId(match[1])) {
+          return match[1];
+        }
+      } catch (e) {
+        // If decoding fails, continue to other checks
+        console.warn("Failed to decode address parameter:", e);
+      }
     }
   }
 

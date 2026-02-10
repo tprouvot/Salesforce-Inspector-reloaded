@@ -785,12 +785,35 @@ svg.icon:hover {
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
-  cursor: pointer;
+  cursor: default;
 }
 
-.export-result {
+.export-result, .export-info {
   display: flex;
   flex: 1 1 0;
   min-height: 0;
+}
+
+.export-result {
   flex-direction: column;
+}
+
+.export-info {
+  resize: none;
+}
+
+.export-result-table {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.export-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
 }

@@ -2167,31 +2167,32 @@ class App extends React.Component {
             )
           )),
         h("div",
-          { className: "slds-card slds-m-horizontal_medium slds-m-bottom_medium export-result", id: "result-area" },
-          h("div", {className: "slds-card__body slds-card__body_inner result-area"},
+          {
+            className: "slds-card slds-m-horizontal_medium slds-m-bottom_medium export-result",
+            id: "result-area"
+          },
+          h("div", {className: "slds-card__body slds-card__body_inner export-result"},
             h("div", {className: "result-bar export-status"},
               renderTitle("Export Result"),
               renderResultButtonsAndFilter(),
               renderExportStatus()
             ),
             h("textarea", {
-              className: "slds-box slds-theme_error",
+              className: "slds-box slds-theme_error export-info",
               readOnly: true,
               value: nullToEmptyString(model.exportError),
-              hidden: model.exportError == null,
-              style: {flex: "1 1 0", minHeight: 0, resize: "none"}
+              hidden: model.exportError == null
             }),
             h("div", {
               ref: "scroller",
               hidden: model.exportError != null,
-              style: {flex: "1 1 0", minHeight: 0, maxHeight: "100%", overflowY: "auto"}
+              className: "export-result-table",
             }
             )
           )
         ),
         this.state.contextMenu && h("div", {
-          className: "context-menu-overlay",
-          style: {position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000},
+          className: "context-menu-overlay export-menu",
           onClick: this.onCloseContextMenu,
           onContextMenu: this.onOverlayContextMenu
         }),
@@ -2206,6 +2207,7 @@ class App extends React.Component {
 }
 
 {
+
   let args = new URLSearchParams(location.search);
   let sfHost = args.get("host");
   let hash = new URLSearchParams(location.hash); //User-agent OAuth flow

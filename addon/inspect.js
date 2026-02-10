@@ -1842,9 +1842,6 @@ class App extends React.Component {
       h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open sfir-border-none"},
         h("button", {
           className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
-          "aria-haspopup": "true",
-          "aria-expanded": "false",
-          title: "Click to open menu",
           onClick: this.onUseAllTab
         },
         h("span", {className: "slds-media__body"},
@@ -1855,10 +1852,7 @@ class App extends React.Component {
       // Fields tab
       h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open sfir-border-none"},
         h("button", {
-          className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
-          "aria-haspopup": "true",
-          "aria-expanded": "false",
-          title: "Click to open menu"
+          className: "slds-button slds-builder-header__item-action slds-media slds-media_center"
         },
         h("span", {className: "slds-media__body"},
           h("span", {className: "slds-truncate", title: "Fields", onClick: this.onUseFieldsTab}, "Fields"),
@@ -1883,10 +1877,7 @@ class App extends React.Component {
       // Relationships tab
       h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open sfir-border-none"},
         h("button", {
-          className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
-          "aria-haspopup": "true",
-          "aria-expanded": "false",
-          title: "Click to open menu"
+          className: "slds-button slds-builder-header__item-action slds-media slds-media_center"
         },
         h("span", {className: "slds-media__body"},
           h("span", {className: "slds-truncate", title: "Relationships", onClick: this.onUseChildsTab}, "Relationships"),

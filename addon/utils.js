@@ -1005,55 +1005,11 @@ export function formatDuration(minutes) {
 }
 
 /**
- * Formats a duration in minutes into a human-readable string showing all units.
- * @param {number} minutes - The duration in minutes
- * @returns {string} A formatted duration string (e.g., "4 days 3 hours 34 minutes")
+ * Formats a number based on the user's locale with specified decimal places
+ * @param {number} value - Any number
+ * @param {number} decimals - Number of decimal places to format to
+ * @returns {string} A formatted number based on the user's locale (e.g., "1,234.56" in en-US)
  */
-export function formatDuration(minutes) {
-  if (minutes < 1) {
-    return "Less than a minute";
-  }
-
-  const parts = [];
-  let remaining = Math.round(minutes);
-
-  // Calculate months (30 days = 43200 minutes)
-  if (remaining >= 43200) {
-    const months = Math.floor(remaining / 43200);
-    parts.push(`${months} month${months !== 1 ? "s" : ""}`);
-    remaining = remaining % 43200;
-  }
-
-  // Calculate weeks (7 days = 10080 minutes)
-  if (remaining >= 10080) {
-    const weeks = Math.floor(remaining / 10080);
-    parts.push(`${weeks} week${weeks !== 1 ? "s" : ""}`);
-    remaining = remaining % 10080;
-  }
-
-  // Calculate days (1440 minutes per day)
-  if (remaining >= 1440) {
-    const days = Math.floor(remaining / 1440);
-    parts.push(`${days} day${days !== 1 ? "s" : ""}`);
-    remaining = remaining % 1440;
-  }
-
-  // Calculate hours (60 minutes per hour)
-  if (remaining >= 60) {
-    const hours = Math.floor(remaining / 60);
-    parts.push(`${hours} hour${hours !== 1 ? "s" : ""}`);
-    remaining = remaining % 60;
-  }
-
-  // Add remaining minutes
-  if (remaining > 0) {
-    parts.push(`${remaining} minute${remaining !== 1 ? "s" : ""}`);
-  }
-
-  return parts.length > 0 ? parts.join(" ") : "Less than a minute";
-}
-
-// Format number using runtime locale
 export function formatNumber(value, decimals) {
   try {
     return value.toLocaleString(undefined, {
@@ -1066,8 +1022,12 @@ export function formatNumber(value, decimals) {
   }
 };
 
-// Format duration using runtime locale, shorten to seconds or minutes when appropriate
-export function formatDuration(ms) {
+/**
+ * Formats performance time given ms with runtime local, shorten to seconds or minutes when appropriate
+ * @param {number} ms - The duration in milliseconds
+ * @returns {string} A formatted performance time as string (e.g., "300ms", "12.34s", "2m 34.56s")
+ */
+export function formatPerformanceTime(ms) {
   if (ms == null || isNaN(ms)) {
     return "0ms";
   }

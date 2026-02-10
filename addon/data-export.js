@@ -1,7 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants,
-  UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, formatNumber, formatDuration} from "./utils.js";
+  UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, formatNumber, formatPerformanceTime} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -289,13 +289,13 @@ class Model {
       const avgTime = this.performancePoints.reduce((a, b) => a + b, 0) / batches;
       const maxTime = Math.max(...this.performancePoints);
       const minTime = Math.min(...this.performancePoints);
-      const avg = `Avg ${formatDuration(avgTime)}`;
-      const max = `Max ${formatDuration(maxTime)}`;
-      const min = `Min ${formatDuration(minTime)}`;
+      const avg = `Avg ${formatPerformanceTime(avgTime)}`;
+      const max = `Max ${formatPerformanceTime(maxTime)}`;
+      const min = `Min ${formatPerformanceTime(minTime)}`;
       batchStats = `Batch Performance: ${avg}, ${min}, ${max}`;
       batchCount = `${formatNumber(batches)} Batches / `;
     }
-    return {text: `${formatNumber(batchCount)} ${formatDuration(this.totalTime)}`, batchStats};
+    return {text: `${formatNumber(batchCount)} ${formatPerformanceTime(this.totalTime)}`, batchStats};
   }
   clearHistory() {
     this.queryHistory.clear();

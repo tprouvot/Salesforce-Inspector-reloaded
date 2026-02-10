@@ -1005,12 +1005,12 @@ export function formatDuration(minutes) {
 }
 
 /**
- * Formats a number based on the user's locale with specified decimal places
+ * Formats a number based on the running user's locale with specified decimal places
  * @param {number} value - Any number
  * @param {number} decimals - Number of decimal places to format to
- * @returns {string} A formatted number based on the user's locale (e.g., "1,234.56" in en-US)
+ * @returns {string} A formatted number based on the user's locale (e.g., "1 234,56" in fr-FR)
  */
-export function formatNumber(value, decimals) {
+export function formatNumber(value, decimals = 0) {
   try {
     return value.toLocaleString(undefined, {
       minimumFractionDigits: decimals,
@@ -1031,12 +1031,11 @@ export function formatPerformanceTime(ms) {
   if (ms == null || isNaN(ms)) {
     return "0ms";
   }
-
   try {
     const alwaysShowMs = localStorage.getItem("showFormattedDurationInMs") === "true";
     if (alwaysShowMs || ms < 1000) {
       // Always show in ms format
-      return `${formatNumber(ms, 0)}ms`;
+      return `${formatNumber(ms)}ms`;
     } else if (ms < 60000) {
       // 1-59 seconds: show "12.34s" format
       return `${formatNumber(ms / 1000, 2)}s`;
@@ -1044,7 +1043,7 @@ export function formatPerformanceTime(ms) {
       // Over 1 minute: show "2m 34.56s" format
       const minutes = Math.floor(ms / 60000);
       const seconds = (ms % 60000) / 1000;
-      return `${formatNumber(minutes, 0)}m ${formatNumber(seconds, 2)}s`;
+      return `${formatNumber(minutes)}m ${formatNumber(seconds, 2)}s`;
     }
   } catch (e) {
     // Failsafe - leave the value alone

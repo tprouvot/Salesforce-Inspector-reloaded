@@ -173,11 +173,11 @@ class Model {
     const appendItems = [];
     // Dynamically build the status text based on available counts
     if (this.counts.success > 0) {
-      appendItems.push(formatNumber(this.counts.success,0));
+      appendItems.push(formatNumber(this.counts.success));
     }
     const total = this.counts.queued + this.counts.processing + this.counts.success + this.counts.failed;
     if (total > 0) {
-      appendItems.push(`${formatNumber(total,0)} record${s(total)}`);
+      appendItems.push(`${formatNumber(total)} record${s(total)}`);
     }
     this.exportStatus = `${statusText} ${appendItems.join(" of ")}`;
     this.exportError = errorText;
@@ -995,7 +995,7 @@ class Model {
         let recs = exportedData.records.length;
         let total = exportedData.totalSize;
         if (total != -1) {
-          vm.setWorkingState(false, "Exported with Errors", {processing:total-recs, success:recs, queued: 0, failed:total-recs});
+          vm.setWorkingState(false, `Exported ${formatNumber(recs)} of ${formatNumber(total)} record${s(total)}. Stopped by error.`, {processing:total-recs, success:recs, queued: 0, failed:total-recs});
           vm.exportedData = exportedData;
           vm.updatedExportedData();
           vm.markPerf();
@@ -2002,7 +2002,7 @@ class App extends React.Component {
     }
 
     const renderExportStatus = () => {
-      return h("div", {className: "result-status flex-right", style: {display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center"}},
+      return h("div", {className: "flex-right export-status"},
                 h("span", {className: `slds-badge slds-theme_${model.exportError ? "error" : "success"}`}, model.exportStatus),
                 perfDetails && h("span", {className: "result-info", title: perfDetails.batchStats}, perfDetails.text),
                 h("span", {},
@@ -2167,18 +2167,9 @@ class App extends React.Component {
             )
           )),
         h("div",
-          {
-            className: "slds-card slds-m-horizontal_medium slds-m-bottom_medium",
-            id: "result-area",
-            style: {
-              flex: "1 1 0",
-              minHeight: 0,
-              display: "flex",
-              flexDirection: "column"
-            }
-          },
-          h("div", {className: "slds-card__body slds-card__body_inner", style: {flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column"}},
-            h("div", {className: "result-bar", style: {display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center"}},
+          { className: "slds-card slds-m-horizontal_medium slds-m-bottom_medium export-result", id: "result-area" },
+          h("div", {className: "slds-card__body slds-card__body_inner result-area"},
+            h("div", {className: "result-bar export-status"},
               renderTitle("Export Result"),
               renderResultButtonsAndFilter(),
               renderExportStatus()
@@ -2215,7 +2206,6 @@ class App extends React.Component {
 }
 
 {
-
   let args = new URLSearchParams(location.search);
   let sfHost = args.get("host");
   let hash = new URLSearchParams(location.hash); //User-agent OAuth flow

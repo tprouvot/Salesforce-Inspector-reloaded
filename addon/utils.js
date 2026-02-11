@@ -48,8 +48,12 @@ export function isOptionEnabled(optionName, optionsArray){
   return true;
 }
 
-export function isSettingEnabled(settingName){
-  return localStorage.getItem(settingName) === "true";
+export function isSettingEnabled(settingName, defaultValue = false){
+  const value = localStorage.getItem(settingName);
+  if (value === null) {
+    return defaultValue;
+  }
+  return value === "true";
 }
 
 export async function getLatestApiVersionFromOrg(sfHost) {
@@ -685,7 +689,7 @@ export class DataCache {
  */
 export async function getSobjectsList(sfHost) {
   // Check if caching is enabled
-  const cacheEnabled = isSettingEnabled(Constants.ENABLE_SOBJECTS_LIST_CACHE);
+  const cacheEnabled = isSettingEnabled(Constants.ENABLE_SOBJECTS_LIST_CACHE, true);
 
   // Check cache first (only if caching is enabled)
   if (cacheEnabled) {

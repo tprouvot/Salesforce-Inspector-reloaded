@@ -255,6 +255,10 @@ class App extends React.PureComponent {
     });
   }
   onShortcutKey(e) {
+    // Only trigger shortcuts for single key presses (no modifier keys)
+    if (e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) {
+      return;
+    }
     const refs = this.refs;
     const actionMap = {
       a: ["all", "clickAllDataBtn"],

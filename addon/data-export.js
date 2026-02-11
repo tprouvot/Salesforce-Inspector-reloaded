@@ -1267,8 +1267,8 @@ function RecordTable(vm) {
   let columnIdx = new Map();
   let header = ["_"];
   function discoverColumns(record, prefix, row) {
-    for (let field in record) {
-      if (field == "attributes") {
+    for (const field of Object.keys(record)) {
+      if (field === "attributes") {
         continue;
       }
       let column = prefix + field;

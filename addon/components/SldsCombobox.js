@@ -10,7 +10,9 @@ export class SldsCombobox extends React.Component {
     this._handleMouseMove = this._handleMouseMove.bind(this);
     this._applyHoverFromMouse = this._applyHoverFromMouse.bind(this);
     this.handleDocumentClick = this.handleDocumentClick.bind(this);
+    this.handleDropdownMouseLeave = this.handleDropdownMouseLeave.bind(this);
     this.containerRef = null;
+    this.inputRef = null;
   }
 
   componentDidMount() {
@@ -121,6 +123,24 @@ export class SldsCombobox extends React.Component {
     }
   }
 
+  // Handles mouse leaving dropdown area for better UX.
+  handleDropdownMouseLeave() {
+    // Clear any visual hover states when mouse exits dropdown
+    const container = document.getElementById(this.props.id + "-listbox");
+    if (container) {
+      const hoveredItems = container.querySelectorAll(".slds-listbox__item.sfir-hovered");
+      for (let i = 0; i < hoveredItems.length; i++) {
+        hoveredItems[i].classList.remove("sfir-hovered");
+      }
+    }
+
+    // If the input field doesn't have focus and user moved mouse away,
+    // close the dropdown to avoid it staying open unintentionally
+    if (this.inputRef && document.activeElement !== this.inputRef && this.props.onClose) {
+      this.props.onClose();
+    }
+  }
+
   render() {
     const {
       id,
@@ -173,7 +193,8 @@ export class SldsCombobox extends React.Component {
             onInput,
             onFocus,
             onClick,
-            onKeyDown
+            onKeyDown,
+            ref: (el) => { this.inputRef = el; }
           }),
           h("span", {className: "slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right"},
             h("svg", {className: "slds-icon slds-icon slds-icon_x-small slds-icon-text-default", "aria-hidden": "true"},
@@ -188,7 +209,8 @@ export class SldsCombobox extends React.Component {
           onMouseDown: (e) => {
             // Prevents input blur when interacting with the dropdown container.
             e.preventDefault();
-          }
+          },
+          onMouseLeave: this.handleDropdownMouseLeave
         },
         h("ul", {className: "slds-listbox slds-listbox_vertical", role: "presentation"},
           entries.length === 0 ? h("li", {role: "presentation", className: "slds-listbox__item"},

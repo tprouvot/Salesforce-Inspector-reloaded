@@ -388,6 +388,7 @@ All cache settings are configured in the **Cache** tab of the Options page:
 The following API requests are cached:
 
 * **User Field Names** (`/services/data/vXX.0/sobjects/User/describe`) - Caches field permission information to optimize user search queries and dynamically build SELECT clauses based on accessible fields
+
 * **SObjects List** - Caches the list of all SObjects (standard and custom objects, tooling objects) from the REST API and Tooling API
 
 ### Why Use Caching?

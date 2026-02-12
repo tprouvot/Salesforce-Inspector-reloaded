@@ -28,6 +28,7 @@
 - `Rest Explorer` fix a performance issue (edit entrypoint rerender completely the output even if no changes) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - `Popup` fix recent items scroll not working anymore in v2 (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - Fix popup/detail record name field [issue #274](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/274) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
+- `Data Export` Enhance Query History and Saved Queries: add delete button for individual entries, add visual badges for saved query labels and Tooling API indicators, save queries to history immediately when executing (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - `Data Export` Fix Column order not respected when performing subqueries [#598](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/598)
 - `Accessibility` Improve screen reader support: fix AlertBanner silent announcements, convert inspector button and tooltip trigger to semantic elements, add popup iframe title issues [#1107](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1107) & [#1108](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1108) (contribution by [akj](https://github.com/akj))
 - `Dependencies Explorer` (contribution by [Georgi Dobrishinov](https://github.com/dobrishinov))

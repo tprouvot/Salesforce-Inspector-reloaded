@@ -4,6 +4,9 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import {SldsCombobox} from "./components/SldsCombobox.js";
+import {SearchUtils, DropdownHelper} from "./query-search-utils.js";
+
 
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
@@ -54,6 +57,16 @@ class Model {
     let savedNb = localStorage.getItem("numberOfQueriesSaved");
     this.savedHistory = createQueryHistory("insextSavedQueryHistory", savedNb ? savedNb : 50);
     this.selectedSavedEntry = null;
+    this.historySearchValue = "";
+    this.filteredHistoryEntries = [];
+    this.historyLower = [];
+    this.historyObjVocab = [];
+    this.historyObjToIds = {};
+    this.savedSearchValue = "";
+    this.filteredSavedEntries = [];
+    this.savedLower = [];
+    this.savedObjVocab = [];
+    this.savedObjToIds = {};
     this.expandAutocomplete = false;
     this.expandSavedOptions = false;
     this.resultsFilter = "";
@@ -102,6 +115,10 @@ class Model {
     this.queryTabs = [];
     this.activeTabIndex = 0;
     this.loadQueryTabs(queryFromUrl);
+    this.rebuildHistoryIndex();
+    this.filteredHistoryEntries = this.queryHistory.list.slice();
+    this.rebuildSavedIndex();
+    this.filteredSavedEntries = this.savedHistory.list.slice();
   }
 
   updatedExportedData() {
@@ -226,6 +243,9 @@ class Model {
   }
   clearHistory() {
     this.queryHistory.clear();
+    this.rebuildHistoryIndex();
+    this.historySearchValue = "";
+    this.filteredHistoryEntries = this.queryHistory.list.slice();
   }
   selectSavedEntry() {
     let delimiter = ":";
@@ -246,15 +266,78 @@ class Model {
   }
   clearSavedHistory() {
     this.savedHistory.clear();
+    this.rebuildSavedIndex();
+    this.savedSearchValue = "";
+    this.filteredSavedEntries = this.savedHistory.list.slice();
   }
   addToHistory() {
     this.savedHistory.add({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    this.rebuildSavedIndex();
+    this.filteredSavedEntries = this.savedHistory.list.slice();
   }
   removeFromHistory() {
     this.savedHistory.remove({query: this.getQueryToSave(), useToolingApi: this.queryTooling});
+    this.rebuildSavedIndex();
+    this.filteredSavedEntries = this.savedHistory.list.slice();
+  }
+  deleteHistoryEntry(entry) {
+    this.queryHistory.remove(entry);
+    this.rebuildHistoryIndex();
+    this.filteredHistoryEntries = SearchUtils.filterEntries(
+      this.historySearchValue,
+      this.historyLower,
+      this.historyObjVocab,
+      this.historyObjToIds,
+      this.queryHistory.list
+    );
+  }
+  deleteSavedEntry(entry) {
+    this.savedHistory.remove(entry);
+    this.rebuildSavedIndex();
+    this.filteredSavedEntries = SearchUtils.filterEntries(
+      this.savedSearchValue,
+      this.savedLower,
+      this.savedObjVocab,
+      this.savedObjToIds,
+      this.savedHistory.list
+    );
   }
   getQueryToSave() {
     return this.queryName != "" ? this.queryName + ":" + this.queryInput.value.trim() : this.queryInput.value.trim();
+  }
+  rebuildHistoryIndex() {
+    const queries = this.queryHistory.list.map(e => e.query);
+    const index = SearchUtils.buildHistoryIndex(queries);
+    this.historyLower = index.lower;
+    this.historyObjVocab = index.vocab;
+    this.historyObjToIds = index.objToIds;
+  }
+  rebuildSavedIndex() {
+    const queries = this.savedHistory.list.map(e => e.query);
+    const index = SearchUtils.buildHistoryIndex(queries);
+    this.savedLower = index.lower;
+    this.savedObjVocab = index.vocab;
+    this.savedObjToIds = index.objToIds;
+  }
+  setHistorySearchValue(value) {
+    this.historySearchValue = value;
+    this.filteredHistoryEntries = SearchUtils.filterEntries(
+      value,
+      this.historyLower,
+      this.historyObjVocab,
+      this.historyObjToIds,
+      this.queryHistory.list
+    );
+  }
+  setSavedSearchValue(value) {
+    this.savedSearchValue = value;
+    this.filteredSavedEntries = SearchUtils.filterEntries(
+      value,
+      this.savedLower,
+      this.savedObjVocab,
+      this.savedObjToIds,
+      this.savedHistory.list
+    );
   }
   autocompleteReload() {
     this.describeInfo.reloadAll();
@@ -848,6 +931,20 @@ class Model {
     vm.initPerf();
     let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
     vm.queryInput.value = query; // Update the input value with the cleaned query
+
+    // Save query to history immediately when export is initiated
+    if (query.trim()) {
+      vm.queryHistory.add({query, useToolingApi: vm.queryTooling});
+      vm.rebuildHistoryIndex();
+      vm.filteredHistoryEntries = SearchUtils.filterEntries(
+        vm.historySearchValue,
+        vm.historyLower,
+        vm.historyObjVocab,
+        vm.historyObjToIds,
+        vm.queryHistory.list
+      );
+    }
+
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
@@ -895,7 +992,6 @@ class Model {
           vm.didUpdate();
           return pr;
         }
-        vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
         if (recs == 0) {
           vm.isWorking = false;
           vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
@@ -1000,6 +1096,20 @@ class Model {
   doQueryPlan(){
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
+
+    // Save query to history immediately when query plan is initiated
+    const query = vm.queryInput.value.trim();
+    if (query) {
+      vm.queryHistory.add({query, useToolingApi: vm.queryTooling});
+      vm.rebuildHistoryIndex();
+      vm.filteredHistoryEntries = SearchUtils.filterEntries(
+        vm.historySearchValue,
+        vm.historyLower,
+        vm.historyObjVocab,
+        vm.historyObjToIds,
+        vm.queryHistory.list
+      );
+    }
 
     vm.spinFor(sfConn.rest("/services/data/v" + apiVersion + "/query/?explain=" + encodeURIComponent(vm.queryInput.value)).then(res => {
       exportedData.addToTable(res.plans);
@@ -1400,8 +1510,14 @@ class App extends React.Component {
       editingTabName: "",
       draggedTabIndex: -1,
       dropTargetIndex: -1,
-      contextMenu: null
+      contextMenu: null,
+      isHistoryDropdownOpen: false,
+      historyActiveIndex: 0,
+      isSavedDropdownOpen: false,
+      savedActiveIndex: 0
     };
+
+    this.scrollTable = null;
   }
   onQueryAllChange(e) {
     let {model} = this.props;
@@ -1685,6 +1801,12 @@ class App extends React.Component {
     });
   }
 
+  handleDocumentClick = (e) => {
+    if (this.state.isDropdownOpen) {
+      this.setState({isDropdownOpen: false});
+    }
+  };
+
   onOverlayContextMenu(e) {
     e.preventDefault();
     e.target.style.visibility = "hidden";
@@ -1710,6 +1832,129 @@ class App extends React.Component {
     this.setState({contextMenu: null});
   }
 
+  _openSavedDropdown() {
+    this.setState({isSavedDropdownOpen: true, savedActiveIndex: -1});
+  }
+
+  _closeSavedDropdown() {
+    this.setState({isSavedDropdownOpen: false, savedActiveIndex: -1});
+  }
+
+  _openHistoryDropdown() {
+    this.setState({isHistoryDropdownOpen: true, historyActiveIndex: -1});
+  }
+
+  _closeHistoryDropdown() {
+    this.setState({isHistoryDropdownOpen: false, historyActiveIndex: -1});
+  }
+
+  onHistorySearchInput(e) {
+    let {model} = this.props;
+    model.setHistorySearchValue(e.target.value);
+    this.setState({historyActiveIndex: -1});
+    if (!this.state.isHistoryDropdownOpen) {
+      this._openHistoryDropdown();
+    }
+    model.didUpdate();
+  }
+  onSavedSearchInput(e) {
+    let {model} = this.props;
+    model.setSavedSearchValue(e.target.value);
+    this.setState({savedActiveIndex: -1});
+    if (!this.state.isSavedDropdownOpen) {
+      this._openSavedDropdown();
+    }
+    model.didUpdate();
+  }
+  onHistoryKeyDown(e, entries, isObjectSuggest) {
+    const {historyActiveIndex} = this.state;
+    const entriesLength = entries.length;
+    if (!entriesLength) return;
+    if (e.key === "Enter" || e.key === "Tab") {
+      // If Tab is pressed and no item is selected, let native tab behavior happen (move focus)
+      if (historyActiveIndex === -1) {
+        if (e.key === "Enter") e.preventDefault(); // Prevent Enter from submitting if nothing selected
+        return;
+      }
+
+      const entry = entries[Math.min(historyActiveIndex, entriesLength - 1)];
+      if (entry) {
+        if (e.key === "Enter") e.preventDefault(); // Only prevent Enter default when selecting
+        // For Tab, we intentionally do NOT prevent default so focus moves to next element
+
+        let {model} = this.props;
+        if (isObjectSuggest) {
+          const completed = `?${entry} `;
+          model.setHistorySearchValue(completed);
+          this.setState({historyActiveIndex: 0});
+          model.didUpdate();
+        } else {
+          model.selectedHistoryEntry = entry;
+          model.selectHistoryEntry();
+          this._closeHistoryDropdown();
+          model.didUpdate();
+        }
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      let {model} = this.props;
+      model.setHistorySearchValue("");
+      this._closeHistoryDropdown();
+      model.didUpdate();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!this.state.isHistoryDropdownOpen) {
+        this._openHistoryDropdown();
+      } else {
+        this.setState({historyActiveIndex: (historyActiveIndex + 1) % entriesLength});
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this.setState({historyActiveIndex: historyActiveIndex < 0 ? entriesLength - 1 : (historyActiveIndex - 1 + entriesLength) % entriesLength});
+    }
+  }
+  onSavedKeyDown(e, entries, isObjectSuggest) {
+    const {savedActiveIndex} = this.state;
+    const entriesLength = entries.length;
+    if (!entriesLength) return;
+    if (e.key === "Enter" || e.key === "Tab") {
+      if (savedActiveIndex === -1) {
+        if (e.key === "Enter") e.preventDefault();
+        return;
+      }
+
+      const entry = entries[Math.min(savedActiveIndex, entriesLength - 1)];
+      if (entry) {
+        if (e.key === "Enter") e.preventDefault();
+        // For Tab, we intentionally do NOT prevent default so focus moves to next element
+
+        let {model} = this.props;
+        if (isObjectSuggest) {
+          const completed = `?${entry} `;
+          model.setSavedSearchValue(completed);
+          this.setState({savedActiveIndex: 0});
+          model.didUpdate();
+        } else {
+          model.selectedSavedEntry = entry;
+          model.selectSavedEntry();
+          this._closeSavedDropdown();
+          model.didUpdate();
+        }
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      let {model} = this.props;
+      model.setSavedSearchValue("");
+      this._closeSavedDropdown();
+      model.didUpdate();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this.setState({savedActiveIndex: (savedActiveIndex + 1) % entriesLength});
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this.setState({savedActiveIndex: savedActiveIndex < 0 ? entriesLength - 1 : (savedActiveIndex - 1 + entriesLength) % entriesLength});
+    }
+  }
   componentDidMount() {
     let {model} = this.props;
     let queryInput = this.refs.query;
@@ -1781,8 +2026,15 @@ class App extends React.Component {
     addEventListener("resize", resize);
     resize();
   }
-  componentDidUpdate() {
+  componentDidUpdate(prevProps, prevState) {
     this.recalculateSize();
+    if (this.state.isDropdownOpen && !prevState.isDropdownOpen) {
+      setTimeout(() => {
+        document.addEventListener("click", this.handleDocumentClick);
+      }, 0);
+    } else if (!this.state.isDropdownOpen && prevState.isDropdownOpen) {
+      document.removeEventListener("click", this.handleDocumentClick);
+    }
   }
   recalculateSize() {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
@@ -1790,6 +2042,98 @@ class App extends React.Component {
   }
   toggleQueryMoreMenu(){
     this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
+  }
+
+  renderHistoryCombobox() {
+    let {model} = this.props;
+    const {isHistoryDropdownOpen, historyActiveIndex} = this.state;
+    const {entries, isObjectSuggest} = DropdownHelper.getHistoryEntries(model);
+    const searchValue = model.historySearchValue || "";
+
+    return h(SldsCombobox, {
+      id: "history",
+      placeholder: "Query History",
+      "aria-label": "Query History",
+      value: searchValue,
+      entries,
+      isOpen: isHistoryDropdownOpen,
+      activeIndex: historyActiveIndex,
+      onInput: this.onHistorySearchInput.bind(this),
+      onFocus: () => this._openHistoryDropdown(),
+      onClick: () => this._openHistoryDropdown(),
+      onKeyDown: (e) => this.onHistoryKeyDown(e, entries, isObjectSuggest),
+      onSelect: (entry) => {
+        if (isObjectSuggest) {
+          const completed = `?${entry} `;
+          model.setHistorySearchValue(completed);
+          this.setState({historyActiveIndex: 0});
+          model.didUpdate();
+        } else {
+          model.selectedHistoryEntry = entry;
+          model.selectHistoryEntry();
+          this._closeHistoryDropdown();
+          model.didUpdate();
+        }
+      },
+      onClose: () => this._closeHistoryDropdown(),
+      onDelete: !isObjectSuggest ? (entry) => {
+        model.deleteHistoryEntry(entry);
+        model.didUpdate();
+      } : null,
+      renderItem: (entry) => {
+        if (isObjectSuggest) {
+          return h("span", {className: "slds-truncate", title: entry}, DropdownHelper.renderHighlightedText(entry, searchValue.replace(/^\?\s*/, "")));
+        }
+        return DropdownHelper.renderQueryItemWithBadges(entry, searchValue);
+      },
+      ref: (el) => { this.historySearchInput = el; }
+    });
+  }
+
+  renderSavedCombobox() {
+    let {model} = this.props;
+    const {isSavedDropdownOpen, savedActiveIndex} = this.state;
+    const {entries, isObjectSuggest} = DropdownHelper.getSavedEntries(model);
+    const searchValue = model.savedSearchValue || "";
+
+    return h(SldsCombobox, {
+      id: "saved",
+      placeholder: "Saved Queries",
+      "aria-label": "Saved Queries",
+      value: searchValue,
+      entries,
+      isOpen: isSavedDropdownOpen,
+      activeIndex: savedActiveIndex,
+      onInput: this.onSavedSearchInput.bind(this),
+      onFocus: () => this._openSavedDropdown(),
+      onClick: () => this._openSavedDropdown(),
+      onKeyDown: (e) => this.onSavedKeyDown(e, entries),
+      onSelect: (entry) => {
+        if (isObjectSuggest) {
+          const completed = `?${entry} `;
+          model.setSavedSearchValue(completed);
+          this.setState({savedActiveIndex: 0});
+          model.didUpdate();
+        } else {
+          model.selectedSavedEntry = entry;
+          model.selectSavedEntry();
+          this._closeSavedDropdown();
+          model.didUpdate();
+        }
+      },
+      onClose: () => this._closeSavedDropdown(),
+      onDelete: !isObjectSuggest ? (entry) => {
+        model.deleteSavedEntry(entry);
+        model.didUpdate();
+      } : null,
+      renderItem: (entry) => {
+        if (isObjectSuggest) {
+          return h("span", {className: "slds-truncate", title: entry}, DropdownHelper.renderHighlightedText(entry, searchValue.replace(/^\?\s*/, "")));
+        }
+        return DropdownHelper.renderQueryItemWithBadges(entry, searchValue);
+      },
+      ref: (el) => { this.savedSearchInput = el; }
+    });
   }
 
   render() {
@@ -1854,17 +2198,11 @@ class App extends React.Component {
                   model.queryTemplates.map(q => h("option", {key: q, value: q}, q))
                 ),
                 h("div", {className: "slds-button-group"},
-                  h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
-                    h("option", {value: JSON.stringify(null), disabled: true}, "Query History"),
-                    model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
-                  ),
+                  this.renderHistoryCombobox(),
                   h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
                 ),
                 h("div", {className: "slds-button-group slds-m-left_small"},
-                  h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
-                    h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
-                    model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))
-                  ),
+                  this.renderSavedCombobox(),
                   h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
                   h("button", {className: "slds-button slds-button_neutral", onClick: this.onAddToHistory, title: "Add query to saved history"}, "Save Query"),
                   h("button", {className: model.expandSavedOptions ? "slds-button slds-button_neutral toggle contract" : "slds-button slds-button_neutral toggle expand", title: "Show More Options", onClick: this.onToggleSavedOptions}, h("div", {className: "button-toggle-icon"}))

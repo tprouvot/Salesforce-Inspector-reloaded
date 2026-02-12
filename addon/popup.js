@@ -483,6 +483,7 @@ class App extends React.PureComponent {
             ref: "showAllDataBox",
             sfHost,
             showDetailsSupported: !inLightning && !inInspector,
+            inInspector,
             linkTarget,
             contextUrl,
             onContextRecordChange: this.onContextRecordChange,
@@ -968,6 +969,18 @@ class AllDataBox extends React.PureComponent {
     if (this.shouldLoadSobjects()) {
       this.loadSobjects();
     }
+
+    this.onSobjectsListRefreshed = (e) => {
+      if (e.detail?.sfHost === this.props.sfHost) {
+        this.setState({ sobjectsList: e.detail.sobjectsList });
+        //this.refs.showAllDataBoxSObject?.refs?.allDataSearch?.getMatchesDelayed("");
+      }
+    };
+    window.addEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -1010,6 +1023,7 @@ class AllDataBox extends React.PureComponent {
 
   /**
    * Check if sobjects should be loaded
+   * Only load in popup/button context (when inInspector is false), not when embedded in data-export, field-creator, etc.
    * @returns {boolean} True if Objects tab is active and popup is expanded, or if preload option is enabled and popup is not yet expanded
    */
   shouldLoadSobjects() {
@@ -1017,8 +1031,8 @@ class AllDataBox extends React.PureComponent {
     if (this.props.isPopupExpanded && this.state.activeSearchAspect === this.SearchAspectTypes.sobject) {
       return true;
     }
-    // Preload before popup opens: only if option is enabled
-    if (!this.props.isPopupExpanded) {
+    // Preload before popup opens: only if option is enabled (not in inspector)
+    if (!this.props.isPopupExpanded && !this.props.inInspector) {
       return isSettingEnabled(Constants.PRELOAD_SOBJECTS_BEFORE_POPUP);
     }
     return false;
@@ -1358,7 +1372,7 @@ class AllDataBoxUsers extends React.PureComponent {
     const cacheKey = "userFieldNames";
 
     // Check cache first
-    let fieldNames = DataCache.getCachedData(cacheKey, sfHost);
+    let fieldNames = await DataCache.getCachedData(cacheKey, sfHost);
 
     if (!fieldNames) {
       // Cache expired or missing, fetch fresh data

@@ -21,6 +21,8 @@ export class Constants {
   static API_DEBUG_STATISTICS = "apiDebugStatistics";
   // Cache Keys
   static CACHE_SOBJECTS_LIST = "sobjectsList";
+  // CustomEvent: dispatched when sobjects list is refreshed in background
+  static SOBJECTS_LIST_REFRESHED_EVENT = "sobjectsListRefreshed";
   // Options
   static PRELOAD_SOBJECTS_BEFORE_POPUP = "preloadSobjectsBeforePopup";
   static ENABLE_SOBJECTS_LIST_CACHE = "enableSobjectsListCache";
@@ -394,7 +396,7 @@ export class DataCache {
    * @param {boolean} useSfHostPrefix - If true, prefix storage key with sfHost (default: true)
    * @returns {Promise<Object|null>|Object|null} Cached data if valid, null otherwise. Promise if isLarge=true
    */
-  static getCachedData(cacheKey, sfHost, isLarge = false, useSfHostPrefix = true) {
+  static async getCachedData(cacheKey, sfHost, isLarge = false, useSfHostPrefix = true) {
     const storageKey = useSfHostPrefix
       ? `${sfHost}_cache_${cacheKey}`
       : `cache_${cacheKey}`;
@@ -412,7 +414,7 @@ export class DataCache {
    * Internal method to get cached data from localStorage (synchronous)
    * @private
    */
-  static _getCachedDataSmall(storageKey, cacheKey, expectedSfHost) {
+  static async _getCachedDataSmall(storageKey, cacheKey, expectedSfHost) {
     const cached = localStorage.getItem(storageKey);
 
     if (!cached) {
@@ -421,6 +423,9 @@ export class DataCache {
 
     try {
       const cacheEntry = JSON.parse(cached);
+      if (cacheEntry._compressed) {
+        cacheEntry.data = await this._decompressGzip(cacheEntry.data);
+      }
 
       // Check if sfHost matches (for sobjectsList cache)
       if (cacheEntry.sfHost && cacheEntry.sfHost !== expectedSfHost) {
@@ -464,23 +469,18 @@ export class DataCache {
         return null;
       }
 
-      // Check if sfHost matches (for sobjectsList cache)
-      if (cached.sfHost && cached.sfHost !== expectedSfHost) {
-        // Different org cached, return null to trigger fresh fetch
-        // Clear old cache asynchronously (don't block)
-        browser.storage.local.remove(storageKey).catch(err => {
-          console.error(`Error clearing old cache for ${cacheKey}:`, err);
-        });
-        return null;
-      }
-
-      if (this.isCacheValid(cached, cacheKey)) {
-        return cached.data;
-      } else {
-        // Cache expired, remove it
+      //check it the cache is valid
+      if (!this.isCacheValid(cached, cacheKey)) {
         await browser.storage.local.remove(storageKey);
         return null;
       }
+
+      //uncompress the data if compressed
+      let data = cached.data;
+      if (cached._compressed) {
+        data = await this._decompressGzip(cached.data);
+      }
+      return {data, lastFetch: cached.lastFetch};
     } catch (e) {
       console.error(`Error reading large data cache for ${cacheKey}:`, e);
       return null;
@@ -494,27 +494,32 @@ export class DataCache {
    * @param {*} data - Any JSON-serializable data to cache
    * @param {boolean} isLarge - If true, use browser.storage.local (async), otherwise localStorage (sync)
    * @param {boolean} useSfHostPrefix - If true, prefix storage key with sfHost (default: true)
+   * @param {number} lastFetch - Timestamp of the last fetch
    * @returns {Promise<boolean>|void} Promise with success boolean if isLarge=true, void otherwise
    */
-  static setCachedData(cacheKey, sfHost, data, isLarge = false, useSfHostPrefix = true) {
+  static async setCachedData(cacheKey, sfHost, data, isLarge = false, useSfHostPrefix = true, lastFetch = null, compression = false) {
     // Get current duration setting
     const durationHours = this.getCacheDurationHours(cacheKey);
 
     const storageKey = useSfHostPrefix
       ? `${sfHost}_cache_${cacheKey}`
       : `cache_${cacheKey}`;
+
+    //set the cache entry and compress the data if needed
     const cacheEntry = {
-      data,
+      data: compression ? await this._compressGzip(data) : data,
       timestamp: Date.now(),
       sfHost, // Store sfHost in cache entry for validation
-      durationHours // Store duration in cache entry
+      durationHours, // Store duration in cache entry
+      lastFetch,
+      _compressed: compression
     };
 
     if (isLarge) {
       // Use browser.storage.local for large data
-      // Clear old cache for different org asynchronously (don't block)
-      this._clearOldOrgCache(cacheKey, sfHost, useSfHostPrefix);
-      return this._setCachedDataLarge(storageKey, cacheKey, cacheEntry);
+      // Await cleanup before storing (avoids race where set runs before clear completes)
+      return this._clearOldOrgCache(storageKey, sfHost, cacheEntry)
+        .then(() => this._setCachedDataLarge(storageKey, cacheKey, cacheEntry));
     } else {
       // Use localStorage for small data (synchronous)
       this._setCachedDataSmall(storageKey, cacheKey, cacheEntry);
@@ -523,37 +528,61 @@ export class DataCache {
   }
 
   /**
-   * Clear cache entries for different orgs (asynchronous, non-blocking)
+   * Clear cache entries to stay under storage quota before storing new data.
+   * Chrome storage.local ~5MB (10MB in Chrome 114+), Firefox ~10MB.
+   * Removes other-org caches first, then oldest entries if still over quota.
    * @private
    */
-  static async _clearOldOrgCache(cacheKey, currentSfHost, useSfHostPrefix = true) {
+  static async _clearOldOrgCache(storageKey, currentSfHost, cacheEntry = undefined) {
     if (typeof browser === "undefined" || !browser.storage || !browser.storage.local) {
       return;
     }
 
+    const maxStorageUsage = 10 * 1024 * 1024;
     try {
-      // Get all storage keys
+      const getBytesInUse = browser.storage.local.getBytesInUse?.bind(browser.storage.local);
+      if (!getBytesInUse) {
+        return;
+      }
+
+      //retrieve the current storage usage and estimate the expected storage usage after the update
+      const currentStorageUsage = await getBytesInUse(null);
+      const cacheEntrySize = (cacheEntry?.data?.length || 0) + 100;
+      const keyStorageUsage = await getBytesInUse(storageKey);
+      let expectedStorageUsage = currentStorageUsage + cacheEntrySize - keyStorageUsage;
+
+      //we have enough space, so we don't need to remove any entries
+      if (expectedStorageUsage <= maxStorageUsage) {
+        return;
+      }
+
       const allData = await browser.storage.local.get(null);
+      //get all the entries that are not expired and sort them by last fetch timestamp (older first)
+      const entries = Object.entries(allData || {})
+        .filter(([, v]) => v && (v.timestamp != null || v.lastFetch != null))
+        .sort((a, b) => (a[1].lastFetch ?? a[1].timestamp ?? 0) - (b[1].lastFetch ?? b[1].timestamp ?? 0));
+
       const keysToRemove = [];
 
-      // Find cache entries for this cacheKey but different sfHost
-      for (const [key, value] of Object.entries(allData)) {
-        const keyMatches = useSfHostPrefix
-          ? key.includes(`_cache_${cacheKey}`)
-          : key === `cache_${cacheKey}`;
-        if (keyMatches && value && value.sfHost && value.sfHost !== currentSfHost) {
+      // Calculate which entry we will remove based on last fetch timestamp
+      for (const [key, value] of entries) {
+        if (value?.sfHost && value.sfHost !== currentSfHost) {
+          //if the entry is from another org, we add it to the list of keys to remove
           keysToRemove.push(key);
+          //then we calculate if we we have enough space to store the new entry
+          const size = await getBytesInUse(key);
+          expectedStorageUsage -= size;
+          if (expectedStorageUsage < maxStorageUsage) {
+            break;
+          }
         }
       }
 
-      // Remove old cache entries asynchronously
       if (keysToRemove.length > 0) {
-        browser.storage.local.remove(keysToRemove).catch(err => {
-          console.error(`Error clearing old cache entries for ${cacheKey}:`, err);
-        });
+        await browser.storage.local.remove(keysToRemove);
       }
     } catch (e) {
-      console.error(`Error checking for old cache entries for ${cacheKey}:`, e);
+      console.error(`Error clearing cache for ${storageKey}:`, e);
     }
   }
 
@@ -570,7 +599,48 @@ export class DataCache {
   }
 
   /**
+   * Compress data with gzip and return as base64 string.
+   * @param {*} data - JSON-serializable data to compress
+   * @returns {Promise<string>} Base64-encoded gzip compressed string
+   * @private
+   */
+  static async _compressGzip(data) {
+    const json = JSON.stringify(data);
+    const blob = new Blob([json], {type: "application/json"});
+    const stream = blob.stream().pipeThrough(new CompressionStream("gzip"));
+    const compressedBlob = await new Response(stream).blob();
+    const buffer = await compressedBlob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
+  }
+
+  /**
+   * Decompress base64 gzip string back to original data.
+   * @param {string} base64Compressed - Base64-encoded gzip compressed string
+   * @returns {Promise<*>} Original decompressed data
+   * @private
+   */
+  static async _decompressGzip(base64Compressed) {
+    const binary = atob(base64Compressed);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    const decompressedBlob = await new Response(stream).blob();
+    const text = await decompressedBlob.text();
+    return JSON.parse(text);
+  }
+
+  /**
    * Internal method to store cached data in browser.storage.local (asynchronous)
+   * On quota error, clears the target key (we're overwriting) and retries once.
+   * Compresses cacheEntry.data with gzip before storing to reduce storage usage.
    * @private
    */
   static async _setCachedDataLarge(storageKey, cacheKey, cacheEntry) {
@@ -580,7 +650,6 @@ export class DataCache {
     }
 
     try {
-
       await browser.storage.local.set({[storageKey]: cacheEntry});
       return true;
     } catch (e) {
@@ -679,202 +748,200 @@ export class DataCache {
 }
 
 /**
- * Get sobjects list - returns cached data if available, otherwise fetches from API
+ * Get sobjects list - returns cached data if available, otherwise fetches from API.
+ * When cache is used, returns immediately and continues refresh in background; dispatches
+ * CustomEvent (Constants.SOBJECTS_LIST_REFRESHED_EVENT) when refresh completes.
  * @param {string} sfHost - Salesforce host (for cache validation)
  * @returns {Promise<Array>} Sobjects list (from cache or fetched from API)
  */
 export async function getSobjectsList(sfHost) {
   // Check if caching is enabled
   const cacheEnabled = isSettingEnabled(Constants.ENABLE_SOBJECTS_LIST_CACHE);
+  const currentFetch = Date.now();
 
   // Check cache first (only if caching is enabled)
   if (cacheEnabled) {
-    const cachedSobjects = await DataCache.getCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, true, false);
+    const cached = await DataCache.getCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, true, true);
+    if (cached) {
+      const sobjectsList = cached.data ?? [];
 
-    if (cachedSobjects && Array.isArray(cachedSobjects)) {
-      // Return cached optimized list (callers handle this format)
-      return cachedSobjects;
+      //if we don't do the Preload SObjects before popup opens, we will refresh the cache in background
+      if (!isSettingEnabled(Constants.PRELOAD_SOBJECTS_BEFORE_POPUP)){
+        const lastFetch = cached.lastFetch ?? null;
+
+        // Return cached data immediately, refresh in background
+        fetchSobjectsList(sfHost, currentFetch, cacheEnabled, sobjectsList, lastFetch);
+      }
+      return sobjectsList;
     }
   }
 
-  // Cache miss - fetch from API
-  const entityMap = new Map();
+  // No cache - fetch and return
+  return await fetchSobjectsList(sfHost, currentFetch, cacheEnabled, null, null);
+}
 
-  function addEntity(
-    {
-      name,
-      label,
-      keyPrefix,
-      durableId,
-      isCustomSetting,
-      recordTypesSupported,
-      isEverCreatable,
-      newUrl,
-      layoutable,
-    },
-    api
-  ) {
-    label = label && label.match("__MISSING") ? "" : label; // Error is added to the label if no label exists
-    let entity = entityMap.get(name);
-    // Each API call enhances the data, only the Name fields are present for each call.
-    if (entity) {
-      if (!entity.keyPrefix) {
-        entity.keyPrefix = keyPrefix;
+/**
+ * Fetches sobjects list in background and dispatches CustomEvent when done.
+ * @private
+ */
+async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobjectsList, lastFetch) {
+  try{
+    const entityMap = new Map();
+
+    //if we have cached data, we need to add it to the entity map
+    if (cachedSobjectsList && cachedSobjectsList.length > 0) {
+      for (const entity of cachedSobjectsList) {
+        entityMap.set(entity.name, entity);
       }
-      if (!entity.durableId) {
-        entity.durableId = durableId;
-      }
-      if (!entity.isCustomSetting) {
-        entity.isCustomSetting = isCustomSetting;
-      }
-      if (!entity.newUrl) {
-        entity.newUrl = newUrl;
-      }
-      if (!entity.recordTypesSupported) {
-        entity.recordTypesSupported = recordTypesSupported;
-      }
-      if (!entity.isEverCreatable) {
-        entity.isEverCreatable = isEverCreatable;
-      }
-      // Keep layoutable true if it was true in either call
-      if (layoutable) {
-        entity.layoutable = true;
-      }
-    } else {
-      entity = {
-        availableApis: [],
+    }
+
+    function addEntity(
+      {
         name,
         label,
         keyPrefix,
         durableId,
         isCustomSetting,
-        availableKeyPrefix: null,
         recordTypesSupported,
         isEverCreatable,
         newUrl,
-        layoutable: layoutable || false,
-      };
-      entityMap.set(name, entity);
+        layoutable,
+      },
+      api
+    ) {
+      label = label && label.match("__MISSING") ? "" : label; // Error is added to the label if no label exists
+      let entity = entityMap.get(name);
+      // Each API call enhances the data, only the Name fields are present for each call.
+      if (entity) {
+        entity.label = label || entity.label;
+        entity.keyPrefix = keyPrefix || entity.keyPrefix;
+        entity.durableId = durableId || entity.durableId;
+        entity.isCustomSetting = isCustomSetting || entity.isCustomSetting;
+        entity.newUrl = newUrl || entity.newUrl;
+        entity.recordTypesSupported = recordTypesSupported || entity.recordTypesSupported;
+        entity.isEverCreatable = isEverCreatable || entity.isEverCreatable;
+        // Keep layoutable true if it was true in either call
+        entity.layoutable = layoutable || entity.layoutable;
+      } else {
+        entity = {
+          availableApis: [],
+          name,
+          label,
+          keyPrefix,
+          durableId,
+          isCustomSetting,
+          availableKeyPrefix: null,
+          recordTypesSupported,
+          isEverCreatable,
+          newUrl,
+          layoutable: layoutable || false,
+        };
+        entityMap.set(name, entity);
+      }
+      if (api) {
+        if (!entity.availableApis.includes(api)) {
+          entity.availableApis.push(api);
+        }
+        if (keyPrefix) {
+          entity.availableKeyPrefix = keyPrefix;
+        }
+      }
     }
-    if (api) {
-      if (!entity.availableApis.includes(api)) {
-        entity.availableApis.push(api);
-      }
-      if (keyPrefix) {
-        entity.availableKeyPrefix = keyPrefix;
+  
+    async function getObjects(url, api, lastFetch) {
+      try {
+        //https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_describeGlobal.htm
+        //https://developer.salesforce.com/docs/atlas.en-us.222.0.api_rest.meta/api_rest/describe_global_with_ifmodified_header.htm
+        //If-Modified-Since: <date> format EEE, dd MMM yyyy HH:mm:ss z
+        const headers = lastFetch ? { "If-Modified-Since": new Date(lastFetch).toGMTString() } : {};
+        const describe = await sfConn.rest(url, { headers: headers } );
+        //if no modification, we receive a 304 status code and an empty response, so process only if describe is not empty
+        if (describe) {
+          for (const sobject of describe.sobjects) {
+            // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
+            addEntity(
+              {...sobject, isCustomSetting: sobject.customSetting || sobject.isCustomSetting, layoutable: sobject.layoutable || false},
+              api
+            );
+          }
+        }
+      } catch (err) {
+        console.error("list " + api + " sobjects", err);
       }
     }
-  }
 
-  async function getObjects(url, api) {
-    try {
-      const describe = await sfConn.rest(url);
-      for (const sobject of describe.sobjects) {
-        // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
-        addEntity(
-          {...sobject, isCustomSetting: sobject.customSetting || sobject.isCustomSetting, layoutable: sobject.layoutable || false},
-          api
-        );
-      }
-    } catch (err) {
-      console.error("list " + api + " sobjects", err);
+    /**
+     * Fetch EntityDefinition records from Salesforce Tooling API
+     * Uses parallel batching to fetch all records (2000 per batch)
+     * @returns {Promise<void>} Resolves when all batches are fetched
+     */
+    function fetchEntityDefinitions() {
+      const batchSize = 2000;
+      // entity definition queries can take a lot of time, so spent a first call to get the total number of records to do all others in parallel
+      return sfConn
+      .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent("SELECT COUNT() FROM EntityDefinition")}`)
+      .then((res) => {
+        const entityNb = res.totalSize;
+        for (let bucket = 0; bucket < Math.ceil(entityNb / batchSize); bucket++) {
+          const query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName LIMIT ${batchSize} OFFSET ${bucket * batchSize}`;
+          sfConn
+            .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent(query)}`)
+            .then((respEntity) => {
+              for (let record of respEntity.records) {
+                addEntity(
+                  {
+                    name: record.QualifiedApiName,
+                    label: record.Label,
+                    keyPrefix: record.KeyPrefix,
+                    durableId: record.DurableId,
+                    isCustomSetting: record.IsCustomSetting,
+                    recordTypesSupported: record.RecordTypesSupported,
+                    newUrl: record.NewUrl,
+                    isEverCreatable: record.IsEverCreatable,
+                  },
+                  null
+                );
+              }
+            })
+            .catch((err) => {
+              console.error("list entity definitions: ", err);
+            });
+        }
+      })
+      .catch((err) => {
+        console.error("count entity definitions: ", err);
+      });
     }
-  }
-
-  // Fetch objects from different APIs
-  await Promise.all([
-    getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
-    getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi"),
-    fetchEntityDefinitions(addEntity, null),
-  ]);
-
-  const sobjectsList = Array.from(entityMap.values());
-
-  // Store in cache for future use (using browser.storage.local for large data)
-  // Create optimized version with only essential fields to reduce cache size
-  // Include layoutable for field-creator.js to avoid unnecessary describe API calls
-  const optimizedList = sobjectsList.map(obj => ({
-    name: obj.name,
-    label: obj.label,
-    keyPrefix: obj.keyPrefix,
-    availableApis: obj.availableApis,
-    availableKeyPrefix: obj.availableKeyPrefix,
-    durableId: obj.durableId,
-    isCustomSetting: obj.isCustomSetting,
-    recordTypesSupported: obj.recordTypesSupported,
-    newUrl: obj.newUrl,
-    isEverCreatable: obj.isEverCreatable,
-    layoutable: obj.layoutable || false
-  }));
-
-  // Store in cache using browser.storage.local (async - don't await, let it happen in background)
-  // DataCache will handle clearing old org cache asynchronously
-  // useSfHostPrefix=false since sobjectsList doesn't use sfHost in storage key
-  // Only store if caching is enabled
-  if (cacheEnabled) {
-    DataCache.setCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, optimizedList, true, false)
-      .catch(err => console.error("Cache storage error:", err));
-  }
-
-  // Return full list (not optimized) for consistency with what callers expect
-  return sobjectsList;
-}
-
-/**
- * Fetch EntityDefinition records from Salesforce Tooling API
- * Uses recursive batching to fetch all records (2000 per batch)
- * @param {Function} addEntityCallback - Callback function called for each entity record
- *                                        Receives: (entityObject, apiIdentifier)
- * @param {string} apiIdentifier - Identifier to pass to addEntityCallback (e.g., "EntityDef" or null)
- * @returns {Promise<void>} Resolves when all batches are fetched
- */
-export async function fetchEntityDefinitions(addEntityCallback, apiIdentifier = null) {
-  const batchSize = 2000;
-  let bucket = 0;
-
-  async function fetchNextBatch() {
-    const offset = bucket > 0 ? ` OFFSET ${bucket * batchSize}` : "";
-    const query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable, NamespacePrefix FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT ${batchSize}${offset}`;
-
-    try {
-      const respEntity = await sfConn.rest(
-        `/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent(query)}`
-      );
-
-      for (const record of respEntity.records) {
-        addEntityCallback(
-          {
-            name: record.QualifiedApiName,
-            label: record.Label,
-            keyPrefix: record.KeyPrefix,
-            durableId: record.DurableId,
-            isCustomSetting: record.IsCustomSetting,
-            recordTypesSupported: record.RecordTypesSupported,
-            newUrl: record.NewUrl,
-            isEverCreatable: record.IsEverCreatable,
-            namespacePrefix: record.NamespacePrefix
-          },
-          apiIdentifier
-        );
-      }
-
-      // If the batch has batchSize records, there are more to fetch
-      const hasMore = respEntity.records?.length >= batchSize;
-      if (hasMore) {
-        bucket++;
-        return fetchNextBatch();
-      }
-      // All batches fetched
-      return Promise.resolve();
-    } catch (err) {
-      console.error("list entity definitions: ", err);
-      throw err;
+  
+    if (entityMap.size > 0) {
+      //it means that we already have fetched the data, so we just need to check if we have updates on regular and tooling api
+      await Promise.all([
+        getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi", lastFetch),
+        getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi", lastFetch),
+      ]);
+    } else {
+      // Fetch objects from different APIs
+      await Promise.all([
+        getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi", null),
+        getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi", null),
+        fetchEntityDefinitions(),
+      ]);
     }
-  }
+  
+    const sobjectsList = Array.from(entityMap.values());
 
-  return fetchNextBatch().catch((err) => {
-    console.error("fetch entity definitions: ", err);
-  });
+    if (cacheEnabled && sobjectsList?.length > 0) {
+      await DataCache.setCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, sobjectsList, true, true, currentFetch, true);
+    }
+    window.dispatchEvent(new CustomEvent(Constants.SOBJECTS_LIST_REFRESHED_EVENT, {
+      detail: { sfHost, sobjectsList }
+    }));
+
+    return sobjectsList;
+  } catch (err) {
+    console.error("Background sobjects refresh error:", err);
+    return null;
+  }
 }
 
 /**

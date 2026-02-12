@@ -4,6 +4,7 @@
     "eslint": "eslint .",
     "firefox-release-build": "node scripts/release-build.js firefox",
     "chrome-release-build": "node scripts/release-build.js chrome",
+    "chrome-beta-build": "ENVIRONMENT_TYPE=BETA node scripts/release-build.js chrome",
     "build-flow-scanner": "node scripts/build-flow-scanner.js"
   },
   "devDependencies": {

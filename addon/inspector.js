@@ -187,34 +187,41 @@ export let sfConn = {
 
     // Calculate duration and track statistics
     const duration = performance.now() - startTime;
-    const isError = !rawResponse && (xhr.status < 200 || xhr.status >= 300);
-    apiStatistics.trackApiCall("rest", url, method, duration, isError);
+    let errorMessage = null;
 
     if (rawResponse){
+      apiStatistics.trackApiCall("rest", url, method, duration, false);
       return xhr;
     } else if (xhr.status >= 200 && xhr.status < 300) {
+      apiStatistics.trackApiCall("rest", url, method, duration, false);
       return xhr.response;
     } else if (xhr.status == 0) {
       if (!logErrors) { console.error("Received no response from Salesforce REST API", xhr); }
+      errorMessage = "Network error, offline or timeout";
+      apiStatistics.trackApiCall("rest", url, method, duration, true, errorMessage);
       let err = new Error();
       err.name = "SalesforceRestError";
-      err.message = "Network error, offline or timeout";
+      err.message = errorMessage;
       throw err;
     } else if (xhr.status == 401) {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
+      errorMessage = `401 Unauthorized: ${error}`;
       //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
       if (localStorage.getItem(this.instanceHostname + Constants.ACCESS_TOKEN)){
         sessionError = {text: "Access Token Expired", title: "Generate New Token", type: "warning", icon: "warning"};
         showToastBanner();
       }
+      apiStatistics.trackApiCall("rest", url, method, duration, true, errorMessage);
       let err = new Error();
       err.name = "Unauthorized";
       err.message = error;
       throw err;
     } else if (xhr.status == 403) {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "Error";
+      errorMessage = `403 Forbidden: ${error}`;
       sessionError = {text: error, type: "error", icon: "error"};
       showToastBanner();
+      apiStatistics.trackApiCall("rest", url, method, duration, true, errorMessage);
       let err = new Error();
       err.name = "Forbidden";
       err.message = error;
@@ -225,13 +232,17 @@ export let sfConn = {
       err.name = "SalesforceRestError";
       err.detail = xhr.response;
       try {
-        err.message = err.detail.map(err => `${err.errorCode}: ${err.message}${err.fields && err.fields.length > 0 ? ` [${err.fields.join(", ")}]` : ""}`).join("\n");
+        errorMessage = err.detail.map(err => `${err.errorCode}: ${err.message}${err.fields && err.fields.length > 0 ? ` [${err.fields.join(", ")}]` : ""}`).join("\n");
+        err.message = errorMessage;
       } catch (ex) {
-        err.message = JSON.stringify(xhr.response);
+        errorMessage = JSON.stringify(xhr.response);
+        err.message = errorMessage;
       }
       if (!err.message) {
-        err.message = "HTTP error " + xhr.status + " " + xhr.statusText;
+        errorMessage = `HTTP error ${xhr.status} ${xhr.statusText}`;
+        err.message = errorMessage;
       }
+      apiStatistics.trackApiCall("rest", url, method, duration, true, errorMessage);
       throw err;
     }
   },
@@ -317,9 +328,10 @@ export let sfConn = {
 
     // Calculate duration and track statistics
     const duration = performance.now() - startTime;
-    apiStatistics.trackApiCall("soap", null, method, duration, xhr.status != 200);
+    let errorMessage = null;
 
     if (xhr.status == 200) {
+      apiStatistics.trackApiCall("soap", null, method, duration, false);
       let responseBody = xhr.response.querySelector(method + "Response");
       let parsed = XML.parse(responseBody).result;
       return parsed;
@@ -329,10 +341,13 @@ export let sfConn = {
       err.name = "SalesforceSoapError";
       err.detail = xhr.response;
       try {
-        err.message = xhr.response.querySelector("faultstring").textContent;
+        errorMessage = xhr.response.querySelector("faultstring").textContent;
+        err.message = errorMessage;
       } catch (ex) {
-        err.message = "HTTP error " + xhr.status + " " + xhr.statusText;
+        errorMessage = `HTTP error ${xhr.status} ${xhr.statusText}`;
+        err.message = errorMessage;
       }
+      apiStatistics.trackApiCall("soap", null, method, duration, true, errorMessage);
       throw err;
     }
   },

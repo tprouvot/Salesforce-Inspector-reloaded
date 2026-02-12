@@ -28,9 +28,12 @@ class Tooltip extends React.Component {
     this.setState({position: {x, y}, opacity: 1});
   }
 
-  onClick(e) {
-    e.preventDefault();
-    this.show();
+  onClick() {
+    if (this.state.isTooltipVisible) {
+      this.onHide();
+    } else {
+      this.show();
+    }
   }
 
   onHover() {
@@ -56,7 +59,7 @@ class Tooltip extends React.Component {
     }
 
     return h("span", {style: {marginLeft: "2px"}, id: this.iconKey},
-      h("a", {href: "#", onClick: this.onClick, onMouseEnter: this.onHover, onMouseLeave: this.onHide},
+      h("button", {type: "button", className: "slds-button slds-button_reset", onClick: this.onClick, onMouseEnter: this.onHover, onMouseLeave: this.onHide},
         h("span", {className: "slds-icon_container slds-icon-utility-info"},
           h("svg", {className: "slds-icon_xx-small slds-icon-text-default", viewBox: "0 0 40 40", style: {verticalAlign: "unset", margin: "3px"}},
             h("use", {xlinkHref: "symbols.svg#info", fill: "#9c9c9c"}),

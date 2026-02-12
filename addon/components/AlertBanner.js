@@ -7,7 +7,7 @@ class AlertBanner extends React.PureComponent {
     let {type, iconName, iconTitle, bannerText, link, assistiveText, onClose} = this.props;
     return (
       h("div", {className: `slds-notify slds-notify_alert slds-theme_${type}`, role: "alert"},
-        h("span", {className: "slds-assistive-text"}, assistiveText | "Notification"),
+        h("span", {className: "slds-assistive-text"}, assistiveText || "Notification"),
         h("span", {className: `slds-icon_container slds-icon-utility-${iconName} slds-m-right_small slds-no-flex slds-align-top`, title: iconTitle},
           h("svg", {className: "slds-icon slds-icon_small", viewBox: "0 0 52 52"},
             h("use", {xlinkHref: `symbols.svg#${iconName}`})

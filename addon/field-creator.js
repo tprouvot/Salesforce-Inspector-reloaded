@@ -1,7 +1,7 @@
 /* global React ReactDOM field-creator.js */
 import {sfConn, apiVersion} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, getSobjectsList} from "./utils.js";
 
 let h = React.createElement;
 
@@ -1235,98 +1235,13 @@ class App extends React.Component {
     return typeMap[uiType] || uiType;
   }
 
-  //TODO cache entity from popup.js
   fetchObjects = async () => {
     try {
-      const entityMap = new Map();
-      const addEntity = (entity, api) => {
-        let existingEntity = entityMap.get(entity.name);
-        if (existingEntity) {
-          // Update existing entity
-          Object.assign(existingEntity, entity);
-          if (!existingEntity.availableApis.includes(api)) {
-            existingEntity.availableApis.push(api);
-          }
-          // Keep layoutable true if it was true in either call
-          existingEntity.layoutable = existingEntity.layoutable || entity.layoutable;
-        } else {
-          // Add new entity
-          entityMap.set(entity.name, {
-            ...entity,
-            availableApis: [api],
-            availableKeyPrefix: entity.keyPrefix || null,
-            layoutable: entity.layoutable || false // Default to false if not specified
-          });
-        }
-      };
+      // Get sobjects list (from cache or fetched from API)
+      const sobjectsList = await getSobjectsList(this.sfHost);
 
-      const getObjects = async (url, api) => {
-        try {
-          const describe = await sfConn.rest(url);
-          describe.sobjects.forEach(sobject => {
-            addEntity({...sobject, layoutable: sobject.layoutable || false}, api);
-          });
-        } catch (err) {
-          console.error("list " + api + " sobjects", err);
-        }
-      };
-
-      //TODO cache entityDefinitionCount from popup.js
-      const getEntityDefinitionCount = async () => {
-        try {
-          const res = await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT COUNT() FROM EntityDefinition"));
-          return res.totalSize;
-        } catch (err) {
-          console.error("count entity definitions: ", err);
-          return 0;
-        }
-      };
-
-      const getEntityDefinitions = async () => {
-        const entityDefinitionCount = await getEntityDefinitionCount();
-        const batchSize = 2000;
-        const batches = Math.ceil(entityDefinitionCount / batchSize);
-        const batchPromises = [];
-
-        for (let bucket = 0; bucket < batches; bucket++) {
-          let offset = bucket > 0 ? " OFFSET " + (bucket * batchSize) : "";
-          let query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable, NamespacePrefix FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT ${batchSize}${offset}`;
-
-          let batchPromise = sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query))
-            .then(respEntity => {
-              for (let record of respEntity.records) {
-                addEntity({
-                  name: record.QualifiedApiName,
-                  label: record.Label,
-                  keyPrefix: record.KeyPrefix,
-                  durableId: record.DurableId,
-                  isCustomSetting: record.IsCustomSetting,
-                  recordTypesSupported: record.RecordTypesSupported,
-                  newUrl: record.NewUrl,
-                  isEverCreatable: record.IsEverCreatable,
-                  namespacePrefix: record.NamespacePrefix,
-                  // Don't set layoutable here, as it should come from describe calls
-                }, "EntityDef");
-              }
-            }).catch(err => {
-              console.error("list entity definitions: ", err);
-            });
-
-          batchPromises.push(batchPromise);
-        }
-
-        return Promise.all(batchPromises);
-      };
-
-      // Fetch objects from different APIs
-      await Promise.all([
-        getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
-        getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi"),
-        getEntityDefinitions(),
-      ]);
-
-      const sObjectsList = Array.from(entityMap.values());
-      const layoutableObjects = sObjectsList.filter(obj =>
+      // Filter for layoutable objects (objects that can have layouts or platform events)
+      const layoutableObjects = sobjectsList.filter(obj =>
         obj.layoutable === true || (obj.keyPrefix && obj.keyPrefix.startsWith("e")) //add layoutable objects and PE objects
       );
 

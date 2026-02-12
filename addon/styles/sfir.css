@@ -224,3 +224,48 @@ a.download-salesforce {
   top: 50%;
   transform: translateY(-50%);
 }
+
+/* Query Combobox Dropdown Customization */
+.sfir-query-combobox-dropdown {
+    min-width: 40rem;
+    max-width: 90vw;
+}
+
+.sfir-query-combobox-dropdown .slds-listbox__option {
+    height: auto !important; /* Allow item to grow based on text content */
+    min-height: 2rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    white-space: normal;
+    word-break: break-word;
+    cursor: pointer;
+}
+
+.sfir-query-combobox-dropdown .slds-listbox__item.sfir-hovered .slds-listbox__option {
+    background-color: var(--slds-s-menu-item-color-background-active, var(--slds-g-color-surface-container-2, #f3f3f3));
+    text-decoration: none;
+}
+
+.sfir-query-combobox-dropdown .slds-listbox__option .slds-truncate {
+    white-space: normal; /* Allow text to wrap */
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.25rem;
+}
+
+/* Query Highlighting Styles */
+.sfir-query-combobox-dropdown mark {
+    background-color: #fff1a6;
+    color: inherit;
+    padding: 0;
+    line-height: inherit;
+    vertical-align: baseline;
+    border-radius: 2px;
+    display: inline;
+}
+
+.sfir-query-combobox-dropdown .clausemark {
+    background-color: #dff5e1; /* subtle mint green for FROM/WHERE */
+    color: inherit;
+    border-radius: 2px;
+}

@@ -1617,18 +1617,18 @@ class AllDataBoxSObject extends React.PureComponent {
         "LastModifiedDate",
         "Name",
       ];
-      
+
       let cachedNameField = null;
       //check if the object is in the standard objects mapping
       const standardNameField = getStandardObjectNameField(selectedValue.sobject.name);
 
       //we have not hit from static standard objects mapping, so check if we have a cached name field
-      if(standardNameField === "N/A") {
+      if (standardNameField === "N/A") {
         // Check cache for nameField and include it in the initial query to avoid extra API call
         const cacheKey = `nameField_${selectedValue.sobject.name}`;
         cachedNameField = DataCache.getCachedData(cacheKey, sfHost);
       }
-      
+
       if (selectedValue.sobject.recordTypesSupported && selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 1) {
         fields.push("RecordType.DeveloperName", "RecordType.Id");
       }
@@ -1651,7 +1651,7 @@ class AllDataBoxSObject extends React.PureComponent {
     if (cachedNameField && !fields.includes("cachedNameField")) {
       fields.push(cachedNameField);
     }
-    if(standardNameField !== "N/A" && standardNameField !== null && !fields.includes(standardNameField)) {
+    if (standardNameField !== "N/A" && standardNameField !== null && !fields.includes(standardNameField)) {
       fields.push(standardNameField);
     }
 

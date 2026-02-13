@@ -31,7 +31,7 @@ export class Constants {
  * Objects with "Name" field are not included (assumed default).
  * Objects with null have no nameField property (e.g., Event, Task use Subject).
  * Objects with a string value have a different nameField than "Name".
- * 
+ *
  * This list helps optimize queries by avoiding unnecessary describe API calls.
  */
 export const STANDARD_OBJECT_NAME_FIELDS = {
@@ -480,7 +480,7 @@ export function downloadCsvFile(csvContent, filename) {
  * Get the name field for a Salesforce object.
  * Checks the standard objects mapping first, then returns null to indicate
  * that the describe API should be used to determine the name field.
- * 
+ *
  * @param {string} sobjectName - The API name of the Salesforce object
  * @returns {string|null|undefined} The name field API name, null if no name field exists, or undefined if not in the mapping
  */
@@ -489,12 +489,12 @@ export function getStandardObjectNameField(sobjectName) {
   if (sobjectName in STANDARD_OBJECT_NAME_FIELDS) {
     return STANDARD_OBJECT_NAME_FIELDS[sobjectName];
   }
-  
+
   // Check for custom metadata types (end with __mdt)
   if (sobjectName.endsWith("__mdt")) {
     return "DeveloperName";
   }
-  
+
   // Not in the mapping - return N/A to indicate describe API should be used
   return 'N/A';
 }

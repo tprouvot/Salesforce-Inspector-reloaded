@@ -1007,3 +1007,50 @@ export function formatDuration(minutes) {
 
   return parts.length > 0 ? parts.join(" ") : "Less than a minute";
 }
+
+/**
+ * Formats a number based on the running user's locale with specified decimal places
+ * @param {number} value - Any number
+ * @param {number} decimals - Number of decimal places to format to
+ * @returns {string} A formatted number based on the user's locale (e.g., "1 234,56" in fr-FR)
+ */
+export function formatNumber(value, decimals = 0) {
+  try {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
+  } catch (e) {
+    // Failsafe - leave the value alone
+    return value;
+  }
+};
+
+/**
+ * Formats performance time given ms with runtime local, shorten to seconds or minutes when appropriate
+ * @param {number} ms - The duration in milliseconds
+ * @returns {string} A formatted performance time as string (e.g., "300ms", "12.34s", "2m 34.56s")
+ */
+export function formatPerformanceTime(ms) {
+  if (ms == null || isNaN(ms)) {
+    return "0ms";
+  }
+  try {
+    const alwaysShowMs = localStorage.getItem("showFormattedDurationInMs") === "true";
+    if (alwaysShowMs || ms < 1000) {
+      // Always show in ms format
+      return `${formatNumber(ms)}ms`;
+    } else if (ms < 60000) {
+      // 1-59 seconds: show "12.34s" format
+      return `${formatNumber(ms / 1000, 2)}s`;
+    } else if (ms >= 60000) {
+      // Over 1 minute: show "2m 34.56s" format
+      const minutes = Math.floor(ms / 60000);
+      const seconds = (ms % 60000) / 1000;
+      return `${formatNumber(minutes)}m ${formatNumber(seconds, 2)}s`;
+    }
+  } catch (e) {
+    // Failsafe - leave the value alone
+    return ms;
+  }
+}

@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, isRecordId, getSobjectsList} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, getStandardObjectNameField, isRecordId, getSobjectsList} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -1600,6 +1600,7 @@ class AllDataBoxSObject extends React.PureComponent {
 
   loadRecordIdDetails() {
     let {selectedValue} = this.state;
+    let {sfHost} = this.props;
     //If a recordId is selected and the object supports regularApi
     if (
       selectedValue
@@ -1616,16 +1617,50 @@ class AllDataBoxSObject extends React.PureComponent {
         "LastModifiedDate",
         "Name",
       ];
+
+      let cachedNameField = null;
+      //check if the object is in the standard objects mapping
+      const standardNameField = getStandardObjectNameField(selectedValue.sobject.name);
+
+      //we have not hit from static standard objects mapping, so check if we have a cached name field
+      if (standardNameField === "N/A") {
+        // Check cache for nameField and include it in the initial query to avoid extra API call
+        const cacheKey = `nameField_${selectedValue.sobject.name}`;
+        cachedNameField = DataCache.getCachedData(cacheKey, sfHost);
+      }
+
       if (selectedValue.sobject.recordTypesSupported && selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 1) {
         fields.push("RecordType.DeveloperName", "RecordType.Id");
       }
-      this.restCallForRecordDetails(fields, selectedValue);
+      this.restCallForRecordDetails(fields, selectedValue, standardNameField, cachedNameField);
     } else {
       this.setState({recordIdDetails: null});
     }
   }
 
-  restCallForRecordDetails(fields, selectedValue) {
+  /** @description Rest call for record details
+   * @param {Array<string>} fields - The fields to select
+   * @param {Object} selectedValue - The selected value
+   * @param {string} standardNameField - The standard name field
+   * @param {string} cachedNameField - The cached name field
+   */
+  restCallForRecordDetails(fields, selectedValue, standardNameField = null, cachedNameField = null) {
+    let {sfHost} = this.props;
+
+    //manage if we have a specific named field for the object
+    if (cachedNameField && !fields.includes("cachedNameField")) {
+      fields.push(cachedNameField);
+    }
+    if (standardNameField !== "N/A" && standardNameField !== null && !fields.includes(standardNameField)) {
+      fields.push(standardNameField);
+    }
+
+    //Then remove the Name field from the fields list if we have a specific named field for the object or a standard name field
+    if (standardNameField !== "N/A" || cachedNameField) {
+      //remove the name field from the fields list
+      fields = fields.filter((field) => field !== "Name");
+    }
+
     let query
       = "SELECT "
       + fields.join()
@@ -1642,44 +1677,76 @@ class AllDataBoxSObject extends React.PureComponent {
           + encodeURIComponent(query),
         {logErrors: false}
       )
-      .then((res) => {
-        for (let record of res.records) {
-          let lastModifiedDate = new Date(record.LastModifiedDate);
-          let createdDate = new Date(record.CreatedDate);
+      .then(async (res) => {
+        //We have 0 or 1 record in the response
+        const record = res.records.length > 0 ? res.records[0] : null;
+        if (record) {
           this.setState({
             recordIdDetails: {
               recordTypeId: record.RecordType ? record.RecordType.Id : "",
-              recordName: record.Name ? record.Name : "",
+              recordName: record.Name || record[standardNameField] || record[cachedNameField] || "",
               recordTypeName: record.RecordType
                 ? record.RecordType.DeveloperName
                 : "",
               createdBy: record.CreatedBy.Alias,
               lastModifiedBy: record.LastModifiedBy.Alias,
-              created:
-                createdDate.toLocaleDateString()
-                + " "
-                + createdDate.toLocaleTimeString(),
-              lastModified:
-                lastModifiedDate.toLocaleDateString()
-                + " "
-                + lastModifiedDate.toLocaleTimeString(),
+              created: new Date(record.CreatedDate).toLocaleString(),
+              lastModified: new Date(record.LastModifiedDate).toLocaleString(),
             },
           });
         }
       })
-      .catch((e) => {
+      .catch(async (e) => {
         //some fields (Name, RecordTypeId) are not available for particular objects, in this case remove it from the fields list
         if (e.message.includes("No such column ")) {
+          //extract from which field the error is happening
+          const errorField = e.message.match(/No such column ['"]?([^'"]+)['"]?/i)[1];
+          const cacheKey = `nameField_${selectedValue.sobject.name}`;
+          let sobjectDescribeNameField = null;
+
+          if (errorField === "Name") {
+            //no need to remove the name field from the fields list, it's done before the call
+            //try to find a specific named field for the object
+            try {
+              // fetch from describe API
+              const sobjectDescribe = await sfConn.rest(
+                "/services/data/v" + apiVersion + "/sobjects/" + selectedValue.sobject.name + "/describe/",
+                {logErrors: false}
+              );
+              const nameField = sobjectDescribe.fields?.find(field => field.nameField);
+              if (nameField) {
+                // Cache the nameField for future use
+                DataCache.setCachedData(cacheKey, sfHost, nameField.name);
+                sobjectDescribeNameField = nameField.name;
+              } else {
+                // No nameField exists - clear the cache key
+                DataCache.clearCache(cacheKey, sfHost);
+              }
+            } catch (e) {
+              console.error("Unable to describe the object:", e);
+            }
+          }
+          if (errorField === cachedNameField) {
+            //oups! there is an issue with the named field, so remove it from the cache
+            DataCache.clearCache(cacheKey, sfHost);
+          }
+
+          //then redo the call for record details with the new fields list
           this.restCallForRecordDetails(
-            fields.filter((field) => field !== "Name"),
-            selectedValue
+            fields,
+            selectedValue,
+            standardNameField,
+            sobjectDescribeNameField
           );
         } else if (
           e.message.includes("Didn't understand relationship 'RecordType'")
         ) {
+          //then do the call without the RecordType fields
           this.restCallForRecordDetails(
             fields.filter((field) => !field.startsWith("RecordType.")),
-            selectedValue
+            selectedValue,
+            standardNameField,
+            cachedNameField
           );
         }
       });

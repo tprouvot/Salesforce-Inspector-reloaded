@@ -224,3 +224,21 @@ a.download-salesforce {
   top: 50%;
   transform: translateY(-50%);
 }
+
+/* ButtonMenu Component Styles - Customizations on top of SLDS */
+.slds-dropdown__list {
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+}
+
+.slds-dropdown_center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Dropdown constraints for ButtonMenu */
+.slds-dropdown {
+  max-height: 20rem;
+  overflow-y: auto;
+}

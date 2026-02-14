@@ -44,16 +44,96 @@ tr.fieldHidden a[href] {
 }
 
 .sfir-filter-clear {
-  right: 0.75rem;
   position: absolute;
-  top: 20%;
-  fill: #9faab5;
+  fill: #706e6b;
   line-height: 1;
-  color: #54698d;
+  color: #706e6b;
+  cursor: pointer;
 }
 
 .sfir-filter-clear-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  fill: currentColor;
+  display: block;
+}
+
+/* Sticky tab bar in inspect page */
+.sfir-inspect-tabs-sticky {
+  position: sticky;
+  top: 3.125rem;
+  background: white;
+  z-index: 50;
+  margin-bottom: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #dddbda;
+}
+
+/* Wrapper for tabs and controls */
+.sfir-tabs-controls-wrapper {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.75rem 0.25rem 0;
+}
+
+/* Tab bar takes available space on left */
+.sfir-tabs-controls-wrapper .slds-tabs_scoped {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* Container for filter and column controls on the right */
+.sfir-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 0.25rem 0;
+}
+
+/* Global filter styling */
+.sfir-controls-right .slds-form-element__control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sfir-controls-right .slds-input {
+  width: 180px;
+  padding-left: 2rem;
+}
+
+.sfir-controls-right .slds-input__icon_left {
   width: 0.875rem;
   height: 0.875rem;
-  fill: currentColor;
+  position: absolute;
+  left: 0.625rem;
+  fill: #706e6b;
+  pointer-events: none;
+}
+
+/* Column controls fixed width container */
+.sfir-column-controls-container {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  min-width: 380px;
+  justify-content: flex-end;
+}
+
+.sfir-column-control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.sfir-column-control-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #3e3e3c;
+  white-space: nowrap;
 }

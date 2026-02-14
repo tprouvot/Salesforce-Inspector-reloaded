@@ -6,6 +6,8 @@ import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
 import {UserInfoModel, PromptTemplate, Constants} from "./utils.js";
 import AgentforceModal from "./components/AgentforceModal.js";
+import {TabBar} from "./components/TabBar.js";
+import {ButtonMenu} from "./components/ButtonMenu.js";
 
 // Constants
 const GET_FIELD_USAGE_LABEL = "Get field usage";
@@ -1648,9 +1650,7 @@ function AgentforceFormulaModalWrapper({model}) {
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.onUseAllTab = this.onUseAllTab.bind(this);
-    this.onUseFieldsTab = this.onUseFieldsTab.bind(this);
-    this.onUseChildsTab = this.onUseChildsTab.bind(this);
+    this.onTabChange = this.onTabChange.bind(this);
     this.onRowsFilterInput = this.onRowsFilterInput.bind(this);
     this.onClearAndFocusFilter = this.onClearAndFocusFilter.bind(this);
     this.onShowObjectMetadata = this.onShowObjectMetadata.bind(this);
@@ -1664,26 +1664,29 @@ class App extends React.Component {
     this.onUpdateTableBorderSettings = this.onUpdateTableBorderSettings.bind(this);
     this.handleClick = this.handleClick.bind(this);
     this.onOpenPopup = this.onOpenPopup.bind(this);
+    this.onFieldColumnSelect = this.onFieldColumnSelect.bind(this);
+    this.onRelationshipColumnSelect = this.onRelationshipColumnSelect.bind(this);
+  }
+
+  onFieldColumnSelect(columnName) {
+    let {model} = this.props;
+    const isChecked = model.fieldRows.selectedColumnMap.has(columnName);
+    model.fieldRows.showHideColumn(!isChecked, columnName);
+    model.didUpdate();
+  }
+
+  onRelationshipColumnSelect(columnName) {
+    let {model} = this.props;
+    const isChecked = model.childRows.selectedColumnMap.has(columnName);
+    model.childRows.showHideColumn(!isChecked, columnName);
+    model.didUpdate();
   }
   componentDidMount() {
     this.refs.rowsFilter.focus();
   }
-  onUseAllTab(e) {
+  onTabChange(e, tabId) {
     let {model} = this.props;
-    e.preventDefault();
-    model.useTab = "all";
-    model.didUpdate();
-  }
-  onUseFieldsTab(e) {
-    let {model} = this.props;
-    e.preventDefault();
-    model.useTab = "fields";
-    model.didUpdate();
-  }
-  onUseChildsTab(e) {
-    let {model} = this.props;
-    e.preventDefault();
-    model.useTab = "childs";
+    model.useTab = tabId;
     model.didUpdate();
   }
   onRowsFilterInput(e) {
@@ -1790,91 +1793,33 @@ class App extends React.Component {
     let linkInNewTab = localStorage.getItem("openLinksInNewTab");
     let linkTarget = linkInNewTab ? "_blank" : "_top";
 
+    // Populate availableColumns for field columns
+    if (model.fieldRows.rows.length > 0) {
+      let cols = new Set();
+      for (let row of model.fieldRows.rows) {
+        for (let prop in row.rowProperties()) {
+          cols.add(prop);
+        }
+      }
+      model.fieldRows.availableColumns = Array.from(cols);
+    }
+
+    // Populate availableColumns for relationship columns
+    if (model.childRows.rows.length > 0) {
+      let cols = new Set();
+      for (let row of model.childRows.rows) {
+        for (let prop in row.rowProperties()) {
+          cols.add(prop);
+        }
+      }
+      model.childRows.availableColumns = Array.from(cols);
+    }
+
     // Define navigation items for this page (injected as "slots")
-    const navItems = [
-      // All tab
-      h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open sfir-border-none"},
-        h("button", {
-          className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
-          "aria-haspopup": "true",
-          "aria-expanded": "false",
-          title: "Click to open menu",
-          onClick: this.onUseAllTab
-        },
-        h("span", {className: "slds-media__body"},
-          h("span", {className: "slds-truncate", title: "All"}, "All")
-        )
-        )
-      ),
-      // Fields tab
-      h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open sfir-border-none"},
-        h("button", {
-          className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
-          "aria-haspopup": "true",
-          "aria-expanded": "false",
-          title: "Click to open menu"
-        },
-        h("span", {className: "slds-media__body"},
-          h("span", {className: "slds-truncate", title: "Fields", onClick: this.onUseFieldsTab}, "Fields"),
-          h(ColumnsVisibiltyBox, {
-            rowList: model.fieldRows,
-            label: "Field columns",
-            content: () => [
-              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "name", name: "name", disabled: true}),
-              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "label", name: "label"}),
-              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "type", name: "type"}),
-              model.sobjectName ? h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "usage", name: "usage"}) : null,
-              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "value", name: "value", disabled: !model.canView()}),
-              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "helptext", name: "helptext"}),
-              h(ColumnVisibiltyToggle, {rowList: model.fieldRows, key: "desc", name: "desc", disabled: !model.hasEntityParticles}),
-              h("hr", {key: "---", className: "slds-m-vertical_small"}),
-              model.fieldRows.availableColumns.map(col => h(ColumnVisibiltyToggle, {key: col, name: col, label: col, rowList: model.fieldRows}))
-            ]
-          })
-        )
-        )
-      ),
-      // Relationships tab
-      h("li", {className: "slds-builder-header__nav-item slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open sfir-border-none"},
-        h("button", {
-          className: "slds-button slds-builder-header__item-action slds-media slds-media_center",
-          "aria-haspopup": "true",
-          "aria-expanded": "false",
-          title: "Click to open menu"
-        },
-        h("span", {className: "slds-media__body"},
-          h("span", {className: "slds-truncate", title: "Relationships", onClick: this.onUseChildsTab}, "Relationships"),
-          h(ColumnsVisibiltyBox, {
-            rowList: model.childRows,
-            label: "Relationship columns",
-            content: () => [
-              ["name", "object", "field", "label"].map(col => h(ColumnVisibiltyToggle, {key: col, rowList: model.childRows, name: col})),
-              h("hr", {key: "---", className: "slds-m-vertical_small"}),
-              model.childRows.availableColumns.map(col => h(ColumnVisibiltyToggle, {key: col, rowList: model.childRows, name: col}))
-            ]
-          })
-        )
-        )
-      )
-    ];
+    const navItems = [];
 
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
-      // Search filter (conditional)
-      model.useTab != "all" ? null
-      : h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"},
-        h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left"},
-          h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", style: {top: "40%"}},
-            h("use", {xlinkHref: "symbols.svg#search"})
-          ),
-          h("input", {className: "slds-input", placeholder: "Filter", value: model.rowsFilter, onChange: this.onRowsFilterInput, ref: "rowsFilter"}),
-          h("a", {href: "about:blank", className: "sfir-filter-clear", onClick: this.onClearAndFocusFilter},
-            h("svg", {className: "sfir-filter-clear-icon"},
-              h("use", {xlinkHref: "symbols.svg#clear"})
-            )
-          )
-        )
-      ),
       // Action buttons
       h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"},
         h("div", {className: "slds-media__body"},
@@ -1950,6 +1895,78 @@ class App extends React.Component {
                 ),
                 h("div", {className: "slds-notify__content"},
                   model.errorMessages.map((data, index) => h("h2", {className: "slds-text-heading_small ", key: index}, data))
+                )
+              )
+            ),
+            h("div", {className: "sfir-inspect-tabs-sticky"},
+              h("div", {className: "sfir-tabs-controls-wrapper"},
+                h(TabBar, {
+                  mode: "simple",
+                  tabs: [
+                    {id: "all", content: "All"},
+                    {id: "fields", content: "Fields"},
+                    {id: "childs", content: "Relationships"}
+                  ],
+                  activeId: model.useTab,
+                  onTabChange: this.onTabChange,
+                  ariaLabel: "Object views"
+                }),
+                h("div", {className: "sfir-controls-right"},
+                  h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left"},
+                    h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", "aria-hidden": "true"},
+                      h("use", {xlinkHref: "symbols.svg#search"})
+                    ),
+                    h("input", {
+                      className: "slds-input",
+                      placeholder: "Global Filter",
+                      value: model.rowsFilter,
+                      onChange: this.onRowsFilterInput,
+                      ref: "rowsFilter"
+                    })
+                  ),
+                  h("div", {className: "sfir-column-controls-container"},
+                    model.useTab == "fields" || model.useTab == "all" ? h("div", {className: "sfir-column-control-group"},
+                      h("span", {className: "sfir-column-control-label"}, "Field columns:"),
+                      h(ButtonMenu, {
+                        label: null,
+                        iconName: "utility:chevrondown",
+                        variant: "border",
+                        iconSize: "small",
+                        menuAlignment: "right",
+                        alternativeText: "Select field columns",
+                        onSelect: this.onFieldColumnSelect,
+                        menuItems: [
+                          {value: "name", label: "name", checked: model.fieldRows.selectedColumnMap.has("name"), disabled: true},
+                          {value: "label", label: "label", checked: model.fieldRows.selectedColumnMap.has("label")},
+                          {value: "type", label: "type", checked: model.fieldRows.selectedColumnMap.has("type")},
+                          ...(model.sobjectName ? [{value: "usage", label: "usage", checked: model.fieldRows.selectedColumnMap.has("usage")}] : []),
+                          {value: "value", label: "value", checked: model.fieldRows.selectedColumnMap.has("value"), disabled: !model.canView()},
+                          {value: "helptext", label: "helptext", checked: model.fieldRows.selectedColumnMap.has("helptext")},
+                          {value: "desc", label: "desc", checked: model.fieldRows.selectedColumnMap.has("desc"), disabled: !model.hasEntityParticles},
+                          ...(model.fieldRows.availableColumns || []).map(col => ({value: col, label: col, checked: model.fieldRows.selectedColumnMap.has(col)}))
+                        ]
+                      })
+                    ) : null,
+                    model.useTab == "childs" || model.useTab == "all" ? h("div", {className: "sfir-column-control-group"},
+                      h("span", {className: "sfir-column-control-label"}, "Relationship columns:"),
+                      h(ButtonMenu, {
+                        label: null,
+                        iconName: "utility:chevrondown",
+                        variant: "border",
+                        iconSize: "small",
+                        menuAlignment: "right",
+                        alternativeText: "Select relationship columns",
+                        onSelect: this.onRelationshipColumnSelect,
+                        menuItems: [
+                          {value: "name", label: "name", checked: model.childRows.selectedColumnMap.has("name")},
+                          {value: "object", label: "object", checked: model.childRows.selectedColumnMap.has("object")},
+                          {value: "field", label: "field", checked: model.childRows.selectedColumnMap.has("field")},
+                          {value: "label", label: "label", checked: model.childRows.selectedColumnMap.has("label")},
+                          ...(model.childRows.availableColumns || []).map(col => ({value: col, label: col, checked: model.childRows.selectedColumnMap.has(col)}))
+                        ]
+                      })
+                    ) : null
+                  )
                 )
               )
             ),

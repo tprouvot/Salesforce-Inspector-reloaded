@@ -7,6 +7,7 @@ import AlertBanner from "./components/AlertBanner.js";
 let p = parent;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
 const isExtensionPage = document.location.ancestorOrigins?.[0].includes(getExtensionId());
+const RECENT_ITEMS_RENDERED_COUNT = 100;
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -4572,9 +4573,7 @@ class Autocomplete extends React.PureComponent {
     let {recentItems} = this.props;
     sfConn
       .rest(
-        "/services/data/v"
-          + apiVersion
-          + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+100"
+        `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+WHERE+Type!='ListView'+LIMIT+${RECENT_ITEMS_RENDERED_COUNT}`
       )
       .then((res) => {
         let itemsIds = new Set();
@@ -4770,20 +4769,15 @@ class Autocomplete extends React.PureComponent {
       itemHeight,
       resultsMouseIsDown,
     } = this.state;
-    // For better performance only render the visible autocomplete items + at least one invisible item above and below (if they exist)
-    const RENDERED_ITEMS_COUNT = 11;
-    let firstIndex = 0;
+
     let autocompleteResults
       = recentItems.length > 0 ? recentItems : matchingResults;
     let lastIndex = autocompleteResults.length - 1;
     let firstRenderedIndex = Math.max(0, scrollTopIndex - 2);
     let lastRenderedIndex = Math.min(
       lastIndex,
-      firstRenderedIndex + RENDERED_ITEMS_COUNT
+      firstRenderedIndex + RECENT_ITEMS_RENDERED_COUNT
     );
-    let topSpace = (firstRenderedIndex - firstIndex) * itemHeight;
-    let bottomSpace = (lastIndex - lastRenderedIndex) * itemHeight;
-    let topSelected = (selectedIndex - firstIndex) * itemHeight;
 
     return h(
       "div",

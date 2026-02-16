@@ -2040,7 +2040,6 @@ class App extends React.Component {
       }
     }
     const cacheKey = currentQuery + "\x00" + cursorParenPos + "\x00" + matchPos;
-    console.log("cacheKey", cacheKey, "this._lastHighlightedCacheKey", this._lastHighlightedCacheKey);
     if (this._lastHighlightedCacheKey === cacheKey) {
       return;
     }

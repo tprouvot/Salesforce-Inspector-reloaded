@@ -2416,7 +2416,7 @@ class App extends React.Component {
               title: "Add new query tab"
             }, "+")
             ),
-            h("div", {className: "query-input-wrapper" + (model.enableSoqlStyling ? "" : " soql-styling-disabled"), ref: "queryWrapper"},
+            h("div", {className: "query-input-wrapper" + (model.enableSoqlStyling ? " soql-styling-enabled" : " soql-styling-disabled"), ref: "queryWrapper"},
               model.enableSoqlStyling ? h("pre", {className: "query-highlight-mirror", ref: "queryHighlight", "aria-hidden": "true"},
                 h("code", {className: "query-highlight-code"})
               ) : null,

@@ -99,6 +99,7 @@ textarea[hidden] {
   position: relative;
   z-index: 1;
   color: transparent;
+  caret-color: var(--slds-g-color-palette-neutral-10, #181818);
   background: transparent;
   tab-size: 4;
   box-sizing: border-box;
@@ -127,6 +128,9 @@ textarea[hidden] {
 #query {
   height: 5em;
   min-height: 7em;
+}
+
+.soql-styling-enabled #query {
   white-space: pre-wrap;
   word-wrap: break-word;
 }

@@ -248,7 +248,7 @@ class Model {
     this.args = args || new URLSearchParams();
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
-    this.title = "Dependencies Explorer";
+    this.title = "Dependencies Explorer (beta)";
     this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
     this.dependencyTree = null; // Store the fetched dependency tree
     this.dependencyError = null;

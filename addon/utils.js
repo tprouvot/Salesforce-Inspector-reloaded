@@ -24,6 +24,7 @@ export class Constants {
   // Options
   static PRELOAD_SOBJECTS_BEFORE_POPUP = "preloadSobjectsBeforePopup";
   static ENABLE_SOBJECTS_LIST_CACHE = "enableSobjectsListCache";
+  static ENABLE_RECENTLY_VIEWED_RECORDS = "enableRecentlyViewedRecords";
 }
 
 /**

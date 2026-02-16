@@ -256,7 +256,9 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Enable Query Typo Fix", key: "enableQueryTypoFix", default: false, tooltip: "Enable automation that removes typos from query input"}},
           {option: Option, props: {type: "text", title: "Prompt Template Name", key: this.sfHost + "_exportAgentForcePrompt", default: Constants.PromptTemplateSOQL, tooltip: "Developer name of the prompt template to use for SOQL query builder"}},
           //This option is created to disable BOM for CSV in case of errors appearing during export, created in v2.0.0, can be deleted in two releases if no issues are reported
-          {option: Option, props: {type: "toggle", default: true, title: "Use BOM for CSV export", key: "useBomForCsvExport", tooltip: "Add UTF-8 BOM (Byte Order Mark) for Excel compatibility with non-Latin characters."}}
+          {option: Option, props: {type: "toggle", default: true, title: "Use BOM for CSV export", key: "useBomForCsvExport", tooltip: "Add UTF-8 BOM (Byte Order Mark) for Excel compatibility with non-Latin characters."}},
+          {option: Option, props: {type: "toggle", title: "Enable SOQL Styling", key: "enableSoqlStyling", default: false, tooltip: "Enable syntax highlighting for SOQL keywords in the query input"}},
+          {option: Option, props: {type: "toggle", title: "Enable SOQL Comments", key: "enableSoqlComments", default: false, tooltip: "Enable management of comments (-- and /* */) in the query input"}},
         ]
       },
       {

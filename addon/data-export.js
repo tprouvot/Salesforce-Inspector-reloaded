@@ -1,5 +1,296 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
+
+/**
+ * Finds the position of the parenthesis matching the one at pos.
+ * Skips parentheses inside single-quoted strings.
+ * @param {string} text - The query text
+ * @param {number} pos - Position of ( or ) (cursor-adjacent)
+ * @returns {number} Position of matching paren, or -1 if not found
+ */
+function findMatchingParenthesis(text, pos) {
+  if (pos < 0 || pos >= text.length) {
+    return -1;
+  }
+  const char = text[pos];
+  if (char === "(") {
+    //if we have an opening parenthesis, we need to find the matching closing parenthesis
+    let depth = 1;
+    let inString = false;
+    //loop through the text to find the matching closing parenthesis
+    for (let i = pos + 1; i < text.length; i++) {
+      const c = text[i];
+      //check if we are in a string
+      if (c === "'" && (i === 0 || text[i - 1] !== "\\")){
+        inString = !inString;
+      }
+      //if we are not in a string, we need to find the matching closing parenthesis
+      if (!inString) {
+        //if we have an opening parenthesis, we need to increment the depth
+        if (c === "(") { 
+          depth++; 
+        }
+        //if we have a closing parenthesis, we need to decrement the depth
+        else if (c === ")") { 
+          depth--; 
+          if (depth === 0) {
+            return i;
+          }
+        }
+      }
+    }
+    return -1;
+  } else if (char === ")") {
+    //if we have a closing parenthesis, we need to find the matching opening parenthesis
+    let depth = 1;
+    let inString = false;
+    //loop through the text to find the matching opening parenthesis
+    for (let i = pos - 1; i >= 0; i--) {
+      const c = text[i];
+      //check if we are in a string
+      if (c === "'" && (i === 0 || text[i - 1] !== "\\")) inString = !inString;
+      //if we are not in a string, we need to find the matching opening parenthesis
+      if (!inString) {
+        //if we have a closing parenthesis, we need to increment the depth
+        if (c === ")") depth++;
+        //if we have an opening parenthesis, we need to decrement the depth
+        else if (c === "(") { depth--; if (depth === 0) return i; }
+      }
+    }
+    return -1;
+  }
+  return -1;
+}
+
+/** Compiled once; used by highlightQueryKeywords */
+const KEYWORDS_REGEX = /\b(SELECT|FROM|WHERE|AND|OR|NOT|IN|LIKE|ORDER\s+BY|GROUP\s+BY|HAVING|LIMIT|OFFSET|ASC|DESC|NULLS\s+FIRST|NULLS\s+LAST|TRUE|FALSE|FIND|RETURNING|IN\s+Name\s+Fields|uiapi|query|edges|node)(?=[\s\r\n]|$)/gi;
+
+/** Matches all placeholder types for single-pass restoration */
+const PLACEHOLDER_REGEX = /\x00(COMMENT|STR|PARENTHESIS)_(\d+)\x00/g;
+
+/**
+ * Highlights SOQL/SQL/SOSL/GraphQL keywords and comments in query text for display in the overlay.
+ * Escapes HTML and wraps keywords/comments in spans with CSS classes.
+ * Strings are protected so -- and // inside them are not treated as comments.
+ * @param {string} query - The query text
+ * @param {number} [cursorParenPos=-1] - Position of parenthesis cursor is adjacent to
+ * @param {number} [matchPos=-1] - Position of matching parenthesis
+ */
+function highlightQueryKeywords(query, cursorParenPos = -1, matchPos = -1) {
+  //no query, return empty string
+  if (!query) return "";
+
+  let result = query;
+  //find all the parenthesis matches and replace them with placeholders
+  const parenMatches = [];
+  const positionsToHighlight = [cursorParenPos, matchPos]
+    .filter(p => p >= 0 && p < query.length && (query[p] === "(" || query[p] === ")"));
+  const uniquePositions = [...new Set(positionsToHighlight)].sort((a, b) => b - a);
+  for (const pos of uniquePositions) {
+    const c = result[pos];
+    const placeholder = `\x00PARENTHESIS_${parenMatches.length}\x00`;
+    parenMatches.push({char: c});
+    result = result.slice(0, pos) + placeholder + result.slice(pos + 1);
+  }
+
+  //find all the string placeholders and replace them with placeholders (parameters + comments)
+  const stringPlaceholders = [];
+  const commentPlaceholders = [];
+  result = result
+    .replace(/'([^']*(?:''[^']*)*)'/g, (m) => {
+      const i = stringPlaceholders.length;
+      stringPlaceholders.push(m);
+      return `\x00STR_${i}\x00`;
+    })
+    .replace(/(?:\/\*[\s\S]*?\*\/|--[^\r\n]*)/g, (m) => {
+      const i = commentPlaceholders.length;
+      commentPlaceholders.push(m);
+      return `\x00COMMENT_${i}\x00`;
+    });
+
+  //highlight the keywords
+  KEYWORDS_REGEX.lastIndex = 0;
+  result = result.replace(KEYWORDS_REGEX, "<span class=\"soql-keyword\">$1</span>");
+
+  //restore the string placeholders, comment placeholders and parenthesis matches
+  PLACEHOLDER_REGEX.lastIndex = 0;
+  result = result.replace(PLACEHOLDER_REGEX, (_, type, i) => {
+    const idx = parseInt(i, 10);
+    if (type === "COMMENT") return `<span class="soql-comment">${commentPlaceholders[idx]}</span>`;
+    if (type === "STR") return stringPlaceholders[idx];
+    return `<span class="paren-match">${parenMatches[idx].char}</span>`;
+  });
+  return result;
+}
+
+/**
+ * Expands lines by splitting on AND/OR at depth 0. Used after initial clause split.
+ */
+function splitOnTopLevelAndOrForLines(text) {
+  const initialLines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  const lines = [];
+  for (const line of initialLines) {
+    const parts = splitTopLevelAndOr(line);
+    if (parts.length <= 1) {
+      lines.push(line);
+    } else {
+      lines.push(parts[0]);
+      for (let i = 2; i < parts.length; i += 2) {
+        lines.push(parts[i - 1] + " " + parts[i]);
+      }
+    }
+  }
+  return lines;
+}
+
+/**
+ * Splits text on AND/OR at top-level (outside parentheses and strings).
+ * Returns array of [part, "AND"|"OR", part, ...].
+ */
+function splitTopLevelAndOr(text) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  let inString = false;
+  const re = /\b(AND|OR)\b/gi;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    for (let i = start; i < m.index; i++) {
+      const c = text[i];
+      if (c === "'" && (i === 0 || text[i - 1] !== "\\")) inString = !inString;
+      if (!inString) {
+        if (c === "(") depth++;
+        else if (c === ")") depth--;
+      }
+    }
+    if (depth === 0 && !inString) {
+      parts.push(text.slice(start, m.index).trim(), m[1].toUpperCase());
+      start = m.index + m[0].length;
+    }
+  }
+  parts.push(text.slice(start).trim());
+  return parts;
+}
+
+/**
+ * Formats parenthesized content: splits on top-level AND/OR and puts each on its own line.
+ * Returns content with newlines but no leading indent (caller adds indent when embedding).
+ */
+function formatParenthetical(text, baseIndent) {
+  const parts = splitTopLevelAndOr(text);
+  if (parts.length <= 1) return text;
+  const innerIndent = baseIndent + "  ";
+  const lines = [];
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      const part = parts[i];
+      const formatted = formatParenGroups(part, innerIndent);
+      lines.push((i === 0 ? "" : parts[i - 1] + " ") + formatted);
+    }
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Recursively formats (...) groups in text. Replaces (inner) with (\n  formatted_inner\n).
+ */
+function formatParenGroups(text, baseIndent) {
+  let result = "";
+  let i = 0;
+  while (i < text.length) {
+    const open = text.indexOf("(", i);
+    if (open < 0) {
+      result += text.slice(i);
+      break;
+    }
+    result += text.slice(i, open);
+    let depth = 1;
+    let j = open + 1;
+    let inStr = false;
+    while (j < text.length && depth > 0) {
+      const c = text[j];
+      if (c === "'" && (j === 0 || text[j - 1] !== "\\")) inStr = !inStr;
+      if (!inStr) {
+        if (c === "(") depth++;
+        else if (c === ")") depth--;
+      }
+      j++;
+    }
+    const inner = text.slice(open + 1, j - 1).trim();
+    const formatted = formatParenthetical(inner, baseIndent);
+    const hasNewlines = formatted.includes("\n");
+    result += hasNewlines
+      ? "(\n" + baseIndent + "  " + formatted.replace(/\n/g, "\n" + baseIndent + "  ") + "\n" + baseIndent + ")"
+      : "(" + formatted + ")";
+    i = j;
+  }
+  return result;
+}
+
+/**
+ * Pretty-format SOQL/SQL/SOSL query: normalize whitespace and put major clauses on new lines.
+ * Formats parenthesized groups in WHERE clauses (AND/OR on separate lines).
+ * Preserves strings and comments. Returns original if query looks like GraphQL (starts with {).
+ * @param {string} query - The query text
+ * @returns {string} Formatted query
+ */
+function prettyFormatQuery(query) {
+  if (!query || typeof query !== "string") {
+    return query || "";
+  }
+  //check if the query is empty => remove extra spaces
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return query;
+  }
+  // GraphQL: minimal formatting (just trim/normalize)
+  if (trimmed.startsWith("{")) {
+    try {
+      return JSON.stringify(JSON.parse(trimmed), null, 2);
+    } catch {
+      return query;
+    }
+  }
+  const stringPlaceholders = [];
+  const commentPlaceholders = [];
+  let work = trimmed
+    .replace(/'([^']*(?:''[^']*)*)'/g, (m) => {
+      const i = stringPlaceholders.length;
+      stringPlaceholders.push(m);
+      return `\x00STR_${i}\x00`;
+    })
+    .replace(/(?:\/\*[\s\S]*?\*\/|--[^\r\n]*)/g, (m) => {
+      const i = commentPlaceholders.length;
+      commentPlaceholders.push(m);
+      return `\x00COMMENT_${i}\x00`;
+    });
+  work = work.replace(/\s+/g, " ").trim();
+  // Split on major clauses; exclude AND/OR from this pass (they're handled by formatParenGroups with depth awareness)
+  const topLevel = /\b(SELECT|FROM|WHERE|NOT|IN|ORDER\s+BY|GROUP\s+BY|HAVING|LIMIT|OFFSET|FIND|RETURNING|IN\s+Name\s+Fields)\b/gi;
+  let result = work.replace(topLevel, "\n$1");
+  result = result.replace(/\n+/g, "\n").trim();
+  // Now split AND/OR at depth 0 only (between major clauses)
+  const lines = splitOnTopLevelAndOrForLines(result);
+  const formatted = [];
+  const indentKeywords = /\b(AND|OR)\b/i;
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim();
+    if (!line) continue;
+    const isContinuation = indentKeywords.test(line) && i > 0;
+    const pad = isContinuation ? "  " : "";
+    line = formatParenGroups(line, pad);
+    formatted.push(pad + line);
+  }
+  result = formatted.join("\n");
+  commentPlaceholders.forEach((c, i) => {
+    result = result.replace(`\x00COMMENT_${i}\x00`, c);
+  });
+  stringPlaceholders.forEach((s, i) => {
+    result = result.replace(`\x00STR_${i}\x00`, s);
+  });
+  return result;
+}
+
 import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
@@ -129,6 +420,8 @@ class Model {
     this.separator = getSeparator();
     this.soqlPrompt = "";
     this.enableQueryTypoFix = localStorage.getItem("enableQueryTypoFix") == "true";
+    this.enableSoqlStyling = localStorage.getItem("enableSoqlStyling") === "true"; // default to false
+    this.enableSoqlComments = localStorage.getItem("enableSoqlComments") === "true"; // default to false
 
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
@@ -171,6 +464,26 @@ class Model {
     this.updatedExportedData();
   }
   setQueryMethod(data, query, vm){
+    if (vm.enableSoqlComments) {
+      // first replace all where parameters to a placeholder binding (so we can preserve them)
+      const stringPlaceholders = [];
+      let result = query.replace(/'([^']*(?:''[^']*)*)'/g, (match) => {
+        stringPlaceholders.push(match);
+        return `\x00PLACEHOLDER_${stringPlaceholders.length - 1}\x00`;
+      });
+      // then remove comments
+      result = result
+      .replace(/\/\*[\s\S]*?\*\//g, "")  // Remove /* */ block comments
+      .split("\n")
+      .filter(line => !line.trim().startsWith("--"))  // Remove -- line comments
+      .join("\n")
+      .trim();
+      // then restore the placeholders
+      stringPlaceholders.forEach((str, i) => {
+        result = result.replace(`\x00PLACEHOLDER_${i}\x00`, str);
+      });
+      query = result;
+    }
     let method;
     let queryParams = "/?q=" + encodeURIComponent(query);
     const baseParams = {progressHandler: vm.exportProgress};
@@ -1433,6 +1746,8 @@ class App extends React.Component {
     this.onRemoveAllTabs = this.onRemoveAllTabs.bind(this);
     this.onTabClick = this.onTabClick.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
+    this.onQueryScroll = this.onQueryScroll.bind(this);
+    this.onPrettyFormat = this.onPrettyFormat.bind(this);
     this.onTabNameEdit = this.onTabNameEdit.bind(this);
     this.onTabNameSubmit = this.onTabNameSubmit.bind(this);
     this.onTabDragStart = this.onTabDragStart.bind(this);
@@ -1665,6 +1980,75 @@ class App extends React.Component {
     model.didUpdate();
   }
 
+  onPrettyFormat() {
+    const {model} = this.props;
+    const textarea = this.refs.query;
+    if (!textarea) {
+      return;
+    }
+    const formatted = prettyFormatQuery(textarea.value);
+    textarea.value = formatted;
+    model.updateCurrentTabQuery(formatted);
+    model.queryAutocompleteHandler();
+    model.didUpdate(() => {
+      // Re-apply value and refresh overlay after React render (in case textarea was recreated)
+      const el = this.refs.query;
+      if (el && el.value !== formatted) {
+        el.value = formatted;
+        this._lastHighlightedCacheKey = null;
+        this.updateQueryHighlight();
+      }
+    });
+  }
+
+  onQueryScroll(e) {
+    //ensure that the two text areas (query and queryHighlight) scroll at the same time
+    const mirror = this.refs.queryHighlight;
+    if (mirror) {
+      mirror.scrollTop = e.target.scrollTop;
+      mirror.scrollLeft = e.target.scrollLeft;
+    }
+  }
+
+  updateQueryHighlight() {
+    //no code styling enabled, do nothing
+    if (!this.props.model.enableSoqlStyling) {
+      return;
+    }
+
+    //get the textarea and the code element
+    const textarea = this.refs.query;
+    const codeEl = this.refs.queryHighlight?.querySelector?.(".query-highlight-code");
+    //the html elements are not available yet, do nothing
+    if (!textarea || !codeEl) {
+      return;
+    }
+
+    //get the current query
+    const currentQuery = textarea.value;
+    const cursorPos = textarea.selectionStart;
+    let cursorParenPos = -1;
+    let matchPos = -1;
+    for (const pos of [cursorPos, cursorPos - 1]) {
+      if (pos >= 0 && pos < currentQuery.length) {
+        const m = findMatchingParenthesis(currentQuery, pos);
+        if (m >= 0) {
+          cursorParenPos = pos;
+          matchPos = m; 
+          break; 
+        }
+      }
+    }
+    const cacheKey = currentQuery + "\x00" + cursorParenPos + "\x00" + matchPos;
+    console.log("cacheKey", cacheKey, "this._lastHighlightedCacheKey", this._lastHighlightedCacheKey);
+    if (this._lastHighlightedCacheKey === cacheKey) {
+      return;
+    }
+    this._lastHighlightedCacheKey = cacheKey;
+
+    codeEl.innerHTML = highlightQueryKeywords(currentQuery, cursorParenPos, matchPos) || "\u00A0";
+  }
+
   onTabNameEdit(e, index) {
     e.stopPropagation();
     let {model} = this.props;
@@ -1766,6 +2150,7 @@ class App extends React.Component {
     let queryInput = this.refs.query;
     model.setQueryInput(queryInput);
     model.soqlPrompt = this.refs.prompt;
+    this.updateQueryHighlight();
     //Set the cursor focus on query text area
     if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
       queryInput.focus();
@@ -1833,6 +2218,7 @@ class App extends React.Component {
     resize();
   }
   componentDidUpdate() {
+    this.updateQueryHighlight();
     this.recalculateSize();
   }
   recalculateSize() {
@@ -2030,12 +2416,19 @@ class App extends React.Component {
               title: "Add new query tab"
             }, "+")
             ),
-            h("textarea", {
-              id: "query",
-              ref: "query",
-              style: {maxHeight: (model.winInnerHeight - 200) + "px"},
-              onChange: this.onQueryInput
-            }),
+            h("div", {className: "query-input-wrapper" + (model.enableSoqlStyling ? "" : " soql-styling-disabled"), ref: "queryWrapper"},
+              model.enableSoqlStyling ? h("pre", {className: "query-highlight-mirror", ref: "queryHighlight", "aria-hidden": "true"},
+                h("code", {className: "query-highlight-code"})
+              ) : null,
+              h("textarea", {
+                id: "query",
+                ref: "query",
+                className: "query-input-with-highlight",
+                style: {maxHeight: (model.winInnerHeight - 200) + "px"},
+                onChange: this.onQueryInput,
+                onScroll: this.onQueryScroll
+              })
+            ),
             h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
               h("div", {className: "autocomplete-header"},
                 h("span", {className: "slds-m-left_xx-small"}, model.autocompleteResults.title),
@@ -2058,7 +2451,10 @@ class App extends React.Component {
                         h("div", {className: "button-icon"}),
                         h("div", {className: "button-toggle-icon"})
                       )
-                    ))
+                    )),
+                  model.enableSoqlStyling ? h("li", {className: "slds-button-group-item"},
+                      h("button", {tabIndex: 6, onClick: this.onPrettyFormat, title: "Pretty format the query", className: "slds-button slds-button_neutral"}, "Pretty Format")
+                  ) : null,
                 ),
               ),
               h("div", {className: "autocomplete-results slds-m-top_small"},

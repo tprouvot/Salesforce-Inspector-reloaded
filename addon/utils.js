@@ -936,10 +936,11 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
 
     if (cacheEnabled && sobjectsList?.length > 0) {
       await DataCache.setCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, sobjectsList, true, true, currentFetch, true);
+      //dispatch event when delta cache is set
+      window.dispatchEvent(new CustomEvent(Constants.SOBJECTS_LIST_REFRESHED_EVENT, {
+        detail: {sfHost, sobjectsList}
+      }));
     }
-    window.dispatchEvent(new CustomEvent(Constants.SOBJECTS_LIST_REFRESHED_EVENT, {
-      detail: {sfHost, sobjectsList}
-    }));
 
     return sobjectsList;
   } catch (err) {

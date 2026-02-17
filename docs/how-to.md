@@ -374,6 +374,17 @@ You can configure which tab should be selected by default when opening the popup
 
 The selected tab will be remembered and used as the default when opening the popup.
 
+## Show recently viewed records in popup
+
+When you focus the Object search field in the popup, the extension queries and displays your recently viewed records for quick access. This is **enabled by default**. The option allows you to disable it if you prefer not to query or display recently viewed records:
+
+1. Open the options page
+2. Go to the "User Experience" tab
+3. Find the "Show recently viewed records in popup" toggle
+4. Disable it to skip the query and only show search results as you type
+
+When disabled, no API call is made to the RecentlyViewed object, which can reduce API usage and improve popup responsiveness.
+
 ## API Cache Configuration
 
 Salesforce Inspector Reloaded uses a caching system to reduce the number of API calls made to Salesforce, improving performance and reducing API usage. The extension caches API response data to optimize queries and avoid unnecessary API requests.

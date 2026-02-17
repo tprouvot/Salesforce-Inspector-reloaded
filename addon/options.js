@@ -1334,7 +1334,7 @@ class SObjectsCacheOptions extends React.Component {
   }
 
   async onClearCache() {
-    await DataCache.clearCache(Constants.CACHE_SOBJECTS_LIST, this.model.sfHost, true, false);
+    await DataCache.clearCache(Constants.CACHE_SOBJECTS_LIST, this.model.sfHost, true, true);
     if (this.appRef) {
       this.appRef.setState({
         showToast: true,

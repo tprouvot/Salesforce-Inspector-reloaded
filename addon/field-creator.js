@@ -1,7 +1,7 @@
 /* global React ReactDOM field-creator.js */
 import {sfConn, apiVersion} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, getSobjectsList} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, getSobjectsList, Constants} from "./utils.js";
 
 let h = React.createElement;
 
@@ -1001,6 +1001,19 @@ class App extends React.Component {
   componentDidMount() {
     this.fetchObjects();
     this.fetchPermissionSets();
+    this.onSobjectsListRefreshed = (e) => {
+      if (e.detail?.sfHost === this.sfHost) {
+        const layoutableObjects = e.detail.sobjectsList.filter(obj =>
+          obj.layoutable === true || (obj.keyPrefix && obj.keyPrefix.startsWith("e"))
+        );
+        this.setState({objects: layoutableObjects});
+      }
+    };
+    window.addEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
   }
 
   handleObjectSearch = (e) => {

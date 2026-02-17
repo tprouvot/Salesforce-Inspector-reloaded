@@ -92,11 +92,30 @@ chrome.commands?.onCommand.addListener((command) => {
   }
 });
 
-chrome.runtime.onInstalled.addListener(({reason}) => {
-  if (reason === "install") {
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === "install") {
     chrome.tabs.create({
       url: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/welcome/"
     });
+  } else if (details.reason === "update" && details.previousVersion?.startsWith("2.0")) {
+    //TODO delete clearSobjectsListCache after 2.0.1 release, only for upgrade from 2.0.0 to 2.0.1
+    await clearSobjectsListCache();
   }
 });
+
+async function clearSobjectsListCache() {
+  try {
+    const storage = (typeof chrome !== "undefined" && chrome.storage) ? chrome.storage : browser.storage;
+    if (!storage?.local) return;
+    const allData = await storage.local.get(null);
+    const keysToRemove = Object.keys(allData || {}).filter(key =>
+      key === "cache_sobjectsList"
+    );
+    if (keysToRemove.length > 0) {
+      await storage.local.remove(keysToRemove);
+    }
+  } catch (e) {
+    console.error("Error clearing sobjectsList cache on update:", e);
+  }
+}
 chrome.runtime.setUninstallURL("https://forms.gle/y7LbTNsFqEqSrtyc6");

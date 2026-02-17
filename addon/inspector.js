@@ -192,7 +192,7 @@ export let sfConn = {
     if (rawResponse){
       apiStatistics.trackApiCall("rest", url, method, duration, false);
       return xhr;
-    } else if (xhr.status >= 200 && xhr.status < 300) {
+    } else if (xhr.status >= 200 && xhr.status < 400) {
       apiStatistics.trackApiCall("rest", url, method, duration, false);
       return xhr.response;
     } else if (xhr.status == 0) {

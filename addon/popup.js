@@ -972,8 +972,7 @@ class AllDataBox extends React.PureComponent {
 
     this.onSobjectsListRefreshed = (e) => {
       if (e.detail?.sfHost === this.props.sfHost) {
-        this.setState({ sobjectsList: e.detail.sobjectsList });
-        //this.refs.showAllDataBoxSObject?.refs?.allDataSearch?.getMatchesDelayed("");
+        this.setState({sobjectsList: e.detail.sobjectsList});
       }
     };
     window.addEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);

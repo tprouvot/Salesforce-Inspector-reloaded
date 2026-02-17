@@ -427,7 +427,7 @@ export class DataCache {
 
     try {
       const cacheEntry = JSON.parse(cached);
-      if (cacheEntry._compressed) {
+      if (cacheEntry.compressed) {
         cacheEntry.data = await this._decompressGzip(cacheEntry.data);
       }
 
@@ -459,7 +459,7 @@ export class DataCache {
    * Internal method to get cached data from browser.storage.local (asynchronous)
    * @private
    */
-  static async _getCachedDataLarge(storageKey, cacheKey, expectedSfHost) {
+  static async _getCachedDataLarge(storageKey, cacheKey) {
     if (typeof browser === "undefined" || !browser.storage || !browser.storage.local) {
       console.warn("browser.storage.local not available");
       return null;
@@ -481,7 +481,7 @@ export class DataCache {
 
       //uncompress the data if compressed
       let data = cached.data;
-      if (cached._compressed) {
+      if (cached.compressed) {
         data = await this._decompressGzip(cached.data);
       }
       return {data, lastFetch: cached.lastFetch};
@@ -516,7 +516,7 @@ export class DataCache {
       sfHost, // Store sfHost in cache entry for validation
       durationHours, // Store duration in cache entry
       lastFetch,
-      _compressed: compression
+      compressed: compression
     };
 
     if (isLarge) {
@@ -789,7 +789,7 @@ export async function getSobjectsList(sfHost) {
  * @private
  */
 async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobjectsList, lastFetch) {
-  try{
+  try {
     const entityMap = new Map();
 
     //if we have cached data, we need to add it to the entity map
@@ -851,14 +851,14 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
         }
       }
     }
-  
+
     async function getObjects(url, api, lastFetch) {
       try {
         //https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_describeGlobal.htm
         //https://developer.salesforce.com/docs/atlas.en-us.222.0.api_rest.meta/api_rest/describe_global_with_ifmodified_header.htm
         //If-Modified-Since: <date> format EEE, dd MMM yyyy HH:mm:ss z
-        const headers = lastFetch ? { "If-Modified-Since": new Date(lastFetch).toGMTString() } : {};
-        const describe = await sfConn.rest(url, { headers: headers } );
+        const headers = lastFetch ? {"If-Modified-Since": new Date(lastFetch).toGMTString()} : {};
+        const describe = await sfConn.rest(url, {headers});
         //if no modification, we receive a 304 status code and an empty response, so process only if describe is not empty
         if (describe) {
           for (const sobject of describe.sobjects) {
@@ -883,40 +883,40 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
       const batchSize = 2000;
       // entity definition queries can take a lot of time, so spent a first call to get the total number of records to do all others in parallel
       return sfConn
-      .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent("SELECT COUNT() FROM EntityDefinition")}`)
-      .then((res) => {
-        const entityNb = res.totalSize;
-        for (let bucket = 0; bucket < Math.ceil(entityNb / batchSize); bucket++) {
-          const query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName LIMIT ${batchSize} OFFSET ${bucket * batchSize}`;
-          sfConn
-            .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent(query)}`)
-            .then((respEntity) => {
-              for (let record of respEntity.records) {
-                addEntity(
-                  {
-                    name: record.QualifiedApiName,
-                    label: record.Label,
-                    keyPrefix: record.KeyPrefix,
-                    durableId: record.DurableId,
-                    isCustomSetting: record.IsCustomSetting,
-                    recordTypesSupported: record.RecordTypesSupported,
-                    newUrl: record.NewUrl,
-                    isEverCreatable: record.IsEverCreatable,
-                  },
-                  null
-                );
-              }
-            })
-            .catch((err) => {
-              console.error("list entity definitions: ", err);
-            });
-        }
-      })
-      .catch((err) => {
-        console.error("count entity definitions: ", err);
-      });
+        .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent("SELECT COUNT() FROM EntityDefinition")}`)
+        .then((res) => {
+          const entityNb = res.totalSize;
+          for (let bucket = 0; bucket < Math.ceil(entityNb / batchSize); bucket++) {
+            const query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName LIMIT ${batchSize} OFFSET ${bucket * batchSize}`;
+            sfConn
+              .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent(query)}`)
+              .then((respEntity) => {
+                for (let record of respEntity.records) {
+                  addEntity(
+                    {
+                      name: record.QualifiedApiName,
+                      label: record.Label,
+                      keyPrefix: record.KeyPrefix,
+                      durableId: record.DurableId,
+                      isCustomSetting: record.IsCustomSetting,
+                      recordTypesSupported: record.RecordTypesSupported,
+                      newUrl: record.NewUrl,
+                      isEverCreatable: record.IsEverCreatable,
+                    },
+                    null
+                  );
+                }
+              })
+              .catch((err) => {
+                console.error("list entity definitions: ", err);
+              });
+          }
+        })
+        .catch((err) => {
+          console.error("count entity definitions: ", err);
+        });
     }
-  
+
     if (entityMap.size > 0) {
       //it means that we already have fetched the data, so we just need to check if we have updates on regular and tooling api
       await Promise.all([
@@ -931,14 +931,14 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
         fetchEntityDefinitions(),
       ]);
     }
-  
+
     const sobjectsList = Array.from(entityMap.values());
 
     if (cacheEnabled && sobjectsList?.length > 0) {
       await DataCache.setCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, sobjectsList, true, true, currentFetch, true);
     }
     window.dispatchEvent(new CustomEvent(Constants.SOBJECTS_LIST_REFRESHED_EVENT, {
-      detail: { sfHost, sobjectsList }
+      detail: {sfHost, sobjectsList}
     }));
 
     return sobjectsList;

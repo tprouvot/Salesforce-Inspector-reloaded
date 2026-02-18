@@ -2,6 +2,7 @@
 
 ## Version 2.0
 
+- Fix Lightning Navigation from Analytics / Tableau [issue #1121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1121)
 - `Popup` review cache management in "Preload SObjects before popup opens". If enabled, refresh of SObject definition is done every "SObjects List Cache" hours, else done in background when the popup is expanded
 - `Rest Explorer` fix a performance issue (edit entrypoint rerender completely the output even if no changes) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - `Popup` fix recent items scroll not working anymore in v2 (contribution by [Nicolas Greard](https://github.com/ngreardSF))

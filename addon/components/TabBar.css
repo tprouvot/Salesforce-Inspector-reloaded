@@ -29,6 +29,7 @@
   position: relative;
   background-color: transparent;
   font-weight: 400;
+  flex-shrink: 0;
 }
 
 .sfir-tabbar__item:first-child {
@@ -121,7 +122,6 @@
   flex: 1;
   min-width: 0;
   position: relative;
-  text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.875rem;
   line-height: 1.5;
@@ -163,8 +163,8 @@
   font-size: 0.875rem;
   font-family: inherit;
   background: var(--slds-s-navigation-color-background-active, #fff);
-  min-width: 4rem;
-  max-width: 7.5rem;
+  width: 100%;
+  box-sizing: border-box;
   line-height: 1.5;
   color: var(--slds-g-color-on-surface-1, #181818);
   transition: border-color 0.1s linear, box-shadow 0.1s linear;
@@ -175,6 +175,23 @@
   border-color: var(--slds-g-color-palette-blue-50, #0176d3);
   box-shadow: 0 0 3px var(--slds-g-color-palette-blue-50, rgba(1, 118, 211, 0.5));
   background-color: var(--slds-s-navigation-color-background-active, #ffffff);
+}
+
+.sfir-tabbar__name-input_invalid {
+  border-color: var(--slds-g-color-border-error, #ea001e);
+}
+
+.sfir-tabbar__edit-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--slds-g-spacing-1, 0.25rem);
+  flex-shrink: 0;
+}
+
+.sfir-tabbar__name-error {
+  font-size: 0.75rem;
+  color: var(--slds-g-color-error, #ea001e);
+  line-height: 1.25;
 }
 
 .sfir-tabbar__close {

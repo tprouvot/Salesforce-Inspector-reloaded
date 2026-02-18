@@ -232,6 +232,30 @@ a.download-salesforce {
   list-style: none;
 }
 
+/* Menu items as buttons: match anchor styling for semantic correctness */
+.slds-dropdown__item > button {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.slds-dropdown__item > button:hover:not([aria-disabled="true"]),
+.slds-dropdown__item > button:focus {
+  background-color: var(--slds-g-color-palette-neutral-95, #f3f3f2);
+  outline: none;
+}
+
+.slds-dropdown__item > button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .slds-dropdown_center {
   left: 50%;
   transform: translateX(-50%);

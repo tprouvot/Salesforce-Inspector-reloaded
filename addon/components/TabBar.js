@@ -12,7 +12,7 @@ let h = React.createElement;
  * @param {string} [props.ariaLabel] - "Tabs" or similar
  *
  * Advanced mode props:
- * @param {Array} props.tabs - [{ name }] from model
+ * @param {Array} props.tabs - [{ id?, name }] from model; id is optional, used as stable React key for reorderable tabs
  * @param {number} props.activeIndex
  * @param {Function} props.onTabChange - (index) => void
  * @param {Function} props.onTabAdd - () => void
@@ -21,7 +21,9 @@ let h = React.createElement;
  * @param {string} props.editingTabName
  * @param {Function} props.onTabNameEdit - (e, index) => void
  * @param {Function} props.onTabNameSubmit - (e, index) => void
- * @param {Function} props.onEditingChange - ({ editingTabIndex, editingTabName }) => void
+ * @param {Function} props.onEditingChange - ({ editingTabIndex, editingTabName, editingTabError }) => void
+ * @param {string} [props.editingTabError] - Validation error message when tab name is invalid
+ * @param {number} [props.maxTabNameLength=50] - Max length for tab name input
  * @param {number} props.draggedTabIndex
  * @param {number} props.dropTargetIndex
  * @param {Function} props.onTabDragStart - (e, index) => void
@@ -34,9 +36,8 @@ let h = React.createElement;
  * @param {Function} props.onTabMouseUp - (e, index) => void
  * @param {Function} props.onTabClick - (e, index) => void
  */
-function sanitizeText(text) {
-  return String(text).replace(/[<>"'&]/g, c => ({"<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "&": "&amp;"}[c]));
-}
+let pendingCursorOffset = null;
+let pendingNameWidth = null;
 
 export function TabBar(props) {
   const { mode = "simple", tabs = [], ariaLabel = "Tabs" } = props;
@@ -75,6 +76,8 @@ export function TabBar(props) {
     onTabRemove,
     editingTabIndex,
     editingTabName,
+    editingTabError,
+    maxTabNameLength = 50,
     onTabNameEdit,
     onTabNameSubmit,
     onEditingChange,
@@ -104,15 +107,16 @@ export function TabBar(props) {
       h(
         "div",
         {
-          key: index,
+          key: tab.id || `tab-${tab.name}`,
           role: "tab",
           tabIndex: index === activeIndex ? 0 : -1,
           "aria-selected": index === activeIndex ? "true" : "false",
-          "aria-label": `${sanitizeText(tab.name)}, tab ${index + 1} of ${tabs.length}`,
+          "aria-label": `${tab.name}, tab ${index + 1} of ${tabs.length}`,
           "aria-controls": `tabpanel-${index}`,
           id: `tab-${index}`,
           title: tabs.length > 1 ? "Middle-click to close tab" : undefined,
-          className: `sfir-tabbar__item ${index === activeIndex ? "slds-is-active" : ""} ${draggedTabIndex === index ? "sfir-tabbar__item_dragging" : ""} ${dropTargetIndex === index ? "sfir-tabbar__item_drop-target" : ""}`,
+          className: ["sfir-tabbar__item", index === activeIndex && "slds-is-active", draggedTabIndex === index && "sfir-tabbar__item_dragging", dropTargetIndex === index && "sfir-tabbar__item_drop-target"].filter(Boolean).join(" "),
+          ref: editingTabIndex !== index ? (el) => { if (el) el.style.minWidth = ""; } : undefined,
           onClick: (e) => onTabClick(e, index),
           onKeyDown: (e) => onTabKeyDown(e, index),
           onMouseUp: (e) => onTabMouseUp(e, index),
@@ -125,31 +129,68 @@ export function TabBar(props) {
           onContextMenu: (e) => onTabContextMenu(e, index)
         },
         editingTabIndex === index
-          ? h("input", {
-              type: "text",
-              className: "sfir-tabbar__name-input",
-              value: editingTabName,
-              onChange: (e) => onEditingChange({ editingTabName: e.target.value }),
-              onBlur: (e) => onTabNameSubmit(e, index),
-              onKeyDown: (e) => {
-                if (e.key === "Enter") {
-                  onTabNameSubmit(e, index);
-                } else if (e.key === "Escape") {
-                  onEditingChange({ editingTabIndex: -1, editingTabName: "" });
+          ? h("span", {
+              className: "sfir-tabbar__edit-wrapper",
+              ref: (el) => {
+                if (el && pendingNameWidth !== null) {
+                  el.style.width = pendingNameWidth + "px";
+                  pendingNameWidth = null;
                 }
-                e.stopPropagation();
-              },
-              autoFocus: true,
-              onClick: (e) => e.stopPropagation(),
-              "aria-label": `Rename tab ${sanitizeText(tab.name)}`,
-              placeholder: "Tab name"
-            })
+              }
+            },
+              h("input", {
+                type: "text",
+                className: `sfir-tabbar__name-input ${editingTabError ? "sfir-tabbar__name-input_invalid" : ""}`,
+                value: editingTabName,
+                maxLength: maxTabNameLength,
+                onChange: (e) => onEditingChange({ editingTabName: e.target.value, editingTabError: "" }),
+                onBlur: (e) => onTabNameSubmit(e, index),
+                onKeyDown: (e) => {
+                  if (e.key === "Enter") {
+                    onTabNameSubmit(e, index);
+                  } else if (e.key === "Escape") {
+                    onEditingChange({ editingTabIndex: -1, editingTabName: "", editingTabError: "" });
+                  }
+                  e.stopPropagation();
+                },
+                autoFocus: true,
+                ref: (el) => {
+                  if (el && pendingCursorOffset !== null) {
+                    const pos = Math.min(pendingCursorOffset, el.value.length);
+                    pendingCursorOffset = null;
+                    setTimeout(() => el.setSelectionRange(pos, pos), 0);
+                  }
+                },
+                onClick: (e) => e.stopPropagation(),
+                "aria-label": `Rename tab ${tab.name}`,
+                "aria-invalid": editingTabError ? "true" : undefined,
+                "aria-describedby": editingTabError ? `sfir-tabbar__error-${index}` : undefined,
+                placeholder: "Tab name"
+              }),
+              editingTabError && h("span", {
+                id: `sfir-tabbar__error-${index}`,
+                className: "sfir-tabbar__name-error",
+                role: "alert"
+              }, editingTabError)
+            )
           : h("span", {
             className: "sfir-tabbar__name",
             onClick: (e) => {
-              if (index === activeIndex) onTabNameEdit(e, index);
+              if (index === activeIndex) {
+                const tabEl = e.currentTarget.closest(".sfir-tabbar__item");
+                if (tabEl) tabEl.style.minWidth = tabEl.offsetWidth + "px";
+                pendingNameWidth = e.currentTarget.offsetWidth;
+                if (document.caretPositionFromPoint) {
+                  const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+                  pendingCursorOffset = pos ? pos.offset : null;
+                } else if (document.caretRangeFromPoint) {
+                  const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+                  pendingCursorOffset = range ? range.startOffset : null;
+                }
+                onTabNameEdit(e, index);
+              }
             },
-            title: index === activeIndex ? "Click to rename tab" : sanitizeText(tab.name),
+            title: index === activeIndex ? "Click to rename tab" : tab.name,
             "aria-hidden": "true"
           }, tab.name),
         tabs.length > 1 ? h("button", {
@@ -170,8 +211,8 @@ export function TabBar(props) {
               e.stopPropagation();
             }
           },
-          title: `Close ${sanitizeText(tab.name)} (or middle-click on tab)`,
-          "aria-label": `Close ${sanitizeText(tab.name)} tab`,
+          title: `Close ${tab.name} (or middle-click on tab)`,
+          "aria-label": `Close ${tab.name} tab`,
           tabIndex: -1
         }, "×") : null
       )
@@ -181,8 +222,7 @@ export function TabBar(props) {
       className: "sfir-tabbar__add",
       onClick: onTabAdd,
       title: "Add new tab",
-      "aria-label": "Add new tab",
-      role: "button"
+      "aria-label": "Add new tab"
     }, "+")
   );
 }

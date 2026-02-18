@@ -1421,6 +1421,7 @@ class App extends React.Component {
       ...this.state,
       editingTabIndex: -1,
       editingTabName: "",
+      editingTabError: "",
       draggedTabIndex: -1,
       dropTargetIndex: -1,
       contextMenu: null
@@ -1674,7 +1675,8 @@ class App extends React.Component {
     let {model} = this.props;
     this.setState({
       editingTabIndex: index,
-      editingTabName: model.queryTabs[index].name
+      editingTabName: model.queryTabs[index].name,
+      editingTabError: ""
     });
   }
 
@@ -1682,13 +1684,12 @@ class App extends React.Component {
     e.preventDefault();
     e.stopPropagation();
     let {model} = this.props;
-    let name = this.state.editingTabName.trim();
-    if (name && name.length <= 50) {
-      model.updateTabName(index, name);
-    }
+    let name = this.state.editingTabName.trim() || model.queryTabs[index].name;
+    model.updateTabName(index, name);
     this.setState({
       editingTabIndex: -1,
-      editingTabName: ""
+      editingTabName: "",
+      editingTabError: ""
     });
   }
 
@@ -2014,6 +2015,7 @@ class App extends React.Component {
               onTabRemove: this.onRemoveTab,
               editingTabIndex: this.state.editingTabIndex,
               editingTabName: this.state.editingTabName,
+              editingTabError: this.state.editingTabError,
               onTabNameEdit: this.onTabNameEdit,
               onTabNameSubmit: this.onTabNameSubmit,
               onEditingChange: (updates) => this.setState(updates),
@@ -2031,6 +2033,11 @@ class App extends React.Component {
               ariaLabel: "Query tabs"
             })
             ),
+            h("div", {
+              role: "tabpanel",
+              id: "tabpanel-" + model.activeTabIndex,
+              "aria-labelledby": "tab-" + model.activeTabIndex
+            },
             h("textarea", {
               id: "query",
               ref: "query",
@@ -2074,6 +2081,7 @@ class App extends React.Component {
                     )
                   )))
               ),
+            )
             ),
             !model.showHelp ? null : h("div", {className: "slds-box slds-theme_info slds-m-top_medium"},
               h("h3", {className: "slds-text-heading_small slds-m-bottom_small"}, "Export Help"),

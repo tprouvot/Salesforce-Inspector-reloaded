@@ -152,7 +152,7 @@ export function TabBar(props) {
             title: index === activeIndex ? "Click to rename tab" : sanitizeText(tab.name),
             "aria-hidden": "true"
           }, tab.name),
-        h("button", {
+        tabs.length > 1 ? h("button", {
           type: "button",
           className: "sfir-tabbar__close",
           onClick: (e) => {
@@ -173,7 +173,7 @@ export function TabBar(props) {
           title: `Close ${sanitizeText(tab.name)} (or middle-click on tab)`,
           "aria-label": `Close ${sanitizeText(tab.name)} tab`,
           tabIndex: -1
-        }, "×")
+        }, "×") : null
       )
     ),
     h("button", {

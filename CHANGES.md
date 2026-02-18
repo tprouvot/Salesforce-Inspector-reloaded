@@ -21,6 +21,7 @@
 
 ## Version 2.0
 
+- `User Experience` Introduce shared TabBar and ButtonMenu components for consistent tab and menu UI across Popup, Options, Data Export, and Inspect pages (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - `Data Export` Fix unrecognized Salesforce Ids [issue #984](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/984)
 - `Data Import` Expose metadata updates through Tooling API (ie Bulk Deactivate Flows) [feature 1125](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1125)
 - Fix Lightning Navigation from Analytics / Tableau [issue #1121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1121)

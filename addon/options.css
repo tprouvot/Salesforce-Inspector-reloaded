@@ -14,6 +14,11 @@
   text-align: center;
 }
 
+.slds-tabs_default .slds-tabs_scoped__link {
+  overflow: hidden;
+  text-overflow: clip;
+}
+
 .slds-tabs_default .slds-tabs_scoped {
   position: sticky;
   top: 0;

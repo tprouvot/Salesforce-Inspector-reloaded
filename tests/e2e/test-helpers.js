@@ -3,16 +3,22 @@
  * Contains common mocks, helpers, and setup functions
  */
 
-// Common test constants
-export const TEST_CONSTANTS = {
-  mockHost: "mock-host.salesforce.com",
-  mockToken: "mock-access-token",
-  apiVersion: "65.0",
-  accountRecordId: "001000000000001AAA",
-  flowId: "301000000000000AAA",
-  flowDefId: "300000000000000AAA",
-  mockEnabled: false
-};
+// Test constants are loaded from test-constants.local.js (gitignored).
+// If the file does not exist, the template (mock mode) is copied automatically.
+// To configure for a real org, run: npm run set-test-constants
+// Or copy test-constants.template.js to test-constants.local.js and fill in real values.
+const _fs = require("fs");
+const _path = require("path");
+const _localPath = _path.join(__dirname, "test-constants.local.js");
+if (!_fs.existsSync(_localPath)) {
+
+  console.warn("test-constants.local.js not found, copying template (mock mode).");
+
+  console.warn("Run 'npm run set-test-constants' to configure for a real org.\n");
+  _fs.copyFileSync(_path.join(__dirname, "test-constants.template.js"), _localPath);
+}
+
+export {TEST_CONSTANTS} from "./test-constants.local.js";
 
 /**
  * Generates a unique GUID that can be reused across all tests
@@ -20,7 +26,7 @@ export const TEST_CONSTANTS = {
  * @returns {string} A unique GUID string
  */
 export function generateTestGuid() {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = Math.random() * 16 | 0;
     const v = c === "x" ? r : (r & 0x3 | 0x8);
     return v.toString(16);
@@ -70,7 +76,7 @@ export async function injectSessionData(context, {host, token, version, addition
     // In headless mode with persistent contexts, ensure context is ready before adding init script
     // Wait a bit for the context to be fully initialized
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     // Add init script for future pages
     await context.addInitScript(initScriptFunction, {host, token, version, additionalSetup});
   } catch (error) {
@@ -210,36 +216,36 @@ export async function pasteData(page, itemSelector, rawData) {
   // Focus the textarea first
   const item = page.locator(itemSelector);
   await item.focus();
-  
+
   // Trigger paste event with clipboardData to call onDataPaste handler
   await page.evaluate(({itemSelector, data}) => {
     const textarea = document.querySelector(itemSelector);
     if (!textarea) return;
-    
+
     // Create a paste event with mock clipboardData
-    const event = new Event("paste", { bubbles: true, cancelable: true });
-    
+    const event = new Event("paste", {bubbles: true, cancelable: true});
+
     // Create clipboardData object that matches the ClipboardEvent interface
     const clipboardDataObj = {
-      getData: function(type) {
+      getData(type) {
         return type === "text/plain" ? data : "";
       },
       items: [],
       types: ["text/plain"]
     };
-    
+
     // Attach clipboardData to the event
     Object.defineProperty(event, "clipboardData", {
       value: clipboardDataObj,
       enumerable: true
     });
-    
+
     // Also set target to textarea
     Object.defineProperty(event, "target", {
       value: textarea,
       enumerable: true
     });
-    
+
     // Dispatch the event
     textarea.dispatchEvent(event);
   }, {itemSelector, data: rawData});
@@ -264,26 +270,26 @@ function urlMatches(responseUrl, searchPart) {
     if (responseUrl.includes(searchPart)) {
       return true;
     }
-    
+
     // Try normalized comparison (decode both)
     const normalizedResponse = decodeURIComponent(responseUrl);
     const normalizedSearch = decodeURIComponent(searchPart);
     if (normalizedResponse.includes(normalizedSearch)) {
       return true;
     }
-    
+
     // Try matching just the path part (ignore protocol/host)
-    const responsePath = responseUrl.split('?')[0]; // Get path without query
-    const searchPath = searchPart.split('?')[0];
+    const responsePath = responseUrl.split("?")[0]; // Get path without query
+    const searchPath = searchPart.split("?")[0];
     if (responsePath.includes(searchPath) || searchPath.includes(responsePath)) {
       // If paths match, check if query params are similar
-      const responseQuery = responseUrl.includes('?') ? responseUrl.split('?')[1] : '';
-      const searchQuery = searchPart.includes('?') ? searchPart.split('?')[1] : '';
+      const responseQuery = responseUrl.includes("?") ? responseUrl.split("?")[1] : "";
+      const searchQuery = searchPart.includes("?") ? searchPart.split("?")[1] : "";
       if (!searchQuery || responseQuery.includes(searchQuery) || searchQuery.includes(responseQuery)) {
         return true;
       }
     }
-    
+
     return false;
   } catch (e) {
     // Fallback to simple includes
@@ -301,26 +307,26 @@ export function initializeResponseTracking(page) {
   if (responseTracker.has(page)) {
     return;
   }
-  
+
   const tracker = {
     responses: [],
     resolvers: new Map(), // Map of urlPart -> resolver functions
     unauthorizedResponses: [], // Track 401 responses
     handler: null
   };
-  
+
   // Set up a global response handler for this page
   tracker.handler = async (response) => {
     try {
       const url = response.url();
       const status = response.status();
-      
+
       // Check for 401 Unauthorized responses
       if (status === 401) {
         tracker.unauthorizedResponses.push(response);
-        
+
         // Try to get response body for detailed error info
-        let responseBody = '';
+        let responseBody = "";
         let errorDetails = {};
         try {
           responseBody = await response.text();
@@ -328,16 +334,16 @@ export function initializeResponseTracking(page) {
             errorDetails = JSON.parse(responseBody);
           } catch (e) {
             // Response body is not JSON, use as-is
-            errorDetails = { rawBody: responseBody };
+            errorDetails = {rawBody: responseBody};
           }
         } catch (e) {
           // Could not read response body
-          errorDetails = { error: 'Could not read response body' };
+          errorDetails = {error: "Could not read response body"};
         }
-        
+
         // Log detailed 401 information to console
-        console.error('❌ HTTP 401 Unauthorized detected!','URL:', url, 'Status:', status);
-        
+        console.error("❌ HTTP 401 Unauthorized detected!", "URL:", url, "Status:", status);
+
         // Store error details for test failure message
         response._unauthorizedDetails = {
           url,
@@ -347,11 +353,11 @@ export function initializeResponseTracking(page) {
           body: errorDetails
         };
       }
-      
+
       // Store all successful responses
       if (status >= 200 && status < 400) {
         tracker.responses.push(response);
-        
+
         // Check if any waiting resolvers match this response
         for (const [urlPart, resolver] of tracker.resolvers.entries()) {
           try {
@@ -373,15 +379,15 @@ export function initializeResponseTracking(page) {
       // Ignore errors (response might be disposed)
     }
   };
-  
+
   // Start tracking responses immediately
-  page.on('response', tracker.handler);
-  
+  page.on("response", tracker.handler);
+
   // Clean up when page closes
-  page.once('close', () => {
+  page.once("close", () => {
     responseTracker.delete(page);
   });
-  
+
   responseTracker.set(page, tracker);
 }
 
@@ -392,7 +398,7 @@ export function initializeResponseTracking(page) {
 export function cleanupResponseTracking(page) {
   const tracker = responseTracker.get(page);
   if (tracker && tracker.handler) {
-    page.off('response', tracker.handler);
+    page.off("response", tracker.handler);
     responseTracker.delete(page);
   }
 }
@@ -401,7 +407,7 @@ export function cleanupResponseTracking(page) {
  * @description Waits for a successful HTTP response from the given Salesforce host
  * This function handles both responses that have already completed and responses that are in-flight
  * by checking a global response tracker that starts tracking as soon as the page is available
- * @param {*} page - Playwright page object 
+ * @param {*} page - Playwright page object
  * @param {*} urlPart - Salesforce host or part of the url to wait for
  * @param {*} timeout - Optional timeout in milliseconds (default: 30000)
  * @returns {Promise<Response>} A promise that resolves to the response
@@ -412,9 +418,9 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
   if (!responseTracker.has(page)) {
     initializeResponseTracking(page);
   }
-  
+
   const tracker = responseTracker.get(page);
-  
+
   // Helper function to check for 401 responses matching the urlPart
   const checkForUnauthorized = () => {
     if (tracker.unauthorizedResponses.length > 0) {
@@ -430,7 +436,7 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
     }
     return null;
   };
-  
+
   const checkTracker = () => {
     if (tracker.responses.length > 0) {
       const matchingResponse = tracker.responses.find(r => {
@@ -446,7 +452,7 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
     }
     return null;
   };
-  
+
   // Check for existing 401 responses before waiting
   const existingUnauthorized = checkForUnauthorized();
   if (existingUnauthorized) {
@@ -457,22 +463,22 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
       headers: existingUnauthorized.headers(),
       body: {}
     };
-    
-    const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n` +
-      `URL: ${details.url}\n` +
-      `Status: ${details.status} ${details.statusText}\n` +
-      `Response Body: ${JSON.stringify(details.body, null, 2)}`;
-    
+
+    const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n`
+      + `URL: ${details.url}\n`
+      + `Status: ${details.status} ${details.statusText}\n`
+      + `Response Body: ${JSON.stringify(details.body, null, 2)}`;
+
     throw new Error(errorMessage);
   }
-  
+
   // Declare variables outside try block so they're accessible in catch
   let trackerResolver = null;
   let unauthorizedResolver = null;
   let timeoutId = null;
   let unauthorizedCheckInterval = null;
   let unauthorizedHandler = null;
-  
+
   try {
     // First, check if we already have a matching response in the tracker
     // This handles responses that completed before this function was called
@@ -480,10 +486,10 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
     if (existingResponse) {
       return existingResponse;
     }
-    
+
     // Create promise that resolves when tracker gets a matching response
     // Add timeout to prevent hanging indefinitely
-    
+
     const trackerPromise = new Promise((resolve, reject) => {
       // Check again in case response arrived between checkTracker and this promise
       const existing = checkTracker();
@@ -491,11 +497,11 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
         resolve(existing);
         return;
       }
-      
+
       // Store resolver so handler can resolve when matching response arrives
       trackerResolver = resolve;
       tracker.resolvers.set(urlPart, resolve);
-      
+
       // Set up periodic check for 401 responses
       unauthorizedResolver = reject;
       unauthorizedCheckInterval = setInterval(() => {
@@ -508,12 +514,12 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
             headers: unauthorized.headers(),
             body: {}
           };
-          
-          const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n` +
-            `URL: ${details.url}\n` +
-            `Status: ${details.status} ${details.statusText}\n` +
-            `Response Body: ${JSON.stringify(details.body, null, 2)}`;
-          
+
+          const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n`
+            + `URL: ${details.url}\n`
+            + `Status: ${details.status} ${details.statusText}\n`
+            + `Response Body: ${JSON.stringify(details.body, null, 2)}`;
+
           clearInterval(unauthorizedCheckInterval);
           if (tracker.resolvers.has(urlPart) && tracker.resolvers.get(urlPart) === resolve) {
             tracker.resolvers.delete(urlPart);
@@ -521,7 +527,7 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
           reject(new Error(errorMessage));
         }
       }, 100); // Check every 100ms for 401 responses
-      
+
       // Set timeout to prevent hanging - reject if no response comes
       // This ensures Promise.race doesn't hang if waitForResponse also fails
       timeoutId = setTimeout(() => {
@@ -535,7 +541,7 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
         }
       }, timeout + 100); // Slightly longer than waitForResponse timeout to let it handle timeout first
     });
-    
+
     // Create promise that rejects on 401 responses
     const unauthorizedPromise = new Promise((resolve, reject) => {
       // Set up a one-time response listener for 401s
@@ -544,36 +550,36 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
           const url = response.url();
           const status = response.status();
           if (status === 401 && urlMatches(url, urlPart)) {
-            let responseBody = '';
+            let responseBody = "";
             let errorDetails = {};
             try {
               responseBody = await response.text();
               try {
                 errorDetails = JSON.parse(responseBody);
               } catch (e) {
-                errorDetails = { rawBody: responseBody };
+                errorDetails = {rawBody: responseBody};
               }
             } catch (e) {
-              errorDetails = { error: 'Could not read response body' };
+              errorDetails = {error: "Could not read response body"};
             }
-            
-            const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n` +
-              `URL: ${url}\n` +
-              `Status: ${status} ${response.statusText()}\n` +
-              `Response Body: ${JSON.stringify(errorDetails, null, 2)}`;
-            
-            page.off('response', unauthorizedHandler);
+
+            const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n`
+              + `URL: ${url}\n`
+              + `Status: ${status} ${response.statusText()}\n`
+              + `Response Body: ${JSON.stringify(errorDetails, null, 2)}`;
+
+            page.off("response", unauthorizedHandler);
             reject(new Error(errorMessage));
           }
         } catch (e) {
           // Ignore errors
         }
       };
-      
-      page.on('response', unauthorizedHandler);
+
+      page.on("response", unauthorizedHandler);
       // Note: Handler cleanup is done in the main cleanup section
     });
-    
+
     // Race between tracker check, waitForResponse, and unauthorized detection
     // waitForResponse catches in-flight and future requests
     // trackerPromise catches responses that complete during setup or before this call
@@ -586,7 +592,7 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
           clearInterval(unauthorizedCheckInterval);
         }
         if (unauthorizedHandler) {
-          page.off('response', unauthorizedHandler);
+          page.off("response", unauthorizedHandler);
         }
         throw error;
       }),
@@ -595,49 +601,49 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
           try {
             const url = response.url();
             const status = response.status();
-            
+
             // Fail immediately if we see a 401 matching our urlPart
             if (status === 401 && urlMatches(url, urlPart)) {
-              let responseBody = '';
+              let responseBody = "";
               let errorDetails = {};
               try {
                 responseBody = await response.text();
                 try {
                   errorDetails = JSON.parse(responseBody);
                 } catch (e) {
-                  errorDetails = { rawBody: responseBody };
+                  errorDetails = {rawBody: responseBody};
                 }
               } catch (e) {
-                errorDetails = { error: 'Could not read response body' };
+                errorDetails = {error: "Could not read response body"};
               }
-              
-              const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n` +
-                `URL: ${url}\n` +
-                `Status: ${status} ${response.statusText()}\n` +
-                `Response Body: ${JSON.stringify(errorDetails, null, 2)}`;
-              
+
+              const errorMessage = `HTTP 401 Unauthorized detected for URL matching "${urlPart}"\n`
+                + `URL: ${url}\n`
+                + `Status: ${status} ${response.statusText()}\n`
+                + `Response Body: ${JSON.stringify(errorDetails, null, 2)}`;
+
               throw new Error(errorMessage);
             }
-            
+
             return urlMatches(url, urlPart) && status >= 200 && status < 400;
           } catch (e) {
             // If it's our 401 error, rethrow it
-            if (e.message && e.message.includes('401 Unauthorized')) {
+            if (e.message && e.message.includes("401 Unauthorized")) {
               throw e;
             }
             return false;
           }
         },
-        { timeout }
+        {timeout}
       )
     ]);
-    
+
     // Cleanup resolver, interval, timeout, and handler
     if (unauthorizedCheckInterval) {
       clearInterval(unauthorizedCheckInterval);
     }
     if (unauthorizedHandler) {
-      page.off('response', unauthorizedHandler);
+      page.off("response", unauthorizedHandler);
     }
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -652,7 +658,7 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
       clearInterval(unauthorizedCheckInterval);
     }
     if (unauthorizedHandler) {
-      page.off('response', unauthorizedHandler);
+      page.off("response", unauthorizedHandler);
     }
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -660,13 +666,13 @@ export async function waitSuccessfulHttpResponse(page, urlPart, timeout = 30000)
     if (tracker.resolvers.has(urlPart)) {
       tracker.resolvers.delete(urlPart);
     }
-    
+
     // Final check of tracker in case response arrived during error handling
     const matchingResponse = checkTracker();
     if (matchingResponse) {
       return matchingResponse;
     }
-    
+
     throw error;
   }
 }

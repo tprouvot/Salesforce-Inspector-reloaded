@@ -4,9 +4,13 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [ releaseCandidate, beta, main ]
+  push:
+    branches: [ releaseCandidate, beta, main ]
 
 jobs:
-  test:
+  # Fork PRs: run tests with mocks (no access to secrets)
+  test-mocked:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
@@ -18,12 +22,54 @@ jobs:
         node-version: '24'
         cache: 'npm'
 
-    # Cache node_modules to speed up the process
     - name: Restore node_modules cache
       id: cache-npm
       uses: actions/cache@v5
       with:
-        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Run Playwright tests (mocked)
+      run: npm run test:e2e:mock
+
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report-mocked
+        path: playwright-report/
+        retention-days: 30
+
+  # Repo PRs + manual dispatch + post-merge push: run tests against real org
+  test-real-org:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || github.event_name == 'push'
+      || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork != true)
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+        cache: 'npm'
+
+    - name: Restore node_modules cache
+      id: cache-npm
+      uses: actions/cache@v5
+      with:
         path: ~/.npm
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
@@ -63,8 +109,6 @@ jobs:
         
         if [ $SF_EXIT_CODE -ne 0 ]; then
           echo "Error: sf org display failed with exit code $SF_EXIT_CODE"
-          # Try again without suppressing stderr to see the error
-          sf org display --json -o cicdorg
           exit 1
         fi
         
@@ -79,12 +123,11 @@ jobs:
         
         if [ -z "$ACCESS_TOKEN" ]; then
           echo "Error: Could not extract access_token from auth response"
-          echo "Available JSON keys:"
-          echo "$ORG_INFO" | jq 'keys' 2>/dev/null || echo "Could not parse JSON"
-          echo "Result keys (if exists):"
-          echo "$ORG_INFO" | jq '.result | keys' 2>/dev/null || echo "No result object"
           exit 1
         fi
+        
+        # Mask the token so it never appears in logs
+        echo "::add-mask::$ACCESS_TOKEN"
         
         # Extract hostname from instance URL
         if [ -n "$INSTANCE_URL" ]; then
@@ -99,17 +142,21 @@ jobs:
           exit 1
         fi
         
-        # Update test-helpers.js with real credentials
-        echo "Updating test-helpers.js with real credentials..."
-        # Use perl for more robust string replacement (perl handles special chars better than sed)
-        # Escape special regex characters in replacement values using quotemeta
-        perl -i -pe "s/mockHost: \".*\"/mockHost: \"\Q$SF_HOST\E\"/" tests/e2e/test-helpers.js
-        perl -i -pe "s/mockToken: \".*\"/mockToken: \"\Q$ACCESS_TOKEN\E\"/" tests/e2e/test-helpers.js
-        perl -i -pe "s/accountRecordId: \".*\"/accountRecordId: \"\Q$SF_TEST_ACCOUNTID\E\"/" tests/e2e/test-helpers.js
-        perl -i -pe "s/flowId: \".*\"/flowId: \"\Q$SF_TEST_FLOWID\E\"/" tests/e2e/test-helpers.js
-        perl -i -pe "s/flowDefId: \".*\"/flowDefId: \"\Q$SF_TEST_FLOWDEFID\E\"/" tests/e2e/test-helpers.js
-        perl -i -pe "s/apiVersion: \".*\"/apiVersion: \"\Q$SF_TEST_APIVERSION\E\"/" tests/e2e/test-helpers.js
-        perl -i -pe "s/mockEnabled: .*/mockEnabled: $SF_TEST_MOCKENABLED/" tests/e2e/test-helpers.js
+        # Generate test-constants.local.js with real credentials
+        echo "Generating tests/e2e/test-constants.local.js..."
+        cat > tests/e2e/test-constants.local.js <<JSEOF
+export const TEST_CONSTANTS = {
+  mockHost: "$SF_HOST",
+  mockToken: "$ACCESS_TOKEN",
+  apiVersion: "$SF_TEST_APIVERSION",
+  accountRecordId: "$SF_TEST_ACCOUNTID",
+  accountRecordName: "Test Account 1",
+  testUserSearchTerm: "Integration User",
+  flowId: "$SF_TEST_FLOWID",
+  flowDefId: "$SF_TEST_FLOWDEFID",
+  mockEnabled: $SF_TEST_MOCKENABLED
+};
+JSEOF
 
     - name: Install dependencies
       run: npm ci
@@ -126,4 +173,3 @@ jobs:
         name: playwright-report
         path: playwright-report/
         retention-days: 30
-

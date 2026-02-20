@@ -380,10 +380,10 @@ export async function routeMock(route, host) {
                     records: [
                         {
                         Id: "005000000000001AAA",
-                        Name: "Test User",
-                        Email: "test@example.com",
-                        Username: "test+username@example.com",
-                        Alias: "tuser",
+                        Name: TEST_CONSTANTS.testUserSearchTerm,
+                        Email: "integration@example.com",
+                        Username: "integration@example.com",
+                        Alias: "intuser",
                         IsActive: true,
                         Profile: {Name: "System Administrator"},
                         UserRole: {Name: "CEO"}
@@ -452,7 +452,7 @@ export async function routeMock(route, host) {
         if (method === "GET" && path.includes("/sobjects/Account/" + TEST_CONSTANTS.accountRecordId)) {
             await fulfillSuccess(route, {
               Id: TEST_CONSTANTS.accountRecordId,
-              Name: "Test Account",
+              Name: TEST_CONSTANTS.accountRecordName,
               Description: "Test Description",
               Type: "Customer",
               attributes: {

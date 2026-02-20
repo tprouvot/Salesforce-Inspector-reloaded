@@ -50,25 +50,59 @@ By default, tests run with mocks enabled, which means they don't require a real 
 
 To run tests against a real Salesforce org (without mocks), you need to:
 
-1. **Configure test constants** in `tests/e2e/test-helpers.js`
+1. **Configure test constants** (generates a gitignored local file)
 2. **Deploy required metadata** to your Salesforce org
 3. **Set up authentication**
 
 
 ### Step 1: Update Test Configuration
 
-Edit `tests/e2e/test-helpers.js` and update the `TEST_CONSTANTS` object:
+Test constants are stored in `tests/e2e/test-constants.local.js`, which is **gitignored** to prevent accidentally committing org credentials. A template file `tests/e2e/test-constants.template.js` is committed for reference.
+
+**Option A: Use the automated script (recommended)**
+
+Run the script to fetch your default org info and generate `test-constants.local.js`:
+
 ```bash
+npm run set-test-constants
+```
+
+Or with options:
+```bash
+# Preview without writing the file
+npm run set-test-constants -- --dry-run
+
+# Use a specific org instead of default
+npm run set-test-constants -- --target-org my-org-alias
+```
+
+Prerequisites: Salesforce CLI (`sf`) installed, authenticated to an org, Flow `RecordTrigger_InspectorTest` deployed, and at least one Account record.
+
+**Important:** Import `tests/account_test_data.csv` before running the script so Account names (e.g. "Test Account 1", "Test Account 2") match test expectations. The script sets both `accountRecordId` and `accountRecordName` from your org.
+
+**Option B: Manual configuration**
+
+Copy the template and fill in real values:
+```bash
+cp tests/e2e/test-constants.template.js tests/e2e/test-constants.local.js
+```
+
+Then edit `tests/e2e/test-constants.local.js`:
+```javascript
 export const TEST_CONSTANTS = {
   mockHost: "your-org-instance.sandbox.my.salesforce.com",  // Your Salesforce instance URL
   mockToken: "YOUR_ACCESS_TOKEN_HERE",                      // Valid Salesforce access token
   apiVersion: "65.0",                                       // API version (must match your org)
   accountRecordId: "001000000000001AAA",                    // Valid Account record ID
+  accountRecordName: "Test Account 1",                      // Account Name (must match record)
+  testUserSearchTerm: "Integration User",                   // User search term (exists in all orgs)
   flowId: "301000000000000AAA",                            // Valid Flow version ID
   flowDefId: "300000000000000AAA",                         // Valid Flow Definition ID
   mockEnabled: false                                        // Set to false to disable mocks
 };
 ```
+
+**Note:** If `test-constants.local.js` does not exist, tests automatically fall back to the template file which runs in mock mode.
 
 ### Step 2: Deploy Required Metadata
 
@@ -104,28 +138,24 @@ When running tests without mocks, your Salesforce org must have the following da
 ### 1. Account Records
 
 **Required:**
-- At least 2 Accounts records with a valid ID
+- At least 2 Accounts with `Name` like "Test Account%" (e.g. "Test Account 1", "Test Account 2")
 - The Account should have:
   - `Name` field populated
   - `Type` field (optional, but some tests check for it)
 
-**To get/create an Account ID:**
-```bash
-# Query for an existing Account
-sf data query --query "SELECT Id, Name FROM Account LIMIT 1" --target-org your-org
+**Import test data (recommended):** Use `tests/account_test_data.csv` with Data Loader, VS Code Salesforce extension, or similar tool to create Account records with names "Test Account 1" and "Test Account 2".
 
-# Or create a test Account
-sf data create record --sobject Account --values "Name='Test Account'" --target-org your-org
+Or create manually:
+```bash
+sf data create record --sobject Account --values "Name='Test Account 1' Type='Customer'" --target-org your-org
+sf data create record --sobject Account --values "Name='Test Account 2' Type='Customer'" --target-org your-org
 ```
 
-Update `accountRecordId` in `test-helpers.js` with the Account ID.
+**Important:** `account_test_data.csv` must be imported so Account names match test expectations. Run `npm run set-test-constants` after importing to populate both `accountRecordId` and `accountRecordName`.
 
-You can leverage the "account_test_data.csv" file to import the required account data.
+### 2. Test User (for Users Tab tests)
 
-### 2. Test User
-
-You need to have a user where the firstname, lastname starts with "Test" to perform user search.
-You can use the SOQL "SELECT Id,Name FROM User where FirstName like 'Test%' or LastName like 'Test%'" to check if a user exists or not.
+**Required for Users Tab tests:** The default test user search term is "Integration User" (exists in all orgs). Update `testUserSearchTerm` in `test-constants.local.js` if your org uses a different user name for these tests.
 
 
 ### 3. Flow (for Flow Scanner Tests)
@@ -144,33 +174,36 @@ sf data query --query "SELECT DurableId, ApiName FROM FlowDefinitionView WHERE A
 sf data query --query "SELECT Id, VersionNumber, Status FROM Flow WHERE Definition.DeveloperName='RecordTrigger_InspectorTest'" --target-org your-org
 ```
 
-Update `flowDefId` and `flowId` in `test-helpers.js` with the IDs.
+Update `flowDefId` and `flowId` in `test-constants.local.js` with the IDs.
 
 
 ## CI/CD Integration
 
-The GitHub Actions workflow (`.github/workflows/e2e.yml`) demonstrates how to run tests in CI/CD:
+The GitHub Actions workflow (`.github/workflows/e2e.yml`) runs tests automatically with different strategies depending on the context:
 
-1. **With Mocks (Default):**
-   - Set `SF_TEST_MOCKENABLED` to `"true"` or omit it
-   - No Salesforce authentication required
+### Fork PRs (mocked)
 
-2. **Without Mocks:**
-   - Set `SF_TEST_MOCKENABLED` to `"false"` in GitHub repository variables
-   - Configure additional variables:
-     - `SF_CLI_URL` - Salesforce CLI download URL (https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz)
-     - `SF_TEST_APIVERSION` - API version
-     - `SF_TEST_ACCOUNTID` - Account record ID
-     - `SF_TEST_FLOWID` - Flow version ID
-     - `SF_TEST_FLOWDEFID` - Flow definition ID
-   - Configure secrets:
-     - `SF_AUTH_URL` - Salesforce authentication URL (sfdx-url format)
+Pull requests from forks **cannot access repository secrets**, so they run tests with mocks using `npm run test:e2e:mock`. This copies the template as `test-constants.local.js` and runs all tests in mock mode.
 
-The workflow will:
+### Repo PRs and post-merge pushes (real org)
+
+Pull requests from the same repository, manual dispatches, and pushes to target branches (post-merge) run tests against a real Salesforce org. This ensures that after a fork PR is merged, the code is validated against the real org on the target branch.
+
+**Required repository variables** (set `SF_TEST_MOCKENABLED` to `"false"`):
+- `SF_CLI_URL` - Salesforce CLI download URL (https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz)
+- `SF_TEST_APIVERSION` - API version
+- `SF_TEST_ACCOUNTID` - Account record ID
+- `SF_TEST_FLOWID` - Flow version ID
+- `SF_TEST_FLOWDEFID` - Flow definition ID
+
+**Required repository secrets:**
+- `SF_AUTH_URL` - Salesforce authentication URL (sfdx-url format)
+
+The real-org workflow will:
 1. Install Salesforce CLI
 2. Authenticate using the auth URL
 3. Extract access token and instance URL
-4. Update `test-helpers.js` with real credentials
+4. Generate `tests/e2e/test-constants.local.js` with real credentials
 5. Run tests against the real org
 
 
@@ -182,7 +215,7 @@ The workflow will:
 
 **Solution:**
 1. Regenerate your access token
-2. Update `mockToken` in `test-helpers.js`
+2. Run `npm run set-test-constants` or update `mockToken` in `test-constants.local.js`
 3. Ensure your user has API access enabled
 
 ### Tests Fail with "Record Not Found"

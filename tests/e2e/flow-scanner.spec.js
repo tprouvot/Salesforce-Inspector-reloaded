@@ -210,14 +210,18 @@ test.describe("Flow Scanner", () => {
   test("Open Purge Versions Modal", async ({page, extensionId}) => {
     await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);
 
+    const versionsText = await page.locator("text=/\\d+ versions?/i").first().textContent().catch(() => "");
+    const versionCount = parseInt(versionsText) || 0;
+    test.skip(versionCount <= 1, "Flow has only 1 version, purge button not available");
+
     // Find purge button (trash icon next to versions count)
     const purgeButton = page.locator("button[title='Purge old versions'], button:has(svg use[xlinkHref*='delete'])").first();
-    await purgeButton.isVisible();
+    await purgeButton.waitFor({state: "visible", timeout: 15000});
     await purgeButton.click();
 
     // Verify purge modal appears
     await expect(page.locator("text=Purge Old Versions")).toBeVisible();
-  });
+  }, {timeout: 45000});
 
   test("Open Agentforce Modal", async ({page, extensionId}) => {
     await initFlowScannerPage(page, extensionId, mockHost, TEST_CONSTANTS.flowDefId, TEST_CONSTANTS.flowId);

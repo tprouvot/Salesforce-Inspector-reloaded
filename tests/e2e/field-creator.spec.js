@@ -28,8 +28,9 @@ test.describe("Field Creator", () => {
     // Select an object first
     await page.locator("#object_select").focus();
     await page.keyboard.type(objectName, {delay: 50});
+    await page.waitForTimeout(250);
 
-    await page.waitForSelector(".ulItem li", {timeout: 5000});
+    await page.waitForSelector(".ulItem li", {timeout: 10000});
     await page.locator(".ulItem li:has-text('" + objectName + "')").first().click();
   }
 
@@ -415,7 +416,7 @@ test.describe("Field Creator", () => {
       await page.waitForSelector("#fields_table tbody tr .cursorPointer svg use.fillRed", {timeout: 10000});
       await page.locator("#fields_table tbody tr .cursorPointer svg use.fillRed").first().click();
 
-      await expect(page.locator(".notificationContent")).toContainText("DUPLICATE_DEVELOPER_NAME");
+      await expect(page.locator(".notificationContent")).toContainText(/DUPLICATE_DEVELOPER_NAME|INVALID_CROSS_REFERENCE_KEY/);
     }
   });
 

@@ -4,7 +4,7 @@ import {
   injectSessionData,
   waitSuccessfulHttpResponse,
 } from "./test-helpers";
-import { routeMock } from "./test-mock";  
+import {routeMock} from "./test-mock";
 
 test.describe("Popup", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -93,7 +93,7 @@ test.describe("Popup", () => {
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
       //if mock is disabled, continue with the request
-      if(!TEST_CONSTANTS.mockEnabled) {
+      if (!TEST_CONSTANTS.mockEnabled) {
         await route.continue();
         return;
       }
@@ -302,17 +302,17 @@ test.describe("Popup", () => {
     await page.goto(`chrome-extension://${extensionId}/test-popup.html?host=${mockHost}`);
 
     //click on the button to open the popup
-    await page.locator('.insext-btn').click();
+    await page.locator(".insext-btn").click();
 
     // Locate the iframe by its name, id, or index
     //const frame = await page.frame({ name: 'popup' });
 
-    const frame = await page.frameLocator('.insext-popup');
+    const frame = await page.frameLocator(".insext-popup");
 
     if (frame) {
       await expect(frame.locator("#root")).toBeVisible();
     } else {
-      throw new Error('Frame not found');
+      throw new Error("Frame not found");
     }
   }
 
@@ -327,13 +327,13 @@ test.describe("Popup", () => {
     //Wait some time to ensure that the responses are processed
     await page.waitForTimeout(500);
 
-    await page.frameLocator('.insext-popup').locator("input[placeholder*='Record id']").waitFor({timeout: 5000});
+    await page.frameLocator(".insext-popup").locator("input[placeholder*='Record id']").waitFor({timeout: 5000});
   }
 
   test("Load Popup Page", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
     // Verify basic page structure (may not have React content if init didn't work)
-    const rootContent = await page.frameLocator('.insext-popup').locator("#root").textContent();
+    const rootContent = await page.frameLocator(".insext-popup").locator("#root").textContent();
 
     // Root should exist even if React hasn't rendered yet
     await expect(rootContent !== null).toBeTruthy();
@@ -343,36 +343,35 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Verify Data & Metadata section
-    await expect(page.frameLocator('.insext-popup').locator("text=Data & Metadata")).toBeVisible();
-    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Data Export')")).toBeVisible();
-    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Data Import')")).toBeVisible();
-    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Field Creator')")).toBeVisible();
-    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Download Metadata')")).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator("text=Data & Metadata")).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator("a:has-text('Data Export')")).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator("a:has-text('Data Import')")).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator("a:has-text('Field Creator')")).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator("a:has-text('Download Metadata')")).toBeVisible();
 
     // Verify Platform Tools section
-    await expect(page.frameLocator('.insext-popup').locator("text=Platform Tools")).toBeVisible();
-    await expect(page.frameLocator('.insext-popup').locator("a:has-text('REST Explorer')")).toBeVisible();
-    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Event Monitor')")).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator("text=Platform Tools")).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator("a:has-text('REST Explorer')")).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator("a:has-text('Event Monitor')")).toBeVisible();
   });
 
   test("Objects Tab - Search and Select Object", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
-    await waitForObjectsTabToLoad(page);  
+    await waitForObjectsTabToLoad(page);
     // Type in search input
-    await page.frameLocator('.insext-popup').locator("input[placeholder*='Record id']").fill("Account");
-
-    // Wait for autocomplete results
+    await page.frameLocator(".insext-popup").locator("input[placeholder*='Record id']").pressSequentially("Account", {delay: 50});
     await page.waitForTimeout(500);
 
     // Verify Account appears in results
-    await expect(await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Account')").count()).toBeGreaterThan(0);
+    await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('Account')").first().waitFor({state: "visible", timeout: 15000});
+    await expect(await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('Account')").count()).toBeGreaterThan(0);
 
     // Click on Account
-    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Account')").first().click();
+    await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('Account')").first().click();
 
     // Verify object details appear
-    await expect(page.frameLocator('.insext-popup').locator(".tab-container .slds-card__body .slds-text-body_small").locator("text=Account")).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator(".tab-container .slds-card__body .slds-text-body_small").locator("text=Account")).toBeVisible();
   });
 
   test("Objects Tab - Select Record ID", async ({page, extensionId}) => {
@@ -380,111 +379,107 @@ test.describe("Popup", () => {
     await waitForObjectsTabToLoad(page);
 
     // Type a record ID
-    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Record id']");
+    const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Record id']");
     await searchInput.fill(TEST_CONSTANTS.accountRecordId);
 
     // Wait for autocomplete
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
 
     // Click on the record result
-    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item").first().click();
+    await page.frameLocator(".insext-popup").locator(".slds-dropdown__item").first().click();
 
-    // Wait for autocomplete
-    await page.waitForTimeout(500);
-
-    // Verify record details appear
-    await expect(page.frameLocator('.insext-popup').locator("text=" + TEST_CONSTANTS.accountRecordId)).toBeVisible();
+    // Verify record details appear (the detail view shows the record ID with key prefix)
+    await expect(page.frameLocator(".insext-popup").locator("text=" + TEST_CONSTANTS.accountRecordId)).toBeVisible({timeout: 10000});
   });
 
   test("Switch to Users Tab", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Users tab
-    const usersTab = page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Users')");
+    const usersTab = page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')");
     await usersTab.click();
 
     // Verify Users tab is active
     await expect(usersTab).toHaveClass(/slds-is-active/);
 
     // Verify user search input appears
-    await expect(page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']")).toBeVisible({timeout: 5000});
   });
 
   test("Users Tab - Search User", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Users tab
-    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Users')").click();
+    await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')").click();
 
     // Wait for user search input
-    await page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
+    await page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
 
-    // Type in search
-    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']");
-    await searchInput.fill("Test");
+    // Type in search (Integration User exists in all orgs)
+    const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']");
+    await searchInput.fill(TEST_CONSTANTS.testUserSearchTerm);
 
     // Wait for autocomplete results
     await page.waitForTimeout(1000);
 
     // Verify user appears in results
-    await expect(page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Test')")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('" + TEST_CONSTANTS.testUserSearchTerm + "')").first()).toBeVisible({timeout: 5000});
   });
 
   test("Users Tab - Select User and View Details", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Users tab
-    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Users')").click();
+    await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')").click();
 
     // Wait for user search input
-    await page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
+    await page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
 
     // Type in search
-    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']");
-    await searchInput.fill("Test");
+    const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']");
+    await searchInput.fill(TEST_CONSTANTS.testUserSearchTerm);
 
     // Wait for autocomplete
     await page.waitForTimeout(1000);
 
     // Click on user result
-    //we use the popin result to get the username
-    const username = await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Test') .dropdown-item.slds-wrap.small span").textContent();
-    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Test')").first().textContent();
-
+    const searchTerm = TEST_CONSTANTS.testUserSearchTerm;
+    const username = await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('" + searchTerm + "')").first().locator(".dropdown-item.slds-wrap.small span").first().textContent();
+    await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('" + searchTerm + "')").first().click();
 
     // Wait for user details to load
     await page.waitForTimeout(2000);
 
     // Verify user details appear
-    await expect(page.frameLocator('.insext-popup').locator("text=Test")).toBeVisible();
-    await expect(page.frameLocator('.insext-popup').locator("text=" + username)).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").getByText(searchTerm, {exact: true}).first()).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator("text=" + username).first()).toBeVisible();
   });
 
   test("Switch to Shortcuts Tab", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Shortcuts tab
-    const shortcutsTab = page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Shortcuts')");
+    const shortcutsTab = page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Shortcuts')");
     await shortcutsTab.click();
 
     // Verify Shortcuts tab is active
     await expect(shortcutsTab).toHaveClass(/slds-is-active/);
 
     // Verify shortcut search input appears
-    await expect(page.frameLocator('.insext-popup').locator("input[placeholder*='Quick find']")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator(".insext-popup").locator("input[placeholder*='Quick find']")).toBeVisible({timeout: 5000});
   });
 
   test("Shortcuts Tab - Search Shortcut", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Shortcuts tab
-    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Shortcuts')").click();
+    await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Shortcuts')").click();
 
     // Wait for shortcut search input
-    await page.frameLocator('.insext-popup').locator("input[placeholder*='Quick find']").waitFor({timeout: 5000});
+    await page.frameLocator(".insext-popup").locator("input[placeholder*='Quick find']").waitFor({timeout: 5000});
 
     // Type in search
-    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Quick find']");
+    const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Quick find']");
     await searchInput.fill("Flow");
 
     // Wait for autocomplete results
@@ -499,21 +494,21 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Click Org tab
-    const orgTab = page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Org')");
+    const orgTab = page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Org')");
     await orgTab.click();
 
     // Verify Org tab is active
     await expect(orgTab).toHaveClass(/slds-is-active/);
 
     // Verify org info table appears
-    await expect(page.frameLocator('.insext-popup').locator("text=Org Id")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator(".insext-popup").locator("text=Org Id")).toBeVisible({timeout: 5000});
   });
 
   test("Change API Version", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Find API version input
-    const apiInput = page.frameLocator('.insext-popup').locator("input#idApiInput");
+    const apiInput = page.frameLocator(".insext-popup").locator("input#idApiInput");
     await expect(apiInput).toBeVisible();
 
     // Change API version
@@ -528,7 +523,7 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Find Data Export link
-    const exportLink = page.frameLocator('.insext-popup').locator("a:has-text('Data Export')");
+    const exportLink = page.frameLocator(".insext-popup").locator("a:has-text('Data Export')");
     await expect(exportLink).toBeVisible();
 
     // Verify href contains data-export.html
@@ -540,7 +535,7 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Find Data Import link
-    const importLink = page.frameLocator('.insext-popup').locator("a:has-text('Data Import')");
+    const importLink = page.frameLocator(".insext-popup").locator("a:has-text('Data Import')");
     await expect(importLink).toBeVisible();
 
     // Verify href contains data-import.html
@@ -552,7 +547,7 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Find REST Explorer link
-    const restLink = page.frameLocator('.insext-popup').locator("a:has-text('REST Explorer')");
+    const restLink = page.frameLocator(".insext-popup").locator("a:has-text('REST Explorer')");
     await expect(restLink).toBeVisible();
 
     // Verify href contains rest-explore.html
@@ -564,7 +559,7 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Find Event Monitor link
-    const eventLink = page.frameLocator('.insext-popup').locator("a:has-text('Event Monitor')");
+    const eventLink = page.frameLocator(".insext-popup").locator("a:has-text('Event Monitor')");
     await expect(eventLink).toBeVisible();
 
     // Verify href contains event-monitor.html
@@ -577,15 +572,17 @@ test.describe("Popup", () => {
     await waitForObjectsTabToLoad(page);
 
     // Type and select an object
-    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Record id']");
-    await searchInput.fill("Account");
-    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Account')").first().click();
+    const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Record id']");
+    await searchInput.pressSequentially("Account", {delay: 50});
+    await page.waitForTimeout(500);
+    await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('Account')").first().waitFor({state: "visible", timeout: 15000});
+    await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('Account')").first().click();
 
     // Wait for object details to appear
     await page.waitForTimeout(5000);
 
     // Verify "Show all data" button appears
-    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Show all data')")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator(".insext-popup").locator("a:has-text('Show all data')")).toBeVisible({timeout: 5000});
   });
 
   test("Objects Tab - Object Links (Fields, List, etc.)", async ({page, extensionId}) => {
@@ -593,63 +590,64 @@ test.describe("Popup", () => {
     await waitForObjectsTabToLoad(page);
 
     // Type and select an object
-    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Record id']");
-    await searchInput.fill("Account");
+    const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Record id']");
+    await searchInput.pressSequentially("Account", {delay: 50});
     await page.waitForTimeout(500);
-    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Account')").first().click();
+    await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('Account')").first().waitFor({state: "visible", timeout: 15000});
+    await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('Account')").first().click();
 
     // Wait for object details to appear
     await page.waitForTimeout(1000);
 
     // Verify links appear
-    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Fields')")).toBeVisible({timeout: 5000});
-    await expect(page.frameLocator('.insext-popup').locator("a:has-text('List')")).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator("a:has-text('Fields')")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator(".insext-popup").locator("a:has-text('List')")).toBeVisible();
   });
 
   test("Users Tab - User Action Buttons", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Users tab
-    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Users')").click();
+    await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')").click();
 
     // Wait for user search input
-    await page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
+    await page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
 
     // Type and select a user
-    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']");
-    await searchInput.fill("Test");
+    const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']");
+    await searchInput.fill(TEST_CONSTANTS.testUserSearchTerm);
     await page.waitForTimeout(1000);
-    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Test')").first().click();
+    await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('" + TEST_CONSTANTS.testUserSearchTerm + "')").first().click();
 
     // Wait for user details to load
     await page.waitForTimeout(2000);
 
     // Verify user action buttons appear
-    await expect(page.frameLocator('.insext-popup').locator("a:has-text('Details')")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator(".insext-popup").locator("a:has-text('Details')")).toBeVisible({timeout: 5000});
     //Pset and PsetG buttons should be visible
-    await expect(await page.frameLocator('.insext-popup').locator("a:has-text('PSet')").count()).toBe(2); 
+    await expect(await page.frameLocator(".insext-popup").locator("a:has-text('PSet')").count()).toBe(2);
   });
 
   test("Users Tab - Enable Debug Logs", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Click Users tab
-    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Users')").click();
+    await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Users')").click();
 
     // Wait for user search input
-    await page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
+    await page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']").waitFor({timeout: 5000});
 
     // Type and select a user
-    const searchInput = page.frameLocator('.insext-popup').locator("input[placeholder*='Name, username']");
-    await searchInput.fill("Test");
+    const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']");
+    await searchInput.fill(TEST_CONSTANTS.testUserSearchTerm);
     await page.waitForTimeout(1000);
-    await page.frameLocator('.insext-popup').locator(".slds-dropdown__item:has-text('Test')").first().click();
+    await page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('" + TEST_CONSTANTS.testUserSearchTerm + "')").first().click();
 
     // Wait for user details to load
     await page.waitForTimeout(2000);
 
     // Click Enable Logs button
-    const enableLogsButton = page.frameLocator('.insext-popup').locator("a#enableDebugLog");
+    const enableLogsButton = page.frameLocator(".insext-popup").locator("a#enableDebugLog");
     await expect(enableLogsButton).toBeVisible({timeout: 5000});
 
     // Note: Clicking this will trigger API calls, but we'll just verify the button exists
@@ -660,31 +658,31 @@ test.describe("Popup", () => {
     await initPopupPage(page, extensionId);
 
     // Click Org tab
-    await page.frameLocator('.insext-popup').locator(".slds-tabs_scoped__item:has-text('Org')").click();
+    await page.frameLocator(".insext-popup").locator(".slds-tabs_scoped__item:has-text('Org')").click();
 
     // Wait for org info to load
     await page.waitForTimeout(2000);
 
     // Verify Delete All ApexLogs button exists
-    await expect(page.frameLocator('.insext-popup').locator("a#deleteLogs:has-text('Delete All ApexLogs')")).toBeVisible({timeout: 5000});
+    await expect(page.frameLocator(".insext-popup").locator("a#deleteLogs:has-text('Delete All ApexLogs')")).toBeVisible({timeout: 5000});
   });
 
   test("Footer Links Exist", async ({page, extensionId}) => {
     await initPopupPage(page, extensionId);
 
     // Wait for footer to load
-    await page.frameLocator('.insext-popup').locator("#footer").waitFor({timeout: 5000});
+    await page.frameLocator(".insext-popup").locator("#footer").waitFor({timeout: 5000});
 
     // Verify footer link exists (release-note is in footer)
-    await expect(page.frameLocator('.insext-popup').locator("#footer a[href*='release-note']")).toBeVisible();
+    await expect(page.frameLocator(".insext-popup").locator("#footer a[href*='release-note']")).toBeVisible();
 
-    const donateContainer = page.frameLocator('.insext-popup').locator("div[title='Donate']");
+    const donateContainer = page.frameLocator(".insext-popup").locator("div[title='Donate']");
     await expect(donateContainer).toBeVisible({timeout: 10000});
     const donateLink = donateContainer.locator("a[href*='donate']");
     await expect(donateLink).toBeAttached({timeout: 10000});
 
     // Documentation locate by parent div title attribute
-    const docContainer = page.frameLocator('.insext-popup').locator("div[title='Documentation']");
+    const docContainer = page.frameLocator(".insext-popup").locator("div[title='Documentation']");
     await expect(docContainer).toBeVisible({timeout: 10000});
     const docLink = docContainer.locator("a[href*='Salesforce-Inspector-reloaded']");
     await expect(docLink).toBeAttached({timeout: 10000});

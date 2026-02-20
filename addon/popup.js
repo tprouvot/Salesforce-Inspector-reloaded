@@ -3822,8 +3822,16 @@ class AllDataSelection extends React.PureComponent {
     );
   }
   getFlowScannerUrl() {
-    return `flow-scanner.html?host=${this.props.sfHost}&flowDefId=${this.state.flowDefinitionId}&flowId=${this.props.selectedValue.recordId}`;
+    const {sfHost, selectedValue} = this.props;
+    const recordId = selectedValue.recordId;
 
+    // FlowDefinition ID (300xxx) - let flow-scanner resolve the version
+    if (recordId?.startsWith("300")) {
+      return `flow-scanner.html?host=${sfHost}&flowDefId=${recordId}`;
+    }
+
+    // Flow version ID - include both definition and version IDs
+    return `flow-scanner.html?host=${sfHost}&flowDefId=${this.state.flowDefinitionId}&flowId=${recordId}`;
   }
   getFlowCompareUrl() {
     return getFlowCompareUrl(this.props.sfHost, this.props.selectedValue.recordId);

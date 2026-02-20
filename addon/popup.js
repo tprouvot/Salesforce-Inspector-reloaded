@@ -3825,12 +3825,17 @@ class AllDataSelection extends React.PureComponent {
     const {sfHost, selectedValue} = this.props;
     const recordId = selectedValue.recordId;
 
-    // FlowDefinition ID (300xxx) - let flow-scanner resolve the version
+    // FlowDefinition ID (300) - let flow-scanner resolve the version
     if (recordId?.startsWith("300")) {
       return `flow-scanner.html?host=${sfHost}&flowDefId=${recordId}`;
     }
 
-    // Flow version ID - include both definition and version IDs
+    // FlowRecord (2aF) - use the resolved flowDefinitionId
+    if (recordId?.startsWith("2aF")) {
+      return `flow-scanner.html?host=${sfHost}&flowDefId=${this.state.flowDefinitionId}`;
+    }
+
+    // Flow version ID (301) - include both definition and version IDs
     return `flow-scanner.html?host=${sfHost}&flowDefId=${this.state.flowDefinitionId}&flowId=${recordId}`;
   }
   getFlowCompareUrl() {
@@ -3978,6 +3983,20 @@ class AllDataSelection extends React.PureComponent {
           });
       } else if (recordId.startsWith("300")) {
         this.setState({flowDefinitionId: recordId});
+      } else if (recordId.startsWith("2aF")) {
+        sfConn
+          .rest(
+            "/services/data/v"
+              + apiVersion
+              + "/query/?q=SELECT+FlowDefinition+FROM+FlowRecord+WHERE+Id='"
+              + recordId
+              + "'"
+          )
+          .then((res) => {
+            if (res.records && res.records.length > 0) {
+              this.setState({flowDefinitionId: res.records[0].FlowDefinition});
+            }
+          });
       }
     }
   }

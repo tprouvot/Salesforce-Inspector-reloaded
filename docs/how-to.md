@@ -168,6 +168,20 @@ Once Flow Builder opens:
 3. Flow Builder will display both versions side-by-side, highlighting differences
 4. Review changes, elements, and logic differences between the versions
 
+## Mass disable flows
+
+You can bulk deactivate flows using the Data Import feature with the Tooling API.
+
+1. Open **Data Import** (shortcut: `i`)
+2. Set **API Type** to **Tooling**
+3. Set **Object** to **FlowDefinition**
+4. Set **Action** to **Update**
+5. Paste your data with two columns:
+   * **Id** – the FlowDefinition Id (from a query like `SELECT Id, DeveloperName FROM FlowDefinition WHERE ActiveVersionId != null`)
+   * **Metadata.activeVersionNumber** – set to `0` to deactivate
+6. Map the columns (use "Skip" for any unknown columns if needed)
+7. Click **Run Update**
+
 ## Add custom links to "Shortcut" tab
 
 <img width="1234" alt="Use custom shortcuts" src="https://github.com/user-attachments/assets/036045b8-133c-46c1-90d0-1db7aa81a190" />

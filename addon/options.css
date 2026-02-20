@@ -17,6 +17,7 @@
 .slds-tabs_default .slds-tabs_scoped__link {
   overflow: hidden;
   text-overflow: clip;
+  padding-inline: clamp(0.2rem, 0.5vw, 1rem);
 }
 
 .slds-tabs_default .slds-tabs_scoped {

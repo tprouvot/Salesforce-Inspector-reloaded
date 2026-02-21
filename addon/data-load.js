@@ -57,7 +57,7 @@ export function DescribeInfo(spinFor, didUpdate) {
     let apiDescribes = sobjectAllDescribes[useToolingApi ? "tool" : "data"];
     if (apiDescribes.global.globalStatus == "pending") {
       apiDescribes.global.globalStatus = "loading";
-      console.log(useToolingApi ? "getting tooling objects" : "getting objects");
+      //console.log(useToolingApi ? "getting tooling objects" : "getting objects");
       spinFor(sfConn.rest(useToolingApi ? "/services/data/v" + apiVersion + "/tooling/sobjects/" : "/services/data/v" + apiVersion + "/sobjects/").then(res => {
         apiDescribes.global.globalStatus = "ready";
         apiDescribes.global.globalDescribe = res;
@@ -106,7 +106,7 @@ export function DescribeInfo(spinFor, didUpdate) {
       }
       if (sobjectInfo.sobject.sobjectStatus == "pending") {
         sobjectInfo.sobject.sobjectStatus = "loading";
-        console.log("getting fields for " + sobjectInfo.global.name);
+        //("getting fields for " + sobjectInfo.global.name);
         spinFor(sfConn.rest(sobjectInfo.global.urls.describe).then(res => {
           sobjectInfo.sobject.sobjectStatus = "ready";
           sobjectInfo.sobject.sobjectDescribe = res;
@@ -457,11 +457,11 @@ export function initScrollTable(scroller) {
     // Recalculate buffers when viewport changes
     bufferHeight = Math.min(500, scroller.offsetHeight);
     bufferWidth = Math.min(500, scroller.offsetWidth);
-    console.log("Buffers updated:", {bufferHeight, bufferWidth});
+    //console.log("Buffers updated:", {bufferHeight, bufferWidth});
   }
 
   function dataChange(newData) {
-    console.log("Data changed");
+    //console.log("Data changed");
     data = newData;
     if (data == null || data.rowVisibilities.length == 0 || data.colVisibilities.length == 0) {
       rowHeights = [];
@@ -531,12 +531,12 @@ export function initScrollTable(scroller) {
 
     if (scrollTop !== newScrollTop || scrollLeft !== newScrollLeft
         || offsetHeight !== newOffsetHeight || offsetWidth !== newOffsetWidth) {
-      console.log("Viewport changed:", {
+      /*console.log("Viewport changed:", {
         scrollTop: newScrollTop,
         scrollLeft: newScrollLeft,
         offsetHeight: newOffsetHeight,
         offsetWidth: newOffsetWidth
-      });
+      });*/
       scrollTop = newScrollTop;
       scrollLeft = newScrollLeft;
       offsetHeight = newOffsetHeight;
@@ -548,7 +548,7 @@ export function initScrollTable(scroller) {
 
   function renderData({force}) {
     try {
-      console.log("Rendering data. Force:", force);
+      //console.log("Rendering data. Force:", force);
       scrollTop = scroller.scrollTop;
       scrollLeft = scroller.scrollLeft;
       offsetHeight = scroller.offsetHeight;
@@ -564,7 +564,7 @@ export function initScrollTable(scroller) {
       if (!force && firstRowTop <= scrollTop && (lastRowTop >= scrollTop + offsetHeight || lastRowIdx == rowCount) && firstColLeft <= scrollLeft && (lastColLeft >= scrollLeft + offsetWidth || lastColIdx == colCount)) {
         return;
       }
-      console.log("Rendering table");
+      //console.log("Rendering table");
 
       while (firstRowTop < scrollTop - bufferHeight && firstRowIdx < rowCount - 1) {
         firstRowTop += rowVisible[firstRowIdx] * rowHeights[firstRowIdx];
@@ -697,11 +697,11 @@ export function initScrollTable(scroller) {
           td = td.nextElementSibling;
         }
       }
-      console.log("Render complete");
+      //console.log("Render complete");
     } catch (error) {
       console.error("Error in renderData:", error);
       // Enhanced error logging
-      console.log("Current state:", {
+      console.error("Current state:", {
         rowCount,
         colCount,
         firstRowIdx,

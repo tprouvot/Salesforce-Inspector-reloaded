@@ -236,6 +236,25 @@ export async function dataExportTest(test) {
   setQuery("select Id from Opportunity where AccountId in (select AccountId from Asset where Price = null) and StageName", "", " = 'Closed Won'");
   assertEquals("Opportunity fields suggestions:", vm.autocompleteResults.title);
 
+  // Autocomplete subquery in SELECT: child relationship suggestions when cursor after "from"
+  setQuery("select Id, (select subject from ", "", ") from Contact");
+  await waitForSpinner();
+  assertEquals("Child relationship suggestions for Contact:", vm.autocompleteResults.title);
+  const contactChildRels = getValues(vm.autocompleteResults.results);
+  assert(contactChildRels.includes("Cases"), "Contact should have Cases child relationship");
+
+  // Autocomplete subquery in SELECT: resolve relationship name "Cases" to Case object for field suggestions
+  setQuery("select Id, (select subject from Cases", "", ") from Contact");
+  await waitForSpinner();
+  assertEquals("Case fields suggestions:", vm.autocompleteResults.title);
+  assert(getValues(vm.autocompleteResults.results).includes("Subject"));
+
+  // Autocomplete subquery in SELECT: when typing object name "Case", suggest relationship name "Cases"
+  setQuery("select Id, (select subject from Case", "", ") from Contact");
+  await waitForSpinner();
+  assertEquals("Use relationship name (not object name). Suggestions for Contact:", vm.autocompleteResults.title);
+  assert(getValues(vm.autocompleteResults.results).includes("Cases"));
+
   // Autocomplete tooling API
   setQuery("select Id from LeadCon", "", "");
   vm.queryTooling = true;

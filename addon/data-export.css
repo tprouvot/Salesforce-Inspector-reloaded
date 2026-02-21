@@ -120,9 +120,61 @@ textarea[hidden] {
   color: var(--slds-g-color-palette-green-50, #2e844a);
 }
 
+.soql-param {
+  color: var(--slds-g-color-palette-red-40, #ba0517);
+}
+
 .paren-match {
   background-color: rgb(from var(--slds-g-color-palette-g-50, #005FB2) r g b / 0.3);
   border-radius: 2px;
+}
+
+/* Autocomplete popup - positioned at caret when typing fields/objects */
+.autocomplete-popup {
+  position: absolute;
+  margin-top: 4px;
+  min-width: 200px;
+  max-width: 400px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #dddbda;
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  font-size: 0.9rem;
+}
+
+.autocomplete-popup-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f3f3;
+  gap: 8px;
+}
+
+.autocomplete-popup-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-popup-item:hover,
+.autocomplete-popup-item.selected {
+  background: var(--slds-g-color-palette-cloud-blue-90, #e5f5fc);
+}
+
+.autocomplete-popup-icon {
+  flex-shrink: 0;
+}
+
+.autocomplete-popup-label {
+  font-weight: 500;
+  color: var(--slds-g-color-palette-neutral-10, #181818);
+}
+
+.autocomplete-popup-title {
+  color: #706e6b;
+  font-size: 0.85em;
+  margin-left: 4px;
 }
 
 #query {
@@ -524,7 +576,8 @@ svg.button-icon {
   background-color: #0070d2;
 }
 
-.object .sfir-autocomplete-icon {
+.object .sfir-autocomplete-icon,
+.childRelationship .sfir-autocomplete-icon {
   -webkit-mask-image: url(images/sobject.svg);
   background-color: #04844b;
 }

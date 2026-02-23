@@ -2,6 +2,8 @@
  * API Debug Statistics Module
  * Tracks API calls made to Salesforce server when debug mode is enabled
  */
+import {Constants} from "./utils.js";
+
 export class ApiStatistics {
   constructor() {
     this.stats = {
@@ -18,10 +20,9 @@ export class ApiStatistics {
         errors: 0,
         totalDuration: 0
       },
-      startTime: Date.now()
+      startTime: Date.now(),
+      errorMessages: []
     };
-    this.API_DEBUG_STATISTICS = "apiDebugStatistics";
-    this.loadStats();
     this._statsLoaded = false;
   }
 
@@ -30,14 +31,13 @@ export class ApiStatistics {
    * @returns {boolean}
    */
   static isDebugModeEnabled() {
-    return localStorage.getItem("apiDebugStatisticsMode") === "true";
+    return localStorage.getItem(Constants.API_DEBUG_STATISTICS_MODE) === "true";
   }
 
   /**
    * Load statistics from localStorage
    */
   loadStats() {
-    const stored = localStorage.getItem(this.API_DEBUG_STATISTICS);
     // Lazy load to avoid circular dependency issues
     if (!this._statsLoaded) {
       this._statsLoaded = true;
@@ -64,7 +64,8 @@ export class ApiStatistics {
         this.stats = {
           ...this.stats,
           ...parsed,
-          startTime: parsed.startTime || Date.now()
+          startTime: parsed.startTime || Date.now(),
+          errorMessages: parsed.errorMessages || []
         };
       } catch (e) {
         console.error("Error loading API debug statistics:", e);
@@ -79,7 +80,7 @@ export class ApiStatistics {
   saveStats(stats = null) {
     try {
       const statsToSave = stats || this.stats;
-      localStorage.setItem(this.API_DEBUG_STATISTICS, JSON.stringify(statsToSave));
+      localStorage.setItem(Constants.API_DEBUG_STATISTICS, JSON.stringify(statsToSave));
       // Update instance stats for consistency
       if (stats) {
         this.stats = stats;
@@ -95,14 +96,20 @@ export class ApiStatistics {
    * @param {string} method - Method name
    * @param {number} duration - Duration in milliseconds
    * @param {boolean} isError - Whether the call resulted in an error
+   * @param {string} errorMessage - Error message if isError is true
   */
-  trackApiCall(mode, url, method, duration, isError = false){
+  trackApiCall(mode, url, method, duration, isError = false, errorMessage = null){
     if (!ApiStatistics.isDebugModeEnabled()) {
       return;
     }
 
+    // Ensure stats are loaded before tracking
+    if (!this._statsLoaded) {
+      this.loadStats();
+    }
+
     // Load current stats from localStorage to ensure synchronization across instances
-    const stored = localStorage.getItem(this.API_DEBUG_STATISTICS);
+    const stored = localStorage.getItem(Constants.API_DEBUG_STATISTICS);
     let stats;
     if (stored) {
       try {
@@ -121,7 +128,8 @@ export class ApiStatistics {
             errors: parsed.soap?.errors || 0,
             totalDuration: parsed.soap?.totalDuration || 0
           },
-          startTime: parsed.startTime || Date.now()
+          startTime: parsed.startTime || Date.now(),
+          errorMessages: parsed.errorMessages || []
         };
       } catch (e) {
         console.error("Error loading API debug statistics:", e);
@@ -131,12 +139,29 @@ export class ApiStatistics {
       stats = this._getDefaultStats();
     }
 
-    this.handleStatsUpdates(mode, stats[mode], url, method, duration, isError);
+    this.handleStatsUpdates(mode, stats[mode], url, method, duration, isError, errorMessage);
+    // Store error message if this is an error
+    if (isError && errorMessage) {
+      if (!stats.errorMessages) {
+        stats.errorMessages = [];
+      }
+      const errorEntry = {
+        timestamp: Date.now(),
+        mode,
+        url,
+        method,
+        message: errorMessage
+      };
+      stats.errorMessages.push(errorEntry);
+      // Keep only the last 10 errors
+      if (stats.errorMessages.length > 10) {
+        stats.errorMessages = stats.errorMessages.slice(-10);
+      }
+    }
     this.saveStats(stats);
   }
 
   handleStatsUpdates(mode, statsType, url, method, duration, isError){
-    const timestamp = Date.now();
     statsType.total++;
     statsType.totalDuration += duration;
 
@@ -204,7 +229,8 @@ export class ApiStatistics {
         errors: 0,
         totalDuration: 0
       },
-      startTime: Date.now()
+      startTime: Date.now(),
+      errorMessages: []
     };
   }
 
@@ -232,7 +258,7 @@ export class ApiStatistics {
       simplified = simplified.replace(/[a-zA-Z0-9]{18}/g, "{id}");
 
       return simplified;
-    } catch (e) {
+    } catch {
       return url;
     }
   }
@@ -242,6 +268,10 @@ export class ApiStatistics {
    * @returns {Object} Statistics object
    */
   getStats() {
+    // Ensure stats are loaded before getting
+    if (!this._statsLoaded) {
+      this.loadStats();
+    }
     //retrieve stats in the localStorage
     this.getStatsFromLocalStorage();
 
@@ -274,7 +304,7 @@ export class ApiStatistics {
 
   /** @description Get stats from localStorage */
   getStatsFromLocalStorage() {
-    const stored = localStorage.getItem(this.API_DEBUG_STATISTICS);
+    const stored = localStorage.getItem(Constants.API_DEBUG_STATISTICS);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -289,7 +319,7 @@ export class ApiStatistics {
   }
 
   setStatsToLocalStorage(stats) {
-    localStorage.setItem(this.API_DEBUG_STATISTICS, JSON.stringify(stats));
+    localStorage.setItem(Constants.API_DEBUG_STATISTICS, JSON.stringify(stats));
   }
 
   /**
@@ -322,11 +352,28 @@ export class ApiStatistics {
         errors: 0,
         totalDuration: 0
       },
-      startTime: Date.now()
+      startTime: Date.now(),
+      errorMessages: []
     };
     this.saveStats();
   }
 }
 
-// Singleton instance
-export const apiStatistics = new ApiStatistics();
+// Singleton instance - lazy initialization to avoid circular dependency issues
+let apiStatisticsInstance = null;
+
+function getApiStatistics() {
+  if (!apiStatisticsInstance) {
+    apiStatisticsInstance = new ApiStatistics();
+  }
+  return apiStatisticsInstance;
+}
+
+// Export a proxy object that lazily initializes the instance
+export const apiStatistics = new Proxy({}, {
+  get(target, prop) {
+    const instance = getApiStatistics();
+    const value = instance[prop];
+    return typeof value === "function" ? value.bind(instance) : value;
+  }
+});

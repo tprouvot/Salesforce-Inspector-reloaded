@@ -6,7 +6,8 @@ import {
   parseSoqlQuery,
   protectStringsAndComments,
   protectSubqueries,
-  PLACEHOLDER_REGEX
+  PLACEHOLDER_REGEX,
+  removeComments
 } from "./soql-parser.js";
 
 /**
@@ -107,12 +108,51 @@ function getCaretCoordinates(textarea, pos) {
 const KEYWORDS_REGEX = /\b(SELECT|FROM|WHERE|AND|OR|NOT|IN|LIKE|ORDER\s+BY|GROUP\s+BY|HAVING|LIMIT|OFFSET|ASC|DESC|NULLS\s+FIRST|NULLS\s+LAST|TRUE|FALSE|FIND|RETURNING|IN\s+Name\s+Fields|uiapi|query|edges|node)(?=[\s\r\n]|$)/gi;
 
 /**
+ * Wraps parentheses at the given positions with a highlight span.
+ * @param {string} html - HTML string (from highlightQueryKeywords)
+ * @param {number} cursorParenPos - Position of parenthesis cursor is adjacent to
+ * @param {number} matchPos - Position of matching parenthesis
+ * @returns {string} HTML with paren-match spans
+ */
+function wrapParensAtPositions(html, cursorParenPos, matchPos) {
+  if (cursorParenPos < 0 && matchPos < 0) return html;
+  let logicalPos = 0;
+  let result = "";
+  let i = 0;
+  let inTag = false;
+  while (i < html.length) {
+    if (html[i] === "<") {
+      inTag = true;
+      result += html[i];
+      i++;
+      continue;
+    }
+    if (inTag) {
+      result += html[i];
+      if (html[i] === ">") inTag = false;
+      i++;
+      continue;
+    }
+    const char = html[i];
+    if ((logicalPos === cursorParenPos || logicalPos === matchPos) && (char === "(" || char === ")")) {
+      result += `<span class="paren-match">${char}</span>`;
+    } else {
+      result += char;
+    }
+    logicalPos++;
+    i++;
+  }
+  return result;
+}
+
+/**
  * Highlights SOQL/SQL/SOSL/GraphQL keywords and comments in query text for display in the overlay.
  * Escapes HTML and wraps keywords/comments in spans with CSS classes.
  * Uses soql-parser to protect strings and comments so they are not modified.
+ * Highlights matching parentheses when cursor is adjacent to one.
  * @param {string} query - The query text
- * @param {number} [cursorParenPos=-1] - Position of parenthesis cursor is adjacent to (reserved for future paren highlighting)
- * @param {number} [matchPos=-1] - Position of matching parenthesis (reserved for future paren highlighting)
+ * @param {number} [cursorParenPos=-1] - Position of parenthesis cursor is adjacent to
+ * @param {number} [matchPos=-1] - Position of matching parenthesis
  */
 function highlightQueryKeywords(query, cursorParenPos = -1, matchPos = -1) {
   if (!query) return "";
@@ -138,6 +178,8 @@ function highlightQueryKeywords(query, cursorParenPos = -1, matchPos = -1) {
     }
     return "";
   });
+
+  result = wrapParensAtPositions(result, cursorParenPos, matchPos);
   return result;
 }
 
@@ -487,24 +529,7 @@ class Model {
   }
   setQueryMethod(data, query, vm){
     if (vm.enableSoqlComments) {
-      // first replace all where parameters to a placeholder binding (so we can preserve them)
-      const stringPlaceholders = [];
-      let result = query.replace(/'([^']*(?:''[^']*)*)'/g, (match) => {
-        stringPlaceholders.push(match);
-        return `\x00PLACEHOLDER_${stringPlaceholders.length - 1}\x00`;
-      });
-      // then remove comments
-      result = result
-      .replace(/\/\*[\s\S]*?\*\//g, "")  // Remove /* */ block comments
-      .split("\n")
-      .filter(line => !line.trim().startsWith("--"))  // Remove -- line comments
-      .join("\n")
-      .trim();
-      // then restore the placeholders
-      stringPlaceholders.forEach((str, i) => {
-        result = result.replace(`\x00PLACEHOLDER_${i}\x00`, str);
-      });
-      query = result;
+      query = removeComments(query, true);
     }
     let method;
     let queryParams = "/?q=" + encodeURIComponent(query);
@@ -696,6 +721,19 @@ class Model {
     }
   }
   /**
+   * Schedules autocomplete to run after a short debounce. Use for input/keyboard events.
+   * Call queryAutocompleteHandler directly for immediate execution (e.g. Ctrl+Space).
+   */
+  scheduleQueryAutocomplete() {
+    const DEBOUNCE_MS = 100;
+    if (this._queryAutocompleteDebounce) clearTimeout(this._queryAutocompleteDebounce);
+    this._queryAutocompleteDebounce = setTimeout(() => {
+      this._queryAutocompleteDebounce = null;
+      this.queryAutocompleteHandler();
+      this.didUpdate();
+    }, DEBOUNCE_MS);
+  }
+  /**
    * SOQL query autocomplete handling.
    * Put caret at the end of a word or select some text to autocomplete it.
    * Searches for both label and API name.
@@ -795,8 +833,9 @@ class Model {
     }
 
     const parsed = parseSoqlQuery(query, selStart);
-    //we are not a valid position for autocomplete => exit
-    if(parsed.cursorInString || parsed.cursorInComment) {
+    // Do not show autocomplete popup when cursor is inside a string or comment
+    if (parsed.cursorInString || parsed.cursorInComment) {
+      vm.autocompleteResults = { sobjectName: "", title: "", results: [] };
       return;
     }
 
@@ -862,7 +901,7 @@ class Model {
     }
 
     // We are after the from clause: display fields of the "from" object.
-    const sobjectName = isInSubquery && isChildRelationship && parentObjectName ? parentObjectName : parsed.from.objectName;
+    const sobjectName = isInSubquery && isChildRelationship && parentObjectName ? parentObjectName : (parsed.from.objectName || this.queryTabs[this.activeTabIndex].name);
     vm.updateCurrentTabName(sobjectName);
 
     let fieldsObjectName = ctx.objectName;
@@ -2007,7 +2046,7 @@ class App extends React.Component {
   onQueryInput(e) {
     let {model} = this.props;
     model.updateCurrentTabQuery(e.target.value);
-    model.queryAutocompleteHandler();
+    model.scheduleQueryAutocomplete();
     model.didUpdate();
   }
 
@@ -2200,8 +2239,7 @@ class App extends React.Component {
     }
 
     function queryAutocompleteEvent() {
-      model.queryAutocompleteHandler();
-      model.didUpdate();
+      model.scheduleQueryAutocomplete();
     }
     queryInput.addEventListener("input", queryAutocompleteEvent);
     queryInput.addEventListener("select", queryAutocompleteEvent);

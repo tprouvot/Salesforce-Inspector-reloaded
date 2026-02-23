@@ -13,7 +13,7 @@ const PLACEHOLDER_PREFIX = "\x00";
  * @param {string} text - Query text
  * @returns {{protected: string, stringPlaceholders: string[], commentPlaceholders: string[]}}
  */
-export function protectStringsAndComments(text) {
+export function protectStringsAndComments(text, removeComments = false) {
   const stringPlaceholders = [];
   const commentPlaceholders = [];
   const protected_ = text
@@ -25,19 +25,18 @@ export function protectStringsAndComments(text) {
     .replace(/(?:\/\*[\s\S]*?\*\/|--[^\r\n]*)/g, (m) => {
       const i = commentPlaceholders.length;
       commentPlaceholders.push(m);
-      return `${PLACEHOLDER_PREFIX}COMMENT_${i}${PLACEHOLDER_PREFIX}`;
+      return removeComments ? "" : `${PLACEHOLDER_PREFIX}COMMENT_${i}${PLACEHOLDER_PREFIX}`;
     });
   return { protected: protected_, stringPlaceholders, commentPlaceholders };
 }
 
-/**
- * Replaces strings and comments with placeholders so they can be safely processed (e.g. for highlighting).
- * Strings are replaced first so comment patterns inside strings are not modified.
- * @param {string} text - Query text
- * @returns {{protected: string, stringPlaceholders: string[], commentPlaceholders: string[]}}
- */
-export function removeComments(text) {;
-  return text.replace(/(?:\/\*[\s\S]*?\*\/|--[^\r\n]*)/g, '');
+export function removeComments(text) {
+  let {protected: protectedQuery, stringPlaceholders} = protectStringsAndComments(text, true);
+  //then restore the placeholders
+  stringPlaceholders.forEach((c, i) => {
+    protectedQuery = protectedQuery.replace(`\x00STR_${i}\x00`, c);
+  });
+  return protectedQuery;
 }
 
 /**
@@ -260,8 +259,7 @@ export function parseSoqlQuery(query, cursorPos = -1) {
   }
 
   //remove all the comments
-  const noComments = removeComments(query);
-  const { protected: protectedQuery, stringPlaceholders, commentPlaceholders } = protectStringsAndComments(noComments);
+  const { protected: protectedQuery, stringPlaceholders, commentPlaceholders } = protectStringsAndComments(query, true);
 
   //extract the subqueries (positions are in protected query)
   const subqueriesProtected = findSubqueries(protectedQuery);

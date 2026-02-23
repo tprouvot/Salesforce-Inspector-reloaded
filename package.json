@@ -11,7 +11,8 @@
     "test:e2e:debug": "npx playwright test --ui --debug",
     "test:coverage": "COLLECT_COVERAGE=true playwright test",
     "test:coverage:report": "node tests/e2e/generate-coverage-report.js",
-    "test:coverage:all": "npm run test:coverage && npm run test:coverage:report"
+    "test:coverage:all": "npm run test:coverage && npm run test:coverage:report",
+    "chrome-beta-build": "ENVIRONMENT_TYPE=BETA node scripts/release-build.js chrome"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.2",

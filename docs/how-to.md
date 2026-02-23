@@ -49,18 +49,20 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 
     >**Warning**
     >If you don't select the `web` scope, you might not be able to use the Login As Incognito.
-4. Configure Security settings:
+4. Flow Enablement
+   * Check the `Enable Authorization Code and Credentials Flow` and then check `Require user credentials in the POST body for Authorization Code and Credentials Flow`
+5. Configure Security settings:
    * **IMPORTANT: Deselect** (disable) `Require secret for Web Server Flow`.
    * Select (enable) `Require Proof Key for Code Exchange (PKCE) extension for Supported Authorization Flows`.
-5. Get Consumer Key and save it in the Options page
+6. Get Consumer Key and save it in the Options page
 
     <img alt="Option button" width="276" alt="image" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/14cc8aac-5ffc-4747-9da1-ba892231ace1">
 
-6. Enter the consumer key
+7. Enter the consumer key
 
     <img alt="Client Id" width="849" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/b1edfea1-5a56-4f42-8945-e452a7ab5cf5">
 
-7. Refresh page and generate new token
+8. Refresh page and generate new token
 
     <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
 
@@ -165,6 +167,20 @@ Once Flow Builder opens:
 2. Use the version selector dropdown to choose a different version to compare against
 3. Flow Builder will display both versions side-by-side, highlighting differences
 4. Review changes, elements, and logic differences between the versions
+
+## Mass disable flows
+
+You can bulk deactivate flows using the Data Import feature with the Tooling API.
+
+1. Open **Data Import** (shortcut: `i`)
+2. Set **API Type** to **Tooling**
+3. Set **Object** to **FlowDefinition**
+4. Set **Action** to **Update**
+5. Paste your data with two columns:
+   * **Id** – the FlowDefinition Id (from a query like `SELECT Id, DeveloperName FROM FlowDefinition WHERE ActiveVersionId != null`)
+   * **Metadata.activeVersionNumber** – set to `0` to deactivate
+6. Map the columns (use "Skip" for any unknown columns if needed)
+7. Click **Run Update**
 
 ## Add custom links to "Shortcut" tab
 
@@ -372,35 +388,86 @@ You can configure which tab should be selected by default when opening the popup
 
 The selected tab will be remembered and used as the default when opening the popup.
 
+## Show recently viewed records in popup
+
+When you focus the Object search field in the popup, the extension queries and displays your recently viewed records for quick access. This is **enabled by default**. The option allows you to disable it if you prefer not to query or display recently viewed records:
+
+1. Open the options page
+2. Go to the "User Experience" tab
+3. Find the "Show recently viewed records in popup" toggle
+4. Disable it to skip the query and only show search results as you type
+
+When disabled, no API call is made to the RecentlyViewed object, which can reduce API usage and improve popup responsiveness.
+
 ## API Cache Configuration
 
 Salesforce Inspector Reloaded uses a caching system to reduce the number of API calls made to Salesforce, improving performance and reducing API usage. The extension caches API response data to optimize queries and avoid unnecessary API requests.
+
+All cache settings are configured in the **Cache** tab of the Options page:
+
+1. Open the extension and click the "Options" button
+2. Navigate to the "Cache" tab
 
 ### Cached Requests
 
 The following API requests are cached:
 
-* **User Object Describe** (`/services/data/vXX.0/sobjects/User/describe`) - Caches field permission information to optimize user search queries and dynamically build SELECT clauses based on accessible fields
+* **User Field Names** (`/services/data/vXX.0/sobjects/User/describe`) - Caches field permission information to optimize user search queries and dynamically build SELECT clauses based on accessible fields
+
+* **SObjects List** - Caches the list of all SObjects (standard and custom objects, tooling objects) from the REST API and Tooling API
 
 ### Why Use Caching?
 
-* **Reduced API Calls**: Caching field permissions means the extension doesn't need to call the describe API every time you search for users
-* **Better Performance**: Faster user searches since cached data is retrieved instantly
-* **Optimized Queries**: The extension builds queries dynamically based on cached field permissions, only including fields you have access to
-* **API Limit Preservation**: Helps preserve your Salesforce API request limits by avoiding redundant describe calls
+* **Reduced API Calls**: Caching means the extension doesn't need to call the describe API every time you search for users or load the SObjects list
+* **Better Performance**: Faster user searches and popup loading since cached data is retrieved instantly
+* **Optimized Queries**: The extension builds queries dynamically based on cached field permissions
+* **API Limit Preservation**: Helps preserve your Salesforce API request limits by avoiding redundant API calls
 
-### Configuring Cache Period
+### User Field Names Cache
 
-You can configure how long cached data should be stored:
+Configure the duration (in hours) for caching User field names. Default: 168 hours (7 days). Use the "Clear Cache" button to immediately refresh cached data.
 
-1. Open the extension and click the "Options" button
-2. Navigate to the "User Experience" tab
-3. Find the "API cache period (days)" setting
-4. Enter the number of days you want cached data to remain valid (default: 7 days)
-5. Click the "Clear Cache" button if you need to immediately refresh cached data
+## SObjects List Cache Management
+
+The SObjects list cache stores the list of all available objects in your org (Account, Contact, custom objects, Tooling API objects, etc.). This improves popup loading performance by avoiding API calls every time you open the extension or access the Objects tab.
+
+### How It Works
+
+* **When cache is enabled**: The extension returns cached data immediately and optionally refreshes it in the background (see below)
+* **When cache is disabled**: A fresh fetch is performed each time the SObjects list is needed
+* **Org-specific**: Each Salesforce org has its own cache; switching orgs automatically uses the correct cache
+
+### Cache Behavior
+
+The behavior depends on two options:
+
+| Preload SObjects | Cache Duration | Behavior |
+|------------------|----------------|----------|
+| **Enabled** (default) | Recommended: 8 hours | SObjects list is loaded from cache before the popup opens. Refresh happens every N hours when the popup is opened. |
+| **Disabled** | Recommended: 168 hours (7 days) | SObjects list loads only when the Objects tab is accessed. Cached data is returned immediately; a background refresh updates the cache when the popup is opened. |
 
 > **Note**
-> The cache is org-specific, meaning each Salesforce org has its own cached data. Cache entries are automatically cleared when they expire based on your configured cache period.
+> "Preload SObjects before popup opens" is in the **API** tab of Options. When enabled, the extension preloads the SObjects list for faster context detection (e.g., knowing which object you're viewing). When disabled, the list loads only when you open the Objects tab.
+
+### Configuring SObjects Cache
+
+1. Open the extension and click the "Options" button
+2. Navigate to the "Cache" tab
+3. Find the "SObjects List Cache" section:
+   * **Enable/Disable**: Toggle caching on or off (enabled by default)
+   * **Duration (hours)**: How long cached data remains valid. Default: 8 hours. Minimum: 1 hour
+   * **Clear Cache**: Click to immediately clear the cache and force a fresh fetch on next use
+
+### When to Clear the Cache
+
+Clear the SObjects List cache when:
+
+* A newly created custom object doesn't appear in the extension's object search
+* You've deployed new objects or made metadata changes
+* You want to ensure you're seeing the latest object list
+
+> **Note**
+> Cache entries expire automatically based on the configured duration. After expiration, the extension fetches fresh data on the next popup open or Objects tab access.
 
 ## Customize User Tab Search Filters and Fields
 

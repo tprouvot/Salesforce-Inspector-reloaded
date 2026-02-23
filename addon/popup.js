@@ -1,12 +1,13 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, fetchAndMergeSobjects} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, getStandardObjectNameField, isRecordId, getSobjectsList} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
 let p = parent;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
-const isExtensionPage = document.location.ancestorOrigins?.[0]?.includes(getExtensionId()) ?? false;
+const isExtensionPage = document.location.ancestorOrigins?.[0].includes(getExtensionId());
+const RECENT_ITEMS_RENDERED_COUNT = 100;
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -239,8 +240,8 @@ class App extends React.PureComponent {
         type: config.type || "info",
         bannerText: config.bannerText || "Action completed",
         iconName: config.iconName || "info",
-        assistiveTest:
-          config.assistiveTest || config.bannerText || "Notification",
+        assistiveText:
+          config.assistiveText || config.bannerText || "Notification",
         link: config.link || null,
         onClose: config.onClose || this.hideToast,
         ...config, // Allow any additional AlertBanner props
@@ -255,6 +256,10 @@ class App extends React.PureComponent {
     });
   }
   onShortcutKey(e) {
+    // Only trigger shortcuts for single key presses (no modifier keys)
+    if (e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) {
+      return;
+    }
     const refs = this.refs;
     const actionMap = {
       a: ["all", "clickAllDataBtn"],
@@ -271,6 +276,7 @@ class App extends React.PureComponent {
       m: ["click", "eventMonitorBtn"],
       v: ["click", "logsViewerBtn"],
       b: ["click", "apiStatisticsBtn"],
+      c: ["click", "dependenciesExplorerBtn"],
       o: ["tab", "objectTab"],
       u: ["tab", "userTab"],
       s: ["tab", "shortcutTab"],
@@ -415,7 +421,7 @@ class App extends React.PureComponent {
           bannerText: `Current Version: ${addonVersion}`,
           iconName: "notification",
           iconTitle: "Notification",
-          assistiveTest: "Version Update Notification",
+          assistiveText: "Version Update Notification",
           onClose: () => this.updateReleaseNotesViewed(addonVersion),
           link: {
             text: "See What's New",
@@ -432,7 +438,7 @@ class App extends React.PureComponent {
           h(AlertBanner, {type: bannerUrlAction.type,
             bannerText: bannerUrlAction.text,
             iconName: bannerUrlAction.icon,
-            assistiveTest: bannerUrlAction.text,
+            assistiveText: bannerUrlAction.text,
             onClose: null,
             link: {
               text: bannerUrlAction.title,
@@ -449,7 +455,7 @@ class App extends React.PureComponent {
             type: this.state.toastConfig.type,
             bannerText: this.state.toastConfig.bannerText,
             iconName: this.state.toastConfig.iconName,
-            assistiveTest: this.state.toastConfig.assistiveTest,
+            assistiveText: this.state.toastConfig.assistiveText,
             onClose: this.state.toastConfig.onClose,
             link: this.state.toastConfig.link,
             // Spread any additional props
@@ -460,7 +466,7 @@ class App extends React.PureComponent {
                     "type",
                     "bannerText",
                     "iconName",
-                    "assistiveTest",
+                    "assistiveText",
                     "onClose",
                     "link",
                   ].includes(key)
@@ -478,6 +484,7 @@ class App extends React.PureComponent {
             ref: "showAllDataBox",
             sfHost,
             showDetailsSupported: !inLightning && !inInspector,
+            inInspector,
             linkTarget,
             contextUrl,
             onContextRecordChange: this.onContextRecordChange,
@@ -556,23 +563,14 @@ class App extends React.PureComponent {
                 h("span", {}, "Field Crea", h("u", {}, "t"), "or")
               )
             ),
-            h(
-              "div",
-              {
-                className:
-                "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small",
-              },
-              h(
-                "a",
-                {
-                  ref: "metaRetrieveBtn",
-                  href: `metadata-retrieve${
-                    useLegacyDownloadMetadata ? "-legacy" : ""
-                  }.html?${hostArg}`,
-                  target: linkTarget,
-                  className: "page-button slds-button slds-button_neutral",
-                },
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+              h("a", {ref: "metaRetrieveBtn", href: `metadata-retrieve${useLegacyDownloadMetadata ? "-legacy" : ""}.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
                 h("span", {}, h("u", {}, "D"), "ownload Metadata")
+              )
+            ),
+            h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
+              h("a", {ref: "dependenciesExplorerBtn", href: `dependencies-explorer.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
+                h("span", {}, "Depen", h("u", {}, "c"), "encies Explorer")
               )
             )
           ),
@@ -964,7 +962,26 @@ class AllDataBox extends React.PureComponent {
   }
 
   componentDidMount() {
-    this.ensureKnownBrowserContext();
+    if (this.state.activeSearchAspect === this.SearchAspectTypes.users) {
+      this.ensureKnownUserContext();
+    } else {
+      this.ensureKnownBrowserContext();
+    }
+
+    if (this.shouldLoadSobjects()) {
+      this.loadSobjects();
+    }
+
+    this.onSobjectsListRefreshed = (e) => {
+      if (e.detail?.sfHost === this.props.sfHost) {
+        this.setState({sobjectsList: e.detail.sobjectsList});
+      }
+    };
+    window.addEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -1007,10 +1024,19 @@ class AllDataBox extends React.PureComponent {
 
   /**
    * Check if sobjects should be loaded
-   * @returns {boolean} True if Objects tab is active and popup is expanded
+   * Only load in popup/button context (when inInspector is false), not when embedded in data-export, field-creator, etc.
+   * @returns {boolean} True if Objects tab is active and popup is expanded, or if preload option is enabled and popup is not yet expanded
    */
   shouldLoadSobjects() {
-    return this.props.isPopupExpanded && this.state.activeSearchAspect === this.SearchAspectTypes.sobject;
+    // Normal loading: when popup is expanded and Objects tab is active
+    if (this.props.isPopupExpanded && this.state.activeSearchAspect === this.SearchAspectTypes.sobject) {
+      return true;
+    }
+    // Preload before popup opens: only if option is enabled (not in inspector)
+    if (!this.props.isPopupExpanded && !this.props.inInspector) {
+      return isSettingEnabled(Constants.PRELOAD_SOBJECTS_BEFORE_POPUP);
+    }
+    return false;
   }
 
   ensureKnownBrowserContext() {
@@ -1074,13 +1100,14 @@ class AllDataBox extends React.PureComponent {
     // Set loading state
     this.setState({sobjectsLoading: true});
 
-    // Use shared utility function with recursive batching (original popup.js behavior)
-    fetchAndMergeSobjects()
-      .then((entityMap) => {
-        // TODO progressively display data as each of the three responses becomes available
+    const {sfHost} = this.props;
+
+    // Get sobjects list (from cache or fetched from API)
+    getSobjectsList(sfHost)
+      .then((sobjectsList) => {
         this.setState({
           sobjectsLoading: false,
-          sobjectsList: Array.from(entityMap.values()),
+          sobjectsList,
         });
         // Only call getMatchesDelayed if the showAllDataBoxSObject component is rendered (i.e., user is on Objects tab)
         this.refs.showAllDataBoxSObject?.refs?.allDataSearch?.getMatchesDelayed(
@@ -1346,7 +1373,7 @@ class AllDataBoxUsers extends React.PureComponent {
     const cacheKey = "userFieldNames";
 
     // Check cache first
-    let fieldNames = DataCache.getCachedData(cacheKey, sfHost);
+    let fieldNames = await DataCache.getCachedData(cacheKey, sfHost);
 
     if (!fieldNames) {
       // Cache expired or missing, fetch fresh data
@@ -1588,6 +1615,7 @@ class AllDataBoxSObject extends React.PureComponent {
 
   loadRecordIdDetails() {
     let {selectedValue} = this.state;
+    let {sfHost} = this.props;
     //If a recordId is selected and the object supports regularApi
     if (
       selectedValue
@@ -1604,16 +1632,50 @@ class AllDataBoxSObject extends React.PureComponent {
         "LastModifiedDate",
         "Name",
       ];
+
+      let cachedNameField = null;
+      //check if the object is in the standard objects mapping
+      const standardNameField = getStandardObjectNameField(selectedValue.sobject.name);
+
+      //we have not hit from static standard objects mapping, so check if we have a cached name field
+      if (standardNameField === "N/A") {
+        // Check cache for nameField and include it in the initial query to avoid extra API call
+        const cacheKey = `nameField_${selectedValue.sobject.name}`;
+        cachedNameField = DataCache.getCachedData(cacheKey, sfHost);
+      }
+
       if (selectedValue.sobject.recordTypesSupported && selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 1) {
         fields.push("RecordType.DeveloperName", "RecordType.Id");
       }
-      this.restCallForRecordDetails(fields, selectedValue);
+      this.restCallForRecordDetails(fields, selectedValue, standardNameField, cachedNameField);
     } else {
       this.setState({recordIdDetails: null});
     }
   }
 
-  restCallForRecordDetails(fields, selectedValue) {
+  /** @description Rest call for record details
+   * @param {Array<string>} fields - The fields to select
+   * @param {Object} selectedValue - The selected value
+   * @param {string} standardNameField - The standard name field
+   * @param {string} cachedNameField - The cached name field
+   */
+  restCallForRecordDetails(fields, selectedValue, standardNameField = null, cachedNameField = null) {
+    let {sfHost} = this.props;
+
+    //manage if we have a specific named field for the object
+    if (cachedNameField && !fields.includes("cachedNameField")) {
+      fields.push(cachedNameField);
+    }
+    if (standardNameField !== "N/A" && standardNameField !== null && !fields.includes(standardNameField)) {
+      fields.push(standardNameField);
+    }
+
+    //Then remove the Name field from the fields list if we have a specific named field for the object or a standard name field
+    if (standardNameField !== "N/A" || cachedNameField) {
+      //remove the name field from the fields list
+      fields = fields.filter((field) => field !== "Name");
+    }
+
     let query
       = "SELECT "
       + fields.join()
@@ -1630,44 +1692,76 @@ class AllDataBoxSObject extends React.PureComponent {
           + encodeURIComponent(query),
         {logErrors: false}
       )
-      .then((res) => {
-        for (let record of res.records) {
-          let lastModifiedDate = new Date(record.LastModifiedDate);
-          let createdDate = new Date(record.CreatedDate);
+      .then(async (res) => {
+        //We have 0 or 1 record in the response
+        const record = res.records.length > 0 ? res.records[0] : null;
+        if (record) {
           this.setState({
             recordIdDetails: {
               recordTypeId: record.RecordType ? record.RecordType.Id : "",
-              recordName: record.Name ? record.Name : "",
+              recordName: record.Name || record[standardNameField] || record[cachedNameField] || "",
               recordTypeName: record.RecordType
                 ? record.RecordType.DeveloperName
                 : "",
               createdBy: record.CreatedBy.Alias,
               lastModifiedBy: record.LastModifiedBy.Alias,
-              created:
-                createdDate.toLocaleDateString()
-                + " "
-                + createdDate.toLocaleTimeString(),
-              lastModified:
-                lastModifiedDate.toLocaleDateString()
-                + " "
-                + lastModifiedDate.toLocaleTimeString(),
+              created: new Date(record.CreatedDate).toLocaleString(),
+              lastModified: new Date(record.LastModifiedDate).toLocaleString(),
             },
           });
         }
       })
-      .catch((e) => {
+      .catch(async (e) => {
         //some fields (Name, RecordTypeId) are not available for particular objects, in this case remove it from the fields list
         if (e.message.includes("No such column ")) {
+          //extract from which field the error is happening
+          const errorField = e.message.match(/No such column ['"]?([^'"]+)['"]?/i)[1];
+          const cacheKey = `nameField_${selectedValue.sobject.name}`;
+          let sobjectDescribeNameField = null;
+
+          if (errorField === "Name") {
+            //no need to remove the name field from the fields list, it's done before the call
+            //try to find a specific named field for the object
+            try {
+              // fetch from describe API
+              const sobjectDescribe = await sfConn.rest(
+                "/services/data/v" + apiVersion + "/sobjects/" + selectedValue.sobject.name + "/describe/",
+                {logErrors: false}
+              );
+              const nameField = sobjectDescribe.fields?.find(field => field.nameField);
+              if (nameField) {
+                // Cache the nameField for future use
+                DataCache.setCachedData(cacheKey, sfHost, nameField.name);
+                sobjectDescribeNameField = nameField.name;
+              } else {
+                // No nameField exists - clear the cache key
+                DataCache.clearCache(cacheKey, sfHost);
+              }
+            } catch (e) {
+              console.error("Unable to describe the object:", e);
+            }
+          }
+          if (errorField === cachedNameField) {
+            //oups! there is an issue with the named field, so remove it from the cache
+            DataCache.clearCache(cacheKey, sfHost);
+          }
+
+          //then redo the call for record details with the new fields list
           this.restCallForRecordDetails(
-            fields.filter((field) => field !== "Name"),
-            selectedValue
+            fields,
+            selectedValue,
+            standardNameField,
+            sobjectDescribeNameField
           );
         } else if (
           e.message.includes("Didn't understand relationship 'RecordType'")
         ) {
+          //then do the call without the RecordType fields
           this.restCallForRecordDetails(
             fields.filter((field) => !field.startsWith("RecordType.")),
-            selectedValue
+            selectedValue,
+            standardNameField,
+            cachedNameField
           );
         }
       });
@@ -2503,7 +2597,7 @@ class AllDataBoxOrg extends React.PureComponent {
   async componentDidMount() {
     let {sfHost} = this.props;
     //this will retrieve the orgInfo from sessionStorage if it exists, otherwise it will fetch it from the API and store it in sessionStorage
-    let orgInfo = await setOrgInfo(sfHost); 
+    let orgInfo = await setOrgInfo(sfHost);
     this.setInstanceStatus(orgInfo.InstanceName, sfHost);
   }
 
@@ -2812,7 +2906,7 @@ class UserDetails extends React.PureComponent {
         type: "success",
         bannerText: operation,
         iconName: "success",
-        assistiveTest: `${operation} completed successfully`,
+        assistiveText: `${operation} completed successfully`,
         link: link || {
           text: message || `${operation} completed successfully`,
         },
@@ -2827,7 +2921,7 @@ class UserDetails extends React.PureComponent {
         type: "error",
         bannerText: `${operation} Failed`,
         iconName: "error",
-        assistiveTest: `Failed to ${operation.toLowerCase()}`,
+        assistiveText: `Failed to ${operation.toLowerCase()}`,
         link: message ? {
           text: message,
         } : {
@@ -3728,6 +3822,7 @@ class AllDataSelection extends React.PureComponent {
   }
   getFlowScannerUrl() {
     return `flow-scanner.html?host=${this.props.sfHost}&flowDefId=${this.state.flowDefinitionId}&flowId=${this.props.selectedValue.recordId}`;
+
   }
   getFlowCompareUrl() {
     return getFlowCompareUrl(this.props.sfHost, this.props.selectedValue.recordId);
@@ -4488,11 +4583,12 @@ class Autocomplete extends React.PureComponent {
   }
   handleFocus() {
     let {recentItems} = this.props;
+    if (!isSettingEnabled(Constants.ENABLE_RECENTLY_VIEWED_RECORDS, true)) {
+      return;
+    }
     sfConn
       .rest(
-        "/services/data/v"
-          + apiVersion
-          + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+100"
+        `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+WHERE+Type!='ListView'+LIMIT+${RECENT_ITEMS_RENDERED_COUNT}`
       )
       .then((res) => {
         let itemsIds = new Set();
@@ -4688,20 +4784,15 @@ class Autocomplete extends React.PureComponent {
       itemHeight,
       resultsMouseIsDown,
     } = this.state;
-    // For better performance only render the visible autocomplete items + at least one invisible item above and below (if they exist)
-    const RENDERED_ITEMS_COUNT = 11;
-    let firstIndex = 0;
+
     let autocompleteResults
       = recentItems.length > 0 ? recentItems : matchingResults;
     let lastIndex = autocompleteResults.length - 1;
     let firstRenderedIndex = Math.max(0, scrollTopIndex - 2);
     let lastRenderedIndex = Math.min(
       lastIndex,
-      firstRenderedIndex + RENDERED_ITEMS_COUNT
+      firstRenderedIndex + RECENT_ITEMS_RENDERED_COUNT
     );
-    let topSpace = (firstRenderedIndex - firstIndex) * itemHeight;
-    let bottomSpace = (lastIndex - lastRenderedIndex) * itemHeight;
-    let topSelected = (selectedIndex - firstIndex) * itemHeight;
 
     return h(
       "div",
@@ -4757,6 +4848,24 @@ function getRecordId(href) {
     const flowId = url.searchParams.get("flowId");
     if (flowId && flowId.startsWith("301")) {
       return flowId;
+    }
+  }
+
+  // Lightning Setup pages with address parameter
+  if (url.pathname.startsWith("/lightning/setup/")) {
+    const addressParam = url.searchParams.get("address");
+    if (addressParam) {
+      try {
+        // Decode the URL-encoded address parameter
+        const decodedAddress = decodeURIComponent(addressParam);
+        const match = decodedAddress.match(/^\/([a-zA-Z0-9]{15,18})(?:\?|$)/);
+        if (match && isRecordId(match[1])) {
+          return match[1];
+        }
+      } catch (e) {
+        // If decoding fails, continue to other checks
+        console.warn("Failed to decode address parameter:", e);
+      }
     }
   }
 

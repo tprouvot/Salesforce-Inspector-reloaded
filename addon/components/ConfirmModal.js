@@ -162,6 +162,7 @@ export default class ConfirmModal extends React.Component {
       confirmTabIndex,
       cancelTabIndex,
       containerClassName,
+      modalSize,
       copyTabIndex,
       rootStyle
     } = this.props;
@@ -178,8 +179,9 @@ export default class ConfirmModal extends React.Component {
     const cancelChildren = buildButtonChildren(cancelLabel, cancelIconName, cancelIconPosition);
     const copyChildren = buildButtonChildren(copyLabel, copyIconName, copyIconPosition);
 
+    const modalSizeClass = modalSize ? ` slds-modal_${modalSize}` : "";
     return h("div", {style: rootStyle},
-      h("div", {className: "slds-modal slds-fade-in-open", role: "dialog", "aria-modal": "true", "aria-labelledby": "modal-heading-01"},
+      h("div", {className: `slds-modal slds-fade-in-open${modalSizeClass}`, role: "dialog", "aria-modal": "true", "aria-labelledby": "modal-heading-01"},
         h("div", {className: `slds-modal__container${containerClassName ? " " + containerClassName : ""}`},
           h("button", {className: "slds-button slds-button_icon slds-modal__close", onClick: this.handleClose},
             h("svg", {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},

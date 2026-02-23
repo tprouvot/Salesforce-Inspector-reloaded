@@ -65,6 +65,14 @@
   #insext.insext-active .insext-popup {
     display: block;
   }
+  #insext button.insext-btn {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+  }
   #insext .insext-btn {
     box-sizing: border-box;
     background: rgba(255, 255, 255, 0.9);

@@ -11,7 +11,8 @@
   },
   "minimum_chrome_version": "88",
   "permissions": [
-    "cookies"
+    "cookies",
+    "storage"
   ],
   "host_permissions": [
     "https://*.salesforce.com/*",
@@ -77,6 +78,7 @@
         "metadata-retrieve.html",
         "metadata-retrieve-legacy.html",
         "explore-api.html",
+        "dependencies-explorer.html",
         "rest-explore.html",
         "limits.html",
         "api-statistics.html",
@@ -140,6 +142,9 @@
     },
     "data-import": {
       "description": "Data Import"
+    },
+    "dependencies-explorer": {
+      "description": "Dependencies Explorer"
     },
     "options": {
       "description": "Options"

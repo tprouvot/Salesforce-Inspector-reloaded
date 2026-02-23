@@ -22,13 +22,18 @@ The Data Export page now supports multiple query tabs, allowing you to work on s
 - **Drag & Drop Reordering**: Click and drag tabs to reorder them according to your preference. The tab positions are automatically saved.
 - **Handling Duplicate Names**: If you open a new tab for an SObject that already has a tab, or if you manually create tabs with duplicate names, a number will be appended to keep them unique (e.g., "Account (1)", "Account (2)").
 - **Preserved Context**: Each tab remembers its own query and the results from the last time it was run. When you switch between tabs, the query and its results are instantly restored.
+- **Context Menu Actions**: **Right-click** on any tab to access the context menu with quick actions:
+  - **Close tab**: Close the selected tab
+  - **Close other tabs**: Close all tabs except the selected one
+  - **Close tabs to the right**: Close all tabs to the right of the selected tab
+  - **Close all tabs**: Close all tabs (creates a new empty tab if all are closed)
 
 ### How to Use
 
 - **Create a new tab**: Click the `+` button in the tab bar
 - **Edit tab names**: Double-click on any tab name, type your custom name, and press Enter
 - **Reorder tabs**: Click and drag any tab to move it to your preferred position
-- **Close tabs**: Click the `×` button on any tab (except when only one tab remains)
+- **Close tabs**: Click the `×` button on any tab (except when only one tab remains), or right-click to access more closing options via the context menu
 
 All tab names and positions are automatically saved and will persist between browser sessions.
 
@@ -72,9 +77,9 @@ then set "Display Query Execution Time" to enabled. Total time for the query to 
 are displayed.
 
 
-## Hide additional columns in query results
+## Hide object columns in query results
 
-After running a query in the "Data Export" page, you can hide additional columns in the query results. These columns represent the name of the objects included in your query. They are useful to automatically map the fields to the correct object in the "Data Import" page. The columns are hidden in the exported files (CSV or Excel) as well. You can set a default value, using the 'Hide additionnal Object Name Columns by default on Data Export' option ("Options" -> "Data Export" tab).
+After running a query in the "Data Export" page, you can hide columns in the query results. These columns represent the name of the objects included in your query. They are useful to automatically map the fields to the correct object in the "Data Import" page. The columns are hidden in the exported files (CSV or Excel) as well. You can set a default value, using the 'Hide Object Name Columns by default on Data Export' option ("Options" -> "Data Export" tab).
 
 ![2024-05-16_17-54-24 (1)](https://github.com/guillaumeSF/Salesforce-Inspector-reloaded/assets/166603639/45fda19b-b426-4b11-91cb-4f0fbc5c47d7)
 

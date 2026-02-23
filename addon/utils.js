@@ -1,5 +1,11 @@
 import {sfConn, apiVersion} from "./inspector.js";
 
+// Browser polyfill for cross-browser compatibility
+if (typeof browser === "undefined") {
+  // eslint-disable-next-line no-var
+  var browser = chrome;
+}
+
 export class Constants {
   static PromptTemplateSOQL = "GenerateSOQL";
   static PromptTemplateFlow = "DescribeFlow";
@@ -10,7 +16,149 @@ export class Constants {
   static ACCESS_TOKEN = "_access_token";
   static CODE_VERIFIER = "_code_verifier";
   static CLIENT_ID = "_clientId";
+  // API Statistics
+  static API_DEBUG_STATISTICS_MODE = "apiDebugStatisticsMode";
+  static API_DEBUG_STATISTICS = "apiDebugStatistics";
+  // Cache Keys
+  static CACHE_SOBJECTS_LIST = "sobjectsList";
+  // CustomEvent: dispatched when sobjects list is refreshed in background
+  static SOBJECTS_LIST_REFRESHED_EVENT = "sobjectsListRefreshed";
+  // Options
+  static PRELOAD_SOBJECTS_BEFORE_POPUP = "preloadSobjectsBeforePopup";
+  static ENABLE_SOBJECTS_LIST_CACHE = "enableSobjectsListCache";
+  static ENABLE_RECENTLY_VIEWED_RECORDS = "enableRecentlyViewedRecords";
 }
+
+/**
+ * Mapping of standard Salesforce objects to their name fields.
+ * Objects with "Name" field are not included (assumed default).
+ * Objects with null have no nameField property (e.g., Event, Task use Subject).
+ * Objects with a string value have a different nameField than "Name".
+ *
+ * This list helps optimize queries by avoiding unnecessary describe API calls.
+ */
+export const STANDARD_OBJECT_NAME_FIELDS = {
+  // Objects with non-standard name fields or no name field
+  "AccountContactRelation": null,
+  "AccountContactRole": null,
+  "AccountPartner": null,
+  "CampaignMember": null,
+  "CampaignMemberStatus": null,
+  "Case": "CaseNumber",
+  "CaseContactRole": null,
+  "CaseMilestone": null,
+  "CaseSolution": null,
+  "CaseStatus": "ApiName",
+  "ChangeRequest": "ChangeRequestNumber",
+  "ContentAsset": "DeveloperName",
+  "ContentBody": null,
+  "ContentDistributionView": null,
+  "ContentDocument": "Title",
+  "ContentDocumentLink": null,
+  "ContentDocumentSubscription": null,
+  "ContentFolderItem": null,
+  "ContentFolderLink": null,
+  "ContentFolderMember": null,
+  "ContentNote": "Title",
+  "ContentNotification": null,
+  "ContentTagSubscription": null,
+  "ContentTaxonomyRelatedTerm": null,
+  "ContentTaxonomyTermRelatedTerm": null,
+  "ContentUserSubscription": null,
+  "ContentVersion": "Title",
+  "ContentVersionComment": null,
+  "ContentVersionRating": null,
+  "ContentWorkspaceDoc": null,
+  "ContentWorkspaceMember": null,
+  "ContentWorkspaceSubscription": null,
+  "Contract": "ContractNumber",
+  "ContractContactRole": null,
+  "ContractGroupPlanAttribute": "AttributeName",
+  "ContractGrpPlanGrpClsAttr": "AttributeName",
+  "ContractLineItem": "LineItemNumber",
+  "ContractStatus": "ApiName",
+  "ContractType": "DeveloperName",
+  "ContractTypeConfig": null,
+  "Event": "Subject",
+  "Expense": "ExpenseNumber",
+  "ExpenseReport": "ExpenseReportNumber",
+  "ExpenseReportEntry": "ExpenseReportEntryNumber",
+  "GroupMember": null,
+  "LeadStatus": "ApiName",
+  "Note": "Title",
+  "OpportunityCompetitor": null,
+  "OpportunityContactRole": null,
+  "OpportunityHistory": null,
+  "OpportunityLineItemSchedule": null,
+  "OpportunityPartner": null,
+  "OpportunityRelatedDeleteLog": "DeleteLog",
+  "OpportunityStage": "ApiName",
+  "Order": "OrderNumber",
+  "OrderItem": "OrderItemNumber",
+  "OrderStatus": "ApiName",
+  "Partner": null,
+  "PartnerRole": "ApiName",
+  "ProductEntitlementTemplate": null,
+  "ProductItem": "ProductItemNumber",
+  "ProductItemTransaction": "ProductItemTransactionNumber",
+  "ProductRequest": "ProductRequestNumber",
+  "ProductRequestLineItem": "ProductRequestLineItemNumber",
+  "ProductRequired": "ProductRequiredNumber",
+  "ProductServiceCampaign": "ProductServiceCampaignName",
+  "ProductServiceCampaignItem": "ProductServiceCampaignItemNumber",
+  "ProductServiceCampaignItemStatus": "ApiName",
+  "ProductServiceCampaignStatus": "ApiName",
+  "ProductTransfer": "ProductTransferNumber",
+  "ProductWarrantyTerm": "ProductWarrantyTermNumber",
+  "QuoteLineItem": "LineNumber",
+  "ReturnOrder": "ReturnOrderNumber",
+  "ReturnOrderLineItem": "ReturnOrderLineItemNumber",
+  "ServiceAppointment": "AppointmentNumber",
+  "ServiceAppointmentCapacityUsage": "ServiceAppointmentCapacityUsageAutonumber",
+  "ServiceAppointmentStatus": "ApiName",
+  "ServiceCrewMember": "ServiceCrewMemberNumber",
+  "ServiceReport": "ServiceReportNumber",
+  "ServiceReportLayout": "MasterLabel",
+  "ServiceResourceCapacity": "CapacityNumber",
+  "ServiceResourceSkill": "SkillNumber",
+  "ServiceTerritoryLocation": "ServiceTerritoryLocationNumber",
+  "ServiceTerritoryMember": "MemberNumber",
+  "Shift": "ShiftNumber",
+  "ShiftStatus": "ApiName",
+  "Shipment": "ShipmentNumber",
+  "ShipmentItem": "ShipmentItemNumber",
+  "Skill": "MasterLabel",
+  "SkillRequirement": "SkillNumber",
+  "SkillType": "MasterLabel",
+  "Solution": "SolutionName",
+  "SolutionStatus": "ApiName",
+  "Task": "Subject",
+  "TaskPriority": "ApiName",
+  "TaskRelation": null,
+  "TaskStatus": "ApiName",
+  "TaskWhoRelation": null,
+  "TimeSheet": "TimeSheetNumber",
+  "TimeSheetEntry": "TimeSheetEntryNumber",
+  "TimeSlot": "TimeSlotNumber",
+  "TimelineObjectDefinition": "DeveloperName",
+  "Vote": null,
+  "WarrantyTerm": "WarrantyTermName",
+  "WorkAccess": null,
+  "WorkBadge": null,
+  "WorkCapacityAvailability": "WorkCapacityAvailNumber",
+  "WorkCapacityLimit": "WorkCapacityLimitNumber",
+  "WorkCapacityUsage": "WorkCapacityUsageNumber",
+  "WorkOrder": "WorkOrderNumber",
+  "WorkOrderLineItem": "LineItemNumber",
+  "WorkOrderLineItemStatus": "ApiName",
+  "WorkOrderStatus": "ApiName",
+  "WorkPlanSelectionRule": "WorkPlanSelectionRuleNumber",
+  "WorkPlanTemplateEntry": "WorkPlanTemplateEntryNumber",
+  "WorkStepStatus": "ApiName",
+  "WorkThanks": null,
+  // Custom metadata types ending with __mdt use "DeveloperName"
+  "CustomMetadataType": "DeveloperName", // For __mdt objects
+};
 
 export function getLinkTarget(e = {}) {
   if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
@@ -34,8 +182,12 @@ export function isOptionEnabled(optionName, optionsArray){
   return true;
 }
 
-export function isSettingEnabled(settingName){
-  return localStorage.getItem(settingName) === "true";
+export function isSettingEnabled(settingName, defaultValue = false){
+  const value = localStorage.getItem(settingName);
+  if (value === null) {
+    return defaultValue;
+  }
+  return value === "true";
 }
 
 export async function getLatestApiVersionFromOrg(sfHost) {
@@ -318,36 +470,70 @@ export function downloadCsvFile(csvContent, filename) {
 }
 
 /**
+ * Get the name field for a Salesforce object.
+ * Checks the standard objects mapping first, then returns null to indicate
+ * that the describe API should be used to determine the name field.
+ *
+ * @param {string} sobjectName - The API name of the Salesforce object
+ * @returns {string|null|undefined} The name field API name, null if no name field exists, or undefined if not in the mapping
+ */
+export function getStandardObjectNameField(sobjectName) {
+  // Check direct mapping first
+  if (sobjectName in STANDARD_OBJECT_NAME_FIELDS) {
+    return STANDARD_OBJECT_NAME_FIELDS[sobjectName];
+  }
+
+  // Check for custom metadata types (end with __mdt)
+  if (sobjectName.endsWith("__mdt")) {
+    return "DeveloperName";
+  }
+
+  // Not in the mapping - return N/A to indicate describe API should be used
+  return "N/A";
+}
+
+/**
  * DataCache - Generic caching utility for any JSON-serializable data
  * Stores data with timestamps and provides expiration checking based on user-configured days.
  */
 export class DataCache {
   /**
-   * Get the cache period in days from localStorage
-   * @returns {number} Cache period in days (default: 7)
+   * Get cache duration for a specific cache key (in hours) from localStorage setting
+   * Falls back to default (168 hours = 7 days) if cache-specific duration not set
+   * This is used when creating new cache entries and for UI display.
+   * Note: Cache validation uses the durationHours stored in the cache entry itself.
+   * @param {string} cacheKey - Cache key to get duration for
+   * @returns {number} Cache duration in hours
    */
-  static getCachePeriodDays() {
-    const cachePeriod = localStorage.getItem("cachePeriodDays");
-    if (cachePeriod === null || cachePeriod === undefined) {
-      return 7; // Default to 7 days
+  static getCacheDurationHours(cacheKey) {
+    const cacheDurationHours = localStorage.getItem(`cacheDuration_${cacheKey}`);
+    if (cacheDurationHours !== null && cacheDurationHours !== undefined) {
+      const hours = parseInt(cacheDurationHours, 10);
+      if (!isNaN(hours) && hours >= 0) {
+        return hours;
+      }
     }
-    const days = parseInt(cachePeriod, 10);
-    return isNaN(days) || days < 1 ? 7 : days;
+    // Fallback to default: 168 hours (7 days)
+    return 168;
   }
 
   /**
    * Check if a cache entry is still valid
-   * @param {Object} cacheEntry - Cache entry with data and timestamp
-   * @param {number} cacheDays - Number of days the cache should be valid
+   * @param {Object} cacheEntry - Cache entry with data, timestamp, and optionally durationHours
+   * @param {string} cacheKey - Cache key for per-cache expiration checking (used for fallback)
    * @returns {boolean} True if cache is valid, false if expired
    */
-  static isCacheValid(cacheEntry, cacheDays) {
+  static isCacheValid(cacheEntry, cacheKey) {
     if (!cacheEntry || !cacheEntry.timestamp) {
       return false;
     }
+    // Use durationHours from cache entry if available, otherwise fallback to current setting
+    const cacheDurationHours = cacheEntry.durationHours !== undefined
+      ? cacheEntry.durationHours
+      : this.getCacheDurationHours(cacheKey);
     const now = Date.now();
     const cacheAge = now - cacheEntry.timestamp;
-    const maxAge = cacheDays * 24 * 60 * 60 * 1000; // Convert days to milliseconds
+    const maxAge = cacheDurationHours * 60 * 60 * 1000; // Convert hours to milliseconds
     return cacheAge < maxAge;
   }
 
@@ -355,10 +541,29 @@ export class DataCache {
    * Get cached data if valid, null if expired or missing
    * @param {string} cacheKey - Unique key for the cached data
    * @param {string} sfHost - Salesforce host (for scoping cache per org)
-   * @returns {Object|null} Cached data if valid, null otherwise
+   * @param {boolean} isLarge - If true, use browser.storage.local (async), otherwise localStorage (sync)
+   * @param {boolean} useSfHostPrefix - If true, prefix storage key with sfHost (default: true)
+   * @returns {Promise<Object|null>|Object|null} Cached data if valid, null otherwise. Promise if isLarge=true
    */
-  static getCachedData(cacheKey, sfHost) {
-    const storageKey = `${sfHost}_cache_${cacheKey}`;
+  static async getCachedData(cacheKey, sfHost, isLarge = false, useSfHostPrefix = true) {
+    const storageKey = useSfHostPrefix
+      ? `${sfHost}_cache_${cacheKey}`
+      : `cache_${cacheKey}`;
+
+    if (isLarge) {
+      // Use browser.storage.local for large data
+      return this._getCachedDataLarge(storageKey, cacheKey, sfHost);
+    } else {
+      // Use localStorage for small data (synchronous)
+      return this._getCachedDataSmall(storageKey, cacheKey, sfHost);
+    }
+  }
+
+  /**
+   * Internal method to get cached data from localStorage (synchronous)
+   * @private
+   */
+  static async _getCachedDataSmall(storageKey, cacheKey, expectedSfHost) {
     const cached = localStorage.getItem(storageKey);
 
     if (!cached) {
@@ -367,9 +572,21 @@ export class DataCache {
 
     try {
       const cacheEntry = JSON.parse(cached);
-      const cacheDays = this.getCachePeriodDays();
+      if (cacheEntry.compressed) {
+        cacheEntry.data = await this._decompressGzip(cacheEntry.data);
+      }
 
-      if (this.isCacheValid(cacheEntry, cacheDays)) {
+      // Check if sfHost matches (for sobjectsList cache)
+      if (cacheEntry.sfHost && cacheEntry.sfHost !== expectedSfHost) {
+        // Different org cached, return null to trigger fresh fetch
+        // Clear old cache asynchronously (don't block)
+        setTimeout(() => {
+          localStorage.removeItem(storageKey);
+        }, 0);
+        return null;
+      }
+
+      if (this.isCacheValid(cacheEntry, cacheKey)) {
         return cacheEntry.data;
       } else {
         // Cache expired, remove it
@@ -384,18 +601,145 @@ export class DataCache {
   }
 
   /**
+   * Internal method to get cached data from browser.storage.local (asynchronous)
+   * @private
+   */
+  static async _getCachedDataLarge(storageKey, cacheKey) {
+    if (typeof browser === "undefined" || !browser.storage || !browser.storage.local) {
+      console.warn("browser.storage.local not available");
+      return null;
+    }
+
+    try {
+      const result = await browser.storage.local.get(storageKey);
+      const cached = result[storageKey];
+
+      if (!cached) {
+        return null;
+      }
+
+      //check it the cache is valid
+      if (!this.isCacheValid(cached, cacheKey)) {
+        await browser.storage.local.remove(storageKey);
+        return null;
+      }
+
+      //uncompress the data if compressed
+      let data = cached.data;
+      if (cached.compressed) {
+        data = await this._decompressGzip(cached.data);
+      }
+      return {data, lastFetch: cached.lastFetch};
+    } catch (e) {
+      console.error(`Error reading large data cache for ${cacheKey}:`, e);
+      return null;
+    }
+  }
+
+  /**
    * Store data in cache with current timestamp
    * @param {string} cacheKey - Unique key for the cached data
    * @param {string} sfHost - Salesforce host (for scoping cache per org)
    * @param {*} data - Any JSON-serializable data to cache
+   * @param {boolean} isLarge - If true, use browser.storage.local (async), otherwise localStorage (sync)
+   * @param {boolean} useSfHostPrefix - If true, prefix storage key with sfHost (default: true)
+   * @param {number} lastFetch - Timestamp of the last fetch
+   * @returns {Promise<boolean>|void} Promise with success boolean if isLarge=true, void otherwise
    */
-  static setCachedData(cacheKey, sfHost, data) {
-    const storageKey = `${sfHost}_cache_${cacheKey}`;
+  static async setCachedData(cacheKey, sfHost, data, isLarge = false, useSfHostPrefix = true, lastFetch = null, compression = false) {
+    // Get current duration setting
+    const durationHours = this.getCacheDurationHours(cacheKey);
+
+    const storageKey = useSfHostPrefix
+      ? `${sfHost}_cache_${cacheKey}`
+      : `cache_${cacheKey}`;
+
+    //set the cache entry and compress the data if needed
     const cacheEntry = {
-      data,
-      timestamp: Date.now()
+      data: compression ? await this._compressGzip(data) : data,
+      timestamp: Date.now(),
+      sfHost, // Store sfHost in cache entry for validation
+      durationHours, // Store duration in cache entry
+      lastFetch,
+      compressed: compression
     };
 
+    if (isLarge) {
+      // Use browser.storage.local for large data
+      // Await cleanup before storing (avoids race where set runs before clear completes)
+      return this._clearOldOrgCache(storageKey, sfHost, cacheEntry)
+        .then(() => this._setCachedDataLarge(storageKey, cacheKey, cacheEntry));
+    } else {
+      // Use localStorage for small data (synchronous)
+      this._setCachedDataSmall(storageKey, cacheKey, cacheEntry);
+      return undefined;
+    }
+  }
+
+  /**
+   * Clear cache entries to stay under storage quota before storing new data.
+   * Chrome storage.local ~5MB (10MB in Chrome 114+), Firefox ~10MB.
+   * Removes other-org caches first, then oldest entries if still over quota.
+   * @private
+   */
+  static async _clearOldOrgCache(storageKey, currentSfHost, cacheEntry = undefined) {
+    if (typeof browser === "undefined" || !browser.storage || !browser.storage.local) {
+      return;
+    }
+
+    const maxStorageUsage = 10 * 1024 * 1024;
+    try {
+      const getBytesInUse = browser.storage.local.getBytesInUse?.bind(browser.storage.local);
+      if (!getBytesInUse) {
+        return;
+      }
+
+      //retrieve the current storage usage and estimate the expected storage usage after the update
+      const currentStorageUsage = await getBytesInUse(null);
+      const cacheEntrySize = (cacheEntry?.data?.length || 0) + 100;
+      const keyStorageUsage = await getBytesInUse(storageKey);
+      let expectedStorageUsage = currentStorageUsage + cacheEntrySize - keyStorageUsage;
+
+      //we have enough space, so we don't need to remove any entries
+      if (expectedStorageUsage <= maxStorageUsage) {
+        return;
+      }
+
+      const allData = await browser.storage.local.get(null);
+      //get all the entries that are not expired and sort them by last fetch timestamp (older first)
+      const entries = Object.entries(allData || {})
+        .filter(([, v]) => v && (v.timestamp != null || v.lastFetch != null))
+        .sort((a, b) => (a[1].lastFetch ?? a[1].timestamp ?? 0) - (b[1].lastFetch ?? b[1].timestamp ?? 0));
+
+      const keysToRemove = [];
+
+      // Calculate which entry we will remove based on last fetch timestamp
+      for (const [key, value] of entries) {
+        if (value?.sfHost && value.sfHost !== currentSfHost) {
+          //if the entry is from another org, we add it to the list of keys to remove
+          keysToRemove.push(key);
+          //then we calculate if we we have enough space to store the new entry
+          const size = await getBytesInUse(key);
+          expectedStorageUsage -= size;
+          if (expectedStorageUsage < maxStorageUsage) {
+            break;
+          }
+        }
+      }
+
+      if (keysToRemove.length > 0) {
+        await browser.storage.local.remove(keysToRemove);
+      }
+    } catch (e) {
+      console.error(`Error clearing cache for ${storageKey}:`, e);
+    }
+  }
+
+  /**
+   * Internal method to store cached data in localStorage (synchronous)
+   * @private
+   */
+  static _setCachedDataSmall(storageKey, cacheKey, cacheEntry) {
     try {
       localStorage.setItem(storageKey, JSON.stringify(cacheEntry));
     } catch (e) {
@@ -404,189 +748,475 @@ export class DataCache {
   }
 
   /**
-   * Clear a specific cache entry
-   * @param {string} cacheKey - Unique key for the cached data
-   * @param {string} sfHost - Salesforce host (for scoping cache per org)
+   * Compress data with gzip and return as base64 string.
+   * @param {*} data - JSON-serializable data to compress
+   * @returns {Promise<string>} Base64-encoded gzip compressed string
+   * @private
    */
-  static clearCache(cacheKey, sfHost) {
-    const storageKey = `${sfHost}_cache_${cacheKey}`;
-    localStorage.removeItem(storageKey);
+  static async _compressGzip(data) {
+    const json = JSON.stringify(data);
+    const blob = new Blob([json], {type: "application/json"});
+    const stream = blob.stream().pipeThrough(new CompressionStream("gzip"));
+    const compressedBlob = await new Response(stream).blob();
+    const buffer = await compressedBlob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
   }
 
   /**
-   * Clear all cache entries for a specific host
-   * @param {string} sfHost - Salesforce host
+   * Decompress base64 gzip string back to original data.
+   * @param {string} base64Compressed - Base64-encoded gzip compressed string
+   * @returns {Promise<*>} Original decompressed data
+   * @private
    */
-  static clearAllCache(sfHost) {
-    const prefix = `${sfHost}_cache_`;
+  static async _decompressGzip(base64Compressed) {
+    const binary = atob(base64Compressed);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    const decompressedBlob = await new Response(stream).blob();
+    const text = await decompressedBlob.text();
+    return JSON.parse(text);
+  }
+
+  /**
+   * Internal method to store cached data in browser.storage.local (asynchronous)
+   * On quota error, clears the target key (we're overwriting) and retries once.
+   * Compresses cacheEntry.data with gzip before storing to reduce storage usage.
+   * @private
+   */
+  static async _setCachedDataLarge(storageKey, cacheKey, cacheEntry) {
+    if (typeof browser === "undefined" || !browser.storage || !browser.storage.local) {
+      console.warn("browser.storage.local not available");
+      return false;
+    }
+
+    try {
+      await browser.storage.local.set({[storageKey]: cacheEntry});
+      return true;
+    } catch (e) {
+      console.error(`Error storing large data cache for ${cacheKey}:`, e);
+      console.error(`Error name: ${e.name}, Error message: ${e.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Clear a specific cache entry
+   * @param {string} cacheKey - Unique key for the cached data
+   * @param {string} sfHost - Salesforce host (for scoping cache per org, not used if useSfHostPrefix is false)
+   * @param {boolean} isLarge - If true, clear from browser.storage.local (async), otherwise localStorage (sync)
+   * @param {boolean} useSfHostPrefix - If true, prefix storage key with sfHost (default: true)
+   * @returns {Promise<void>|void} Promise if isLarge=true, void otherwise
+   */
+  static clearCache(cacheKey, sfHost, isLarge = false, useSfHostPrefix = true) {
+    const storageKey = useSfHostPrefix
+      ? `${sfHost}_cache_${cacheKey}`
+      : `cache_${cacheKey}`;
+
+    if (isLarge) {
+      // Clear from browser.storage.local
+      return this._clearCacheLarge(storageKey);
+    } else {
+      // Clear from localStorage
+      if (useSfHostPrefix) {
+        // Direct removal for sfHost-prefixed keys
+        localStorage.removeItem(storageKey);
+      } else {
+        // Iterate through all localStorage keys to find and remove matching cache entries
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.endsWith(`_cache_${cacheKey}`)) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+      }
+      return undefined;
+    }
+  }
+
+  /**
+   * Internal method to clear cached data from browser.storage.local (asynchronous)
+   * @private
+   * @param {string} storageKey - The exact storage key to remove
+   */
+  static async _clearCacheLarge(storageKey) {
+    if (typeof browser !== "undefined" && browser.storage && browser.storage.local) {
+      // Direct removal using exact storage key (works for both prefixed and non-prefixed keys)
+      await browser.storage.local.remove(storageKey);
+    }
+  }
+
+  /**
+   * Clear ALL extension cache entries from both localStorage and browser.storage.local
+   * Clears all cache entries regardless of host or cache key
+   * @returns {Promise<void>}
+   */
+  static async clearAllExtensionCache() {
     const keysToRemove = [];
 
-    // Collect all keys that match the pattern
+    // Collect all cache-related keys from localStorage
+    // Patterns: *_cache_* or cache_* or cacheDuration_*
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith(prefix)) {
+      if (key && (key.includes("_cache_") || key.startsWith("cache_") || key.startsWith("cacheDuration_"))) {
         keysToRemove.push(key);
       }
     }
 
-    // Remove all matching keys
+    // Remove all matching keys from localStorage
     keysToRemove.forEach(key => localStorage.removeItem(key));
+    console.log(`Cleared ${keysToRemove.length} cache entries from localStorage`);
+
+    // Also clear from browser.storage.local if available
+    if (typeof browser !== "undefined" && browser.storage && browser.storage.local) {
+      try {
+        const allData = await browser.storage.local.get(null);
+        const largeKeysToRemove = Object.keys(allData).filter(key =>
+          key.includes("_cache_") || key.startsWith("cache_")
+        );
+        if (largeKeysToRemove.length > 0) {
+          await browser.storage.local.remove(largeKeysToRemove);
+          console.log(`Cleared ${largeKeysToRemove.length} cache entries from browser.storage.local`);
+        }
+      } catch (e) {
+        console.error("Error clearing browser.storage.local cache:", e);
+      }
+    }
+  }
+
+}
+
+/**
+ * Get sobjects list - returns cached data if available, otherwise fetches from API.
+ * When cache is used, returns immediately and continues refresh in background; dispatches
+ * CustomEvent (Constants.SOBJECTS_LIST_REFRESHED_EVENT) when refresh completes.
+ * @param {string} sfHost - Salesforce host (for cache validation)
+ * @returns {Promise<Array>} Sobjects list (from cache or fetched from API)
+ */
+export async function getSobjectsList(sfHost) {
+  // Check if caching is enabled
+  const cacheEnabled = isSettingEnabled(Constants.ENABLE_SOBJECTS_LIST_CACHE, true);
+  const currentFetch = Date.now();
+
+  // Check cache first (only if caching is enabled)
+  if (cacheEnabled) {
+    const cached = await DataCache.getCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, true, true);
+    if (cached) {
+      const sobjectsList = cached.data ?? [];
+
+      //if we don't do the Preload SObjects before popup opens, we will refresh the cache in background
+      if (!isSettingEnabled(Constants.PRELOAD_SOBJECTS_BEFORE_POPUP)){
+        const lastFetch = cached.lastFetch ?? null;
+
+        // Return cached data immediately, refresh in background
+        fetchSobjectsList(sfHost, currentFetch, cacheEnabled, sobjectsList, lastFetch);
+      }
+      return sobjectsList;
+    }
+  }
+
+  // No cache - fetch and return
+  return await fetchSobjectsList(sfHost, currentFetch, cacheEnabled, null, null);
+}
+
+/**
+ * Fetches sobjects list in background and dispatches CustomEvent when done.
+ * @private
+ */
+async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobjectsList, lastFetch) {
+  try {
+    const entityMap = new Map();
+
+    //if we have cached data, we need to add it to the entity map
+    if (cachedSobjectsList && cachedSobjectsList.length > 0) {
+      for (const entity of cachedSobjectsList) {
+        entityMap.set(entity.name, entity);
+      }
+    }
+
+    function addEntity(
+      {
+        name,
+        label,
+        keyPrefix,
+        durableId,
+        isCustomSetting,
+        recordTypesSupported,
+        isEverCreatable,
+        newUrl,
+        layoutable,
+      },
+      api
+    ) {
+      label = label && label.match("__MISSING") ? "" : label; // Error is added to the label if no label exists
+      let entity = entityMap.get(name);
+      // Each API call enhances the data, only the Name fields are present for each call.
+      if (entity) {
+        entity.label = label || entity.label;
+        entity.keyPrefix = keyPrefix || entity.keyPrefix;
+        entity.durableId = durableId || entity.durableId;
+        entity.isCustomSetting = isCustomSetting || entity.isCustomSetting;
+        entity.newUrl = newUrl || entity.newUrl;
+        entity.recordTypesSupported = recordTypesSupported || entity.recordTypesSupported;
+        entity.isEverCreatable = isEverCreatable || entity.isEverCreatable;
+        // Keep layoutable true if it was true in either call
+        entity.layoutable = layoutable || entity.layoutable;
+      } else {
+        entity = {
+          availableApis: [],
+          name,
+          label,
+          keyPrefix,
+          durableId,
+          isCustomSetting,
+          availableKeyPrefix: null,
+          recordTypesSupported,
+          isEverCreatable,
+          newUrl,
+          layoutable: layoutable || false,
+        };
+        entityMap.set(name, entity);
+      }
+      if (api) {
+        if (!entity.availableApis.includes(api)) {
+          entity.availableApis.push(api);
+        }
+        if (keyPrefix) {
+          entity.availableKeyPrefix = keyPrefix;
+        }
+      }
+    }
+
+    async function getObjects(url, api, lastFetch) {
+      try {
+        //https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_describeGlobal.htm
+        //https://developer.salesforce.com/docs/atlas.en-us.222.0.api_rest.meta/api_rest/describe_global_with_ifmodified_header.htm
+        //If-Modified-Since: <date> format EEE, dd MMM yyyy HH:mm:ss z
+        const headers = lastFetch ? {"If-Modified-Since": new Date(lastFetch).toGMTString()} : {};
+        const describe = await sfConn.rest(url, {headers});
+        //if no modification, we receive a 304 status code and an empty response, so process only if describe is not empty
+        if (describe) {
+          for (const sobject of describe.sobjects) {
+            // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
+            addEntity(
+              {...sobject, isCustomSetting: sobject.customSetting || sobject.isCustomSetting, layoutable: sobject.layoutable || false},
+              api
+            );
+          }
+        }
+      } catch (err) {
+        console.error("list " + api + " sobjects", err);
+      }
+    }
+
+    /**
+     * Fetch EntityDefinition records from Salesforce Tooling API
+     * Uses parallel batching to fetch all records (2000 per batch)
+     * @returns {Promise<void>} Resolves when all batches are fetched
+     */
+    function fetchEntityDefinitions() {
+      const batchSize = 2000;
+      // entity definition queries can take a lot of time, so spent a first call to get the total number of records to do all others in parallel
+      return sfConn
+        .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent("SELECT COUNT() FROM EntityDefinition")}`)
+        .then((res) => {
+          const entityNb = res.totalSize;
+          for (let bucket = 0; bucket < Math.ceil(entityNb / batchSize); bucket++) {
+            const query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName LIMIT ${batchSize} OFFSET ${bucket * batchSize}`;
+            sfConn
+              .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent(query)}`)
+              .then((respEntity) => {
+                for (let record of respEntity.records) {
+                  addEntity(
+                    {
+                      name: record.QualifiedApiName,
+                      label: record.Label,
+                      keyPrefix: record.KeyPrefix,
+                      durableId: record.DurableId,
+                      isCustomSetting: record.IsCustomSetting,
+                      recordTypesSupported: record.RecordTypesSupported,
+                      newUrl: record.NewUrl,
+                      isEverCreatable: record.IsEverCreatable,
+                    },
+                    null
+                  );
+                }
+              })
+              .catch((err) => {
+                console.error("list entity definitions: ", err);
+              });
+          }
+        })
+        .catch((err) => {
+          console.error("count entity definitions: ", err);
+        });
+    }
+
+    if (entityMap.size > 0) {
+      //it means that we already have fetched the data, so we just need to check if we have updates on regular and tooling api
+      await Promise.all([
+        getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi", lastFetch),
+        getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi", lastFetch),
+      ]);
+    } else {
+      // Fetch objects from different APIs
+      await Promise.all([
+        getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi", null),
+        getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi", null),
+        fetchEntityDefinitions(),
+      ]);
+    }
+
+    const sobjectsList = Array.from(entityMap.values());
+
+    if (cacheEnabled && sobjectsList?.length > 0) {
+      await DataCache.setCachedData(Constants.CACHE_SOBJECTS_LIST, sfHost, sobjectsList, true, true, currentFetch, true);
+      //dispatch event when delta cache is set
+      window.dispatchEvent(new CustomEvent(Constants.SOBJECTS_LIST_REFRESHED_EVENT, {
+        detail: {sfHost, sobjectsList}
+      }));
+    }
+
+    return sobjectsList;
+  } catch (err) {
+    console.error("Background sobjects refresh error:", err);
+    return null;
   }
 }
 
 /**
- * Shared utility function to fetch and merge sobjects from multiple sources
- * Used by both field-creator.js and popup.js
- * @returns {Promise<Map>} Promise that resolves to a Map of entity names to entity objects
+ * Validates if a string is a valid Salesforce record ID
+ * @param {string} recordId - The string to validate
+ * @returns {boolean} True if the string is a valid record ID
  */
-export async function fetchAndMergeSobjects() {
-  const entityMap = new Map();
+export function isRecordId(recordId) {
+  return typeof recordId === "string"
+       && /^[a-zA-Z0-9]{15,18}$/.test(recordId)
+       && /^[0-9a-zA-Z]{3}/.test(recordId)
+       && !recordId.startsWith("000")
+       && !/[^a-zA-Z0-9]/.test(recordId)
+       && /[0-9]/.test(recordId.slice(0, 5));
+}
 
-  /**
-   * Add or merge an entity into the entityMap
-   * @param {Object} entity - Entity data
-   * @param {string} api - API source identifier (e.g., "regularApi", "toolingApi")
-   */
-  const addEntity = (entity, api) => {
-    // Handle __MISSING label error case
-    const label = entity.label && entity.label.match("__MISSING") ? "" : entity.label;
-    const processedEntity = {...entity, label};
+/**
+ * Generates a package.xml string from grouped metadata components
+ * @param {Map|Object} groupedComponents - Map or Object where keys are metadata types and values are Set or Array of member names
+ * @param {Object} [options] - Optional configuration
+ * @param {boolean} [options.includeXmlDeclaration=true] - Whether to include XML declaration
+ * @param {boolean} [options.sortTypes=true] - Whether to sort types alphabetically
+ * @param {boolean} [options.skipEmptyTypes=true] - Whether to skip types with no members
+ * @returns {string} The generated package.xml string
+ */
+export function generatePackageXml(groupedComponents, options = {}) {
+  const {
+    includeXmlDeclaration = true,
+    sortTypes = true,
+    skipEmptyTypes = true
+  } = options;
 
-    let existingEntity = entityMap.get(processedEntity.name);
+  let packageXml = "";
 
-    if (existingEntity) {
-      // Merge existing entity - preserve existing values, only update if new value is truthy
-      if (!existingEntity.keyPrefix && processedEntity.keyPrefix) {
-        existingEntity.keyPrefix = processedEntity.keyPrefix;
-      }
-      if (!existingEntity.durableId && processedEntity.durableId) {
-        existingEntity.durableId = processedEntity.durableId;
-      }
-      if (!existingEntity.isCustomSetting && processedEntity.isCustomSetting) {
-        existingEntity.isCustomSetting = processedEntity.isCustomSetting;
-      }
-      if (!existingEntity.newUrl && processedEntity.newUrl) {
-        existingEntity.newUrl = processedEntity.newUrl;
-      }
-      if (!existingEntity.recordTypesSupported && processedEntity.recordTypesSupported) {
-        existingEntity.recordTypesSupported = processedEntity.recordTypesSupported;
-      }
-      if (!existingEntity.isEverCreatable && processedEntity.isEverCreatable) {
-        existingEntity.isEverCreatable = processedEntity.isEverCreatable;
-      }
-      if (!existingEntity.namespacePrefix && processedEntity.namespacePrefix) {
-        existingEntity.namespacePrefix = processedEntity.namespacePrefix;
-      }
-      // Handle layoutable - keep true if it was true in either call
-      if (processedEntity.layoutable !== undefined) {
-        existingEntity.layoutable = existingEntity.layoutable || processedEntity.layoutable;
-      }
-      // Merge availableApis
-      if (api && !existingEntity.availableApis.includes(api)) {
-        existingEntity.availableApis.push(api);
-      }
-      // Update availableKeyPrefix if we have a keyPrefix
-      if (processedEntity.keyPrefix && api) {
-        existingEntity.availableKeyPrefix = processedEntity.keyPrefix;
-      }
-    } else {
-      // Create new entity
-      const newEntity = {
-        availableApis: api ? [api] : [],
-        name: processedEntity.name,
-        label: processedEntity.label,
-        keyPrefix: processedEntity.keyPrefix,
-        durableId: processedEntity.durableId,
-        isCustomSetting: processedEntity.isCustomSetting,
-        availableKeyPrefix: processedEntity.keyPrefix || null,
-        recordTypesSupported: processedEntity.recordTypesSupported,
-        isEverCreatable: processedEntity.isEverCreatable,
-        newUrl: processedEntity.newUrl,
-        namespacePrefix: processedEntity.namespacePrefix,
-        layoutable: processedEntity.layoutable || false
-      };
-      entityMap.set(processedEntity.name, newEntity);
+  if (includeXmlDeclaration) {
+    packageXml += '<?xml version="1.0" encoding="UTF-8"?>\n';
+  }
+
+  packageXml += '<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n';
+
+  // Convert Map to entries if needed, and handle both Set and Array members
+  let entries;
+  if (groupedComponents instanceof Map) {
+    entries = Array.from(groupedComponents.entries());
+  } else {
+    entries = Object.entries(groupedComponents);
+  }
+
+  // Sort types alphabetically if requested
+  if (sortTypes) {
+    entries.sort(([typeA], [typeB]) => typeA.localeCompare(typeB));
+  }
+
+  entries.forEach(([type, members]) => {
+    // Convert Set to Array if needed
+    const membersArray = members instanceof Set ? Array.from(members) : members;
+
+    // Skip empty types if requested
+    if (skipEmptyTypes && membersArray.length === 0) {
+      return;
     }
-  };
 
-  /**
-   * Fetch objects from a describe endpoint
-   * @param {string} url - API endpoint URL
-   * @param {string} api - API identifier
-   */
-  const getObjects = async (url, api) => {
-    try {
-      const describe = await sfConn.rest(url);
-      for (const sobject of describe.sobjects) {
-        // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
-        addEntity({
-          ...sobject,
-          isCustomSetting: sobject.customSetting !== undefined ? sobject.customSetting : sobject.isCustomSetting,
-          layoutable: sobject.layoutable || false
-        }, api);
-      }
-    } catch (err) {
-      console.error("list " + api + " sobjects", err);
-    }
-  };
+    packageXml += "    <types>\n";
 
-  /**
-   * Fetch a single batch of EntityDefinitions
-   * @param {number} bucket - Batch number (0-indexed)
-   * @returns {Promise<boolean>} True if there are more batches to fetch
-   */
-  const getEntityDefinitionBatch = async (bucket) => {
-    const batchSize = 2000;
-    const offset = bucket > 0 ? " OFFSET " + (bucket * batchSize) : "";
-    const query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable, NamespacePrefix FROM EntityDefinition ORDER BY QualifiedApiName ASC LIMIT ${batchSize}${offset}`;
-
-    try {
-      const respEntity = await sfConn.rest("/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent(query));
-      for (const record of respEntity.records) {
-        addEntity({
-          name: record.QualifiedApiName,
-          label: record.Label,
-          keyPrefix: record.KeyPrefix,
-          durableId: record.DurableId,
-          isCustomSetting: record.IsCustomSetting,
-          recordTypesSupported: record.RecordTypesSupported,
-          newUrl: record.NewUrl,
-          isEverCreatable: record.IsEverCreatable,
-          namespacePrefix: record.NamespacePrefix,
-          // Don't set layoutable here, as it should come from describe calls
-        }, null);
-      }
-      return respEntity.records?.length >= batchSize; // If the batch has batchSize records, there might be more
-    } catch (err) {
-      console.error("list entity definitions: ", err);
-      throw err;
-    }
-  };
-
-  /** Fetch all EntityDefinitions using recursive sequential batching */
-  const getEntityDefinitions = async () => {
-    let bucket = 0;
-
-    const fetchNextBatch = async () => {
-      const hasMore = await getEntityDefinitionBatch(bucket);
-      if (hasMore) {
-        bucket++;
-        return fetchNextBatch();
-      }
-      return Promise.resolve();
-    };
-
-    return fetchNextBatch().catch(err => {
-      console.error("fetch entity definitions: ", err);
+    // Sort members alphabetically
+    const sortedMembers = [...membersArray].sort();
+    sortedMembers.forEach(member => {
+      packageXml += `        <members>${member}</members>\n`;
     });
-  };
 
-  // Fetch objects from different APIs
-  await Promise.all([
-    getObjects("/services/data/v" + apiVersion + "/sobjects/", "regularApi"),
-    getObjects("/services/data/v" + apiVersion + "/tooling/sobjects/", "toolingApi"),
-    getEntityDefinitions(),
-  ]);
+    packageXml += `        <name>${type}</name>\n`;
+    packageXml += "    </types>\n";
+  });
 
-  return entityMap;
+  packageXml += `    <version>${apiVersion}</version>\n`;
+  packageXml += "</Package>";
+
+  return packageXml;
+}
+
+/**
+ * Formats a duration in minutes into a human-readable string showing all units.
+ * @param {number} minutes - The duration in minutes
+ * @returns {string} A formatted duration string (e.g., "4 days 3 hours 34 minutes")
+ */
+export function formatDuration(minutes) {
+  if (minutes < 1) {
+    return "Less than a minute";
+  }
+
+  const parts = [];
+  let remaining = Math.round(minutes);
+
+  // Calculate months (30 days = 43200 minutes)
+  if (remaining >= 43200) {
+    const months = Math.floor(remaining / 43200);
+    parts.push(`${months} month${months !== 1 ? "s" : ""}`);
+    remaining = remaining % 43200;
+  }
+
+  // Calculate weeks (7 days = 10080 minutes)
+  if (remaining >= 10080) {
+    const weeks = Math.floor(remaining / 10080);
+    parts.push(`${weeks} week${weeks !== 1 ? "s" : ""}`);
+    remaining = remaining % 10080;
+  }
+
+  // Calculate days (1440 minutes per day)
+  if (remaining >= 1440) {
+    const days = Math.floor(remaining / 1440);
+    parts.push(`${days} day${days !== 1 ? "s" : ""}`);
+    remaining = remaining % 1440;
+  }
+
+  // Calculate hours (60 minutes per hour)
+  if (remaining >= 60) {
+    const hours = Math.floor(remaining / 60);
+    parts.push(`${hours} hour${hours !== 1 ? "s" : ""}`);
+    remaining = remaining % 60;
+  }
+
+  // Add remaining minutes
+  if (remaining > 0) {
+    parts.push(`${remaining} minute${remaining !== 1 ? "s" : ""}`);
+  }
+
+  return parts.length > 0 ? parts.join(" ") : "Less than a minute";
 }

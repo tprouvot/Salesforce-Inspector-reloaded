@@ -22,6 +22,7 @@ export class ApiStatistics {
     };
     this.API_DEBUG_STATISTICS = "apiDebugStatistics";
     this.loadStats();
+    this._statsLoaded = false;
   }
 
   /**
@@ -37,6 +38,11 @@ export class ApiStatistics {
    */
   loadStats() {
     const stored = localStorage.getItem(this.API_DEBUG_STATISTICS);
+    // Lazy load to avoid circular dependency issues
+    if (!this._statsLoaded) {
+      this._statsLoaded = true;
+    }
+    const stored = localStorage.getItem(Constants.API_DEBUG_STATISTICS);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -284,6 +290,18 @@ export class ApiStatistics {
 
   setStatsToLocalStorage(stats) {
     localStorage.setItem(this.API_DEBUG_STATISTICS, JSON.stringify(stats));
+  }
+
+  /**
+   * Get the last 10 error messages
+   * @returns {Array} Array of error objects with timestamp, mode, url, method, and message
+   */
+  getLastErrors() {
+    if (!this._statsLoaded) {
+      this.loadStats();
+    }
+    this.getStatsFromLocalStorage();
+    return (this.stats.errorMessages || []).slice(-10);
   }
 
   /**

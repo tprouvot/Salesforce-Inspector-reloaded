@@ -1,7 +1,7 @@
 /* global React ReactDOM field-creator.js */
 import {sfConn, apiVersion} from "./inspector.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, fetchAndMergeSobjects} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, getSobjectsList, Constants} from "./utils.js";
 
 let h = React.createElement;
 
@@ -1001,6 +1001,19 @@ class App extends React.Component {
   componentDidMount() {
     this.fetchObjects();
     this.fetchPermissionSets();
+    this.onSobjectsListRefreshed = (e) => {
+      if (e.detail?.sfHost === this.sfHost) {
+        const layoutableObjects = e.detail.sobjectsList.filter(obj =>
+          obj.layoutable === true || (obj.keyPrefix && obj.keyPrefix.startsWith("e"))
+        );
+        this.setState({objects: layoutableObjects});
+      }
+    };
+    window.addEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
   }
 
   handleObjectSearch = (e) => {
@@ -1235,15 +1248,13 @@ class App extends React.Component {
     return typeMap[uiType] || uiType;
   }
 
-  //TODO cache entity from popup.js
   fetchObjects = async () => {
     try {
-      // Use shared utility function with parallel batching and namespace prefix
-      const entityMap = await fetchAndMergeSobjects();
+      // Get sobjects list (from cache or fetched from API)
+      const sobjectsList = await getSobjectsList(this.sfHost);
 
-      const sObjectsList = Array.from(entityMap.values());
-      // Filter to only layoutable objects (objects that can have fields created)
-      const layoutableObjects = sObjectsList.filter(obj =>
+      // Filter for layoutable objects (objects that can have layouts or platform events)
+      const layoutableObjects = sobjectsList.filter(obj =>
         obj.layoutable === true || (obj.keyPrefix && obj.keyPrefix.startsWith("e")) //add layoutable objects and PE objects
       );
 

@@ -685,31 +685,21 @@ class Model {
       },
       columnValid() {
         let columnName = columnVm.columnValue.split(":");
-        // Ensure there are 1 or 3 elements, so we know if we should treat it as a normal field or an external ID
-        if (columnName.length != 1 && columnName.length != 3) {
-          return false;
+        if (columnName.length != 1 && columnName.length != 3) return false;
+        const first = columnName[0];
+        if (first.includes(".")) {
+          return first.split(".").every(p => xmlName.test(p)) && columnName.length === 1;
         }
-        // Ensure that createElement will not throw, see https://dom.spec.whatwg.org/#dom-document-createelement
-        if (!xmlName.test(columnName[0])) {
-          return false;
-        }
-        // Ensure that createElement will not throw, see https://dom.spec.whatwg.org/#dom-document-createelement
-        if (columnName.length == 3 && !xmlName.test(columnName[2])) {
-          return false;
-        }
+        if (!xmlName.test(first)) return false;
+        if (columnName.length == 3 && !xmlName.test(columnName[2])) return false;
         return true;
       },
       columnError() {
-        if (columnVm.columnIgnore()) {
-          return "";
-        }
-        if (!columnVm.columnValid()) {
-          return "Invalid field name";
-        }
-        let value = columnVm.columnValue;
-        if (!self.columnList().some(s => s.toLowerCase() == value.toLowerCase())) {
-          return "Unknown field";
-        }
+        if (columnVm.columnIgnore()) return "";
+        if (!columnVm.columnValid()) return "Invalid field name";
+        const v = columnVm.columnValue;
+        if (v.includes(".") && !v.includes(":")) return "";
+        if (!self.columnList().some(s => s.toLowerCase() == v.toLowerCase())) return "Unknown field";
         return "";
       },
       columnUnknownField() {
@@ -829,29 +819,29 @@ class Model {
         let sobject = {};
         sobject["$xsi:type"] = sobjectType;
         sobject.fieldsToNull = [];
+        const isTooling = this.apiType === "Tooling";
+        const val = v => isTooling ? convertValueForApi(v) : v;
         for (let c = 0; c < row.length; c++) {
           if (header[c][0] != "_") {
             let columnName = header[c].split(":");
+            let [fieldName] = columnName;
+            const isId = c === inputIdColumnIndex || fieldName.toLowerCase() === "id";
             if (row[c].trim() == "") {
-              if (c != inputIdColumnIndex) {
-                let field;
-                let [fieldName] = columnName;
-                if (columnName.length == 1) { // Our validation ensures there are always one or three elements in the array
-                  field = fieldName;
-                } else {
-                  field = /__r$/.test(fieldName) ? fieldName.replace(/__r$/, "__c") : fieldName + "Id";
-                }
+              if (!isId) {
+                const field = columnName.length == 1
+                  ? (fieldName.includes(".") ? fieldName.split(".")[0] : fieldName)
+                  : (/__r$/.test(fieldName) ? fieldName.replace(/__r$/, "__c") : fieldName + "Id");
                 sobject.fieldsToNull.push(field);
               }
-            } else if (columnName.length == 1) { // Our validation ensures there are always one or three elements in the array
-              let [fieldName] = columnName;
-              sobject[fieldName] = row[c];
+            } else if (columnName.length == 1) {
+              if (isTooling && fieldName.includes(".")) {
+                setNestedValue(sobject, fieldName, val(row[c]));
+              } else {
+                sobject[fieldName] = val(row[c]);
+              }
             } else {
-              let [fieldName, typeName, subFieldName] = columnName;
-              sobject[fieldName] = {
-                "$xsi:type": typeName,
-                [subFieldName]: row[c]
-              };
+              let [relFieldName, typeName, subFieldName] = columnName;
+              sobject[relFieldName] = {"$xsi:type": typeName, [subFieldName]: val(row[c])};
             }
           }
         }
@@ -1509,4 +1499,24 @@ class StatusBox extends React.Component {
 
 function stringIsEmpty(str) {
   return str == null || str == undefined || str.trim() == "";
+}
+
+function convertValueForApi(value) {
+  const s = String(value ?? "").trim();
+  if (!s) return null;
+  if (s.toLowerCase() === "true") return true;
+  if (s.toLowerCase() === "false") return false;
+  const n = Number(s);
+  return !Number.isNaN(n) && String(n) === s ? n : s;
+}
+
+function setNestedValue(obj, path, value) {
+  const parts = path.split(".");
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const k = parts[i];
+    if (!(cur[k] && typeof cur[k] === "object")) cur[k] = {};
+    cur = cur[k];
+  }
+  cur[parts[parts.length - 1]] = value;
 }

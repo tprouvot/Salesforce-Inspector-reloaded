@@ -411,6 +411,7 @@ export let setupLinks = [
   {label: "Create New Custom Permission", link: "/lightning/setup/CustomPermissions/page?address=/0CP/e", section: "Platform Tools > Custom Code > Custom Permission", prod: false},
   {label: "Recycle Bin", link: "/lightning/o/DeleteEvent/home", section: "App Launcher > Custom Link", prod: false},
   {label: "Automation Lightning App", link: "/lightning/page/home", section: "Platform Tools > Process Automation", prod: false},
+  {label: "Developer Console", link: "/_ui/common/apex/debug/ApexCSIPage", section: "Platform Tools > Developer Console", prod: false},
 
   //ConnectApi namespace classes doc links
   {label: "Class ActionLinks", link: "https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_ConnectAPI_ActionLinks_static_methods.htm", section: "Documentation Apex> ConnectApi > ActionLinks", prod: false, isExternal: true},

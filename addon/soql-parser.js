@@ -280,7 +280,7 @@ export function parseSoqlQuery(query, cursorPos = -1) {
 
   const clauses = splitClauses(sanitizedQuery);
   result.select = parseSelectClause(clauses.select || "");
-  result.from = { objectName: clauses.from || null, raw: clauses.from ? "from " + clauses.from : "" };
+  result.from = { objectName: clauses.from?.trim().split(/\s/)[0] || null, raw: clauses.from ? "from " + clauses.from : "" };
   if (clauses.where) result.where = { raw: clauses.where.trim() };
   if (clauses.orderBy) result.orderBy = { raw: clauses.orderBy.trim() };
   if (clauses.groupBy) result.groupBy = { raw: clauses.groupBy.trim() };

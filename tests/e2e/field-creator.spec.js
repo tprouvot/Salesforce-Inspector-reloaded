@@ -4,7 +4,7 @@ import {
   injectSessionData,
   waitSuccessfulHttpResponse
 } from "./test-helpers";
-import { routeMock } from "./test-mock";
+import {routeMock} from "./test-mock";
 
 test.describe("Field Creator", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -23,14 +23,14 @@ test.describe("Field Creator", () => {
     ]);
 
     //Wait some time to ensure that the responses are processed
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Select an object first
     await page.locator("#object_select").focus();
     await page.keyboard.type(objectName, {delay: 50});
-    await page.waitForTimeout(250);
+    await page.waitForTimeout(150);
 
-    await page.waitForSelector(".ulItem li", {timeout: 10000});
+    await page.waitForSelector(".ulItem li", {timeout: 2000});
     await page.locator(".ulItem li:has-text('" + objectName + "')").first().click();
   }
 
@@ -45,7 +45,7 @@ test.describe("Field Creator", () => {
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
       //if mock is disabled, continue with the request
-      if(!TEST_CONSTANTS.mockEnabled) {
+      if (!TEST_CONSTANTS.mockEnabled) {
         await route.continue();
         return;
       }
@@ -243,14 +243,14 @@ test.describe("Field Creator", () => {
       if (!modal) return false;
       const tables = modal.querySelectorAll("table.slds-table");
       return tables.length > 0;
-    }, {timeout: 10000});
+    }, {timeout: 2000});
 
     // Type in search box
     const searchInput = page.locator("input[placeholder='Search profiles and permission sets...']");
     await searchInput.fill("Test");
 
     // Verify search works (permission sets should be filtered)
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
     // The table should still be visible
     await expect(page.locator(".modal-dialog table.slds-table")).toBeVisible();
   });
@@ -262,7 +262,7 @@ test.describe("Field Creator", () => {
     await page.waitForSelector("#fields_table tbody tr");
 
     // Wait for objects and permission sets to load
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1000);
 
     // Click Permissions button
     const permissionsButton = page.locator("#fields_table tbody tr").first().locator("button:has-text('Permissions')");
@@ -277,7 +277,7 @@ test.describe("Field Creator", () => {
       if (!modal) return false;
       const tables = modal.querySelectorAll("table.slds-table tbody tr");
       return tables.length > 0;
-    }, {timeout: 10000});
+    }, {timeout: 2000});
 
     // Click a checkbox for Edit permission (first permission set, second column)
     const editCheckbox = page.locator(".modal-dialog table.slds-table tbody tr").first().locator("td").nth(1).locator("input[type='checkbox']");
@@ -391,7 +391,7 @@ test.describe("Field Creator", () => {
       if (!modal) return false;
       const tables = modal.querySelectorAll("table.slds-table tbody tr");
       return tables.length > 0;
-    }, {timeout: 10000});
+    }, {timeout: 2000});
 
     //editCheckbox
     await page.locator(".modal-dialog table.slds-table tbody tr").first().locator("td").nth(1).locator("input[type='checkbox']").click();
@@ -405,15 +405,14 @@ test.describe("Field Creator", () => {
     await deployButton.click();
 
     //if mock is enabled, the test must successfully deploy the fields
-    if(TEST_CONSTANTS.mockEnabled) {
+    if (TEST_CONSTANTS.mockEnabled) {
       // Wait for pending status (clock icon) - this indicates deployment started
       // This verifies that clicking Deploy triggers the deployment process
-      await page.waitForSelector("#fields_table tbody tr .cursorPointer svg use.fillGreen", {timeout: 10000});
-    }
-    else{
+      await page.waitForSelector("#fields_table tbody tr .cursorPointer svg use.fillGreen", {timeout: 2000});
+    } else {
       // in real test; the deploy will be successful, but here we will test that it has failed (because the field already exists)
       // so we are checking the error message
-      await page.waitForSelector("#fields_table tbody tr .cursorPointer svg use.fillRed", {timeout: 10000});
+      await page.waitForSelector("#fields_table tbody tr .cursorPointer svg use.fillRed", {timeout: 2000});
       await page.locator("#fields_table tbody tr .cursorPointer svg use.fillRed").first().click();
 
       await expect(page.locator(".notificationContent")).toContainText(/DUPLICATE_DEVELOPER_NAME|INVALID_CROSS_REFERENCE_KEY/);

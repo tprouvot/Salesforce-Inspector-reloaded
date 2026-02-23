@@ -4,7 +4,7 @@ import {
   injectSessionData,
   createModelExposureSetup,
 } from "./test-helpers";
-import { routeMock } from "./test-mock";
+import {routeMock} from "./test-mock";
 
 test.describe("Event Monitor", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -21,7 +21,7 @@ test.describe("Event Monitor", () => {
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
       //if mock is disabled, continue with the request
-      if(!TEST_CONSTANTS.mockEnabled) {
+      if (!TEST_CONSTANTS.mockEnabled) {
         await route.continue();
         return;
       }
@@ -53,7 +53,7 @@ test.describe("Event Monitor", () => {
    */
   async function addFakeTestEvent(page) {
     // Wait for the addTestEvent function to be available
-    await page.waitForFunction(() => typeof window.addTestEvent === "function", {timeout: 10000});
+    await page.waitForFunction(() => typeof window.addTestEvent === "function", {timeout: 2000});
 
     // Add test events directly without subscribing - using the global function
     await page.evaluate(() => {
@@ -89,7 +89,8 @@ test.describe("Event Monitor", () => {
   test("Load Standard Platform Events", async ({page, extensionId}) => {
     await initEventMonitorPage(page, extensionId);
 
-    await page.waitForTimeout(500);
+    // Longer wait needed when run in full suite (org API load); do not reduce
+    await page.waitForTimeout(1000);
 
     // Verify channel dropdown has options (org-specific; check list is non-empty)
     const channelSelect = page.locator("select.slds-select").nth(1); // Second select is the channel dropdown
@@ -101,8 +102,8 @@ test.describe("Event Monitor", () => {
     await initEventMonitorPage(page, extensionId);
 
     // Select "Custom Platform Event" channel type
-    await  page.locator("select.slds-select").first().selectOption("platformEvent");
-    await page.waitForTimeout(500);
+    await page.locator("select.slds-select").first().selectOption("platformEvent");
+    await page.waitForTimeout(250);
 
     // Verify channel dropdown shows custom events (check for the option text)
     const channelSelect = page.locator("select.slds-select").nth(1);
@@ -116,7 +117,7 @@ test.describe("Event Monitor", () => {
 
     // Select "Change Event" channel type
     await page.locator("select.slds-select").first().selectOption("changeEvent");
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Verify "All Change Events" option exists (order is org-dependent)
     const channelSelect = page.locator("select.slds-select").nth(1);
@@ -233,12 +234,10 @@ test.describe("Event Monitor", () => {
     await copyButton.click();
 
     // Wait a bit for clipboard to be updated
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(100);
 
     // Verify clipboard content
-    const clipboardContent = await page.evaluate(async () => {
-      return await navigator.clipboard.readText();
-    });
+    const clipboardContent = await page.evaluate(async () => await navigator.clipboard.readText());
     await expect(clipboardContent).toContain("replayId");
     await expect(clipboardContent).toContain("TestEvent");
   });
@@ -269,11 +268,11 @@ test.describe("Event Monitor", () => {
 
     // Click Subscribe button (use title to distinguish from modal button)
     const subscribeButton = page.locator("button[title='Subscribe to channel']");
-    await expect(subscribeButton).toBeEnabled({timeout: 5000});
+    await expect(subscribeButton).toBeEnabled({timeout: 1000});
     await subscribeButton.click();
 
     // Verify confirmation popup appears
-    await expect(page.locator("text=Important")).toBeVisible({timeout: 5000});
+    await expect(page.locator("text=Important")).toBeVisible({timeout: 1000});
     await expect(page.locator("text=Use this option sparingly")).toBeVisible();
     // Use more specific selector for modal buttons (footer)
     await expect(page.locator(".slds-modal .slds-modal__footer button:has-text('Subscribe')")).toBeVisible();

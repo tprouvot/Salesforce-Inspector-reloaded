@@ -4,7 +4,7 @@ import {
   injectSessionData,
   createModelExposureSetup
 } from "./test-helpers";
-import { routeMock } from "./test-mock";
+import {routeMock} from "./test-mock";
 
 test.describe("Inspect", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -23,7 +23,7 @@ test.describe("Inspect", () => {
     // Mock Salesforce API calls
     await context.route("**/*", async route => {
       //if mock is disabled, continue with the request
-      if(!TEST_CONSTANTS.mockEnabled) {
+      if (!TEST_CONSTANTS.mockEnabled) {
         await route.continue();
         return;
       }
@@ -45,17 +45,20 @@ test.describe("Inspect", () => {
    */
   async function initInspectPage(page, extensionId, recordId = null, useToolingApi = false) {
     await page.goto(`chrome-extension://${extensionId}/inspect.html?host=${mockHost}&objectType=Account${recordId ? `&recordId=${recordId}` : ""}${useToolingApi ? "&useToolingApi=1" : ""}`);
-    await page.waitForSelector("#root", {timeout: 10000});
-    await page.waitForSelector("text=Inspect", {timeout: 10000});
+    await page.waitForSelector("#root", {timeout: 2000});
+    await page.waitForSelector("text=Inspect", {timeout: 2000});
   }
 
   async function initInspectPageWaitRecordName(page, extensionId) {
     await initInspectPage(page, extensionId, TEST_CONSTANTS.accountRecordId);
-    await page.waitForSelector(`td:has-text('${TEST_CONSTANTS.accountRecordId}')`, {timeout: 10000});
+    await page.waitForSelector(`td:has-text('${TEST_CONSTANTS.accountRecordId}')`, {timeout: 2000});
   }
 
   test("Load Inspect Page - Object Only", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
+
+    // Wait for table so the page is fully loaded before asserting
+    await page.waitForSelector("table.slds-table", {timeout: 2000});
 
     // Verify page subtitle contains Account (more specific selector)
     await expect(page.locator("span.slds-truncate:has-text('Account')").first()).toBeVisible();
@@ -76,7 +79,7 @@ test.describe("Inspect", () => {
   test("Switch Tabs", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 10000});
+    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
 
     // Click Fields tab
     await page.locator(".slds-builder-header_container li span[title=Fields]").click();
@@ -91,7 +94,9 @@ test.describe("Inspect", () => {
   test("Filter Fields", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector("input[placeholder='Filter']", {timeout: 10000});
+    // Wait for table first so the page is fully loaded (filter is in header, same render)
+    await page.waitForSelector("table.slds-table", {timeout: 2000});
+    await page.waitForSelector("input[placeholder='Filter']", {timeout: 2000});
 
     // Type in filter
     const filterInput = page.locator("input[placeholder='Filter']");
@@ -107,23 +112,23 @@ test.describe("Inspect", () => {
   test("Toggle Column Visibility", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 10000});
+    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
 
     // Click Fields tab to open column visibility menu
     await page.locator(".slds-builder-header_container li span[title=Fields]").click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Click the chevron to open column visibility menu
     const chevron = page.locator(".slds-builder-header_container li span[title=Fields]").locator("..").locator("svg").first();
     await chevron.click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Find and toggle a column checkbox (e.g., Label)
     const labelCheckbox = page.locator("input[type='checkbox']").filter({hasText: /Label/i}).first();
     if (await labelCheckbox.isVisible()) {
       const wasChecked = await labelCheckbox.isChecked();
       await labelCheckbox.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(250);
       // Verify state changed
       const isNowChecked = await labelCheckbox.isChecked();
       expect(isNowChecked).toBe(!wasChecked);
@@ -133,13 +138,13 @@ test.describe("Inspect", () => {
   test("Calculate Field Usage", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 10000});
+    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
 
     // Click Fields tab
     await page.locator(".slds-builder-header_container li span[title=Fields]").click();
 
     // Wait for Usage column header with action button
-    await page.waitForSelector("text=Usage (%)", {timeout: 10000});
+    await page.waitForSelector("text=Usage (%)", {timeout: 1000});
 
     // Find the refresh button in the Usage column header
     const usageHeader = page.locator("th:has-text('Usage (%)')");
@@ -149,7 +154,7 @@ test.describe("Inspect", () => {
       await refreshButton.click();
 
       // Wait for loading to complete (longer for real org)
-      await page.waitForTimeout(4000);
+      await page.waitForTimeout(250);
 
       // Verify usage values appear (not "Get field usage" anymore) - skip when real org as API may not complete in time
       if (TEST_CONSTANTS.mockEnabled) {
@@ -171,7 +176,7 @@ test.describe("Inspect", () => {
     await editButton.click();
 
     // Wait for edit mode
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Verify Save and Cancel buttons appear
     await expect(page.locator("button:has-text('Save')")).toBeVisible();
@@ -183,14 +188,14 @@ test.describe("Inspect", () => {
 
     // Enter edit mode
     await page.locator("button:has-text('Edit')").click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Double-click on a field value to edit
     const nameCell = page.locator(`td:has-text('${TEST_CONSTANTS.accountRecordName}')`).first();
     await nameCell.dblclick();
 
     // Wait for textarea to appear
-    await page.waitForSelector("textarea", {timeout: 5000});
+    await page.waitForSelector("textarea", {timeout: 1000});
 
     // Type new value
     const textarea = page.locator("textarea").first();
@@ -205,11 +210,11 @@ test.describe("Inspect", () => {
 
     // Enter edit mode
     await page.locator("button:has-text('Edit')").click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Click Cancel
     await page.locator("button:has-text('Cancel')").click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Verify edit mode is cancelled (Save button should not be visible)
     await expect(page.locator("button:has-text('Save')")).not.toBeVisible();
@@ -223,7 +228,7 @@ test.describe("Inspect", () => {
     await deleteButton.click();
 
     // Wait for delete confirmation
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Verify Confirm delete button appears
     await expect(page.locator("button:has-text('Confirm delete')")).toBeVisible();
@@ -237,7 +242,7 @@ test.describe("Inspect", () => {
     await newButton.click();
 
     // Wait for create mode
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Verify Save new button appears
     await expect(page.locator("button:has-text('Save new')")).toBeVisible();
@@ -248,19 +253,19 @@ test.describe("Inspect", () => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector("table.slds-table", {timeout: 10000});
-    await page.waitForTimeout(2000); // Wait for table to fully render
+    await page.waitForSelector("table.slds-table", {timeout: 1000});
+    await page.waitForTimeout(250); // Wait for table to fully render
 
     // Find settings button in the actions column header
     const actionsHeader = page.locator("th.field-actions, th.child-actions").first();
     const settingsButton = actionsHeader.locator("button").first();
     await settingsButton.click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Click Copy Table
     const copyTableLink = page.locator("a:has-text('Copy Table')");
     await copyTableLink.click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Verify clipboard was set (in test mode)
     const clipboardValue = await page.evaluate(() => navigator.clipboard.readText());
@@ -271,43 +276,43 @@ test.describe("Inspect", () => {
   test("Export Table - Download CSV", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector("table.slds-table", {timeout: 10000});
-    await page.waitForTimeout(2000); // Wait for table to fully render
+    await page.waitForSelector("table.slds-table", {timeout: 1000});
+    await page.waitForTimeout(250); // Wait for table to fully render
 
     // Find settings button in the actions column header
     const actionsHeader = page.locator("th.field-actions, th.child-actions").first();
     const settingsButton = actionsHeader.locator("button").first();
     await settingsButton.click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Click Download CSV
     const downloadLink = page.locator("a:has-text('Download CSV')");
 
     // Set up download listener
-    const downloadPromise = page.waitForEvent("download", {timeout: 5000}).catch(() => null);
+    const downloadPromise = page.waitForEvent("download", {timeout: 1000}).catch(() => null);
     await downloadLink.click();
 
     // Note: In test environment, downloads may not trigger, so we just verify the click works
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
   });
 
   test("Toggle Table Borders", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector("table.slds-table", {timeout: 10000});
-    await page.waitForTimeout(2000); // Wait for table to fully render
+    await page.waitForSelector("table.slds-table", {timeout: 1000});
+    await page.waitForTimeout(250); // Wait for table to fully render
 
     // Find settings button in the actions column header
     const actionsHeader = page.locator("th.field-actions, th.child-actions").first();
     const settingsButton = actionsHeader.locator("button").first();
     await settingsButton.click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Click Show/Hide table borders
     const bordersLink = page.locator("a").filter({hasText: /table border/i});
     if (await bordersLink.isVisible()) {
       await bordersLink.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(250);
 
       // Verify table class changed
       const table = page.locator("table.slds-table").first();
@@ -320,12 +325,12 @@ test.describe("Inspect", () => {
   test("Show Object Metadata", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector("a:has-text('More')", {timeout: 10000});
+    await page.waitForSelector("a:has-text('More')", {timeout: 1000});
 
     // Click More button
     const moreButton = page.locator("a:has-text('More')");
     await moreButton.click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(250);
 
     // Verify metadata modal appears
     await expect(page.locator("text=All available metadata")).toBeVisible();
@@ -334,7 +339,7 @@ test.describe("Inspect", () => {
   test("Field Actions Menu", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector("table.slds-table", {timeout: 10000});
+    await page.waitForSelector("table.slds-table", {timeout: 1000});
 
     // Find first field actions button (dropdown)
     const fieldActionsButtons = page.locator("td.field-actions button");
@@ -342,7 +347,7 @@ test.describe("Inspect", () => {
 
     if (await firstActionButton.isVisible()) {
       await firstActionButton.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(250);
 
       // Verify menu appears
       await expect(page.locator("text=All field metadata")).toBeVisible();
@@ -352,11 +357,11 @@ test.describe("Inspect", () => {
   test("Relationship Actions Menu", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector("text=Relationships", {timeout: 10000});
+    await page.waitForSelector("text=Relationships", {timeout: 1000});
 
     // Switch to Relationships tab
     await page.locator("text=Relationships").click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(250);
 
     // Find first relationship actions button
     const relationshipActionsButtons = page.locator("td.child-actions button");
@@ -364,7 +369,7 @@ test.describe("Inspect", () => {
 
     if (await firstActionButton.isVisible()) {
       await firstActionButton.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(250);
 
       // Verify menu appears
       await expect(page.locator("text=All relationship metadata")).toBeVisible();
@@ -380,7 +385,7 @@ test.describe("Inspect", () => {
 
     if (await objectActionsButton.isVisible()) {
       await objectActionsButton.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(250);
 
       // Verify menu appears with options
       await expect(page.locator("text=View record in Salesforce")).toBeVisible();
@@ -398,10 +403,10 @@ test.describe("Inspect", () => {
     await initInspectPageWaitRecordName(page, extensionId);
 
     // Find a reference field value (ID) and click it
-    const idLink = page.locator("a:has-text('"+TEST_CONSTANTS.accountRecordId+"')").first();
+    const idLink = page.locator("a:has-text('" + TEST_CONSTANTS.accountRecordId + "')").first();
     if (await idLink.isVisible()) {
       await idLink.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(250);
 
       // Verify popup menu appears
       await expect(page.locator("text=View in Salesforce")).toBeVisible();
@@ -412,11 +417,11 @@ test.describe("Inspect", () => {
   test("Column Filtering", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 10000});
+    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
 
     // Switch to Fields tab (enables column filtering)
     await page.locator(".slds-builder-header_container li span[title=Fields]").click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(250);
 
     // Find a column filter input
     const filterInputs = page.locator("input.column-filter-box");
@@ -424,7 +429,7 @@ test.describe("Inspect", () => {
 
     if (await firstFilter.isVisible()) {
       await firstFilter.fill("Test");
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(250);
 
       // Verify filter was applied
       await expect(firstFilter).toHaveValue("Test");

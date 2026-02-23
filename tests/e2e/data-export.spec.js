@@ -38,7 +38,7 @@ test.describe("Data Export", () => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
 
     // Wait for the query box to appear
-    await page.waitForSelector("textarea#query");
+    await page.waitForSelector("textarea#query", {timeout: 2000});
 
     // Enter Query
     const queryInput = page.locator("textarea#query");
@@ -47,11 +47,11 @@ test.describe("Data Export", () => {
     // Click Export
     await page.click("button:has-text('Run Export')");
     //Wait that the response is successful
-    await waitSuccessfulHttpResponse(page, mockHost);
+    await waitSuccessfulHttpResponse(page, mockHost, 1000);
 
     // Verify Results
     // Wait for the status to show completion
-    await expect(page.locator(".result-status")).toContainText("Exported 2 records");
+    await expect(page.locator(".result-status")).toContainText("Exported 2 records", {timeout: 2000});
 
     // Wait for the table to appear (it's inside #result-area)
     const resultTable = page.locator("#result-area table");
@@ -73,7 +73,7 @@ test.describe("Data Export", () => {
 
   test("Autocomplete Suggestions", async ({page, context, extensionId}) => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
-    await page.waitForSelector("textarea#query");
+    await page.waitForSelector("textarea#query", {timeout: 2000});
 
     const queryInput = page.locator("textarea#query");
 
@@ -132,13 +132,13 @@ test.describe("Data Export", () => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
-    await page.waitForSelector("textarea#query");
+    await page.waitForSelector("textarea#query", {timeout: 2000});
 
     // Run a query first
     const queryInput = page.locator("textarea#query");
     await queryInput.fill("SELECT Id, Name FROM Account WHERE Name like 'Test Account%' ORDER BY Name");
     await page.click("button:has-text('Run Export')");
-    await expect(page.locator(".result-status")).toContainText("Exported 2 records");
+    await expect(page.locator(".result-status")).toContainText("Exported 2 records", {timeout: 2000});
 
     // Wait for the table to appear (it's inside #result-area)
     const resultTable = page.locator("#result-area table");

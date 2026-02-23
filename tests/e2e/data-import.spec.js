@@ -11,6 +11,9 @@ import { routeMock } from "./test-mock";
 test.describe("Data Import", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
 
+  // Slight increase when running full suite - beforeEach can be slow under load
+  test.setTimeout(2000);
+
   test.beforeEach(async ({context}) => {
     // 1. Inject Fake Session Data with model exposure setup
     await injectSessionData(context, {
@@ -75,7 +78,7 @@ test.describe("Data Import", () => {
     await page.waitForFunction(() => {
       const spinner = document.querySelector(".slds-spinner");
       return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
-    }, {timeout: 10000});
+    }, {timeout: 2000});
 
     return objectInput;
   }
@@ -98,9 +101,9 @@ test.describe("Data Import", () => {
 
     // Wait for data to be parsed and field mapping to be validated
     // First wait for the field mapping section to appear (indicates data was parsed)
-    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 5000});
+    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 2000});
     // Then wait for the button to be enabled
-    await page.waitForSelector("button:has-text('Run Insert'):not([disabled])", {timeout: 10000});
+    await page.waitForSelector("button:has-text('Run Insert'):not([disabled])", {timeout: 2000});
 
     // Click Run Insert button
     await page.click("button:has-text('Run Insert')");
@@ -114,7 +117,7 @@ test.describe("Data Import", () => {
 
     // Wait for import to complete
     //TODO: better way to wait for import to complete
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
 
     // Verify status counts
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
@@ -138,10 +141,10 @@ test.describe("Data Import", () => {
     await page.locator("#form-import-action").selectOption("update");
 
     // Wait for data to be parsed and field mapping to appear
-    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 5000});
+    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 2000});
 
     // Wait for button to be enabled - with debugging info
-    await page.waitForSelector("button:has-text('Run Update'):not([disabled])", {timeout: 5000});
+    await page.waitForSelector("button:has-text('Run Update'):not([disabled])", {timeout: 2000});
 
     // Click Run Update button
     await page.click("button:has-text('Run Update')");
@@ -151,7 +154,7 @@ test.describe("Data Import", () => {
     await page.locator(".slds-modal button:has-text('Update')").click();
 
     // Wait for import to complete
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
 
     // Verify status success count is greater than 0
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
@@ -165,20 +168,20 @@ test.describe("Data Import", () => {
     // Wait for external ID field to be visible (it's conditionally rendered when upsert is selected)
     // The parent div has hidden attribute, so we wait for the input to be visible
     const externalIdField = page.locator("#form-external-id");
-    await externalIdField.waitFor({state: "visible", timeout: 5000});
+    await externalIdField.waitFor({state: "visible", timeout: 2000});
 
     // Set external ID field
     await page.locator("#form-external-id").fill("Name");
-    await page.waitForTimeout(1000); // Wait for validation
+    await page.waitForTimeout(500); // Wait for validation
 
     // Paste CSV data
     const csvData = "Name,Number__c\r\ntest2-" + TEST_GUID + ",222\r\ntest6-" + TEST_GUID + ",666";
     await pasteData(page, "#data-paste", csvData);
 
     // Wait for data to be parsed
-    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 5000});
+    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 2000});
     // Wait for button to be enabled
-    await page.waitForSelector("button:has-text('Run Upsert'):not([disabled])", {timeout: 10000});
+    await page.waitForSelector("button:has-text('Run Upsert'):not([disabled])", {timeout: 2000});
 
     // Click Run Upsert button
     await page.click("button:has-text('Run Upsert')");
@@ -188,7 +191,7 @@ test.describe("Data Import", () => {
     await page.locator(".slds-modal button:has-text('Upsert')").click();
 
     // Wait for import to complete
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1000);
 
     // Verify status
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
@@ -207,10 +210,10 @@ test.describe("Data Import", () => {
     await pasteData(page, "#data-paste", csvData);
 
     // Wait for data to be parsed and field mapping to appear
-    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 5000});
+    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 2000});
 
     // Wait for button to be enabled - with debugging info
-    await page.waitForSelector("button:has-text('Run Delete'):not([disabled])", {timeout: 5000});
+    await page.waitForSelector("button:has-text('Run Delete'):not([disabled])", {timeout: 2000});
 
     // Click Run Delete button
     await page.click("button:has-text('Run Delete')");
@@ -220,7 +223,7 @@ test.describe("Data Import", () => {
     await page.locator(".slds-modal button:has-text('Delete')").click();
 
     // Wait for import to complete
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
 
     // Verify status
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
@@ -254,10 +257,10 @@ test.describe("Data Import", () => {
     await pasteData(page, "#data-paste", excelData);
 
     // Wait for data to be parsed and field mapping to appear
-    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 5000});
+    await page.waitForSelector(".slds-card__body_inner input[list='columnlist']", {timeout: 2000});
 
     // Wait for button to be enabled
-    await page.waitForSelector("button:has-text('Run Insert'):not([disabled])", {timeout: 5000});
+    await page.waitForSelector("button:has-text('Run Insert'):not([disabled])", {timeout: 2000});
 
     // Click Run Insert button
     await page.click("button:has-text('Run Insert')");
@@ -267,7 +270,7 @@ test.describe("Data Import", () => {
     await page.locator(".slds-modal button:has-text('Insert')").click();
 
     // Wait for import to complete
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
 
     // Verify status
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
@@ -295,7 +298,7 @@ test.describe("Data Import", () => {
 
     // Try to paste empty data
     await pasteData(page, "#data-paste", "");
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(150);
 
     // Verify error message appears (check if error div is visible or contains text)
     const errorDiv = page.locator("#error-data-paste");

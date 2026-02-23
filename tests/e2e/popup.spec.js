@@ -546,11 +546,11 @@ test.describe("Popup", () => {
       const searchInput = page.frameLocator(".insext-popup").locator("input[placeholder*='Name, username']");
       await searchInput.fill(TEST_CONSTANTS.testUserSearchTerm);
 
-      // Wait for autocomplete results
-      await page.waitForTimeout(1000);
+      // Wait for autocomplete results (User API can be slower when full suite runs)
+      await page.waitForTimeout(1500);
 
       // Verify user appears in results
-      await expect(page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('" + TEST_CONSTANTS.testUserSearchTerm + "')").first()).toBeVisible({timeout: 1000});
+      await expect(page.frameLocator(".insext-popup").locator(".slds-dropdown__item:has-text('" + TEST_CONSTANTS.testUserSearchTerm + "')").first()).toBeVisible({timeout: 2000});
     });
 
     test("Select User and View Details", async ({page, extensionId}) => {

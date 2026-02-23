@@ -3,7 +3,7 @@ import {
   TEST_CONSTANTS,
   injectSessionData
 } from "./test-helpers";
-import { routeMock } from "./test-mock";
+import {routeMock} from "./test-mock";
 
 test.describe("Metadata Retrieve", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -19,7 +19,7 @@ test.describe("Metadata Retrieve", () => {
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
       //if mock is disabled, continue with the request
-      if(!TEST_CONSTANTS.mockEnabled) {
+      if (!TEST_CONSTANTS.mockEnabled) {
         await route.continue();
         return;
       }
@@ -77,7 +77,7 @@ test.describe("Metadata Retrieve", () => {
     await filterInput.fill("Apex");
 
     // Wait for filter to apply
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Verify filtered results
     await expect(page.locator("text=ApexClass")).toBeVisible();
@@ -130,7 +130,7 @@ test.describe("Metadata Retrieve", () => {
     await expect(firstCheckbox).toBeChecked();
 
     // Verify package.xml is generated
-    await page.waitForSelector("#packageXml", {timeout: 5000});
+    await page.waitForSelector("#packageXml", {timeout: 1000});
     const packageXml = await page.locator("#packageXml").textContent();
     expect(packageXml).toContain("<Package");
   });
@@ -143,11 +143,11 @@ test.describe("Metadata Retrieve", () => {
     await apexClassItem.locator("button.slds-accordion__summary-action").click();
 
     // Wait for listMetadata API call and children to load
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(500);
 
     // Verify children are displayed
     const children = apexClassItem.locator(".slds-accordion__list-item");
-    await expect(children.first()).toBeVisible({timeout: 5000});
+    await expect(children.first()).toBeVisible({timeout: 1000});
   });
 
   test("Toggle Managed Packages Filter", async ({page, extensionId}) => {
@@ -175,7 +175,7 @@ test.describe("Metadata Retrieve", () => {
     await firstCheckbox.click();
 
     // Wait for package.xml to be generated
-    await page.waitForSelector("#packageXml", {timeout: 5000});
+    await page.waitForSelector("#packageXml", {timeout: 1000});
 
     // Verify package.xml content
     const packageXml = await page.locator("#packageXml").textContent();
@@ -194,7 +194,7 @@ test.describe("Metadata Retrieve", () => {
     await firstCheckbox.click();
 
     // Wait for package.xml to be generated
-    await page.waitForSelector("#packageXml", {timeout: 5000});
+    await page.waitForSelector("#packageXml", {timeout: 1000});
 
     // Click copy button
     await page.locator("button[title='Copy package.xml']").click();
@@ -208,17 +208,17 @@ test.describe("Metadata Retrieve", () => {
     await initMetadataRetrievePage(page, extensionId);
 
     // Wait for page to load
-    await page.waitForSelector("button[title='Display Deployment Settings']", {timeout: 10000});
+    await page.waitForSelector("button[title='Display Deployment Settings']", {timeout: 1000});
 
     // Click settings button
     const settingsButton = page.locator("button[title='Display Deployment Settings']");
     await settingsButton.click();
 
     // Wait for options to appear
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(250);
 
     // Verify deployment options appear
-    await expect(page.locator("h2:has-text('Deployment Settings')")).toBeVisible({timeout: 5000});
+    await expect(page.locator("h2:has-text('Deployment Settings')")).toBeVisible({timeout: 1000});
     await expect(page.locator("label:has-text('Test Level')")).toBeVisible();
   });
 
@@ -226,14 +226,14 @@ test.describe("Metadata Retrieve", () => {
     await initMetadataRetrievePage(page, extensionId);
 
     // Wait for page to load
-    await page.waitForSelector("button[title='Display Deployment Settings']", {timeout: 10000});
+    await page.waitForSelector("button[title='Display Deployment Settings']", {timeout: 1000});
 
     // Click settings button
     const settingsButton = page.locator("button[title='Display Deployment Settings']");
     await settingsButton.click();
 
     // Wait for options to appear
-    await page.waitForSelector("label:has-text('Test Level')", {timeout: 5000});
+    await page.waitForSelector("label:has-text('Test Level')", {timeout: 1000});
 
     // Change test level
     const testLevelSelect = page.locator("select.slds-select");
@@ -255,7 +255,7 @@ test.describe("Metadata Retrieve", () => {
     await initMetadataRetrievePage(page, extensionId);
 
     // Wait for page to load
-    await page.waitForSelector("button[title='Import package.xml or package zip file']", {timeout: 10000});
+    await page.waitForSelector("button[title='Import package.xml or package zip file']", {timeout: 1000});
 
     // Create a test package.xml file
     const packageXmlContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -276,10 +276,10 @@ test.describe("Metadata Retrieve", () => {
     });
 
     // Wait for toast notification (the file reader is async)
-    await page.waitForTimeout(1000);
-    await page.waitForSelector(".slds-notify", {timeout: 10000});
+    await page.waitForTimeout(500);
+    await page.waitForSelector(".slds-notify", {timeout: 1000});
 
     // Verify success toast appears
-    await expect(page.locator("text=imported successfully")).toBeVisible({timeout: 5000});
+    await expect(page.locator("text=imported successfully")).toBeVisible({timeout: 1000});
   });
 });

@@ -461,7 +461,7 @@ export function getCursorContext(query, cursorPos, parsed) {
   ctx.isInString = parsedResult.cursorInString;
   ctx.isInComment = parsedResult.cursorInComment;
 
-  if(ctx.isInString || ctx.isInComment) {
+  if(ctx.isInString || ctx.isInComment || !query) {
     return ctx;
   }
 

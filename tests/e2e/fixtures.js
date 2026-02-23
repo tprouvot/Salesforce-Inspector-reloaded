@@ -10,7 +10,7 @@ export const test = base.extend({
     const pathToExtension = path.join(process.cwd(), "addon");
     const context = await chromium.launchPersistentContext("", {
       headless: true,
-      channel: 'chromium',
+      channel: "chromium",
       args: [
         `--disable-extensions-except=${pathToExtension}`,
         `--load-extension=${pathToExtension}`,
@@ -29,7 +29,7 @@ export const test = base.extend({
       // Wait for chrome APIs to be available
       let retries = 10;
       while (retries > 0 && (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local)) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 50));
         retries--;
       }
       if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
@@ -52,7 +52,7 @@ export const test = base.extend({
     // Initialize response tracking early to catch responses that complete
     // before waitSuccessfulHttpResponse is called
     initializeResponseTracking(page);
-    
+
     // Start coverage collection if enabled
     // eslint-disable-next-line no-undef
     const collectCoverage = process.env.COLLECT_COVERAGE === "true";

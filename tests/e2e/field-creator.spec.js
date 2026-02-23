@@ -14,11 +14,11 @@ test.describe("Field Creator", () => {
     await page.goto(`chrome-extension://${extensionId}/field-creator.html?host=${mockHost}`);
     await page.waitForSelector("#object_select");
 
-    // Wait for objects, entity definitions and permission sets to load
+    // Wait for objects and entity definitions to load (utils.js fetches sobjects, tooling/sobjects, and EntityDefinition via COUNT + batched queries)
     await Promise.all([
       waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/sobjects/"),
       waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/tooling/sobjects/"),
-      waitSuccessfulHttpResponse(page, "/services/data/v" + apiVersion + "/tooling/query?q=" + encodeURIComponent("SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable, NamespacePrefix FROM EntityDefinition ORDER BY QualifiedApiName ASC")),
+      waitSuccessfulHttpResponse(page, "EntityDefinition"),
       waitSuccessfulHttpResponse(page, "PermissionSet"),
     ]);
 

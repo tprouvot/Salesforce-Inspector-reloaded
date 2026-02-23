@@ -75,7 +75,7 @@ export async function injectSessionData(context, {host, token, version, addition
   try {
     // In headless mode with persistent contexts, ensure context is ready before adding init script
     // Wait a bit for the context to be fully initialized
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     // Add init script for future pages
     await context.addInitScript(initScriptFunction, {host, token, version, additionalSetup});

@@ -4,7 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -74,6 +74,11 @@ class Model {
     this.spinFor = createSpinForMethod(this);
 
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { this.refreshColumn(); });
+    this.sobjectsList = null;
+    getSobjectsList(sfHost).then((sobjectsList) => {
+      this.sobjectsList = sobjectsList;
+      this.didUpdate();
+    });
 
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
@@ -292,6 +297,21 @@ class Model {
   }
 
   sobjectList() {
+    const hardcodedObjectsPrefix = ["01Z", "00O"];//Dashboard and Report can be deleted
+    // Use cached sobjects list from utils (like popup.js) to avoid redundant API call
+    if (this.sobjectsList && this.sobjectsList.length > 0) {
+      if (this.apiType == "Metadata") {
+        return this.sobjectsList.filter(sobject => sobject.name.endsWith("__mdt"));
+      }
+      const useToolingApi = this.apiType == "Tooling";
+      const requiredApi = useToolingApi ? "toolingApi" : "regularApi";
+
+      return this.sobjectsList.filter(
+        sobject => (sobject.availableApis || []).includes(requiredApi)
+          && (sobject.createable || sobject.deletable || sobject.updateable || hardcodedObjectsPrefix.includes(sobject.keyPrefix))
+      );
+    }
+    // Fallback to DescribeInfo when cache not yet loaded or disabled
     let {globalDescribe} = this.describeInfo.describeGlobal(this.apiType == "Tooling");
     if (!globalDescribe) {
       return [];
@@ -301,10 +321,9 @@ class Model {
       return globalDescribe.sobjects
         .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"));
     } else {
-      const hardcodedObjectsPrefix = ["01Z", "00O"];//Dashboard and Report can be deleted
       return globalDescribe.sobjects
         .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable || hardcodedObjectsPrefix.includes(sobjectDescribe.keyPrefix));
-    };
+    }
   }
 
   idLookupList() {
@@ -685,31 +704,21 @@ class Model {
       },
       columnValid() {
         let columnName = columnVm.columnValue.split(":");
-        // Ensure there are 1 or 3 elements, so we know if we should treat it as a normal field or an external ID
-        if (columnName.length != 1 && columnName.length != 3) {
-          return false;
+        if (columnName.length != 1 && columnName.length != 3) return false;
+        const first = columnName[0];
+        if (first.includes(".")) {
+          return first.split(".").every(p => xmlName.test(p)) && columnName.length === 1;
         }
-        // Ensure that createElement will not throw, see https://dom.spec.whatwg.org/#dom-document-createelement
-        if (!xmlName.test(columnName[0])) {
-          return false;
-        }
-        // Ensure that createElement will not throw, see https://dom.spec.whatwg.org/#dom-document-createelement
-        if (columnName.length == 3 && !xmlName.test(columnName[2])) {
-          return false;
-        }
+        if (!xmlName.test(first)) return false;
+        if (columnName.length == 3 && !xmlName.test(columnName[2])) return false;
         return true;
       },
       columnError() {
-        if (columnVm.columnIgnore()) {
-          return "";
-        }
-        if (!columnVm.columnValid()) {
-          return "Invalid field name";
-        }
-        let value = columnVm.columnValue;
-        if (!self.columnList().some(s => s.toLowerCase() == value.toLowerCase())) {
-          return "Unknown field";
-        }
+        if (columnVm.columnIgnore()) return "";
+        if (!columnVm.columnValid()) return "Invalid field name";
+        const v = columnVm.columnValue;
+        if (v.includes(".") && !v.includes(":")) return "";
+        if (!self.columnList().some(s => s.toLowerCase() == v.toLowerCase())) return "Unknown field";
         return "";
       },
       columnUnknownField() {
@@ -829,29 +838,29 @@ class Model {
         let sobject = {};
         sobject["$xsi:type"] = sobjectType;
         sobject.fieldsToNull = [];
+        const isTooling = this.apiType === "Tooling";
+        const val = v => isTooling ? convertValueForApi(v) : v;
         for (let c = 0; c < row.length; c++) {
           if (header[c][0] != "_") {
             let columnName = header[c].split(":");
+            let [fieldName] = columnName;
+            const isId = c === inputIdColumnIndex || fieldName.toLowerCase() === "id";
             if (row[c].trim() == "") {
-              if (c != inputIdColumnIndex) {
-                let field;
-                let [fieldName] = columnName;
-                if (columnName.length == 1) { // Our validation ensures there are always one or three elements in the array
-                  field = fieldName;
-                } else {
-                  field = /__r$/.test(fieldName) ? fieldName.replace(/__r$/, "__c") : fieldName + "Id";
-                }
+              if (!isId) {
+                const field = columnName.length == 1
+                  ? (fieldName.includes(".") ? fieldName.split(".")[0] : fieldName)
+                  : (/__r$/.test(fieldName) ? fieldName.replace(/__r$/, "__c") : fieldName + "Id");
                 sobject.fieldsToNull.push(field);
               }
-            } else if (columnName.length == 1) { // Our validation ensures there are always one or three elements in the array
-              let [fieldName] = columnName;
-              sobject[fieldName] = row[c];
+            } else if (columnName.length == 1) {
+              if (isTooling && fieldName.includes(".")) {
+                setNestedValue(sobject, fieldName, val(row[c]));
+              } else {
+                sobject[fieldName] = val(row[c]);
+              }
             } else {
-              let [fieldName, typeName, subFieldName] = columnName;
-              sobject[fieldName] = {
-                "$xsi:type": typeName,
-                [subFieldName]: row[c]
-              };
+              let [relFieldName, typeName, subFieldName] = columnName;
+              sobject[relFieldName] = {"$xsi:type": typeName, [subFieldName]: val(row[c])};
             }
           }
         }
@@ -1117,11 +1126,22 @@ class App extends React.Component {
   componentDidMount() {
     let {model} = this.props;
 
+    this.onSobjectsListRefreshed = (e) => {
+      if (e.detail?.sfHost === model.sfHost) {
+        model.sobjectsList = e.detail.sobjectsList;
+        model.didUpdate();
+      }
+    };
+    window.addEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
+
     addEventListener("resize", () => { this.scrollTable.viewportChange(); });
 
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
     model.updateImportTableResult();
+  }
+  componentWillUnmount() {
+    window.removeEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
   }
   componentDidUpdate() {
     let {model} = this.props;
@@ -1247,7 +1267,7 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-import-data"}, "Data"),
                             h("div", {className: "slds-form-element__control"},
-                              h("textarea", {id: "data-paste", ariaDescribedby: "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
+                              h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
                               h("div", {id: "error-data-paste", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.dataError}, model.dataError)
                             )
                           )
@@ -1504,14 +1524,29 @@ class StatusBox extends React.Component {
       ReactDOM.render(h(App, {model}), root, cb);
     };
     ReactDOM.render(h(App, {model}), root);
-
-    if (parent && parent.isUnitTest) { // for unit tests
-      parent.insextTestLoaded({model});
-    }
-
   });
 }
 
 function stringIsEmpty(str) {
   return str == null || str == undefined || str.trim() == "";
+}
+
+function convertValueForApi(value) {
+  const s = String(value ?? "").trim();
+  if (!s) return null;
+  if (s.toLowerCase() === "true") return true;
+  if (s.toLowerCase() === "false") return false;
+  const n = Number(s);
+  return !Number.isNaN(n) && String(n) === s ? n : s;
+}
+
+function setNestedValue(obj, path, value) {
+  const parts = path.split(".");
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const k = parts[i];
+    if (!(cur[k] && typeof cur[k] === "object")) cur[k] = {};
+    cur = cur[k];
+  }
+  cur[parts[parts.length - 1]] = value;
 }

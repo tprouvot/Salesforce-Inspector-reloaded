@@ -1,7 +1,7 @@
 import {getRedirectUri, getClientId, Constants} from "./utils.js";
 import {apiStatistics} from "./api-statistics.js";
 
-export let defaultApiVersion = "65.0";
+export let defaultApiVersion = "66.0";
 export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiVersion : localStorage.getItem("apiVersion");
 
 export let sessionError;
@@ -192,7 +192,7 @@ export let sfConn = {
     if (rawResponse){
       apiStatistics.trackApiCall("rest", url, method, duration, false);
       return xhr;
-    } else if (xhr.status >= 200 && xhr.status < 300) {
+    } else if (xhr.status >= 200 && xhr.status < 400) {
       apiStatistics.trackApiCall("rest", url, method, duration, false);
       return xhr.response;
     } else if (xhr.status == 0) {

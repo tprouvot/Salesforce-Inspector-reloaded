@@ -136,7 +136,7 @@ The extension caches the SObjects list to improve popup loading performance. Thi
    * A success message will confirm the cache has been cleared
 
 2. **Wait for cache expiration**:
-   * The cache will automatically expire based on the configured duration (default: 168 hours / 7 days)
+   * The cache will automatically expire based on the configured duration (default: 8 hours when "Preload SObjects before popup opens" is enabled, 168 hours / 7 days when disabled)
    * After expiration, the extension will fetch fresh data on the next popup open
 
-**Note:** The extension only caches one org's SObjects list at a time. If you switch between orgs, the cache is automatically cleared and refreshed for the new org.
+**Note:** The extension caches SObjects per org. If you switch between orgs, the extension uses the cache for the current org. For more details on cache configuration, see [SObjects List Cache Management](../how-to.md#sobjects-list-cache-management) in the how-to.

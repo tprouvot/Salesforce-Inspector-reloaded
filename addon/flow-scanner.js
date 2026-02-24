@@ -2368,14 +2368,20 @@ const SEVERITY_ICONS = {
   info: h("span", {className: "sev-ico info", "aria-label": "Info"}, "ℹ️")
 };
 
-// Initialize the application
+// Initialize the application only when this is the main entry point
+// Check if we're on the flow-scanner page by looking for required URL parameters
 {
-  let root = document.getElementById("root");
+  const urlParams = new URLSearchParams(window.location.search);
+  const flowDefId = urlParams.get("flowDefId");
+  const flowId = urlParams.get("flowId");
+  const isFlowScannerPage = flowDefId && flowId;
 
-  // eslint-disable-next-line react/no-deprecated
-  ReactDOM.render(h(App), root);
+  // Only initialize if we have the required parameters (i.e., we're on flow-scanner.html)
+  // This prevents initialization when flow-scanner.js is imported by options.js
+  if (isFlowScannerPage) {
+    let root = document.getElementById("root");
 
-  if (parent && parent.isUnitTest) {
-    parent.insextTestLoaded({sfConn});
+    // eslint-disable-next-line react/no-deprecated
+    ReactDOM.render(h(App), root);
   }
 }

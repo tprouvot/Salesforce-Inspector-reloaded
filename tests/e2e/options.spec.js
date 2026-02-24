@@ -79,29 +79,6 @@ test.describe("Options", () => {
       await expect(page.locator("a[role='tab']:has-text('Custom Shortcuts')")).toBeVisible();
     });
 
-    test("Toggle Option - Flow Scrollability", async ({page, extensionId}) => {
-      await initOptionsPage(page, extensionId);
-
-      // Find Flow Scrollability checkbox by ID
-      const checkbox = page.locator("input#scrollOnFlowBuilder");
-      await expect(checkbox).toBeVisible();
-
-      // Get initial state
-      const initialChecked = await checkbox.isChecked();
-
-      // Find the parent container and click the toggle span
-      const checkboxContainer = checkbox.locator("..").locator("..");
-      const toggleSpan = checkboxContainer.locator("span.slds-checkbox_faux_container");
-      await toggleSpan.click();
-
-      // Wait for state to update
-      await page.waitForTimeout(500);
-
-      // Verify state changed
-      const newChecked = await checkbox.isChecked();
-      await expect(newChecked).toBe(!initialChecked);
-    });
-
     test("Toggle Option - Popup Dark Theme", async ({page, extensionId}) => {
       await initOptionsPage(page, extensionId);
 

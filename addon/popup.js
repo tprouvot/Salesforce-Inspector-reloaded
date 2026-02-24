@@ -1609,10 +1609,10 @@ class AllDataBoxSObject extends React.PureComponent {
     }
 
     await this.setState({selectedValue: match});
-    this.loadRecordIdDetails();
+    await this.loadRecordIdDetails();
   }
 
-  loadRecordIdDetails() {
+  async loadRecordIdDetails() {
     let {selectedValue} = this.state;
     let {sfHost} = this.props;
     //If a recordId is selected and the object supports regularApi
@@ -1640,7 +1640,7 @@ class AllDataBoxSObject extends React.PureComponent {
       if (standardNameField === "N/A") {
         // Check cache for nameField and include it in the initial query to avoid extra API call
         const cacheKey = `nameField_${selectedValue.sobject.name}`;
-        cachedNameField = DataCache.getCachedData(cacheKey, sfHost);
+        cachedNameField = await DataCache.getCachedData(cacheKey, sfHost);
       }
 
       if (selectedValue.sobject.recordTypesSupported && selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 1) {
@@ -1702,8 +1702,8 @@ class AllDataBoxSObject extends React.PureComponent {
               recordTypeName: record.RecordType
                 ? record.RecordType.DeveloperName
                 : "",
-              createdBy: record.CreatedBy.Alias,
-              lastModifiedBy: record.LastModifiedBy.Alias,
+              createdBy: record.CreatedBy?.Alias,
+              lastModifiedBy: record.LastModifiedBy?.Alias,
               created: new Date(record.CreatedDate).toLocaleString(),
               lastModified: new Date(record.LastModifiedDate).toLocaleString(),
             },

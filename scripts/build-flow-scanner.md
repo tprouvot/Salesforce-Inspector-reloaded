@@ -5,6 +5,7 @@
 ## Prerequisites
 
 **pnpm** must be installed globally:
+
 ```sh
 npm install -g pnpm
 ```
@@ -12,18 +13,23 @@ npm install -g pnpm
 ## Quick Steps
 
 ### Build Latest Version (Default)
+
 **Single command to build and install the latest version:**
+
 ```sh
 npm run build-flow-scanner
 ```
 
 ### Build Specific Version
+
 **To build a specific version of the flow scanner core:**
+
 ```sh
 node scripts/build-flow-scanner.js 6.13.0
 ```
 
 Or with the full tag name:
+
 ```sh
 node scripts/build-flow-scanner.js core-v6.13.0
 ```
@@ -31,6 +37,7 @@ node scripts/build-flow-scanner.js core-v6.13.0
 ## What the Script Does
 
 This command will:
+
 1. **Clone** the Lightning Flow Scanner monorepo from GitHub
 2. **Fetch tags** to enable version selection
 3. **Checkout** the specified version (or auto-detect the latest `core-v*` tag)
@@ -62,6 +69,7 @@ The script supports two modes:
 ### Cross-Platform Compatibility
 
 The script is designed to work on:
+
 - **macOS** - Uses native Unix tools
 - **Windows** - Pure JavaScript sorting (no `head` command dependency)
 - **Linux** - Works with all standard distributions
@@ -87,6 +95,7 @@ The Lightning Flow Scanner monorepo uses pnpm workspaces with Turborepo. The `@f
 ### Node.js Compatibility
 
 The script uses native Node.js `fs` module and is compatible with:
+
 - Node.js 16.x (LTS)
 - Node.js 18.x (LTS)
 - Node.js 20.x (LTS)

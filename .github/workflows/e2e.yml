@@ -144,19 +144,18 @@ jobs:
         
         # Generate test-constants.local.js with real credentials
         echo "Generating tests/e2e/test-constants.local.js..."
-        cat > tests/e2e/test-constants.local.js <<JSEOF
-export const TEST_CONSTANTS = {
-  mockHost: "$SF_HOST",
-  mockToken: "$ACCESS_TOKEN",
-  apiVersion: "$SF_TEST_APIVERSION",
-  accountRecordId: "$SF_TEST_ACCOUNTID",
-  accountRecordName: "Test Account 1",
-  testUserSearchTerm: "Integration User",
-  flowId: "$SF_TEST_FLOWID",
-  flowDefId: "$SF_TEST_FLOWDEFID",
-  mockEnabled: $SF_TEST_MOCKENABLED
-};
-JSEOF
+        printf '%s\n' \
+          'export const TEST_CONSTANTS = {' \
+          '  mockHost: "'"$SF_HOST"'",' \
+          '  mockToken: "'"$ACCESS_TOKEN"'",' \
+          '  apiVersion: "'"$SF_TEST_APIVERSION"'",' \
+          '  accountRecordId: "'"$SF_TEST_ACCOUNTID"'",' \
+          '  accountRecordName: "Test Account 1",' \
+          '  testUserSearchTerm: "Integration User",' \
+          '  flowId: "'"$SF_TEST_FLOWID"'",' \
+          '  flowDefId: "'"$SF_TEST_FLOWDEFID"'",' \
+          '  mockEnabled: '"$SF_TEST_MOCKENABLED" \
+          '};' > tests/e2e/test-constants.local.js
 
     - name: Install dependencies
       run: npm ci

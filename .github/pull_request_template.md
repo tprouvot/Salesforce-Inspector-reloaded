@@ -8,6 +8,6 @@
 - [ ] My PR relates to an existing issue or feature request and **I discussed it with maintainer**
 - [ ] I used SLDS style and limit the usage of custom CSS
 - [ ] I have performed a self-review of my code
-- [ ] I ran the [unit tests](https://github.com/tprouvot/Salesforce-Inspector-reloaded#unit-tests) and my PR does not break any tests
+- [ ] I added [unit tests](https://github.com/tprouvot/Salesforce-Inspector-reloaded#unit-tests) for the feature I'm adding
 - [ ] I documented the changes I've made on the [CHANGES.md](https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/master/CHANGES.md) and followed actual conventions
 - [ ] I added a new section on [how-to.md](https://github.com/tprouvot/Salesforce-Inspector-reloaded/blob/master/docs/how-to.md) (optional)

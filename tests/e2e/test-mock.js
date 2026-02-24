@@ -361,9 +361,9 @@ export async function routeMock(route, host) {
 
       // Dependencies Explorer - CustomObject (test/main: Inspector_Test__c)
       // Match tooling query for CustomObject (FROM CustomObject) - avoid EntityParticle which has FROM EntityParticle
-      const isCustomObjectQuery = path.includes("/tooling/") &&
-        (query.includes("from customobject") || query.includes("from+customobject")) &&
-        !query.includes("from entityparticle");
+      const isCustomObjectQuery = path.includes("/tooling/")
+        && (query.includes("from customobject") || query.includes("from+customobject"))
+        && !query.includes("from entityparticle");
       if (isCustomObjectQuery) {
         await fulfillSuccess(route, {
           records: [

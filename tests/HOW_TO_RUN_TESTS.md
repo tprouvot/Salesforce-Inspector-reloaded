@@ -26,22 +26,26 @@ This guide explains how to set up and run the Playwright end-to-end tests for Sa
 By default, tests run with mocks enabled, which means they don't require a real Salesforce org connection.
 
 1. **Install dependencies:**
+
 ```bash
    npm install
    npx playwright install --with-deps chromium
 ```
 
-2. **Run all tests:**
+1. **Run all tests:**
+
 ```bash
    npm run test:e2e
 ```
 
-3. **Run tests in debug mode (with UI):**
+1. **Run tests in debug mode (with UI):**
+
 ```bash
    npm run test:e2e:debug
 ```
 
-4. **Run a specific test file:**
+1. **Run a specific test file:**
+
 ```bash
    npx playwright test data-export.spec.js
 ```
@@ -53,7 +57,6 @@ To run tests against a real Salesforce org (without mocks), you need to:
 1. **Configure test constants** (generates a gitignored local file)
 2. **Deploy required metadata** to your Salesforce org
 3. **Set up authentication**
-
 
 ### Step 1: Update Test Configuration
 
@@ -68,6 +71,7 @@ npm run set-test-constants
 ```
 
 Or with options:
+
 ```bash
 # Preview without writing the file
 npm run set-test-constants -- --dry-run
@@ -83,16 +87,18 @@ Prerequisites: Salesforce CLI (`sf`) installed, authenticated to an org, Flow `R
 **Option B: Manual configuration**
 
 Copy the template and fill in real values:
+
 ```bash
 cp tests/e2e/test-constants.template.js tests/e2e/test-constants.local.js
 ```
 
 Then edit `tests/e2e/test-constants.local.js`:
+
 ```javascript
 export const TEST_CONSTANTS = {
   mockHost: "your-org-instance.sandbox.my.salesforce.com",  // Your Salesforce instance URL
   mockToken: "YOUR_ACCESS_TOKEN_HERE",                      // Valid Salesforce access token
-  apiVersion: "65.0",                                       // API version (must match your org)
+  apiVersion: "66.0",                                       // API version (must match your org)
   accountRecordId: "001000000000001AAA",                    // Valid Account record ID
   accountRecordName: "Test Account 1",                      // Account Name (must match record)
   testUserSearchTerm: "Integration User",                   // User search term (exists in all orgs)
@@ -109,16 +115,13 @@ export const TEST_CONSTANTS = {
 The tests require specific metadata to be deployed to your Salesforce org. This metadata is located in the `test/` directory.
 WARNING: the flow must have an inactive version
 
-
 ### Step 3: Assign Permission Set
 
 After deploying, assign the `SfInspector` permission set to your test user:
 
-
 ### Step 4: Create Required Test Data
 
 Some tests require specific data records. See [Required Salesforce Org Data](#required-salesforce-org-data) section below.
-
 
 ### Step 5: Run Tests
 
@@ -130,7 +133,6 @@ npm run test:e2e
 
 The tests will now make real API calls to your Salesforce org.
 
-
 ## Required Salesforce Org Data
 
 When running tests without mocks, your Salesforce org must have the following data:
@@ -138,6 +140,7 @@ When running tests without mocks, your Salesforce org must have the following da
 ### 1. Account Records
 
 **Required:**
+
 - At least 2 Accounts with `Name` like "Test Account%" (e.g. "Test Account 1", "Test Account 2")
 - The Account should have:
   - `Name` field populated
@@ -146,6 +149,7 @@ When running tests without mocks, your Salesforce org must have the following da
 **Import test data (recommended):** Use `tests/account_test_data.csv` with Data Loader, VS Code Salesforce extension, or similar tool to create Account records with names "Test Account 1" and "Test Account 2".
 
 Or create manually:
+
 ```bash
 sf data create record --sobject Account --values "Name='Test Account 1' Type='Customer'" --target-org your-org
 sf data create record --sobject Account --values "Name='Test Account 2' Type='Customer'" --target-org your-org
@@ -157,15 +161,16 @@ sf data create record --sobject Account --values "Name='Test Account 2' Type='Cu
 
 **Required for Users Tab tests:** The default test user search term is "Integration User" (exists in all orgs). Update `testUserSearchTerm` in `test-constants.local.js` if your org uses a different user name for these tests.
 
-
 ### 3. Flow (for Flow Scanner Tests)
 
 **Required:**
+
 - A Flow named `RecordTrigger_InspectorTest` (or update test constants)
 - Flow Definition ID (DurableId)
 - Flow Version ID (Id)
 
 **To get Flow IDs:**
+
 ```bash
 # Get Flow Definition ID
 sf data query --query "SELECT DurableId, ApiName FROM FlowDefinitionView WHERE ApiName='RecordTrigger_InspectorTest'" --target-org your-org
@@ -175,7 +180,6 @@ sf data query --query "SELECT Id, VersionNumber, Status FROM Flow WHERE Definiti
 ```
 
 Update `flowDefId` and `flowId` in `test-constants.local.js` with the IDs.
-
 
 ## CI/CD Integration
 
@@ -190,22 +194,24 @@ Pull requests from forks **cannot access repository secrets**, so they run tests
 Pull requests from the same repository, manual dispatches, and pushes to target branches (post-merge) run tests against a real Salesforce org. This ensures that after a fork PR is merged, the code is validated against the real org on the target branch.
 
 **Required repository variables** (set `SF_TEST_MOCKENABLED` to `"false"`):
-- `SF_CLI_URL` - Salesforce CLI download URL (https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz)
+
+- `SF_CLI_URL` - Salesforce CLI download URL (<https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz>)
 - `SF_TEST_APIVERSION` - API version
 - `SF_TEST_ACCOUNTID` - Account record ID
 - `SF_TEST_FLOWID` - Flow version ID
 - `SF_TEST_FLOWDEFID` - Flow definition ID
 
 **Required repository secrets:**
+
 - `SF_AUTH_URL` - Salesforce authentication URL (sfdx-url format)
 
 The real-org workflow will:
+
 1. Install Salesforce CLI
 2. Authenticate using the auth URL
 3. Extract access token and instance URL
 4. Generate `tests/e2e/test-constants.local.js` with real credentials
 5. Run tests against the real org
-
 
 ## Troubleshooting
 
@@ -214,6 +220,7 @@ The real-org workflow will:
 **Cause:** Invalid or expired access token.
 
 **Solution:**
+
 1. Regenerate your access token
 2. Run `npm run set-test-constants` or update `mockToken` in `test-constants.local.js`
 3. Ensure your user has API access enabled
@@ -223,6 +230,7 @@ The real-org workflow will:
 **Cause:** Test constants reference IDs that don't exist in your org.
 
 **Solution:**
+
 1. Verify Account ID exists: `sf data query --query "SELECT Id FROM Account WHERE Id='YOUR_ID'" --target-org your-org`
 2. Verify Flow IDs exist (see Flow section above)
 3. Update test constants with valid IDs
@@ -232,6 +240,7 @@ The real-org workflow will:
 **Cause:** Missing permissions on `Inspector_Test__c` object.
 
 **Solution:**
+
 1. Deploy the `SfInspector` permission set
 2. Assign it to your test user
 3. Verify field-level security allows access to all fields
@@ -241,6 +250,7 @@ The real-org workflow will:
 **Cause:** Extension path or ID issues.
 
 **Solution:**
+
 1. Ensure `addon/` directory exists and contains `manifest.json`
 2. Check Playwright config loads extension correctly
 3. Verify extension ID is being captured correctly
@@ -250,6 +260,7 @@ The real-org workflow will:
 **Cause:** Your org's data structure differs from mocked data.
 
 **Solution:**
+
 1. Review the mock responses in `tests/e2e/test-mock.js`
 2. Ensure your org has similar data structure
 3. Or update mocks to match your org's structure
@@ -259,6 +270,7 @@ The real-org workflow will:
 **Cause:** Flow not deployed or incorrect Flow IDs.
 
 **Solution:**
+
 1. Deploy the Flow from `test/main/default/flows/`
 2. Verify Flow is Active
 3. Get correct Flow Definition ID and Version ID

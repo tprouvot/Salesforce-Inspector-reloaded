@@ -57,7 +57,7 @@
     }
     const instanceUrl = result.instanceUrl;
     const accessToken = result.accessToken;
-    const apiVersion = result.apiVersion || "65.0";
+    const apiVersion = result.apiVersion || "66.0";
 
     if (!instanceUrl || !accessToken) {
       throw new Error("Could not extract instanceUrl or accessToken from org display");

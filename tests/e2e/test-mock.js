@@ -232,7 +232,9 @@ export async function routeMock(route, host) {
 
     // REST API - SOQL Query
     if (method === "GET" && path.includes("/query") && url.includes("q=")) {
-      const query = decodeURIComponent(url.split("q=")[1]).toLowerCase();
+      const qPart = url.split("q=")[1] || "";
+      const qValue = qPart.includes("&") ? qPart.split("&")[0] : qPart;
+      const query = decodeURIComponent(qValue).toLowerCase();
 
       if (query.includes("from entitydefinition") || query.includes("from+entitydefinition")) {
         await fulfillSuccess(route, {
@@ -308,8 +310,8 @@ export async function routeMock(route, host) {
         return true;
       }
 
-      // Mock Flow versions query
-      if (path.includes("/tooling/") && path.includes("SELECT+Id,VersionNumber,Status+FROM+Flow")) {
+      // Mock Flow versions query (flow-scanner: SELECT Id, VersionNumber, Status FROM Flow)
+      if (path.includes("/tooling/") && query.includes("from flow") && query.includes("versionnumber") && !query.includes("definition")) {
         await fulfillSuccess(route, {
           records: [
             {
@@ -323,6 +325,96 @@ export async function routeMock(route, host) {
               Status: "Obsolete"
             }
           ]
+        });
+        return true;
+      }
+
+      // Dependencies Explorer - ApexClass (test/main: SalesforceInspectorTest)
+      if (path.includes("/tooling/") && query.includes("apexclass")) {
+        await fulfillSuccess(route, {
+          records: [
+            {
+              Id: "01p000000000001AAA",
+              Name: "SalesforceInspectorTest",
+              NamespacePrefix: null
+            }
+          ]
+        });
+        return true;
+      }
+
+      // Dependencies Explorer - Flow (test/main: RecordTrigger_InspectorTest)
+      if (path.includes("/tooling/query") && query.includes("from flow") && query.includes("definition")) {
+        await fulfillSuccess(route, {
+          records: [
+            {
+              Id: TEST_CONSTANTS.flowId,
+              Definition: {DeveloperName: "RecordTrigger_InspectorTest"},
+              VersionNumber: 1,
+              Status: "Active",
+              ProcessType: "AutoLaunchedFlow"
+            }
+          ]
+        });
+        return true;
+      }
+
+      // Dependencies Explorer - CustomObject (test/main: Inspector_Test__c)
+      // Match tooling query for CustomObject (FROM CustomObject) - avoid EntityParticle which has FROM EntityParticle
+      const isCustomObjectQuery = path.includes("/tooling/") &&
+        (query.includes("from customobject") || query.includes("from+customobject")) &&
+        !query.includes("from entityparticle");
+      if (isCustomObjectQuery) {
+        await fulfillSuccess(route, {
+          records: [
+            {
+              Id: "01I000000000001AAA",
+              DeveloperName: "Inspector_Test__c",
+              NamespacePrefix: null
+            }
+          ]
+        });
+        return true;
+      }
+
+      // Dependencies Explorer - MetadataComponentDependency
+      // dependsOn: MetadataComponentId IN (...) - ApexClass/Flow depends on Inspector_Test__c
+      // dependedOnBy: RefMetadataComponentId IN (...) - return empty (nothing references our test metadata)
+      if (path.includes("/tooling/") && query.includes("metadatacomponentdependency")) {
+        const isDependedOnBy = query.includes("refmetadatacomponentid in");
+        let records = [];
+        if (!isDependedOnBy) {
+          const apexClassId = "01p000000000001";
+          const flowIdLower = TEST_CONSTANTS.flowId.toLowerCase();
+          // ApexClass SalesforceInspectorTest (01p000000000001AAA) references Inspector_Test__c
+          if (query.includes(apexClassId)) {
+            records = [{
+              MetadataComponentId: "01p000000000001AAA",
+              MetadataComponentName: "SalesforceInspectorTest",
+              MetadataComponentType: "ApexClass",
+              RefMetadataComponentId: "01I000000000001AAA",
+              RefMetadataComponentName: "Inspector_Test__c",
+              RefMetadataComponentType: "CustomObject",
+              RefMetadataComponentNamespace: null
+            }];
+          }
+          // Flow RecordTrigger_InspectorTest references Inspector_Test__c
+          else if (query.includes(flowIdLower)) {
+            records = [{
+              MetadataComponentId: TEST_CONSTANTS.flowId,
+              MetadataComponentName: "RecordTrigger_InspectorTest",
+              MetadataComponentType: "Flow",
+              RefMetadataComponentId: "01I000000000001AAA",
+              RefMetadataComponentName: "Inspector_Test__c",
+              RefMetadataComponentType: "CustomObject",
+              RefMetadataComponentNamespace: null
+            }];
+          }
+        }
+        await fulfillSuccess(route, {
+          records,
+          totalSize: records.length,
+          done: true
         });
         return true;
       }

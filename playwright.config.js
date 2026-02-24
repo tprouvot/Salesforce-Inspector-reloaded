@@ -21,8 +21,6 @@ export default defineConfig({
         ["list"], // Shows progress with error details
         ["html"], // Generates HTML report
       ],
-  globalSetup: "./tests/e2e/global-setup.js",
-  globalTeardown: "./tests/e2e/global-teardown.js",
   use: {
     trace: "on-first-retry",
   },

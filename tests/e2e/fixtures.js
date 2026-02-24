@@ -1,6 +1,5 @@
 import {test as base, chromium} from "@playwright/test";
 import path from "path";
-import {addCoverageData} from "./coverage-storage.js";
 import {initializeResponseTracking} from "./test-helpers.js";
 
 export const test = base.extend({
@@ -53,31 +52,7 @@ export const test = base.extend({
     // before waitSuccessfulHttpResponse is called
     initializeResponseTracking(page);
 
-    // Start coverage collection if enabled
-    // eslint-disable-next-line no-undef
-    const collectCoverage = process.env.COLLECT_COVERAGE === "true";
-    if (collectCoverage) {
-      try {
-        await page.coverage.startJSCoverage();
-      } catch (error) {
-        console.warn("Could not start coverage:", error.message);
-      }
-    }
-
     await use(page);
-
-    // Stop coverage and collect data
-    if (collectCoverage) {
-      try {
-        const coverage = await page.coverage.stopJSCoverage();
-        if (coverage && coverage.length > 0) {
-          addCoverageData(coverage);
-        }
-      } catch (error) {
-        // Coverage might not be available in all contexts
-        console.warn("Could not collect coverage:", error.message);
-      }
-    }
   },
 });
 export const expect = base.expect;

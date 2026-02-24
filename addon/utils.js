@@ -1120,10 +1120,8 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
 export function isRecordId(recordId) {
   return typeof recordId === "string"
        && /^[a-zA-Z0-9]{15,18}$/.test(recordId)
-       && /^[0-9a-zA-Z]{3}/.test(recordId)
        && !recordId.startsWith("000")
-       && !/[^a-zA-Z0-9]/.test(recordId)
-       && /[0-9]/.test(recordId.slice(0, 5));
+       && /[0-9]/.test(recordId);
 }
 
 /**

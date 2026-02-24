@@ -3,7 +3,8 @@
  * Copy this file to test-constants.local.js and fill in real values,
  * or run: npm run set-test-constants
  *
- * test-constants.local.js is gitignored and will never be committed.
+ * test-constants.local.js is gitignored. This template is used as fallback in CI
+ * when .local is absent (mock mode).
  */
 export const TEST_CONSTANTS = {
   mockHost: "mock-host.salesforce.com",

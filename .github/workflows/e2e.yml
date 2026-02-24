@@ -157,6 +157,10 @@ jobs:
           '  mockEnabled: '"$SF_TEST_MOCKENABLED" \
           '};' > tests/e2e/test-constants.local.js
 
+    - name: Ensure test constants exist (fallback when auth step skipped)
+      if: vars.SF_TEST_MOCKENABLED != 'false'
+      run: cp tests/e2e/test-constants.template.js tests/e2e/test-constants.local.js
+
     - name: Install dependencies
       run: npm ci
 

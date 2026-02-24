@@ -195,3 +195,11 @@ a.download-salesforce {
 .sfir-error-modal-content {
   max-height: 400px;
 }
+
+/* Center datalist dropdown arrow in Object/External ID inputs (data-import) */
+#form-search-object::-webkit-calendar-picker-indicator,
+#form-external-id::-webkit-calendar-picker-indicator {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+}

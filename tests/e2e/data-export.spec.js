@@ -4,7 +4,7 @@ import {
   injectSessionData,
   waitSuccessfulHttpResponse
 } from "./test-helpers";
-import { routeMock } from "./test-mock";
+import {routeMock} from "./test-mock";
 
 test.describe("Data Export", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
@@ -20,7 +20,7 @@ test.describe("Data Export", () => {
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
       //if mock is disabled, continue with the request
-      if(!TEST_CONSTANTS.mockEnabled) {
+      if (!TEST_CONSTANTS.mockEnabled) {
         await route.continue();
         return;
       }

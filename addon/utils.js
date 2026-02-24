@@ -955,6 +955,9 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
         isEverCreatable,
         newUrl,
         layoutable,
+        createable,
+        deletable,
+        updateable,
       },
       api
     ) {
@@ -971,6 +974,10 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
         entity.isEverCreatable = isEverCreatable || entity.isEverCreatable;
         // Keep layoutable true if it was true in either call
         entity.layoutable = layoutable || entity.layoutable;
+        // Keep createable/deletable/updateable true if true in either call (for data-import filtering)
+        if (createable) entity.createable = true;
+        if (deletable) entity.deletable = true;
+        if (updateable) entity.updateable = true;
       } else {
         entity = {
           availableApis: [],
@@ -1009,7 +1016,14 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
           for (const sobject of describe.sobjects) {
             // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
             addEntity(
-              {...sobject, isCustomSetting: sobject.customSetting || sobject.isCustomSetting, layoutable: sobject.layoutable || false},
+              {
+                ...sobject,
+                isCustomSetting: sobject.customSetting || sobject.isCustomSetting,
+                layoutable: sobject.layoutable || false,
+                createable: sobject.createable,
+                deletable: sobject.deletable,
+                updateable: sobject.updateable,
+              },
               api
             );
           }
@@ -1047,6 +1061,10 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
                       recordTypesSupported: record.RecordTypesSupported,
                       newUrl: record.NewUrl,
                       isEverCreatable: record.IsEverCreatable,
+                      // EntityDefinition does not expose createable/deletable/updateable; use isEverCreatable as createable hint
+                      createable: record.IsEverCreatable,
+                      deletable: false,
+                      updateable: false,
                     },
                     null
                   );

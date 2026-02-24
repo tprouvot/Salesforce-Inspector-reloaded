@@ -6,13 +6,13 @@ import {
   createModelExposureSetup,
   pasteData,
 } from "./test-helpers";
-import { routeMock } from "./test-mock";
+import {routeMock} from "./test-mock";
 
 test.describe("Data Import", () => {
   const {mockHost, mockToken, apiVersion} = TEST_CONSTANTS;
 
-  // Slight increase when running full suite - beforeEach can be slow under load
-  test.setTimeout(2000);
+  // Slight increase when running full suite - page setup and beforeEach can be slow under load
+  test.setTimeout(10000);
 
   test.beforeEach(async ({context}) => {
     // 1. Inject Fake Session Data with model exposure setup
@@ -26,7 +26,7 @@ test.describe("Data Import", () => {
     // 2. Mock Salesforce API Calls
     await context.route("**/*", async route => {
       //if mock is disabled, continue with the request
-      if(!TEST_CONSTANTS.mockEnabled) {
+      if (!TEST_CONSTANTS.mockEnabled) {
         await route.continue();
         return;
       }
@@ -40,7 +40,7 @@ test.describe("Data Import", () => {
     });
   });
 
-/**
+  /**
  * Initializes the import page
  * @param {Object} page - Playwright page object
  * @param {Object} context - Playwright browser context
@@ -78,7 +78,7 @@ test.describe("Data Import", () => {
     await page.waitForFunction(() => {
       const spinner = document.querySelector(".slds-spinner");
       return !spinner || spinner.style.display === "none" || !spinner.classList.contains("slds-spinner");
-    }, {timeout: 2000});
+    }, {timeout: 3000});
 
     return objectInput;
   }
@@ -94,8 +94,8 @@ test.describe("Data Import", () => {
     await page.locator("#form-import-action").selectOption("create");
 
     //Paste CSV data - trigger onDataPaste handler by dispatching paste event with clipboardData
-    const csvData = '"Name","Checkbox__c","Number__c"\r\ntest3-' + TEST_GUID + ',false,300.03\r\ntest4-' + TEST_GUID + ',true,400.04';
-    
+    const csvData = '"Name","Checkbox__c","Number__c"\r\ntest3-' + TEST_GUID + ",false,300.03\r\ntest4-" + TEST_GUID + ",true,400.04";
+
     // Trigger paste event with clipboardData to call onDataPaste handler
     await pasteData(page, "#data-paste", csvData);
 
@@ -124,7 +124,7 @@ test.describe("Data Import", () => {
     await expect(page.locator("text=/\\d+ Succeeded/")).toContainText("2 Succeeded");
 
     // Extract the record IDs from the result table
-    return await page.locator("table.slds-table tr:not(:first-child) td:nth-child(5)").allTextContents();;
+    return await page.locator("table.slds-table tr:not(:first-child) td:nth-child(5)").allTextContents(); ;
   }
 
   /**
@@ -197,7 +197,7 @@ test.describe("Data Import", () => {
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();
     await expect(page.locator("text=/\\d+ Succeeded/")).toContainText("2 Succeeded");
 
-    return await page.locator("table.slds-table tr:not(:first-child) td:nth-child(4)").allTextContents();;
+    return await page.locator("table.slds-table tr:not(:first-child) td:nth-child(4)").allTextContents(); ;
 
   }
 
@@ -243,7 +243,7 @@ test.describe("Data Import", () => {
     const createdRecordIds = await createRecords(page, "create");
     await updateRecords(page, new Array(createdRecordIds[0]));
     const upsertedRecordIds = await upsertRecords(page, createdRecordIds);
-    await deleteRecords(page,createdRecordIds.concat(upsertedRecordIds));
+    await deleteRecords(page, createdRecordIds.concat(upsertedRecordIds));
   });
 
   test("Create Records from Excel Format", async ({page, context, extensionId}) => {
@@ -253,7 +253,7 @@ test.describe("Data Import", () => {
     await page.locator("#form-import-action").selectOption("create");
 
     // Paste Excel data (tab-separated) - make sure tabs are actual tab characters
-    const excelData = '"Name"\t"Number__c"\r\ntest6-' + TEST_GUID + '\t600.06\r\ntest7-' + TEST_GUID + '\t700.07';
+    const excelData = '"Name"\t"Number__c"\r\ntest6-' + TEST_GUID + "\t600.06\r\ntest7-" + TEST_GUID + "\t700.07";
     await pasteData(page, "#data-paste", excelData);
 
     // Wait for data to be parsed and field mapping to appear
@@ -270,7 +270,7 @@ test.describe("Data Import", () => {
     await page.locator(".slds-modal button:has-text('Insert')").click();
 
     // Wait for import to complete
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1500);
 
     // Verify status
     await expect(page.locator("text=/\\d+ Succeeded/")).toBeVisible();

@@ -1,0 +1,174 @@
+name: Playwright Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ releaseCandidate, beta, main ]
+  push:
+    branches: [ releaseCandidate, beta, main ]
+
+jobs:
+  # Fork PRs: run tests with mocks (no access to secrets)
+  test-mocked:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+        cache: 'npm'
+
+    - name: Restore node_modules cache
+      id: cache-npm
+      uses: actions/cache@v5
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install chromium
+
+    - name: Run Playwright tests (mocked)
+      run: npm run test:e2e:mock
+
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report-mocked
+        path: playwright-report/
+        retention-days: 30
+
+  # Repo PRs + manual dispatch + post-merge push: run tests against real org
+  test-real-org:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || github.event_name == 'push'
+      || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork != true)
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+        cache: 'npm'
+
+    - name: Restore node_modules cache
+      id: cache-npm
+      uses: actions/cache@v5
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Setup Salesforce CLI and authenticate
+      if: ${{ vars.SF_TEST_MOCKENABLED == 'false' }}
+      env:
+        SF_CLI_URL: ${{ vars.SF_CLI_URL }}
+        SF_TEST_APIVERSION: ${{ vars.SF_TEST_APIVERSION }}
+        SF_TEST_MOCKENABLED: ${{ vars.SF_TEST_MOCKENABLED }}
+        SF_TEST_ACCOUNTID: ${{ vars.SF_TEST_ACCOUNTID }}
+        SF_TEST_FLOWID: ${{ vars.SF_TEST_FLOWID }}
+        SF_TEST_FLOWDEFID: ${{ vars.SF_TEST_FLOWDEFID }}
+        SF_AUTH_URL: ${{ secrets.SF_AUTH_URL }}
+      run: |
+        # Install Salesforce CLI
+        echo "Installing Salesforce CLI from $SF_CLI_URL"
+        wget $SF_CLI_URL -O sf-cli.tar.xz
+        mkdir -p sf-cli
+        tar xJf sf-cli.tar.xz -C sf-cli --strip-components=1
+        echo "$PWD/sf-cli/bin" >> $GITHUB_PATH
+        export PATH="$PWD/sf-cli/bin:$PATH"
+        sf --version
+        
+        # Authenticate and get access token
+        echo "Authenticating to Salesforce org using SF_AUTH_URL..."
+        echo $SF_AUTH_URL > ./SFDX_AUTH_URL.txt
+        sf org login sfdx-url -f ./SFDX_AUTH_URL.txt -a cicdorg -d
+
+        # Display the authenticated org and extract the access token and instance url
+        echo "Extracting authentication information..."
+        ORG_INFO=$(sf org display --json -o cicdorg 2>/dev/null)
+        SF_EXIT_CODE=$?
+        
+        if [ $SF_EXIT_CODE -ne 0 ]; then
+          echo "Error: sf org display failed with exit code $SF_EXIT_CODE"
+          exit 1
+        fi
+        
+        # Check if we got valid JSON
+        if [ -z "$ORG_INFO" ]; then
+          echo "Error: sf org display returned empty output"
+          exit 1
+        fi
+        
+        ACCESS_TOKEN=$(echo "$ORG_INFO" | jq -r '.result.accessToken // empty' 2>/dev/null)
+        INSTANCE_URL=$(echo "$ORG_INFO" | jq -r '.result.instanceUrl // empty' 2>/dev/null)
+        
+        if [ -z "$ACCESS_TOKEN" ]; then
+          echo "Error: Could not extract access_token from auth response"
+          exit 1
+        fi
+        
+        # Mask the token so it never appears in logs
+        echo "::add-mask::$ACCESS_TOKEN"
+        
+        # Extract hostname from instance URL
+        if [ -n "$INSTANCE_URL" ]; then
+          SF_HOST=$(echo "$INSTANCE_URL" | sed 's|https\?://||' | sed 's|/.*||')
+        else
+          echo "Error: Could not determine Salesforce instance URL"
+          exit 1
+        fi
+        
+        if [ -z "$SF_HOST" ]; then
+          echo "Error: Could not determine Salesforce hostname"
+          exit 1
+        fi
+        
+        # Generate test-constants.local.js with real credentials
+        echo "Generating tests/e2e/test-constants.local.js..."
+        printf '%s\n' \
+          'export const TEST_CONSTANTS = {' \
+          '  mockHost: "'"$SF_HOST"'",' \
+          '  mockToken: "'"$ACCESS_TOKEN"'",' \
+          '  apiVersion: "'"$SF_TEST_APIVERSION"'",' \
+          '  accountRecordId: "'"$SF_TEST_ACCOUNTID"'",' \
+          '  accountRecordName: "Test Account 1",' \
+          '  testUserSearchTerm: "Integration User",' \
+          '  flowId: "'"$SF_TEST_FLOWID"'",' \
+          '  flowDefId: "'"$SF_TEST_FLOWDEFID"'",' \
+          '  mockEnabled: '"$SF_TEST_MOCKENABLED" \
+          '};' > tests/e2e/test-constants.local.js
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install chromium
+
+    - name: Run Playwright tests
+      run: npm run test:e2e
+
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30

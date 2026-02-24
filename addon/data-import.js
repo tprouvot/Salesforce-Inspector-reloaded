@@ -4,7 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -74,6 +74,11 @@ class Model {
     this.spinFor = createSpinForMethod(this);
 
     this.describeInfo = new DescribeInfo(this.spinFor.bind(this), () => { this.refreshColumn(); });
+    this.sobjectsList = null;
+    getSobjectsList(sfHost).then((sobjectsList) => {
+      this.sobjectsList = sobjectsList;
+      this.didUpdate();
+    });
 
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
@@ -292,6 +297,21 @@ class Model {
   }
 
   sobjectList() {
+    const hardcodedObjectsPrefix = ["01Z", "00O"];//Dashboard and Report can be deleted
+    // Use cached sobjects list from utils (like popup.js) to avoid redundant API call
+    if (this.sobjectsList && this.sobjectsList.length > 0) {
+      if (this.apiType == "Metadata") {
+        return this.sobjectsList.filter(sobject => sobject.name.endsWith("__mdt"));
+      }
+      const useToolingApi = this.apiType == "Tooling";
+      const requiredApi = useToolingApi ? "toolingApi" : "regularApi";
+
+      return this.sobjectsList.filter(
+        sobject => (sobject.availableApis || []).includes(requiredApi)
+          && (sobject.createable || sobject.deletable || sobject.updateable || hardcodedObjectsPrefix.includes(sobject.keyPrefix))
+      );
+    }
+    // Fallback to DescribeInfo when cache not yet loaded or disabled
     let {globalDescribe} = this.describeInfo.describeGlobal(this.apiType == "Tooling");
     if (!globalDescribe) {
       return [];
@@ -301,10 +321,9 @@ class Model {
       return globalDescribe.sobjects
         .filter(sobjectDescribe => sobjectDescribe.name.endsWith("__mdt"));
     } else {
-      const hardcodedObjectsPrefix = ["01Z", "00O"];//Dashboard and Report can be deleted
       return globalDescribe.sobjects
         .filter(sobjectDescribe => sobjectDescribe.createable || sobjectDescribe.deletable || sobjectDescribe.updateable || hardcodedObjectsPrefix.includes(sobjectDescribe.keyPrefix));
-    };
+    }
   }
 
   idLookupList() {
@@ -1107,11 +1126,22 @@ class App extends React.Component {
   componentDidMount() {
     let {model} = this.props;
 
+    this.onSobjectsListRefreshed = (e) => {
+      if (e.detail?.sfHost === model.sfHost) {
+        model.sobjectsList = e.detail.sobjectsList;
+        model.didUpdate();
+      }
+    };
+    window.addEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
+
     addEventListener("resize", () => { this.scrollTable.viewportChange(); });
 
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
     model.updateImportTableResult();
+  }
+  componentWillUnmount() {
+    window.removeEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
   }
   componentDidUpdate() {
     let {model} = this.props;
@@ -1237,7 +1267,7 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-import-data"}, "Data"),
                             h("div", {className: "slds-form-element__control"},
-                              h("textarea", {id: "data-paste", ariaDescribedby: "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
+                              h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
                               h("div", {id: "error-data-paste", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.dataError}, model.dataError)
                             )
                           )
@@ -1494,11 +1524,6 @@ class StatusBox extends React.Component {
       ReactDOM.render(h(App, {model}), root, cb);
     };
     ReactDOM.render(h(App, {model}), root);
-
-    if (parent && parent.isUnitTest) { // for unit tests
-      parent.insextTestLoaded({model});
-    }
-
   });
 }
 

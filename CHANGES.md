@@ -2,7 +2,7 @@
 
 ## Version 2.1
 
-- `Show All Data` See Lookup Names on lookup title [feature #1130](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1130)
+- `Show All Data` Display Lookup Names on lookup title [feature #1130](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1130)
 
 ## Version 2.0
 

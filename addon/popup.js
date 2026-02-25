@@ -957,6 +957,7 @@ class AllDataBox extends React.PureComponent {
       contextSobject: null,
     };
     this.onAspectClick = this.onAspectClick.bind(this);
+    this.onClearSobjectsCache = this.onClearSobjectsCache.bind(this);
     this.parseContextUrl = this.ensureKnownBrowserContext.bind(this);
   }
 
@@ -1119,6 +1120,20 @@ class AllDataBox extends React.PureComponent {
       });
   }
 
+  async onClearSobjectsCache() {
+    const {sfHost} = this.props;
+    await DataCache.clearCache(Constants.CACHE_SOBJECTS_LIST, sfHost, true, true);
+    this.setState({sobjectsList: null, sobjectsLoading: false}, () => {
+      this.loadSobjects();
+    });
+    if (this.props.showToast) {
+      this.props.showToast({
+        type: "success",
+        bannerText: "SObjects List cache cleared.",
+      });
+    }
+  }
+
   render() {
     let {
       activeSearchAspect,
@@ -1234,6 +1249,8 @@ class AllDataBox extends React.PureComponent {
           contextSobject,
           linkTarget,
           onContextRecordChange,
+          onClearSobjectsCache: this.onClearSobjectsCache,
+          showToast: this.props.showToast,
           isFieldsPresent,
           eventMonitorHref,
         })
@@ -1580,9 +1597,19 @@ class AllDataBoxSObject extends React.PureComponent {
     this.state = {
       selectedValue: null,
       recordIdDetails: null,
+      searchQuery: "",
+      searchMatchCount: 0,
     };
     this.onDataSelect = this.onDataSelect.bind(this);
     this.getMatches = this.getMatches.bind(this);
+    this.onMatchingResultsChange = this.onMatchingResultsChange.bind(this);
+  }
+
+  onMatchingResultsChange(matchingResults, userQuery) {
+    this.setState({
+      searchQuery: userQuery || "",
+      searchMatchCount: matchingResults?.length ?? 0,
+    });
   }
 
   componentDidMount() {
@@ -1872,7 +1899,10 @@ class AllDataBoxSObject extends React.PureComponent {
       isFieldsPresent,
       eventMonitorHref,
     } = this.props;
-    let {selectedValue, recordIdDetails} = this.state;
+    let {selectedValue, recordIdDetails, searchQuery, searchMatchCount} = this.state;
+    let {onClearSobjectsCache} = this.props;
+    const cacheEnabled = isSettingEnabled(Constants.ENABLE_SOBJECTS_LIST_CACHE, true);
+    const showClearCacheButton = cacheEnabled && searchQuery.trim().length > 0 && searchMatchCount === 0;
     return h(
       "div",
       {className: "tab-container slds-p-horizontal_x-small"},
@@ -1880,6 +1910,7 @@ class AllDataBoxSObject extends React.PureComponent {
         ref: "allDataSearch",
         sfHost,
         onDataSelect: this.onDataSelect,
+        onMatchingResultsChange: this.onMatchingResultsChange,
         sobjectsList,
         getMatches: this.getMatches,
         inputSearchDelay: 0,
@@ -2206,15 +2237,34 @@ class AllDataBoxSObject extends React.PureComponent {
                 )
               )
             ),
-            h(
-              "div",
-              {className: "slds-text-longform"},
-              h(
-                "h3",
-                {className: "slds-text-body_regular"},
-                "No record to display"
+            showClearCacheButton
+              ? h(
+                "div",
+                {className: "slds-text-longform slds-m-top_small slds-m-bottom_small"},
+                h(
+                  "p",
+                  {className: "slds-text-body_regular slds-m-bottom_xx-small"},
+                  "No matching objects found. Clear the cache to refresh the list and include newly created objects."
+                ),
+                h(
+                  "button",
+                  {
+                    className: "slds-button slds-button_neutral",
+                    onClick: onClearSobjectsCache,
+                    title: "Clear SObjects List cache and refresh"
+                  },
+                  "Clear Cache"
+                )
               )
-            )
+              : h(
+                "div",
+                {className: "slds-text-longform"},
+                h(
+                  "h3",
+                  {className: "slds-text-body_regular"},
+                  "No record to display"
+                )
+              )
           )
         )
     );
@@ -4420,7 +4470,7 @@ class AllDataSearch extends React.PureComponent {
   }
   getMatchesDelayed(userQuery) {
     let {queryDelayTimer} = this.state;
-    let {inputSearchDelay} = this.props;
+    let {inputSearchDelay, onMatchingResultsChange} = this.props;
 
     if (queryDelayTimer) {
       clearTimeout(queryDelayTimer);
@@ -4429,6 +4479,7 @@ class AllDataSearch extends React.PureComponent {
       let {getMatches} = this.props;
       const matchingResults = await getMatches(userQuery);
       await this.setState({matchingResults});
+      onMatchingResultsChange?.(matchingResults, userQuery);
     }, inputSearchDelay);
 
     this.setState({queryDelayTimer});

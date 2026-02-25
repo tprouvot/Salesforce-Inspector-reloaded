@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, copyToClipboard} from "./utils.js";
+import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, copyToClipboard, applyProductionStyling} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
@@ -56,12 +56,7 @@ class Model {
     // Set orgName from sfHost
     this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
 
-    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
-      //change background color for production
-      document.body.classList.add("sfir-prod");
-      this.isProd = true;
-    }
+    this.isProd = applyProductionStyling(sfHost);
 
     if (args.has("channel")) {
       let channel = args.get("channel");

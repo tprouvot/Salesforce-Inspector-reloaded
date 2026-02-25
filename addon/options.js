@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, defaultApiVersion} from "./inspector.js";
-import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod, DataCache} from "./utils.js";
+import {nullToEmptyString, getLatestApiVersionFromOrg, Constants, UserInfoModel, createSpinForMethod, DataCache, applyProductionStyling} from "./utils.js";
 import {getFlowScannerRules, FLOW_SCANNER_RULES_STORAGE_KEY} from "./flow-scanner-rules.js";
 /* global initButton, lightningflowscanner */
 import {DescribeInfo} from "./data-load.js";
@@ -17,11 +17,7 @@ class Model {
     this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
     this.spinnerCount = 0;
 
-    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
-      //change background color for production
-      document.body.classList.add("sfir-prod");
-    }
+    applyProductionStyling(sfHost);
 
     // Initialize spinFor method
     this.spinFor = createSpinForMethod(this);

@@ -160,6 +160,39 @@ export const STANDARD_OBJECT_NAME_FIELDS = {
   "CustomMetadataType": "DeveloperName", // For __mdt objects
 };
 
+/**
+ * Determines if the org should be treated as production (for styling/warnings).
+ * Returns false for sandbox, trial orgs, and Developer Edition orgs.
+ * @param {string} sfHost - Salesforce host (e.g. "myorg.lightning.force.com")
+ * @returns {boolean} True if production org, false otherwise
+ */
+export function isProductionOrg(sfHost) {
+  const isSandbox = localStorage.getItem(sfHost + "_isSandbox") === "true";
+  const trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+  if (isSandbox || (trialExpDate && trialExpDate !== "null")) {
+    return false;
+  }
+  const orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo") || "null");
+  if (orgInfo?.OrganizationType === "Developer Edition") {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Applies production styling (sfir-prod class) to document.body when the org is production.
+ * Developer Edition orgs are not considered production.
+ * @param {string} sfHost - Salesforce host (e.g. "myorg.lightning.force.com")
+ * @returns {boolean} True if production styling was applied, false otherwise
+ */
+export function applyProductionStyling(sfHost) {
+  if (isProductionOrg(sfHost)) {
+    document.body.classList.add("sfir-prod");
+    return true;
+  }
+  return false;
+}
+
 export function getLinkTarget(e = {}) {
   if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
     return "_blank";

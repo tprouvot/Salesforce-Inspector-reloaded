@@ -191,6 +191,22 @@ export async function routeMock(route, host) {
       return true;
     }
 
+    // Platform Event Describe (TestEvent__e) - for event-monitor Generate flow
+    if (path.includes("/sobjects/TestEvent__e/describe")) {
+      await fulfillSuccess(route, {
+        name: "TestEvent__e",
+        label: "Test Event",
+        keyPrefix: "e00",
+        createable: true,
+        fields: [
+          {name: "Id", label: "Record ID", type: "id", createable: false, updateable: false, referenceTo: []},
+          {name: "Message__c", label: "Message", type: "string", length: 255, createable: true, updateable: true, referenceTo: []},
+          {name: "Count__c", label: "Count", type: "double", createable: true, updateable: true, referenceTo: []}
+        ]
+      });
+      return true;
+    }
+
     // Inspector_Test__c Describe (Fields)
     if (path.includes("/sobjects/Inspector_Test__c/describe")) {
       await fulfillSuccess(route, {
@@ -235,6 +251,30 @@ export async function routeMock(route, host) {
       const qPart = url.split("q=")[1] || "";
       const qValue = qPart.includes("&") ? qPart.split("&")[0] : qPart;
       const query = decodeURIComponent(qValue).toLowerCase();
+
+      // EntityDefinition for Custom Platform Events (KeyPrefix LIKE 'e%')
+      if ((query.includes("from entitydefinition") || query.includes("from+entitydefinition"))
+        && query.includes("keyprefix") && query.includes("e%")) {
+        await fulfillSuccess(route, {
+          size: 1,
+          totalSize: 1,
+          done: true,
+          records: [
+            {
+              QualifiedApiName: "TestEvent__e",
+              Label: "Test Event",
+              KeyPrefix: "e00",
+              DurableId: "TestEvent__e",
+              IsCustomSetting: false,
+              RecordTypesSupported: false,
+              NewUrl: null,
+              IsEverCreatable: true,
+              NamespacePrefix: null
+            }
+          ]
+        });
+        return true;
+      }
 
       if (query.includes("from entitydefinition") || query.includes("from+entitydefinition")) {
         await fulfillSuccess(route, {
@@ -497,6 +537,12 @@ export async function routeMock(route, host) {
     }
 
     //REST API - DML Operations
+    // POST (Create) - Platform Event publish
+    if (method === "POST" && path.includes("sobjects/TestEvent__e")) {
+      await success({id: "e00000000000001AAA", success: true, errors: []}, 201);
+      return true;
+    }
+
     // POST (Create)
     if (method === "POST" && path.includes("sobjects/Inspector_Test__c")) {
       await success({id: "a00000000000001AAA", success: true, errors: []}, 201);

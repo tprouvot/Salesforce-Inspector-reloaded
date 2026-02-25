@@ -30,6 +30,93 @@ export class Constants {
 }
 
 /**
+ * Unified storage-backed history/saved list used by data-export, rest-explore, and event-monitor.
+ * @param {string} storageKey - localStorage key
+ * @param {number} max - max entries to keep
+ * @param {Object} options - configuration
+ * @param {function(Object): boolean} [options.isValidEntry] - filter valid entries (default: objects only)
+ * @param {function(Object, Object): boolean} [options.matchAdd] - find existing for dedupe on add
+ * @param {function(Object, Object): boolean} [options.matchRemove] - find entry for remove (default: matchAdd or by key)
+ * @param {function(Object, Object): number} [options.sortComparator] - sort comparator (for saved lists)
+ * @param {boolean} [options.addToFront=true] - add new entries to front (history) or end (saved)
+ */
+export class StorageHistory {
+  constructor(storageKey, max, options = {}) {
+    this.storageKey = storageKey;
+    this.max = max;
+    this.options = {
+      isValidEntry: (e) => typeof e === "object",
+      matchAdd: null,
+      matchRemove: null,
+      sortComparator: null,
+      addToFront: true,
+      ...options
+    };
+    this.list = this._get();
+  }
+
+  _get() {
+    let list;
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      list = stored ? JSON.parse(stored) : [];
+    } catch {
+      list = [];
+    }
+    if (!Array.isArray(list)) {
+      list = [];
+    }
+    list = list.filter(this.options.isValidEntry);
+    if (this.options.sortComparator) {
+      list.sort(this.options.sortComparator);
+    }
+    this.list = list;
+    return list;
+  }
+
+  add(entry) {
+    let list = this._get();
+    const match = this.options.matchAdd || ((e, ent) => e.key === ent.key);
+    const idx = list.findIndex((e) => match(e, entry));
+    if (idx > -1) {
+      list.splice(idx, 1);
+    }
+    if (this.options.addToFront) {
+      list.splice(0, 0, entry);
+    } else {
+      list.push(entry);
+    }
+    if (this.options.sortComparator) {
+      list.sort(this.options.sortComparator);
+    }
+    if (list.length > this.max) {
+      list.pop();
+    }
+    localStorage.setItem(this.storageKey, JSON.stringify(list));
+    this.list = list;
+  }
+
+  remove(entry) {
+    let list = this._get();
+    const match = this.options.matchRemove || this.options.matchAdd || ((e, ent) => e.key === ent.key);
+    const idx = list.findIndex((e) => match(e, entry));
+    if (idx > -1) {
+      list.splice(idx, 1);
+    }
+    if (this.options.sortComparator) {
+      list.sort(this.options.sortComparator);
+    }
+    localStorage.setItem(this.storageKey, JSON.stringify(list));
+    this.list = list;
+  }
+
+  clear() {
+    localStorage.removeItem(this.storageKey);
+    this.list = [];
+  }
+}
+
+/**
  * Mapping of standard Salesforce objects to their name fields.
  * Objects with "Name" field are not included (assumed default).
  * Objects with null have no nameField property (e.g., Event, Task use Subject).

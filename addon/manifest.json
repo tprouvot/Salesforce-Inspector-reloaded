@@ -12,8 +12,7 @@
   "minimum_chrome_version": "88",
   "permissions": [
     "cookies",
-    "storage",
-    "unlimitedStorage"
+    "storage"
   ],
   "host_permissions": [
     "https://*.salesforce.com/*",

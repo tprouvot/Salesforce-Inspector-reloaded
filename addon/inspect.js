@@ -2654,9 +2654,7 @@ class DetailsBox extends React.Component {
       }
       return false;
     });
-
   });
-
 }
 
 {

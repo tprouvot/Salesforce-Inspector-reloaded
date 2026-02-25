@@ -226,14 +226,7 @@ This branch will be merged into beta and then master when the new version is pub
 
 ### Unit tests
 
-1. Set up an org (e.g. a Developer Edition) and apply the following customizations:
-   1. Everything described in metadata in `test/`. Push to org with `sf deploy metadata -d test/ -o [your-test-org-alias]`.
-   2. Make sure your user language is set to English.
-   3. Ensure the org has no _namespace prefix_ (Setup → Package Manager).
-   4. Assign Permission Set `SfInspector` to your user.
-2. Navigate to one of the extension pages and replace the file name with `test-framework.html`, for example `chrome-extension://example/test-framework.html?host=example.my.salesforce.com`.
-3. Wait until "Salesforce Inspector unit test finished successfully" is shown.
-4. If the test fails, open your browser's developer tools console to see error messages.
+See [How to run tests](tests/HOW_TO_RUN_TESTS.md).
 
 ### Linting
 
@@ -261,7 +254,7 @@ By Thomas Prouvot and forked from [Søren Krabbe and Jesper Kristensen](https://
 
 This extension uses the following third-party libraries:
 
-- [Lightning Flow Scanner Core](https://github.com/Flow-Scanner/lightning-flow-scanner-core) - A lightweight engine for Flow metadata analysis in Node.js and browser environments (MIT License)
+- [Lightning Flow Scanner Core](https://github.com/Flow-Scanner/lightning-flow-scanner) - A lightweight engine for Flow metadata analysis in Node.js and browser environments (MIT License)
 - [PrismJS](https://prismjs.com/) - Lightweight, extensible syntax highlighter (MIT License)
 
 For full license details, see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)

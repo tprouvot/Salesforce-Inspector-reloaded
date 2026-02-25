@@ -76,7 +76,6 @@ class OptionsTabSelector extends React.Component {
         tabTitle: "User Experience",
         content: [
           {option: ArrowButtonOption, props: {key: 1}},
-          {option: Option, props: {type: "toggle", title: "Flow Scrollability", key: "scrollOnFlowBuilder"}},
           {option: Option, props: {type: "toggle", title: "Inspect page - Show table borders", key: "displayInspectTableBorders"}},
           {option: Option, props: {type: "toggle", title: "Always open links in a new tab", key: "openLinksInNewTab", tooltip: "Enabling this option will prevent Lightning Navigation (faster loading) to be used"}},
           {option: Option, props: {type: "toggle", title: "Open Permission Set / Permission Set Group summary from shortcuts", key: "enablePermSetSummary"}},
@@ -142,6 +141,7 @@ class OptionsTabSelector extends React.Component {
               ]}
           },
           {option: Option, props: {type: "toggle", title: "Enable Dynamic Popup Height", key: "popupHeighDynamictMode", default: false, tooltip: "When enabled, the popup height will be dynamically adjusted based on the content."}},
+          {option: Option, props: {type: "toggle", title: "Show recently viewed records in popup", key: Constants.ENABLE_RECENTLY_VIEWED_RECORDS, default: true, tooltip: "When enabled, queries and displays recently viewed records when focusing the Object search field in the popup."}},
         ]
       },
       {
@@ -1334,7 +1334,7 @@ class SObjectsCacheOptions extends React.Component {
   }
 
   async onClearCache() {
-    await DataCache.clearCache(Constants.CACHE_SOBJECTS_LIST, this.model.sfHost, true, false);
+    await DataCache.clearCache(Constants.CACHE_SOBJECTS_LIST, this.model.sfHost, true, true);
     if (this.appRef) {
       this.appRef.setState({
         showToast: true,
@@ -1378,7 +1378,8 @@ class SObjectsCacheOptions extends React.Component {
           h("div", {className: "slds-col slds-size_1-of-2"},
             h("div", {className: "slds-grid slds-grid_vertical-align-center slds-gutters_small"},
               h("div", {className: "slds-col slds-size_4-of-12"},
-                h("label", {className: "slds-form-element__label", htmlFor: "sobjectsCacheDuration"}, "Duration (hours):")
+                h("label", {className: "slds-form-element__label", htmlFor: "sobjectsCacheDuration"}, "Duration (hours):",
+                  h(Tooltip, {tooltip: "If 'Preload SObjects before popup opens' is enabled, recommended value is 8 (to force a refresh every 8 hours), else recommended value is 168 (7 days - refresh when the popup is opened in background)", idKey: "sobjectsCacheDurationTooltip"})),
               ),
               h("div", {className: "slds-col slds-size_3-of-12"},
                 h("div", {className: "slds-form-element__control"},
@@ -2192,10 +2193,5 @@ class App extends React.Component {
       ReactDOM.render(h(App, {model}), root, cb);
     };
     ReactDOM.render(h(App, {model}), root);
-
-    if (parent && parent.isUnitTest) { // for unit tests
-      parent.insextTestLoaded({model});
-    }
-
   });
 }

@@ -92,6 +92,7 @@ class Model {
     this.exportProgress = {};
     this.queryName = "";
     this.apiResponse = null;
+    this.responseCounter = 0;
     this.canSendRequest = true;
     this.resultClass = "neutral";
     this.request = {endpoint: "", method: "get", body: "", headers: ""};
@@ -367,6 +368,7 @@ class Model {
             value: this.formatResponse(responseText, fallbackFormat),
             size: responseSize
           };
+          this.responseCounter++;
           return;
         }
       } else {
@@ -381,6 +383,7 @@ class Model {
       value: responseData ? this.formatResponse(responseData, format) : "NONE",
       size: responseSize
     };
+    this.responseCounter++;
 
     // Extract new API endpoints from successful JSON responses
     if (this.resultClass === "success" && responseData && typeof responseData === "object" && !Array.isArray(responseData)) {
@@ -499,6 +502,7 @@ class App extends React.Component {
   }
   resetRequest(model) {
     model.apiResponse = "";
+    model.responseCounter++;
     model.didUpdate();
   }
   onSelectQueryMethod(e) {
@@ -630,8 +634,11 @@ class App extends React.Component {
   }
   componentDidUpdate() {
     this.recalculateSize();
-    if (window.Prism) {
+    // Only run Prism when a new query result arrived - skip when just typing in endpoint/body.
+    const counter = this.props.model?.responseCounter ?? 0;
+    if (counter !== this._lastHighlightedCounter && this.props.model?.apiResponse && window.Prism) {
       window.Prism.highlightAll();
+      this._lastHighlightedCounter = counter;
     }
   }
   canSendRequest() {
@@ -894,10 +901,6 @@ class App extends React.Component {
       ReactDOM.render(h(App, {model}), root, cb);
     };
     ReactDOM.render(h(App, {model}), root);
-
-    if (parent && parent.isUnitTest) { // for unit tests
-      parent.insextTestLoaded({model, sfConn});
-    }
   });
 
 }

@@ -7,6 +7,7 @@ import AlertBanner from "./components/AlertBanner.js";
 let p = parent;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
 const isExtensionPage = document.location.ancestorOrigins?.[0].includes(getExtensionId());
+const RECENT_ITEMS_RENDERED_COUNT = 100;
 
 let h = React.createElement;
 if (typeof browser === "undefined") {
@@ -54,7 +55,6 @@ function getFilteredLocalStorage() {
   const domainStart = host?.split(".")[0];
   const storedData = {...localStorage};
   const keysToSend = [
-    "scrollOnFlowBuilder",
     "colorizeProdBanner",
     "colorizeSandboxBanner",
     "prodBannerText",
@@ -255,6 +255,10 @@ class App extends React.PureComponent {
     });
   }
   onShortcutKey(e) {
+    // Only trigger shortcuts for single key presses (no modifier keys)
+    if (e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) {
+      return;
+    }
     const refs = this.refs;
     const actionMap = {
       a: ["all", "clickAllDataBtn"],
@@ -479,6 +483,7 @@ class App extends React.PureComponent {
             ref: "showAllDataBox",
             sfHost,
             showDetailsSupported: !inLightning && !inInspector,
+            inInspector,
             linkTarget,
             contextUrl,
             onContextRecordChange: this.onContextRecordChange,
@@ -785,6 +790,7 @@ class App extends React.PureComponent {
             {
               className:
               "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small",
+              id: "footer"
             },
             h(
               "a",
@@ -964,6 +970,17 @@ class AllDataBox extends React.PureComponent {
     if (this.shouldLoadSobjects()) {
       this.loadSobjects();
     }
+
+    this.onSobjectsListRefreshed = (e) => {
+      if (e.detail?.sfHost === this.props.sfHost) {
+        this.setState({sobjectsList: e.detail.sobjectsList});
+      }
+    };
+    window.addEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener(Constants.SOBJECTS_LIST_REFRESHED_EVENT, this.onSobjectsListRefreshed);
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -1006,6 +1023,7 @@ class AllDataBox extends React.PureComponent {
 
   /**
    * Check if sobjects should be loaded
+   * Only load in popup/button context (when inInspector is false), not when embedded in data-export, field-creator, etc.
    * @returns {boolean} True if Objects tab is active and popup is expanded, or if preload option is enabled and popup is not yet expanded
    */
   shouldLoadSobjects() {
@@ -1013,8 +1031,8 @@ class AllDataBox extends React.PureComponent {
     if (this.props.isPopupExpanded && this.state.activeSearchAspect === this.SearchAspectTypes.sobject) {
       return true;
     }
-    // Preload before popup opens: only if option is enabled
-    if (!this.props.isPopupExpanded) {
+    // Preload before popup opens: only if option is enabled (not in inspector)
+    if (!this.props.isPopupExpanded && !this.props.inInspector) {
       return isSettingEnabled(Constants.PRELOAD_SOBJECTS_BEFORE_POPUP);
     }
     return false;
@@ -1354,7 +1372,7 @@ class AllDataBoxUsers extends React.PureComponent {
     const cacheKey = "userFieldNames";
 
     // Check cache first
-    let fieldNames = DataCache.getCachedData(cacheKey, sfHost);
+    let fieldNames = await DataCache.getCachedData(cacheKey, sfHost);
 
     if (!fieldNames) {
       // Cache expired or missing, fetch fresh data
@@ -1596,6 +1614,7 @@ class AllDataBoxSObject extends React.PureComponent {
 
   loadRecordIdDetails() {
     let {selectedValue} = this.state;
+    let {sfHost} = this.props;
     //If a recordId is selected and the object supports regularApi
     if (
       selectedValue
@@ -1612,6 +1631,7 @@ class AllDataBoxSObject extends React.PureComponent {
         "LastModifiedDate",
         "Name",
       ];
+
       if (selectedValue.sobject.recordTypesSupported && selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 1) {
         fields.push("RecordType.DeveloperName", "RecordType.Id");
       }
@@ -4499,11 +4519,12 @@ class Autocomplete extends React.PureComponent {
   }
   handleFocus() {
     let {recentItems} = this.props;
+    if (!isSettingEnabled(Constants.ENABLE_RECENTLY_VIEWED_RECORDS, true)) {
+      return;
+    }
     sfConn
       .rest(
-        "/services/data/v"
-          + apiVersion
-          + "/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+LIMIT+100"
+        `/services/data/v${apiVersion}/query/?q=SELECT+Id,Name,Type+FROM+RecentlyViewed+WHERE+Type!='ListView'+LIMIT+${RECENT_ITEMS_RENDERED_COUNT}`
       )
       .then((res) => {
         let itemsIds = new Set();
@@ -4699,20 +4720,15 @@ class Autocomplete extends React.PureComponent {
       itemHeight,
       resultsMouseIsDown,
     } = this.state;
-    // For better performance only render the visible autocomplete items + at least one invisible item above and below (if they exist)
-    const RENDERED_ITEMS_COUNT = 11;
-    let firstIndex = 0;
+
     let autocompleteResults
       = recentItems.length > 0 ? recentItems : matchingResults;
     let lastIndex = autocompleteResults.length - 1;
     let firstRenderedIndex = Math.max(0, scrollTopIndex - 2);
     let lastRenderedIndex = Math.min(
       lastIndex,
-      firstRenderedIndex + RENDERED_ITEMS_COUNT
+      firstRenderedIndex + RECENT_ITEMS_RENDERED_COUNT
     );
-    let topSpace = (firstRenderedIndex - firstIndex) * itemHeight;
-    let bottomSpace = (lastIndex - lastRenderedIndex) * itemHeight;
-    let topSelected = (selectedIndex - firstIndex) * itemHeight;
 
     return h(
       "div",

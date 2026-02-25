@@ -52,35 +52,90 @@ function cleanupTempDir(tempDir) {
   }
 }
 
-// Clone repo and checkout latest tag
-function setupRemoteRepo(tempDir) {
+function getLatestTag(cwd) {
   "use strict";
-  const repoUrl = "https://github.com/flow-scanner/lightning-flow-scanner-core";
-
-  logStep("Cloning lightning-flow-scanner-core repository");
-
-  // Clone directly into tempDir with shallow clone (no history)
-  execSync(`git clone --depth 1 ${repoUrl} "${tempDir}"`, {stdio: "inherit"});
-
-  // Get the latest tag and checkout
   try {
-    const latestTag = execSync("git describe --tags $(git rev-list --tags --max-count=1)", {cwd: tempDir})
-      .toString().trim();
-    logStep(`Checking out latest tag: ${latestTag}`);
-    execSync(`git checkout tags/${latestTag}`, {cwd: tempDir, stdio: "inherit"});
-    logSuccess(`Checked out tag ${latestTag}`);
-  } catch (error) {
-    log("No tags found, using default branch", "yellow");
+    const tagsOutput = execSync('git tag -l "core-v*"', {cwd, encoding: "utf8"});
+    return tagsOutput
+      .trim()
+      .split(/\r?\n/)
+      .map(t => t.trim())
+      .filter(Boolean)
+      .sort((a, b) => b.localeCompare(a, undefined, {numeric: true, sensitivity: "base"}))[0];
+  } catch {
+    return null;
   }
-
-  logSuccess("Repository cloned successfully");
 }
 
-function getLibraryNameFromViteConfig(tempDir) {
+// Clone repo, checkout tag, and build with pnpm
+function setupAndBuildRepo(tempDir) {
+  "use strict";
+  const repoUrl = "https://github.com/Flow-Scanner/lightning-flow-scanner";
+
+  logStep("Cloning monorepo");
+
+  const cloneDir = path.join(tempDir, "repo");
+  fs.mkdirSync(cloneDir, {recursive: true});
+
+  // Clone the repository (shallow clone for speed)
+  execSync(`git clone --depth 1 ${repoUrl} "${cloneDir}"`, {stdio: "inherit"});
+
+  // Fetch all tags (shallow clone doesn't include tags by default)
+  execSync("git fetch --tags --force", {cwd: cloneDir, stdio: "inherit"});
+
+  // Check if a version argument was provided (e.g. node scripts/build-flow-scanner.js 6.13.0)
+  const targetVersion = process.argv[2];
+  let tagToCheckout;
+
+  if (targetVersion) {
+    // If user provided a specific version (e.g. "6.13.0"), construct the tag (e.g. "core-v6.13.0")
+    // If they provided the full tag (e.g. "core-v6.13.0"), use it as is
+    tagToCheckout = targetVersion.startsWith("core-v") ? targetVersion : `core-v${targetVersion}`;
+    logStep(`Using specified version: ${tagToCheckout}`);
+  } else {
+    // Auto-detect latest if no version specified
+    tagToCheckout = getLatestTag(cloneDir);
+    if (tagToCheckout) {
+      logStep(`Auto-detected latest version: ${tagToCheckout}`);
+    }
+  }
+
+  if (!tagToCheckout) {
+    logError("No core-v* tags found. Aborting build.");
+    process.exit(1);
+  }
+
+  try {
+    execSync(`git checkout tags/${tagToCheckout}`, {cwd: cloneDir, stdio: "inherit"});
+    logSuccess(`Checked out tag ${tagToCheckout}`);
+  } catch (e) {
+    logError(`Failed to checkout tag ${tagToCheckout}: ${e.message}`);
+    process.exit(1);
+  }
+
+  const coreDir = path.join(cloneDir, "packages", "core");
+  if (!fs.existsSync(coreDir)) {
+    logError("packages/core directory not found in repository");
+    process.exit(1);
+  }
+
+  // Build using pnpm from monorepo root (Turborepo handles workspace deps)
+  logStep("Installing dependencies with pnpm");
+  execSync("pnpm install", {cwd: cloneDir, stdio: "inherit"});
+  logSuccess("Dependencies installed");
+
+  logStep("Building project with pnpm");
+  execSync("pnpm dist", {cwd: cloneDir, stdio: "inherit"});
+  logSuccess("Build completed");
+
+  return coreDir;
+}
+
+function getLibraryNameFromViteConfig(coreDir) {
   "use strict";
   logStep("Reading Vite config to get library name");
   try {
-    const viteConfigPath = path.join(tempDir, "vite.config.ts");
+    const viteConfigPath = path.join(coreDir, "vite.config.ts");
     const viteConfigContent = fs.readFileSync(viteConfigPath, "utf8");
     const match = viteConfigContent.match(/name:\s*"([^"]+)"/);
     if (!match || !match[1]) {
@@ -96,22 +151,10 @@ function getLibraryNameFromViteConfig(tempDir) {
   return null;
 }
 
-function runCommand(command, description, cwd) {
+function readPackageJson(coreDir) {
   "use strict";
   try {
-    logStep(description);
-    execSync(command, {stdio: "inherit", cwd: cwd || process.cwd()});
-    logSuccess(`${description} completed successfully`);
-  } catch {
-    logError(`${description} failed`);
-    process.exit(1);
-  }
-}
-
-function readPackageJson(tempDir) {
-  "use strict";
-  try {
-    const packageJsonPath = path.join(tempDir, "package.json");
+    const packageJsonPath = path.join(coreDir, "package.json");
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
     return packageJson;
   } catch {
@@ -149,13 +192,15 @@ function injectVersion(umdFilePath, version, libraryName) {
     logStep("Injecting version and library name information");
 
     // Define the library name for dynamic access in the addon
-    const libraryNameSnippet = `window.flowScannerLibraryName = "${libraryName}";\n`;
+    const libraryNameLiteral = JSON.stringify(libraryName);
+    const versionLiteral = JSON.stringify(version);
+    const libraryNameSnippet = `window.flowScannerLibraryName = ${libraryNameLiteral};\n`;
 
     // Create the version injection snippet
     const versionSnippet = `
 // Version injection
-if (typeof window !== 'undefined' && window.${libraryName}) {
-  window.${libraryName}.version = "${version}";
+if (typeof window !== "undefined" && window[${libraryNameLiteral}]) {
+  window[${libraryNameLiteral}].version = ${versionLiteral};
 }`;
 
     // Prepend library name and append the version snippet to the UMD content
@@ -188,32 +233,34 @@ function main() {
   log("🚀 Lightning Flow Scanner Core Build Script", "green");
   log("============================================", "green");
 
+  // Show usage information if version argument is provided
+  const targetVersion = process.argv[2];
+  if (targetVersion) {
+    log(`Building specific version: ${targetVersion}`, "blue");
+  } else {
+    log("Building latest version (use 'node scripts/build-flow-scanner.js <version>' to specify a version)", "blue");
+  }
+
   let tempDir;
 
   try {
-    // Step 1: Create temporary directory and setup remote repo
+    // Step 1: Create temporary directory, clone, and build with pnpm
     tempDir = createTempDir();
     logSuccess(`Created temporary directory: ${tempDir}`);
 
-    setupRemoteRepo(tempDir);
+    const coreDir = setupAndBuildRepo(tempDir);
 
     // Step 2: Read package.json to get version
     logStep("Reading package.json");
-    const packageJson = readPackageJson(tempDir);
+    const packageJson = readPackageJson(coreDir);
     const version = packageJson.version;
     logSuccess(`Version found: ${version}`);
 
-    const libraryName = getLibraryNameFromViteConfig(tempDir);
+    const libraryName = getLibraryNameFromViteConfig(coreDir);
 
-    // Step 3: Install dependencies
-    runCommand("npm install", "Installing dependencies", tempDir);
-
-    // Step 4: Build the project
-    runCommand("npm run vite:dist", "Building project with Vite", tempDir);
-
-    // Step 5: Find the UMD file
+    // Step 3: Find the UMD file
     logStep("Locating compiled UMD file");
-    const distDir = path.join(tempDir, "dist");
+    const distDir = path.join(coreDir, "dist");
 
     if (!fs.existsSync(distDir)) {
       logError("Dist directory not found. Build may have failed.");
@@ -223,7 +270,7 @@ function main() {
     const umdFilePath = findUMDFile(distDir);
     logSuccess(`UMD file found: ${path.basename(umdFilePath)}`);
 
-    // Step 6: Inject version and create final output
+    // Step 4: Inject version and create final output
     injectVersion(umdFilePath, version, libraryName);
 
     log("\n🎉 Build completed successfully!", "green");

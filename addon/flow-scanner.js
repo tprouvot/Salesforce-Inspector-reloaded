@@ -63,6 +63,32 @@ function getFlowVersionPurgePlan(versions, historySize) {
   };
 }
 
+
+/**
+ * Constructs version-specific links for the Flow Scanner Core library.
+ * @param {string} version - The semantic version (e.g., "1.2.3")
+ * @returns {Object} URLs for npm and GitHub
+ */
+function getFlowScannerLinks(version) {
+  const npmPackage = "@flow-scanner/lightning-flow-scanner-core";
+  const githubRepo = "https://github.com/Flow-Scanner/lightning-flow-scanner";
+
+  if (!version || !/^\d+\.\d+\.\d+/.test(version)) {
+    // Fallback to main package/repo if version is invalid
+    return {
+      npm: `https://www.npmjs.com/package/${npmPackage}`,
+      github: githubRepo,
+      isVersioned: false
+    };
+  }
+
+  return {
+    npm: `https://www.npmjs.com/package/${npmPackage}/v/${version}`,
+    github: `${githubRepo}/releases/tag/core-v${version}`,
+    isVersioned: true
+  };
+}
+
 /**
  * Manages the analysis of Salesforce Flows, including data fetching,
  * scanning, and results processing.
@@ -616,9 +642,9 @@ class FlowScanner {
     if (!this._cachedFlowElementTypes) {
       const tempFlow = new this.flowScannerCore.Flow("temp", {});
       this._cachedFlowElementTypes = [
-        ...tempFlow.flowNodes,
-        ...tempFlow.flowResources,
-        ...tempFlow.flowVariables
+        ...(tempFlow.NODE_TAGS || []),
+        ...(tempFlow.RESOURCE_TAGS || []),
+        ...(tempFlow.VARIABLE_TAGS || [])
       ];
     }
 
@@ -2265,8 +2291,9 @@ class App extends React.Component {
             h("small", {},
               "💡 Based on ",
               h("a", {
-                href: "https://github.com/flow-scanner/lightning-flow-scanner-core",
+                href: getFlowScannerLinks(scannerVersion).npm,
                 target: getLinkTarget(),
+                title: scannerVersion ? `View v${scannerVersion} on npm` : "View package on npm"
               }, "Lightning Flow Scanner Core"),
               `\u00A0 (core v${scannerVersion})`
             )
@@ -2341,14 +2368,20 @@ const SEVERITY_ICONS = {
   info: h("span", {className: "sev-ico info", "aria-label": "Info"}, "ℹ️")
 };
 
-// Initialize the application
+// Initialize the application only when this is the main entry point
+// Check if we're on the flow-scanner page by looking for required URL parameters
 {
-  let root = document.getElementById("root");
+  const urlParams = new URLSearchParams(window.location.search);
+  const flowDefId = urlParams.get("flowDefId");
+  const flowId = urlParams.get("flowId");
+  const isFlowScannerPage = flowDefId && flowId;
 
-  // eslint-disable-next-line react/no-deprecated
-  ReactDOM.render(h(App), root);
+  // Only initialize if we have the required parameters (i.e., we're on flow-scanner.html)
+  // This prevents initialization when flow-scanner.js is imported by options.js
+  if (isFlowScannerPage) {
+    let root = document.getElementById("root");
 
-  if (parent && parent.isUnitTest) {
-    parent.insextTestLoaded({sfConn});
+    // eslint-disable-next-line react/no-deprecated
+    ReactDOM.render(h(App), root);
   }
 }

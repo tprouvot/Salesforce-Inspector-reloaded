@@ -968,7 +968,8 @@ class App extends React.Component {
           confirmLabel: "Download",
           confirmIconName: "symbols.svg#download",
           cancelLabel: "Close",
-          children: h("div", {style: {maxHeight: "60vh", overflow: "auto"}},
+          modalSize: "large",
+          children: h("div", {className: "slds-scrollable_y"},
             h("pre", {className: "reset-margin"},
               h("code", {
                 id: "metadata-xml-content",

@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {copyToClipboard, downloadCsvFile} from "./utils.js";
+import {copyToClipboard, downloadCsvFile, getStandardObjectNameField} from "./utils.js";
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -9,6 +9,66 @@ import AgentforceModal from "./components/AgentforceModal.js";
 
 // Constants
 const GET_FIELD_USAGE_LABEL = "Get field usage";
+
+/**
+ * Builds a SOQL query to fetch a record with lookup name fields.
+ * Uses STANDARD_OBJECT_NAME_FIELDS to only add relationship fields when the referenced object has a name field.
+ * @param {Object} sobjectDescribe - Object describe from REST API
+ * @param {string} recordId - Record Id to fetch
+ * @returns {{query: string, lookupFieldMap: Array<{fieldName: string, relationshipPath: string, nameField: string}>}}
+ */
+function buildRecordQueryWithLookupNames(sobjectDescribe, recordId) {
+  let selectFields = [];
+  const lookupFieldMap = [];
+
+  for (const field of sobjectDescribe.fields) {
+    if (!field.name || field.name === "attributes") {
+      continue;
+    }
+    selectFields.push(field.name);
+
+    if (field.type === "reference" && field.relationshipName && field.referenceTo && field.referenceTo.length === 1) {
+      const referencedObject = field.referenceTo[0];
+      const nameField = getStandardObjectNameField(referencedObject);
+      if (nameField !== null) {
+        const relationshipField = nameField === "N/A" ? "Name" : nameField;
+        selectFields.push(field.relationshipName + "." + relationshipField);
+        lookupFieldMap.push({fieldName: field.name, relationshipPath: field.relationshipName, nameField: relationshipField});
+      }
+    }
+  }
+
+  const query = "SELECT " + selectFields.join(", ") + " FROM " + sobjectDescribe.name + " WHERE Id = '" + recordId + "'";
+  return {query, lookupFieldMap};
+}
+
+/**
+ * Flattens a SOQL record result and extracts lookup names into lookupNames map.
+ * @param {Object} record - Single record from SOQL query (records[0])
+ * @param {Array} lookupFieldMap - From buildRecordQueryWithLookupNames
+ * @returns {{flatRecord: Object, lookupNames: Object}}
+ */
+function flattenSoqlRecordWithLookupNames(record, lookupFieldMap) {
+  const flatRecord = {};
+  const lookupNames = {};
+
+  for (const key in record) {
+    if (key === "attributes") {
+      continue;
+    }
+    const value = record[key];
+    if (value && typeof value === "object" && value.attributes) {
+      const lookupInfo = lookupFieldMap.find(l => l.relationshipPath === key);
+      if (lookupInfo && value[lookupInfo.nameField] != null) {
+        lookupNames[lookupInfo.fieldName] = value[lookupInfo.nameField];
+      }
+    } else {
+      flatRecord[key] = value;
+    }
+  }
+
+  return {flatRecord, lookupNames};
+}
 
 class Model {
   constructor(sfHost) {
@@ -49,6 +109,7 @@ class Model {
     this.popupTmpReactElement = undefined;
     this.popupReactElement = undefined;
     this.recordName;
+    this.lookupNames = {}; // Maps lookup field name -> display name (e.g. AccountId -> "Acme Corp")
     let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
     if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
       //change background color for production
@@ -407,19 +468,26 @@ Structure your response clearly with appropriate headings.`;
   }
   setRecordData(recordDataPromise) {
     this.spinFor("retrieving record", recordDataPromise.then(res => {
-      for (let name in res) {
+      let recordData = res;
+      if (res.recordData && res.lookupNames) {
+        this.lookupNames = res.lookupNames;
+        recordData = res.recordData;
+      } else {
+        this.lookupNames = {};
+      }
+      for (let name in recordData) {
         if (name != "attributes") {
-          this.fieldRows.getRow(name).dataTypedValue = res[name];
+          this.fieldRows.getRow(name).dataTypedValue = recordData[name];
         }
       }
       this.fieldRows.resortRows();
-      this.recordData = res;
+      this.recordData = recordData;
       this.fieldRows.showHideColumn(true, "value");
       this.spinFor(
         "describing layout",
         this.sobjectDescribePromise.then(sobjectDescribe => {
           if (sobjectDescribe.urls.layouts) {
-            return sfConn.rest(sobjectDescribe.urls.layouts + "/" + (res.RecordTypeId || "012000000000000AAA"));
+            return sfConn.rest(sobjectDescribe.urls.layouts + "/" + (recordData.RecordTypeId || "012000000000000AAA"));
           }
           return undefined;
         }).then(layoutDescribe => {
@@ -475,6 +543,7 @@ Structure your response clearly with appropriate headings.`;
     }
     this.recordData = null;
     this.layoutInfo = null;
+    this.lookupNames = {};
   }
   startLoading() {
 
@@ -498,9 +567,20 @@ Structure your response clearly with appropriate headings.`;
       this.childRows.resortRows();
     }));
 
-    // Fetch record data using record retrieve call
+    // Fetch record data using SOQL query (includes lookup names when referenced object has a name field)
     if (this.recordId) {
-      this.setRecordData(sfConn.rest("/services/data/v" + apiVersion + "/" + (this.useToolingApi ? "tooling/" : "") + "sobjects/" + this.sobjectName + "/" + this.recordId));
+      const recordPromise = this.sobjectDescribePromise.then(sobjectDescribe => {
+        const {query, lookupFieldMap} = buildRecordQueryWithLookupNames(sobjectDescribe, this.recordId);
+        const queryUrl = "/services/data/v" + apiVersion + "/" + (this.useToolingApi ? "tooling/" : "") + "query/?q=" + encodeURIComponent(query);
+        return sfConn.rest(queryUrl).then(res => {
+          if (!res.records || res.records.length === 0) {
+            throw new Error("Record not found");
+          }
+          const {flatRecord, lookupNames} = flattenSoqlRecordWithLookupNames(res.records[0], lookupFieldMap);
+          return {recordData: flatRecord, lookupNames};
+        });
+      });
+      this.setRecordData(recordPromise);
     }
 
     // Fetch fields using a Tooling API call, which returns fields not readable by the current user, but fails if the user does not have access to the Tooling API.
@@ -1386,6 +1466,9 @@ class FieldRow extends TableRow {
       return this.entityParticle.DataType == "reference" && !!this.dataTypedValue;
     }
     return false;
+  }
+  lookupDisplayValue() {
+    return this.rowList.model.lookupNames?.[this.fieldName] ?? null;
   }
   idLink() {
     return "https://" + this.rowList.model.sfHost + "/" + this.dataTypedValue;
@@ -2281,9 +2364,10 @@ class FieldValueCell extends React.Component {
         )
       );
     } else if (row.isId()) {
+      const lookupTitle = row.lookupDisplayValue() ? row.lookupDisplayValue() : null;
       return h("td", {className: col.className, onDoubleClick: this.onTryEdit},
         h("div", {className: "pop-menu-container"},
-          h("div", {className: "sfir-inspect-table-text quick-select"}, h("a", {href: row.idLink() /*used to show visited color*/, onClick: this.onRecordIdClick}, row.dataStringValue())),
+          h("div", {className: "sfir-inspect-table-text quick-select"}, h("a", {href: row.idLink() /*used to show visited color*/, onClick: this.onRecordIdClick, title: lookupTitle}, row.dataStringValue())),
           row.recordIdPop == null ? null : h("div", {className: "slds-dropdown slds-dropdown_left slds-dropdown_actions pop-menu"},
             h("ul", {className: "slds-dropdown__list"},
               row.recordIdPop.map(link =>

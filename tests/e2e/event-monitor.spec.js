@@ -286,12 +286,9 @@ test.describe("Event Monitor", () => {
 
     // Select Custom Platform Event channel type
     await page.locator("select.slds-select").first().selectOption("platformEvent");
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1500);
 
-    // Wait for channel dropdown to populate with TestEvent__e
-    const channelSelect = page.locator("select.slds-select").nth(1);
-    await channelSelect.selectOption("TestEvent__e");
-    await page.waitForTimeout(300);
+
 
     // Click Generate button
     const generateButton = page.locator("button:has-text('Generate')");

@@ -13,12 +13,49 @@ The Event Monitor page allows users to subscribe to and display Salesforce Platf
 - **Filter Events:** Users can filter events to hide or show specific events based on certain criteria, and view the count of currently displayed events.
 - **Replay Events:** Users can specify a `Replay From` value to replay past events from a specific point in time.
 - **Copy Event Data:** Users can copy the event data in JSON format for further analysis or troubleshooting.
+- **Generate and Publish Platform Events:** Users can generate random platform events and publish them to test subscriptions.
+- **History and Saved Events:** Published events are recorded in history; users can save events with a label and re-publish from history or saved list.
 
 ## Filter Events
 The Event Monitor page now includes a filtering feature that allows users to hide or show specific events. This can be useful for focusing on particular types of events or reducing noise in the event stream.
 
 - **How to Filter Events:** Use the filter options provided in the interface to specify which events should be displayed.
 - **View Filtered Event Count:** The interface displays the number of events currently visible after filtering, helping users quickly assess the volume of relevant events.
+
+## Generate and Publish Platform Events
+
+The Event Monitor allows you to generate and publish platform events for testing. This is useful when you need to trigger events without external systems.
+
+1. **Select a channel** that supports publishing (Custom or Standard Platform Event).
+2. **Click the "Generate" button** to open the Generate Platform Event modal.
+3. The modal fetches the event schema and generates a random payload based on createable fields.
+4. **Edit the payload** in the JSON textarea if needed.
+5. **Click "Publish"** to send the event to Salesforce.
+6. **Click "Regenerate"** to generate a new random payload without closing the modal.
+
+The Generate button is only enabled for creatable platform events (based on the sobject metadata).
+
+## History and Saved Events
+
+When publishing platform events, the Event Monitor keeps a history and allows you to save events for reuse.
+
+### Publish History
+
+- Each successfully published event is automatically added to the **History** dropdown.
+- History stores the last 20 published events per org.
+- Select an entry from the History dropdown to load its payload and re-publish.
+- Use **Clear History** from the dropdown menu to remove all history entries.
+
+### Saved Events
+
+- Save events with a custom label for quick reuse.
+- Enter a label in the **Label** input and click **Save Event**.
+- Saved events appear in the **Saved** dropdown (up to 50 per org).
+- Select an entry from the Saved dropdown to load its payload.
+- Use **Remove Saved** to delete the currently selected saved event.
+- Use **Clear Saved** to remove all saved events.
+
+History and saved events are stored per Salesforce org (scoped by host).
 
 ## Subscribe to an Event from the Popup
 You can also directly access the Event Monitor page and pre-select the Event from the popup by clicking the `Subscribe to Event` button.
@@ -45,6 +82,7 @@ If you are facing the error: No such column 'EventName' on entity 'PlatformEvent
 3. **Set Replay From (Optional):** Define the starting point for replaying events. Use the default value `-1` to receive only new events.
 4. **Subscribe:** Click the "Subscribe" button to start monitoring the selected channel.
 5. **Unsubscribe:** Click the "Unsubscribe" button to stop monitoring.
+6. **Generate (Optional):** Click the "Generate" button to create and publish test platform events. Use History or Saved dropdowns to re-publish previous events.
 
 ## Production Considerations
 If you are monitoring events in a production environment, the interface will highlight the potential risks, especially when using the replay functionality. Be cautious and ensure you fully understand the impact of subscribing to large volumes of events.

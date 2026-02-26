@@ -11,5 +11,9 @@
         <members>Account</members>
         <name>Settings</name>
     </types>
+    <types>
+        <members>TestEvent__e</members>
+        <name>CustomObject</name>
+    </types>
     <version>64.0</version>
 </Package>

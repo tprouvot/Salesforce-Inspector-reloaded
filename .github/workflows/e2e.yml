@@ -40,7 +40,9 @@ jobs:
       run: npx playwright install chromium
 
     - name: Run Playwright tests (mocked)
-      run: npm run test:e2e:mock
+      run: |
+        echo "::notice::🧪 Tests running in MOCKED mode (API calls intercepted, no real Salesforce org)"
+        npm run test:e2e:mock
 
     - uses: actions/upload-artifact@v4
       if: always()
@@ -160,6 +162,14 @@ jobs:
     - name: Ensure test constants exist (fallback when auth step skipped)
       if: vars.SF_TEST_MOCKENABLED != 'false'
       run: cp tests/e2e/test-constants.template.js tests/e2e/test-constants.local.js
+
+    - name: Display test mode
+      run: |
+        if [ "${{ vars.SF_TEST_MOCKENABLED }}" = "false" ]; then
+          echo "::notice::🔗 Tests running against REAL Salesforce org (SF_TEST_MOCKENABLED=false)"
+        else
+          echo "::notice::🧪 Tests running in MOCKED mode (SF_TEST_MOCKENABLED not set to false, API calls intercepted)"
+        fi
 
     - name: Install dependencies
       run: npm ci

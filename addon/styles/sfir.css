@@ -112,6 +112,16 @@ a.download-salesforce {
     cursor: pointer;
 }
 
+/* Confirmation modal overlay - ensures it appears above parent modal with dimmed backdrop */
+.sfir-confirm-modal-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 9002;
+}
+
 /* Modal Container - shared across pages */
 .modalContainer {
   max-width: 100rem;
@@ -179,6 +189,17 @@ a.download-salesforce {
   padding: 1.25rem;
   font-size: 0.9375rem;
   color: #181818;
+}
+
+/* Generate Platform Event payload textarea */
+.sfir-event-history-select {
+  min-width: 25rem;
+  max-width: 100%;
+}
+
+.sfir-generate-event-payload {
+  font-family: monospace;
+  font-size: 0.875rem;
 }
 
 /* API Statistics Error Link Styles */

@@ -107,9 +107,9 @@ test.describe("Event Monitor", () => {
 
     // Verify channel dropdown shows custom events (check for the option text)
     const channelSelect = page.locator("select.slds-select").nth(1);
-    // The label should be "Batch Job Execution Event" or "Event" based on the mock
+    // Mock returns "Test Event"; real org returns platform event labels (e.g. "Batch Job Execution Event")
     const options = await channelSelect.locator("option").allTextContents();
-    await expect(options.some(text => text.includes(TEST_CONSTANTS.mockEnabled ? "Account" : "Event"))).toBeTruthy();
+    await expect(options.some(text => text.includes("Event"))).toBeTruthy();
   });
 
   test("Change Channel Type to Change Event", async ({page, extensionId}) => {
@@ -279,5 +279,42 @@ test.describe("Event Monitor", () => {
     await expect(page.locator(".slds-modal .slds-modal__footer button:has-text('Cancel')")).toBeVisible();
     //cancel is also in the modal as close button
     await expect(page.locator(".slds-modal button:has-text('Cancel').slds-modal__close")).toBeEnabled();
+  });
+
+  test("Generate and Publish Platform Event", async ({page, extensionId}) => {
+    await initEventMonitorPage(page, extensionId);
+
+    // Select Custom Platform Event channel type
+    await page.locator("select.slds-select").first().selectOption("platformEvent");
+    await page.waitForTimeout(1500);
+
+
+
+    // Click Generate button
+    const generateButton = page.locator("button:has-text('Generate')");
+    await expect(generateButton).toBeEnabled({timeout: 2000});
+    await generateButton.click();
+
+    // Wait for Generate Platform Event modal to open and payload to load
+    await expect(page.locator(".slds-modal:has-text('Generate Platform Event')")).toBeVisible({timeout: 3000});
+    await expect(page.locator("#generate-event-payload, textarea.sfir-generate-event-payload")).toBeVisible({timeout: 3000});
+
+    // Wait for payload to be generated (contains Message__c or Count__c from describe mock)
+    const payloadTextarea = page.locator("textarea.sfir-generate-event-payload, #generate-event-payload");
+    await expect(payloadTextarea).not.toHaveValue("", {timeout: 3000});
+
+    // Click Publish button in modal footer
+    const publishButton = page.locator(".slds-modal .slds-modal__footer button:has-text('Publish')");
+    await expect(publishButton).toBeEnabled({timeout: 1000});
+    await publishButton.click();
+
+    // Verify no error is shown and modal stays open (successful publish)
+    await page.waitForTimeout(300);
+    await expect(page.locator(".slds-theme_error:has-text('Invalid')")).toHaveCount(0);
+    await expect(page.locator(".slds-modal:has-text('Generate Platform Event')")).toBeVisible();
+
+    // Verify History dropdown has new entry (published event is added to history)
+    const historySelect = page.locator(".slds-modal select.sfir-event-history-select");
+    await expect(historySelect.locator("option")).toHaveCount(2, {timeout: 2000}); // "History" placeholder + 1 entry
   });
 });

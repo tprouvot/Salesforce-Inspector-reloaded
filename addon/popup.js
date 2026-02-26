@@ -3936,6 +3936,9 @@ class AllDataSelection extends React.PureComponent {
   getSubscribeUrl(name) {
     return this.props.eventMonitorHref + "&channel=" + name;
   }
+  getGenerateEventUrl(name) {
+    return this.props.eventMonitorHref + "&channel=" + name + "&generate=1";
+  }
   setFlowDefinitionId(recordId) {
     if (recordId && !this.state.flowDefinitionId) {
       if (recordId.startsWith("301")) {
@@ -4277,14 +4280,26 @@ class AllDataSelection extends React.PureComponent {
         : null,
       selectedValue.sobject.name.endsWith("__e")
         ? h(
-          "a",
-          {
-            href: this.getSubscribeUrl(selectedValue.sobject.name),
-            target: linkTarget,
-            className:
-                "slds-button slds-button_neutral slds-m-top_xx-small page-button slds-button slds-button_neutral",
-          },
-          h("span", {}, h("u", {}), "Subscribe to Event")
+          "div",
+          {className: "slds-button-group slds-m-top_xx-small", role: "group"},
+          h(
+            "a",
+            {
+              href: this.getSubscribeUrl(selectedValue.sobject.name),
+              target: linkTarget,
+              className: "slds-button slds-button_neutral page-button",
+            },
+            h("span", {}, h("u", {}), "Subscribe Event")
+          ),
+          h(
+            "a",
+            {
+              href: this.getGenerateEventUrl(selectedValue.sobject.name),
+              target: linkTarget,
+              className: "slds-button slds-button_neutral page-button",
+            },
+            h("span", {}, "Generate Event")
+          )
         )
         : null
     );

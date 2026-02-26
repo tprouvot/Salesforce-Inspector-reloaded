@@ -107,9 +107,9 @@ test.describe("Event Monitor", () => {
 
     // Verify channel dropdown shows custom events (check for the option text)
     const channelSelect = page.locator("select.slds-select").nth(1);
-    // The label should be "Batch Job Execution Event" or "Event" based on the mock
+    // Mock returns "Test Event"; real org returns platform event labels (e.g. "Batch Job Execution Event")
     const options = await channelSelect.locator("option").allTextContents();
-    await expect(options.some(text => text.includes(TEST_CONSTANTS.mockEnabled ? "Account" : "Event"))).toBeTruthy();
+    await expect(options.some(text => text.includes("Event"))).toBeTruthy();
   });
 
   test("Change Channel Type to Change Event", async ({page, extensionId}) => {

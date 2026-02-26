@@ -82,7 +82,6 @@ class OptionsTabSelector extends React.Component {
                 {label: "Flows", name: "flows", checked: true},
                 {label: "Profiles", name: "profiles", checked: true},
                 {label: "PermissionSets", name: "permissionSets", checked: true},
-                {label: "Communities", name: "networks", checked: true},
                 {label: "Apex Classes", name: "classes", checked: false}
               ]}
           },

@@ -1523,33 +1523,36 @@ class AllDataBoxUsers extends React.PureComponent {
   }
 
   resultRender(matches, userQuery) {
-    return matches.map((value) => ({
-      key: value.Id,
-      value,
-      element: [
-        h(
-          "div",
-          {className: "dropdown-item slds-wrap", key: "main"},
-          h(MarkSubstring, {
-            text: value.Name + " (" + value.Alias + ")",
-            start: value.Name.toLowerCase().indexOf(userQuery.toLowerCase()),
-            length: userQuery.length,
-          })
-        ),
-        h(
-          "div",
-          {className: "dropdown-item slds-wrap small", key: "sub"},
-          h("div", {}, value.Profile ? value.Profile.Name : ""),
-          h(MarkSubstring, {
-            text: !value.IsActive ? "⚠ " + value.Username : value.Username,
-            start: value.Username.toLowerCase().indexOf(
-              userQuery.toLowerCase()
-            ),
-            length: userQuery.length,
-          })
-        ),
-      ],
-    }));
+    return matches.map((value, index) => {
+      const itemKey = value.Id || "user-" + index;
+      return {
+        key: itemKey,
+        value,
+        element: [
+          h(
+            "div",
+            {className: "dropdown-item slds-wrap", key: "main-" + itemKey},
+            h(MarkSubstring, {
+              text: value.Name + " (" + value.Alias + ")",
+              start: value.Name.toLowerCase().indexOf(userQuery.toLowerCase()),
+              length: userQuery.length,
+            })
+          ),
+          h(
+            "div",
+            {className: "dropdown-item slds-wrap small", key: "sub-" + itemKey},
+            h("div", {}, value.Profile ? value.Profile.Name : ""),
+            h(MarkSubstring, {
+              text: !value.IsActive ? "⚠ " + value.Username : value.Username,
+              start: value.Username.toLowerCase().indexOf(
+                userQuery.toLowerCase()
+              ),
+              length: userQuery.length,
+            })
+          ),
+        ],
+      };
+    });
   }
 
   render() {
@@ -1850,43 +1853,46 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   resultRender(matches, userQuery) {
-    return matches.map((value) => ({
-      key: value.recordId + "#" + value.sobject.name,
-      value,
-      element: [
-        h(
-          "div",
-          {className: "dropdown-item slds-wrap", key: "main"},
-          value.recordId
-            || h(MarkSubstring, {
-              text: value.sobject.name,
-              start: value.sobject.name
+    return matches.map((value, index) => {
+      const itemKey = value.recordId + "#" + value.sobject.name + "#" + index;
+      return {
+        key: itemKey,
+        value,
+        element: [
+          h(
+            "div",
+            {className: "dropdown-item slds-wrap", key: "main-" + itemKey},
+            value.recordId
+              || h(MarkSubstring, {
+                text: value.sobject.name,
+                start: value.sobject.name
+                  .toLowerCase()
+                  .indexOf(userQuery.toLowerCase()),
+                length: userQuery.length,
+              }),
+            value.sobject.availableApis.length == 0 ? " (Not readable)" : ""
+          ),
+          h(
+            "div",
+            {className: "dropdown-item slds-wrap", key: "sub-" + itemKey},
+            h(MarkSubstring, {
+              text: value.sobject.keyPrefix || "---",
+              start:
+                value.sobject.keyPrefix == userQuery.substring(0, 3) ? 0 : -1,
+              length: 3,
+            }),
+            " • ",
+            h(MarkSubstring, {
+              text: value.sobject.label,
+              start: value.sobject.label
                 .toLowerCase()
                 .indexOf(userQuery.toLowerCase()),
               length: userQuery.length,
-            }),
-          value.sobject.availableApis.length == 0 ? " (Not readable)" : ""
-        ),
-        h(
-          "div",
-          {className: "dropdown-item slds-wrap", key: "sub"},
-          h(MarkSubstring, {
-            text: value.sobject.keyPrefix || "---",
-            start:
-              value.sobject.keyPrefix == userQuery.substring(0, 3) ? 0 : -1,
-            length: 3,
-          }),
-          " • ",
-          h(MarkSubstring, {
-            text: value.sobject.label,
-            start: value.sobject.label
-              .toLowerCase()
-              .indexOf(userQuery.toLowerCase()),
-            length: userQuery.length,
-          })
-        ),
-      ],
-    }));
+            })
+          ),
+        ],
+      };
+    });
   }
 
   render() {
@@ -2323,43 +2329,38 @@ class AllDataBoxShortcut extends React.PureComponent {
           != undefined;
       }
 
-      //search for metadata if user did not disabled it
-      if (metadataShortcutSearch) {
+      //search for metadata if user did not disabled it (min 2 chars to avoid heavy queries)
+      if (metadataShortcutSearch && shortcutSearch.length >= 2) {
         const queries = {
           flows:
             "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%"
             + shortcutSearch
-            + "%' LIMIT 30",
+            + "%' LIMIT 15",
           profiles:
             "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%"
             + shortcutSearch
-            + "%' LIMIT 30",
+            + "%' LIMIT 15",
           permissionSets:
             "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%"
             + shortcutSearch
-            + "%' LIMIT 30",
-          networks:
-            "SELECT NetworkId, Network.Name, Network.Status, Network.UrlPathPrefix, SiteId FROM WebStoreNetwork WHERE Network.Name LIKE '%"
-            + shortcutSearch
-            + "%' LIMIT 50",
+            + "%' LIMIT 15",
           classes:
             "SELECT Id, Name, NamespacePrefix, ApiVersion, Status, LengthWithoutComments FROM ApexClass WHERE Name LIKE '%"
             + shortcutSearch
-            + "%' LIMIT 50",
+            + "%' LIMIT 20",
         };
         // If metadataShortcutSearchOptions is null, assume all options are checked
         const defaultOptions = [
           "flows",
           "profiles",
           "permissionSets",
-          "networks",
           "classes",
         ].map((name) => ({name, checked: true}));
         const effectiveOptions
           = metadataShortcutSearchOptions || defaultOptions;
 
         const compositeRequest = effectiveOptions
-          .filter((setting) => setting.checked)
+          .filter((setting) => setting.checked && queries[setting.name])
           .map((setting) => ({
             method: "GET",
             url:
@@ -2428,14 +2429,6 @@ class AllDataBoxShortcut extends React.PureComponent {
                 + (rec.NamespacePrefix
                   ? ""
                   : " • Length: " + rec.LengthWithoutComments);
-            } else if (rec.attributes.type === "WebStoreNetwork") {
-              rec.link = `/sfsites/picasso/core/config/commeditor.jsp?servlet%2Fnetworks%2Fswitch%3FnetworkId%3D${rec.NetworkId}%26startURL%3D%252FcommunitySetup%252FcwApp.app%2523%252Fc%252Fhome&siteId=${rec.SiteId}&`;
-              rec.label = rec.Network.Name;
-              let url = rec.Network.UrlPathPrefix
-                ? " • /" + rec.Network.UrlPathPrefix
-                : "";
-              rec.name = rec.NetworkId + url;
-              rec.detail = "Network (" + rec.Network.Status + ") • Builder";
             }
             rec.title = rec.name;
             result.push(rec);
@@ -2446,6 +2439,7 @@ class AllDataBoxShortcut extends React.PureComponent {
       result.length > 0
         ? result
         : result.push({
+          Id: "global-search-" + shortcutSearch,
           link: "/one/one.app#" + this.getEncodedGlobalSearch(shortcutSearch),
           label: '"' + shortcutSearch + '"',
           detail: "No results found",
@@ -2484,8 +2478,8 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   resultRender(matches, shortcutQuery) {
-    return matches.map((value) => ({
-      key: value.Id,
+    return matches.map((value, index) => ({
+      key: value.Id || "shortcut-" + index,
       value,
       element: [
         h(
@@ -2493,7 +2487,7 @@ class AllDataBoxShortcut extends React.PureComponent {
           {
             className: "dropdown-item slds-wrap",
             title: value.title,
-            key: "main" + value.Id,
+            key: "main-" + (value.Id || index),
           },
           h(MarkSubstring, {
             text: value.label,
@@ -2508,7 +2502,7 @@ class AllDataBoxShortcut extends React.PureComponent {
           {
             className: "dropdown-item slds-wrap small",
             title: value.title,
-            key: "sub" + value.Id,
+            key: "sub-" + (value.Id || index),
           },
           h("div", {}, value.detail),
           h(MarkSubstring, {
@@ -4439,8 +4433,10 @@ class AllDataSearch extends React.PureComponent {
       queryString: "",
       matchingResults: [],
       recentItems: [],
-      queryDelayTimer: null,
+      searchLoading: false,
     };
+    this.queryDelayTimerRef = {current: null};
+    this.searchGeneration = 0;
     this.onAllDataInput = this.onAllDataInput.bind(this);
     this.onAllDataFocus = this.onAllDataFocus.bind(this);
     this.onAllDataBlur = this.onAllDataBlur.bind(this);
@@ -4484,23 +4480,31 @@ class AllDataSearch extends React.PureComponent {
     }
   }
   getMatchesDelayed(userQuery) {
-    let {queryDelayTimer} = this.state;
     let {inputSearchDelay, onMatchingResultsChange} = this.props;
+    const timerRef = this.queryDelayTimerRef;
 
-    if (queryDelayTimer) {
-      clearTimeout(queryDelayTimer);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
     }
-    queryDelayTimer = setTimeout(async () => {
-      let {getMatches} = this.props;
-      const matchingResults = await getMatches(userQuery);
-      await this.setState({matchingResults});
-      onMatchingResultsChange?.(matchingResults, userQuery);
+    timerRef.current = setTimeout(async () => {
+      timerRef.current = null;
+      const generation = ++this.searchGeneration;
+      this.setState({searchLoading: true});
+      try {
+        let {getMatches} = this.props;
+        const matchingResults = await getMatches(userQuery);
+        if (generation !== this.searchGeneration) {
+          return;
+        }
+        await this.setState({matchingResults});
+        onMatchingResultsChange?.(matchingResults, userQuery);
+      } finally {
+        this.setState({searchLoading: false});
+      }
     }, inputSearchDelay);
-
-    this.setState({queryDelayTimer});
   }
   render() {
-    let {queryString, matchingResults, recentItems} = this.state;
+    let {queryString, matchingResults, recentItems, searchLoading} = this.state;
     let {placeholderText, resultRender, sfHost} = this.props;
     return h(
       "div",
@@ -4526,22 +4530,38 @@ class AllDataSearch extends React.PureComponent {
         queryString,
         sfHost,
       }),
-      h(
-        "svg",
-        {
-          className:
-            "slds-input__icon slds-input__icon_left slds-icon-text-default",
-          viewBox: "0 0 520 520",
-          onClick: this.onAllDataArrowClick,
-        },
-        h(
-          "g",
-          {},
-          h("path", {
-            d: "M496 453L362 320a189 189 0 10-340-92 190 190 0 00298 135l133 133a14 14 0 0021 0l21-21a17 17 0 001-22zM210 338a129 129 0 11130-130 129 129 0 01-130 130z",
-          })
+      searchLoading
+        ? h(
+          "div",
+          {
+            className: "slds-input__icon slds-input__icon_left sfir-search-spinner",
+            "aria-hidden": "true",
+          },
+          h("div", {
+            role: "status",
+            className: "slds-spinner slds-spinner_small slds-spinner_brand",
+            "aria-label": "Searching",
+          }, [
+            h("div", {key: "dot-a", className: "slds-spinner__dot-a"}),
+            h("div", {key: "dot-b", className: "slds-spinner__dot-b"}),
+          ])
         )
-      )
+        : h(
+          "svg",
+          {
+            className:
+              "slds-input__icon slds-input__icon_left slds-icon-text-default",
+            viewBox: "0 0 520 520",
+            onClick: this.onAllDataArrowClick,
+          },
+          h(
+            "g",
+            {},
+            h("path", {
+              d: "M496 453L362 320a189 189 0 10-340-92 190 190 0 00298 135l133 133a14 14 0 0021 0l21-21a17 17 0 001-22zM210 338a129 129 0 11130-130 129 129 0 01-130 130z",
+            })
+          )
+        )
     );
   }
 }
@@ -4823,7 +4843,7 @@ class Autocomplete extends React.PureComponent {
             h(
               "div",
               {
-                key,
+                key: key || "result-" + (firstRenderedIndex + index),
                 className:
                   "slds-dropdown__item "
                   + (selectedIndex == index + firstRenderedIndex

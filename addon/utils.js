@@ -27,6 +27,9 @@ export class Constants {
   static PRELOAD_SOBJECTS_BEFORE_POPUP = "preloadSobjectsBeforePopup";
   static ENABLE_SOBJECTS_LIST_CACHE = "enableSobjectsListCache";
   static ENABLE_RECENTLY_VIEWED_RECORDS = "enableRecentlyViewedRecords";
+  // Custom Permission Access Control
+  static READ_CUSTOM_PERMISSION = "_readCustomPermission";
+  static WRITE_CUSTOM_PERMISSION = "_writeCustomPermission";
 }
 
 /**
@@ -337,6 +340,7 @@ export async function getUserInfo() {
     const res = await sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {});
     return {
       success: true,
+      userId: res.userId,
       userInfo: res.userFullName + " / " + res.userName + " / " + res.organizationName,
       userFullName: res.userFullName,
       userInitials: res.userFullName.split(" ").map(n => n[0]).join(""),
@@ -348,6 +352,7 @@ export async function getUserInfo() {
     console.error("Error fetching user info:", error);
     return {
       success: false,
+      userId: null,
       userInfo: "Error loading user info",
       userFullName: "Unknown User",
       userInitials: "?",
@@ -380,6 +385,7 @@ export async function getUserInfo() {
 export class UserInfoModel {
   constructor(spinForCallback) {
     // Initialize with loading state
+    this.userId = null;
     this.userInfo = "...";
     this.userFullName = "";
     this.userInitials = "";
@@ -399,6 +405,7 @@ export class UserInfoModel {
     const result = await getUserInfo();
 
     // Update all properties from result
+    this.userId = result.userId;
     this.userInfo = result.userInfo;
     this.userFullName = result.userFullName;
     this.userInitials = result.userInitials;
@@ -419,6 +426,71 @@ export class UserInfoModel {
       userError: this.userError,
       userErrorDescription: this.userErrorDescription
     };
+  }
+}
+
+/**
+ * Check if the current user has a specific Custom Permission.
+ * Uses sessionStorage to cache the result per browser session.
+ * @param {string} sfHost - Salesforce host
+ * @param {string} permissionApiName - DeveloperName of the Custom Permission
+ * @param {string} userId - Current user's Salesforce Id
+ * @returns {Promise<{hasPermission: boolean, warning: string|null}>}
+ */
+export async function checkCustomPermission(sfHost, permissionApiName, userId) {
+  if (!permissionApiName || !permissionApiName.trim()) {
+    return {hasPermission: true, warning: null};
+  }
+  permissionApiName = permissionApiName.trim();
+
+  // Check sessionStorage cache
+  const cacheKey = sfHost + "_customPerm_" + permissionApiName;
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (e) {
+      // Ignore invalid cache
+    }
+  }
+
+  try {
+    // Query 1: Resolve Custom Permission API name to Id
+    const permResult = await sfConn.rest(
+      "/services/data/v" + apiVersion + "/query/?q="
+      + encodeURIComponent("SELECT Id FROM CustomPermission WHERE DeveloperName = '" + permissionApiName + "'")
+    );
+
+    if (!permResult.records || permResult.records.length === 0) {
+      // Custom Permission not found — fail open with warning
+      const result = {hasPermission: true, warning: "Custom Permission '" + permissionApiName + "' was not found in this org. Please verify the API name in Settings."};
+      sessionStorage.setItem(cacheKey, JSON.stringify(result));
+      return result;
+    }
+
+    const customPermissionId = permResult.records[0].Id;
+
+    // Query 2: Check if user has access (single-level nesting)
+    const accessResult = await sfConn.rest(
+      "/services/data/v" + apiVersion + "/query/?q="
+      + encodeURIComponent(
+        "SELECT Id FROM SetupEntityAccess "
+        + "WHERE SetupEntityId = '" + customPermissionId + "' "
+        + "AND SetupEntityType = 'CustomPermission' "
+        + "AND ParentId IN ("
+        + "SELECT PermissionSetId FROM PermissionSetAssignment WHERE AssigneeId = '" + userId + "'"
+        + ") LIMIT 1"
+      )
+    );
+
+    const hasPermission = accessResult.records && accessResult.records.length > 0;
+    const result = {hasPermission, warning: null};
+    sessionStorage.setItem(cacheKey, JSON.stringify(result));
+    return result;
+  } catch (error) {
+    console.error("Error checking custom permission:", error);
+    // Fail closed on API errors — block the operation
+    return {hasPermission: false, warning: "Failed to verify Custom Permission: " + error.message};
   }
 }
 

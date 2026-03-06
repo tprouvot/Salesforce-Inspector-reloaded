@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory, checkCustomPermission} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -82,6 +82,16 @@ class Model {
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
 
+    // Custom Permission access control
+    this.hasReadPermission = null; // null = loading, true = allowed, false = blocked
+    this.readPermissionWarning = null;
+    this.readCustomPermissionName = localStorage.getItem(sfHost + Constants.READ_CUSTOM_PERMISSION);
+    if (this.readCustomPermissionName) {
+      this.spinFor(this._checkReadPermission());
+    } else {
+      this.hasReadPermission = true;
+    }
+
     let queryFromUrl = false;
     if (args.has("query")) {
       this.initialQuery = args.get("query");
@@ -102,6 +112,21 @@ class Model {
     this.queryTabs = [];
     this.activeTabIndex = 0;
     this.loadQueryTabs(queryFromUrl);
+  }
+
+  async _checkReadPermission() {
+    // Wait for userInfoModel to have userId
+    while (!this.userInfoModel.userId) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (this.userInfoModel.userError) {
+        this.hasReadPermission = false;
+        this.readPermissionWarning = "Unable to verify permissions: user info could not be loaded.";
+        return;
+      }
+    }
+    const result = await checkCustomPermission(this.sfHost, this.readCustomPermissionName, this.userInfoModel.userId);
+    this.hasReadPermission = result.hasPermission;
+    this.readPermissionWarning = result.warning;
   }
 
   updatedExportedData() {
@@ -840,6 +865,9 @@ class Model {
     return query.trim();
   }
   doExport() {
+    if (this.hasReadPermission === false) {
+      return;
+    }
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
     exportedData.isTooling = vm.queryTooling;
@@ -1745,16 +1773,20 @@ class App extends React.Component {
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
       } else if (e.data.command === "open-export-execute"){
-        model.doExport();
-        model.didUpdate();
+        if (model.hasReadPermission !== false) {
+          model.doExport();
+          model.didUpdate();
+        }
       }
     });
 
     addEventListener("keydown", e => {
       if ((e.ctrlKey && e.key == "Enter") || e.key == "F5") {
         e.preventDefault();
-        model.doExport();
-        model.didUpdate();
+        if (model.hasReadPermission !== false) {
+          model.doExport();
+          model.didUpdate();
+        }
       }
     });
 
@@ -1840,6 +1872,19 @@ class App extends React.Component {
         ...model.userInfoModel.getProps(),
         utilityItems
       }),
+
+      model.hasReadPermission === false
+        ? h("div", {className: "slds-notify slds-notify_alert slds-alert_warning slds-m-horizontal_medium slds-m-top_xx-large", role: "alert"},
+          h("span", {className: "slds-assistive-text"}, "warning"),
+          h("h2", {}, "You do not have the required Custom Permission (", model.readCustomPermissionName, ") to export data.")
+        )
+        : null,
+      model.readPermissionWarning && model.hasReadPermission === true
+        ? h("div", {className: "slds-notify slds-notify_alert slds-alert_warning slds-m-horizontal_medium slds-m-top_xx-large", role: "alert"},
+          h("span", {className: "slds-assistive-text"}, "warning"),
+          h("h2", {}, model.readPermissionWarning)
+        )
+        : null,
 
       h("div", {className: "slds-m-top_xx-large sfir-page-container"},
         h("div", {className: "slds-card slds-m-around_medium"},
@@ -1990,7 +2035,7 @@ class App extends React.Component {
                 h("span", {className: "slds-m-left_xx-small"}, model.autocompleteResults.title),
                 h("ul", {className: "slds-button-group-row flex-right"},
                   h("li", {className: "slds-button-group-item"},
-                    h("button", {tabIndex: 1, disabled: model.isWorking, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand"}, "Run Export")
+                    h("button", {tabIndex: 1, disabled: model.isWorking || model.hasReadPermission === false || model.hasReadPermission === null, onClick: this.onExport, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand"}, "Run Export")
                   ),
                   h("li", {className: "slds-button-group-item"},
                     isOptionEnabled("export-query", this.state.hideButtonsOption) ? h("button", {tabIndex: 2, onClick: this.onCopyQuery, title: "Copy query url", className: "slds-button slds-button_neutral copy-id"}, "Export Query") : null

@@ -66,6 +66,42 @@ The creation of Connected Apps is soon to be deprecated (planned for Spring 26')
 
     <img width="275" alt="Generate Token" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/931df75d-42ac-4667-ab3f-35f6b6b65a66">
 
+## Restrict Data Export / Import with Custom Permissions
+
+---
+
+You can restrict who can use the Data Export (read) and Data Import (write) features by leveraging Salesforce Custom Permissions. This is useful when you need to grant API access for other integrations but want to prevent certain users from mass-exporting or modifying records via the extension.
+
+### Setup
+
+1. **Create Custom Permissions** in Salesforce Setup:
+    - Navigate to **Setup > Custom Permissions > New**
+    - Create one for read access (e.g. `Inspector_Read_Access`) and/or one for write access (e.g. `Inspector_Write_Access`)
+
+2. **Assign the Custom Permissions** to the appropriate users via Permission Sets, Permission Set Groups, or Profiles.
+
+3. **Configure the extension**:
+    - Open the extension **Options** page (gear icon)
+    - Go to the **API** tab
+    - Enter the Custom Permission API name (DeveloperName) in:
+        - **Read Custom Permission** — controls access to Data Export
+        - **Write Custom Permission** — controls access to Data Import
+
+### Behavior
+
+| Scenario | Result |
+|----------|--------|
+| Setting is blank (default) | No restriction — all users can use the feature |
+| Custom Permission exists and user has it | User can use the feature normally |
+| Custom Permission exists and user lacks it | Feature is blocked — button disabled, warning banner shown |
+| Custom Permission API name doesn't exist in the org | Warning banner shown, but feature is **not blocked** (fail open) |
+
+### Notes
+
+- The permission check result is cached per browser session (sessionStorage) to minimize API calls. Close and reopen the tab to pick up permission changes.
+- The check covers Profiles, Permission Sets, and Permission Set Groups.
+- Each org can have different Custom Permission names configured (settings are org-specific).
+
 ## Migrate saved queries from legacy extension to Salesforce Inspector Reloaded
 
 1. Open data export page on legacy extension

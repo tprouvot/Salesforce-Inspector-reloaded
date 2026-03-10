@@ -4,7 +4,7 @@ import {sfConn, apiVersion} from "./inspector.js";
 import {csvParse} from "./csv-parse.js";
 import {DescribeInfo, initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, getSobjectsList, Constants, applyProductionStyling, checkCustomPermission} from "./utils.js";
 
 const allApis = [
   {value: "Enterprise", label: "Enterprise (default)"},
@@ -79,6 +79,16 @@ class Model {
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
 
+    // Custom Permission access control
+    this.hasWritePermission = null; // null = loading, true = allowed, false = blocked
+    this.writePermissionWarning = null;
+    this.writeCustomPermissionName = localStorage.getItem(sfHost + Constants.WRITE_CUSTOM_PERMISSION);
+    if (this.writeCustomPermissionName) {
+      this.spinFor(this._checkWritePermission());
+    } else {
+      this.hasWritePermission = true;
+    }
+
     let apiTypeParam = args.get("apitype");
     this.apiType = this.importType.endsWith("__mdt") ? "Metadata" : apiTypeParam ? apiTypeParam : "Enterprise";
 
@@ -92,6 +102,21 @@ class Model {
       this.skipAllUnknownFields();
       console.log(this.importData);
     }
+  }
+
+  async _checkWritePermission() {
+    // Wait for userInfoModel to have userId
+    while (!this.userInfoModel.userId) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (this.userInfoModel.userError) {
+        this.hasWritePermission = false;
+        this.writePermissionWarning = "Unable to verify permissions: user info could not be loaded.";
+        return;
+      }
+    }
+    const result = await checkCustomPermission(this.sfHost, this.writeCustomPermissionName, this.userInfoModel.userId);
+    this.hasWritePermission = result.hasPermission;
+    this.writePermissionWarning = result.warning;
   }
 
   // set available actions based on api type, and set the first one as the default
@@ -557,6 +582,9 @@ class Model {
   }
 
   doImport() {
+    if (this.hasWritePermission === false) {
+      return;
+    }
     let importedRecords = this.importData.counts.Queued + this.importData.counts.Processing;
     let skippedRecords = this.importAction != "undelete" ? this.importData.counts.Succeeded + this.importData.counts.Failed : 0;
     let actionVerb = this.getActionVerb(this.importAction);
@@ -1190,6 +1218,19 @@ class App extends React.Component {
         ...model.userInfoModel.getProps(),
         utilityItems
       }),
+      model.hasWritePermission === false
+        ? h("div", {className: "slds-notify slds-notify_alert slds-alert_warning slds-m-horizontal_medium slds-m-top_xx-large", role: "alert"},
+          h("span", {className: "slds-assistive-text"}, "warning"),
+          h("h2", {}, "You do not have the required Custom Permission (", model.writeCustomPermissionName, ") to import data.")
+        )
+        : null,
+      model.writePermissionWarning && model.hasWritePermission === true
+        ? h("div", {className: "slds-notify slds-notify_alert slds-alert_warning slds-m-horizontal_medium slds-m-top_xx-large", role: "alert"},
+          h("span", {className: "slds-assistive-text"}, "warning"),
+          h("h2", {}, model.writePermissionWarning)
+        )
+        : null,
+
       h("div", {className: "slds-m-top_xx-large sfir-page-container"},
         h("div", {className: "slds-m-around_medium"},
           h("div", {className: "slds-grid slds-gutters"},
@@ -1322,7 +1363,7 @@ class App extends React.Component {
         h("div", {className: "slds-card slds-m-horizontal_medium slds-p-around_small"},
           h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
             h("div", {className: "slds-col"},
-              h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_brand"}, "Run " + model.importActionName),
+              h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0 || model.hasWritePermission === false || model.hasWritePermission === null, className: "slds-button slds-button_brand"}, "Run " + model.importActionName),
               h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "slds-button slds-button_neutral" : "slds-button slds-button_neutral"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
               h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick, className: "slds-button slds-button_neutral"}, "Retry Failed"),
               h("div", {className: "slds-button-group"},

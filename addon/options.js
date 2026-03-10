@@ -160,6 +160,8 @@ class OptionsTabSelector extends React.Component {
                 }
               }}},
           {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders", inputSize: "6"}},
+          {option: Option, props: {type: "text", title: "Read Custom Permission", placeholder: "e.g. Inspector_Read_Access", key: this.sfHost + Constants.READ_CUSTOM_PERMISSION, inputSize: "5", tooltip: "API name of a Custom Permission. If set, only users with this permission can use Data Export. Leave blank to allow all users."}},
+          {option: Option, props: {type: "text", title: "Write Custom Permission", placeholder: "e.g. Inspector_Write_Access", key: this.sfHost + Constants.WRITE_CUSTOM_PERMISSION, inputSize: "5", tooltip: "API name of a Custom Permission. If set, only users with this permission can use Data Import. Leave blank to allow all users."}},
           {option: Option, props: {type: "toggle", title: "Enable API Stats Debug Mode", key: Constants.API_DEBUG_STATISTICS_MODE, default: false, tooltip: "When enabled, tracks API call statistics (REST and SOAP) to help monitor API usage. Statistics can be viewed on the API Debug Statistics page."}},
           {option: Option, props: {type: "toggle", title: "Preload SObjects before popup opens", key: Constants.PRELOAD_SOBJECTS_BEFORE_POPUP, default: true, tooltip: "When enabled, loads the SObjects list from cache before the popup is opened for faster context detection. Disable to reduce initial load time and only load when the Objects tab is accessed."}},
         ]

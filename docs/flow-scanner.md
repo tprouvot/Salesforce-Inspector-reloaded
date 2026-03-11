@@ -14,7 +14,7 @@ The Flow Scanner automatically reviews your Salesforce Flows and checks them aga
 
 **Built on Lightning Flow Scanner Core**
 
-The Flow Scanner in Salesforce Inspector Reloaded is powered by the [Lightning Flow Scanner Core](https://github.com/Lightning-Flow-Scanner/lightning-flow-scanner-core), an open-source rule engine capable of conducting static analysis on Salesforce Lightning Flows, Process Builders, and Workflows. This core library provides the comprehensive rule definitions and scanning capabilities that make the Flow Scanner so powerful.
+The Flow Scanner in Salesforce Inspector Reloaded is powered by the [Lightning Flow Scanner](https://github.com/Flow-Scanner/lightning-flow-scanner), an open-source rule engine capable of conducting static analysis on Salesforce Lightning Flows, Process Builders, and Workflows. This core library provides the comprehensive rule definitions and scanning capabilities that make the Flow Scanner so powerful.
 
 ---
 

@@ -30,6 +30,93 @@ export class Constants {
 }
 
 /**
+ * Unified storage-backed history/saved list used by data-export, rest-explore, and event-monitor.
+ * @param {string} storageKey - localStorage key
+ * @param {number} max - max entries to keep
+ * @param {Object} options - configuration
+ * @param {function(Object): boolean} [options.isValidEntry] - filter valid entries (default: objects only)
+ * @param {function(Object, Object): boolean} [options.matchAdd] - find existing for dedupe on add
+ * @param {function(Object, Object): boolean} [options.matchRemove] - find entry for remove (default: matchAdd or by key)
+ * @param {function(Object, Object): number} [options.sortComparator] - sort comparator (for saved lists)
+ * @param {boolean} [options.addToFront=true] - add new entries to front (history) or end (saved)
+ */
+export class StorageHistory {
+  constructor(storageKey, max, options = {}) {
+    this.storageKey = storageKey;
+    this.max = max;
+    this.options = {
+      isValidEntry: (e) => typeof e === "object",
+      matchAdd: null,
+      matchRemove: null,
+      sortComparator: null,
+      addToFront: true,
+      ...options
+    };
+    this.list = this._get();
+  }
+
+  _get() {
+    let list;
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      list = stored ? JSON.parse(stored) : [];
+    } catch {
+      list = [];
+    }
+    if (!Array.isArray(list)) {
+      list = [];
+    }
+    list = list.filter(this.options.isValidEntry);
+    if (this.options.sortComparator) {
+      list.sort(this.options.sortComparator);
+    }
+    this.list = list;
+    return list;
+  }
+
+  add(entry) {
+    let list = this._get();
+    const match = this.options.matchAdd || ((e, ent) => e.key === ent.key);
+    const idx = list.findIndex((e) => match(e, entry));
+    if (idx > -1) {
+      list.splice(idx, 1);
+    }
+    if (this.options.addToFront) {
+      list.splice(0, 0, entry);
+    } else {
+      list.push(entry);
+    }
+    if (this.options.sortComparator) {
+      list.sort(this.options.sortComparator);
+    }
+    if (list.length > this.max) {
+      list.pop();
+    }
+    localStorage.setItem(this.storageKey, JSON.stringify(list));
+    this.list = list;
+  }
+
+  remove(entry) {
+    let list = this._get();
+    const match = this.options.matchRemove || this.options.matchAdd || ((e, ent) => e.key === ent.key);
+    const idx = list.findIndex((e) => match(e, entry));
+    if (idx > -1) {
+      list.splice(idx, 1);
+    }
+    if (this.options.sortComparator) {
+      list.sort(this.options.sortComparator);
+    }
+    localStorage.setItem(this.storageKey, JSON.stringify(list));
+    this.list = list;
+  }
+
+  clear() {
+    localStorage.removeItem(this.storageKey);
+    this.list = [];
+  }
+}
+
+/**
  * Mapping of standard Salesforce objects to their name fields.
  * Objects with "Name" field are not included (assumed default).
  * Objects with null have no nameField property (e.g., Event, Task use Subject).
@@ -159,6 +246,39 @@ export const STANDARD_OBJECT_NAME_FIELDS = {
   // Custom metadata types ending with __mdt use "DeveloperName"
   "CustomMetadataType": "DeveloperName", // For __mdt objects
 };
+
+/**
+ * Determines if the org should be treated as production (for styling/warnings).
+ * Returns false for sandbox, trial orgs, and Developer Edition orgs.
+ * @param {string} sfHost - Salesforce host (e.g. "myorg.lightning.force.com")
+ * @returns {boolean} True if production org, false otherwise
+ */
+export function isProductionOrg(sfHost) {
+  const isSandbox = localStorage.getItem(sfHost + "_isSandbox") === "true";
+  const trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
+  if (isSandbox || (trialExpDate && trialExpDate !== "null")) {
+    return false;
+  }
+  const orgInfo = JSON.parse(sessionStorage.getItem(sfHost + "_orgInfo") || "null");
+  if (orgInfo?.OrganizationType === "Developer Edition") {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Applies production styling (sfir-prod class) to document.body when the org is production.
+ * Developer Edition orgs are not considered production.
+ * @param {string} sfHost - Salesforce host (e.g. "myorg.lightning.force.com")
+ * @returns {boolean} True if production styling was applied, false otherwise
+ */
+export function applyProductionStyling(sfHost) {
+  if (isProductionOrg(sfHost)) {
+    document.body.classList.add("sfir-prod");
+    return true;
+  }
+  return false;
+}
 
 export function getLinkTarget(e = {}) {
   if (localStorage.getItem("openLinksInNewTab") == "true" || (e.ctrlKey || e.metaKey)) {
@@ -419,16 +539,6 @@ export async function getPKCEParameters(sfHost) {
 
 // Copy text to the clipboard, without rendering it, since rendering is slow.
 export function copyToClipboard(value) {
-  // Check for unit tests - wrap in try-catch to handle SecurityError in popup mode
-  try {
-    if (parent && parent.isUnitTest) {
-      parent.testClipboardValue = value;
-      return;
-    }
-  } catch (error) {
-    // SecurityError occurs in popup mode when accessing parent frame
-    console.error("Error copying to clipboard:", error);
-  }
   // Use execCommand to trigger an oncopy event and use an event handler to copy the text to the clipboard.
   // The oncopy event only works on editable elements, e.g. an input field.
   let temp = document.createElement("input");
@@ -499,7 +609,7 @@ export function getStandardObjectNameField(sobjectName) {
   }
 
   // Not in the mapping - return N/A to indicate describe API should be used
-  return 'N/A';
+  return "N/A";
 }
 
 /**
@@ -965,6 +1075,9 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
         isEverCreatable,
         newUrl,
         layoutable,
+        createable,
+        deletable,
+        updateable,
       },
       api
     ) {
@@ -981,6 +1094,10 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
         entity.isEverCreatable = isEverCreatable || entity.isEverCreatable;
         // Keep layoutable true if it was true in either call
         entity.layoutable = layoutable || entity.layoutable;
+        // Keep createable/deletable/updateable true if true in either call (for data-import filtering)
+        if (createable) entity.createable = true;
+        if (deletable) entity.deletable = true;
+        if (updateable) entity.updateable = true;
       } else {
         entity = {
           availableApis: [],
@@ -1019,7 +1136,14 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
           for (const sobject of describe.sobjects) {
             // Bugfix for when the describe call returns before the tooling query call, and isCustomSetting is undefined
             addEntity(
-              {...sobject, isCustomSetting: sobject.customSetting || sobject.isCustomSetting, layoutable: sobject.layoutable || false},
+              {
+                ...sobject,
+                isCustomSetting: sobject.customSetting || sobject.isCustomSetting,
+                layoutable: sobject.layoutable || false,
+                createable: sobject.createable,
+                deletable: sobject.deletable,
+                updateable: sobject.updateable,
+              },
               api
             );
           }
@@ -1057,6 +1181,10 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
                       recordTypesSupported: record.RecordTypesSupported,
                       newUrl: record.NewUrl,
                       isEverCreatable: record.IsEverCreatable,
+                      // EntityDefinition does not expose createable/deletable/updateable; use isEverCreatable as createable hint
+                      createable: record.IsEverCreatable,
+                      deletable: false,
+                      updateable: false,
                     },
                     null
                   );
@@ -1112,10 +1240,8 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
 export function isRecordId(recordId) {
   return typeof recordId === "string"
        && /^[a-zA-Z0-9]{15,18}$/.test(recordId)
-       && /^[0-9a-zA-Z]{3}/.test(recordId)
        && !recordId.startsWith("000")
-       && !/[^a-zA-Z0-9]/.test(recordId)
-       && /[0-9]/.test(recordId.slice(0, 5));
+       && /[0-9]/.test(recordId);
 }
 
 /**

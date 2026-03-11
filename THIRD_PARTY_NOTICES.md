@@ -6,7 +6,7 @@ This project includes code from the following open source projects:
 
 - **License**: MIT License
 - **Copyright**: Flow-Scanner Contributors
-- **Source**: https://github.com/Flow-Scanner/lightning-flow-scanner-core
+- **Source**: https://github.com/Flow-Scanner/lightning-flow-scanner
 - **Files**: `addon/lib/flow-scanner-core.js`
 
 MIT License

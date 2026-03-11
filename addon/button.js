@@ -29,95 +29,6 @@ function initButton(sfHost, inInspector) {
   loadPopup(sfHost);
   document.body.appendChild(rootEl);
 
-  function addFlowScrollability(popupEl) {
-    const currentUrl = window.location.href;
-    // Check the current URL for the string "builder_platform_interaction"
-    if (currentUrl.includes("builder_platform_interaction")) {
-      const checkboxState = iFrameLocalStorage.scrollOnFlowBuilder;
-
-      // Create toggle container with styling to match navbar
-      const toggleContainer = document.createElement("div");
-      toggleContainer.className = "slds-form-element__control";
-      toggleContainer.style.cssText = "margin-left: auto; display: flex; align-items: center; gap: 0.5rem;";
-
-      // Create descriptive label text
-      const labelText = document.createElement("span");
-      labelText.textContent = "Enable flow scrollability";
-      labelText.style.color = "white";
-
-      // Create label wrapper
-      const overflowLabel = document.createElement("label");
-      overflowLabel.className = "slds-checkbox_toggle slds-grid";
-
-      // Create checkbox input
-      const overflowCheckbox = document.createElement("input");
-      overflowCheckbox.type = "checkbox";
-      overflowCheckbox.id = "overflow-checkbox";
-      overflowCheckbox.className = "slds-input";
-      overflowCheckbox.checked = (checkboxState != null) ? checkboxState : true;
-
-      // Create faux container
-      const fauxContainer = document.createElement("span");
-      fauxContainer.className = "slds-checkbox_faux_container center-label";
-      fauxContainer.setAttribute("aria-live", "assertive");
-
-      // Create faux checkbox
-      const fauxCheckbox = document.createElement("span");
-      fauxCheckbox.className = "slds-checkbox_faux";
-
-      // Assemble the structure
-      fauxContainer.appendChild(fauxCheckbox);
-      overflowLabel.appendChild(overflowCheckbox);
-      overflowLabel.appendChild(fauxContainer);
-      toggleContainer.appendChild(labelText);
-      toggleContainer.appendChild(overflowLabel);
-
-      // Get a reference to the <head> element
-      const head = document.head;
-      // Create a new <style> element
-      const style = document.createElement("style");
-      // Set the initial text content of the <style> element
-      style.textContent = ".canvas {overflow : auto!important ; }";
-      // Append the <style> element to the <head> element
-      head.appendChild(style);
-
-      // Add toggle before last child of .slds-builder-header
-      observeElement(".slds-builder-header", (builderHeader) => {
-        const lastChild = builderHeader.lastElementChild;
-        if (lastChild) {
-          builderHeader.insertBefore(toggleContainer, lastChild);
-        } else {
-          builderHeader.appendChild(toggleContainer);
-        }
-      });
-      // Set the overflow property to "auto"
-      overflowCheckbox.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
-      // Listen for changes to the checkbox state
-      overflowCheckbox.addEventListener("change", function() {
-        // Check if the checkbox is currently checked
-        // Save the checkbox state to local storage
-        popupEl.contentWindow.postMessage({
-          updateLocalStorage: true,
-          key: "scrollOnFlowBuilder",
-          value: JSON.stringify(this.checked)
-        }, "*");
-        // Set the overflow property to "auto"
-        this.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
-      });
-
-      function wheelHandler(e) {
-        if (overflowCheckbox.checked) {
-          if (e.target.matches(".canvas, .builder-canvas, .flow-builder-canvas") || e.target.classList.contains("flow-container")) {
-            e.stopPropagation();
-          }
-        }
-      }
-
-      observeElement(".canvas, .builder-canvas, .flow-builder-canvas", (canvas) => {
-        canvas.addEventListener("wheel", wheelHandler, {capture: true, passive: false});
-      });
-    }
-  }
 
   // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
   function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos, popupHeighDynamictMode: dynamicHeight}) {
@@ -318,7 +229,6 @@ function initButton(sfHost, inInspector) {
           popupEl.classList.add(`insext-popup-${o}-${dir}`);
         }
         setRootCSSProperties(rootEl, btn);
-        addFlowScrollability(popupEl);
         setFavicon(sfHost);
         popupEl.contentWindow.postMessage({
           insextInitResponse: true,

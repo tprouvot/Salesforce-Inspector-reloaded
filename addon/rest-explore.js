@@ -3,66 +3,17 @@ import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
 import {initScrollTable} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, createSpinForMethod, copyToClipboard, isOptionEnabled} from "./utils.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, isOptionEnabled, StorageHistory} from "./utils.js";
 
-class QueryHistory {
-  constructor(storageKey, max) {
-    this.storageKey = storageKey;
-    this.max = max;
-    this.list = this._get();
-  }
-
-  _get() {
-    let history;
-    try {
-      history = JSON.parse(localStorage[this.storageKey]);
-    } catch (e) {
-      // empty
-    }
-    if (!Array.isArray(history)) {
-      history = [];
-    }
-    // A previous version stored just strings. Skip entries from that to avoid errors.
-    history = history.filter(e => typeof e == "object");
-    this.sort(this.storageKey, history);
-    return history;
-  }
-
-  add(entry) {
-    let history = this._get();
-    let historyIndex = history.findIndex(e => e.endpoint == entry.endpoint);
-    if (historyIndex > -1) {
-      history.splice(historyIndex, 1);
-    }
-    history.splice(0, 0, entry);
-    if (history.length > this.max) {
-      history.pop();
-    }
-    localStorage[this.storageKey] = JSON.stringify(history);
-    this.sort(this.storageKey, history);
-  }
-
-  remove(entry) {
-    let history = this._get();
-    let historyIndex = history.findIndex(e => e.endpoint == entry.endpoint);
-    if (historyIndex > -1) {
-      history.splice(historyIndex, 1);
-    }
-    localStorage[this.storageKey] = JSON.stringify(history);
-    this.sort(this.storageKey, history);
-  }
-
-  clear() {
-    localStorage.removeItem(this.storageKey);
-    this.list = [];
-  }
-
-  sort(storageKey, history) {
-    if (storageKey === "restSavedQueryHistory") {
-      history.sort((a, b) => (a.endpoint > b.endpoint) ? 1 : ((b.endpoint > a.endpoint) ? -1 : 0));
-    }
-    this.list = history;
-  }
+function createRestQueryHistory(storageKey, max) {
+  const isSaved = storageKey === "restSavedQueryHistory";
+  return new StorageHistory(storageKey, max, {
+    isValidEntry: (e) => typeof e === "object",
+    matchAdd: (e, ent) => e.endpoint === ent.endpoint,
+    matchRemove: (e, ent) => e.endpoint === ent.endpoint,
+    sortComparator: isSaved ? (a, b) => (a.endpoint > b.endpoint ? 1 : b.endpoint > a.endpoint ? -1 : 0) : null,
+    addToFront: true
+  });
 }
 
 class Model {
@@ -80,9 +31,9 @@ class Model {
     this.exportStatus = "";
     this.exportError = null;
     this.exportedData = null;
-    this.queryHistory = new QueryHistory("restQueryHistory", 100);
+    this.queryHistory = createRestQueryHistory("restQueryHistory", 100);
     this.selectedHistoryEntry = null;
-    this.savedHistory = new QueryHistory("restSavedQueryHistory", 50);
+    this.savedHistory = createRestQueryHistory("restSavedQueryHistory", 50);
     this.selectedSavedEntry = null;
     this.expandSavedOptions = false;
     this.startTime = null;
@@ -901,10 +852,6 @@ class App extends React.Component {
       ReactDOM.render(h(App, {model}), root, cb);
     };
     ReactDOM.render(h(App, {model}), root);
-
-    if (parent && parent.isUnitTest) { // for unit tests
-      parent.insextTestLoaded({model, sfConn});
-    }
   });
 
 }

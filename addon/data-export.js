@@ -436,6 +436,7 @@ class Model {
     this.enableSoqlStyling = localStorage.getItem("enableSoqlStyling") === "true"; // default to false
     this.enableSoqlComments = localStorage.getItem("enableSoqlComments") === "true"; // default to false
     this.enableAutocompletePopup = localStorage.getItem("enableDataExportAutocomplete") === "true"; // default to false (option must be enabled)
+    this.includeFormula = localStorage.getItem("includeFormulaFieldsFromExportAutocomplete") !== "false";
 
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
@@ -860,9 +861,10 @@ class Model {
       //retrieve the describe of the parent object
       const parentDescribe = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
       if (parentDescribe?.sobjectDescribe?.childRelationships) {
+        const fieldsObjectNameLower = fieldsObjectName?.toLowerCase();
         fieldsObjectName = parentDescribe.sobjectDescribe.childRelationships.find(cr =>
-          cr.relationshipName && cr.childSObject && cr.relationshipName.toLowerCase() === fieldsObjectName.toLowerCase()
-        ).childSObject;
+          cr.relationshipName && cr.childSObject && cr.relationshipName.toLowerCase() === fieldsObjectNameLower
+        )?.childSObject || fieldsObjectName;
       }
     }
 
@@ -1168,10 +1170,9 @@ class Model {
     } else {
       // Autocomplete field names and functions
       if (ctrlSpace) {
-        let includeFormula = localStorage.getItem("includeFormulaFieldsFromExportAutocomplete") !== "false";
         let ar = contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
-          .filter(field => (field.name.toLowerCase().includes(searchTermLower) || field.label.toLowerCase().includes(searchTermLower)) && (includeFormula || !field.calculated))
+          .filter(field => (field.name.toLowerCase().includes(searchTermLower) || field.label.toLowerCase().includes(searchTermLower)) && (vm.includeFormula || !field.calculated))
           .map(field => contextPath + field.name)
           .toArray();
         if (ar.length > 0) {
@@ -1189,7 +1190,7 @@ class Model {
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
           .filter(field => field.name.toLowerCase().includes(searchTermLower) || field.label.toLowerCase().includes(searchTermLower))
           .flatMap(function* (field) {
-            yield {value: field.name, title: field.label, suffix: isInSelectClause ? ", " : " ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
+            yield {value: field.name, title: field.label, suffix: isInSelectClause ? ", " : "", rank: 1, autocompleteType: "fieldName", dataType: field.type};
             if (field.relationshipName) {
               yield {value: field.relationshipName + ".", title: field.label, suffix: "", rank: 1, autocompleteType: "relationshipName", dataType: ""};
             }

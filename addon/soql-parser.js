@@ -470,7 +470,9 @@ export function getCursorContext(query, cursorPos, parsed) {
   ctx.justAfterFromMatch = ctx.textBeforeCursor.match(/(^|\s)from\s+([a-z0-9_]*)$/i);
 
   // Main FROM is the only one in sanitized query (subqueries are placeholders)
-  const mainFromPosInSanitized = parsedResult.sanitizedQuery.indexOf(parsedResult.from.raw);
+  const mainFromPosInSanitized = parsedResult.sanitizedQuery.toLowerCase().indexOf(parsedResult.from.raw.toLowerCase());
+
+  
   const mainFromPosInRaw = mainFromPosInSanitized >= 0
     ? sanitizedToRawPos(parsedResult.sanitizedQuery, mainFromPosInSanitized, parsedResult.subqueries)
     : -1;

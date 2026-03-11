@@ -798,6 +798,14 @@ class FieldRow extends React.Component {
         h("use", {xlinkHref: "symbols.svg#error", className: "fillRed"})
         );
         break;
+      case "warning":
+        deploymentStatus = h("svg", {
+          className: "slds-button slds-icon_x-small slds-icon-text-default slds-m-top_xxx-small width20px",
+          viewBox: "0 0 52 52"
+        },
+        h("use", {xlinkHref: "symbols.svg#info", className: "fillBlue"})
+        );
+        break;
       default:
         deploymentStatus = "";
     }
@@ -956,6 +964,7 @@ class App extends React.Component {
       importError: "",
       objectSearch: "",
       fieldErrorMessage: "",
+      fieldErrorStatus: "error",
       errorMessageClickable: false,
       filteredObjects: [],
       includeManagedPackage: localStorage.getItem("fieldCreatorIncludeManaged") === "true"
@@ -1215,7 +1224,10 @@ class App extends React.Component {
       method: "POST",
       body: newField
     })
-      .then(data => this.setFieldPermissions(field, data.id, objectName))
+      .then(data => this.setFieldPermissions(field, data.id, objectName).catch(error => {
+        console.error("Error setting permissions:", error);
+        return {permissionError: error.message || "Unknown permission error"};
+      }))
       .catch(error => {
         console.error("Error creating field:", error);
         throw error;
@@ -1440,19 +1452,25 @@ class App extends React.Component {
 
   onShowDeploymentStatus = (index) => {
     const field = this.state.fields[index];
-    if (field.deploymentStatus === "error") {
-      let errorMessage = "Deployment Error";
+    if (field.deploymentStatus === "error" || field.deploymentStatus === "warning") {
+      let errorMessage = field.deploymentStatus === "error" ? "Deployment Error" : "Field created successfully, but permission assignment failed";
       try {
         const errorData = JSON.parse(field.deploymentError);
-        errorMessage = errorData[0]?.message || errorMessage;
+        errorMessage = (field.deploymentStatus === "warning" ? "Field created. Permission error: " : "") + (errorData[0]?.message || errorMessage);
 
       } catch (e) {
         console.error("Catch error", e);
-        errorMessage = field.deploymentError || errorMessage;
+        errorMessage = (field.deploymentStatus === "warning" ? "Field created. Permission error: " : "") + (field.deploymentError || errorMessage);
       }
-      this.setState({fieldErrorMessage: errorMessage});
+      this.setState({
+        fieldErrorMessage: errorMessage,
+        fieldErrorStatus: field.deploymentStatus
+      });
     } else if (field.deploymentStatus === "pending") {
-      this.setState({fieldErrorMessage: "Field deployment is in progress"});
+      this.setState({
+        fieldErrorMessage: "Field deployment is in progress",
+        fieldErrorStatus: "info"
+      });
     }
   };
 
@@ -1557,9 +1575,14 @@ class App extends React.Component {
     fieldsToProcess.forEach((field) => {
       const index = fields.findIndex(f => f === field);
       this.createField(field, this.state.selectedObject.name)
-        .then(() => {
+        .then((result) => {
           const newFields = [...this.state.fields];
-          newFields[index].deploymentStatus = "success";
+          if (result && result.permissionError) {
+            newFields[index].deploymentStatus = "warning";
+            newFields[index].deploymentError = result.permissionError;
+          } else {
+            newFields[index].deploymentStatus = "success";
+          }
           this.setState({fields: newFields});
         })
         .catch(error => {
@@ -1731,10 +1754,10 @@ class App extends React.Component {
       ),
 
       this.state.fieldErrorMessage && h("div", {className: "notification_container"},
-        h("div", {className: "slds-notify slds-notify_toast slds-theme_error notificationContent"},
+        h("div", {className: `slds-notify slds-notify_toast slds-theme_${this.state.fieldErrorStatus || "error"} notificationContent`},
           h("span", {className: "errorIcon"},
             h("svg", {className: "slds-icon width24px height24px", "aria-hidden": "true"},
-              h("use", {xlinkHref: "symbols.svg#error", className: "iconFill"})
+              h("use", {xlinkHref: `symbols.svg#${this.state.fieldErrorStatus === "warning" ? "info" : (this.state.fieldErrorStatus === "info" ? "clock" : "error")}`, className: "iconFill"})
             )
           ),
           h("span", {className: "slds-text-heading_small"},

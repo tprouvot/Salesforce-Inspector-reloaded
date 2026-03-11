@@ -15,3 +15,12 @@ venv/
 .vscode/
 .DS_Store
 .cursorrules
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+tests/coverage/
+
+# Local test constants (contains org credentials)
+tests/e2e/test-constants.local.js

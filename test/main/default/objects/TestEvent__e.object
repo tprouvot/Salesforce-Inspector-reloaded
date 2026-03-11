@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Platform event for Event Monitor e2e tests (Generate and Publish flow)</description>
+    <eventType>StandardVolume</eventType>
+    <label>Test Event</label>
+    <pluralLabel>Test Events</pluralLabel>
+    <publishBehavior>PublishAfterCommit</publishBehavior>
+    <fields>
+        <fullName>Message__c</fullName>
+        <description>Message field for test payload</description>
+        <externalId>false</externalId>
+        <label>Message</label>
+        <length>255</length>
+        <required>false</required>
+        <trackTrending>false</trackTrending>
+        <type>Text</type>
+    </fields>
+    <fields>
+        <fullName>Count__c</fullName>
+        <description>Count field for test payload</description>
+        <externalId>false</externalId>
+        <label>Count</label>
+        <precision>18</precision>
+        <required>false</required>
+        <scale>0</scale>
+        <trackTrending>false</trackTrending>
+        <type>Number</type>
+        <unique>false</unique>
+    </fields>
+</CustomObject>

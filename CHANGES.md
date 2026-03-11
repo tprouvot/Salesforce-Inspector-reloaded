@@ -1,9 +1,15 @@
 # Release Notes
 
-## Version 2.0
+## Version 2.1
 
+- `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition
+- `Show All Data` Display Lookup Names on lookup title [feature #1130](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1130)
 - `Data Export` SOQL subquery autocomplete: detect child relationship names in subqueries, suggest relationship names based on parent object, resolve relationship name (e.g. "Cases") to child object (e.g. "Case") for field suggestions, and show relationship→object mapping when typing object API name
 - `Data Export` add capabilities to highlight SQL keywords, add comments in SOQL (removed on query run), and pretty format the SOQL (button) [666](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/666) [359](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/359) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
+
+## Version 2.0
+
+- `Data Export` Fix unrecognized Salesforce Ids [issue #984](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/984)
 - `Data Import` Expose metadata updates through Tooling API (ie Bulk Deactivate Flows) [feature 1125](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1125)
 - Fix Lightning Navigation from Analytics / Tableau [issue #1121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1121)
 - `Popup` review cache management in "Preload SObjects before popup opens". If enabled, refresh of SObject definition is done every "SObjects List Cache" hours, else done in background when the popup is expanded

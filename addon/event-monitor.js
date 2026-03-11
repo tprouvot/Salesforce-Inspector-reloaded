@@ -1,5 +1,5 @@
 /* global React ReactDOM */
-import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, copyToClipboard} from "./utils.js";
+import {getLinkTarget, UserInfoModel, getBrowserType, createSpinForMethod, copyToClipboard, applyProductionStyling, StorageHistory} from "./utils.js";
 import {sfConn, apiVersion} from "./inspector.js";
 // Import the CometD library
 import {CometD} from "./lib/cometd/cometd.js";
@@ -13,6 +13,96 @@ const channelTypes = [
   {value: "changeEvent", label: "Change Event", prefix: "/data/"},
   {value: "realTimeEvent", label: "Real-Time Event", prefix: "/event/"}
 ];
+
+const PUBLISHABLE_CHANNEL_TYPES = ["platformEvent", "standardPlatformEvent"];
+
+function createPlatformEventHistory(storageKey, max) {
+  return new StorageHistory(storageKey, max, {
+    isValidEntry: (e) => typeof e === "object" && e.channel && e.payload !== undefined,
+    matchAdd: (e, ent) => e.channel === ent.channel && e.payload === ent.payload,
+    matchRemove: (e, ent) => e.key === ent.key,
+    sortComparator: null,
+    addToFront: true
+  });
+}
+
+function createPlatformEventSaved(storageKey, max) {
+  const labelCmp = (a, b) => {
+    const la = (a.label || "").toLowerCase();
+    const lb = (b.label || "").toLowerCase();
+    return la > lb ? 1 : lb > la ? -1 : 0;
+  };
+  return new StorageHistory(storageKey, max, {
+    isValidEntry: (e) => typeof e === "object" && e.channel && e.payload !== undefined && e.label,
+    matchAdd: (e, ent) => (e.label || "").toLowerCase() === (ent.label || "").toLowerCase(),
+    matchRemove: (e, ent) => e.key === ent.key,
+    sortComparator: labelCmp,
+    addToFront: false
+  });
+}
+
+function pad(n, d) {
+  return `000${n}`.slice(-d);
+}
+
+function getDatetime(d) {
+  return (
+    `${pad(d.getFullYear(), 4)}-${pad(d.getMonth() + 1, 2)}-${pad(d.getDate(), 2)}T`
+    + `${pad(d.getHours(), 2)}:${pad(d.getMinutes(), 2)}:${pad(d.getSeconds(), 2)}.`
+    + `${pad(d.getMilliseconds(), 3)}${d.getTimezoneOffset() <= 0 ? "+" : "-"}${pad(Math.abs(d.getTimezoneOffset()) / 60, 2)}:${pad(Math.abs(d.getTimezoneOffset()) % 60, 2)}`
+  );
+}
+
+function generateRandomValueForField(field) {
+  const type = (field.type || "").toLowerCase();
+  const maxLen = field.length || 255;
+
+  switch (type) {
+    case "string":
+    case "textarea":
+    case "longtextarea":
+    case "url":
+    case "email":
+    case "phone": {
+      const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+      let s = "";
+      const len = Math.min(maxLen, Math.max(5, Math.floor(Math.random() * 20)));
+      for (let i = 0; i < len; i++) {
+        s += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return s;
+    }
+    case "boolean":
+      return Math.random() < 0.5;
+    case "int":
+      return Math.floor(Math.random() * 10000);
+    case "double":
+    case "currency":
+    case "percent":
+      return Math.round(Math.random() * 1000 * 100) / 100;
+    case "date": {
+      const d = new Date();
+      d.setDate(d.getDate() + Math.floor(Math.random() * 7) - 3);
+      return `${pad(d.getFullYear(), 4)}-${pad(d.getMonth() + 1, 2)}-${pad(d.getDate(), 2)}`;
+    }
+    case "datetime":
+      return getDatetime(new Date());
+    case "picklist":
+    case "multipicklist":
+      if (field.picklistValues && field.picklistValues.length > 0) {
+        const val = field.picklistValues[Math.floor(Math.random() * field.picklistValues.length)];
+        return val.value;
+      }
+      return "Unknown";
+    case "reference":
+    case "id":
+    case "address":
+    case "location":
+      return undefined;
+    default:
+      return "gen_" + Math.random().toString(36).slice(2, 10);
+  }
+}
 
 class Model {
 
@@ -46,6 +136,21 @@ class Model {
     this.popConfirmed = false;
     this.isProd = false;
     this.eventFilter = "";
+    this.generateEventPopup = false;
+    this.generateEventError = "";
+    this.generateEventLoading = false;
+    this.generateEventPayload = "";
+    this.generateEventDescribeFields = null;
+    this.generateEventDescribeChannel = null;
+    this.platformEventHistory = createPlatformEventHistory(sfHost + "_eventMonitorPublishHistory", 20);
+    this.platformEventSaved = createPlatformEventSaved(sfHost + "_eventMonitorSavedEvents", 50);
+    this.selectedHistoryEntry = null;
+    this.selectedSavedEntry = null;
+    this.platformEventSaveLabel = "";
+    this.confirmClearHistory = false;
+    this.confirmRemoveSaved = null;
+    this.confirmClearSaved = false;
+    this.expandEventHistoryOptions = false;
 
     // Initialize spinFor method
     this.spinFor = createSpinForMethod(this);
@@ -56,12 +161,7 @@ class Model {
     // Set orgName from sfHost
     this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
 
-    let trialExpDate = localStorage.getItem(sfHost + "_trialExpirationDate");
-    if (localStorage.getItem(sfHost + "_isSandbox") != "true" && (!trialExpDate || trialExpDate === "null")) {
-      //change background color for production
-      document.body.classList.add("sfir-prod");
-      this.isProd = true;
-    }
+    this.isProd = applyProductionStyling(sfHost);
 
     if (args.has("channel")) {
       let channel = args.get("channel");
@@ -74,6 +174,9 @@ class Model {
     }
     if (args.has("replayId")) {
       this.replayId = args.get("replayId");
+    }
+    if (args.get("generate") === "1") {
+      this.generateEventPopup = true;
     }
   }
   /**
@@ -102,6 +205,29 @@ class Model {
     this.eventFilter = "";
     if (window.Prism) {
       window.Prism.highlightAll();
+    }
+  }
+
+  /**
+   * Add a test event to the events array
+   * Useful for testing without subscribing to channels
+   * @param {Object} eventData - Event data object (should match CometD message.data format)
+   */
+  addTestEvent(eventData) {
+    // Ensure eventData has the expected structure
+    const event = {
+      event: {
+        replayId: eventData.event?.replayId || Date.now(),
+        ...eventData.event
+      },
+      ...eventData
+    };
+
+    // Check if event already exists (by replayId)
+    const eventExists = this.events.some(e => e.event?.replayId === event.event.replayId);
+    if (!eventExists) {
+      this.events.unshift(event);
+      this.didUpdate();
     }
   }
 
@@ -136,6 +262,23 @@ class App extends React.Component {
     this.onEventFilterInput = this.onEventFilterInput.bind(this);
     this.onClearAndFocusFilter = this.onClearAndFocusFilter.bind(this);
     this.onCustomChannelInput = this.onCustomChannelInput.bind(this);
+    this.onGenerateEventClick = this.onGenerateEventClick.bind(this);
+    this.onGenerateEventConfirm = this.onGenerateEventConfirm.bind(this);
+    this.onGenerateEventCancel = this.onGenerateEventCancel.bind(this);
+    this.onGenerateEventPayloadChange = this.onGenerateEventPayloadChange.bind(this);
+    this.onRegenerateEvent = this.onRegenerateEvent.bind(this);
+    this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
+    this.onSelectSavedEntry = this.onSelectSavedEntry.bind(this);
+    this.onSavePlatformEvent = this.onSavePlatformEvent.bind(this);
+    this.onPlatformEventSaveLabelChange = this.onPlatformEventSaveLabelChange.bind(this);
+    this.onClearHistory = this.onClearHistory.bind(this);
+    this.onRemoveSaved = this.onRemoveSaved.bind(this);
+    this.onClearSaved = this.onClearSaved.bind(this);
+    this.onToggleEventHistoryOptions = this.onToggleEventHistoryOptions.bind(this);
+    this.onConfirmClearHistory = this.onConfirmClearHistory.bind(this);
+    this.onConfirmRemoveSaved = this.onConfirmRemoveSaved.bind(this);
+    this.onConfirmClearSaved = this.onConfirmClearSaved.bind(this);
+    this.disableGenerate = this.disableGenerate.bind(this);
     this.getEventChannels();
     this.state = {peLimits: []};
   }
@@ -189,6 +332,10 @@ class App extends React.Component {
     await this.handleChannelEvents(model, channelType);
     this.setSelectedChannel(model);
     model.didUpdate();
+    if (model.generateEventPopup && model.selectedChannel && !this.disableGenerate()) {
+      await this.fetchPlatformEventDescribe();
+      this.generatePayloadFromDescribe();
+    }
   }
 
   async handleChannelEvents(model, channelType) {
@@ -493,6 +640,250 @@ class App extends React.Component {
     return model.isListenning || (model.selectedChannel == null && !model.customChannelPath);
   }
 
+  disableGenerate() {
+    let {model} = this.props;
+    return !PUBLISHABLE_CHANNEL_TYPES.includes(model.selectedChannelType)
+      || !!model.customChannelPath
+      || model.selectedChannel == null;
+  }
+
+  async fetchPlatformEventDescribe() {
+    let {model} = this.props;
+    if (model.generateEventDescribeFields && model.generateEventDescribeChannel === model.selectedChannel) {
+      return;
+    }
+    model.generateEventError = "";
+    model.generateEventLoading = true;
+    model.didUpdate();
+
+    try {
+      const describeUrl = "/services/data/v" + apiVersion + "/sobjects/" + model.selectedChannel + "/describe";
+      const sobjectDescribe = await sfConn.rest(describeUrl);
+      model.generateEventDescribeFields = sobjectDescribe.fields || [];
+      model.generateEventDescribeChannel = model.selectedChannel;
+      model.generateEventLoading = false;
+      model.didUpdate();
+    } catch (err) {
+      model.generateEventError = err.message || String(err);
+      model.generateEventLoading = false;
+      model.didUpdate();
+    }
+  }
+
+  generatePayloadFromDescribe() {
+    let {model} = this.props;
+    const fields = model.generateEventDescribeFields;
+    if (!fields || model.generateEventDescribeChannel !== model.selectedChannel) {
+      return;
+    }
+    const payload = {};
+    const isPlatformEvent = (model.selectedChannel || "").endsWith("__e");
+    for (const field of fields) {
+      if (field.calculated || field.name === "Id") continue;
+      const canSet = field.createable || field.updateable;
+      const isCustomField = field.name.endsWith("__c");
+      if (!canSet && !(isPlatformEvent && isCustomField)) continue;
+      const value = generateRandomValueForField(field);
+      if (value !== undefined) {
+        payload[field.name] = value;
+      }
+    }
+    model.generateEventPayload = JSON.stringify(payload, null, 2);
+    model.didUpdate();
+  }
+
+  async onGenerateEventClick() {
+    let {model} = this.props;
+    model.generateEventPopup = true;
+    model.generateEventPayload = "";
+    this.persistParamInUrl("generate", "1");
+    model.didUpdate();
+    await this.fetchPlatformEventDescribe();
+    this.generatePayloadFromDescribe();
+  }
+
+  onRegenerateEvent() {
+    this.generatePayloadFromDescribe();
+  }
+
+  onGenerateEventPayloadChange(e) {
+    let {model} = this.props;
+    model.generateEventPayload = e.target.value;
+    model.generateEventError = "";
+    model.didUpdate();
+  }
+
+  onGenerateEventCancel() {
+    let {model} = this.props;
+    model.generateEventPopup = false;
+    model.generateEventError = "";
+    model.generateEventLoading = false;
+    model.generateEventPayload = "";
+    model.selectedHistoryEntry = null;
+    model.selectedSavedEntry = null;
+    model.expandEventHistoryOptions = false;
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.delete("generate");
+    window.history.replaceState(null, "", "?" + urlParams.toString());
+    model.didUpdate();
+  }
+
+  onSelectHistoryEntry(e) {
+    let {model} = this.props;
+    const key = e.target.value;
+    if (!key) {
+      model.selectedHistoryEntry = null;
+      model.didUpdate();
+      return;
+    }
+    const entry = model.platformEventHistory.list.find(item => String(item.key) === key);
+    if (entry) {
+      model.generateEventPayload = entry.payload;
+      model.selectedHistoryEntry = entry;
+      model.selectedSavedEntry = null;
+      model.generateEventError = "";
+      model.didUpdate();
+    }
+  }
+
+  onSelectSavedEntry(e) {
+    let {model} = this.props;
+    const key = e.target.value;
+    if (!key) {
+      model.selectedSavedEntry = null;
+      model.didUpdate();
+      return;
+    }
+    const entry = model.platformEventSaved.list.find(item => String(item.key) === key);
+    if (entry) {
+      model.generateEventPayload = entry.payload;
+      model.selectedSavedEntry = entry;
+      model.selectedHistoryEntry = null;
+      model.generateEventError = "";
+      model.didUpdate();
+    }
+  }
+
+  onSavePlatformEvent(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    const label = (model.platformEventSaveLabel || "").trim();
+    if (!label || !model.generateEventPayload) {
+      model.didUpdate();
+      return;
+    }
+    model.platformEventSaved.add({
+      channel: model.selectedChannel,
+      payload: model.generateEventPayload,
+      label,
+      key: Date.now()
+    });
+    model.platformEventSaveLabel = "";
+    model.didUpdate();
+  }
+
+  onPlatformEventSaveLabelChange(e) {
+    let {model} = this.props;
+    model.platformEventSaveLabel = e.target.value;
+    model.didUpdate();
+  }
+
+  onClearHistory() {
+    let {model} = this.props;
+    model.confirmClearHistory = true;
+    model.expandEventHistoryOptions = false;
+    model.didUpdate();
+  }
+
+  onRemoveSaved() {
+    let {model} = this.props;
+    if (model.selectedSavedEntry) {
+      model.confirmRemoveSaved = model.selectedSavedEntry;
+      model.expandEventHistoryOptions = false;
+      model.didUpdate();
+    }
+  }
+
+  onClearSaved() {
+    let {model} = this.props;
+    model.confirmClearSaved = true;
+    model.expandEventHistoryOptions = false;
+    model.didUpdate();
+  }
+
+  onToggleEventHistoryOptions(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.expandEventHistoryOptions = !model.expandEventHistoryOptions;
+    model.didUpdate();
+  }
+
+  onConfirmClearHistory() {
+    let {model} = this.props;
+    model.platformEventHistory.clear();
+    model.confirmClearHistory = false;
+    model.selectedHistoryEntry = null;
+    model.didUpdate();
+  }
+
+  onConfirmRemoveSaved() {
+    let {model} = this.props;
+    if (model.confirmRemoveSaved) {
+      model.platformEventSaved.remove(model.confirmRemoveSaved);
+      model.selectedSavedEntry = null;
+    }
+    model.confirmRemoveSaved = null;
+    model.didUpdate();
+  }
+
+  onConfirmClearSaved() {
+    let {model} = this.props;
+    model.platformEventSaved.clear();
+    model.confirmClearSaved = false;
+    model.selectedSavedEntry = null;
+    model.didUpdate();
+  }
+
+  async onGenerateEventConfirm() {
+    let {model} = this.props;
+    model.generateEventError = "";
+    model.generateEventLoading = true;
+    model.didUpdate();
+
+    try {
+      let payload;
+      try {
+        payload = JSON.parse(model.generateEventPayload || "{}");
+      } catch (parseErr) {
+        throw new Error("Invalid JSON: " + (parseErr.message || String(parseErr)));
+      }
+
+      if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+        throw new Error("Payload must be a JSON object");
+      }
+
+      await sfConn.rest("/services/data/v" + apiVersion + "/sobjects/" + model.selectedChannel, {
+        method: "POST",
+        body: payload
+      });
+
+      model.platformEventHistory.add({
+        channel: model.selectedChannel,
+        payload: model.generateEventPayload,
+        label: "",
+        key: Date.now()
+      });
+
+      model.generateEventLoading = false;
+      model.generateEventError = "";
+      model.didUpdate();
+    } catch (err) {
+      model.generateEventError = err.message || String(err);
+      model.generateEventLoading = false;
+      model.didUpdate();
+    }
+  }
+
   render() {
     let {model} = this.props;
     let {peLimits} = this.state;
@@ -621,7 +1012,13 @@ class App extends React.Component {
                       onClick: this.onUnsuscribeToChannel,
                       title: "Unsubscribe to channel",
                       disabled: !model.isListenning
-                    }, "Unsubscribe")
+                    }, "Unsubscribe"),
+                    h("button", {
+                      className: "slds-button slds-button_neutral slds-m-left_x-small",
+                      onClick: this.onGenerateEventClick,
+                      title: "Generate and publish a random platform event",
+                      disabled: this.disableGenerate()
+                    }, "Generate")
                   )
                 )
               )
@@ -776,7 +1173,155 @@ class App extends React.Component {
       ) : null,
       h("p", {className: "slds-m-bottom_small"}, "Use this option sparingly. Subscribing with the -2 option when a large number of event messages are stored can slow performance."),
       h("p", {}, "Hitting the daily limit can break existing integration!")
-      )
+      ),
+      h(ConfirmModal, {
+        isOpen: model.generateEventPopup,
+        title: "Generate Platform Event",
+        onConfirm: this.onGenerateEventConfirm,
+        onCancel: this.onGenerateEventCancel,
+        onCopy: this.onRegenerateEvent,
+        confirmLabel: "Publish",
+        cancelLabel: "Cancel",
+        copyLabel: "Regenerate",
+        confirmVariant: model.isProd ? "destructive" : "brand",
+        confirmDisabled: model.generateEventLoading || !model.generateEventPayload,
+        copyDisabled: model.generateEventLoading,
+        modalSize: "large"
+      },
+      model.isProd ? h("div", {className: "slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error slds-m-bottom_small"},
+        h("span", {className: "slds-assistive-text"}, "warning"),
+        h("h2", {}, "WARNING: You are on a PRODUCTION environment.")
+      ) : null,
+      h("p", {className: "slds-m-bottom_small"}, "Edit the platform event payload below, then click Publish for " + (model.selectedChannel || "") + "."),
+      h("div", {className: "slds-grid slds-gutters slds-m-bottom_small"},
+        h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_2-of-6"},
+          h("div", {className: "slds-form-element"},
+            h("label", {className: "slds-form-element__label"}, "History"),
+            h("div", {className: "slds-form-element__control"},
+              h("select", {
+                className: "slds-select sfir-event-history-select",
+                value: model.selectedHistoryEntry ? String(model.selectedHistoryEntry.key) : "",
+                onChange: this.onSelectHistoryEntry,
+                disabled: model.generateEventLoading
+              },
+              h("option", {value: "", disabled: true}, "History"),
+              model.platformEventHistory.list.map(entry => h("option", {key: entry.key, value: String(entry.key)}, entry.channel + " " + (entry.payload.length > 100 ? entry.payload.slice(0, 100) + "..." : entry.payload)))
+              )
+            )
+          )
+        ),
+        h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-6"},
+          h("div", {className: "slds-form-element"},
+            h("label", {className: "slds-form-element__label"}, "Saved"),
+            h("div", {className: "slds-form-element__control"},
+              h("select", {
+                className: "slds-select",
+                value: model.selectedSavedEntry ? String(model.selectedSavedEntry.key) : "",
+                onChange: this.onSelectSavedEntry,
+                disabled: model.generateEventLoading
+              },
+              h("option", {value: "", disabled: true}, "Saved"),
+              model.platformEventSaved.list.map(entry => h("option", {key: entry.key, value: String(entry.key)}, (entry.label || "") + " " + entry.channel))
+              )
+            )
+          )
+        ),
+        h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_1-of-6"},
+          h("div", {className: "slds-form-element"},
+            h("label", {className: "slds-form-element__label", htmlFor: "platform-event-save-label"}, "Label"),
+            h("div", {className: "slds-form-element__control"},
+              h("input", {
+                id: "platform-event-save-label",
+                type: "text",
+                className: "slds-input",
+                placeholder: "Event label",
+                value: model.platformEventSaveLabel,
+                onChange: this.onPlatformEventSaveLabelChange,
+                disabled: model.generateEventLoading
+              })
+            )
+          )
+        ),
+        h("div", {className: "slds-col slds-size_1-of-1 slds-medium-size_2-of-6 slds-grid slds-grid_vertical-align-end"},
+          h("div", {className: "slds-button-group", role: "group"},
+            h("button", {
+              className: "slds-button slds-button_neutral",
+              onClick: this.onSavePlatformEvent,
+              disabled: model.generateEventLoading || !model.generateEventPayload || !(model.platformEventSaveLabel || "").trim()
+            }, "Save Event"),
+            h("div", {className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last" + (model.expandEventHistoryOptions ? " slds-is-open" : ""), onClick: this.onToggleEventHistoryOptions},
+              h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", type: "button"},
+                h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#down"})
+                )
+              ),
+              h("div", {className: "slds-dropdown slds-dropdown_right slds-dropdown_actions"},
+                h("ul", {className: "slds-dropdown__list", role: "menu"},
+                  h("li", {className: "slds-dropdown__item", role: "presentation"},
+                    h("a", {href: "#", role: "menuitem", tabIndex: "0", onClick: (e) => { e.preventDefault(); e.stopPropagation(); this.onClearHistory(); }}, "Clear History")
+                  ),
+                  h("li", {className: "slds-dropdown__item", role: "presentation"},
+                    h("a", {href: "#", role: "menuitem", tabIndex: "0", onClick: (e) => { e.preventDefault(); e.stopPropagation(); this.onRemoveSaved(); }}, "Remove Saved")
+                  ),
+                  h("li", {className: "slds-dropdown__item", role: "presentation"},
+                    h("a", {href: "#", role: "menuitem", tabIndex: "0", onClick: (e) => { e.preventDefault(); e.stopPropagation(); this.onClearSaved(); }}, "Clear Saved")
+                  )
+                )
+              )
+            )
+          )
+        )
+      ),
+      model.generateEventLoading && !model.generateEventPayload ? h("div", {className: "slds-spinner_container slds-p-around_medium"},
+        h("div", {role: "status", className: "slds-spinner slds-spinner_medium slds-spinner_brand", "aria-label": "Loading"},
+          h("div", {className: "slds-spinner__dot-a"}),
+          h("div", {className: "slds-spinner__dot-b"})
+        )
+      ) : null,
+      model.generateEventPayload ? h("div", {className: "slds-form-element slds-m-top_small"},
+        h("label", {className: "slds-form-element__label", htmlFor: "generate-event-payload"}, "Event payload (JSON)"),
+        h("textarea", {
+          id: "generate-event-payload",
+          className: "slds-textarea sfir-generate-event-payload",
+          value: model.generateEventPayload,
+          onChange: this.onGenerateEventPayloadChange,
+          disabled: model.generateEventLoading,
+          rows: 12,
+          placeholder: "{}"
+        })
+      ) : null,
+      model.generateEventError ? h("div", {className: "slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error slds-m-top_small"},
+        h("span", {className: "slds-assistive-text"}, "error"),
+        h("h2", {}, model.generateEventError)
+      ) : null
+      ),
+      model.confirmClearHistory ? h("div", {className: "sfir-confirm-modal-overlay"}, h(ConfirmModal, {
+        isOpen: true,
+        title: "Clear Publish History",
+        message: "Are you sure you want to clear the publish history?",
+        onCancel: () => { model.confirmClearHistory = false; model.didUpdate(); },
+        onConfirm: this.onConfirmClearHistory,
+        cancelLabel: "Cancel",
+        confirmLabel: "Clear"
+      })) : null,
+      model.confirmRemoveSaved ? h("div", {className: "sfir-confirm-modal-overlay"}, h(ConfirmModal, {
+        isOpen: true,
+        title: "Remove Saved Event",
+        message: "Are you sure you want to remove this saved event?",
+        onCancel: () => { model.confirmRemoveSaved = null; model.didUpdate(); },
+        onConfirm: this.onConfirmRemoveSaved,
+        cancelLabel: "Cancel",
+        confirmLabel: "Remove"
+      })) : null,
+      model.confirmClearSaved ? h("div", {className: "sfir-confirm-modal-overlay"}, h(ConfirmModal, {
+        isOpen: true,
+        title: "Clear Saved Events",
+        message: "Are you sure you want to remove all saved events?",
+        onCancel: () => { model.confirmClearSaved = false; model.didUpdate(); },
+        onConfirm: this.onConfirmClearSaved,
+        cancelLabel: "Cancel",
+        confirmLabel: "Clear"
+      })) : null
     );
   }
 }
@@ -792,11 +1337,18 @@ class App extends React.Component {
     model.reactCallback = cb => {
       ReactDOM.render(h(App, {model}), root, cb);
     };
-    ReactDOM.render(h(App, {model}), root);
-
-    if (parent && parent.isUnitTest) { // for unit tests
-      parent.insextTestLoaded({model});
+    // Expose model and addTestEvent to window for testing
+    if (typeof window !== "undefined") {
+      // Expose addTestEvent as a global function for easier test access
+      window.addTestEvent = (eventData) => {
+        if (model) {
+          model.addTestEvent(eventData);
+        } else {
+          console.warn("Event Monitor model not available");
+        }
+      };
     }
+    ReactDOM.render(h(App, {model}), root);
   });
 }
 

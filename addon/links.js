@@ -70,7 +70,7 @@ export let setupLinks = [
   {label: "Connected Apps OAuth Usage", link: "/lightning/setup/ConnectedAppsUsage/home", section: "Platform Tools > Apps > Connected Apps", prod: false},
   {label: "Manage Connected Apps", link: "/lightning/setup/ConnectedApplication/home", section: "Platform Tools > Apps > Connected Apps", prod: false},
   //Platform Tools > Apps > External Client Apps
-  {label: "External Client App Manager", link: "/lightning/setup/ConnectedAppsUsage/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
+  {label: "External Client App Manager", link: "/lightning/setup/ManageExternalClientApplication/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
   {label: "External Client Apps OAuth Usage", link: "/lightning/setup/ExternalClientApplicationOauthUsage/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
   {label: "External Client App Settings", link: "/lightning/setup/ExternalClientApplicationSettings/home", section: "Platform Tools > Apps > External Client Apps", prod: false},
   //Platform Tools > Apps > Lightning Bolt
@@ -101,7 +101,6 @@ export let setupLinks = [
   {label: "Themes", link: "/lightning/setup/CommunityThemeDefinitionList/home", section: "Platform Tools > Feature Settings > Digital Experiences", prod: false},
 
   //Platform Tools > Feature Settings
-  {label: "Field History Tracking", link: "/lightning/setup/FieldHistoryTracking/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Field History Tracking", link: "/lightning/setup/FieldHistoryTracking/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Functions", link: "/lightning/setup/Functions/home", section: "Platform Tools > Feature Settings", prod: false},
   {label: "Home", link: "/lightning/setup/Home/home", section: "Platform Tools > Feature Settings", prod: false},

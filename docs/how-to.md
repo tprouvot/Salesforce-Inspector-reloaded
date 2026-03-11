@@ -126,16 +126,10 @@ If you want to _always_ open extension's links in a new tab, you can enable> **W
 
 ## Disable metadata search from Shortcut tab
 
-By default when you enter keyword in the Shortcut tab, the search is performed on the Setup link shortcuts _AND_ metadata (Flows, PermissionSets and Profiles).
+By default when you enter keyword in the Shortcut tab, the search is performed on the Setup link shortcuts _AND_ metadata (Flows, Profiles, Permission Sets and Apex Classes).
 If you want to disable the search on the metadata, update related option:
 
 <img width="892" alt="image" src="https://github.com/user-attachments/assets/2541fc22-9f1b-4cd1-90cd-d4615b313d96">
-
-## Enable / Disable Flow scrollability
-
-Go on a Salesforce flow and check / uncheck the checbox to update navigation scrollability on the Flow Builder
-
-![2023-09-29_16-01-14 (1)](https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/91845a31-8f53-4ea1-b895-4cb036d1bed0)
 
 ## Compare Flow Versions
 

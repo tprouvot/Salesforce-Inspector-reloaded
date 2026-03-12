@@ -107,6 +107,31 @@ Add a new property `csvSeparator` containing the needed separator for CSV files
 
    <img alt="Update csv separator" src="../assets/images/how-to/csv-separator.png?raw=true" height="300">
 
+## Data Export Query Input Options
+
+These options affect the SOQL query input box on the **Data Export** page. You can enable them from the Options page (Data Export tab).
+
+### Enable SOQL Styling
+
+When enabled, the query input displays **syntax highlighting** for SOQL keywords (SELECT, FROM, WHERE, etc.), comments, and string literals. It also enables the **Pretty Format** button, which reformats your query with proper line breaks and indentation for better readability.
+
+* **Default**: Off
+* **Use case**: Useful when writing or reviewing complex queries—keywords stand out and the Pretty Format button helps structure long queries.
+
+### Enable SOQL Comments
+
+When enabled, the extension **manages comments** in the query input. You can use inline comments (`--`) and block comments (`/* */`) to document your SOQL. Before the query is sent to Salesforce, comments are automatically stripped so they never reach the API.
+
+* **Default**: Off
+* **Use case**: Add notes or temporarily disable clauses while testing queries, without affecting execution.
+
+### Enable field/object autocomplete popup
+
+When enabled, a **floating autocomplete popup** appears as you type in the query input. It suggests object names (after `FROM`), field names (after the object), and child relationship names in subqueries. You can click a suggestion or use the keyboard to insert it.
+
+* **Default**: Off
+* **Use case**: Speeds up writing SOQL by suggesting valid object and field names based on your org's metadata. The inline pill suggestions remain available in the autocomplete box regardless of this setting.
+
 ## Open links in a new tab
 
 If you want to _always_ open extension's links in a new tab, you can enable> **Warning**

@@ -570,7 +570,8 @@ svg.button-icon {
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
+  min-width: 100%;
+  width: max-content;
   max-height: 250px;
   overflow: auto;
   background-color: white;
@@ -589,6 +590,7 @@ svg.button-icon {
   padding: 8px 12px;
   font-size: 0.8125rem;
   color: #16325c;
+  white-space: nowrap;
   transition: background-color 0.1s linear;
 }
 

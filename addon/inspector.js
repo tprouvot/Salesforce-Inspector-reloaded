@@ -212,6 +212,24 @@ export let sfConn = {
     } else if (xhr.status == 401) {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
       errorMessage = `401 Unauthorized: ${error}`;
+
+      // Try to refresh the session from the browser cookie before giving up
+      if (!this._sessionRetried) {
+        this._sessionRetried = true;
+        try {
+          let message = await new Promise(resolve =>
+            chrome.runtime.sendMessage({message: "getSession", sfHost: this.instanceHostname}, resolve));
+          if (message && message.key && message.key !== this.sessionId) {
+            this.sessionId = message.key;
+            this._sessionRetried = false;
+            return this.rest(url, {method, api, body, bodyType, headers, progressHandler, logErrors, rawResponse, responseType});
+          }
+        } catch (e) {
+          // ignore retry errors
+        }
+        this._sessionRetried = false;
+      }
+
       //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
       if (localStorage.getItem(this.instanceHostname + Constants.ACCESS_TOKEN)){
         sessionError = {text: "Access Token Expired", title: "Generate New Token", type: "warning", icon: "warning"};

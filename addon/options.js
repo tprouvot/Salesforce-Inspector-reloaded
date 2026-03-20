@@ -8,6 +8,7 @@ import Toast from "./components/Toast.js";
 import Tooltip from "./components/Tooltip.js";
 import ColorPicker from "./components/ColorPicker.js";
 import {PageHeader} from "./components/PageHeader.js";
+import SubtabsCustomizations from "./components/SubtabsCustomizations.js";
 
 class Model {
 
@@ -404,6 +405,13 @@ class OptionsTabSelector extends React.Component {
         content: [
           {option: Option, props: {type: "toggle", title: "Enable Agentforce Helper for formula fields", key: "showAgentforceHelperInspect", default: true, tooltip: "When enabled, shows the 'Agentforce Helper' link in the field actions menu for calculated/formula fields."}},
           {option: Option, props: {type: "text", title: "Formula Helper Prompt Template Name", key: this.sfHost + "_formulaAgentForcePrompt", default: "FormulaHelper", tooltip: "Developer name of the prompt template to use for Formula Field Analysis in the Inspect page"}},
+        ]
+      },
+      {
+        id: "subtabs-customization",
+        tabTitle: "Subtabs Customization",
+        content: [
+          {option: SubtabsCustomizations, props: {}}
         ]
       }
     ];
@@ -1490,16 +1498,27 @@ class CustomShortcuts extends React.Component {
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onSort = this.onSort.bind(this);
     this.onSearch = this.onSearch.bind(this);
+    // Load both global and org-local shortcuts, tagging each with its scope
+    const globalShortcuts = JSON.parse(localStorage.getItem("_orgLinks") || "[]").map(s => ({...s, isGlobal: true}));
+    const orgShortcuts = JSON.parse(localStorage.getItem(this.sfHost + "_orgLinks") || "[]").map(s => ({...s, isGlobal: false}));
     this.state = {
-      shortcuts: JSON.parse(localStorage.getItem(this.sfHost + "_orgLinks") || "[]"),
+      shortcuts: [...globalShortcuts, ...orgShortcuts],
       editingIndex: -1,
-      newShortcut: {label: "", link: "", section: "", isExternal: false},
+      newShortcut: {label: "", link: "", section: "", isExternal: false, isGlobal: false},
       sortConfig: {
         key: null,
         direction: "asc"
       },
       searchTerm: ""
     };
+  }
+
+  // Persist shortcuts back to the correct localStorage keys based on isGlobal flag
+  persistShortcuts(shortcuts) {
+    const globalOnes = shortcuts.filter(s => s.isGlobal);
+    const orgOnes = shortcuts.filter(s => !s.isGlobal);
+    localStorage.setItem("_orgLinks", JSON.stringify(globalOnes));
+    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(orgOnes));
   }
 
   onSearch(e) {
@@ -1582,7 +1601,7 @@ class CustomShortcuts extends React.Component {
   onAddShortcut() {
     this.setState({
       editingIndex: this.state.shortcuts.length,
-      newShortcut: {label: "", link: "", section: "", isExternal: false}
+      newShortcut: {label: "", link: "", section: "", isExternal: false, isGlobal: false}
     });
   }
 
@@ -1597,7 +1616,7 @@ class CustomShortcuts extends React.Component {
     const newShortcuts = [...this.state.shortcuts];
     newShortcuts.splice(index, 1);
     this.setState({shortcuts: newShortcuts});
-    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(newShortcuts));
+    this.persistShortcuts(newShortcuts);
   }
 
   onSaveShortcut() {
@@ -1616,16 +1635,16 @@ class CustomShortcuts extends React.Component {
     this.setState({
       shortcuts: newShortcuts,
       editingIndex: -1,
-      newShortcut: {label: "", link: "", section: "", isExternal: false}
+      newShortcut: {label: "", link: "", section: "", isExternal: false, isGlobal: false}
     });
 
-    localStorage.setItem(this.sfHost + "_orgLinks", JSON.stringify(newShortcuts));
+    this.persistShortcuts(newShortcuts);
   }
 
   onCancelEdit() {
     this.setState({
       editingIndex: -1,
-      newShortcut: {label: "", link: "", section: ""}
+      newShortcut: {label: "", link: "", section: "", isExternal: false, isGlobal: false}
     });
   }
 
@@ -1701,6 +1720,9 @@ class CustomShortcuts extends React.Component {
               h("div", {className: "slds-truncate", title: "External"}, "External")
             ),
             h("th", {scope: "col"},
+              h("div", {className: "slds-truncate", title: "Global (all orgs)"}, "Global")
+            ),
+            h("th", {scope: "col"},
               h("div", {className: "slds-truncate", title: "Actions"}, "Actions")
             )
           )
@@ -1749,6 +1771,19 @@ class CustomShortcuts extends React.Component {
                   )
                 )
               ),
+              h("td", {key: "global", "data-label": "Global"},
+                h("div", {className: "slds-truncate"},
+                  h("label", {className: "slds-checkbox_toggle", title: "Apply to all orgs"},
+                    h("input", {
+                      type: "checkbox",
+                      checked: !!newShortcut.isGlobal,
+                      onChange: (e) => this.handleInputChange("isGlobal", e.target.checked)
+                    }),
+                    h("span", {className: "slds-checkbox_off"}, "Org"),
+                    h("span", {className: "slds-checkbox_on"}, "Global")
+                  )
+                )
+              ),
               h("td", {key: "actions", "data-label": "Actions"},
                 h("div", {className: "slds-truncate"},
                   h("button", {
@@ -1782,6 +1817,13 @@ class CustomShortcuts extends React.Component {
                   shortcut.isExternal && h("svg", {className: "slds-button__icon"},
                     h("use", {xlinkHref: "symbols.svg#check"})
                   )
+                )
+              ),
+              h("td", {key: "global", "data-label": "Global"},
+                h("div", {className: "slds-truncate"},
+                  shortcut.isGlobal
+                    ? h("span", {className: "slds-badge slds-badge_lightest", title: "Applies to all orgs"}, "Global")
+                    : h("span", {className: "slds-text-color_weak", style: {fontSize: "0.75rem"}}, "Org")
                 )
               ),
               h("td", {key: "actions", "data-label": "Actions"},

@@ -4,6 +4,8 @@
 
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition
 - `Show All Data` Display Lookup Names on lookup title [feature #1130](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1130)
+- `Popup` Add customizable fields and buttons to User, Org, and Object subtabs [feature #970](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/970)
+- `Custom Shortcuts` Add "Global" toggle to apply shortcuts across all orgs
 
 ## Version 2.0
 

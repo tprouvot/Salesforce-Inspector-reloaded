@@ -1,8 +1,10 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, isRecordId, getSobjectsList} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, isRecordId, getSobjectsList, getSubtabConfig} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
+import CustomSubtabFields from "./components/CustomSubtabFields.js";
+import CustomSubtabButtons from "./components/CustomSubtabButtons.js";
 
 let p = parent;
 let hideButtonsOption = JSON.parse(localStorage.getItem("hideButtonsOption"));
@@ -100,14 +102,18 @@ function init({sfHost, inDevConsole, inLightning, inInspector}) {
 }
 
 function initLinks({sfHost}) {
-  //add custom links to setupLink
-  if (localStorage.getItem(sfHost + "_orgLinks")) {
-    let links = JSON.parse(localStorage.getItem(sfHost + "_orgLinks"));
-    links.forEach((link) => {
-      setupLinks.push(link);
-    });
-  }
+  //add global custom links to setupLink (no host prefix)
+  const globalLinks = JSON.parse(localStorage.getItem("_orgLinks") || "[]");
+  globalLinks.forEach((link) => {
+    setupLinks.push(link);
+  });
+  //add org-specific custom links to setupLink
+  const orgLinks = JSON.parse(localStorage.getItem(sfHost + "_orgLinks") || "[]");
+  orgLinks.forEach((link) => {
+    setupLinks.push(link);
+  });
 }
+
 
 class App extends React.PureComponent {
   constructor(props) {
@@ -1499,20 +1505,43 @@ class AllDataBoxUsers extends React.PureComponent {
     // leverage USER_MODE to get the user details with fields that are not accessible by the regular API
     const hasProfileId = await this.hasFieldAccess("ProfileId");
     const hasIsPortalEnabled = await this.hasFieldAccess("IsPortalEnabled");
-    const querySelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)" + (hasProfileId ? ", ProfileId, Profile.Name" : "") + (hasIsPortalEnabled ? ", IsPortalEnabled" : "") + " FROM User WHERE Id='" + selectedUserId + "' WITH USER_MODE LIMIT 1";
+    const baseSelect = "SELECT Id, Name, Email, Username, UserRole.Name, Alias, LocaleSidKey, LanguageLocaleKey, IsActive, FederationIdentifier, ContactId, UserPreferencesUserDebugModePref, (SELECT Id, IsFrozen FROM UserLogins LIMIT 1)"
+      + (hasProfileId ? ", ProfileId, Profile.Name" : "")
+      + (hasIsPortalEnabled ? ", IsPortalEnabled" : "");
 
-    try {
-      setIsLoading(true);
-      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(querySelect));
+    // Append any configured custom fields
+    const customConfig = getSubtabConfig(this.props.sfHost, "User");
+    const customFieldSuffix = customConfig.fields.length > 0 ? ", " + customConfig.fields.join(", ") : "";
+
+    const runQuery = async (selectClause) => {
+      const q = selectClause + " FROM User WHERE Id='" + selectedUserId + "' WITH USER_MODE LIMIT 1";
+      const userResult = await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=" + encodeURIComponent(q));
       let userDetail = userResult.records[0];
       userDetail.debugModeActionLabel = userDetail.UserPreferencesUserDebugModePref ? "Disable" : "Enable";
-      //query NetworkMember only if it is a portal user (display "Login to Experience" button)
-      if (userDetail.IsPortalEnabled){
+      if (userDetail.IsPortalEnabled) {
         await sfConn.rest("/services/data/v" + apiVersion + "/query/?q=SELECT+NetworkId+FROM+NetworkMember+WHERE+MemberId='" + userDetail.Id + "'").then(res => {
-          if (res.records && res.records.length > 0){
+          if (res.records && res.records.length > 0) {
             userDetail.NetworkId = res.records[0].NetworkId;
           }
         });
+      }
+      return userDetail;
+    };
+
+    try {
+      setIsLoading(true);
+      let userDetail;
+      try {
+        // Try with custom fields first
+        userDetail = await runQuery(baseSelect + customFieldSuffix);
+      } catch (customFieldErr) {
+        // If it failed due to an invalid custom field, fall back to base query only
+        if (customFieldSuffix && customFieldErr.message && customFieldErr.message.includes("No such column")) {
+          console.warn("Custom field error — retrying without custom fields:", customFieldErr.message);
+          userDetail = await runQuery(baseSelect);
+        } else {
+          throw customFieldErr;
+        }
       }
       await this.setState({selectedUser: userDetail});
     } catch (err) {
@@ -1672,9 +1701,12 @@ class AllDataBoxSObject extends React.PureComponent {
   }
 
   restCallForRecordDetails(fields, selectedValue) {
+    // Append any configured custom fields for the selected object
+    const customConfig = getSubtabConfig(this.props.sfHost, "Object", selectedValue.sobject.name);
+    const allFields = [...fields, ...customConfig.fields.filter(f => !fields.includes(f))];
     let query
       = "SELECT "
-      + fields.join()
+      + allFields.join()
       + " FROM "
       + selectedValue.sobject.name
       + " where id='"
@@ -2843,6 +2875,21 @@ class AllDataBoxOrg extends React.PureComponent {
             )
           )
         ),
+        // Custom subtab fields for Org context
+        h(CustomSubtabFields, {
+          fields: getSubtabConfig(sfHost, "Org").fields,
+          record: orgInfo || {},
+          sfHost,
+          linkTarget
+        }),
+        // Custom subtab buttons for Org context
+        h(CustomSubtabButtons, {
+          buttons: getSubtabConfig(sfHost, "Org").buttons,
+          sfHost,
+          linkTarget,
+          recordId: orgInfo?.Id || "",
+          userId: ""
+        }),
         h(
           "div",
           {
@@ -3572,6 +3619,21 @@ class UserDetails extends React.PureComponent {
           )
         )
       ),
+      // Custom subtab fields
+      h(CustomSubtabFields, {
+        fields: getSubtabConfig(this.sfHost, "User").fields,
+        record: user,
+        sfHost: this.sfHost,
+        linkTarget
+      }),
+      // Custom subtab buttons
+      h(CustomSubtabButtons, {
+        buttons: getSubtabConfig(this.sfHost, "User").buttons,
+        sfHost: this.sfHost,
+        linkTarget,
+        userId: user.Id,
+        recordId: user.Id
+      }),
       h(
         "div",
         {ref: "userButtons", className: "slds-button-group justify-center"},
@@ -4160,6 +4222,21 @@ class AllDataSelection extends React.PureComponent {
           )
         )
       ),
+      // Custom subtab fields for Object context
+      h(CustomSubtabFields, {
+        fields: getSubtabConfig(sfHost, "Object", selectedValue.sobject.name).fields,
+        record: selectedValue.sobject,
+        sfHost,
+        linkTarget
+      }),
+      // Custom subtab buttons for Object context
+      h(CustomSubtabButtons, {
+        buttons: getSubtabConfig(sfHost, "Object", selectedValue.sobject.name).buttons,
+        sfHost,
+        linkTarget,
+        recordId: selectedValue.recordId || "",
+        userId: ""
+      }),
       h(
         "div",
         {

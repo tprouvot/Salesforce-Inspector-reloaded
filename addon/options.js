@@ -107,11 +107,8 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "toggle", title: "Enable Lightning Navigation", key: "lightningNavigation", default: true, tooltip: "Enable faster navigation by using standard e.force:navigateToURL method"}},
           {option: MultiCheckboxButtonGroup,
             props: {title: "Exclude users from search (org specific)",
-              key: this.sfHost + "_userSearchExclusions",
-              checkboxes: [
-                {label: " Exclude Portal users", name: "portal", checked: false},
-                {label: " Exclude Inactive users", name: "inactive", checked: false}
-              ]}
+              key: this.sfHost + Constants.USER_SEARCH_EXCLUSIONS_KEY,
+              checkboxes: Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(({label, name}) => ({label, name, checked: false}))}
           },
           {option: MultiCheckboxButtonGroup,
             props: {title: "User Default Search Fields",

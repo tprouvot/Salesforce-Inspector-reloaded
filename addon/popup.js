@@ -1323,27 +1323,45 @@ class AllDataBoxUsers extends React.PureComponent {
       userSearchFields,
       excludeInactiveUsersFromSearch,
       excludePortalUsersFromSearch,
+      filterDropdownOpen: false,
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
+    this.onFilterToggle = this.onFilterToggle.bind(this);
+    this.onFilterChange = this.onFilterChange.bind(this);
+    this.documentClickHandler = null;
+  }
+
+  onFilterToggle() {
+    this.setState(state => ({filterDropdownOpen: !state.filterDropdownOpen}));
+  }
+
+  onFilterChange(filterName, checked) {
+    const {sfHost} = this.props;
+    const option = Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.find(o => o.name === filterName);
+    if (!option) return;
+    const newState = {[option.stateKey]: checked};
+    this.setState(newState, () => {
+      const merged = Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => ({
+        name: o.name,
+        label: o.label,
+        checked: this.state[o.stateKey],
+      }));
+      localStorage.setItem(sfHost + Constants.USER_SEARCH_EXCLUSIONS_KEY, JSON.stringify(merged));
+      const query = this.refs.allDataSearch?.state?.queryString ?? "";
+      this.refs.allDataSearch?.getMatchesDelayed?.(query);
+    });
   }
 
   getUserSearchExclusionsFromLocalStorage() {
-    // Try to read from new MultiCheckboxButtonGroup format first
-    const userSearchExclusions = localStorage.getItem(this.props.sfHost + "_userSearchExclusions");
-    const defaultExclusions = {
-      excludePortalUsersFromSearch: false,
-      excludeInactiveUsersFromSearch: false
-    };
+    const userSearchExclusions = localStorage.getItem(this.props.sfHost + Constants.USER_SEARCH_EXCLUSIONS_KEY);
+    const defaultExclusions = Object.fromEntries(Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => [o.stateKey, false]));
     if (!userSearchExclusions) {
       return defaultExclusions;
     }
     try {
       const parsed = JSON.parse(userSearchExclusions);
-      return {
-        excludePortalUsersFromSearch: parsed.find(cb => cb.name === "portal")?.checked || false,
-        excludeInactiveUsersFromSearch: parsed.find(cb => cb.name === "inactive")?.checked || false
-      };
+      return Object.fromEntries(Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => [o.stateKey, parsed.find(cb => cb.name === o.name)?.checked || false]));
     } catch (e) {
       return defaultExclusions;
     }
@@ -1355,9 +1373,30 @@ class AllDataBoxUsers extends React.PureComponent {
     this.refs.allDataSearch.refs.showAllDataInp.focus();
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps, prevState) {
     if (prevProps.contextUserId !== this.props.contextUserId) {
       this.onDataSelect({Id: this.props.contextUserId});
+    }
+    if (this.state.filterDropdownOpen && !prevState.filterDropdownOpen) {
+      this.documentClickHandler = (e) => {
+        const filterEl = this.refs.filterDropdownRef;
+        if (filterEl && !filterEl.contains(e.target)) {
+          this.setState({filterDropdownOpen: false});
+          document.removeEventListener("mousedown", this.documentClickHandler);
+          this.documentClickHandler = null;
+        }
+      };
+      setTimeout(() => document.addEventListener("mousedown", this.documentClickHandler), 0);
+    } else if (!this.state.filterDropdownOpen && prevState.filterDropdownOpen && this.documentClickHandler) {
+      document.removeEventListener("mousedown", this.documentClickHandler);
+      this.documentClickHandler = null;
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.documentClickHandler) {
+      document.removeEventListener("mousedown", this.documentClickHandler);
+      this.documentClickHandler = null;
     }
   }
 
@@ -1556,7 +1595,7 @@ class AllDataBoxUsers extends React.PureComponent {
   }
 
   render() {
-    let {selectedUser} = this.state;
+    let {selectedUser, filterDropdownOpen, excludePortalUsersFromSearch, excludeInactiveUsersFromSearch} = this.state;
     let {sfHost, linkTarget, contextOrgId, contextUserId, contextPath}
       = this.props;
 
@@ -1573,6 +1612,57 @@ class AllDataBoxUsers extends React.PureComponent {
         inputSearchDelay: 400,
         placeholderText: "Name, username, email or alias",
         resultRender: this.resultRender,
+        rightIcon:         h(
+          "div",
+          {
+            ref: "filterDropdownRef",
+            className: "slds-dropdown-trigger slds-dropdown-trigger_click" + (filterDropdownOpen ? " slds-is-open" : ""),
+          },
+          h(
+            "button",
+            {
+              type: "button",
+              className: "sfir-input-filter-btn",
+              title: "Search filters",
+              "aria-haspopup": "true",
+              "aria-expanded": filterDropdownOpen,
+              onClick: this.onFilterToggle,
+            },
+            h(
+              "svg",
+              {className: "sfir-input-filter-icon slds-icon-text-default", "aria-hidden": "true", viewBox: "0 0 520 520"},
+              h("use", {xlinkHref: "symbols.svg#filterList"})
+            )
+          ),
+          filterDropdownOpen && h(
+            "div",
+            {className: "slds-dropdown slds-dropdown_right sfir-user-filter-dropdown"},
+            h("div", {className: "slds-dropdown__header slds-p-horizontal_small slds-p-vertical_x-small slds-text-body_small slds-text-color_weak"}, "Exclude users from search"),
+            h("ul", {className: "slds-dropdown__list", role: "menu"},
+              Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(option => {
+                const checked = option.stateKey === "excludePortalUsersFromSearch" ? excludePortalUsersFromSearch : excludeInactiveUsersFromSearch;
+                return h(
+                  "li",
+                  {key: option.name, className: "slds-dropdown__item", role: "presentation"},
+                  h(
+                    "div",
+                    {
+                      className: "sfir-filter-checkbox-item" + (checked ? " selected" : ""),
+                      role: "menuitemcheckbox",
+                      "aria-checked": checked,
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        this.onFilterChange(option.name, !checked);
+                      },
+                    },
+                    h("input", {type: "checkbox", checked, readOnly: true, "aria-hidden": "true"}),
+                    option.label.trim()
+                  )
+                );
+              })
+            )
+          )
+        ),
       }),
       h(
         "div",
@@ -4505,12 +4595,13 @@ class AllDataSearch extends React.PureComponent {
   }
   render() {
     let {queryString, matchingResults, recentItems, searchLoading} = this.state;
-    let {placeholderText, resultRender, sfHost} = this.props;
+    let {placeholderText, resultRender, sfHost, rightIcon} = this.props;
     return h(
       "div",
       {
         className:
-          "input-with-dropdown slds-form-element__control slds-grow slds-input-has-icon slds-input-has-icon_left-right",
+          "input-with-dropdown slds-form-element__control slds-grow slds-input-has-icon slds-input-has-icon_left-right"
+          + (rightIcon ? " sfir-has-right-icon" : ""),
       },
       h("input", {
         className: "slds-input sfir-font-size_11px",
@@ -4561,7 +4652,12 @@ class AllDataSearch extends React.PureComponent {
               d: "M496 453L362 320a189 189 0 10-340-92 190 190 0 00298 135l133 133a14 14 0 0021 0l21-21a17 17 0 001-22zM210 338a129 129 0 11130-130 129 129 0 01-130 130z",
             })
           )
-        )
+        ),
+      rightIcon && h(
+        "div",
+        {className: "slds-input__icon slds-input__icon_right sfir-input-right-icon"},
+        rightIcon
+      )
     );
   }
 }

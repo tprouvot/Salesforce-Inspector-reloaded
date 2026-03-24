@@ -107,6 +107,13 @@ function initLinks({sfHost}) {
       setupLinks.push(link);
     });
   }
+  //add global custom links (shared across every org) to setupLink
+  if (localStorage.getItem(Constants.GLOBAL_LINKS_KEY)) {
+    let globalLinks = JSON.parse(localStorage.getItem(Constants.GLOBAL_LINKS_KEY));
+    globalLinks.forEach((link) => {
+      setupLinks.push(link);
+    });
+  }
 }
 
 class App extends React.PureComponent {
@@ -569,7 +576,7 @@ class App extends React.PureComponent {
             ),
             h("div", {className: "slds-col slds-size_1-of-1 slds-p-horizontal_xx-small  slds-m-bottom_xx-small"},
               h("a", {ref: "dependenciesExplorerBtn", href: `dependencies-explorer.html?${hostArg}`, target: linkTarget, className: "page-button slds-button slds-button_neutral"},
-                h("span", {}, "Depen", h("u", {}, "c"), "encies Explorer")
+                h("span", {}, "Dependen", h("u", {}, "c"), "ies Explorer")
               )
             )
           ),
@@ -1323,27 +1330,45 @@ class AllDataBoxUsers extends React.PureComponent {
       userSearchFields,
       excludeInactiveUsersFromSearch,
       excludePortalUsersFromSearch,
+      filterDropdownOpen: false,
     };
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
+    this.onFilterToggle = this.onFilterToggle.bind(this);
+    this.onFilterChange = this.onFilterChange.bind(this);
+    this.documentClickHandler = null;
+  }
+
+  onFilterToggle() {
+    this.setState(state => ({filterDropdownOpen: !state.filterDropdownOpen}));
+  }
+
+  onFilterChange(filterName, checked) {
+    const {sfHost} = this.props;
+    const option = Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.find(o => o.name === filterName);
+    if (!option) return;
+    const newState = {[option.stateKey]: checked};
+    this.setState(newState, () => {
+      const merged = Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => ({
+        name: o.name,
+        label: o.label,
+        checked: this.state[o.stateKey],
+      }));
+      localStorage.setItem(sfHost + Constants.USER_SEARCH_EXCLUSIONS_KEY, JSON.stringify(merged));
+      const query = this.refs.allDataSearch?.state?.queryString ?? "";
+      this.refs.allDataSearch?.getMatchesDelayed?.(query);
+    });
   }
 
   getUserSearchExclusionsFromLocalStorage() {
-    // Try to read from new MultiCheckboxButtonGroup format first
-    const userSearchExclusions = localStorage.getItem(this.props.sfHost + "_userSearchExclusions");
-    const defaultExclusions = {
-      excludePortalUsersFromSearch: false,
-      excludeInactiveUsersFromSearch: false
-    };
+    const userSearchExclusions = localStorage.getItem(this.props.sfHost + Constants.USER_SEARCH_EXCLUSIONS_KEY);
+    const defaultExclusions = Object.fromEntries(Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => [o.stateKey, false]));
     if (!userSearchExclusions) {
       return defaultExclusions;
     }
     try {
       const parsed = JSON.parse(userSearchExclusions);
-      return {
-        excludePortalUsersFromSearch: parsed.find(cb => cb.name === "portal")?.checked || false,
-        excludeInactiveUsersFromSearch: parsed.find(cb => cb.name === "inactive")?.checked || false
-      };
+      return Object.fromEntries(Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(o => [o.stateKey, parsed.find(cb => cb.name === o.name)?.checked || false]));
     } catch (e) {
       return defaultExclusions;
     }
@@ -1355,9 +1380,30 @@ class AllDataBoxUsers extends React.PureComponent {
     this.refs.allDataSearch.refs.showAllDataInp.focus();
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps, prevState) {
     if (prevProps.contextUserId !== this.props.contextUserId) {
       this.onDataSelect({Id: this.props.contextUserId});
+    }
+    if (this.state.filterDropdownOpen && !prevState.filterDropdownOpen) {
+      this.documentClickHandler = (e) => {
+        const filterEl = this.refs.filterDropdownRef;
+        if (filterEl && !filterEl.contains(e.target)) {
+          this.setState({filterDropdownOpen: false});
+          document.removeEventListener("mousedown", this.documentClickHandler);
+          this.documentClickHandler = null;
+        }
+      };
+      setTimeout(() => document.addEventListener("mousedown", this.documentClickHandler), 0);
+    } else if (!this.state.filterDropdownOpen && prevState.filterDropdownOpen && this.documentClickHandler) {
+      document.removeEventListener("mousedown", this.documentClickHandler);
+      this.documentClickHandler = null;
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.documentClickHandler) {
+      document.removeEventListener("mousedown", this.documentClickHandler);
+      this.documentClickHandler = null;
     }
   }
 
@@ -1556,7 +1602,7 @@ class AllDataBoxUsers extends React.PureComponent {
   }
 
   render() {
-    let {selectedUser} = this.state;
+    let {selectedUser, filterDropdownOpen, excludePortalUsersFromSearch, excludeInactiveUsersFromSearch} = this.state;
     let {sfHost, linkTarget, contextOrgId, contextUserId, contextPath}
       = this.props;
 
@@ -1573,6 +1619,57 @@ class AllDataBoxUsers extends React.PureComponent {
         inputSearchDelay: 400,
         placeholderText: "Name, username, email or alias",
         resultRender: this.resultRender,
+        rightIcon: h(
+          "div",
+          {
+            ref: "filterDropdownRef",
+            className: "slds-dropdown-trigger slds-dropdown-trigger_click" + (filterDropdownOpen ? " slds-is-open" : ""),
+          },
+          h(
+            "button",
+            {
+              type: "button",
+              className: "sfir-input-filter-btn",
+              title: "Search filters",
+              "aria-haspopup": "true",
+              "aria-expanded": filterDropdownOpen,
+              onClick: this.onFilterToggle,
+            },
+            h(
+              "svg",
+              {className: "sfir-input-filter-icon slds-icon-text-default", "aria-hidden": "true", viewBox: "0 0 520 520"},
+              h("use", {xlinkHref: "symbols.svg#filterList"})
+            )
+          ),
+          filterDropdownOpen && h(
+            "div",
+            {className: "slds-dropdown slds-dropdown_right sfir-user-filter-dropdown"},
+            h("div", {className: "slds-dropdown__header slds-p-horizontal_small slds-p-vertical_x-small slds-text-body_small slds-text-color_weak"}, "Exclude users from search"),
+            h("ul", {className: "slds-dropdown__list", role: "menu"},
+              Constants.USER_SEARCH_EXCLUSIONS_CHECKBOXES.map(option => {
+                const checked = option.stateKey === "excludePortalUsersFromSearch" ? excludePortalUsersFromSearch : excludeInactiveUsersFromSearch;
+                return h(
+                  "li",
+                  {key: option.name, className: "slds-dropdown__item", role: "presentation"},
+                  h(
+                    "div",
+                    {
+                      className: "sfir-filter-checkbox-item" + (checked ? " selected" : ""),
+                      role: "menuitemcheckbox",
+                      "aria-checked": checked,
+                      onClick: (e) => {
+                        e.stopPropagation();
+                        this.onFilterChange(option.name, !checked);
+                      },
+                    },
+                    h("input", {type: "checkbox", checked, readOnly: true, "aria-hidden": "true"}),
+                    option.label.trim()
+                  )
+                );
+              })
+            )
+          )
+        ),
       }),
       h(
         "div",
@@ -1622,7 +1719,7 @@ class AllDataBoxSObject extends React.PureComponent {
 
   componentDidUpdate(prevProps) {
     let {contextRecordId, sobjectsLoading, contextSobject} = this.props;
-    if (prevProps.contextRecordId !== contextRecordId) {
+    if (prevProps.contextRecordId !== contextRecordId || prevProps.contextSobject !== contextSobject) {
       this.updateSelection(contextRecordId, contextSobject);
     }
     if (prevProps.sobjectsLoading !== sobjectsLoading && !sobjectsLoading) {
@@ -2288,10 +2385,85 @@ class AllDataBoxShortcut extends React.PureComponent {
     this.getMatches = this.getMatches.bind(this);
     this.onDataSelect = this.onDataSelect.bind(this);
     this.onAddShortcut = this.onAddShortcut.bind(this);
+    this.resultRender = this.resultRender.bind(this);
   }
 
   componentDidMount() {
     this.refs.allDataSearch.refs.showAllDataInp.focus();
+  }
+
+  /**
+   * Parse Shortcut tab query prefixes:
+   * - "/term" → setup links only
+   * - "!term" → all metadata types
+   * - "!flow term" / "!profile term" / "!class term" / "!perm term" → one metadata type
+   * - "term" → setup links + metadata (default)
+   */
+  parseShortcutSearch(shortcutSearch) {
+    const METADATA_TYPE_ALIASES = {
+      flow: "flows",
+      profile: "profiles",
+      class: "classes",
+      perm: "permissionSets"
+    };
+    const ALL_METADATA_TYPES = [
+      "flows",
+      "profiles",
+      "permissionSets",
+      "classes",
+    ];
+
+    if (shortcutSearch.startsWith("/")) {
+      return {
+        includeLinks: true,
+        includeMetadata: false,
+        metadataTypes: [],
+        query: shortcutSearch.slice(1).trim(),
+      };
+    }
+
+    if (shortcutSearch.startsWith("!")) {
+      const rest = shortcutSearch.slice(1).trim();
+      const typeMatch = rest.match(/^([a-zA-Z]+)\s+(.*)$/);
+      if (typeMatch) {
+        const alias = METADATA_TYPE_ALIASES[typeMatch[1].toLowerCase()];
+        if (alias) {
+          return {
+            includeLinks: false,
+            includeMetadata: true,
+            metadataTypes: [alias],
+            query: typeMatch[2].trim(),
+            forceMetadata: true,
+          };
+        }
+      }
+      const singleType = METADATA_TYPE_ALIASES[rest.toLowerCase()];
+      if (singleType) {
+        // "!profile" with no search term yet
+        return {
+          includeLinks: false,
+          includeMetadata: true,
+          metadataTypes: [singleType],
+          query: "",
+          forceMetadata: true,
+        };
+      }
+      return {
+        includeLinks: false,
+        includeMetadata: true,
+        metadataTypes: ALL_METADATA_TYPES,
+        query: rest,
+        forceMetadata: true,
+      };
+    }
+
+    return {
+      includeLinks: true,
+      includeMetadata: true,
+      metadataTypes: null, // use options
+      query: shortcutSearch,
+      forceMetadata: false,
+    };
   }
 
   async getMatches(shortcutSearch) {
@@ -2300,19 +2472,33 @@ class AllDataBoxShortcut extends React.PureComponent {
       return [];
     }
     try {
-      setIsLoading(true);
       shortcutSearch = shortcutSearch.trim();
+      const {
+        includeLinks,
+        includeMetadata,
+        metadataTypes,
+        query,
+        forceMetadata,
+      } = this.parseShortcutSearch(shortcutSearch);
 
-      //search for shortcuts
-      let result = setupLinks.filter((item) =>
-        item.label.toLowerCase().includes(shortcutSearch.toLowerCase())
-      );
-      result.forEach((element) => {
-        element.detail = element.section;
-        element.name = element.link;
-        element.Id = element.name;
-        element.isSetupLink = true;
-      });
+      if (!query) {
+        return [];
+      }
+
+      let result = [];
+
+      //search for setup / custom shortcuts
+      if (includeLinks) {
+        result = setupLinks.filter((item) =>
+          item.label.toLowerCase().includes(query.toLowerCase())
+        );
+        result.forEach((element) => {
+          element.detail = element.section;
+          element.name = element.link;
+          element.Id = element.name;
+          element.isSetupLink = true;
+        });
+      }
 
       let metadataShortcutSearchOptions = localStorage.getItem(
         "metadataShortcutSearchOptions"
@@ -2329,24 +2515,31 @@ class AllDataBoxShortcut extends React.PureComponent {
           != undefined;
       }
 
-      //search for metadata if user did not disabled it (min 2 chars to avoid heavy queries)
-      if (metadataShortcutSearch && shortcutSearch.length >= 2) {
+      // Explicit ! prefix always searches metadata; otherwise respect options
+      const canSearchMetadata
+        = includeMetadata
+        && query.length >= 2
+        && (forceMetadata || metadataShortcutSearch);
+
+      //search for metadata if enabled (min 2 chars to avoid heavy queries)
+      if (canSearchMetadata) {
+        setIsLoading(true);
         const queries = {
           flows:
             "SELECT DurableId, LatestVersionId, ApiName, Label, ProcessType FROM FlowDefinitionView WHERE Label LIKE '%"
-            + shortcutSearch
+            + query
             + "%' LIMIT 15",
           profiles:
             "SELECT Id, Name, UserLicense.Name FROM Profile WHERE Name LIKE '%"
-            + shortcutSearch
+            + query
             + "%' LIMIT 15",
           permissionSets:
             "SELECT Id, Name, Label, Type, LicenseId, License.Name, PermissionSetGroupId FROM PermissionSet WHERE Label LIKE '%"
-            + shortcutSearch
+            + query
             + "%' LIMIT 15",
           classes:
             "SELECT Id, Name, NamespacePrefix, ApiVersion, Status, LengthWithoutComments FROM ApexClass WHERE Name LIKE '%"
-            + shortcutSearch
+            + query
             + "%' LIMIT 20",
         };
         // If metadataShortcutSearchOptions is null, assume all options are checked
@@ -2359,89 +2552,99 @@ class AllDataBoxShortcut extends React.PureComponent {
         const effectiveOptions
           = metadataShortcutSearchOptions || defaultOptions;
 
-        const compositeRequest = effectiveOptions
-          .filter((setting) => setting.checked && queries[setting.name])
-          .map((setting) => ({
+        let typesToQuery;
+        if (metadataTypes) {
+          // Prefix selected specific types (or all for bare "!")
+          typesToQuery = metadataTypes.filter((name) => queries[name]);
+        } else {
+          typesToQuery = effectiveOptions
+            .filter((setting) => setting.checked && queries[setting.name])
+            .map((setting) => setting.name);
+        }
+
+        if (typesToQuery.length > 0) {
+          const compositeRequest = typesToQuery.map((name) => ({
             method: "GET",
             url:
               "/services/data/v"
               + apiVersion
               + "/query/?q="
-              + encodeURIComponent(queries[setting.name]),
-            referenceId: setting.name + "Select",
+              + encodeURIComponent(queries[name]),
+            referenceId: name + "Select",
           }));
 
-        const searchResult = await sfConn.rest(
-          "/services/data/v" + apiVersion + "/composite",
-          {method: "POST", body: {compositeRequest}}
-        );
-        let results = searchResult.compositeResponse.filter(
-          (elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0
-        );
+          const searchResult = await sfConn.rest(
+            "/services/data/v" + apiVersion + "/composite",
+            {method: "POST", body: {compositeRequest}}
+          );
+          let results = searchResult.compositeResponse.filter(
+            (elm) => elm.httpStatusCode == 200 && elm.body.records.length > 0
+          );
 
-        let enablePermSetSummary
-          = localStorage.getItem("enablePermSetSummary") === "true";
+          let enablePermSetSummary
+            = localStorage.getItem("enablePermSetSummary") === "true";
 
-        results.forEach((element) => {
-          element.body.records.forEach((rec) => {
-            if (rec.attributes.type === "FlowDefinitionView") {
-              rec.link
-                = "/builder_platform_interaction/flowBuilder.app?flowDefId="
-                + rec.DurableId
-                + "&flowId="
-                + rec.LatestVersionId;
-              rec.label = rec.Label;
-              rec.name = rec.ApiName;
-              rec.detail = rec.attributes.type + " • " + rec.ProcessType;
-            } else if (rec.attributes.type === "Profile") {
-              rec.link
-                = "/lightning/setup/EnhancedProfiles/page?address=%2F" + rec.Id;
-              rec.label = rec.Name;
-              rec.name = rec.Id;
-              rec.detail = rec.attributes.type + " • " + rec.UserLicense.Name;
-            } else if (rec.attributes.type === "PermissionSet") {
-              rec.label = rec.Label;
-              rec.name = rec.Name;
-              rec.detail = rec.attributes.type + " • " + rec.Type;
-              rec.detail
-                += rec.License?.Name != null ? " • " + rec.License?.Name : "";
+          results.forEach((element) => {
+            element.body.records.forEach((rec) => {
+              if (rec.attributes.type === "FlowDefinitionView") {
+                rec.link
+                  = "/builder_platform_interaction/flowBuilder.app?flowDefId="
+                  + rec.DurableId
+                  + "&flowId="
+                  + rec.LatestVersionId;
+                rec.label = rec.Label;
+                rec.name = rec.ApiName;
+                rec.detail = rec.attributes.type + " • " + rec.ProcessType;
+              } else if (rec.attributes.type === "Profile") {
+                rec.link
+                  = "/lightning/setup/EnhancedProfiles/page?address=%2F" + rec.Id;
+                rec.label = rec.Name;
+                rec.name = rec.Id;
+                rec.detail = rec.attributes.type + " • " + rec.UserLicense.Name;
+              } else if (rec.attributes.type === "PermissionSet") {
+                rec.label = rec.Label;
+                rec.name = rec.Name;
+                rec.detail = rec.attributes.type + " • " + rec.Type;
+                rec.detail
+                  += rec.License?.Name != null ? " • " + rec.License?.Name : "";
 
-              const isGroup = rec.Type === "Group";
-              let psetOrGroupId = isGroup ? rec.PermissionSetGroupId : rec.Id;
-              let type = isGroup ? "PermSetGroups" : "PermSets";
-              let endLink = enablePermSetSummary
-                ? psetOrGroupId + "/summary"
-                : "page?address=%2F" + psetOrGroupId;
-              rec.link = "/lightning/setup/" + type + "/" + endLink;
-            } else if (rec.attributes.type === "ApexClass") {
-              rec.link
-                = "/lightning/setup/ApexClasses/page?address=%2F" + rec.Id;
-              rec.label = rec.Name;
-              rec.name = rec.NamespacePrefix
-                ? rec.NamespacePrefix + "__" + rec.Name
-                : rec.Name;
-              rec.detail
-                = rec.attributes.type
-                + " • "
-                + rec.ApiVersion
-                + ".0 • "
-                + rec.Status
-                + (rec.NamespacePrefix
-                  ? ""
-                  : " • Length: " + rec.LengthWithoutComments);
-            }
-            rec.title = rec.name;
-            result.push(rec);
+                const isGroup = rec.Type === "Group";
+                let psetOrGroupId = isGroup ? rec.PermissionSetGroupId : rec.Id;
+                let type = isGroup ? "PermSetGroups" : "PermSets";
+                let endLink = enablePermSetSummary
+                  ? psetOrGroupId + "/summary"
+                  : "page?address=%2F" + psetOrGroupId;
+                rec.link = "/lightning/setup/" + type + "/" + endLink;
+              } else if (rec.attributes.type === "ApexClass") {
+                rec.link
+                  = "/lightning/setup/ApexClasses/page?address=%2F" + rec.Id;
+                rec.label = rec.Name;
+                rec.name = rec.NamespacePrefix
+                  ? rec.NamespacePrefix + "__" + rec.Name
+                  : rec.Name;
+                rec.detail
+                  = rec.attributes.type
+                  + " • "
+                  + rec.ApiVersion
+                  + ".0 • "
+                  + rec.Status
+                  + (rec.NamespacePrefix
+                    ? ""
+                    : " • Length: " + rec.LengthWithoutComments);
+              }
+              rec.title = rec.name;
+              result.push(rec);
+            });
           });
-        });
+        }
       }
       //if no result found, add the global search link
       result.length > 0
         ? result
         : result.push({
-          Id: "global-search-" + shortcutSearch,
-          link: "/one/one.app#" + this.getEncodedGlobalSearch(shortcutSearch),
-          label: '"' + shortcutSearch + '"',
+          Id: "global-search-" + query,
+          link: "/one/one.app#" + this.getEncodedGlobalSearch(query),
+          label: '"' + query + '"',
           detail: "No results found",
           name: "Use Global Search",
         });
@@ -2478,6 +2681,8 @@ class AllDataBoxShortcut extends React.PureComponent {
   }
 
   resultRender(matches, shortcutQuery) {
+    const {query} = this.parseShortcutSearch((shortcutQuery || "").trim());
+    const highlightQuery = query || shortcutQuery || "";
     return matches.map((value, index) => ({
       key: value.Id || "shortcut-" + index,
       value,
@@ -2493,8 +2698,8 @@ class AllDataBoxShortcut extends React.PureComponent {
             text: value.label,
             start: value.label
               .toLowerCase()
-              .indexOf(shortcutQuery.toLowerCase()),
-            length: shortcutQuery.length,
+              .indexOf(highlightQuery.toLowerCase()),
+            length: highlightQuery.length,
           })
         ),
         h(
@@ -2509,8 +2714,8 @@ class AllDataBoxShortcut extends React.PureComponent {
             text: value.name,
             start: value.name
               .toLowerCase()
-              .indexOf(shortcutQuery.toLowerCase()),
-            length: shortcutQuery.length,
+              .indexOf(highlightQuery.toLowerCase()),
+            length: highlightQuery.length,
           })
         ),
       ],
@@ -2533,7 +2738,7 @@ class AllDataBoxShortcut extends React.PureComponent {
         getMatches: this.getMatches,
         onDataSelect: this.onDataSelect,
         inputSearchDelay: 200,
-        placeholderText: "Quick find links, shortcuts",
+        placeholderText: "Search… /links !perm !flow !profile !class",
         resultRender: this.resultRender,
         sfHost,
         icon: "add",
@@ -3992,7 +4197,7 @@ class AllDataSelection extends React.PureComponent {
             "article",
             {
               className:
-                "slds-card slds-card_boundary slds-p-horizontal_small slds-p-vertical_xx-small sfir-background-grey",
+                "slds-card slds-card_boundary slds-p-horizontal_small slds-p-vertical_x-small sfir-background-grey",
             },
             h(
               "div",
@@ -4505,12 +4710,13 @@ class AllDataSearch extends React.PureComponent {
   }
   render() {
     let {queryString, matchingResults, recentItems, searchLoading} = this.state;
-    let {placeholderText, resultRender, sfHost} = this.props;
+    let {placeholderText, resultRender, sfHost, rightIcon} = this.props;
     return h(
       "div",
       {
         className:
-          "input-with-dropdown slds-form-element__control slds-grow slds-input-has-icon slds-input-has-icon_left-right",
+          "input-with-dropdown slds-form-element__control slds-grow slds-input-has-icon "
+          + (rightIcon ? "slds-input-has-icon_left-right sfir-has-right-icon" : "slds-input-has-icon_right"),
       },
       h("input", {
         className: "slds-input sfir-font-size_11px",
@@ -4561,7 +4767,12 @@ class AllDataSearch extends React.PureComponent {
               d: "M496 453L362 320a189 189 0 10-340-92 190 190 0 00298 135l133 133a14 14 0 0021 0l21-21a17 17 0 001-22zM210 338a129 129 0 11130-130 129 129 0 01-130 130z",
             })
           )
-        )
+        ),
+      rightIcon && h(
+        "div",
+        {className: "slds-input__icon slds-input__icon_right sfir-input-right-icon"},
+        rightIcon
+      )
     );
   }
 }
@@ -4845,9 +5056,9 @@ class Autocomplete extends React.PureComponent {
               {
                 key: key || "result-" + (firstRenderedIndex + index),
                 className:
-                  "slds-dropdown__item "
+                  "slds-dropdown__item autocomplete-item "
                   + (selectedIndex == index + firstRenderedIndex
-                    ? "selected-old"
+                    ? "selected"
                     : ""),
                 onClick: (e) => this.onResultClick(e, value),
                 onMouseEnter: () =>
@@ -4987,9 +5198,15 @@ function sfLocaleKeyToCountryCode(localeKey) {
     return "";
   }
   const splitted = localeKey.split("_");
-  return splitted[
+  const code = splitted[
     splitted.length > 1 && !localeKey.includes("_LATN_") ? 1 : 0
   ].toLowerCase();
+  // Languages without their own ISO 3166 country code: Catalan (ca) and Basque (eu), added in Salesforce Summer '26
+  const regionalFlags = {ca: "catalonia", eu: "basque"};
+  if (splitted.length === 1 && regionalFlags[code]) {
+    return regionalFlags[code];
+  }
+  return code;
 }
 
 window.getRecordId = getRecordId; // for unit tests

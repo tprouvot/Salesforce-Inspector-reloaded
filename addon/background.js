@@ -81,7 +81,7 @@ chrome.commands?.onCommand.addListener((command) => {
         break;
     }
     chrome.tabs.create({
-      url: `https:///${sfHost}${link}`
+      url: `https://${sfHost}${link}`
     });
 
   } else if (command.startsWith("open-")){

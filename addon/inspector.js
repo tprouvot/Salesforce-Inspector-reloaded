@@ -117,10 +117,34 @@ export let sfConn = {
     return tokenData.access_token;
   },
 
+  async retrySessionFromConnectedAppToken() {
+    const generatedToken = localStorage.getItem(this.instanceHostname + Constants.ACCESS_TOKEN);
+    if (generatedToken && generatedToken !== this.sessionId) {
+      this.sessionId = generatedToken;
+      return true;
+    }
+    return false;
+  },
+
+  async retrySessionFromCookie() {
+    let message = await new Promise(resolve =>
+      chrome.runtime.sendMessage({message: "getSession", sfHost: this.instanceHostname}, resolve));
+    if (message && message.key && message.key !== this.sessionId) {
+      this.instanceHostname = getMyDomain(message.hostname);
+      this.sessionId = message.key;
+      return true;
+    }
+    return false;
+  },
+
   async rest(url, {logErrors = true, method = "GET", api = "normal", body = undefined, bodyType = "json", responseType = "json", headers = {}, progressHandler = null, useCache = true} = {}, rawResponse) {
     if (!this.instanceHostname) {
       throw new Error("Instance Hostname not found");
     }
+
+    const requestUrl = url;
+    const requestOptions = {logErrors, method, api, body, bodyType, responseType, headers, progressHandler, useCache};
+    let requestBody = body;
 
     // Track API call start time for statistics
     const startTime = performance.now();
@@ -154,9 +178,9 @@ export let sfConn = {
       xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
     }
 
-    if (body !== undefined) {
+    if (requestBody !== undefined) {
       if (bodyType == "json") {
-        body = JSON.stringify(body);
+        requestBody = JSON.stringify(requestBody);
       } else if (bodyType == "raw") {
         // Do nothing
       } else {
@@ -188,7 +212,7 @@ export let sfConn = {
           resolve();
         }
       };
-      xhr.send(body);
+      xhr.send(requestBody);
     });
 
     // Calculate duration and track statistics
@@ -213,21 +237,20 @@ export let sfConn = {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
       errorMessage = `401 Unauthorized: ${error}`;
 
-      // Try to refresh the session from the browser cookie before giving up
+      // Retry once with a fresher connected app token or Salesforce session cookie.
       if (!this._sessionRetried) {
         this._sessionRetried = true;
         try {
-          let message = await new Promise(resolve =>
-            chrome.runtime.sendMessage({message: "getSession", sfHost: this.instanceHostname}, resolve));
-          if (message && message.key && message.key !== this.sessionId) {
-            this.sessionId = message.key;
-            this._sessionRetried = false;
-            return this.rest(url, {method, api, body, bodyType, headers, progressHandler, logErrors, rawResponse, responseType});
+          const hasFreshSession = await this.retrySessionFromConnectedAppToken()
+            || await this.retrySessionFromCookie();
+          if (hasFreshSession) {
+            return await this.rest(requestUrl, requestOptions, rawResponse);
           }
-        } catch (e) {
+        } catch {
           // ignore retry errors
+        } finally {
+          this._sessionRetried = false;
         }
-        this._sessionRetried = false;
       }
 
       //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured

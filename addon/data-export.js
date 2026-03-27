@@ -1,6 +1,359 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
+import {
+  findMatchingParenthesis,
+  getCursorContext,
+  parseSoqlQuery,
+  protectStringsAndComments,
+  protectSubqueries,
+  PLACEHOLDER_REGEX,
+  removeComments
+} from "./soql-parser.js";
+
+/**
+ * Returns autocomplete results for a describe status (loading/loadfailed/notfound).
+ * @param {string} status - describeStatus
+ * @param {{sobjectName?: string, loadingTitle: string, loadfailedTitle: string, notfoundTitle?: string, defaultTitle?: string}} options
+ * @returns {{autocompleteResults: object, setRetry?: boolean}|null} Object to set on vm, or null if not handled
+ */
+function getAutocompleteForDescribeStatus(status, options) {
+  const {sobjectName = "", loadingTitle, loadfailedTitle, notfoundTitle, defaultTitle} = options;
+  const unexpectedTitle = defaultTitle || "Unexpected error: " + status;
+  switch (status) {
+    case "loading":
+      return {autocompleteResults: {sobjectName, title: loadingTitle, results: []}};
+    case "loadfailed":
+      return {autocompleteResults: {sobjectName, title: loadfailedTitle, results: [{value: "Retry", title: "Retry"}]}, setRetry: true};
+    case "notfound":
+      if (notfoundTitle) return {autocompleteResults: {sobjectName, title: notfoundTitle, results: []}};
+      break;
+    default:
+      return {autocompleteResults: {sobjectName, title: unexpectedTitle, results: []}};
+  }
+  return {autocompleteResults: {sobjectName, title: unexpectedTitle, results: []}};
+}
+
+/**
+ * Builds autocomplete results from child relationships.
+ * @param {Array} childRels - childRelationships from sobject describe
+ * @param {string} searchTerm - filter by relationship name or childSObject
+ * @param {{sobjectName?: string, title: string}} options
+ * @param {function} resultsSort
+ * @returns {{sobjectName: string, title: string, results: Array}}
+ */
+function buildChildRelationshipAutocompleteResults(childRels, searchTerm, options, resultsSort) {
+  const {sobjectName = "", title} = options;
+  const searchTermLower = searchTerm.toLowerCase();
+  const filtered = (childRels || []).filter(cr => cr.relationshipName &&
+    (cr.relationshipName.toLowerCase().includes(searchTermLower) ||
+      (cr.childSObject && cr.childSObject.toLowerCase().includes(searchTermLower))));
+  return {
+    sobjectName,
+    title,
+    results: filtered.map(cr => ({
+      value: cr.relationshipName,
+      title: cr.childSObject ? cr.relationshipName + " → " + cr.childSObject + (cr.field ? " (" + cr.field + ")" : "") : cr.relationshipName,
+      suffix: " ",
+      rank: 1,
+      autocompleteType: "childRelationship",
+      dataType: ""
+    })).sort(resultsSort)
+  };
+}
+
+/**
+ * Gets the pixel coordinates of the caret in a textarea (viewport coordinates).
+ * @param {HTMLTextAreaElement} textarea - The textarea element
+ * @param {number} pos - The character position (selectionStart)
+ * @returns {{top: number, left: number} | null} Viewport coordinates of caret, or null if unavailable
+ */
+function getCaretCoordinates(textarea, pos) {
+  if (!textarea || pos < 0) return null;
+  const style = getComputedStyle(textarea);
+  const textareaRect = textarea.getBoundingClientRect();
+  const div = document.createElement("div");
+  div.style.cssText = [
+    "position: fixed",
+    "visibility: hidden",
+    "white-space: pre-wrap",
+    "word-wrap: break-word",
+    "overflow: hidden",
+    "height: auto",
+    "min-height: 0",
+    "width: " + textarea.offsetWidth + "px",
+    "font: " + style.font,
+    "padding: " + style.padding,
+    "box-sizing: " + style.boxSizing,
+    "line-height: " + style.lineHeight,
+    "letter-spacing: " + style.letterSpacing,
+    "tab-size: " + (style.tabSize || "4"),
+    "top: " + (textareaRect.top - textarea.scrollTop) + "px",
+    "left: " + (textareaRect.left - textarea.scrollLeft) + "px"
+  ].join("; ");
+  document.body.appendChild(div);
+
+  const text = textarea.value.substring(0, pos);
+  const span = document.createElement("span");
+  span.textContent = "\u200b";
+  div.textContent = text;
+  div.appendChild(span);
+
+  const spanRect = span.getBoundingClientRect();
+  document.body.removeChild(div);
+
+  return { top: spanRect.top, left: spanRect.left };
+}
+
+/** Compiled once; used by highlightQueryKeywords */
+const KEYWORDS_REGEX = /\b(SELECT|FROM|WHERE|AND|OR|NOT|IN|LIKE|ORDER\s+BY|GROUP\s+BY|HAVING|LIMIT|OFFSET|ASC|DESC|NULLS\s+FIRST|NULLS\s+LAST|TRUE|FALSE|FIND|RETURNING|IN\s+Name\s+Fields|uiapi|query|edges|node)(?=[\s\r\n]|$)/gi;
+
+/**
+ * Wraps parentheses at the given positions with a highlight span.
+ * @param {string} html - HTML string (from highlightQueryKeywords)
+ * @param {number} cursorParenPos - Position of parenthesis cursor is adjacent to
+ * @param {number} matchPos - Position of matching parenthesis
+ * @returns {string} HTML with paren-match spans
+ */
+function wrapParensAtPositions(html, cursorParenPos, matchPos) {
+  if (cursorParenPos < 0 && matchPos < 0) return html;
+  let logicalPos = 0;
+  let result = "";
+  let i = 0;
+  let inTag = false;
+  while (i < html.length) {
+    if (html[i] === "<") {
+      inTag = true;
+      result += html[i];
+      i++;
+      continue;
+    }
+    if (inTag) {
+      result += html[i];
+      if (html[i] === ">") inTag = false;
+      i++;
+      continue;
+    }
+    const char = html[i];
+    if ((logicalPos === cursorParenPos || logicalPos === matchPos) && (char === "(" || char === ")")) {
+      result += `<span class="paren-match">${char}</span>`;
+    } else {
+      result += char;
+    }
+    logicalPos++;
+    i++;
+  }
+  return result;
+}
+
+/**
+ * Highlights SOQL/SQL/SOSL/GraphQL keywords and comments in query text for display in the overlay.
+ * Escapes HTML and wraps keywords/comments in spans with CSS classes.
+ * Uses soql-parser to protect strings and comments so they are not modified.
+ * Highlights matching parentheses when cursor is adjacent to one.
+ * @param {string} query - The query text
+ * @param {number} [cursorParenPos=-1] - Position of parenthesis cursor is adjacent to
+ * @param {number} [matchPos=-1] - Position of matching parenthesis
+ */
+function highlightQueryKeywords(query, cursorParenPos = -1, matchPos = -1) {
+  if (!query) return "";
+
+  const {protected: protected_, stringPlaceholders, commentPlaceholders} = protectStringsAndComments(query);
+
+  KEYWORDS_REGEX.lastIndex = 0;
+  let result = protected_.replace(KEYWORDS_REGEX, "<span class=\"soql-keyword\">$1</span>");
+
+  PLACEHOLDER_REGEX.lastIndex = 0;
+  result = result.replace(PLACEHOLDER_REGEX, (_, type, i) => {
+    const idx = parseInt(i, 10);
+    if (type === "COMMENT") {
+      let commentContent = commentPlaceholders[idx];
+      PLACEHOLDER_REGEX.lastIndex = 0;
+      commentContent = commentContent.replace(PLACEHOLDER_REGEX, (__, strType, strI) =>
+        strType === "STR" ? stringPlaceholders[parseInt(strI, 10)] : __
+      );
+      return `<span class="soql-comment">${commentContent}</span>`;
+    }
+    if (type === "STR") {
+      return `<span class="soql-param">${stringPlaceholders[idx]}</span>`;
+    }
+    return "";
+  });
+
+  result = wrapParensAtPositions(result, cursorParenPos, matchPos);
+  return result;
+}
+
+/**
+ * Expands lines by splitting on AND/OR at depth 0. Used after initial clause split.
+ */
+function splitOnTopLevelAndOrForLines(text) {
+  const initialLines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  const lines = [];
+  for (const line of initialLines) {
+    const parts = splitTopLevelAndOr(line);
+    if (parts.length <= 1) {
+      lines.push(line);
+    } else {
+      lines.push(parts[0]);
+      for (let i = 2; i < parts.length; i += 2) {
+        lines.push(parts[i - 1] + " " + parts[i]);
+      }
+    }
+  }
+  return lines;
+}
+
+/**
+ * Splits text on AND/OR at top-level (outside parentheses and strings).
+ * Returns array of [part, "AND"|"OR", part, ...].
+ */
+function splitTopLevelAndOr(text) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  let inString = false;
+  const re = /\b(AND|OR)\b/gi;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    for (let i = start; i < m.index; i++) {
+      const c = text[i];
+      if (c === "'" && (i === 0 || text[i - 1] !== "\\")) inString = !inString;
+      if (!inString) {
+        if (c === "(") depth++;
+        else if (c === ")") depth--;
+      }
+    }
+    if (depth === 0 && !inString) {
+      parts.push(text.slice(start, m.index).trim(), m[1].toUpperCase());
+      start = m.index + m[0].length;
+    }
+  }
+  parts.push(text.slice(start).trim());
+  return parts;
+}
+
+/**
+ * Formats parenthesized content: splits on top-level AND/OR and puts each on its own line.
+ * Returns content with newlines but no leading indent (caller adds indent when embedding).
+ */
+function formatParenthetical(text, baseIndent) {
+  const parts = splitTopLevelAndOr(text);
+  if (parts.length <= 1) return text;
+  const innerIndent = baseIndent + "  ";
+  const lines = [];
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      const part = parts[i];
+      const formatted = formatParenGroups(part, innerIndent);
+      lines.push((i === 0 ? "" : parts[i - 1] + " ") + formatted);
+    }
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Recursively formats (...) groups in text. Replaces (inner) with (\n  formatted_inner\n).
+ */
+function formatParenGroups(text, baseIndent) {
+  let result = "";
+  let i = 0;
+  while (i < text.length) {
+    const open = text.indexOf("(", i);
+    if (open < 0) {
+      result += text.slice(i);
+      break;
+    }
+    result += text.slice(i, open);
+    let depth = 1;
+    let j = open + 1;
+    let inStr = false;
+    while (j < text.length && depth > 0) {
+      const c = text[j];
+      if (c === "'" && (j === 0 || text[j - 1] !== "\\")) inStr = !inStr;
+      if (!inStr) {
+        if (c === "(") depth++;
+        else if (c === ")") depth--;
+      }
+      j++;
+    }
+    const inner = text.slice(open + 1, j - 1).trim();
+    const formatted = formatParenthetical(inner, baseIndent);
+    const hasNewlines = formatted.includes("\n");
+    result += hasNewlines
+      ? "(\n" + baseIndent + "  " + formatted.replace(/\n/g, "\n" + baseIndent + "  ") + "\n" + baseIndent + ")"
+      : "(" + formatted + ")";
+    i = j;
+  }
+  return result;
+}
+
+/**
+ * Pretty-format SOQL/SQL/SOSL query: normalize whitespace and put major clauses on new lines.
+ * Formats parenthesized groups in WHERE clauses (AND/OR on separate lines).
+ * Preserves strings and comments. Returns original if query looks like GraphQL (starts with {).
+ * @param {string} query - The query text
+ * @returns {string} Formatted query
+ */
+function prettyFormatQuery(query) {
+  if (!query || typeof query !== "string") {
+    return query || "";
+  }
+  //check if the query is empty => remove extra spaces
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return query;
+  }
+  // GraphQL: minimal formatting (just trim/normalize)
+  if (trimmed.startsWith("{")) {
+    try {
+      return JSON.stringify(JSON.parse(trimmed), null, 2);
+    } catch {
+      return query;
+    }
+  }
+
+  const {protected: strCommentProtected, stringPlaceholders, commentPlaceholders} = protectStringsAndComments(trimmed);
+  // Track which comments started on their own line (newline before) so we preserve that in output
+  const commentOnNewLine = commentPlaceholders.map((_, i) => {
+    const placeholder = `\x00COMMENT_${i}\x00`;
+    const idx = strCommentProtected.indexOf(placeholder);
+    return idx >= 0 && (idx === 0 || strCommentProtected[idx - 1] === "\n" || strCommentProtected[idx - 1] === "\r");
+  });
+  const {protected: work, subqueryPlaceholders} = protectSubqueries(strCommentProtected);
+  const normalized = work.replace(/\s+/g, " ").trim();
+  // Split on major clauses; exclude AND/OR/NOT/IN from this pass (they're handled by formatParenGroups with depth awareness)
+  const topLevel = /\b(SELECT|FROM|WHERE|ORDER\s+BY|GROUP\s+BY|HAVING|LIMIT|OFFSET|FIND|RETURNING\s+Name\s+Fields)\b/gi;
+  let result = normalized.replace(topLevel, "\n$1");
+  result = result.replace(/\n+/g, "\n").trim();
+  // Now split AND/OR at depth 0 only (between major clauses)
+  const lines = splitOnTopLevelAndOrForLines(result);
+  const formatted = [];
+  const indentKeywords = /\b(AND|OR)\b/i;
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim();
+    if (!line) continue;
+    const isContinuation = indentKeywords.test(line) && i > 0;
+    const pad = isContinuation ? "  " : "";
+    line = formatParenGroups(line, pad);
+    formatted.push(pad + line);
+  }
+  result = formatted.join("\n");
+  //restore the placeholders
+  subqueryPlaceholders.forEach((s, i) => {
+    result = result.replace(`\x00SUBQUERY_${i}\x00`, s);
+  });
+  commentPlaceholders.forEach((c, i) => {
+    const replacement = commentOnNewLine[i] ? "\n" + c : c;
+    result = result.replace(`\x00COMMENT_${i}\x00`, replacement);
+  });
+  stringPlaceholders.forEach((s, i) => {
+    result = result.replace(`\x00STR_${i}\x00`, s);
+  });
+  return result;
+}
+
 import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -55,6 +408,8 @@ class Model {
     this.savedHistory = createQueryHistory("insextSavedQueryHistory", savedNb ? savedNb : 50);
     this.selectedSavedEntry = null;
     this.expandAutocomplete = false;
+    this.autocompletePopupIndex = -1;
+    this.autocompletePopupDismissed = false;
     this.expandSavedOptions = false;
     this.resultsFilter = "";
     this.displayPerformance = localStorage.getItem("displayQueryPerformance") !== "false"; // default to true
@@ -78,6 +433,10 @@ class Model {
     this.separator = getSeparator();
     this.soqlPrompt = "";
     this.enableQueryTypoFix = localStorage.getItem("enableQueryTypoFix") == "true";
+    this.enableSoqlStyling = localStorage.getItem("enableSoqlStyling") === "true"; // default to false
+    this.enableSoqlComments = localStorage.getItem("enableSoqlComments") === "true"; // default to false
+    this.enableAutocompletePopup = localStorage.getItem("enableDataExportAutocomplete") === "true"; // default to false (option must be enabled)
+    this.includeFormula = localStorage.getItem("includeFormulaFieldsFromExportAutocomplete") !== "false";
 
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
@@ -120,6 +479,9 @@ class Model {
     this.updatedExportedData();
   }
   setQueryMethod(data, query, vm){
+    if (vm.enableSoqlComments) {
+      query = removeComments(query, true);
+    }
     let method;
     let queryParams = "/?q=" + encodeURIComponent(query);
     const baseParams = {progressHandler: vm.exportProgress};
@@ -310,6 +672,19 @@ class Model {
     }
   }
   /**
+   * Schedules autocomplete to run after a short debounce. Use for input/keyboard events.
+   * Call queryAutocompleteHandler directly for immediate execution (e.g. Ctrl+Space).
+   */
+  scheduleQueryAutocomplete() {
+    const DEBOUNCE_MS = 100;
+    if (this._queryAutocompleteDebounce) clearTimeout(this._queryAutocompleteDebounce);
+    this._queryAutocompleteDebounce = setTimeout(() => {
+      this._queryAutocompleteDebounce = null;
+      this.queryAutocompleteHandler();
+      this.didUpdate();
+    }, DEBOUNCE_MS);
+  }
+  /**
    * SOQL query autocomplete handling.
    * Put caret at the end of a word or select some text to autocomplete it.
    * Searches for both label and API name.
@@ -323,6 +698,7 @@ class Model {
    */
   queryAutocompleteHandler(e = {}) {
     let vm = this; // eslint-disable-line consistent-this
+
     let useToolingApi = vm.queryTooling;
     let query = vm.queryInput.value;
     let selStart = vm.queryInput.selectionStart;
@@ -335,6 +711,8 @@ class Model {
       return;
     }
     vm.autocompleteState = newAutocompleteState;
+    vm.autocompletePopupDismissed = false;
+    vm.autocompletePopupIndex = -1;
 
     // Cancel any async operation since its results will no longer be relevant.
     if (vm.autocompleteProgress.abort) {
@@ -367,34 +745,35 @@ class Model {
       ? query.substring(selStart, selEnd)
       : query.substring(0, selStart).match(/[a-zA-Z0-9_]*$/)[0];
     selStart = selEnd - searchTerm.length;
+    const searchTermLower = searchTerm.toLowerCase();
 
     function sortRank({value, title}) {
       let i = 0;
-      if (value.toLowerCase() == searchTerm.toLowerCase()) {
+      if (value.toLowerCase() == searchTermLower) {
         return i;
       }
       i++;
-      if (title.toLowerCase() == searchTerm.toLowerCase()) {
+      if (title.toLowerCase() == searchTermLower) {
         return i;
       }
       i++;
-      if (value.toLowerCase().startsWith(searchTerm.toLowerCase())) {
+      if (value.toLowerCase().startsWith(searchTermLower)) {
         return i;
       }
       i++;
-      if (title.toLowerCase().startsWith(searchTerm.toLowerCase())) {
+      if (title.toLowerCase().startsWith(searchTermLower)) {
         return i;
       }
       i++;
-      if (value.toLowerCase().includes("__" + searchTerm.toLowerCase())) {
+      if (value.toLowerCase().includes("__" + searchTermLower)) {
         return i;
       }
       i++;
-      if (value.toLowerCase().includes("_" + searchTerm.toLowerCase())) {
+      if (value.toLowerCase().includes("_" + searchTermLower)) {
         return i;
       }
       i++;
-      if (title.toLowerCase().includes(" " + searchTerm.toLowerCase())) {
+      if (title.toLowerCase().includes(" " + searchTermLower)) {
         return i;
       }
       i++;
@@ -404,40 +783,57 @@ class Model {
       return sortRank(a) - sortRank(b) || a.rank - b.rank || a.value.localeCompare(b.value);
     }
 
-    // If we are just after the "from" keyword, autocomplete the sobject name
-    if (query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
+    const parsed = parseSoqlQuery(query, selStart);
+    // Do not show autocomplete popup when cursor is inside a string or comment
+    if (parsed.cursorInString || parsed.cursorInComment) {
+      vm.autocompleteResults = { sobjectName: "", title: "", results: [] };
+      return;
+    }
+
+    const ctx = getCursorContext(query, selStart, parsed);
+    const {isInSubquery, parentObjectName, isChildRelationship} = ctx;
+
+    // If we are just after the "from" keyword (or typing the object name after it), autocomplete the sobject name or child relationship names (in subqueries)
+    if (ctx.justAfterFromMatch) {
+      //display child relationship names for the parent object (child relationships are only available for subqueries)
+      if (isInSubquery && parentObjectName && isChildRelationship) {
+        // Suggest child relationship names for the parent object
+        const {sobjectStatus: parentStatus, sobjectDescribe: parentDescribe} = vm.describeInfo.describeSobject(useToolingApi, parentObjectName);
+        if (!parentDescribe) {
+          const statusResult = getAutocompleteForDescribeStatus(parentStatus, {
+            loadingTitle: "Loading " + parentObjectName + " metadata...",
+            loadfailedTitle: "Loading " + parentObjectName + " metadata failed.",
+            notfoundTitle: "Unknown parent object: " + parentObjectName
+          });
+          vm.autocompleteResults = statusResult.autocompleteResults;
+          if (statusResult.setRetry) vm.autocompleteClick = vm.autocompleteReload.bind(vm);
+          return;
+        }
+        vm.autocompleteResults = buildChildRelationshipAutocompleteResults(
+          parentDescribe.childRelationships,
+          searchTerm,
+          {title: "Child relationship suggestions for " + parentObjectName + ":"},
+          resultsSort
+        );
+        return;
+      }
+
+      //display global object suggestions
       let {globalStatus, globalDescribe} = vm.describeInfo.describeGlobal(useToolingApi);
       if (!globalDescribe) {
-        switch (globalStatus) {
-          case "loading":
-            vm.autocompleteResults = {
-              sobjectName: "",
-              title: "Loading metadata...",
-              results: []
-            };
-            return;
-          case "loadfailed":
-            vm.autocompleteResults = {
-              sobjectName: "",
-              title: "Loading metadata failed.",
-              results: [{value: "Retry", title: "Retry"}]
-            };
-            vm.autocompleteClick = vm.autocompleteReload.bind(vm);
-            return;
-          default:
-            vm.autocompleteResults = {
-              sobjectName: "",
-              title: "Unexpected error: " + globalStatus,
-              results: []
-            };
-            return;
-        }
+        const statusResult = getAutocompleteForDescribeStatus(globalStatus, {
+          loadingTitle: "Loading metadata...",
+          loadfailedTitle: "Loading metadata failed."
+        });
+        vm.autocompleteResults = statusResult.autocompleteResults;
+        if (statusResult.setRetry) vm.autocompleteClick = vm.autocompleteReload.bind(vm);
+        return;
       }
       vm.autocompleteResults = {
         sobjectName: "",
         title: "Objects suggestions:",
         results: new Enumerable(globalDescribe.sobjects)
-          .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTerm.toLowerCase()) || sobjectDescribe.label.toLowerCase().includes(searchTerm.toLowerCase()))
+          .filter(sobjectDescribe => sobjectDescribe.name.toLowerCase().includes(searchTermLower) || sobjectDescribe.label.toLowerCase().includes(searchTermLower))
           .map(sobjectDescribe => ({value: sobjectDescribe.name, title: sobjectDescribe.label, suffix: " ", rank: 1, autocompleteType: "object", dataType: ""}))
           .toArray()
           .sort(resultsSort)
@@ -445,75 +841,63 @@ class Model {
       return;
     }
 
-    let sobjectName, isAfterFrom;
-    // Find out what sobject we are querying, by using the word after the "from" keyword.
-    // Assuming no subqueries in the select clause, we should find the correct sobjectName. There should be only one "from" keyword, and strings (which may contain the word "from") are only allowed after the real "from" keyword.
-    let fromKeywordMatch = /(^|\s)from\s+([a-z0-9_]*)/i.exec(query);
-    let findKeywordMatch = /(^|\s)find\s+([a-z0-9_]*)/i.exec(query);
-    let graphKeywordMatch = /(^|\s)uiapi\s+([a-z0-9_]*)/i.exec(query);
-    if (fromKeywordMatch) {
-      sobjectName = fromKeywordMatch[2];
-      isAfterFrom = selStart > fromKeywordMatch.index + 1;
-    } else {
-      // We still want to find the from keyword if the user is typing just before the keyword, and there is no space.
-      fromKeywordMatch = /^from\s+([a-z0-9_]*)/i.exec(query.substring(selEnd));
-      if (fromKeywordMatch) {
-        sobjectName = fromKeywordMatch[1];
-        isAfterFrom = false;
-      } else {
-        let title = findKeywordMatch || graphKeywordMatch ? "" : "\"from\" keyword not found";
-        vm.autocompleteResults = {
-          sobjectName: "",
-          title,
-          results: []
-        };
+    const fromKeywordMatch = /(^|\s)from\s+([a-z0-9_]*)/i.exec(query);
+    const fallbackFrom = /^from\s+([a-z0-9_]*)/i.exec(query.substring(selEnd));
+    const findKeywordMatch = /(^|\s)find\s+([a-z0-9_]*)/i.exec(query);
+    const graphKeywordMatch = /(^|\s)uiapi\s+([a-z0-9_]*)/i.exec(query);
+    if (!fromKeywordMatch && !fallbackFrom) {
+      const title = findKeywordMatch || graphKeywordMatch ? "" : "\"from\" keyword not found";
+      vm.autocompleteResults = {sobjectName: "", title, results: []};
+      return;
+    }
+
+    // We are after the from clause: display fields of the "from" object.
+    const sobjectName = isInSubquery && isChildRelationship && parentObjectName ? parentObjectName : (parsed.from.objectName || this.queryTabs[this.activeTabIndex].name);
+    vm.updateCurrentTabName(sobjectName);
+
+    let fieldsObjectName = ctx.objectName;
+    // Contact→Contacts: replace object name with api name of the linked object rather than the relationship name
+    if (isInSubquery && parentObjectName && isChildRelationship) {
+      //retrieve the describe of the parent object
+      const parentDescribe = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
+      if (parentDescribe?.sobjectDescribe?.childRelationships) {
+        const fieldsObjectNameLower = fieldsObjectName?.toLowerCase();
+        fieldsObjectName = parentDescribe.sobjectDescribe.childRelationships.find(cr =>
+          cr.relationshipName && cr.childSObject && cr.relationshipName.toLowerCase() === fieldsObjectNameLower
+        )?.childSObject || fieldsObjectName;
+      }
+    }
+
+    if (!fieldsObjectName) {
+      vm.autocompleteResults = {sobjectName, title: "Unknown object: " + fieldsObjectName, results: []};
+      return;
+    }
+
+    let {sobjectStatus, sobjectDescribe} = vm.describeInfo.describeSobject(useToolingApi, fieldsObjectName);
+
+    if (!sobjectDescribe) {
+      if (sobjectStatus === "loading" || sobjectStatus === "loadfailed") {
+        const statusResult = getAutocompleteForDescribeStatus(sobjectStatus, {
+          fieldsObjectName,
+          loadingTitle: "Loading " + fieldsObjectName + " metadata...",
+          loadfailedTitle: "Loading " + fieldsObjectName + " metadata failed."
+        });
+        vm.autocompleteResults = statusResult.autocompleteResults;
+        if (statusResult.setRetry) vm.autocompleteClick = vm.autocompleteReload.bind(vm);
         return;
       }
-    }
-    // If we are in a subquery, try to detect that.
-    fromKeywordMatch = /\(\s*select.*\sfrom\s+([a-z0-9_]*)/i.exec(query);
-    if (fromKeywordMatch && fromKeywordMatch.index < selStart) {
-      let subQuery = query.substring(fromKeywordMatch.index, selStart);
-      // Try to detect if the subquery ends before the selection
-      if (subQuery.split(")").length < subQuery.split("(").length) {
-        sobjectName = fromKeywordMatch[1];
-        isAfterFrom = selStart > fromKeywordMatch.index + fromKeywordMatch[0].length;
+      if (sobjectStatus === "notfound") {
+        vm.autocompleteResults = {sobjectName, title: "Unknown object: " + fieldsObjectName, results: []};
+        return;
       }
-    }
-    vm.updateCurrentTabName(sobjectName);
-    let {sobjectStatus, sobjectDescribe} = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
-    if (!sobjectDescribe) {
-      switch (sobjectStatus) {
-        case "loading":
-          vm.autocompleteResults = {
-            sobjectName,
-            title: "Loading " + sobjectName + " metadata...",
-            results: []
-          };
-          return;
-        case "loadfailed":
-          vm.autocompleteResults = {
-            sobjectName,
-            title: "Loading " + sobjectName + " metadata failed.",
-            results: [{value: "Retry", title: "Retry"}]
-          };
-          vm.autocompleteClick = vm.autocompleteReload.bind(vm);
-          return;
-        case "notfound":
-          vm.autocompleteResults = {
-            sobjectName,
-            title: "Unknown object: " + sobjectName,
-            results: []
-          };
-          return;
-        default:
-          vm.autocompleteResults = {
-            sobjectName,
-            title: "Unexpected error for object: " + sobjectName + ": " + sobjectStatus,
-            results: []
-          };
-          return;
-      }
+      const statusResult = getAutocompleteForDescribeStatus(sobjectStatus, {
+        fieldsObjectName,
+        loadingTitle: "",
+        loadfailedTitle: "",
+        defaultTitle: "Unexpected error for object: " + fieldsObjectName + ": " + sobjectStatus
+      });
+      vm.autocompleteResults = statusResult.autocompleteResults;
+      return;
     }
 
     /*
@@ -560,6 +944,8 @@ class Model {
     */
     let contextSobjectDescribes = new Enumerable([sobjectDescribe]);
     let contextPath = query.substring(0, contextEnd).match(/[a-zA-Z0-9_.]*$/)[0];
+    // In SELECT we use comma between fields; in WHERE/ORDER BY/etc. we use space.
+    const isInSelectClause = ctx.isInSelectClause;
     let sobjectStatuses = new Map(); // Keys are error statuses, values are an object name with that status. Only one object name in the value, since we only show one error message.
     if (contextPath) {
       let contextFields = contextPath.split(".");
@@ -772,7 +1158,7 @@ class Model {
           yield {value: "null", title: "null", suffix: " ", rank: 1, autocompleteType: "null", dataType: ""};
         }
       })
-        .filter(res => res.value.toLowerCase().includes(searchTerm.toLowerCase()) || res.title.toLowerCase().includes(searchTerm.toLowerCase()))
+        .filter(res => res.value.toLowerCase().includes(searchTermLower) || res.title.toLowerCase().includes(searchTermLower))
         .toArray()
         .sort(resultsSort);
       vm.autocompleteResults = {
@@ -784,15 +1170,14 @@ class Model {
     } else {
       // Autocomplete field names and functions
       if (ctrlSpace) {
-        let includeFormula = localStorage.getItem("includeFormulaFieldsFromExportAutocomplete") !== "false";
         let ar = contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
-          .filter(field => (field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase())) && (includeFormula || !field.calculated))
+          .filter(field => (field.name.toLowerCase().includes(searchTermLower) || field.label.toLowerCase().includes(searchTermLower)) && (vm.includeFormula || !field.calculated))
           .map(field => contextPath + field.name)
           .toArray();
         if (ar.length > 0) {
           vm.queryInput.focus();
-          vm.queryInput.setRangeText(ar.join(", ") + (isAfterFrom ? " " : ""), selStart - contextPath.length, selEnd, "end");
+          vm.queryInput.setRangeText(ar.join(", ") + (isInSelectClause ? "" : " "), selStart - contextPath.length, selEnd, "end");
           vm.updateCurrentTabQuery(vm.queryInput.value);
         }
         vm.queryAutocompleteHandler();
@@ -803,16 +1188,16 @@ class Model {
         title: contextSobjectDescribes.map(sobjectDescribe => sobjectDescribe.name).toArray().join(", ") + " fields suggestions:",
         results: contextSobjectDescribes
           .flatMap(sobjectDescribe => sobjectDescribe.fields)
-          .filter(field => field.name.toLowerCase().includes(searchTerm.toLowerCase()) || field.label.toLowerCase().includes(searchTerm.toLowerCase()))
+          .filter(field => field.name.toLowerCase().includes(searchTermLower) || field.label.toLowerCase().includes(searchTermLower))
           .flatMap(function* (field) {
-            yield {value: field.name, title: field.label, suffix: isAfterFrom ? " " : ", ", rank: 1, autocompleteType: "fieldName", dataType: field.type};
+            yield {value: field.name, title: field.label, suffix: isInSelectClause ? ", " : "", rank: 1, autocompleteType: "fieldName", dataType: field.type};
             if (field.relationshipName) {
               yield {value: field.relationshipName + ".", title: field.label, suffix: "", rank: 1, autocompleteType: "relationshipName", dataType: ""};
             }
           })
           .concat(
             new Enumerable(["FIELDS(ALL)", "FIELDS(STANDARD)", "FIELDS(CUSTOM)", "AVG", "COUNT", "COUNT_DISTINCT", "MIN", "MAX", "SUM", "CALENDAR_MONTH", "CALENDAR_QUARTER", "CALENDAR_YEAR", "DAY_IN_MONTH", "DAY_IN_WEEK", "DAY_IN_YEAR", "DAY_ONLY", "FISCAL_MONTH", "FISCAL_QUARTER", "FISCAL_YEAR", "HOUR_IN_DAY", "WEEK_IN_MONTH", "WEEK_IN_YEAR", "toLabel", "convertTimezone", "convertCurrency", "FORMAT", "GROUPING"])
-              .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
+              .filter(fn => fn.toLowerCase().startsWith(searchTermLower))
               .map(fn => {
                 if (fn.includes(")")) { //Exception to easily support functions with hardcoded parameter options
                   return {value: fn, title: fn, suffix: "", rank: 2, autocompleteType: "variable", dataType: ""};
@@ -1382,6 +1767,8 @@ class App extends React.Component {
     this.onRemoveAllTabs = this.onRemoveAllTabs.bind(this);
     this.onTabClick = this.onTabClick.bind(this);
     this.onQueryInput = this.onQueryInput.bind(this);
+    this.onQueryScroll = this.onQueryScroll.bind(this);
+    this.onPrettyFormat = this.onPrettyFormat.bind(this);
     this.onTabNameEdit = this.onTabNameEdit.bind(this);
     this.onTabNameSubmit = this.onTabNameSubmit.bind(this);
     this.onTabDragStart = this.onTabDragStart.bind(this);
@@ -1610,8 +1997,89 @@ class App extends React.Component {
   onQueryInput(e) {
     let {model} = this.props;
     model.updateCurrentTabQuery(e.target.value);
-    model.queryAutocompleteHandler();
+    model.scheduleQueryAutocomplete();
     model.didUpdate();
+  }
+
+  onPrettyFormat() {
+    const {model} = this.props;
+    const textarea = this.refs.query;
+    if (!textarea) {
+      return;
+    }
+    const formatted = prettyFormatQuery(textarea.value);
+    textarea.value = formatted;
+    model.updateCurrentTabQuery(formatted);
+    model.queryAutocompleteHandler();
+    model.didUpdate(() => {
+      // Re-apply value and refresh overlay after React render (in case textarea was recreated)
+      const el = this.refs.query;
+      if (el && el.value !== formatted) {
+        el.value = formatted;
+        this._lastHighlightedCacheKey = null;
+        this.updateQueryHighlight();
+      }
+    });
+  }
+
+  onQueryScroll(e) {
+    //ensure that the two text areas (query and queryHighlight) scroll at the same time
+    const mirror = this.refs.queryHighlight;
+    if (mirror) {
+      mirror.scrollTop = e.target.scrollTop;
+      mirror.scrollLeft = e.target.scrollLeft;
+    }
+  }
+
+  updateQueryHighlight() {
+    //no code styling enabled, do nothing
+    if (!this.props.model.enableSoqlStyling) {
+      return;
+    }
+
+    //get the textarea and the code element
+    const textarea = this.refs.query;
+    const codeEl = this.refs.queryHighlight?.querySelector?.(".query-highlight-code");
+    //the html elements are not available yet, do nothing
+    if (!textarea || !codeEl) {
+      return;
+    }
+
+    //get the current query
+    const currentQuery = textarea.value;
+    const cursorPos = textarea.selectionStart;
+    let cursorParenPos = -1;
+    let matchPos = -1;
+    for (const pos of [cursorPos, cursorPos - 1]) {
+      if (pos >= 0 && pos < currentQuery.length) {
+        const m = findMatchingParenthesis(currentQuery, pos);
+        if (m >= 0) {
+          cursorParenPos = pos;
+          matchPos = m; 
+          break; 
+        }
+      }
+    }
+    const cacheKey = currentQuery + "\x00" + cursorParenPos + "\x00" + matchPos;
+    if (this._lastHighlightedCacheKey === cacheKey) {
+      return;
+    }
+    this._lastHighlightedCacheKey = cacheKey;
+
+    codeEl.innerHTML = highlightQueryKeywords(currentQuery, cursorParenPos, matchPos) || "\u00A0";
+
+    // Sync mirror scroll with textarea (e.g. after adding newline that causes overflow, browser may scroll textarea asynchronously)
+    const mirror = this.refs.queryHighlight;
+    if (mirror) {
+      const syncScroll = () => {
+        if (mirror && textarea) {
+          mirror.scrollTop = textarea.scrollTop;
+          mirror.scrollLeft = textarea.scrollLeft;
+        }
+      };
+      syncScroll();
+      requestAnimationFrame(syncScroll);
+    }
   }
 
   onTabNameEdit(e, index) {
@@ -1715,14 +2183,14 @@ class App extends React.Component {
     let queryInput = this.refs.query;
     model.setQueryInput(queryInput);
     model.soqlPrompt = this.refs.prompt;
+    this.updateQueryHighlight();
     //Set the cursor focus on query text area
     if (localStorage.getItem("disableQueryInputAutoFocus") !== "true"){
       queryInput.focus();
     }
 
     function queryAutocompleteEvent() {
-      model.queryAutocompleteHandler();
-      model.didUpdate();
+      model.scheduleQueryAutocomplete();
     }
     queryInput.addEventListener("input", queryAutocompleteEvent);
     queryInput.addEventListener("select", queryAutocompleteEvent);
@@ -1731,6 +2199,15 @@ class App extends React.Component {
     queryInput.addEventListener("keyup", queryAutocompleteEvent);
     queryInput.addEventListener("mouseup", queryAutocompleteEvent);
 
+    // Dismiss autocomplete popup when query input loses focus
+    queryInput.addEventListener("blur", () => {
+      if (model.autocompleteResults.results.length > 0 && !model.autocompletePopupDismissed) {
+        model.autocompletePopupDismissed = true;
+        model.autocompletePopupIndex = -1;
+        model.didUpdate();
+      }
+    });
+
     // We do not want to perform Salesforce API calls for autocomplete on every keystroke, so we only perform these when the user pressed Ctrl+Space
     // Chrome on Linux does not fire keypress when the Ctrl key is down, so we listen for keydown. Might be https://code.google.com/p/chromium/issues/detail?id=13891#c50
     queryInput.addEventListener("keydown", e => {
@@ -1738,6 +2215,30 @@ class App extends React.Component {
         e.preventDefault();
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();
+      } else if (model.enableAutocompletePopup && model.autocompleteResults.results.length > 0 && !model.autocompletePopupDismissed) {
+        const maxIdx = model.autocompleteResults.results.length - 1;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          model.autocompletePopupIndex = Math.min(model.autocompletePopupIndex + 1, maxIdx);
+          model.didUpdate();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          model.autocompletePopupIndex = model.autocompletePopupIndex <= 0 ? maxIdx : model.autocompletePopupIndex - 1;
+          model.didUpdate();
+        } else if (e.key === "Enter" && model.autocompletePopupIndex >= 0) {
+          e.preventDefault();
+          const item = model.autocompleteResults.results[model.autocompletePopupIndex];
+          if (item && model.autocompleteClick) {
+            model.autocompleteClick(item);
+            model.autocompletePopupIndex = -1;
+            model.didUpdate();
+          }
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          model.autocompletePopupDismissed = true;
+          model.autocompletePopupIndex = -1;
+          model.didUpdate();
+        }
       }
     });
     addEventListener("message", e => {
@@ -1782,7 +2283,14 @@ class App extends React.Component {
     resize();
   }
   componentDidUpdate() {
+    this.updateQueryHighlight();
     this.recalculateSize();
+    // Scroll selected autocomplete item into view when using keyboard
+    const popup = this.refs.queryWrapper?.querySelector?.(".autocomplete-popup");
+    const selected = popup?.querySelector?.(".autocomplete-popup-item.selected");
+    if (selected) {
+      selected.scrollIntoView({block: "nearest", behavior: "smooth"});
+    }
   }
   recalculateSize() {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
@@ -1979,12 +2487,70 @@ class App extends React.Component {
               title: "Add new query tab"
             }, "+")
             ),
-            h("textarea", {
-              id: "query",
-              ref: "query",
-              style: {maxHeight: (model.winInnerHeight - 200) + "px"},
-              onChange: this.onQueryInput
-            }),
+            h("div", {className: "query-input-wrapper" + (model.enableSoqlStyling ? " soql-styling-enabled" : " soql-styling-disabled"), ref: "queryWrapper"},
+              model.enableSoqlStyling ? h("pre", {className: "query-highlight-mirror", ref: "queryHighlight", "aria-hidden": "true"},
+                h("code", {className: "query-highlight-code"})
+              ) : null,
+              h("textarea", {
+                id: "query",
+                ref: "query",
+                className: "query-input-with-highlight",
+                style: {maxHeight: (model.winInnerHeight - 200) + "px"},
+                onChange: this.onQueryInput,
+                onScroll: this.onQueryScroll
+              }),
+              model.autocompleteResults.results.length > 0 && !model.autocompletePopupDismissed && model.enableAutocompletePopup ? (() => {
+                const textarea = this.refs.query;
+                const wrapper = this.refs.queryWrapper;
+                let style = { maxHeight: "240px" };
+                if (textarea && wrapper) {
+                  const coords = getCaretCoordinates(textarea, textarea.selectionStart);
+                  if (coords) {
+                    const wrapperRect = wrapper.getBoundingClientRect();
+                    const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 18;
+                    style = {
+                      ...style,
+                      top: (coords.top - wrapperRect.top + lineHeight) + "px",
+                      left: (coords.left - wrapperRect.left) + "px"
+                    };
+                  }
+                }
+                return h("div", {
+                  className: "autocomplete-popup",
+                  role: "listbox",
+                  "aria-label": model.autocompleteResults.title,
+                  style,
+                  onMouseDown: e => e.preventDefault() // Prevent textarea blur when clicking popup so selection works
+                },
+                  model.autocompleteResults.results.map((r, idx) =>
+                    h("div", {
+                      key: r.value,
+                      role: "option",
+                      "aria-selected": idx === model.autocompletePopupIndex,
+                      className: "autocomplete-popup-item" + (idx === model.autocompletePopupIndex ? " selected" : ""),
+                      onClick: e => {
+                        e.preventDefault();
+                        if (model.autocompleteClick) {
+                          model.autocompleteClick(r);
+                          model.autocompletePopupIndex = -1;
+                          model.didUpdate();
+                        }
+                      },
+                      onMouseEnter: () => {
+                        model.autocompletePopupIndex = idx;
+                        model.didUpdate();
+                      }
+                    },
+                      h("span", {className: "autocomplete-popup-icon " + r.autocompleteType + " " + r.dataType},
+                        h("span", {className: "sfir-autocomplete-icon"})
+                      ),
+                      h("span", {className: "autocomplete-popup-label"}, r.value),
+                      r.title && r.title !== r.value ? h("span", {className: "autocomplete-popup-title"}, " — ", r.title) : null
+                    )
+                  )
+                );
+              })() : null
+            ),
             h("div", {className: "autocomplete-box" + (model.expandAutocomplete ? " expanded" : "")},
               h("div", {className: "autocomplete-header"},
                 h("span", {className: "slds-m-left_xx-small"}, model.autocompleteResults.title),
@@ -2007,7 +2573,10 @@ class App extends React.Component {
                         h("div", {className: "button-icon"}),
                         h("div", {className: "button-toggle-icon"})
                       )
-                    ))
+                    )),
+                  model.enableSoqlStyling ? h("li", {className: "slds-button-group-item"},
+                      h("button", {tabIndex: 6, onClick: this.onPrettyFormat, title: "Pretty format the query", className: "slds-button slds-button_neutral"}, "Pretty Format")
+                  ) : null,
                 ),
               ),
               h("div", {className: "autocomplete-results slds-m-top_small"},

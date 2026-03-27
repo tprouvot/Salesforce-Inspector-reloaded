@@ -47,10 +47,11 @@ export const TEST_GUID = generateTestGuid();
  * @param {string} options.token - Access token
  * @param {string} options.version - API version
  * @param {Object} options.additionalSetup - Additional setup function to run
+ * @param {Object} options.dataExportOptions - Data export localStorage options (serializable; use instead of additionalSetup for options)
  */
-export async function injectSessionData(context, {host, token, version, additionalSetup = null}) {
+export async function injectSessionData(context, {host, token, version, additionalSetup = null, dataExportOptions = null}) {
   // Define the init script function once to avoid duplication
-  const initScriptFunction = ({host, token, version, additionalSetup}) => {
+  const initScriptFunction = ({host, token, version, additionalSetup, dataExportOptions}) => {
     try {
       // Check if localStorage is available (may not be in some contexts)
       if (typeof Storage !== "undefined" && window.localStorage) {
@@ -60,6 +61,17 @@ export async function injectSessionData(context, {host, token, version, addition
         window.localStorage.setItem(keyPrefix + "_orgInstance", "FRA12S");
         window.localStorage.setItem(keyPrefix + "_trialExpirationDate", "2026-01-01");
         window.localStorage.setItem("apiVersion", version);
+        if (dataExportOptions) {
+          if (dataExportOptions.enableSoqlStyling !== undefined) {
+            window.localStorage.setItem("enableSoqlStyling", String(dataExportOptions.enableSoqlStyling));
+          }
+          if (dataExportOptions.enableSoqlComments !== undefined) {
+            window.localStorage.setItem("enableSoqlComments", String(dataExportOptions.enableSoqlComments));
+          }
+          if (dataExportOptions.enableDataExportAutocomplete !== undefined) {
+            window.localStorage.setItem("enableDataExportAutocomplete", String(dataExportOptions.enableDataExportAutocomplete));
+          }
+        }
       }
     } catch (e) {
       // localStorage might not be accessible in this context, continue anyway
@@ -78,7 +90,7 @@ export async function injectSessionData(context, {host, token, version, addition
     await new Promise(resolve => setTimeout(resolve, 50));
 
     // Add init script for future pages
-    await context.addInitScript(initScriptFunction, {host, token, version, additionalSetup});
+    await context.addInitScript(initScriptFunction, {host, token, version, additionalSetup, dataExportOptions});
   } catch (error) {
     // If addInitScript fails (can happen in headless mode), we'll apply directly to pages
     console.warn(`addInitScript failed, will apply directly to pages: ${error.message}`);
@@ -92,7 +104,7 @@ export async function injectSessionData(context, {host, token, version, addition
       try {
         // Check if page is still attached and ready
         if (!page.isClosed()) {
-          await page.evaluate(initScriptFunction, {host, token, version, additionalSetup});
+          await page.evaluate(initScriptFunction, {host, token, version, additionalSetup, dataExportOptions});
         }
       } catch (error) {
         // Page might not be ready yet or might be closed, ignore errors

@@ -223,6 +223,25 @@ export async function routeMock(route, host) {
       return true;
     }
 
+    // Contact Describe (for child relationship autocomplete and subquery)
+    if (path.includes("/sobjects/Contact/describe") && !path.includes("/tooling/")) {
+      await fulfillSuccess(route, {
+        name: "Contact",
+        label: "Contact",
+        keyPrefix: "003",
+        fields: [
+          {name: "Id", label: "Contact ID", type: "id", createable: false, updateable: false, nillable: false, referenceTo: []},
+          {name: "Name", label: "Full Name", type: "string", createable: true, updateable: true, nillable: false, nameField: true, referenceTo: []},
+          {name: "AccountId", label: "Account ID", type: "reference", referenceTo: ["Account"], createable: true, updateable: true, relationshipName: "Account"}
+        ],
+        urls: {
+          sobject: `/services/data/v${apiVersion}/sobjects/Contact`,
+          rowTemplate: `/services/data/v${apiVersion}/sobjects/Contact/{ID}`
+        }
+      });
+      return true;
+    }
+
     // REST API - User Describe
     if (url.includes("/sobjects/User/describe")) {
       await fulfillSuccess(route, {
@@ -321,6 +340,39 @@ export async function routeMock(route, host) {
             type: "Organization",
             url: `/services/data/v${apiVersion}/sobjects/Organization/00D000000000000000`
           }]
+        });
+        return true;
+      }
+
+      // Subquery: SELECT Id, Name, (SELECT Id, Name FROM Contacts) FROM Account
+      const hasSubqueryFromContacts = (query.includes("(select") || query.includes("( select"))
+        && (query.includes("from contacts)") || query.includes("from+contacts)"));
+      if (hasSubqueryFromContacts && (query.includes("from account") || query.includes("from+account"))) {
+        const accountRecordsWithContacts = [
+          {
+            ...accountRecords[0],
+            Contacts: {
+              totalSize: 2,
+              done: true,
+              records: [
+                {attributes: {type: "Contact"}, Id: "003000000000001AAA", Name: "Contact 1"},
+                {attributes: {type: "Contact"}, Id: "003000000000002AAA", Name: "Contact 2"}
+              ]
+            }
+          },
+          {
+            ...accountRecords[1],
+            Contacts: {
+              totalSize: 0,
+              done: true,
+              records: []
+            }
+          }
+        ];
+        await success({
+          totalSize: 2,
+          done: true,
+          records: accountRecordsWithContacts
         });
         return true;
       }

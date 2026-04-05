@@ -602,6 +602,18 @@ export function initScrollTable(scroller) {
       table.className = "slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered slds-is-relative";
       let cellsVisible = false;
 
+      // Event delegation for checkbox changes (avoids listener leaks during virtual scroll recycling)
+      if (data && data.showCheckboxes) {
+        table.addEventListener("change", e => {
+          if (e.target.classList.contains("row-select-checkbox")) {
+            let rowIdx = parseInt(e.target.getAttribute("data-row-index"));
+            if (data.onToggleRowSelection) data.onToggleRowSelection(rowIdx);
+          } else if (e.target.classList.contains("select-all-checkbox")) {
+            if (data.onSelectAll) data.onSelectAll(e.target.checked);
+          }
+        });
+      }
+
       // Ensure firstRowIdx never goes below headerRows
       firstRowIdx = Math.max(headerRows, firstRowIdx);
 
@@ -628,6 +640,24 @@ export function initScrollTable(scroller) {
           renderCell(data, cell, td);
           tr.appendChild(td);
         }
+        // Prepend "Select All" checkbox cell to header
+        if (data.showCheckboxes) {
+          let th = document.createElement("td");
+          th.className = "scrolltable-cell header checkbox-cell";
+          th.style.position = "sticky";
+          th.style.left = "0";
+          th.style.zIndex = "10";
+          let selectAllCb = document.createElement("input");
+          selectAllCb.type = "checkbox";
+          selectAllCb.className = "select-all-checkbox";
+          let allSelected = data.isAllVisibleSelected ? data.isAllVisibleSelected() : false;
+          let someSelected = data.isSomeVisibleSelected ? data.isSomeVisibleSelected() : false;
+          selectAllCb.checked = allSelected;
+          selectAllCb.indeterminate = someSelected && !allSelected;
+          selectAllCb.title = allSelected ? "Deselect all visible records" : "Select all visible records";
+          th.appendChild(selectAllCb);
+          tr.insertBefore(th, tr.firstChild);
+        }
         table.appendChild(tr);
       }
 
@@ -638,7 +668,11 @@ export function initScrollTable(scroller) {
         }
         let row = data.table[r];
         let tr = document.createElement("tr");
-        tr.className = "slds-line-height_reset";
+        let trClasses = "slds-line-height_reset";
+        if (data.showCheckboxes && data.rowSelections && data.rowSelections[r]) {
+          trClasses += " row-selected";
+        }
+        tr.className = trClasses;
         for (let c = firstColIdx; c < lastColIdx; c++) {
           if (colVisible[c] == 0) {
             continue;
@@ -657,6 +691,19 @@ export function initScrollTable(scroller) {
           td.style.height = rowHeights[r] + "px";
           renderCell(data, cell, td);
           tr.appendChild(td);
+          cellsVisible = true;
+        }
+        // Prepend row checkbox cell
+        if (data.showCheckboxes) {
+          let tdCheck = document.createElement("td");
+          tdCheck.className = "scrolltable-cell checkbox-cell";
+          let cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "row-select-checkbox";
+          cb.checked = !!(data.rowSelections && data.rowSelections[r]);
+          cb.setAttribute("data-row-index", r);
+          tdCheck.appendChild(cb);
+          tr.insertBefore(tdCheck, tr.firstChild);
           cellsVisible = true;
         }
         table.appendChild(tr);
@@ -684,6 +731,10 @@ export function initScrollTable(scroller) {
           tr = tr.nextElementSibling;
         }
         let td = table.firstElementChild.firstElementChild;
+        // Skip the checkbox cell if present
+        if (data && data.showCheckboxes && td) {
+          td = td.nextElementSibling;
+        }
         for (let c = firstColIdx; c < lastColIdx; c++) {
           if (colVisible[c] == 0) {
             continue;

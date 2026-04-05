@@ -59,16 +59,18 @@ test.describe("Data Export", () => {
 
     // Check Headers
     // The table is virtualized and uses <td> for headers in the first row, not <th>
+    // Column 0 is the checkbox cell (added for selective deletion)
+    // Column 1 is "_" (record reference), then the queried fields follow
     const headerCells = resultTable.locator("tr").first().locator("td");
-    await expect(headerCells.nth(1)).toHaveText("Id");
-    await expect(headerCells.nth(2)).toHaveText("Name");
-    await expect(headerCells.nth(3)).toHaveText("Type");
+    await expect(headerCells.nth(2)).toHaveText("Id");
+    await expect(headerCells.nth(3)).toHaveText("Name");
+    await expect(headerCells.nth(4)).toHaveText("Type");
 
     // Check Data
     // The data rows follow the header row
     const firstDataRow = resultTable.locator("tr").nth(1);
-    await expect(firstDataRow.locator("td").nth(1)).toHaveText(/^001/);
-    await expect(firstDataRow.locator("td").nth(2)).toContainText("Test Account 1");
+    await expect(firstDataRow.locator("td").nth(2)).toHaveText(/^001/);
+    await expect(firstDataRow.locator("td").nth(3)).toContainText("Test Account 1");
   });
 
   test("Autocomplete Suggestions", async ({page, context, extensionId}) => {
@@ -144,10 +146,10 @@ test.describe("Data Export", () => {
     const resultTable = page.locator("#result-area table");
     await expect(resultTable).toBeVisible();
 
-    //in the result table extract the first row and get the values of id
+    // Column 0 is checkbox, column 1 is "_", column 2 is "Id", column 3 is "Name"
     const firstRow = resultTable.locator("tr").nth(1);
-    const id = await firstRow.locator("td").nth(1).textContent();
-    const name = await firstRow.locator("td").nth(2).textContent();
+    const id = await firstRow.locator("td").nth(2).textContent();
+    const name = await firstRow.locator("td").nth(3).textContent();
 
     // Click Copy CSV
     await page.click("button:has-text('Copy (CSV)')");
@@ -159,6 +161,152 @@ test.describe("Data Export", () => {
 
     expect(clipboardContent).toContain('"Id","Name"');
     expect(clipboardContent).toContain('"' + id + '","' + name + '"');
+  });
+
+  test("Delete button disabled when no records selected", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const queryInput = page.locator("textarea#query");
+    await queryInput.fill("SELECT Id, Name FROM Account WHERE Name like 'Test Account%'");
+    await page.click("button:has-text('Run Export')");
+    await expect(page.locator(".result-status")).toContainText("Exported 2 records", {timeout: 2000});
+
+    // Delete button should be disabled — no rows selected yet
+    const deleteBtn = page.locator("button:has-text('Delete Records')");
+    await expect(deleteBtn).toBeVisible();
+    await expect(deleteBtn).toBeDisabled();
+  });
+
+  test("Checkbox column renders after export", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const queryInput = page.locator("textarea#query");
+    await queryInput.fill("SELECT Id, Name FROM Account WHERE Name like 'Test Account%'");
+    await page.click("button:has-text('Run Export')");
+    await expect(page.locator(".result-status")).toContainText("Exported 2 records", {timeout: 2000});
+
+    const resultTable = page.locator("#result-area table");
+    await expect(resultTable).toBeVisible();
+
+    // Header should have Select All checkbox
+    const selectAllCb = resultTable.locator("tr").first().locator(".select-all-checkbox");
+    await expect(selectAllCb).toBeVisible();
+    await expect(selectAllCb).not.toBeChecked();
+
+    // Each data row should have a row checkbox
+    const rowCheckboxes = resultTable.locator("tr:not(:first-child) .row-select-checkbox");
+    await expect(rowCheckboxes).toHaveCount(2);
+    for (const cb of await rowCheckboxes.all()) {
+      await expect(cb).not.toBeChecked();
+    }
+  });
+
+  test("Selecting a row enables delete button with count", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const queryInput = page.locator("textarea#query");
+    await queryInput.fill("SELECT Id, Name FROM Account WHERE Name like 'Test Account%'");
+    await page.click("button:has-text('Run Export')");
+    await expect(page.locator(".result-status")).toContainText("Exported 2 records", {timeout: 2000});
+
+    const resultTable = page.locator("#result-area table");
+
+    // Select the first data row checkbox
+    const firstRowCb = resultTable.locator("tr:nth-child(2) .row-select-checkbox");
+    await firstRowCb.check();
+
+    // Delete button should now show count
+    await expect(page.locator("button:has-text('Delete 1 Record')")).toBeVisible();
+    await expect(page.locator("button:has-text('Delete 1 Record')")).toBeEnabled();
+
+    // Header checkbox should be indeterminate (some but not all selected)
+    const selectAllCb = resultTable.locator("tr").first().locator(".select-all-checkbox");
+    const isIndeterminate = await selectAllCb.evaluate(el => el.indeterminate);
+    expect(isIndeterminate).toBe(true);
+  });
+
+  test("Select All selects all rows and updates delete count", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const queryInput = page.locator("textarea#query");
+    await queryInput.fill("SELECT Id, Name FROM Account WHERE Name like 'Test Account%'");
+    await page.click("button:has-text('Run Export')");
+    await expect(page.locator(".result-status")).toContainText("Exported 2 records", {timeout: 2000});
+
+    const resultTable = page.locator("#result-area table");
+    const selectAllCb = resultTable.locator("tr").first().locator(".select-all-checkbox");
+
+    // Click Select All
+    await selectAllCb.check();
+
+    // All row checkboxes should be checked
+    const rowCheckboxes = resultTable.locator("tr:not(:first-child) .row-select-checkbox");
+    for (const cb of await rowCheckboxes.all()) {
+      await expect(cb).toBeChecked();
+    }
+
+    // Delete button shows total count
+    await expect(page.locator("button:has-text('Delete 2 Records')")).toBeVisible();
+    await expect(page.locator("button:has-text('Delete 2 Records')")).toBeEnabled();
+
+    // Select All checkbox should be checked (not indeterminate)
+    await expect(selectAllCb).toBeChecked();
+    const isIndeterminate = await selectAllCb.evaluate(el => el.indeterminate);
+    expect(isIndeterminate).toBe(false);
+  });
+
+  test("Deselect All disables delete button", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const queryInput = page.locator("textarea#query");
+    await queryInput.fill("SELECT Id, Name FROM Account WHERE Name like 'Test Account%'");
+    await page.click("button:has-text('Run Export')");
+    await expect(page.locator(".result-status")).toContainText("Exported 2 records", {timeout: 2000});
+
+    const resultTable = page.locator("#result-area table");
+    const selectAllCb = resultTable.locator("tr").first().locator(".select-all-checkbox");
+
+    // Select All then Deselect All
+    await selectAllCb.check();
+    await expect(page.locator("button:has-text('Delete 2 Records')")).toBeEnabled();
+
+    await selectAllCb.uncheck();
+
+    // Delete button should be back to disabled
+    await expect(page.locator("button:has-text('Delete Records')")).toBeDisabled();
+
+    // All row checkboxes should be unchecked
+    const rowCheckboxes = resultTable.locator("tr:not(:first-child) .row-select-checkbox");
+    for (const cb of await rowCheckboxes.all()) {
+      await expect(cb).not.toBeChecked();
+    }
+  });
+
+  test("Selected rows have highlighted background", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const queryInput = page.locator("textarea#query");
+    await queryInput.fill("SELECT Id, Name FROM Account WHERE Name like 'Test Account%'");
+    await page.click("button:has-text('Run Export')");
+    await expect(page.locator(".result-status")).toContainText("Exported 2 records", {timeout: 2000});
+
+    const resultTable = page.locator("#result-area table");
+
+    // Before selection: no row-selected class
+    const firstDataRow = resultTable.locator("tr:nth-child(2)");
+    await expect(firstDataRow).not.toHaveClass(/row-selected/);
+
+    // Select first row
+    await resultTable.locator("tr:nth-child(2) .row-select-checkbox").check();
+
+    // After selection: row-selected class present
+    await expect(firstDataRow).toHaveClass(/row-selected/);
   });
 
 });

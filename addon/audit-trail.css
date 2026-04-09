@@ -3,6 +3,24 @@
    data-export.css — only page-specific overrides live here.
    ─────────────────────────────────────────────────────────────────────────── */
 
+/* Full-height flex chain so #audit-result-area can grow to fill the viewport */
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+#root, #root > div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 /* Scrollable result table that fills the remaining viewport height */
 #audit-result-area {
   flex: 1 1 0;

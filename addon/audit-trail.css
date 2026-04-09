@@ -1,0 +1,158 @@
+/* ── Audit Trail page-specific styles ──────────────────────────────────────
+   Base styling comes from: button.css, slds-spinner.css, data-load.css,
+   data-export.css — only page-specific overrides live here.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Scrollable result table that fills the remaining viewport height */
+#audit-result-area {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  margin: 12px 12px 12px 12px;
+  overflow: hidden;
+}
+
+#audit-table-wrap {
+  flex: 1 1 0;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #dddbda;
+  border-radius: 0 0 0.25rem 0.25rem;
+}
+
+/* Table itself */
+#audit-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.8125rem;
+  color: #16325c;
+}
+
+#audit-table thead th {
+  background-color: #fafaf9;
+  border-bottom: 2px solid #dddbda;
+  border-right: 1px solid #e5e5e5;
+  padding: 7px 10px;
+  text-align: left;
+  font-weight: 700;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+#audit-table thead th:last-child {
+  border-right: none;
+}
+
+/* Filter row inputs */
+#audit-table thead tr.filter-row th {
+  background-color: #f3f2f2;
+  border-bottom: 1px solid #dddbda;
+  padding: 4px 6px;
+  top: 36px; /* stack below header row */
+}
+
+#audit-table thead tr.filter-row input {
+  width: 100%;
+  height: 26px;
+  padding: 3px 8px;
+  border: 1px solid #dddbda;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  color: #16325c;
+  background: #fff;
+}
+
+#audit-table thead tr.filter-row input:focus {
+  border: 1px solid rgb(21, 137, 238);
+  box-shadow: rgb(6, 28, 63) 0 0 3px 0;
+  outline: none;
+}
+
+#audit-table tbody tr:hover td {
+  background-color: #f3f2f2;
+}
+
+#audit-table tbody td {
+  border-bottom: 1px solid #e5e5e5;
+  border-right: 1px solid #e5e5e5;
+  padding: 5px 10px;
+  white-space: nowrap;
+  max-width: 480px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#audit-table tbody td:last-child {
+  border-right: none;
+}
+
+#audit-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* No-results cell */
+.audit-no-results {
+  text-align: center;
+  padding: 24px !important;
+  color: #706e6b;
+  font-style: italic;
+  white-space: normal !important;
+}
+
+/* Column-toggle button row (lives inside .area) */
+.col-toggle-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.col-toggle-row label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #3e3e3c;
+  margin-right: 2px;
+  white-space: nowrap;
+  cursor: default;
+}
+
+/* Column toggle buttons reuse the base `button` style; toggled state = highlighted */
+.col-toggle-btn {
+  height: 26px;
+  line-height: 26px;
+  padding: 0 10px;
+  font-size: 0.75rem;
+}
+
+/* Result meta bar */
+.result-bar {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid #dddbda;
+  border-bottom: none;
+  border-radius: 0.25rem 0.25rem 0 0;
+  background: #f8f8f8;
+}
+
+.result-bar h1 {
+  margin-right: 10px;
+}
+
+.result-info {
+  font-style: italic;
+  color: #8c8c8c;
+  margin-left: 8px;
+}
+
+/* Footer note */
+.audit-footer-note {
+  font-size: 0.75rem;
+  color: #706e6b;
+  font-style: italic;
+  margin: 6px 12px 8px;
+}

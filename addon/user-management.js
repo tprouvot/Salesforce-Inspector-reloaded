@@ -1,5 +1,7 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
+import {getUserInfo} from "./utils.js";
+import {PageHeader} from "./components/PageHeader.js";
 /* global initButton */
 
 let h = React.createElement;
@@ -185,7 +187,7 @@ class UserManagementApp extends React.Component {
     super(props);
     this.state = {
       spinnerCount: 0,
-      userInfo: "\u2026",
+      userFullName: "", userInitials: "\u2026", userName: "", userError: null, userErrorDescription: null,
 
       loading: true,
       working: false,
@@ -243,11 +245,11 @@ class UserManagementApp extends React.Component {
   }
 
   async componentDidMount() {
-    // Top-bar user info (non-fatal)
     this.spinFor(
-      sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {})
-        .then(res => this.setState({userInfo: res.userFullName + " / " + res.userName + " / " + res.organizationName}))
-        .catch(() => {})
+      getUserInfo().then(res => this.setState({
+        userFullName: res.userFullName, userInitials: res.userInitials,
+        userName: res.userName, userError: res.userError, userErrorDescription: res.userErrorDescription,
+      }))
     );
 
     // Load org + profiles + roles
@@ -506,7 +508,7 @@ class UserManagementApp extends React.Component {
   render() {
     const {sfHost} = this.props;
     const {
-      spinnerCount, userInfo,
+      spinnerCount, userFullName, userInitials, userName, userError, userErrorDescription,
       loading, working, loadError,
       mode, cloneTargetUser,
       email, firstName, lastName, alias, username, nickname,
@@ -528,33 +530,15 @@ class UserManagementApp extends React.Component {
       showCloneSearch && h(UserSearchModal, {onSelect: this.onCloneUserSelected, onCancel: this.onCancelCloneSearch}),
       overlayVisible  && h(ResultsOverlay,  {type: overlayType, results: overlayResults, createdUserId, sfHost, onClose: this.onOverlayClose}),
 
-      // ── Top banner ──────────────────────────────────────────────────────
-      h("div", {id: "user-info"},
-        h("a", {href: sfLink, className: "sf-link"},
-          h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-          ),
-          " Salesforce Home"
-        ),
-        h("h1", {},
-          isClone
-            ? h("span", {}, "Clone User \u2014 ", cloneTargetUser ? cloneTargetUser.Username : "\u2026")
-            : "User Management"
-        ),
-        h("span", {}, " / " + userInfo),
-        h("div", {className: "flex-right"},
-          h("div", {
-            id: "spinner",
-            role: "status",
-            className: "slds-spinner slds-spinner_small slds-spinner_inline",
-            hidden: spinnerCount === 0,
-          },
-            h("span", {className: "slds-assistive-text"}, "Loading\u2026"),
-            h("div", {className: "slds-spinner__dot-a"}),
-            h("div", {className: "slds-spinner__dot-b"})
-          )
-        )
-      ),
+      h(PageHeader, {
+        pageTitle: isClone ? "Clone User" : "User Management",
+        subTitle: isClone ? (cloneTargetUser ? cloneTargetUser.Username : "\u2026") : undefined,
+        orgName: sfHost.split(".")[0]?.toUpperCase() || "",
+        sfLink,
+        sfHost,
+        spinnerCount,
+        userFullName, userInitials, userName, userError, userErrorDescription,
+      }),
 
       // ── Load error ──────────────────────────────────────────────────────
       loadError && h("div", {className: "area", style: {color: "#c23934", fontWeight: 600}},

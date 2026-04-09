@@ -2,6 +2,9 @@
    Base styling comes from: button.css, slds-spinner.css, data-load.css,
    data-export.css — only page-specific overrides live here.
    ─────────────────────────────────────────────────────────────────────────── */
+.area {
+  margin-top: 60px!important;
+}
 
 /* Form layout inside .area */
 .um-form-row {

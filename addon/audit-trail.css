@@ -120,6 +120,9 @@ body {
   white-space: normal !important;
 }
 
+.area {
+  margin-top: 60px!important;
+}
 /* Column-toggle button row (lives inside .area) */
 .col-toggle-row {
   display: flex;

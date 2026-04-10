@@ -2,6 +2,10 @@
 
 ## Version 2.1
 
+- `Audit Trail` Add dedicated page to query and filter `SetupAuditTrail` records with configurable row limit and column visibility (contribution by [SantiParris8](https://github.com/SantiParris8))
+- `User Management` Add dedicated page to search, create and clone Salesforce users directly from the extension (contribution by [SantiParris8](https://github.com/SantiParris8))
+- `Popup` Add Audit Trail and User Management shortcut buttons to the popup
+
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition

@@ -84,8 +84,8 @@ test.describe("Data Export", () => {
     await expect(page.locator(".autocomplete-box")).toBeVisible();
     await expect(page.locator(".autocomplete-results")).toContainText("Account");
 
-    // Click suggestion - target the link element specifically with title="Account"
-    await page.locator(".autocomplete-results a[title='Account']").first().click();
+    // Click suggestion - target the button element specifically with title="Account"
+    await page.locator(".autocomplete-results button[title='Account']").first().click();
 
     // Autocomplete adds a trailing space
     await expect(queryInput).toHaveValue("SELECT Id FROM Account ");
@@ -119,8 +119,8 @@ test.describe("Data Export", () => {
     await expect(page.locator(".autocomplete-header")).toContainText("Account fields suggestions");
 
     await expect(page.locator(".autocomplete-results")).toContainText("Name");
-    // Click suggestion - target the link element specifically
-    await page.locator(".autocomplete-results a").filter({hasText: "Name"}).first().click();
+    // Click suggestion - target the button element specifically
+    await page.locator(".autocomplete-results button").filter({hasText: "Name"}).first().click();
 
     // Autocomplete adds ", " after fields when not last?
     // "SELECT Id, Name,  FROM Account"

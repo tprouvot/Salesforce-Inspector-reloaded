@@ -625,7 +625,7 @@ test.describe("Popup", () => {
       await page.waitForTimeout(2000);
 
       // Click Enable Logs button
-      const enableLogsButton = page.frameLocator(".insext-popup").locator("a#enableDebugLog");
+      const enableLogsButton = page.frameLocator(".insext-popup").locator("button#enableDebugLog");
       await expect(enableLogsButton).toBeVisible({timeout: 1000});
 
       // Note: Clicking this will trigger API calls, but we'll just verify the button exists
@@ -695,7 +695,7 @@ test.describe("Popup", () => {
       await page.waitForTimeout(2000);
 
       // Verify Delete All ApexLogs button exists
-      await expect(page.frameLocator(".insext-popup").locator("a#deleteLogs:has-text('Delete All ApexLogs')")).toBeVisible({timeout: 1000});
+      await expect(page.frameLocator(".insext-popup").locator("button#deleteLogs:has-text('Delete All ApexLogs')")).toBeVisible({timeout: 1000});
     });
   });
 });

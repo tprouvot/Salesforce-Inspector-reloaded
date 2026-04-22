@@ -78,6 +78,12 @@ body{
     text-align: left;
 }
 
+/* Virtual-focus highlight for listbox options selected via aria-activedescendant.
+   SLDS ships .slds-is-selected only for buttons, so dropdown-item options need their own rule. */
+.slds-dropdown__item.slds-is-selected {
+    background-color: var(--slds-s-menu-item-color-background-active, var(--slds-g-color-surface-container-2, #f3f3f3));
+}
+
 /* Custom icon styles for dropdown menu actions */
 a .icon,
 button .icon {

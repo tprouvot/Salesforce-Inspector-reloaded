@@ -113,6 +113,10 @@ export let setupLinks = [
   {label: "Sales Cloud Einstein Assessor", link: "/lightning/setup/SalesCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   {label: "Service Cloud Einstein Assessor", link: "lightning/setup/ServiceCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   //Platform Tools > Einstein > Einstein Generative AI
+  {label: "Agentforce Analytics", link: "/lightning/setup/AgentAnalyticsLibrary/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
+  {label: "Agentforce Agents", link: "/lightning/setup/EinsteinCopilot/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
+  {label: "Agentforce Asset Library", link: "/lightning/setup/AgentAssetLibrary/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
+  {label: "Testing Center", link: "/lightning/setup/TestingCenter/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
   {label: "Einstein Audit, Analytics, and Monitoring Setup", link: "/lightning/setup/EinsteinFeedbackSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
   {label: "Einstein Setup", link: "/lightning/setup/EinsteinGPTSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
   {label: "Einstein Trust Layer", link: "/lightning/setup/EinsteinTrustLayerSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},

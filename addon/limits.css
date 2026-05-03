@@ -11,12 +11,12 @@ figcaption {
   font-weight: bold;
   display: table-caption;
   caption-side: bottom;
-  height: 55px;
-  font-size: 1.2em;
+  line-height: 1.2;
+  font-size: 1.1em;
 }
 figcaption > div {
   font-weight: normal;
-  font-size: 0.8em;
+  font-size: 0.9em;
   margin-top: 2px;
 }
 .gauge {

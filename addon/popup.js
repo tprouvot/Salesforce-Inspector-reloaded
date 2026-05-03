@@ -36,7 +36,7 @@ if (typeof browser === "undefined") {
     if (request.msg === "shortcut_pressed") {
       if (request.command === "open-popup") {
         parent.postMessage({insextOpenPopup: true}, "*");
-      } else {
+      } else if (request.command !== "open-show-all-data") {
         parent.postMessage({command: request.command}, "*");
       }
     } else if (request.message === "tokenUpdated" && request.sfHost) {
@@ -138,6 +138,7 @@ class App extends React.PureComponent {
     };
     this.onContextUrlMessage = this.onContextUrlMessage.bind(this);
     this.onShortcutKey = this.onShortcutKey.bind(this);
+    this.onShowAllDataShortcut = this.onShowAllDataShortcut.bind(this);
     this.onChangeApi = this.onChangeApi.bind(this);
     this.onContextRecordChange = this.onContextRecordChange.bind(this);
     this.updateReleaseNotesViewed = this.updateReleaseNotesViewed.bind(this);
@@ -325,12 +326,31 @@ class App extends React.PureComponent {
     let {sfHost} = this.props;
     addEventListener("message", this.onContextUrlMessage);
     addEventListener("keydown", this.onShortcutKey);
+    chrome.runtime.onMessage.addListener(this.onShowAllDataShortcut);
     parent.postMessage({insextLoaded: true}, "*");
     setOrgInfo(this.props.sfHost);
   }
   componentWillUnmount() {
     removeEventListener("message", this.onContextUrlMessage);
     removeEventListener("keydown", this.onShortcutKey);
+    chrome.runtime.onMessage.removeListener(this.onShowAllDataShortcut);
+  }
+  onShowAllDataShortcut(request) {
+    if (request.msg === "shortcut_pressed" && request.command === "open-show-all-data") {
+      let {sfHost} = this.props;
+      let {contextUrl} = this.state;
+      let recordId = contextUrl && getRecordId(contextUrl);
+      let sobject = contextUrl && getSobject(contextUrl);
+      let args = new URLSearchParams();
+      args.set("host", sfHost);
+      if (sobject) {
+        args.set("objectType", sobject);
+      }
+      if (recordId) {
+        args.set("recordId", recordId);
+      }
+      window.open(chrome.runtime.getURL("inspect.html?" + args), "_blank");
+    }
   }
   isMac() {
     return navigator.userAgentData?.platform.toLowerCase().indexOf("mac") > -1 || navigator.userAgent.toLowerCase().indexOf("mac") > -1;

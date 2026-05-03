@@ -86,5 +86,10 @@
     "flow-scanner.html"
   ],
   "incognito": "spanning",
-  "manifest_version": 2
+  "manifest_version": 2,
+  "commands": {
+    "open-show-all-data": {
+      "description": "Open Show All Data for current record"
+    }
+  }
 }

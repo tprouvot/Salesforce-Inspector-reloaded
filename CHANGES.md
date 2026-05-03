@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Show All Data` Add configurable keyboard shortcut to open Show All Data for the current record (`Alt+Shift+I` by default) [issue #917](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/917) (contribution by [Ruben Halman](https://github.com/RubenHalman))
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition

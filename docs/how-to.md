@@ -324,8 +324,13 @@ Navigate to your browser shortcut menu and choose dedicated shortcuts for the pa
 
 * Chrome: [chrome://extensions/shortcut](chrome://extensions/shortcut)
 * Edge: [edge://extensions/shortcuts](edge://extensions/shortcuts)
+* Firefox: Open the Add-ons Manager (`Cmd+Shift+A` on Mac / `Ctrl+Shift+A` on Windows), click the gear icon, then select "Manage Extension Shortcuts"
 
 <img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">
+
+### Open Show All Data for current record
+
+Press `Alt+Shift+I` (default) to instantly open the Show All Data page for the record you're currently viewing, without having to open the popup first. You can remap this shortcut in your browser's extension shortcut settings.
 
 ### Default shortcuts
 

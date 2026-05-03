@@ -88,8 +88,9 @@ chrome.commands?.onCommand.addListener((command, tab) => {
       msg: "shortcut_pressed", command, sfHost
     });
   } else {
+    const protocol = navigator.userAgent?.includes("Chrome") ? "chrome-extension" : "moz-extension";
     chrome.tabs.create({
-      url: `chrome-extension://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
+      url: `${protocol}://${chrome.i18n.getMessage("@@extension_id")}/${command}.html?host=${sfHost}`
     });
   }
 });

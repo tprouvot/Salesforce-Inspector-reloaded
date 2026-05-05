@@ -1108,15 +1108,13 @@ class TableRow {
       let s = this.sortKey(col.name);
       return s != null && ("" + s).toLowerCase().includes(term);
     };
-    if (this.rowList.model.useTab != "all") {
-      return selectedColumns.every(col =>
-        !col.columnFilter || split(col.columnFilter).every(term => search(term, col))
-      );
-    } else {
-      return split(this.rowList.model.rowsFilter).every(term =>
-        !term || selectedColumns.some(col => search(term, col))
-      );
-    }
+    let globalMatch = split(this.rowList.model.rowsFilter).every(term =>
+      !term || selectedColumns.some(col => search(term, col))
+    );
+    let columnMatch = selectedColumns.every(col =>
+      !col.columnFilter || split(col.columnFilter).every(term => search(term, col))
+    );
+    return globalMatch && columnMatch;
   }
 }
 

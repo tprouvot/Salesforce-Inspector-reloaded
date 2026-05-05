@@ -64,9 +64,9 @@ test.describe("Inspect", () => {
     await expect(page.locator("span.slds-truncate:has-text('Account')").first()).toBeVisible();
 
     // Verify tabs are visible
-    await expect(page.locator("button:has-text('All')")).toBeVisible();
-    await expect(page.locator("button:has-text('Fields')")).toBeVisible();
-    await expect(page.locator("button:has-text('Relationships')")).toBeVisible();
+    await expect(page.locator("li[role='tab'][data-aspect='all']")).toBeVisible();
+    await expect(page.locator("li[role='tab'][data-aspect='fields']")).toBeVisible();
+    await expect(page.locator("li[role='tab'][data-aspect='childs']")).toBeVisible();
   });
 
   test("Load Inspect Page - With Record ID", async ({page, extensionId}) => {
@@ -79,16 +79,16 @@ test.describe("Inspect", () => {
   test("Switch Tabs", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
+    await page.waitForSelector("li[role='tab'][data-aspect='fields']", {timeout: 1000});
 
     // Click Fields tab
-    await page.locator(".slds-builder-header_container li span[title=Fields]").click();
+    await page.locator("li[role='tab'][data-aspect='fields']").click();
 
     // Click Relationships tab
-    await page.locator(".slds-builder-header_container li span[title=Relationships]").click();
+    await page.locator("li[role='tab'][data-aspect='childs']").click();
 
     // Click All tab
-    await page.locator(".slds-builder-header_container li span[title=All]").click();
+    await page.locator("li[role='tab'][data-aspect='all']").click();
   });
 
   test("Filter Fields", async ({page, extensionId}) => {
@@ -96,10 +96,10 @@ test.describe("Inspect", () => {
 
     // Wait for table first so the page is fully loaded (filter is in header, same render)
     await page.waitForSelector("table.slds-table", {timeout: 2000});
-    await page.waitForSelector("input[placeholder='Filter']", {timeout: 2000});
+    await page.waitForSelector("input[placeholder='Global Filter']", {timeout: 2000});
 
-    // Type in filter
-    const filterInput = page.locator("input[placeholder='Filter']");
+    // Type in filter on All tab
+    const filterInput = page.locator("input[placeholder='Global Filter']");
     await filterInput.fill("Name");
 
     // Wait for filtering to take effect
@@ -107,20 +107,31 @@ test.describe("Inspect", () => {
 
     // Verify Name field is visible
     await expect(page.locator("text=Name").first()).toBeVisible();
+
+    // Switch to Fields tab and confirm global filter still applies there
+    await page.locator("li[role='tab'][data-aspect='fields']").click();
+    await page.waitForTimeout(250);
+
+    const visibleRows = page.locator("tbody tr:not([hidden])");
+    const rowCount = await visibleRows.count();
+    expect(rowCount).toBeGreaterThan(0);
+    for (let i = 0; i < rowCount; i++) {
+      await expect(visibleRows.nth(i)).toContainText(/name/i);
+    }
   });
 
   test("Toggle Column Visibility", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
+    await page.waitForSelector("li[role='tab'][data-aspect='fields']", {timeout: 1000});
 
     // Click Fields tab to open column visibility menu
-    await page.locator(".slds-builder-header_container li span[title=Fields]").click();
+    await page.locator("li[role='tab'][data-aspect='fields']").click();
     await page.waitForTimeout(250);
 
-    // Click the chevron to open column visibility menu
-    const chevron = page.locator(".slds-builder-header_container li span[title=Fields]").locator("..").locator("svg").first();
-    await chevron.click();
+    // Click the column control button to open column visibility menu
+    const columnControl = page.locator(".sfir-column-control-group button").first();
+    await columnControl.click();
     await page.waitForTimeout(250);
 
     // Find and toggle a column checkbox (e.g., Label)
@@ -138,10 +149,10 @@ test.describe("Inspect", () => {
   test("Calculate Field Usage", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
+    await page.waitForSelector("li[role='tab'][data-aspect='fields']", {timeout: 1000});
 
     // Click Fields tab
-    await page.locator(".slds-builder-header_container li span[title=Fields]").click();
+    await page.locator("li[role='tab'][data-aspect='fields']").click();
 
     // Wait for Usage column header with action button
     await page.waitForSelector("text=Usage (%)", {timeout: 1000});
@@ -417,10 +428,10 @@ test.describe("Inspect", () => {
   test("Column Filtering", async ({page, extensionId}) => {
     await initInspectPage(page, extensionId);
 
-    await page.waitForSelector(".slds-builder-header_container li span[title=Fields]", {timeout: 1000});
+    await page.waitForSelector("li[role='tab'][data-aspect='fields']", {timeout: 1000});
 
     // Switch to Fields tab (enables column filtering)
-    await page.locator(".slds-builder-header_container li span[title=Fields]").click();
+    await page.locator("li[role='tab'][data-aspect='fields']").click();
     await page.waitForTimeout(250);
 
     // Find a column filter input

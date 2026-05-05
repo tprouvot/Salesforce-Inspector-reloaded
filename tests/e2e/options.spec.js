@@ -31,15 +31,15 @@ test.describe("Options", () => {
 
   async function initOptionsPage(page, extensionId, selectedTab = null, gotoTab = null) {
     await page.goto(`chrome-extension://${extensionId}/options.html?host=${mockHost}${selectedTab ? `&selectedTab=${selectedTab}` : ""}`);
-    await page.waitForSelector(".sfir-options-tab-container", {timeout: 1000});
+    await page.waitForSelector(".slds-tabs_scoped__nav", {timeout: 1000});
     if (gotoTab) {
-      await page.locator(`a[role='tab']:has-text('${gotoTab}')`).click();
+      await page.locator(`li[role='tab']:has-text('${gotoTab}')`).click();
     }
 
     // Ensure we're on the gotoTab / selectedTab or User Experience tab (default)
-    await page.waitForSelector("a[role='tab']:has-text('" + (gotoTab || selectedTab || "User Experience") + "')", {timeout: 1000});
+    await page.waitForSelector("li[role='tab']:has-text('" + (gotoTab || selectedTab || "User Experience") + "')", {timeout: 1000});
     //check if the related tab is active
-    await expect(page.locator(".options-tab:has-text('" + (gotoTab || selectedTab || "User Experience") + "')")).toHaveClass(/slds-is-active/);
+    await expect(page.locator("li[role='tab']:has-text('" + (gotoTab || selectedTab || "User Experience") + "')")).toHaveClass(/slds-is-active/);
   }
 
   test.describe("User Experience", () => {
@@ -68,15 +68,15 @@ test.describe("Options", () => {
       await initOptionsPage(page, extensionId);
 
       // Verify all main tabs are present (use role="tab" to be specific)
-      await expect(page.locator("a[role='tab']:has-text('User Experience')")).toBeVisible();
-      await expect(page.locator("a[role='tab']:has-text('API')")).toBeVisible();
-      await expect(page.locator("a[role='tab']:has-text('Data Export')")).toBeVisible();
-      await expect(page.locator("a[role='tab']:has-text('Data Import')")).toBeVisible();
-      await expect(page.locator("a[role='tab']:has-text('Field Creator')")).toBeVisible();
-      await expect(page.locator("a[role='tab']:has-text('Enable Logs')")).toBeVisible();
-      await expect(page.locator("a[role='tab']:has-text('Metadata')")).toBeVisible();
-      await expect(page.locator("a[role='tab']:has-text('Flow Scanner')")).toBeVisible();
-      await expect(page.locator("a[role='tab']:has-text('Custom Shortcuts')")).toBeVisible();
+      await expect(page.locator("li[role='tab']:has-text('User Experience')")).toBeVisible();
+      await expect(page.locator("li[role='tab']:has-text('API')")).toBeVisible();
+      await expect(page.locator("li[role='tab']:has-text('Data Export')")).toBeVisible();
+      await expect(page.locator("li[role='tab']:has-text('Data Import')")).toBeVisible();
+      await expect(page.locator("li[role='tab']:has-text('Field Creator')")).toBeVisible();
+      await expect(page.locator("li[role='tab']:has-text('Enable Logs')")).toBeVisible();
+      await expect(page.locator("li[role='tab']:has-text('Metadata')")).toBeVisible();
+      await expect(page.locator("li[role='tab']:has-text('Flow Scanner')")).toBeVisible();
+      await expect(page.locator("li[role='tab']:has-text('Custom Shortcuts')")).toBeVisible();
     });
 
     test("Toggle Option - Popup Dark Theme", async ({page, extensionId}) => {
@@ -188,7 +188,7 @@ test.describe("Options", () => {
       await initOptionsPage(page, extensionId, null, "API");
 
       // Verify API tab is active
-      await expect(page.locator(".options-tab:has-text('API')")).toHaveClass(/slds-is-active/);
+      await expect(page.locator("li[role='tab']:has-text('API')")).toHaveClass(/slds-is-active/);
 
       // Verify API version input is visible (use more specific selector)
       await expect(page.locator("span:has-text('API Version')").first()).toBeVisible();
@@ -220,7 +220,7 @@ test.describe("Options", () => {
       await initOptionsPage(page, extensionId, "api");
 
       // Verify API tab is active by default
-      await expect(page.locator(".options-tab:has-text('API')")).toHaveClass(/slds-is-active/);
+      await expect(page.locator("li[role='tab']:has-text('API')")).toHaveClass(/slds-is-active/);
     });
 
     test("Restore Default API Version", async ({page, extensionId}) => {
@@ -560,13 +560,13 @@ test.describe("Options", () => {
       const optionsUrl = `chrome-extension://${extensionId}/options.html?host=${mockHost}`;
       await page.goto(optionsUrl);
 
-      await page.waitForSelector(".sfir-options-tab-container", {timeout: 1000});
+      await page.waitForSelector(".slds-tabs_scoped__nav", {timeout: 1000});
 
       // Click Metadata tab (use role="tab" to be specific)
-      await page.locator("a[role='tab']:has-text('Metadata')").click();
+      await page.locator("li[role='tab']:has-text('Metadata')").click();
 
       // Verify Metadata tab is active
-      await expect(page.locator(".options-tab:has-text('Metadata')")).toHaveClass(/slds-is-active/);
+      await expect(page.locator("li[role='tab']:has-text('Metadata')")).toHaveClass(/slds-is-active/);
 
       // Verify Include managed packages metadata option is visible
       await expect(page.locator("text=Include managed packages metadata")).toBeVisible();
@@ -619,7 +619,7 @@ test.describe("Options", () => {
       await initOptionsPage(page, extensionId, null, "Enable Logs");
 
       // Verify Enable Logs tab is active
-      await expect(page.locator(".options-tab:has-text('Enable Logs')")).toHaveClass(/slds-is-active/);
+      await expect(page.locator("li[role='tab']:has-text('Enable Logs')")).toHaveClass(/slds-is-active/);
 
       // Verify Debug Level option is visible
       await expect(page.locator("text=Debug Level (DeveloperName)")).toBeVisible();

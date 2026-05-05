@@ -3950,6 +3950,7 @@ class AllDataSelection extends React.PureComponent {
     super(props);
     this.state = {
       flowDefinitionId: null,
+      flowVersionId: null,
     };
   }
   clickAllDataBtn() {
@@ -4023,7 +4024,10 @@ class AllDataSelection extends React.PureComponent {
     return `flow-scanner.html?host=${sfHost}&flowDefId=${this.state.flowDefinitionId}&flowId=${recordId}`;
   }
   getFlowCompareUrl() {
-    return getFlowCompareUrl(this.props.sfHost, this.props.selectedValue.recordId);
+    const {sfHost, selectedValue} = this.props;
+    const recordId = selectedValue.recordId;
+    const flowVersionId = recordId?.startsWith("301") ? recordId : this.state.flowVersionId;
+    return getFlowCompareUrl(sfHost, flowVersionId);
   }
   /**
    * Optimistically generate lightning setup uri for the provided object api name.
@@ -4151,9 +4155,32 @@ class AllDataSelection extends React.PureComponent {
   getGenerateEventUrl(name) {
     return this.props.eventMonitorHref + "&channel=" + name + "&generate=1";
   }
+  resolveFlowVersionId(flowDefinitionId) {
+    if (!flowDefinitionId || this.state.flowVersionId) {
+      return;
+    }
+    const activeQuery = "SELECT+Id+FROM+Flow+WHERE+DefinitionId='" + flowDefinitionId + "'+AND+Status='Active'+LIMIT+1";
+    sfConn
+      .rest("/services/data/v" + apiVersion + "/tooling/query/?q=" + activeQuery)
+      .then((res) => {
+        if (res.records && res.records.length > 0) {
+          this.setState({flowVersionId: res.records[0].Id});
+          return;
+        }
+        const latestQuery = "SELECT+Id+FROM+Flow+WHERE+DefinitionId='" + flowDefinitionId + "'+ORDER+BY+VersionNumber+DESC+LIMIT+1";
+        sfConn
+          .rest("/services/data/v" + apiVersion + "/tooling/query/?q=" + latestQuery)
+          .then((latestRes) => {
+            if (latestRes.records && latestRes.records.length > 0) {
+              this.setState({flowVersionId: latestRes.records[0].Id});
+            }
+          });
+      });
+  }
   setFlowDefinitionId(recordId) {
     if (recordId && !this.state.flowDefinitionId) {
       if (recordId.startsWith("301")) {
+        this.setState({flowVersionId: recordId});
         sfConn
           .rest(
             "/services/data/v"
@@ -4170,6 +4197,7 @@ class AllDataSelection extends React.PureComponent {
           });
       } else if (recordId.startsWith("300")) {
         this.setState({flowDefinitionId: recordId});
+        this.resolveFlowVersionId(recordId);
       } else if (recordId.startsWith("2aF")) {
         sfConn
           .rest(
@@ -4181,7 +4209,9 @@ class AllDataSelection extends React.PureComponent {
           )
           .then((res) => {
             if (res.records && res.records.length > 0) {
-              this.setState({flowDefinitionId: res.records[0].FlowDefinition});
+              const defId = res.records[0].FlowDefinition;
+              this.setState({flowDefinitionId: defId});
+              this.resolveFlowVersionId(defId);
             }
           });
       }
@@ -4198,7 +4228,7 @@ class AllDataSelection extends React.PureComponent {
       isFieldsPresent,
       eventMonitorHref,
     } = this.props;
-    let {flowDefinitionId} = this.state;
+    let {flowDefinitionId, flowVersionId} = this.state;
     // Show buttons for the available APIs.
     let buttons = selectedValue.sobject.availableApis
       ? Array.from(selectedValue.sobject.availableApis)
@@ -4454,7 +4484,7 @@ class AllDataSelection extends React.PureComponent {
           "Flow Scanner"
         )
         : null,
-      flowDefinitionId
+      flowVersionId
         ? h(
           "a",
           {

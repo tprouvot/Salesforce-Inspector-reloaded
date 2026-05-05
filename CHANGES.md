@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Replace the Query History and Saved Queries dropdowns with searchable comboboxes: filter by text or by object with `?`, delete individual entries with the Delete key or the trash icon, and see saved query labels and Tooling API badges [#1114](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1114) (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - `Org Limits` Fix gauge falsely displaying as full/blue when a limit is "0 of 0 consumed" [issue #1347](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1347)
 - `Data Import` Fix Run button doesn't update when selecting Undelete before data is loaded [issue #1331](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1331) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Import` Fix Object field briefly shows a false "Unknown object" error after page load [issue #1333](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1333) (contribution by [Prem Kumar](https://github.com/prem-k-r))
@@ -37,7 +38,6 @@
 - `Rest Explorer` fix a performance issue (edit entrypoint rerender completely the output even if no changes) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - `Popup` fix recent items scroll not working anymore in v2 (contribution by [Nicolas Greard](https://github.com/ngreardSF))
 - Fix popup/detail record name field [issue #274](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/274) (contribution by [Nicolas Greard](https://github.com/ngreardSF))
-- `Data Export` Enhance Query History and Saved Queries: add delete button for individual entries, add visual badges for saved query labels and Tooling API indicators, save queries to history immediately when executing (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - `Data Export` Fix Column order not respected when performing subqueries [#598](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/598)
 - `Accessibility` Improve screen reader support: fix AlertBanner silent announcements, convert inspector button and tooltip trigger to semantic elements, add popup iframe title issues [#1107](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1107) & [#1108](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1108) (contribution by [akj](https://github.com/akj))
 - `Dependencies Explorer` (contribution by [Georgi Dobrishinov](https://github.com/dobrishinov))

@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `User Experience` Introduce shared TabBar and ButtonMenu components for consistent tab and menu UI across Popup, Options, Data Export, and Inspect pages (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - `Metadata` Add 'Run Relevant Tests' option to metadata deploy Test Level picklist [feature 1286](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1286)
 - `Popup` Fix language flag icons for Catalan and Basque on the Users tab [issue #1196](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1196)
 - `Custom Shortcuts` Add "Global" toggle to share a shortcut across all orgs instead of keeping it specific to the current org [feature 191](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/191)
@@ -21,7 +22,6 @@
 
 ## Version 2.0
 
-- `User Experience` Introduce shared TabBar and ButtonMenu components for consistent tab and menu UI across Popup, Options, Data Export, and Inspect pages (contribution by [Camille Guillory](https://github.com/CamilleGuillory))
 - `Data Export` Fix unrecognized Salesforce Ids [issue #984](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/984)
 - `Data Import` Expose metadata updates through Tooling API (ie Bulk Deactivate Flows) [feature 1125](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1125)
 - Fix Lightning Navigation from Analytics / Tableau [issue #1121](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1121)

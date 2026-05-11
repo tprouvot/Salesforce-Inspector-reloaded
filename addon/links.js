@@ -113,6 +113,10 @@ export let setupLinks = [
   {label: "Sales Cloud Einstein Assessor", link: "/lightning/setup/SalesCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   {label: "Service Cloud Einstein Assessor", link: "lightning/setup/ServiceCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   //Platform Tools > Einstein > Einstein Generative AI
+  {label: "Agentforce Analytics", link: "/lightning/setup/AgentAnalyticsLibrary/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
+  {label: "Agentforce Agents", link: "/lightning/setup/EinsteinCopilot/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
+  {label: "Agentforce Asset Library", link: "/lightning/setup/AgentAssetLibrary/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
+  {label: "Testing Center", link: "/lightning/setup/TestingCenter/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
   {label: "Einstein Audit, Analytics, and Monitoring Setup", link: "/lightning/setup/EinsteinFeedbackSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
   {label: "Einstein Setup", link: "/lightning/setup/EinsteinGPTSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
   {label: "Einstein Trust Layer", link: "/lightning/setup/EinsteinTrustLayerSetup/home", section: "Platform Tools > Einstein > Einstein Generative AI", prod: false},
@@ -215,7 +219,7 @@ export let setupLinks = [
   {label: "Send Actions", link: "/lightning/setup/SendAction/home", section: "Platform Tools > Process Automation > Workflow Actions", prod: false},
   {label: "Tasks", link: "/lightning/setup/WorkflowTasks/home", section: "Platform Tools > Process Automation > Workflow Actions", prod: false},
   {label: "Workflow Rules", link: "/lightning/setup/WorkflowRules/home", section: "Platform Tools > Process Automation", prod: false},
-  //User Interface
+  //Platform Tools > User Interface
   {label: "Action Link Templates", link: "/lightning/setup/ActionLinkGroupTemplates/home", section: "Platform Tools > User Interface", prod: false},
   {label: "Guided Actions", link: "/lightning/setup/GuidedActions/home", section: "Platform Tools > User Interface", prod: false},
   {label: "App Menu", link: "/lightning/setup/AppMenu/home", section: "Platform Tools > User Interface", prod: false},
@@ -232,7 +236,7 @@ export let setupLinks = [
   {label: "Quick Text Settings", link: "/lightning/setup/LightningQuickTextSettings/home", section: "Platform Tools > User Interface", prod: false},
   {label: "Record Page Settings", link: "/lightning/setup/SimpleRecordHome/home", section: "Platform Tools > User Interface", prod: false},
   {label: "Rename Tabs and Labels", link: "/lightning/setup/RenameTab/home", section: "Platform Tools > User Interface", prod: false},
-  //Sites and Domains
+  //Platform Tools > Sites and Domains
   {label: "Custom URLs", link: "/lightning/setup/DomainSites/home", section: "Platform Tools > User Interface > Sites and Domains", prod: false},
   {label: "Domains", link: "/lightning/setup/DomainNames/home", section: "Platform Tools > User Interface > Sites and Domains", prod: false},
   {label: "Sites", link: "/lightning/setup/CustomDomain/home", section: "Platform Tools > User Interface > Sites and Domains", prod: false},
@@ -248,7 +252,7 @@ export let setupLinks = [
   {label: "Translation Settings", link: "/lightning/setup/LabelWorkbenchSetup/home", section: "Platform Tools > User Interface > Translation Workbench", prod: false},
 
   {label: "User Interface", link: "/lightning/setup/UserInterfaceUI/home", section: "Platform Tools > User Interface", prod: false},
-  //Custom Code
+  //Platform Tools > Custom Code
   {label: "Apex Classes", link: "/lightning/setup/ApexClasses/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Apex Hammer Test Results", link: "/lightning/setup/ApexHammerResultStatus/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Apex Settings", link: "/lightning/setup/ApexSettings/home", section: "Platform Tools > Custom Code", prod: false},
@@ -260,7 +264,7 @@ export let setupLinks = [
   {label: "Custom Permissions", link: "/lightning/setup/CustomPermissions/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Custom Settings", link: "/lightning/setup/CustomSettings/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Email Services", link: "/lightning/setup/EmailToApexFunction/home", section: "Platform Tools > Custom Code", prod: false},
-  //Lightning Components
+  //Platform Tools > Custom Code > Lightning Components
   {label: "Debug Mode", link: "/lightning/setup/UserDebugModeSetup/home", section: "Platform Tools > Custom Code > Lightning Components", prod: false},
   {label: "Lightning Components", link: "/lightning/setup/LightningComponentBundles/home", section: "Platform Tools > Custom Code > Lightning Components", prod: false},
 
@@ -270,7 +274,7 @@ export let setupLinks = [
   {label: "Tools", link: "/lightning/setup/ClientDevTools/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Visualforce Components", link: "/lightning/setup/ApexComponents/home", section: "Platform Tools > Custom Code", prod: false},
   {label: "Visualforce Pages", link: "/lightning/setup/ApexPages/home", section: "Platform Tools > Custom Code", prod: false},
-  //Development
+  //Platform Tools >   Development
   {label: "Dev Hub", link: "/lightning/setup/DevHub/home", section: "Platform Tools > Dev Hub", prod: true},
   {label: "DevOps Center", link: "/lightning/setup/DevOpsCenterSetup/home", section: "Platform Tools > Dev Hub", prod: true},
   {label: "Org Shape", link: "/lightning/setup/ShapeGrantAccess/home", section: "Platform Tools > Dev Hub", prod: true},
@@ -321,6 +325,7 @@ export let setupLinks = [
   {label: "External Data Sources", link: "/lightning/setup/ExternalDataSource/home", section: "Platform Tools > Integrations", prod: false},
   {label: "External Objects", link: "/lightning/setup/ExternalObjects/home", section: "Platform Tools > Integrations", prod: false},
   {label: "External Services", link: "/lightning/setup/ExternalServices/home", section: "Platform Tools > Integrations", prod: false},
+  {label: "Named Query API", link: "/lightning/setup/ApiNamedQuery/home", section: "Platform Tools > Integrations", prod: false},
   {label: "Platform Events", link: "/lightning/setup/EventObjects/home", section: "Platform Tools > Integrations", prod: false},
   {label: "Teams Integration", link: "/lightning/setup/MicrosoftTeamsIntegration/home", section: "Platform Tools > Integrations", prod: false},
   //Platform Tools > Notification Builder

@@ -328,10 +328,6 @@ Navigate to your browser shortcut menu and choose dedicated shortcuts for the pa
 
 <img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">
 
-### Open Show All Data for current record
-
-Press `Alt+Shift+I` (default) to instantly open the Show All Data page for the record you're currently viewing, without having to open the popup first. You can remap this shortcut in your browser's extension shortcut settings.
-
 ### Default shortcuts
 
 If you want to open popup keyboard shortcuts, you can use the 'ctrl' (windows) or 'command' (mac) key with the corresponding key.
@@ -342,6 +338,8 @@ Example:
 * Org <ins>L</ins>imits : l
 * <ins>D</ins>ownload Metadata : d
 * E<ins>x</ins>plore API : x
+
+You can also assign a shortcut to open **Show All Data** directly for the current record (default: `Alt+Shift+I`), skipping the popup entirely.
 
 ## Highlight PROD with a top border
 

@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Firefox` Support configurable keyboard shortcuts: all extension commands now appear in Firefox's Add-ons Manager under "Manage Extension Shortcuts", and fixed shortcut navigation to use `moz-extension://` protocol [issue #960](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/960) (contribution by [Ruben Halman](https://github.com/RubenHalman))
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition
 

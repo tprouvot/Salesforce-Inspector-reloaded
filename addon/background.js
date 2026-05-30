@@ -81,6 +81,33 @@ chrome.commands?.onCommand.addListener((command) => {
       url: `https:///${sfHost}${link}`
     });
 
+  } else if (command === "open-show-all-data") {
+    chrome.tabs.query({active: true, currentWindow: true}, tabs => {
+      let tab = tabs[0];
+      if (!tab?.url) return;
+      let tabUrl = tab.url;
+      let currentDomain;
+      try { currentDomain = new URL(tabUrl).hostname; } catch { return; }
+      chrome.cookies.get({url: tabUrl, name: "sid", storeId: tab.cookieStoreId}, cookie => {
+        if (!cookie || currentDomain.endsWith(".mcas.ms")) {
+          openShowAllData(currentDomain, tabUrl);
+          return;
+        }
+        const [orgId] = cookie.value.split("!");
+        const orderedDomains = ["salesforce.com", "cloudforce.com", "salesforce.mil", "cloudforce.mil", "sfcrmproducts.cn", "force.com"];
+        let resolved = false;
+        orderedDomains.forEach(domain => {
+          chrome.cookies.getAll({name: "sid", domain, secure: true, storeId: tab.cookieStoreId}, cookies => {
+            if (resolved) return;
+            let sessionCookie = cookies.find(c => c.value.startsWith(orgId + "!") && c.domain != "help.salesforce.com");
+            if (sessionCookie) {
+              resolved = true;
+              openShowAllData(sessionCookie.domain, tabUrl);
+            }
+          });
+        });
+      });
+    });
   } else if (command.startsWith("open-")){
     chrome.runtime.sendMessage({
       msg: "shortcut_pressed", command, sfHost
@@ -117,5 +144,29 @@ async function clearSobjectsListCache() {
   } catch (e) {
     console.error("Error clearing sobjectsList cache on update:", e);
   }
+}
+function openShowAllData(host, tabUrl) {
+  let url;
+  try { url = new URL(tabUrl); } catch { return; }
+  let sobject = null;
+  let sobjectMatch = url.pathname.match(/\/lightning\/[ro]\/([a-zA-Z0-9_]+)\/[a-zA-Z0-9]+/);
+  if (sobjectMatch) sobject = sobjectMatch[1];
+  let recordId = null;
+  if (url.pathname.includes("/builder_platform_interaction/flowBuilder.app")) {
+    let flowId = url.searchParams.get("flowId");
+    if (flowId?.startsWith("301")) recordId = flowId;
+  } else {
+    for (let p of url.pathname.split("/")) {
+      if (p.match(/^([a-zA-Z0-9]{3}|[a-zA-Z0-9]{15}|[a-zA-Z0-9]{18})$/) && p.includes("0000")) {
+        recordId = p;
+        break;
+      }
+    }
+  }
+  let args = new URLSearchParams();
+  args.set("host", host);
+  if (sobject) args.set("objectType", sobject);
+  if (recordId) args.set("recordId", recordId);
+  chrome.tabs.create({url: chrome.runtime.getURL("inspect.html?" + args)});
 }
 chrome.runtime.setUninstallURL("https://forms.gle/y7LbTNsFqEqSrtyc6");

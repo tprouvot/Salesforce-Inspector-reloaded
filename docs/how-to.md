@@ -324,6 +324,7 @@ Navigate to your browser shortcut menu and choose dedicated shortcuts for the pa
 
 * Chrome: [chrome://extensions/shortcut](chrome://extensions/shortcut)
 * Edge: [edge://extensions/shortcuts](edge://extensions/shortcuts)
+* Firefox: Open the Add-ons Manager (`Cmd+Shift+A` on Mac / `Ctrl+Shift+A` on Windows), click the gear icon, then select "Manage Extension Shortcuts"
 
 <img width="660" alt="Use Chrome Shortcuts" src="https://github.com/tprouvot/Salesforce-Inspector-reloaded/assets/35368290/382aea2d-5278-4dfe-89e6-6dcec4c724c9">
 
@@ -337,6 +338,8 @@ Example:
 * Org <ins>L</ins>imits : l
 * <ins>D</ins>ownload Metadata : d
 * E<ins>x</ins>plore API : x
+
+You can also assign a shortcut to open **Show All Data** directly for the current record (default: `Alt+Shift+I`), skipping the popup entirely.
 
 ## Highlight PROD with a top border
 

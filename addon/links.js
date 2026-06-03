@@ -183,6 +183,9 @@ export let setupLinks = [
   {label: "Knowledge Settings", link: "/lightning/setup/KnowledgeSettings/home", section: "Platform Tools > Feature Settings > Service > Knowledge", prod: false},
   {label: "Validation Statuses", link: "/lightning/setup/ValidationStatuses/home", section: "Platform Tools > Feature Settings > Service > Knowledge", prod: false},
 
+  //Platform Tools > Feature Settings > Service > Messaging
+  {label: "Messaging Settings", link: "/lightning/setup/LiveMessageSetup/home", section: "Platform Tools > Feature Settings > Service > Messaging", prod: false},
+
   {label: "Macro Settings", link: "/lightning/setup/MacroSettings/home", section: "Platform Tools > Feature Settings > Service", prod: false},
   {label: "Omni-Channel Settings", link: "/lightning/setup/OmniChannelSettings/home", section: "Platform Tools > Feature Settings > Service", prod: false},
   {label: "Snap-ins", link: "/lightning/setup/Snap-ins/home", section: "Platform Tools > Feature Settings > Service", prod: false},

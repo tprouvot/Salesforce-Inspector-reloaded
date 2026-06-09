@@ -321,6 +321,10 @@ export let setupLinks = [
   {label: "In-App Guidance", link: "/lightning/setup/Prompts/home", section: "Platform Tools > User Engagement", prod: false},
   //Platform Tools > Integrations
   {label: "API", link: "/lightning/setup/WebServices/home", section: "Platform Tools > Integrations", prod: false},
+  //Platform Tools > Integrations > API Catalog
+  {label: "API Catalog", link: "/lightning/setup/ApiCatalog/home", section: "Platform Tools > Integrations > API Catalog", prod: false},
+  {label: "MCP Servers", link: "/lightning/setup/McpServer/home", section: "Platform Tools > Integrations > API Catalog", prod: false},
+
   {label: "Basic Data Import", link: "/lightning/setup/BasicDataImport/home", section: "Platform Tools > Integrations", prod: false},
   {label: "Change Data Capture", link: "/lightning/setup/CdcObjectEnablement/home", section: "Platform Tools > Integrations", prod: false},
   {label: "Data Import Wizard", link: "/lightning/setup/DataManagementDataImporter/home", section: "Platform Tools > Integrations", prod: false},

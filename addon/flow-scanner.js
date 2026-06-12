@@ -1240,8 +1240,14 @@ function FlowInfoSection(props) {
               role: "button",
               tabIndex: "0",
               "aria-label": "Click to toggle description visibility",
-              dangerouslySetInnerHTML: {
-                __html: (flow.xmlData?.description || "No description provided").replace(/\n/g, "<br>")
+              ref: (el) => {
+                if (!el) return;
+                el.textContent = "";
+                const desc = flow.xmlData?.description || "No description provided";
+                desc.split("\n").forEach((line, i, arr) => {
+                  el.appendChild(document.createTextNode(line));
+                  if (i < arr.length - 1) el.appendChild(document.createElement("br"));
+                });
               }
             })
           )

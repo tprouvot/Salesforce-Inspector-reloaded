@@ -60,8 +60,10 @@ class OptionsTabSelector extends React.Component {
     const initialTabId = urlParams.get("selectedTab") || "user-experience";
 
     this.state = {
-      selectedTabId: initialTabId
+      selectedTabId: initialTabId,
+      hasToken: false
     };
+    const self = this;
 
     const flowScannerVersion = window.lightningflowscanner?.version || "";
     const flowScannerTitle = flowScannerVersion ? `Enabled Rules (v${flowScannerVersion})` : "Enabled Rules";
@@ -150,10 +152,12 @@ class OptionsTabSelector extends React.Component {
               actionButton: {
                 label: "Delete Token",
                 title: "Delete the connected app generated token",
-                disabled: localStorage.getItem(this.sfHost + Constants.ACCESS_TOKEN) == null,
+                get disabled() { return !self.state.hasToken; },
                 onClick: (e, model) => {
-                  localStorage.removeItem(model.sfHost + Constants.ACCESS_TOKEN);
-                  e.target.disabled = true;
+                  chrome.storage.local.remove(model.sfHost + Constants.ACCESS_TOKEN, () => {
+                    self.setState({ hasToken: false });
+                    e.target.disabled = true;
+                  });
                 }
               }}},
           {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders", inputSize: "6"}},
@@ -442,6 +446,13 @@ class OptionsTabSelector extends React.Component {
       this.appRef.pendingImportFilters = [FLOW_SCANNER_RULES_STORAGE_KEY];
       this.appRef.refs.fileInput.click();
     }
+  }
+
+  componentDidMount() {
+    const key = this.sfHost + Constants.ACCESS_TOKEN;
+    chrome.storage.local.get(key, (result) => {
+      this.setState({ hasToken: !!result[key] });
+    });
   }
 
   onTabSelect(e) {
@@ -976,6 +987,7 @@ class Option extends React.Component {
             this.actionButton && h("div", {className: "slds-col"},
               h("button", {
                 className: `slds-button slds-button_${this.actionButtonVariant}`,
+                disabled: !!this.props.actionButton?.disabled,
                 onClick: (e) => this.actionButton.onClick(e, this.props.model, this.props.appRef),
                 title: this.actionButton.title || "Action"
               }, this.actionButton.label || "Action")

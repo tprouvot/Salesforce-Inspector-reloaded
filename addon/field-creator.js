@@ -1591,7 +1591,6 @@ class App extends React.Component {
             className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"
           },
           h("a", {
-            href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/field-creator/",
             target: "_blank",
             title: "Field Creator Help",
             className: "slds-button slds-button_icon slds-button_icon-border-filled"

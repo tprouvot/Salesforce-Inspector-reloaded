@@ -26,7 +26,8 @@ export let sfConn = {
     }
 
     sfHost = getMyDomain(sfHost);
-    const oldToken = localStorage.getItem(sfHost + Constants.ACCESS_TOKEN);
+    const storageResult = await chrome.storage.local.get(sfHost + Constants.ACCESS_TOKEN);
+    const oldToken = storageResult[sfHost + Constants.ACCESS_TOKEN];
     this.instanceHostname = sfHost;
 
     // Check if this is an OAuth callback with authorization code (PKCE flow)
@@ -40,7 +41,7 @@ export let sfConn = {
         // Exchange authorization code for access token
         const accessToken = await this.exchangeCodeForToken(sfHost, authorizationCode, codeVerifier);
         this.sessionId = accessToken;
-        localStorage.setItem(sfHost + Constants.ACCESS_TOKEN, accessToken);
+        await chrome.storage.local.set({[sfHost + Constants.ACCESS_TOKEN]: accessToken});
 
         //send message to popup so that it can update the token
         chrome.runtime.sendMessage({message: "tokenUpdated", sfHost});
@@ -207,7 +208,8 @@ export let sfConn = {
       let error = xhr.response.length > 0 ? xhr.response[0].message : "New access token needed";
       errorMessage = `401 Unauthorized: ${error}`;
       //set sessionError only if user has already generated a token, which will prevent to display the error when the session is expired and api access control not configured
-      if (localStorage.getItem(this.instanceHostname + Constants.ACCESS_TOKEN)){
+      const tokenCheck = await chrome.storage.local.get(this.instanceHostname + Constants.ACCESS_TOKEN);
+      if (tokenCheck[this.instanceHostname + Constants.ACCESS_TOKEN]){
         sessionError = {text: "Access Token Expired", title: "Generate New Token", type: "warning", icon: "warning"};
         showToastBanner();
       }

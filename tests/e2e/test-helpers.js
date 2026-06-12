@@ -55,11 +55,14 @@ export async function injectSessionData(context, {host, token, version, addition
       // Check if localStorage is available (may not be in some contexts)
       if (typeof Storage !== "undefined" && window.localStorage) {
         const keyPrefix = host;
-        window.localStorage.setItem(keyPrefix + "_access_token", token);
         window.localStorage.setItem(keyPrefix + "_isSandbox", "true");
         window.localStorage.setItem(keyPrefix + "_orgInstance", "FRA12S");
         window.localStorage.setItem(keyPrefix + "_trialExpirationDate", "2026-01-01");
         window.localStorage.setItem("apiVersion", version);
+      }
+      // Token is stored in chrome.storage.local (inaccessible to page JS)
+      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({[host + "_access_token"]: token});
       }
     } catch (e) {
       // localStorage might not be accessible in this context, continue anyway

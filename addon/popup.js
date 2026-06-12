@@ -40,12 +40,13 @@ if (typeof browser === "undefined") {
         parent.postMessage({command: request.command}, "*");
       }
     } else if (request.message === "tokenUpdated" && request.sfHost) {
-      // Re-read the session from localStorage
-      const newToken = localStorage.getItem(request.sfHost + Constants.ACCESS_TOKEN);
-      if (newToken) {
-        sfConn.sessionId = newToken;
-        init({sfHost: request.sfHost});
-      }
+      chrome.storage.local.get(request.sfHost + Constants.ACCESS_TOKEN, (result) => {
+        const newToken = result[request.sfHost + Constants.ACCESS_TOKEN];
+        if (newToken) {
+          sfConn.sessionId = newToken;
+          init({sfHost: request.sfHost});
+        }
+      });
     }
   });
 }
@@ -63,7 +64,7 @@ function getFilteredLocalStorage() {
   // Always get fresh values for keysToSend from localStorage
   // to avoid cache issues when these values change in options
   return Object.fromEntries(
-    Object.entries(storedData).filter(([key]) => (key.startsWith(domainStart) || key.startsWith("popup") || keysToSend.includes(key)) && !key.endsWith(Constants.ACCESS_TOKEN))
+    Object.entries(storedData).filter(([key]) => key.startsWith(domainStart) || key.startsWith("popup") || keysToSend.includes(key))
   );
 }
 function closePopup() {
@@ -425,10 +426,6 @@ class App extends React.PureComponent {
           link: {
             text: "See What's New",
             props: {
-              href:
-                "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-"
-                + addonVersion.replace(".", ""),
-              target: "_blank",
               onClick: () => this.updateReleaseNotesViewed(addonVersion),
             },
           },
@@ -792,17 +789,7 @@ class App extends React.PureComponent {
               "slds-col slds-size_4-of-12 footer-small-text slds-m-top_xx-small",
               id: "footer"
             },
-            h(
-              "a",
-              {
-                href:
-                "https://tprouvot.github.io/Salesforce-Inspector-reloaded/release-note/#version-"
-                + addonVersion.replace(".", ""),
-                title: "Release note",
-                target: linkTarget,
-              },
-              "v" + addonVersion
-            ),
+            h("span", {title: "Version"}, "v" + addonVersion),
             h("span", {}, " / "),
             h("input", {
               id: "idApiInput",
@@ -825,7 +812,6 @@ class App extends React.PureComponent {
             h(
               "a",
               {
-                href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/how-to/?h=short#customize-extensions-shortcuts",
                 target: linkTarget,
               },
               h(
@@ -852,7 +838,6 @@ class App extends React.PureComponent {
             h(
               "a",
               {
-                href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/donate/",
                 target: linkTarget,
               },
               h(
@@ -879,7 +864,6 @@ class App extends React.PureComponent {
             h(
               "a",
               {
-                href: "https://tprouvot.github.io/Salesforce-Inspector-reloaded/",
                 target: linkTarget,
               },
               h(

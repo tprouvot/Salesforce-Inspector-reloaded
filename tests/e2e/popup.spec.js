@@ -426,19 +426,18 @@ test.describe("Popup", () => {
       // Wait for footer to load
       await page.frameLocator(".insext-popup").locator("#footer").waitFor({timeout: 1000});
 
-      // Verify footer link exists (release-note is in footer)
-      await expect(page.frameLocator(".insext-popup").locator("#footer a[href*='release-note']")).toBeVisible();
+      // Verify version span is in footer (external release-note href removed)
+      await expect(page.frameLocator(".insext-popup").locator("#footer span[title='Version']")).toBeVisible();
 
       const donateContainer = page.frameLocator(".insext-popup").locator("div[title='Donate']");
       await expect(donateContainer).toBeVisible({timeout: 1000});
-      const donateLink = donateContainer.locator("a[href*='donate']");
-      await expect(donateLink).toBeAttached({timeout: 1000});
+      // Donate icon button exists (external href removed)
+      await expect(donateContainer.locator("a")).toBeAttached({timeout: 1000});
 
-      // Documentation locate by parent div title attribute
+      // Documentation icon button exists (external href removed)
       const docContainer = page.frameLocator(".insext-popup").locator("div[title='Documentation']");
       await expect(docContainer).toBeVisible({timeout: 1000});
-      const docLink = docContainer.locator("a[href*='Salesforce-Inspector-reloaded']");
-      await expect(docLink).toBeAttached({timeout: 1000});
+      await expect(docContainer.locator("a")).toBeAttached({timeout: 1000});
     });
   });
 

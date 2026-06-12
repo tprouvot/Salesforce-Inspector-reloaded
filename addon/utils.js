@@ -12,7 +12,7 @@ export class Constants {
   static PromptTemplateDebugLog = "AnalyzeDebugLog";
   static PromptTemplateFormula = "FormulaHelper";
   // Consumer Key of default connected app
-  static DEFAULT_CLIENT_ID = "3MVG9HB6vm3GZZR9qrol39RJW_sZZjYV5CZXSWbkdi6dd74gTIUaEcanh7arx9BHhl35WhHW4AlNUY8HtG2hs";
+  static DEFAULT_CLIENT_ID = "REPLACE_WITH_COMPANY_CONSUMER_KEY";
   static ACCESS_TOKEN = "_access_token";
   static CODE_VERIFIER = "_code_verifier";
   static CLIENT_ID = "_clientId";

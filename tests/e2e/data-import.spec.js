@@ -52,18 +52,20 @@ test.describe("Data Import", () => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto(`chrome-extension://${extensionId}/data-import.html?host=${mockHost}`);
 
-    // Inject localStorage data after page loads (init script might fail due to security restrictions)
+    // Inject session data after page loads (init script might fail due to security restrictions)
     await page.evaluate(({host, token, version}) => {
       try {
         if (typeof Storage !== "undefined" && window.localStorage) {
-          const keyPrefix = host;
-          window.localStorage.setItem(keyPrefix + "_access_token", token);
-          window.localStorage.setItem(keyPrefix + "_isSandbox", "true");
-          window.localStorage.setItem(keyPrefix + "_orgInstance", "FRA12S");
+          window.localStorage.setItem(host + "_isSandbox", "true");
+          window.localStorage.setItem(host + "_orgInstance", "FRA12S");
           window.localStorage.setItem("apiVersion", version);
         }
       } catch (e) {
         console.warn("Failed to set localStorage:", e.message);
+      }
+      // Token is stored in chrome.storage.local (inaccessible to page JS)
+      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({[host + "_access_token"]: token});
       }
     }, {host: mockHost, token: mockToken, version: apiVersion});
 

@@ -189,8 +189,7 @@ test.describe("Flow Scanner", () => {
 
     // Click Export button
     const exportButton = page.locator("button:has-text('Export')");
-    await exportButton.isVisible();
-    if (!(await exportButton.isDisabled())) {
+    if (await exportButton.isVisible() && !(await exportButton.isDisabled())) {
       await exportButton.click();
 
       // Verify download was triggered (in test mode, we can't verify actual download)

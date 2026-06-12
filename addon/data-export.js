@@ -1741,6 +1741,9 @@ class App extends React.Component {
       }
     });
     addEventListener("message", e => {
+      if (!e.origin.startsWith("chrome-extension://") && !e.origin.startsWith("moz-extension://")) {
+        return;
+      }
       if (e.data.command === "open-export-autocomplete") {
         model.queryAutocompleteHandler({ctrlSpace: true});
         model.didUpdate();

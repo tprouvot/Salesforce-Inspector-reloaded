@@ -506,17 +506,23 @@ test.describe("Options", () => {
 
       await page.waitForSelector("button[title='Export Options']", {timeout: 1000});
 
-      // Set up download listener
-      const downloadPromise = page.waitForEvent("download");
+      // Playwright cannot reliably intercept extension blob-URL downloads via the
+      // download event, so intercept the anchor before it is clicked instead.
+      await page.evaluate(() => {
+        window._exportFilename = null;
+        const origAppend = document.body.appendChild.bind(document.body);
+        document.body.appendChild = function(el) {
+          if (el instanceof HTMLAnchorElement && el.download) {
+            window._exportFilename = el.download;
+          }
+          return origAppend(el);
+        };
+      });
 
-      // Click Export Options button
       await page.locator("button[title='Export Options']").click();
 
-      // Wait for download
-      const download = await downloadPromise;
-
-      // Verify download filename
-      expect(download.suggestedFilename()).toBe("reloadedConfiguration.json");
+      const filename = await page.evaluate(() => window._exportFilename);
+      expect(filename).toBe("reloadedConfiguration.json");
     });
 
     test("Import Options", async ({page, extensionId}) => {

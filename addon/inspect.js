@@ -529,6 +529,19 @@ Structure your response clearly with appropriate headings.`;
     this.childRows = new ChildRowList(this);
     this.startLoading();
   }
+  refreshData() {
+    // Re-fetch the latest field values from Salesforce for the currently displayed record.
+    // We keep the existing fieldRows/childRows (and therefore the active row filter, column
+    // filters and sort order), so the user's filter is still obeyed after the refresh.
+    if (this.recordId) {
+      this.recordName = null; // Recompute the record heading in case the Name changed.
+      this.clearRecordData();
+      this.setRecordData(sfConn.rest("/services/data/v" + apiVersion + "/" + (this.useToolingApi ? "tooling/" : "") + "sobjects/" + this.sobjectName + "/" + this.recordId));
+    } else {
+      // No specific record is loaded, so there are no values to refresh; reload the object metadata instead.
+      this.reloadTables();
+    }
+  }
 
   exportTable() {
     // Get the current active tab to determine which table to export
@@ -1642,6 +1655,7 @@ class App extends React.Component {
     this.onDoDelete = this.onDoDelete.bind(this);
     this.onDoCreate = this.onDoCreate.bind(this);
     this.onDoSave = this.onDoSave.bind(this);
+    this.onRefresh = this.onRefresh.bind(this);
     this.onCancelEdit = this.onCancelEdit.bind(this);
     this.onUpdateTableBorderSettings = this.onUpdateTableBorderSettings.bind(this);
     this.handleClick = this.handleClick.bind(this);
@@ -1730,6 +1744,12 @@ class App extends React.Component {
     model.doSave();
     model.didUpdate();
     e.currentTarget.disabled = false;
+  }
+  onRefresh(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.refreshData();
+    model.didUpdate();
   }
   onCancelEdit() {
     let {model} = this.props;
@@ -1855,6 +1875,12 @@ class App extends React.Component {
       h("div", {className: "slds-builder-header__utilities-item slds-p-top_x-small slds-p-horizontal_x-small sfir-border-none"},
         h("div", {className: "slds-media__body"},
           h("span", {className: "slds-button-group object-actions"},
+            model.editMode == null && model.objectName() ? h("button", {
+              title: "Refresh the data shown in the table with the latest field values from Salesforce",
+              className: "slds-button slds-button_neutral",
+              disabled: model.spinnerCount != 0,
+              onClick: this.onRefresh
+            }, "Refresh") : null,
             model.editMode == null && model.recordData && (model.useTab == "all" || model.useTab == "fields") ? h("button", {
               title: "Inline edit the values of this record",
               className: "slds-button slds-button_neutral",

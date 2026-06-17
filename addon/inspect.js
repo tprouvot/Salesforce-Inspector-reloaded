@@ -1671,14 +1671,26 @@ class App extends React.Component {
   onRowsFilterInput(e) {
     let {model} = this.props;
     model.rowsFilter = e.target.value;
+    this.persistFilterInUrl(model.rowsFilter);
     model.didUpdate();
   }
   onClearAndFocusFilter(e) {
     e.preventDefault();
     let {model} = this.props;
     model.rowsFilter = "";
+    this.persistFilterInUrl(model.rowsFilter);
     this.refs.rowsFilter.focus();
     model.didUpdate();
+  }
+  // Persist the filter value in the URL so it survives page refreshes.
+  persistFilterInUrl(value) {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (value) {
+      urlParams.set("filter", value);
+    } else {
+      urlParams.delete("filter");
+    }
+    window.history.replaceState(null, "", "?" + urlParams.toString());
   }
   onShowObjectMetadata(e) {
     e.preventDefault();
@@ -2636,6 +2648,7 @@ class DetailsBox extends React.Component {
     model.sobjectName = args.get("objectType");
     model.useToolingApi = args.has("useToolingApi");
     model.recordId = args.get("recordId");
+    model.rowsFilter = args.get("filter") || "";
     model.startLoading();
     model.reactCallback = cb => {
       ReactDOM.render(h(App, {model}), root, cb);

@@ -1,7 +1,9 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
 /* global initButton */
-import {copyToClipboard, initScrollTable} from "./data-load.js";
+import {initScrollTable} from "./data-load.js";
+import {PageHeader} from "./components/PageHeader.js";
+import {UserInfoModel, createSpinForMethod, copyToClipboard, isOptionEnabled} from "./utils.js";
 
 class QueryHistory {
   constructor(storageKey, max) {
@@ -70,7 +72,7 @@ class Model {
     this.initialEndpoint = "";
     this.sfLink = "https://" + sfHost;
     this.spinnerCount = 0;
-    this.userInfo = "...";
+    this.orgName = "";
     this.winInnerHeight = 0;
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
@@ -90,11 +92,14 @@ class Model {
     this.exportProgress = {};
     this.queryName = "";
     this.apiResponse = null;
+    this.responseCounter = 0;
     this.canSendRequest = true;
     this.resultClass = "neutral";
-    this.request = {endpoint: "", method: "get", body: ""};
+    this.request = {endpoint: "", method: "get", body: "", headers: ""};
+    this.showHeadersEditor = false;
     this.apiList;
     this.filteredApiList;
+    this.displayOptions = JSON.parse(localStorage.getItem("restExploreDisplayOptions") || "[]");
     this.requestTemplates = localStorage.getItem("requestTemplates") ? this.requestTemplates = localStorage.getItem("requestTemplates").split("//") : [
       {key: "getLimit", endpoint: `/services/data/v${apiVersion}/limits`, method: "GET", body: ""},
       {key: "executeApex", endpoint: `/services/data/v${apiVersion}/tooling/executeAnonymous/?anonymousBody=System.debug(LoggingLevel.INFO, 'Executing apex example');`, method: "GET", body: ""},
@@ -105,9 +110,14 @@ class Model {
     ];
     this.selectedTemplate = "";
 
-    this.spinFor(sfConn.soap(sfConn.wsdl(apiVersion, "Partner"), "getUserInfo", {}).then(res => {
-      this.userInfo = res.userFullName + " / " + res.userName + " / " + res.organizationName;
-    }));
+    // Initialize spinFor method
+    this.spinFor = createSpinForMethod(this);
+
+    // Initialize user info model - handles all user-related properties
+    this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
+
+    // Set orgName from sfHost
+    this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
 
     if (args.has("endpoint") && args.has("method")) {
       this.request.endpoint = args.get("endpoint");
@@ -151,6 +161,42 @@ class Model {
   toggleSavedOptions() {
     this.expandSavedOptions = !this.expandSavedOptions;
   }
+  toggleHeadersEditor() {
+    this.showHeadersEditor = !this.showHeadersEditor;
+    if (this.showHeadersEditor && !this.request.headers) {
+      // Pre-populate with default headers when first opened
+      this.request.headers = this.getDefaultHeaders();
+    }
+  }
+  getDefaultHeaders() {
+    // Get default headers that can be edited
+    // Note: Authorization/X-SFDC-Session headers are set automatically based on API type
+    const headers = [];
+    headers.push("Accept: application/json; charset=UTF-8");
+    if (this.request.body && this.request.body.length > 0) {
+      headers.push("Content-Type: application/json; charset=UTF-8");
+    }
+    return headers.join("\n");
+  }
+  parseHeaders(headersText) {
+    const headers = {};
+    if (!headersText || !headersText.trim()) {
+      return headers;
+    }
+    const lines = headersText.split("\n");
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const colonIndex = trimmed.indexOf(":");
+      if (colonIndex === -1) continue;
+      const name = trimmed.substring(0, colonIndex).trim();
+      const value = trimmed.substring(colonIndex + 1).trim();
+      if (name && value) {
+        headers[name] = value;
+      }
+    }
+    return headers;
+  }
   showDescribeUrl() {
     let args = new URLSearchParams();
     args.set("host", this.sfHost);
@@ -163,7 +209,7 @@ class Model {
   copyAsJson() {
     copyToClipboard(this.apiResponse.value, null, "  ");
   }
-  clear(){
+  clear() {
     this.apiResponse.value = "";
   }
   selectSavedEntry() {
@@ -209,35 +255,25 @@ class Model {
       this.testCallback();
     }
   }
-  /**
-   * Show the spinner while waiting for a promise.
-   * didUpdate() must be called after calling spinFor.
-   * didUpdate() is called when the promise is resolved or rejected, so the caller doesn't have to call it, when it updates the model just before resolving the promise, for better performance.
-   * @param promise The promise to wait for.
-   */
-  spinFor(promise) {
-    this.spinnerCount++;
-    promise
-      .catch(err => {
-        console.error("spinFor", err);
-      })
-      .then(() => {
-        this.spinnerCount--;
-        this.didUpdate();
-      })
-      .catch(err => console.log("error handling failed", err));
-  }
 
   doSend() {
-    this.startTime = performance.now();
+    const shouldCalculateDuration = isOptionEnabled("responseDuration", this.displayOptions);
+    if (shouldCalculateDuration) {
+      this.startTime = performance.now();
+    }
     this.canSendRequest = false;
     let api = this.request.endpoint.startsWith("/services/async/") ? "bulk" : "normal";
-    let responseType = this.request.endpoint.startsWith("/services/async/") ? "xml" : "json";
+    // Use empty string for responseType to allow access to responseText
+    // This enables dynamic format detection based on Content-Type header
+    let responseType = this.request.endpoint.startsWith("/services/async/") ? "xml" : "";
     this.request.method = this.request.method.toUpperCase();
-    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", progressHandler: this.autocompleteProgress, useCache: false}, true)
+    const customHeaders = this.parseHeaders(this.request.headers);
+    this.spinFor(sfConn.rest(this.request.endpoint, {method: this.request.method, api, responseType, body: this.request.body, bodyType: "raw", headers: customHeaders, progressHandler: this.autocompleteProgress, useCache: false}, true)
       .catch(err => {
         this.canSendRequest = true;
-        this.totalTime = performance.now() - this.startTime;
+        if (shouldCalculateDuration) {
+          this.totalTime = performance.now() - this.startTime;
+        }
         if (err.name != "AbortError") {
           this.autocompleteResults = {
             title: "Error: " + err.message,
@@ -248,7 +284,9 @@ class Model {
       })
       .then((result) => {
         //generate key with timestamp
-        this.totalTime = performance.now() - this.startTime;
+        if (shouldCalculateDuration) {
+          this.totalTime = performance.now() - this.startTime;
+        }
         this.request.key = Date.now();
         this.queryHistory.add(this.request);
         if (!result) {
@@ -260,23 +298,98 @@ class Model {
       }));
   }
 
-  parseResponse(result, status) {
+  getFormatFromContentType(result) {
+    const contentType = result.getResponseHeader ? result.getResponseHeader("Content-Type") : "";
 
+    // Check if endpoint is ApexLog Body
+    if (this.request.endpoint && this.request.endpoint.includes("ApexLog") && this.request.endpoint.includes("Body")) {
+      return "log";
+    }
+    if (!contentType) {
+      return result.responseType || "json";
+    }
+    if (contentType.includes("xml")) {
+      return "xml";
+    }
+    if (contentType.includes("csv")) {
+      return "csv";
+    }
+    if (contentType.includes("text/")) {
+      return "text";
+    }
+    if (contentType.includes("application/json")) {
+      return "json";
+    }
+    return result.responseType || "json";
+  }
+
+  getResponseText(result) {
+    // When responseType is "json", response contains parsed object (or null), can't access responseText
+    if (result.responseType === "json" && result.response !== null && result.response !== undefined) {
+      return null; // Already parsed
+    }
+    // For other responseTypes, get raw text
+    return result.responseText || result.response || "";
+  }
+
+  parseResponse(result, status) {
     this.resultClass = result.status < 300 ? "success" : result.status > 399 ? "error" : "";
-    let format = result.responseType.length > 0 ? result.responseType : "xml";
+
+    const format = this.getFormatFromContentType(result);
+    const responseText = this.getResponseText(result);
+    let responseData = null;
+    const shouldCalculateSize = isOptionEnabled("responseSize", this.displayOptions);
+    let responseSize = 0;
+
+    if (responseText === null) {
+      // Already parsed (responseType was "json")
+      responseData = result.response;
+      // Calculate size from stringified JSON only if option is enabled
+      if (shouldCalculateSize && responseData !== null && responseData !== undefined) {
+        responseSize = new Blob([JSON.stringify(responseData)]).size;
+      }
+    } else if (responseText) {
+      // Calculate size from raw response text only if option is enabled
+      if (shouldCalculateSize) {
+        responseSize = new Blob([responseText]).size;
+      }
+      // Parse based on format
+      if (format === "json") {
+        try {
+          responseData = JSON.parse(responseText);
+        } catch {
+          // Not valid JSON, treat as text or log
+          responseData = responseText;
+          const fallbackFormat = (this.request.endpoint && this.request.endpoint.includes("ApexLog") && this.request.endpoint.includes("Body")) ? "log" : "text";
+          this.apiResponse = {
+            status,
+            code: result.status,
+            format: fallbackFormat,
+            value: this.formatResponse(responseText, fallbackFormat),
+            size: responseSize
+          };
+          this.responseCounter++;
+          return;
+        }
+      } else {
+        responseData = responseText;
+      }
+    }
+
     this.apiResponse = {
       status,
       code: result.status,
       format,
-      value: result.response ? this.formatResponse(result.response, format) : "NONE"
+      value: responseData ? this.formatResponse(responseData, format) : "NONE",
+      size: responseSize
     };
-    if (this.resultClass === "success"){
-      let newApis = Object.keys(result.response)
-        .filter(key => typeof result.response[key] == "string" && result.response[key].startsWith("/services/data/"))
-        .map(key => ({
-          key,
-          "endpoint": result.response[key]
-        }));
+    this.responseCounter++;
+
+    // Extract new API endpoints from successful JSON responses
+    if (this.resultClass === "success" && responseData && typeof responseData === "object" && !Array.isArray(responseData)) {
+      const newApis = Object.keys(responseData)
+        .filter(key => typeof responseData[key] == "string" && responseData[key].startsWith("/services/data/"))
+        .map(key => ({key, "endpoint": responseData[key]}));
       newApis.forEach(api => {
         if (!this.apiList.some(existingApi => existingApi.key === api.key)) {
           this.apiList.push(api);
@@ -289,9 +402,16 @@ class Model {
   formatResponse(resp, format) {
     if (format === "xml") {
       return this.formatXml(resp);
-    } else {
+    }
+    if (format === "text" || format === "log") {
+      // For text/log responses, return as-is
+      return typeof resp === "string" ? resp : String(resp);
+    }
+    // For JSON, stringify if it's an object, otherwise return as-is
+    if (typeof resp === "object" && resp !== null) {
       return JSON.stringify(resp, null, "    ");
     }
+    return String(resp);
   }
 
   formatXml(sourceXml) {
@@ -314,7 +434,18 @@ class Model {
     let resultDoc = xsltProcessor.transformToDocument(xmlDoc);
     let resultXml = new XMLSerializer().serializeToString(resultDoc);
     return resultXml;
-  };
+  }
+
+  formatBytes(bytes) {
+    if (bytes === 0) {
+      return "0 B";
+    }
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return (bytes / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
+  }
+
 }
 
 
@@ -338,10 +469,21 @@ class App extends React.Component {
     this.onUpdateBody = this.onUpdateBody.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onSetEndpoint = this.onSetEndpoint.bind(this);
+    this.onToggleHeadersEditor = this.onToggleHeadersEditor.bind(this);
+    this.onUpdateHeaders = this.onUpdateHeaders.bind(this);
   }
   onSelectEntry(e, list) {
     let {model} = this.props;
-    model.request = list.filter(template => template.key.toString() === e.target.value)[0];
+    const selectedRequest = list.filter(template => template.key.toString() === e.target.value)[0];
+    // Preserve headers editor state and headers if they exist
+    const currentHeaders = model.request.headers || "";
+    const showHeadersEditor = model.showHeadersEditor;
+    model.request = selectedRequest;
+    // Restore headers if they were set, otherwise initialize empty
+    if (!model.request.headers) {
+      model.request.headers = currentHeaders || "";
+    }
+    model.showHeadersEditor = showHeadersEditor;
     this.refs.endpoint.value = model.request.endpoint;
     this.resetRequest(model);
     model.didUpdate();
@@ -358,13 +500,12 @@ class App extends React.Component {
     let {model} = this.props;
     this.onSelectEntry(e, model.savedHistory.list);
   }
-  resetRequest(model){
+  resetRequest(model) {
     model.apiResponse = "";
-    this.refs.resultBar.classList.remove("success");
-    this.refs.resultBar.classList.remove("error");
+    model.responseCounter++;
     model.didUpdate();
   }
-  onSelectQueryMethod(e){
+  onSelectQueryMethod(e) {
     let {model} = this.props;
     model.request.method = e.target.value;
     this.canSendRequest();
@@ -421,12 +562,12 @@ class App extends React.Component {
     model.copyAsJson();
     model.didUpdate();
   }
-  onClearResponse(){
+  onClearResponse() {
     let {model} = this.props;
     model.clear();
     model.didUpdate();
   }
-  onUpdateBody(e){
+  onUpdateBody(e) {
     let {model} = this.props;
     model.request.body = e.target.value;
     this.canSendRequest();
@@ -437,7 +578,7 @@ class App extends React.Component {
     model.setQueryName(e.target.value);
     model.didUpdate();
   }
-  onSetEndpoint(e){
+  onSetEndpoint(e) {
     let {model} = this.props;
     model.request.endpoint = e.target.value;
     //replace current endpoint with latest on the have the autocomplete works for all api versions
@@ -445,7 +586,16 @@ class App extends React.Component {
     model.filteredApiList = model.apiList.filter(api => api.endpoint.toLowerCase().includes(updatedApiEndpoint.toLowerCase()));
     model.didUpdate();
   }
-
+  onToggleHeadersEditor() {
+    let {model} = this.props;
+    model.toggleHeadersEditor();
+    model.didUpdate();
+  }
+  onUpdateHeaders(e) {
+    let {model} = this.props;
+    model.request.headers = e.target.value;
+    model.didUpdate();
+  }
   componentDidMount() {
     let {model} = this.props;
     let endpointInput = this.refs.endpoint;
@@ -484,15 +634,18 @@ class App extends React.Component {
   }
   componentDidUpdate() {
     this.recalculateSize();
-    if (window.Prism) {
+    // Only run Prism when a new query result arrived - skip when just typing in endpoint/body.
+    const counter = this.props.model?.responseCounter ?? 0;
+    if (counter !== this._lastHighlightedCounter && this.props.model?.apiResponse && window.Prism) {
       window.Prism.highlightAll();
+      this._lastHighlightedCounter = counter;
     }
   }
-  canSendRequest(){
+  canSendRequest() {
     let {model} = this.props;
     model.canSendRequest = model.request.method === "GET" || model.request.body.length > 1;
   }
-  autocompleteClick(value){
+  autocompleteClick(value) {
     let {model} = this.props;
     model.request.method = "GET";
     this.refs.endpoint.value = value.endpoint;
@@ -506,131 +659,223 @@ class App extends React.Component {
     // Investigate if we can use the IntersectionObserver API here instead, once it is available.
     //this.scrollTable.viewportChange();
   }
-  toggleQueryMoreMenu(){
-    this.refs.buttonQueryMenu.classList.toggle("slds-is-open");
+  toggleQueryMoreMenu(event) {
+    this.refs.buttonQueryMenu?.classList.toggle("slds-is-open");
   }
   render() {
     let {model} = this.props;
     return h("div", {},
-      h("div", {id: "user-info"},
-        h("a", {href: model.sfLink, className: "sf-link"},
-          h("svg", {viewBox: "0 0 24 24"},
-            h("path", {d: "M18.9 12.3h-1.5v6.6c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-5.1h-3.6v5.1c0 .2-.1.3-.3.3h-3c-.2 0-.3-.1-.3-.3v-6.6H5.1c-.1 0-.3-.1-.3-.2s0-.2.1-.3l6.9-7c.1-.1.3-.1.4 0l7 7v.3c0 .1-.2.2-.3.2z"})
-          ),
-          " Salesforce Home"
-        ),
-        h("h1", {}, "REST Explore"),
-        h("span", {}, " / " + model.userInfo),
-        h("div", {className: "flex-right"},
-          h("div", {id: "spinner", role: "status", className: "slds-spinner slds-spinner_small slds-spinner_inline", hidden: model.spinnerCount == 0},
-            h("span", {className: "slds-assistive-text"}),
-            h("div", {className: "slds-spinner__dot-a"}),
-            h("div", {className: "slds-spinner__dot-b"}),
-          )
-        ),
-      ),
-      h("div", {className: "area"},
-        h("div", {className: "area-header"},
-        ),
-        h("div", {className: "query-controls"},
-          h("h1", {}, "Request"),
-          h("div", {className: "query-history-controls"},
-            h("select", {value: model.selectedTemplate, onChange: this.onSelectRequestTemplate, className: "query-template", title: "Check documentation to customize templates"},
-              h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
-              model.requestTemplates.map(req => h("option", {key: req.key, value: req.key}, req.method + " " + req.endpoint))
-            ),
-            h("div", {className: "button-group"},
-              h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "History"),
-                model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.method + " " + q.endpoint))
-              ),
-              h("button", {onClick: this.onClearHistory, title: "Clear Request History"}, "Clear")
-            ),
-            h("div", {className: "button-group"},
-              h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
-                h("option", {value: JSON.stringify(null), disabled: true}, "Saved"),
-                model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.label + " " + q.method + " " + q.endpoint))
-              ),
-              h("input", {placeholder: "Query Label", type: "save", value: model.queryName, onInput: this.onSetQueryName}),
-              h("button", {onClick: this.onAddToHistory, title: "Add request to saved history"}, "Save Query"),
-              h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last"},
-                h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled", onMouseEnter: () => this.toggleQueryMoreMenu(), title: "Show more options"},
-                  h("svg", {className: "slds-button__icon"},
-                    h("use", {xlinkHref: "symbols.svg#down"})
-                  ),
-                  h("span", {className: "slds-assistive-text"}, "Show more options")
+      h(PageHeader, {
+        pageTitle: "REST Explorer",
+        orgName: model.orgName,
+        sfLink: model.sfLink,
+        sfHost: model.sfHost,
+        spinnerCount: model.spinnerCount,
+        ...model.userInfoModel.getProps()
+      }),
+      h(
+        "div",
+        {
+          className: "slds-m-top_xx-large sfir-page-container"
+        },
+        // Request card (not flexible)
+        h("div", {className: "slds-card slds-m-around_medium"},
+          h("div", {className: "slds-card__body slds-card__body_inner"},
+            h("div", {className: "slds-card__header slds-grid slds-grid_vertical-align-center"},
+              h("header", {className: "slds-media slds-media_center slds-has-flexi-truncate"},
+                h("div", {className: "slds-media__body"},
+                  h("h3", {className: " slds-card__header-title"}, "Request"),
                 ),
-                h("div", {className: "slds-dropdown slds-dropdown_right", onMouseLeave: () => this.toggleQueryMoreMenu()},
-                  h("ul", {className: "slds-dropdown__list", role: "menu"},
-                    h("li", {className: "slds-dropdown__item", role: "presentation"},
-                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
-                        h("span", {className: "slds-truncate"},
-                          h("span", {className: "slds-truncate blue", onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
+                h("div", {},
+                  h("div", {className: "slds-form-element__control"},
+                    h("div", {className: "slds-grid slds-grid_align-end"},
+                      h("div", {className: "slds-size_1-of-6"}),
+                      h("div", {className: "slds-size-1-of-6 slds-p-horizontal_xx-small"},
+                        h("div", {className: "slds-form-element__control"},
+                          h("select", {value: model.selectedTemplate, onChange: this.onSelectRequestTemplate, className: "slds-select", title: "Check documentation to customize templates"},
+                            h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "Templates"),
+                            model.requestTemplates.map(req => h("option", {key: req.key, value: req.key}, req.method + " " + req.endpoint))
+                          ),
+                        )
+                      ),
+                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
+                        h("div", {className: "slds-form-element__control"},
+                          h("select", {value: JSON.stringify(model.selectedHistoryEntry), onChange: this.onSelectHistoryEntry, className: "slds-select"},
+                            h("option", {value: JSON.stringify(null), disabled: true}, "History"),
+                            model.queryHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.method + " " + q.endpoint))
+                          ),
+                        )
+                      ),
+                      h("div", {className: "slds-col slds-p-horizontal_xx-small slds-p-horizontal_xx-small slds-m-right_large"},
+                        h("div", {className: "slds-form-element__control"},
+                          h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Request History"}, "Clear")
+                        )
+                      ),
+                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
+                        h("div", {className: "slds-form-element__control"},
+                          h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "slds-select"},
+                            h("option", {value: JSON.stringify(null), disabled: true}, "Saved"),
+                            model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: q.key}, q.label + " " + q.method + " " + q.endpoint))
+                          ),
+                        )
+                      ),
+                      h("div", {className: "slds-size_1-of-6 slds-p-horizontal_xx-small"},
+                        h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left"},
+                          h("svg", {className: "slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default", "aria-hidden": "true"},
+                            h("use", {xlinkHref: "symbols.svg#save"})
+                          ),
+                          h("input", {className: "slds-input", placeholder: "Query Label", value: model.queryName, onInput: this.onSetQueryName})
+                        )
+                      ),
+                      h("div", {className: "slds-col slds-p-left_xx-small"},
+                        h("div", {className: "slds-button-group", role: "group"},
+                          h("button", {
+                            className: "slds-button slds-button_neutral",
+                            onClick: this.onAddToHistory,
+                            style: {whiteSpace: "nowrap"}
+                          }, "Save Query"),
+                          h("div", {ref: "buttonQueryMenu", className: "slds-dropdown-trigger slds-dropdown-trigger_click slds-button_last", onClick: (event) => event.currentTarget.classList.toggle("slds-is-open")},
+                            h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled"},
+                              h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                                h("use", {xlinkHref: "symbols.svg#down"})
+                              )
+                            ),
+                            h("div", {className: "slds-dropdown slds-dropdown_right slds-dropdown_actions"},
+                              h("ul", {className: "slds-dropdown__list", role: "menu"},
+                                h("li", {className: "slds-dropdown__item", role: "presentation"},
+                                  h("a", {href: "#", role: "menuitem", tabIndex: "0", target: "_blank"},
+                                    h("span", {onClick: this.onRemoveFromHistory, title: "Remove query from saved history"}, "Remove Saved Query")
+                                  )
+                                ),
+                                h("li", {className: "slds-dropdown__item", role: "presentation"},
+                                  h("a", {href: "#", role: "menuitem", tabIndex: "0", target: "_blank"},
+                                    h("span", {onClick: this.onClearSavedHistory, title: "Clear Saved Queries"}, "Clear Saved Queries")
+                                  )
+                                ),
+                              )
+                            )
+                          )
                         )
                       )
-                    ),
-                    h("li", {className: "slds-dropdown__item", role: "presentation"},
-                      h("a", {onClick: () => console.log("menu item click"), target: "_blank", tabIndex: "0"},
-                        h("span", {className: "slds-truncate"},
-                          h("span", {className: "slds-truncate blue", onClick: this.onClearSavedHistory, title: "Clear saved history"}, "Clear Saved Queries")
+                    )
+                  ),
+                )
+              )
+            ),
+            h("div", {className: "slds-card__body slds-card__body_inner"},
+              h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
+                h("div", {className: "slds-size_1-of-12 slds-p-right_xx-small"},
+                  h("div", {className: "slds-form-element"},
+                    h("div", {className: "slds-form-element__control"},
+                      h("div", {className: "slds-select_container"},
+                        h("select", {className: "slds-select", value: model.request.method, onChange: this.onSelectQueryMethod},
+                          h("option", {key: "get", value: "GET"}, "GET"),
+                          h("option", {key: "post", value: "POST"}, "POST"),
+                          h("option", {key: "put", value: "PUT"}, "PUT"),
+                          h("option", {key: "patch", value: "PATCH"}, "PATCH"),
+                          h("option", {key: "delete", value: "DELETE"}, "DELETE")
                         )
                       )
                     )
                   )
+                ),
+                h("div", {className: "slds-col sfir-full-width slds-p-horizontal_xx-small"},
+                  h("input", {ref: "endpoint", className: "slds-input", type: "default", placeholder: "/services/data/v" + apiVersion, onChange: this.onSetEndpoint})
+                ),
+                h("div", {className: "slds-col slds-text-align_right slds-p-left_xx-small"},
+                  h("div", {className: "slds-grid slds-grid_vertical-align-center slds-grid_align-end slds-gutters_xx-small"},
+                    h("div", {className: "slds-col"},
+                      h("button", {className: "slds-button slds-button_neutral slds-button_small", onClick: this.onToggleHeadersEditor, title: model.showHeadersEditor ? "Hide Headers" : "Show Headers"}, "Headers")
+                    ),
+                    h("div", {className: "slds-col"},
+                      h("button", {tabIndex: 1, disabled: !model.canSendRequest, onClick: this.onSend, title: "Ctrl+Enter / F5", className: "slds-button slds-button_brand slds-button_small"}, "Send")
+                    )
+                  )
+                ),
+              ),
+              h("div", {className: "slds-m-top_medium"},
+                model.filteredApiList?.length > 0
+                  ? model.filteredApiList.map(r =>
+                    h("span", {className: "slds-pill slds-pill_link slds-m-vertical_xxx-small", key: r.key},
+                      h("span", {className: "slds-pill__icon_container"},
+                        h("span", {className: "slds-avatar slds-avatar_circle"},
+                          h("svg", {className: "slds-button__icon", "aria-hidden": "true"},
+                            h("use", {xlinkHref: "symbols.svg#link"})
+                          ),
+                        )
+                      ),
+                      h("a", {
+                        href: "#",
+                        className: "slds-pill__action",
+                        onClick: e => { e.preventDefault(); this.autocompleteClick(r); model.didUpdate(); }
+                      },
+                      h("span", {className: "slds-pill__label"}, r.key)
+                      ),
+                    ),
+                  ) : null
+              ),
+              model.showHeadersEditor && h("div", {className: "slds-m-top_medium"},
+                h("h3", {className: "slds-text-heading_small"}, "Request Headers"),
+                h("div", {className: "slds-m-top_small"},
+                  h("textarea", {className: "slds-textarea", rows: 2, value: model.request.headers || "", onChange: this.onUpdateHeaders, placeholder: "Accept: application/json; charset=UTF-8\nContent-Type: application/json; charset=UTF-8"})
                 )
               ),
-            ),
-          ),
-        ),
-        h("div", {className: "query-controls slds-form-element__control"},
-          h("select", {value: model.request.method, onChange: this.onSelectQueryMethod, className: "query-history slds-m-right_medium", title: "Choose rest method"},
-            h("option", {key: "get", value: "GET"}, "GET"),
-            h("option", {key: "post", value: "POST"}, "POST"),
-            h("option", {key: "put", value: "PUT"}, "PUT"),
-            h("option", {key: "patch", value: "PATCH"}, "PATCH"),
-            h("option", {key: "delete", value: "DELETE"}, "DELETE")
-          ),
-          h("input", {ref: "endpoint", className: "slds-input query-control slds-m-right_medium", type: "default", placeholder: "/services/data/v" + apiVersion, onChange: this.onSetEndpoint}),
-          h("div", {className: "flex-right"},
-            h("button", {tabIndex: 1, disabled: !model.canSendRequest, onClick: this.onSend, title: "Ctrl+Enter / F5", className: "highlighted"}, "Send")
-          )
-        ),
-        h("div", {className: "autocomplete-box"},
-          h("div", {className: "autocomplete-header"}),
-          h("div", {className: "autocomplete-results"},
-            model.filteredApiList?.length > 0 ? model.filteredApiList.map(r =>
-              h("div", {className: "autocomplete-result", key: r.key}, h("a", {tabIndex: 0, title: r.key, onClick: e => { e.preventDefault(); this.autocompleteClick(r); model.didUpdate(); }, href: "#", className: "fieldName url"}, h("div", {className: "autocomplete-icon"}), r.key), " ")
-            ) : null
-          ),
-        ),
-        h("div", {className: "autocomplete-box slds-m-top_medium"},
-          h("h1", {className: ""}, "Request Body"),
-          h("div", {className: "slds-m-top_small"},
-            h("textarea", {className: "request-body", value: model.request.body, onChange: this.onUpdateBody})
-          )
-        )
-      ),
-      h("div", {className: "area", id: "result-area"},
-        h("div", {ref: "resultBar", className: `result-bar ${model.resultClass}`},
-          h("h1", {}, "Response"),
-          h("div", {className: "button-group"},
-            h("button", {disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy")
-          ),
-          h("span", {className: "result-status flex-right"},
-            model.apiResponse && h("div",
-              h("span", {}, model.totalTime.toFixed(1) + "ms"),
-              h("span", {className: "slds-m-left_medium status-code"}, "Status: " + model.apiResponse.code)
-            ),
-            h("div", {className: "slds-m-left_medium button-group"},
-              h("button", {disabled: !model.apiResponse, onClick: this.onClearResponse, title: "Clear Response"}, "Clear")
+              h("div", {className: "slds-m-top_medium"},
+                h("h3", {className: "slds-text-heading_small"}, "Request Body"),
+                h("div", {className: "slds-m-top_small"},
+                  h("textarea", {className: "slds-textarea", rows: 6, value: model.request.body, onChange: this.onUpdateBody})
+                )
+              )
             )
           )
         ),
-        h("textarea", {id: "result-text", readOnly: true, value: model.exportError || "", hidden: model.exportError == null}),
-        h("div", {id: "result-table", ref: "scroller", hidden: model.exportError != null},
-          model.apiResponse && h("div", {},
-            h("pre", {className: "reset-margin"}, // Set the language class for Prism to highlight
-              h("code", {className: "language-" + model.apiResponse.format}, model.apiResponse.value)
+        // Response card (flexible, fills remaining space)
+        h(
+          "div",
+          {
+            className: "slds-card slds-m-around_medium",
+            style: {
+              flex: "1 1 0",
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column"
+            }
+          },
+          h("div", {className: "slds-card__header"},
+            h("div", {className: "slds-grid slds-grid_vertical-align-center slds-grid_align-spread slds-p-around_small"},
+              h("div", {className: "slds-size_8-of-12"},
+                h("span", {className: "slds-text-heading_small slds-m-right_small"}, "Response"),
+                h("button", {className: "slds-button slds-button_neutral", disabled: !model.apiResponse, onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy"),
+              ),
+              h("div", {className: "slds-size_4-of-12 slds-text-align_right"},
+                h("span", {},
+                  model.apiResponse && h("div", {},
+                    isOptionEnabled("responseSize", model.displayOptions) && model.apiResponse.size > 0 && h("span", {className: "slds-m-right_small"}, model.formatBytes(model.apiResponse.size)),
+                    isOptionEnabled("responseDuration", model.displayOptions) && h("span", {className: "slds-m-right_small"}, model.totalTime.toFixed(1) + "ms"),
+                    h("span", {className: "slds-m-right_small slds-badge slds-theme_" + model.resultClass}, "Status: " + model.apiResponse?.code),
+                    h("button", {className: "slds-button slds-button_neutral", disabled: !model.apiResponse, onClick: this.onClearResponse, title: "Clear Response"}, "Clear")
+                  )
+                )
+              ),
+            )
+          ),
+          h(
+            "div",
+            {
+              className: "slds-card__body slds-card__body_inner",
+              ref: "scroller",
+              hidden: model.exportError != null,
+              style: {
+                flex: "1 1 0",
+                minHeight: 0,
+                maxHeight: "100%",
+                overflowY: "auto"
+              }
+            },
+            model.apiResponse && h("div", {},
+              h("pre", {className: "reset-margin", style: {margin: 0}},
+                h("code", {className: "language-" + model.apiResponse.format}, model.apiResponse.value)
+              )
             )
           )
         )
@@ -656,10 +901,6 @@ class App extends React.Component {
       ReactDOM.render(h(App, {model}), root, cb);
     };
     ReactDOM.render(h(App, {model}), root);
-
-    if (parent && parent.isUnitTest) { // for unit tests
-      parent.insextTestLoaded({model, sfConn});
-    }
   });
 
 }

@@ -19,80 +19,32 @@ if (document.querySelector("body.sfdcBody, body.ApexCSIPage, #auraLoadingBox, #s
 function initButton(sfHost, inInspector) {
   let rootEl = document.createElement("div");
   rootEl.id = "insext";
-  let btn = document.createElement("div");
+  let btn = document.createElement("button");
   let iFrameLocalStorage = {};
+  btn.type = "button";
   btn.className = "insext-btn";
-  btn.tabIndex = 0;
   btn.accessKey = "i";
   btn.title = "Show Salesforce details (Alt+I / Shift+Alt+I)";
   rootEl.appendChild(btn);
   loadPopup(sfHost);
   document.body.appendChild(rootEl);
 
-  addFlowScrollability();
-
-  function addFlowScrollability(popupEl) {
-    const currentUrl = window.location.href;
-    // Check the current URL for the string "builder_platform_interaction"
-    if (currentUrl.includes("builder_platform_interaction")) {
-      // Create a new checkbox element
-      const headerFlow = document.querySelector("builder_platform_interaction-container-common");
-      const overflowCheckbox = document.createElement("input");
-      overflowCheckbox.type = "checkbox";
-      overflowCheckbox.id = "overflow-checkbox";
-      const checkboxState = iFrameLocalStorage.scrollOnFlowBuilder;
-      // Check local storage for the checkbox state
-      (checkboxState != null) ? (overflowCheckbox.checked = checkboxState) : (overflowCheckbox.checked = true);
-      // Create a new label element for the checkbox
-      const overflowLabel = document.createElement("label");
-      overflowLabel.textContent = "Enable flow scrollability";
-      overflowLabel.htmlFor = "overflow-checkbox";
-      if (currentUrl.includes("sandbox")){
-        overflowCheckbox.className = "checkboxScrollSandbox";
-        overflowLabel.className = "labelCheckboxScrollSandbox";
-      } else {
-        overflowCheckbox.className = "checkboxScrollProd";
-        overflowLabel.className = "labeCheckboxScrollProd";
-      }
-      // Get a reference to the <head> element
-      const head = document.head;
-      // Create a new <style> element
-      const style = document.createElement("style");
-      // Set the initial text content of the <style> element
-      style.textContent = ".canvas {overflow : auto!important ; }";
-      // Append the <style> element to the <head> element
-      head.appendChild(style);
-      // Append the checkbox and label elements to the body of the document
-      headerFlow.appendChild(overflowCheckbox);
-      headerFlow.appendChild(overflowLabel);
-      // Set the overflow property to "auto"
-      overflowCheckbox.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
-      // Listen for changes to the checkbox state
-      overflowCheckbox.addEventListener("change", function() {
-        // Check if the checkbox is currently checked
-        // Save the checkbox state to local storage
-        popupEl.contentWindow.postMessage({
-          updateLocalStorage: true,
-          key: "scrollOnFlowBuilder",
-          value: JSON.stringify(this.checked)
-        }, "*");
-        // Set the overflow property to "auto"
-        this.checked ? style.textContent = ".canvas {overflow : auto!important ; }" : style.textContent = ".canvas {overflow : hidden!important ; }";
-      });
-    }
-  }
 
   // Calulates default position, left to right for horizontal, and adds boundaries to keep it on screen
-  function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos}) {
+  function calcPopup({popupArrowOrientation: o, popupArrowPosition: pos, popupHeighDynamictMode: dynamicHeight}) {
     o = o || "vertical"; // Default to vertical
     const isVertical = o === "vertical";
     pos = pos ? Math.min(95, pos) + "%" : "122px";
     const [posStyle, oStyle] = isVertical ? ["top", "right"] : ["left", "bottom"];
     const imgSrc = isVertical
-      ? "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAPCAYAAADd/14OAAAA40lEQVQoz2P4//8/AzpWzGj6L59U/V8urgxMg/g4FUn6J/+X9E38LxWc8V8htR67IpCkuGfMfxCQjSpENRFFkXvk/1+/foGxQloDSD0DVkVfvnyBY7hCdEVv3rxBwXCFIIdKh2WDFT1+/BgDo1qd2fL/1q1bWDFcoW5xz3/Xppn/oycu/X/x4kUMDFeoWdD136R8wn+f9rlgxSdOnEDBKFajK96/fz8coyjEpnj79u1gjKEQXXFE/+L/Gzdu/G9WMfG/am4HZlzDFAf3LPwfOWEJWBPIwwzYUg9MsXXNFDAN4gMAmASShdkS4AcAAAAASUVORK5CYII="
-      : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAKCAYAAABrGwT5AAAAAXNSR0IArs4c6QAAAFBlWElmTU0AKgAAAAgAAgESAAMAAAABAAEAAIdpAAQAAAABAAAAJgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAD6ADAAQAAAABAAAACgAAAADdC3pnAAABWWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNi4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyI+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgoZXuEHAAABKElEQVQoFWNgwAI0C7r+6xb3/AdJKaTW/1fMaAKz0ZUyoguANHKzszEIcnMy3Hn+muHX2+cMLDwCDExs7Az3Z9ShqGdC1gzTKCHAyyDGz8OwszCM4c/Hdwy/P75l+PfrJwO6C+CakTXyc3EwlDnogM09M6eL4e+Xj1gNAGtG15hrrozsIIarSydjNYARXWOKnhQDJycnBubg4GBQDk5lYObhZ2DlFwaHARMocORFBRl4ONgYYtSEUGxE5zzevJDh77cvwEB8AQ4DJnZWFgY2FmaGSCU+dLVY+S+2LWZg+PeP4f+f3wwsP3//Yfj8/SdD6/G3DK/evceqAVkQFHiMwGhjZGFlYPn68xfDwzfvGX78+sPwYFYDSjwia4KxQdHF/JePgZGZmQEASqV1t0W3n+oAAAAASUVORK5CYII=";
-    const btnClass = `insext-btn-${o}`;
-    return {pos, posStyle, oStyle, imgSrc, btnClass};
+      ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M14 7l-5 5 5 5' stroke='%230176d3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
+      : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M7 10l5 5 5-5' stroke='%230176d3' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
+    let btnClasses = [];
+    btnClasses.push(`insext-btn-${o}`);
+    if (dynamicHeight === "true") {
+      btnClasses.push("insext-btn-dynamic-height");
+    }
+    return {pos, posStyle, oStyle, imgSrc, btnClasses};
   }
 
   function setRootCSSProperties(rootElement, buttonElement) {
@@ -102,7 +54,7 @@ function initButton(sfHost, inInspector) {
     img.src = p.imgSrc;
     rootElement.style[p.posStyle] = p.pos;
     rootElement.style[p.oStyle] = 0;
-    buttonElement.classList.add(p.btnClass);
+    p.btnClasses.forEach(item => buttonElement.classList.add(item));
     buttonElement.appendChild(img);
   }
 
@@ -156,15 +108,9 @@ function initButton(sfHost, inInspector) {
   function colorizeBanner(faviconColor, isSandbox, bannerText){
     const sandboxBannerSelector = "div.slds-color__background_gray-1.slds-text-align_center.slds-size_full.slds-text-body_regular.oneSystemMessage";
     if (isSandbox === "false"){
+      let envNameBanner = addBannerText(isSandbox, faviconColor, bannerText, sandboxBannerSelector);
       const bannerContainer = document.querySelector(sandboxBannerSelector);
-      const envNameBanner = document.createElement("div");
-      envNameBanner.className = "slds-notify_alert";
-      envNameBanner.style.backgroundColor = faviconColor;
-      envNameBanner.style.color = "white";
-      const envNameSpan = document.createElement("span");
-      envNameSpan.textContent = bannerText ? bannerText : "WARNING: THIS IS PRODUCTION";
-      envNameBanner.appendChild(envNameSpan);
-
+      addBannerText(isSandbox, faviconColor, bannerText, bannerContainer);
       if (bannerContainer) {
         //most of the time
         bannerContainer.appendChild(envNameBanner);
@@ -178,10 +124,28 @@ function initButton(sfHost, inInspector) {
       // add a new observer for the new devops_center sandbox banner
       observeElement("devops_center-base-component", (banner) => {
         const navBar = banner.getElementsByClassName("navBar-container")[0];
+        if (bannerText){
+          addBannerText(true, faviconColor, bannerText, navBar.firstChild);
+        }
         if (navBar) navBar.style.backgroundColor = faviconColor;
       });
 
     }
+  }
+
+  function addBannerText(isSandbox, faviconColor, bannerText, bannerContainer) {
+    const envNameBanner = document.createElement("div");
+    envNameBanner.style.backgroundColor = faviconColor;
+    envNameBanner.style.color = "white";
+    const envNameSpan = document.createElement("span");
+    envNameSpan.textContent = bannerText ? bannerText : "WARNING: THIS IS PRODUCTION";
+    envNameBanner.appendChild(envNameSpan);
+    if (isSandbox === "false"){
+      envNameBanner.className = "slds-notify_alert";
+    } else {
+      bannerContainer.firstChild.after(envNameBanner);
+    }
+    return envNameBanner;
   }
 
   function addBorder(fav){
@@ -208,24 +172,46 @@ function initButton(sfHost, inInspector) {
 
     let popupSrc = chrome.runtime.getURL("popup.html?host=" + sfHost);
     let popupEl = document.createElement("iframe");
+    popupEl.title = "Salesforce Inspector Reloaded";
+
     function getOrientation(source) {
-      const o = (source === "localStorage")
-        ? localStorage.getItem("popupArrowOrientation")
-        : iFrameLocalStorage.popupArrowOrientation;
-      return o || "vertical";
+      return getKeyFromStorage(source, "popupArrowOrientation", "vertical");
     }
+
+    function getKeyFromStorage(source, key, defaultValue) {
+      const o = (source === "localStorage") ? localStorage.getItem(key) : iFrameLocalStorage?.[key];
+      return o || defaultValue;
+    }
+
     // return a value for direction popup will expand, based on position and orientation
     function calcDirection(pos, o) {
       if (o === "horizontal") {
-        return pos < 8 ? "right" : pos >= 90 ? "left" : "centered";
+        return pos < 90 ? "left" : "right";
       }
       return pos >= 55 ? "up" : null;
     }
-    function resetPopupClass(o) {
+
+    function resetPopupClass(source, dynamicHeight, orientation, position = "20", direction = null) {
       popupEl.className = "insext-popup";
-      popupEl.classList.add(`insext-popup-${o}`);
+      popupEl.classList.add(`insext-popup-${orientation}`);
+
+      //manage dynamic height of popup
+      const intPosition = Number(position);
+
+      if (dynamicHeight) {
+        const height = direction === "up" ? intPosition : (98 - (orientation === "horizontal" ? 0 : intPosition)); //the height is the total height minus the position and the popup margin at the bottom
+        popupEl.style.height = `calc(${height}vh)`;
+
+        //in up direction, we need to adjust the top position to keep the popup on screen
+        if (direction === "up") {
+          popupEl.style.top = `calc(-${intPosition - 5}vh)`;
+        }
+      } else {
+        popupEl.style.height = "";
+      }
     }
-    resetPopupClass(getOrientation("localStorage"));
+
+    resetPopupClass("localStorage", getKeyFromStorage("localStorage", "popupHeighDynamictMode"), getOrientation("localStorage"));
     popupEl.src = popupSrc;
     addEventListener("message", e => {
       if (e.source != popupEl.contentWindow) {
@@ -236,13 +222,13 @@ function initButton(sfHost, inInspector) {
         iFrameLocalStorage = e.data.iFrameLocalStorage;
         const {popupArrowPosition: pos} = iFrameLocalStorage;
         const o = getOrientation("iframe");
+        const dynamicHeight = getKeyFromStorage("iframe", "popupHeighDynamictMode", "true") === "true";
         const dir = calcDirection(pos, o);
-        resetPopupClass(o);
+        resetPopupClass("iframe", dynamicHeight, o, pos, dir);
         if (dir) {
           popupEl.classList.add(`insext-popup-${o}-${dir}`);
         }
         setRootCSSProperties(rootEl, btn);
-        addFlowScrollability(popupEl);
         setFavicon(sfHost);
         popupEl.contentWindow.postMessage({
           insextInitResponse: true,

@@ -27,6 +27,7 @@ export class Constants {
   static PRELOAD_SOBJECTS_BEFORE_POPUP = "preloadSobjectsBeforePopup";
   static ENABLE_SOBJECTS_LIST_CACHE = "enableSobjectsListCache";
   static ENABLE_RECENTLY_VIEWED_RECORDS = "enableRecentlyViewedRecords";
+  static DEFAULT_ENABLE_SOBJECTS_LIST_CACHE = false;
 }
 
 /**
@@ -905,7 +906,7 @@ export class DataCache {
  */
 export async function getSobjectsList(sfHost) {
   // Check if caching is enabled
-  const cacheEnabled = isSettingEnabled(Constants.ENABLE_SOBJECTS_LIST_CACHE, true);
+  const cacheEnabled = isSettingEnabled(Constants.ENABLE_SOBJECTS_LIST_CACHE, Constants.DEFAULT_ENABLE_SOBJECTS_LIST_CACHE);
   const currentFetch = Date.now();
 
   // Check cache first (only if caching is enabled)

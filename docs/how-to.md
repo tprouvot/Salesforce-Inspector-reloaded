@@ -448,7 +448,7 @@ The behavior depends on two options:
 1. Open the extension and click the "Options" button
 2. Navigate to the "Cache" tab
 3. Find the "SObjects List Cache" section:
-   * **Enable/Disable**: Toggle caching on or off (enabled by default)
+   * **Enable/Disable**: Toggle caching on or off (disabled by default)
    * **Duration (hours)**: How long cached data remains valid. Default: 8 hours. Minimum: 1 hour
    * **Clear Cache**: Click to immediately clear the cache and force a fresh fetch on next use
 

@@ -1300,7 +1300,6 @@ class MultiCheckboxButtonGroup extends React.Component {
 }
 
 class SObjectsCacheOptions extends React.Component {
-
   constructor(props) {
     super(props);
     this.model = props.model;
@@ -1316,7 +1315,7 @@ class SObjectsCacheOptions extends React.Component {
     const cacheDuration = localStorage.getItem(cacheDurationKey);
 
     this.state = {
-      cacheEnabled: cacheEnabled !== null ? JSON.parse(cacheEnabled) : true,
+      cacheEnabled: cacheEnabled !== null ? JSON.parse(cacheEnabled) : Constants.DEFAULT_ENABLE_SOBJECTS_LIST_CACHE,
       cacheDuration: cacheDuration !== null ? cacheDuration : "8"
     };
   }

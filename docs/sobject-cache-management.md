@@ -9,8 +9,9 @@ This document describes the SObject list cache management, the high-level SObjec
 The extension caches the **SObjects list** (metadata about all Salesforce objects) to improve popup loading performance. The cache stores object metadata (name, label, keyPrefix, etc.) so the extension avoids repeated API calls when you open the popup or switch between orgs.
 
 **Key data sources merged into the SObjects list:**
+
 - **REST API** `/sobjects/` — standard describe global
-- **Tooling API** `/tooling/sobjects/` — tooling describe global  
+- **Tooling API** `/tooling/sobjects/` — tooling describe global
 - **EntityDefinition** — Tooling API query for labels, keyPrefix, layoutable, etc.
 
 ---
@@ -19,12 +20,13 @@ The extension caches the **SObjects list** (metadata about all Salesforce object
 
 | Setting | Storage Key | Default | Effect |
 |---------|-------------|---------|--------|
-| **Enable SObjects List Cache** | `enableSobjectsListCache` | `true` | When enabled, the SObjects list is cached. When disabled, every request fetches from the API. |
+| **Enable SObjects List Cache** | `enableSobjectsListCache` | `false` | When enabled, the SObjects list is cached. When disabled, every request fetches from the API. |
 | **Preload SObjects before popup opens** | `preloadSobjectsBeforePopup` | `true` | When enabled, loads SObjects (from cache or API) as soon as the popup page loads, even before the user expands it. When disabled, loads only when the Objects tab is active. |
 | **SObjects List Cache Duration (hours)** | `cacheDuration_sobjectsList` | `8` (UI default) / `168` (code fallback) | How long a cache entry is considered valid. After expiry, the next request fetches fresh data. |
 | **Clear Cache** (button) | — | — | Manually clears the SObjects list cache for the current org. |
 
 **Settings interconnection:**
+
 - **Preload ON + Cache ON:** Uses cache immediately when popup loads; no background refresh (list is already fast).
 - **Preload OFF + Cache ON:** Uses cache when Objects tab is opened; refreshes in background (with `If-Modified-Since`) to get updates.
 - **Cache Duration:** Used when creating cache entries and when validating if a cache entry is still valid.
@@ -136,7 +138,7 @@ flowchart TB
 
 ### 2. `getSobjectsList(sfHost)`
 
-1. Check `enableSobjectsListCache` (default: true).
+1. Check `enableSobjectsListCache` (default: false).
 2. If cache disabled → fetch from API, return result.
 3. If cache enabled → try `DataCache.getCachedData(CACHE_SOBJECTS_LIST, sfHost, true, true)`.
 4. **Cache miss or expired** → `fetchSobjectsList(...)` and return.

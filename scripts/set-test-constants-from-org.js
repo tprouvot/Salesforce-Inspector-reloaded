@@ -5,7 +5,9 @@
  * Uses Salesforce CLI (sf) to get org info and run SOQL queries.
  *
  * Prerequisites:
- * - Salesforce CLI installed (sf)
+ * - Salesforce CLI installed (sf). Requires a version with
+ *   'sf org auth show-access-token' (the access token is redacted from
+ *   'sf org display' since the CLI security update, ~May 2026).
  * - Authenticated to a default org (sf org login web or sfdx force:auth:web:login)
  * - Flow RecordTrigger_InspectorTest deployed to the org
  * - At least one Account record in the org
@@ -46,6 +48,21 @@
     }
   }
 
+  function getAccessToken() {
+    // sf org display no longer returns the access token (redacted since the
+    // CLI security update, ~May 2026). The token must be fetched from the
+    // dedicated command; --json bypasses the interactive confirmation prompt.
+    const args = ["org", "auth", "show-access-token", "--json"];
+    if (TARGET_ORG) args.push("--target-org", TARGET_ORG);
+    const output = runSfCommand(args);
+    const data = JSON.parse(output);
+    const accessToken = data.result?.accessToken;
+    if (!accessToken || accessToken.startsWith("[REDACTED]")) {
+      throw new Error("Could not retrieve access token from 'sf org auth show-access-token'");
+    }
+    return accessToken;
+  }
+
   function getOrgInfo() {
     const args = ["org", "display", "--json"];
     if (TARGET_ORG) args.push("--target-org", TARGET_ORG);
@@ -56,13 +73,13 @@
       throw new Error("No org result in sf org display output");
     }
     const instanceUrl = result.instanceUrl;
-    const accessToken = result.accessToken;
     const apiVersion = result.apiVersion || "66.0";
 
-    if (!instanceUrl || !accessToken) {
-      throw new Error("Could not extract instanceUrl or accessToken from org display");
+    if (!instanceUrl) {
+      throw new Error("Could not extract instanceUrl from org display");
     }
 
+    const accessToken = getAccessToken();
     const host = new URL(instanceUrl).hostname;
     return {host, accessToken, apiVersion};
   }
@@ -188,10 +205,19 @@ export const TEST_CONSTANTS = {
       mockEnabled: false
     };
 
+    // Hide real access tokens (start with the org id prefix "00D") from the
+    // printed output to avoid leaking credentials in logs. A non-token value
+    // (e.g. a "[REDACTED] ..." placeholder) is shown as-is so it can help
+    // diagnose configuration issues.
+    const printableConstants = {
+      ...constants,
+      mockToken: constants.mockToken.startsWith("00D") ? "[MASKED] real token written to file, hidden from logs" : constants.mockToken
+    };
+
     console.log("\n" + "=".repeat(50));
     console.log("TEST_CONSTANTS:");
     console.log("=".repeat(50));
-    console.log(JSON.stringify(constants, null, 2));
+    console.log(JSON.stringify(printableConstants, null, 2));
     console.log("=".repeat(50));
 
     if (DRY_RUN) {

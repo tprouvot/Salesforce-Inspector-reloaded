@@ -102,7 +102,7 @@ jobs:
         echo $SF_AUTH_URL > ./SFDX_AUTH_URL.txt
         sf org login sfdx-url -f ./SFDX_AUTH_URL.txt -a cicdorg -d
 
-        # Display the authenticated org and extract the access token and instance url
+        # Display the authenticated org and extract the instance url
         echo "Extracting authentication information..."
         ORG_INFO=$(sf org display --json -o cicdorg 2>/dev/null)
         SF_EXIT_CODE=$?
@@ -118,11 +118,16 @@ jobs:
           exit 1
         fi
         
-        ACCESS_TOKEN=$(echo "$ORG_INFO" | jq -r '.result.accessToken // empty' 2>/dev/null)
         INSTANCE_URL=$(echo "$ORG_INFO" | jq -r '.result.instanceUrl // empty' 2>/dev/null)
         
-        if [ -z "$ACCESS_TOKEN" ]; then
-          echo "Error: Could not extract access_token from auth response"
+        # The access token is redacted from "sf org display" since the CLI
+        # security update (~May 2026). Retrieve it from the dedicated command
+        # (--json/--no-prompt skip the interactive security confirmation).
+        TOKEN_INFO=$(sf org auth show-access-token --json -o cicdorg --no-prompt 2>/dev/null)
+        ACCESS_TOKEN=$(echo "$TOKEN_INFO" | jq -r '.result.accessToken // empty' 2>/dev/null)
+        
+        if [ -z "$ACCESS_TOKEN" ] || [ "${ACCESS_TOKEN#\[REDACTED\]}" != "$ACCESS_TOKEN" ]; then
+          echo "Error: Could not extract access token from 'sf org auth show-access-token'"
           exit 1
         fi
         

@@ -574,6 +574,23 @@ class Model {
     copyToClipboard(csvSerialize([header, ...data], separator));
   }
 
+  canDownloadErrors() {
+    return this.importData.taggedRows != null && this.importCounts().Failed > 0;
+  }
+
+  downloadErrors() {
+    let header = this.importData.importTable.header.map(c => c.columnValue);
+    let failedRows = this.importData.taggedRows.filter(row => row.status === "Failed").map(row => row.cells);
+    let csv = "﻿" + csvSerialize([header, ...failedRows], ",");
+    let blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement("a");
+    a.href = url;
+    a.download = "import-errors-" + this.importType + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   importCounts() {
     return this.importData.counts;
   }
@@ -1094,6 +1111,7 @@ class App extends React.Component {
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
     this.onFileUpload = this.onFileUpload.bind(this);
+    this.onDownloadErrorsClick = this.onDownloadErrorsClick.bind(this);
     this.unloadListener = null;
     this.state = {templateValueIndex: -1};
   }
@@ -1203,6 +1221,11 @@ class App extends React.Component {
       separator = localStorage.getItem("csvSeparator");
     }
     model.copyResult(separator);
+  }
+  onDownloadErrorsClick(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.downloadErrors();
   }
   onFileUpload(e) {
     const file = e.target.files[0];
@@ -1459,6 +1482,7 @@ class App extends React.Component {
               h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_brand"}, "Run " + model.importActionName),
               h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "slds-button slds-button_neutral" : "slds-button slds-button_neutral"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
               h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick, className: "slds-button slds-button_neutral"}, "Retry Failed"),
+              h("button", {disabled: !model.canDownloadErrors(), onClick: this.onDownloadErrorsClick, title: "Download failed rows as a CSV file", className: "slds-button slds-button_neutral"}, "Download errors"),
               h("div", {className: "slds-button-group"},
                 h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsExcelClick, title: "Copy import result to clipboard for pasting into Excel or similar", className: "slds-button slds-button_neutral slds-m-horizontal_none"}, "Copy (Excel format)"),
                 h("button", {disabled: !model.canCopy(), onClick: this.onCopyAsCsvClick, title: "Copy import result to clipboard for saving as a CSV file", className: "slds-button slds-button_neutral"}, "Copy (CSV)"),

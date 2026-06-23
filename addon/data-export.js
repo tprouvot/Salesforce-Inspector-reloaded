@@ -107,8 +107,7 @@ class Model {
   updatedExportedData() {
     if (this.exportedData) {
       this.exportedData.updateColumnsVisibility();
-      this.exportedData.onSaveRecord = (rowIdx) => this.saveRecord(rowIdx);
-      this.exportedData.onCancelRecord = (rowIdx) => this.cancelRecord(rowIdx);
+      this.exportedData.onPendingEditsChanged = () => this.didUpdate();
     }
     this.resultTableCallback(this.exportedData);
   }
@@ -267,37 +266,6 @@ class Model {
   hasPendingEdits() {
     return this.exportedData && this.exportedData.pendingEdits && Object.keys(this.exportedData.pendingEdits).length > 0;
   }
-  async saveRecord(rowIdx) {
-    let rt = this.exportedData;
-    if (!rt || !rt.pendingEdits || !rt.pendingEdits[rowIdx]) return;
-    let {recordId, fields} = rt.pendingEdits[rowIdx];
-    let sobjectType = rt.sobject;
-    try {
-      await sfConn.rest(`/services/data/v${apiVersion}/sobjects/${sobjectType}/${recordId}`, {method: "PATCH", body: fields});
-      delete rt.pendingEdits[rowIdx];
-      this.exportStatus = "Record saved successfully.";
-    } catch (e) {
-      this.exportStatus = "Save failed: " + (e.message || e);
-    }
-    this.updatedExportedData();
-    this.didUpdate();
-  }
-  cancelRecord(rowIdx) {
-    let rt = this.exportedData;
-    if (!rt || !rt.pendingEdits || !rt.pendingEdits[rowIdx]) return;
-    // Restore original values from rt.records
-    let record = rt.records[rowIdx - 1];
-    let header = rt.table[0];
-    if (record && header) {
-      for (let fieldName of Object.keys(rt.pendingEdits[rowIdx].fields)) {
-        let colIndex = header.findIndex(h => h === fieldName);
-        if (colIndex !== -1) rt.table[rowIdx][colIndex] = record[fieldName] !== undefined ? record[fieldName] : null;
-      }
-    }
-    delete rt.pendingEdits[rowIdx];
-    this.updatedExportedData();
-    this.didUpdate();
-  }
   async saveAllEdits() {
     let rt = this.exportedData;
     if (!rt || !rt.pendingEdits) return;
@@ -322,9 +290,19 @@ class Model {
   cancelAllEdits() {
     let rt = this.exportedData;
     if (!rt || !rt.pendingEdits) return;
+    let header = rt.table[0];
     for (let rowIdx of Object.keys(rt.pendingEdits).map(Number)) {
-      this.cancelRecord(rowIdx);
+      let record = rt.records[rowIdx - 1];
+      if (record && header) {
+        for (let fieldName of Object.keys(rt.pendingEdits[rowIdx].fields)) {
+          let colIndex = header.findIndex(h => h === fieldName);
+          if (colIndex !== -1) rt.table[rowIdx][colIndex] = record[fieldName] !== undefined ? record[fieldName] : null;
+        }
+      }
     }
+    rt.pendingEdits = {};
+    this.updatedExportedData();
+    this.didUpdate();
   }
   canDelete() {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query

@@ -181,17 +181,6 @@ function renderEditCell(rt, rowIdx, colIndex, currentValue, td) {
     input.value = currentValue == null ? "" : String(currentValue);
   }
 
-  // Save/Cancel buttons
-  let saveBtn = document.createElement("button");
-  saveBtn.className = "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_xx-small";
-  saveBtn.title = "Save this record";
-  saveBtn.innerHTML = `<svg class="slds-button__icon" aria-hidden="true"><use xlink:href="symbols.svg#check"></use></svg>`;
-
-  let cancelBtn = document.createElement("button");
-  cancelBtn.className = "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_xx-small";
-  cancelBtn.title = "Cancel";
-  cancelBtn.innerHTML = `<svg class="slds-button__icon" aria-hidden="true"><use xlink:href="symbols.svg#close"></use></svg>`;
-
   function commitEdit() {
     let newValue = input.value;
     if (!rt.pendingEdits) rt.pendingEdits = {};
@@ -201,10 +190,10 @@ function renderEditCell(rt, rowIdx, colIndex, currentValue, td) {
     if (!recordId) { cancelEdit(); return; }
     if (!rt.pendingEdits[rowIdx]) rt.pendingEdits[rowIdx] = {recordId, fields: {}};
     rt.pendingEdits[rowIdx].fields[fieldName] = newValue === "" ? null : newValue;
-    // Update display value in table data
     rt.table[rowIdx][colIndex] = newValue === "" ? null : newValue;
-    // Save immediately for this record
-    if (rt.onSaveRecord) rt.onSaveRecord(rowIdx);
+    td.textContent = "";
+    renderCell(rt, rt.table[rowIdx][colIndex], td);
+    if (rt.onPendingEditsChanged) rt.onPendingEditsChanged();
   }
 
   function cancelEdit() {
@@ -212,16 +201,13 @@ function renderEditCell(rt, rowIdx, colIndex, currentValue, td) {
     renderCell(rt, currentValue, td);
   }
 
-  saveBtn.addEventListener("click", e => { e.stopPropagation(); commitEdit(); });
-  cancelBtn.addEventListener("click", e => { e.stopPropagation(); cancelEdit(); });
   input.addEventListener("keydown", e => {
     if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
     if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
   });
+  input.addEventListener("blur", () => commitEdit());
 
   td.appendChild(input);
-  td.appendChild(saveBtn);
-  td.appendChild(cancelBtn);
   input.focus();
   if (input.select) input.select();
 }
@@ -736,29 +722,6 @@ export function initScrollTable(scroller) {
         let tr = document.createElement("tr");
         tr.className = "slds-line-height_reset";
 
-        // Row-level Save / Cancel buttons (only when inline edit is enabled and row has pending edits)
-        if (data.onSaveRecord && data.pendingEdits && data.pendingEdits[r]) {
-          let tdActions = document.createElement("td");
-          tdActions.className = "scrolltable-cell";
-          tdActions.style.whiteSpace = "nowrap";
-
-          let saveBtn = document.createElement("button");
-          saveBtn.className = "slds-button slds-button_icon slds-button_icon-border-filled slds-m-right_xx-small";
-          saveBtn.title = "Save this record";
-          saveBtn.innerHTML = `<svg class="slds-button__icon" aria-hidden="true"><use xlink:href="symbols.svg#check"></use></svg>`;
-          saveBtn.addEventListener("click", () => data.onSaveRecord(r));
-
-          let cancelBtn = document.createElement("button");
-          cancelBtn.className = "slds-button slds-button_icon slds-button_icon-border-filled";
-          cancelBtn.title = "Cancel changes for this record";
-          cancelBtn.innerHTML = `<svg class="slds-button__icon" aria-hidden="true"><use xlink:href="symbols.svg#close"></use></svg>`;
-          cancelBtn.addEventListener("click", () => data.onCancelRecord && data.onCancelRecord(r));
-
-          tdActions.appendChild(saveBtn);
-          tdActions.appendChild(cancelBtn);
-          tr.appendChild(tdActions);
-        }
-
         for (let c = firstColIdx; c < lastColIdx; c++) {
           if (colVisible[c] == 0) {
             continue;
@@ -778,7 +741,7 @@ export function initScrollTable(scroller) {
           renderCell(data, cell, td);
 
           // Double-click to edit (only on data cells beyond col 0 which is the record object)
-          if (data.onSaveRecord && c > 0) {
+          if (data.onPendingEditsChanged && c > 0) {
             td.style.cursor = "pointer";
             td.addEventListener("dblclick", () => {
               renderEditCell(data, r, c, cell, td);

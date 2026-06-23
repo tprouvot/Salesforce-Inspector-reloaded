@@ -130,6 +130,102 @@ export function s(num, suffix = "s") {
   return num == 1 ? "" : suffix;
 }
 
+function getFieldDescribe(rt, colIndex) {
+  if (!rt.describeInfo || !rt.sobject) return null;
+  let header = rt.table[0];
+  if (!header) return null;
+  let fieldName = header[colIndex];
+  if (typeof fieldName !== "string") return null;
+  let {sobjectDescribe} = rt.describeInfo.describeSobject(rt.isTooling, rt.sobject);
+  if (!sobjectDescribe) return null;
+  return sobjectDescribe.fields.find(f => f.name.toLowerCase() === fieldName.toLowerCase()) || null;
+}
+
+function renderEditCell(rt, rowIdx, colIndex, currentValue, td) {
+  let header = rt.table[0];
+  let fieldName = header[colIndex];
+  let fieldDescribe = getFieldDescribe(rt, colIndex);
+
+  // Check if field is editable
+  if (!fieldDescribe || !fieldDescribe.updateable) {
+    td.title = "This field is not editable";
+    return;
+  }
+
+  td.textContent = "";
+  td.style.padding = "2px";
+
+  let input;
+  if (fieldDescribe.type === "picklist" || fieldDescribe.type === "multipicklist") {
+    input = document.createElement("select");
+    input.className = "slds-select";
+    input.style.minWidth = "80px";
+    // Add blank option
+    let blankOpt = document.createElement("option");
+    blankOpt.value = "";
+    blankOpt.textContent = "-- None --";
+    input.appendChild(blankOpt);
+    for (let pv of (fieldDescribe.picklistValues || [])) {
+      if (!pv.active) continue;
+      let opt = document.createElement("option");
+      opt.value = pv.value;
+      opt.textContent = pv.label;
+      if (pv.value === currentValue) opt.selected = true;
+      input.appendChild(opt);
+    }
+  } else {
+    input = document.createElement("input");
+    input.type = "text";
+    input.className = "slds-input";
+    input.style.minWidth = "80px";
+    input.value = currentValue == null ? "" : String(currentValue);
+  }
+
+  // Save/Cancel buttons
+  let saveBtn = document.createElement("button");
+  saveBtn.className = "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_xx-small";
+  saveBtn.title = "Save this record";
+  saveBtn.innerHTML = `<svg class="slds-button__icon" aria-hidden="true"><use xlink:href="symbols.svg#check"></use></svg>`;
+
+  let cancelBtn = document.createElement("button");
+  cancelBtn.className = "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_xx-small";
+  cancelBtn.title = "Cancel";
+  cancelBtn.innerHTML = `<svg class="slds-button__icon" aria-hidden="true"><use xlink:href="symbols.svg#close"></use></svg>`;
+
+  function commitEdit() {
+    let newValue = input.value;
+    if (!rt.pendingEdits) rt.pendingEdits = {};
+    let record = rt.table[rowIdx][0];
+    let recordId = record && record.attributes && record.attributes.url
+      ? record.attributes.url.replace(/.*\//, "") : null;
+    if (!recordId) { cancelEdit(); return; }
+    if (!rt.pendingEdits[rowIdx]) rt.pendingEdits[rowIdx] = {recordId, fields: {}};
+    rt.pendingEdits[rowIdx].fields[fieldName] = newValue === "" ? null : newValue;
+    // Update display value in table data
+    rt.table[rowIdx][colIndex] = newValue === "" ? null : newValue;
+    // Save immediately for this record
+    if (rt.onSaveRecord) rt.onSaveRecord(rowIdx);
+  }
+
+  function cancelEdit() {
+    td.textContent = "";
+    renderCell(rt, currentValue, td);
+  }
+
+  saveBtn.addEventListener("click", e => { e.stopPropagation(); commitEdit(); });
+  cancelBtn.addEventListener("click", e => { e.stopPropagation(); cancelEdit(); });
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
+    if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+  });
+
+  td.appendChild(input);
+  td.appendChild(saveBtn);
+  td.appendChild(cancelBtn);
+  input.focus();
+  if (input.select) input.select();
+}
+
 function renderCell(rt, cell, td) {
   function popLink(recordInfo, label) {
     let a = document.createElement("a");
@@ -639,6 +735,30 @@ export function initScrollTable(scroller) {
         let row = data.table[r];
         let tr = document.createElement("tr");
         tr.className = "slds-line-height_reset";
+
+        // Row-level Save / Cancel buttons (only when inline edit is enabled and row has pending edits)
+        if (data.onSaveRecord && data.pendingEdits && data.pendingEdits[r]) {
+          let tdActions = document.createElement("td");
+          tdActions.className = "scrolltable-cell";
+          tdActions.style.whiteSpace = "nowrap";
+
+          let saveBtn = document.createElement("button");
+          saveBtn.className = "slds-button slds-button_icon slds-button_icon-border-filled slds-m-right_xx-small";
+          saveBtn.title = "Save this record";
+          saveBtn.innerHTML = `<svg class="slds-button__icon" aria-hidden="true"><use xlink:href="symbols.svg#check"></use></svg>`;
+          saveBtn.addEventListener("click", () => data.onSaveRecord(r));
+
+          let cancelBtn = document.createElement("button");
+          cancelBtn.className = "slds-button slds-button_icon slds-button_icon-border-filled";
+          cancelBtn.title = "Cancel changes for this record";
+          cancelBtn.innerHTML = `<svg class="slds-button__icon" aria-hidden="true"><use xlink:href="symbols.svg#close"></use></svg>`;
+          cancelBtn.addEventListener("click", () => data.onCancelRecord && data.onCancelRecord(r));
+
+          tdActions.appendChild(saveBtn);
+          tdActions.appendChild(cancelBtn);
+          tr.appendChild(tdActions);
+        }
+
         for (let c = firstColIdx; c < lastColIdx; c++) {
           if (colVisible[c] == 0) {
             continue;
@@ -656,6 +776,15 @@ export function initScrollTable(scroller) {
           td.style.minWidth = colWidths[c] + "px";
           td.style.height = rowHeights[r] + "px";
           renderCell(data, cell, td);
+
+          // Double-click to edit (only on data cells beyond col 0 which is the record object)
+          if (data.onSaveRecord && c > 0) {
+            td.style.cursor = "pointer";
+            td.addEventListener("dblclick", () => {
+              renderEditCell(data, r, c, cell, td);
+            });
+          }
+
           tr.appendChild(td);
           cellsVisible = true;
         }

@@ -2,6 +2,9 @@
 
 ## Version 2.1
 
+- `Data Export` Add inline editing: double-click any cell to edit it, picklist fields show a dropdown, Save/Cancel buttons appear in the toolbar when changes are pending, saving sends a REST PATCH only for modified records, spinner during save and error badge on failure (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
+- `Data Import` Add file upload support: upload `.csv`, `.json`, `.xlsx`, `.tsv` or `.txt` files directly instead of pasting data. XLSX parsing is handled natively with no external library (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
+- `Data Import` Add "Download errors" button to export failed rows as a CSV file after an import (contribution by [Samuel Krissi](https://github.com/samuelkrissi))
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition

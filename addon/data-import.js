@@ -28,6 +28,106 @@ const headersTemplates = [
   '{"DuplicateRuleHeader": {"allowSave": true}}'
 ];
 
+// --- Inline XLSX parser (no external dependency) ---
+
+async function xlsxToTsv(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const view = new DataView(buffer);
+
+  async function inflate(data) {
+    const ds = new DecompressionStream("deflate-raw");
+    const w = ds.writable.getWriter();
+    w.write(data); w.close();
+    const chunks = [];
+    const r = ds.readable.getReader();
+    for (;;) { const {done, value} = await r.read(); if (done) break; chunks.push(value); }
+    const out = new Uint8Array(chunks.reduce((s, c) => s + c.length, 0));
+    let pos = 0; for (const c of chunks) { out.set(c, pos); pos += c.length; }
+    return out;
+  }
+
+  // Parse ZIP entries
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= 0; i--) {
+    if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("Not a valid XLSX file");
+  const cdOffset = view.getUint32(eocd + 16, true);
+  const numEntries = view.getUint16(eocd + 8, true);
+  const entries = {};
+  let p = cdOffset;
+  for (let i = 0; i < numEntries; i++) {
+    if (view.getUint32(p, true) !== 0x02014b50) break;
+    const method = view.getUint16(p + 10, true);
+    const compSize = view.getUint32(p + 20, true);
+    const fnLen = view.getUint16(p + 28, true);
+    const exLen = view.getUint16(p + 30, true);
+    const cmLen = view.getUint16(p + 32, true);
+    const lfhOff = view.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(bytes.slice(p + 46, p + 46 + fnLen));
+    p += 46 + fnLen + exLen + cmLen;
+    const lfnLen = view.getUint16(lfhOff + 26, true);
+    const lexLen = view.getUint16(lfhOff + 28, true);
+    const dataOff = lfhOff + 30 + lfnLen + lexLen;
+    entries[name] = {method, data: bytes.slice(dataOff, dataOff + compSize)};
+  }
+
+  async function entryText(e) {
+    const raw = e.method === 8 ? await inflate(e.data) : e.data;
+    return new TextDecoder().decode(raw);
+  }
+
+  // Shared strings
+  const sharedStrings = [];
+  if (entries["xl/sharedStrings.xml"]) {
+    const doc = new DOMParser().parseFromString(await entryText(entries["xl/sharedStrings.xml"]), "text/xml");
+    for (const si of doc.querySelectorAll("si")) {
+      sharedStrings.push(Array.from(si.querySelectorAll("t")).map(t => t.textContent).join(""));
+    }
+  }
+
+  // First worksheet path
+  let sheetPath = null;
+  if (entries["xl/workbook.xml"] && entries["xl/_rels/workbook.xml.rels"]) {
+    const wb = new DOMParser().parseFromString(await entryText(entries["xl/workbook.xml"]), "text/xml");
+    const rels = new DOMParser().parseFromString(await entryText(entries["xl/_rels/workbook.xml.rels"]), "text/xml");
+    const rId = wb.querySelector("sheets > sheet")?.getAttribute("r:id");
+    const target = rels.querySelector(`Relationship[Id="${rId}"]`)?.getAttribute("Target");
+    if (target) sheetPath = target.startsWith("/") ? target.slice(1) : "xl/" + target;
+  }
+  if (!sheetPath || !entries[sheetPath]) {
+    sheetPath = Object.keys(entries).find(k => /^xl\/worksheets\/sheet\d+\.xml$/.test(k));
+  }
+  if (!sheetPath) throw new Error("No worksheet found in this XLSX file");
+
+  const sheetDoc = new DOMParser().parseFromString(await entryText(entries[sheetPath]), "text/xml");
+  let maxCols = 0;
+  const parsedRows = [];
+  for (const rowEl of sheetDoc.querySelectorAll("row")) {
+    const cells = {};
+    for (const c of rowEl.querySelectorAll("c")) {
+      const m = (c.getAttribute("r") || "").match(/^([A-Z]+)/);
+      if (!m) continue;
+      let col = 0;
+      for (const ch of m[1]) col = col * 26 + ch.charCodeAt(0) - 64;
+      col--;
+      maxCols = Math.max(maxCols, col + 1);
+      const type = c.getAttribute("t");
+      const vEl = c.querySelector("v");
+      let val = "";
+      if (type === "s" && vEl) val = sharedStrings[parseInt(vEl.textContent)] ?? "";
+      else if (type === "inlineStr") val = Array.from(c.querySelectorAll("t")).map(t => t.textContent).join("");
+      else if (type === "b" && vEl) val = vEl.textContent === "1" ? "true" : "false";
+      else if (vEl) val = vEl.textContent;
+      cells[col] = val;
+    }
+    parsedRows.push(cells);
+  }
+  return parsedRows.map(row => Array.from({length: maxCols}, (_, i) => row[i] ?? "").join("\t")).join("\r\n");
+}
+
+// --- End XLSX parser ---
+
 class Model {
 
   constructor(sfHost, args) {
@@ -240,6 +340,25 @@ class Model {
     csv.unshift(fields.join(separator));
     csv = csv.join("\r\n");
     return csv;
+  }
+
+  async loadFile(file) {
+    if (this.isWorking()) return;
+    const name = file.name.toLowerCase();
+    if (name.endsWith(".xlsx")) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const tsv = await xlsxToTsv(buffer);
+        this.setData(tsv);
+      } catch (e) {
+        this.dataError = "XLSX error: " + e.message;
+        this.updateResult(null);
+      }
+    } else {
+      const text = await file.text();
+      this.setData(text);
+    }
+    this.didUpdate();
   }
 
   copyOptions() {
@@ -974,6 +1093,7 @@ class App extends React.Component {
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
+    this.onFileUpload = this.onFileUpload.bind(this);
     this.unloadListener = null;
     this.state = {templateValueIndex: -1};
   }
@@ -1083,6 +1203,13 @@ class App extends React.Component {
       separator = localStorage.getItem("csvSeparator");
     }
     model.copyResult(separator);
+  }
+  onFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    let {model} = this.props;
+    model.loadFile(file);
+    e.target.value = "";
   }
   onCopyOptionsClick(e) {
     e.preventDefault();
@@ -1264,6 +1391,13 @@ class App extends React.Component {
                             h("span", {className: "slds-form-element__label", htmlFor: "form-import-data"}, "Data"),
                             h("div", {className: "slds-form-element__control"},
                               h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
+                              h("label", {className: "slds-button slds-button_neutral slds-m-top_xx-small", style: {cursor: "pointer"}, title: "Upload a CSV, JSON or Excel (.xlsx) file"},
+                                h("svg", {className: "slds-button__icon slds-button__icon_left", "aria-hidden": "true"},
+                                  h("use", {xlinkHref: "symbols.svg#upload"})
+                                ),
+                                "Upload file",
+                                h("input", {type: "file", accept: ".csv,.json,.xlsx,.xls,.tsv,.txt", style: {display: "none"}, disabled: model.isWorking(), onChange: this.onFileUpload})
+                              ),
                               h("div", {id: "error-data-paste", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.dataError}, model.dataError)
                             )
                           )

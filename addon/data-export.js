@@ -45,6 +45,8 @@ class Model {
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
+    this.isSaving = false;
+    this.saveError = null;
     this.exportStatus = "Ready";
     this.exportError = null;
     this.exportedData = null;
@@ -270,20 +272,28 @@ class Model {
     let rt = this.exportedData;
     if (!rt || !rt.pendingEdits) return;
     let rowIndices = Object.keys(rt.pendingEdits).map(Number);
+    if (rowIndices.length === 0) return;
+    this.isSaving = true;
+    this.saveError = null;
+    this.didUpdate();
     let errors = [];
     await Promise.all(rowIndices.map(async rowIdx => {
       let {recordId, fields} = rt.pendingEdits[rowIdx];
-      let sobjectType = rt.sobject;
       try {
-        await sfConn.rest(`/services/data/v${apiVersion}/sobjects/${sobjectType}/${recordId}`, {method: "PATCH", body: fields});
+        await sfConn.rest(`/services/data/v${apiVersion}/sobjects/${rt.sobject}/${recordId}`, {method: "PATCH", body: fields});
         delete rt.pendingEdits[rowIdx];
       } catch (e) {
-        errors.push(`Row ${rowIdx}: ` + (e.message || e));
+        errors.push(`${recordId}: ` + (e.detail?.message || e.message || String(e)));
       }
     }));
-    this.exportStatus = errors.length === 0
-      ? `${rowIndices.length} record(s) saved successfully.`
-      : `Save completed with errors: ${errors.join(" | ")}`;
+    this.isSaving = false;
+    if (errors.length === 0) {
+      this.exportStatus = `${rowIndices.length} record(s) saved successfully.`;
+      this.saveError = null;
+    } else {
+      this.exportStatus = `Save completed with ${errors.length} error(s).`;
+      this.saveError = errors.join("\n");
+    }
     this.updatedExportedData();
     this.didUpdate();
   }
@@ -2135,8 +2145,17 @@ class App extends React.Component {
                 ),
                 isOptionEnabled("delete", this.state.hideButtonsOption)
                   ? h("button", {className: "slds-button slds-button_destructive", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
-                model.hasPendingEdits() ? h("button", {className: "slds-button slds-button_brand slds-m-left_x-small", onClick: this.onSaveAllEdits, title: "Save all pending changes to Salesforce"}, "Save All") : null,
-                model.hasPendingEdits() ? h("button", {className: "slds-button slds-button_neutral slds-m-left_xx-small", onClick: this.onCancelAllEdits, title: "Cancel all pending changes"}, "Cancel All") : null,
+                (model.hasPendingEdits() || model.isSaving) ? h("button", {className: "slds-button slds-button_brand slds-m-left_x-small", disabled: model.isSaving, onClick: this.onSaveAllEdits, title: "Save all pending changes to Salesforce"},
+                  model.isSaving
+                    ? h("div", {className: "slds-spinner slds-spinner_x-small slds-spinner_inline", style: {position: "relative", width: "1em", height: "1em", display: "inline-block", verticalAlign: "middle", marginRight: "4px"}},
+                        h("div", {className: "slds-spinner__dot-a"}),
+                        h("div", {className: "slds-spinner__dot-b"})
+                      )
+                    : null,
+                  model.isSaving ? "Saving..." : "Save"
+                ) : null,
+                (model.hasPendingEdits() || model.isSaving) ? h("button", {className: "slds-button slds-button_neutral slds-m-left_xx-small", disabled: model.isSaving, onClick: this.onCancelAllEdits, title: "Cancel all pending changes"}, "Cancel") : null,
+                model.saveError ? h("span", {className: "slds-badge slds-theme_error slds-m-left_x-small", title: model.saveError}, "Save error — hover for details") : null,
               ),
               model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element"},
                 h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},

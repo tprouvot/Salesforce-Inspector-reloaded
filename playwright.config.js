@@ -29,6 +29,8 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
+        // Use pre-installed Chrome in CI to avoid Playwright's browser download
+        ...(process.env.CI ? {channel: "chrome"} : {}),
         // Chrome options for loading the unpacked extension
         args: [
           `--disable-extensions-except=${path.join(process.cwd(), "addon")}`,

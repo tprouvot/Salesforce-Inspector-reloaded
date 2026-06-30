@@ -9,7 +9,7 @@ export const test = base.extend({
     const pathToExtension = path.join(process.cwd(), "addon");
     const context = await chromium.launchPersistentContext("", {
       headless: true,
-      channel: process.env.CI ? "chrome" : "chromium",
+      channel: "chromium",
       args: [
         `--disable-extensions-except=${pathToExtension}`,
         `--load-extension=${pathToExtension}`,

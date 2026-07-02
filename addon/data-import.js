@@ -370,6 +370,15 @@ class Model {
     }());
   }
 
+  columnLabel(columnName) {
+    let sobjectDescribe = this.describeInfo.describeSobject(this.apiType == "Tooling", this.importType).sobjectDescribe;
+    if (!sobjectDescribe) {
+      return undefined;
+    }
+    let field = sobjectDescribe.fields.find(sobjectField => sobjectField.name.toLowerCase() == columnName.toLowerCase());
+    return field ? field.label : undefined;
+  }
+
   importIdColumnValid() {
     return this.importAction == "create" || this.inputIdColumnIndex() > -1;
   }
@@ -654,14 +663,24 @@ class Model {
     if (!col) {
       return col;
     }
-    let columnName = col.split(".");
+    let trimmedCol = col.trim();
+    let columnName = trimmedCol.split(".");
     if (columnName.length == 2) {
       let externalIdColumn = this.columnList().find(s => s.toLowerCase().startsWith(columnName[0].toLowerCase()) && s.toLowerCase().endsWith(columnName[1].toLowerCase()));
       if (externalIdColumn) {
         return externalIdColumn;
       }
     }
-    return col.trim();
+
+    let sobjectDescribe = this.describeInfo.describeSobject(this.apiType == "Tooling", this.importType).sobjectDescribe;
+    if (sobjectDescribe) {
+      let matchingField = sobjectDescribe.fields.find(field => field.label && field.label.toLowerCase() == trimmedCol.toLowerCase());
+      if (matchingField) {
+        return matchingField.name;
+      }
+    }
+
+    return trimmedCol;
   }
 
   refreshColumn() {
@@ -1258,7 +1277,7 @@ class App extends React.Component {
             ),
             h("datalist", {id: "sobjectlist"}, model.sobjectList().map(data => h("option", {key: data.name, value: data.name}))),
             h("datalist", {id: "idlookuplist"}, model.idLookupList().map(data => h("option", {key: data, value: data}))),
-            h("datalist", {id: "columnlist"}, model.columnList().map(data => h("option", {key: data, value: data})))
+            h("datalist", {id: "columnlist"}, model.columnList().map(data => h("option", {key: data, value: data, label: model.columnLabel(data)})))
           ),
         ),
         h("div", {className: "conf-subsection columns-mapping"},
@@ -1349,7 +1368,7 @@ class ColumnMapper extends React.Component {
   }
   onColumnValueChange(e) {
     let {model, column} = this.props;
-    column.columnValue = e.target.value;
+    column.columnValue = model.guessColumn(e.target.value);
     model.didUpdate();
   }
   onColumnSkipClick(e) {

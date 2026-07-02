@@ -654,14 +654,24 @@ class Model {
     if (!col) {
       return col;
     }
-    let columnName = col.split(".");
+    let trimmedCol = col.trim();
+    let columnName = trimmedCol.split(".");
     if (columnName.length == 2) {
       let externalIdColumn = this.columnList().find(s => s.toLowerCase().startsWith(columnName[0].toLowerCase()) && s.toLowerCase().endsWith(columnName[1].toLowerCase()));
       if (externalIdColumn) {
         return externalIdColumn;
       }
     }
-    return col.trim();
+
+    let sobjectDescribe = this.describeInfo.describeSobject(this.apiType == "Tooling", this.importType).sobjectDescribe;
+    if (sobjectDescribe) {
+      let matchingField = sobjectDescribe.fields.find(field => field.label && field.label.toLowerCase() == trimmedCol.toLowerCase());
+      if (matchingField) {
+        return matchingField.name;
+      }
+    }
+
+    return trimmedCol;
   }
 
   refreshColumn() {

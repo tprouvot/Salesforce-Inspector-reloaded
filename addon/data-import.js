@@ -370,6 +370,21 @@ class Model {
     }());
   }
 
+  columnSuggestionList() {
+    let suggestions = this.columnList().map(value => ({value}));
+    let existingValues = new Set(suggestions.map(suggestion => suggestion.value.toLowerCase()));
+    let sobjectDescribe = this.describeInfo.describeSobject(this.apiType == "Tooling", this.importType).sobjectDescribe;
+    if (sobjectDescribe) {
+      for (let field of sobjectDescribe.fields) {
+        if (field.label && existingValues.has(field.name.toLowerCase()) && !existingValues.has(field.label.toLowerCase())) {
+          suggestions.push({value: field.label, label: field.name});
+          existingValues.add(field.label.toLowerCase());
+        }
+      }
+    }
+    return suggestions;
+  }
+
   importIdColumnValid() {
     return this.importAction == "create" || this.inputIdColumnIndex() > -1;
   }
@@ -1268,7 +1283,7 @@ class App extends React.Component {
             ),
             h("datalist", {id: "sobjectlist"}, model.sobjectList().map(data => h("option", {key: data.name, value: data.name}))),
             h("datalist", {id: "idlookuplist"}, model.idLookupList().map(data => h("option", {key: data, value: data}))),
-            h("datalist", {id: "columnlist"}, model.columnList().map(data => h("option", {key: data, value: data})))
+            h("datalist", {id: "columnlist"}, model.columnSuggestionList().map(data => h("option", {key: data.value, value: data.value, label: data.label})))
           ),
         ),
         h("div", {className: "conf-subsection columns-mapping"},
@@ -1359,7 +1374,7 @@ class ColumnMapper extends React.Component {
   }
   onColumnValueChange(e) {
     let {model, column} = this.props;
-    column.columnValue = e.target.value;
+    column.columnValue = model.guessColumn(e.target.value);
     model.didUpdate();
   }
   onColumnSkipClick(e) {

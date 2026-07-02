@@ -370,6 +370,15 @@ class Model {
     }());
   }
 
+  columnLabel(columnName) {
+    let sobjectDescribe = this.describeInfo.describeSobject(this.apiType == "Tooling", this.importType).sobjectDescribe;
+    if (!sobjectDescribe) {
+      return undefined;
+    }
+    let field = sobjectDescribe.fields.find(sobjectField => sobjectField.name.toLowerCase() == columnName.toLowerCase());
+    return field && field.label != field.name ? field.label : undefined;
+  }
+
   importIdColumnValid() {
     return this.importAction == "create" || this.inputIdColumnIndex() > -1;
   }
@@ -1268,7 +1277,7 @@ class App extends React.Component {
             ),
             h("datalist", {id: "sobjectlist"}, model.sobjectList().map(data => h("option", {key: data.name, value: data.name}))),
             h("datalist", {id: "idlookuplist"}, model.idLookupList().map(data => h("option", {key: data, value: data}))),
-            h("datalist", {id: "columnlist"}, model.columnList().map(data => h("option", {key: data, value: data})))
+            h("datalist", {id: "columnlist"}, model.columnList().map(data => h("option", {key: data, value: data, label: model.columnLabel(data)})))
           ),
         ),
         h("div", {className: "conf-subsection columns-mapping"},

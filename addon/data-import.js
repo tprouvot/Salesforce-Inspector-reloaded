@@ -376,7 +376,7 @@ class Model {
       return undefined;
     }
     let field = sobjectDescribe.fields.find(sobjectField => sobjectField.name.toLowerCase() == columnName.toLowerCase());
-    return field && field.label != field.name ? field.label : undefined;
+    return field ? field.label : undefined;
   }
 
   importIdColumnValid() {

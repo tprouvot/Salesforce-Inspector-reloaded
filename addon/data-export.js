@@ -16,6 +16,24 @@ function createQueryHistory(storageKey, max) {
   });
 }
 
+function isEditableElement(element) {
+  if (!element || element.nodeType !== 1) {
+    return false;
+  }
+  const tagName = element.tagName;
+  return tagName == "INPUT"
+    || tagName == "TEXTAREA"
+    || tagName == "SELECT"
+    || element.isContentEditable
+    || element.closest("[contenteditable]") != null;
+}
+
+function isVisibleElement(element) {
+  return element
+    && element.getClientRects().length > 0
+    && getComputedStyle(element).visibility != "hidden";
+}
+
 class Model {
   static QUERY_TAB_PREFIX = "Query";
 
@@ -1371,6 +1389,7 @@ class App extends React.Component {
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
+    this.onFilterShortcutKeyDown = this.onFilterShortcutKeyDown.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
     this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption")), isDropdownOpen: false};// Tracks whether the dropdown is open
@@ -1556,6 +1575,30 @@ class App extends React.Component {
       this.setState({isDropdownOpen: false});
     }
     model.didUpdate();
+  }
+  onFilterShortcutKeyDown(e) {
+    if (e.defaultPrevented) {
+      return;
+    }
+    const filterInput = this.refs.resultsFilter;
+    if (!isVisibleElement(filterInput) || document.activeElement == filterInput) {
+      return;
+    }
+
+    const isExplicitShortcut = (e.ctrlKey || e.metaKey)
+      && e.shiftKey
+      && !e.altKey
+      && (e.key || "").toLowerCase() == "f";
+    const isSlashShortcut = e.key == "/"
+      && !e.ctrlKey
+      && !e.altKey
+      && !e.metaKey
+      && !isEditableElement(e.target);
+
+    if (isExplicitShortcut || isSlashShortcut) {
+      e.preventDefault();
+      filterInput.focus();
+    }
   }
   onSetQueryName(e) {
     let {model} = this.props;
@@ -1757,6 +1800,7 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
+    addEventListener("keydown", this.onFilterShortcutKeyDown);
 
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
@@ -1780,6 +1824,9 @@ class App extends React.Component {
     }
     addEventListener("resize", resize);
     resize();
+  }
+  componentWillUnmount() {
+    removeEventListener("keydown", this.onFilterShortcutKeyDown);
   }
   componentDidUpdate() {
     this.recalculateSize();
@@ -2079,7 +2126,9 @@ class App extends React.Component {
               model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element"},
                 h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},
                   h("input", {
+                    ref: "resultsFilter",
                     className: "slds-input slds-button slds-m-around_none",
+                    "aria-label": "Filter Result",
                     placeholder: model.filterColumns?.length > 0
                       ? `Filter by (${model.filterColumns.length})`
                       : "Filter",

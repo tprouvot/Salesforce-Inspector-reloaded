@@ -21,17 +21,17 @@ function isEditableElement(element) {
     return false;
   }
   const tagName = element.tagName;
-  return tagName == "INPUT"
-    || tagName == "TEXTAREA"
-    || tagName == "SELECT"
+  return tagName === "INPUT"
+    || tagName === "TEXTAREA"
+    || tagName === "SELECT"
     || element.isContentEditable
-    || element.closest("[contenteditable]") != null;
+    || element.closest("[contenteditable]") !== null;
 }
 
 function isVisibleElement(element) {
   return element
     && element.getClientRects().length > 0
-    && getComputedStyle(element).visibility != "hidden";
+    && getComputedStyle(element).visibility !== "hidden";
 }
 
 class Model {
@@ -1581,15 +1581,15 @@ class App extends React.Component {
       return;
     }
     const filterInput = this.refs.resultsFilter;
-    if (!isVisibleElement(filterInput) || document.activeElement == filterInput) {
+    if (!isVisibleElement(filterInput) || document.activeElement === filterInput) {
       return;
     }
 
     const isExplicitShortcut = (e.ctrlKey || e.metaKey)
       && e.shiftKey
       && !e.altKey
-      && (e.key || "").toLowerCase() == "f";
-    const isSlashShortcut = e.key == "/"
+      && (e.key || "").toLowerCase() === "f";
+    const isSlashShortcut = e.key === "/"
       && !e.ctrlKey
       && !e.altKey
       && !e.metaKey
@@ -1842,6 +1842,11 @@ class App extends React.Component {
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
+
+    const isMac = navigator.userAgentData?.platform === "macOS" || /Mac/.test(navigator.platform);
+    const filterShortcutTitle = isMac
+      ? "Filter export results (/ or ⌘⇧F)"
+      : "Filter export results (/ or Ctrl+Shift+F)";
 
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
@@ -2129,6 +2134,7 @@ class App extends React.Component {
                     ref: "resultsFilter",
                     className: "slds-input slds-button slds-m-around_none",
                     "aria-label": "Filter Result",
+                    title: filterShortcutTitle,
                     placeholder: model.filterColumns?.length > 0
                       ? `Filter by (${model.filterColumns.length})`
                       : "Filter",

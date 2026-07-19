@@ -174,19 +174,35 @@ class Model {
     });
   }
 
-  retrieveMetaFromPackageXml(packageXml){
+  parsePackageXml(packageXml) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(packageXml, "text/xml");
-
-    const retrieveRequest = {apiVersion, unpackaged: {types: []}};
+    const retrieveRequest = { apiVersion, unpackaged: { types: [] } };
 
     const types = xmlDoc.getElementsByTagName("types");
     for (let typeNode of types) {
-      const name = typeNode.getElementsByTagName("name")[0].textContent;
+      const nameNode = typeNode.getElementsByTagName("name")[0];
+      if (!nameNode) continue;
+      const name = nameNode.textContent;
       const members = [...typeNode.getElementsByTagName("members")].map(m => m.textContent).sort();
-      retrieveRequest.unpackaged.types.push({name, members});
+      retrieveRequest.unpackaged.types.push({ name, members });
     }
     retrieveRequest.unpackaged.types.sort((a, b) => a.name.localeCompare(b.name));
+
+    if (this.metadataObjects && this.metadataObjects.length > 0) {
+      const typeNames = retrieveRequest.unpackaged.types.map(t => t.name);
+      this.metadataObjects.forEach(obj => {
+        if (typeNames.includes(obj.xmlName)) {
+          obj.selected = true;
+        }
+      });
+    }
+
+    return retrieveRequest;
+  }
+
+  retrieveMetaFromPackageXml(packageXml) {
+    const retrieveRequest = this.parsePackageXml(packageXml);
     this.retrieveMetadata(retrieveRequest);
   }
 
@@ -642,6 +658,8 @@ class App extends React.Component {
         try {
           const importedPackage = event.target.result;
           model.packageXml = importedPackage;
+          model.parsePackageXml(importedPackage);
+
           this.setState({
             showToast: true,
             toastMessage: fileName + " imported successfully!",
@@ -777,7 +795,7 @@ class App extends React.Component {
     let {model} = this.props;
     let clipText = e.clipboardData.getData("text/plain");
     model.packageXml = clipText;
-    model.retrieveMetaFromPackageXml(clipText);
+    model.parsePackageXml(clipText);
     model.didUpdate();
   }
   onUpdateManagedPackageSelection(e){
@@ -1045,7 +1063,18 @@ class App extends React.Component {
                 onClick: this.onStartClick,
                 disabled: !model.deployRequestId && (!model.metadataObjects || !model.metadataObjects.some(obj => obj.selected))
               }, "Retrieve Metadata"),
-              model.statusLink ? h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.refs.fileInput.click(), title: "Save status info"},
+              model.statusLink ? h("button", {
+                className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small",
+                onClick: () => {
+                  const a = document.createElement("a");
+                  a.href = model.statusLink;
+                  a.download = "status_info.json";
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                },
+                title: "Save status info"
+              },
                 h("svg", {className: "slds-button__icon"},
                   h("use", {xlinkHref: "symbols.svg#info"})
                 )

@@ -1300,7 +1300,7 @@ function RecordTable(vm) {
       }
       let filter = vm.resultsFilter;
       for (let record of expRecords) {
-        let row = new Array(header.length);
+        let row = new Array(header.length).fill(undefined);
         row[0] = record;
         rt.table.push(row);
         rt.rowVisibilities.push(isVisible(row, filter));
@@ -1324,7 +1324,18 @@ function RecordTable(vm) {
     },
     updateColumnsVisibility() {
       if (rt.table.length > 1) {
-        rt.colVisibilities = rt.table[1].map(cell => !(typeof cell == "object" && cell !== null && vm.prefHideRelations));
+        let numCols = rt.table[1].length;
+        let isObjCol = new Array(numCols).fill(false);
+        for (let c = 0; c < numCols; c++) {
+          for (let r = 1; r < rt.table.length; r++) {
+            let cell = rt.table[r][c];
+            if (typeof cell == "object" && cell !== null) {
+              isObjCol[c] = true;
+              break;
+            }
+          }
+        }
+        rt.colVisibilities = isObjCol.map(isObj => !(isObj && vm.prefHideRelations));
       }
     },
     getVisibleTable() {

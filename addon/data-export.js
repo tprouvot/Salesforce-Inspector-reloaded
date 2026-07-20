@@ -293,7 +293,7 @@ class Model {
   }
 
   downloadAsXlsx() {
-    const rawData = this.exportedData.getVisibleTable(); 
+    const rawData = this.exportedData.getXlsxData();
     const filename = `${this.exportedData.records[0]?.attributes.type}-${new Date().toLocaleDateString()}.xlsx`;
     downloadXlsxFile(rawData, filename);
   }
@@ -1269,6 +1269,18 @@ function RecordTable(vm) {
     }
   }
 
+  function cellToXlsxValue(cell) {
+    if (cell == null) {
+      return "";
+    } else if (typeof cell == "object") {
+      if (cell.attributes && cell.attributes.type) {
+        return "[" + cell.attributes.type + "]";
+      }
+      return "" + cell;
+    }
+    return cell; 
+  }
+
   let isVisible = (row, filter) => {
     // If no filter is applied, show all rows
     if (!filter) {
@@ -1323,6 +1335,7 @@ function RecordTable(vm) {
       }
     },
     csvSerialize: separator => rt.getVisibleTable().map(row => row.map(cell => "\"" + cellToString(cell).split("\"").join("\"\"") + "\"").join(separator)).join("\r\n"),
+    getXlsxData: () => rt.getVisibleTable().map(row => row.map(cell => cellToXlsxValue(cell))),
     updateVisibility() {
       let filter = vm.resultsFilter;
       let countOfVisibleRecords = 0;

@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, downloadXlsxFile, StorageHistory} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -260,7 +260,7 @@ class Model {
     this.describeInfo.reloadAll();
   }
   canCopy() {
-    return this.exportedData != null;
+    return this.exportedData != null && this.exportedData.table.length > 0;
   }
   canDelete() {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
@@ -279,8 +279,23 @@ class Model {
   }
   downloadAsCsv(){
     const csvContent = this.exportedData.csvSerialize(this.separator);
-    const filename = `${this.exportedData.records[0].attributes.type}-${new Date().toLocaleDateString()}.csv`;
+    const filename = `${this.exportedData.records[0]?.attributes.type}-${new Date().toLocaleDateString()}.csv`;
     downloadCsvFile(csvContent, filename);
+  }
+  canDownloadXlsx() {
+    if (!this.exportedData || this.exportedData.table.length === 0) {
+      return false;
+    }
+    const visibleTable = this.exportedData.getVisibleTable();
+    const rowCount = visibleTable.length;
+    const colCount = rowCount > 0 ? visibleTable[0].length : 0;
+    return (rowCount * colCount) <= 500000;
+  }
+
+  downloadAsXlsx() {
+    const rawData = this.exportedData.getVisibleTable(); 
+    const filename = `${this.exportedData.records[0]?.attributes.type}-${new Date().toLocaleDateString()}.xlsx`;
+    downloadXlsxFile(rawData, filename);
   }
   deleteRecords(e) {
     let data = this.exportedData.csvSerialize(this.separator);
@@ -1368,6 +1383,7 @@ class App extends React.Component {
     this.onCopyAsExcel = this.onCopyAsExcel.bind(this);
     this.onCopyAsCsv = this.onCopyAsCsv.bind(this);
     this.onDownloadAsCsv = this.onDownloadAsCsv.bind(this);
+    this.onDownloadAsXlsx = this.onDownloadAsXlsx.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
@@ -1537,6 +1553,11 @@ class App extends React.Component {
   onDownloadAsCsv(){
     let {model} = this.props;
     model.downloadAsCsv();
+    model.didUpdate();
+  }
+  onDownloadAsXlsx(){
+    let {model} = this.props;
+    model.downloadAsXlsx();
     model.didUpdate();
   }
   onCopyAsJson() {
@@ -2064,9 +2085,16 @@ class App extends React.Component {
                 h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onCopyAsCsv, title: "Copy exported data to clipboard for saving as a CSV file"}, "Copy (CSV)"),
                 h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onCopyAsJson, title: "Copy raw API output to clipboard"}, "Copy (JSON)"),
                 h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onDownloadAsCsv, title: "Download as a CSV file"},
-                  h("svg", {className: "slds-button__icon"},
-                    h("use", {xlinkHref: "symbols.svg#download"})
-                  )
+                  h("svg", {className: "slds-button__icon slds-button__icon_left"}, h("use", {xlinkHref: "symbols.svg#download"})), "CSV"
+                ),
+                h("button", {
+                  className: "slds-button slds-button_neutral", 
+                  disabled: !model.canCopy(), 
+                  onClick: (e) => { if (!model.canDownloadXlsx()) { e.preventDefault(); e.currentTarget.blur(); return; } this.onDownloadAsXlsx(); },
+                  style: (model.canCopy() && !model.canDownloadXlsx()) ? {color: "#c9c7c5", cursor: "not-allowed"} : {},
+                  title: (model.canCopy() && !model.canDownloadXlsx()) ? "Dataset is too large for XLSX (> 500k cells). Use CSV instead." : "Download as an XLSX file"
+                },
+                  h("svg", {className: "slds-button__icon slds-button__icon_left"}, h("use", {xlinkHref: "symbols.svg#download"})), "XLSX"
                 ),
                 h("button", {className: "slds-button slds-button_neutral", disabled: !model.canCopy(), onClick: this.onPrefHideRelationsChange, title: `${model.prefHideRelations ? "Show" : "Hide"} Object Columns`},
                   h("svg", {className: `slds-button__icon ${model.prefHideRelations ? "" : "disabled"}`},

@@ -289,9 +289,11 @@ class Model {
     const visibleTable = this.exportedData.getVisibleTable();
     const rowCount = visibleTable.length;
     const colCount = rowCount > 0 ? visibleTable[0].length : 0;
-    return (rowCount * colCount) <= 500000;
+    const totalCells = rowCount * colCount;
+    const MAX_CELLS = 2000000;
+    const MAX_EXCEL_ROWS = 1048576;
+    return totalCells <= MAX_CELLS && rowCount <= MAX_EXCEL_ROWS;
   }
-
   downloadAsXlsx() {
     const rawData = this.exportedData.getXlsxData();
     const filename = `${this.exportedData.records[0]?.attributes.type}-${new Date().toLocaleDateString()}.xlsx`;
@@ -2105,7 +2107,14 @@ class App extends React.Component {
                   disabled: !model.canCopy(), 
                   onClick: (e) => { if (!model.canDownloadXlsx()) { e.preventDefault(); e.currentTarget.blur(); return; } this.onDownloadAsXlsx(); },
                   style: (model.canCopy() && !model.canDownloadXlsx()) ? {color: "#c9c7c5", cursor: "not-allowed"} : {},
-                  title: (model.canCopy() && !model.canDownloadXlsx()) ? "Dataset is too large for XLSX (> 500k cells). Use CSV instead." : "Download as an XLSX file"
+                  title: (() => {
+                    if (!model.canCopy() || model.canDownloadXlsx()) return "Download as an XLSX file";
+                    const rowCount = model.exportedData ? model.exportedData.getVisibleTable().length : 0;
+                    const colCount = rowCount > 0 ? model.exportedData.getVisibleTable()[0].length : 0;
+                    return (rowCount > 1048576) 
+                      ? "Dataset exceeds Excel's row limit (> 1,048,576 rows). Use CSV instead." 
+                      : "Dataset is too large for XLSX (> 2M cells). Use CSV instead.";
+                  })()
                 },
                   h("svg", {className: "slds-button__icon slds-button__icon_left"}, h("use", {xlinkHref: "symbols.svg#download"})), "XLSX"
                 ),

@@ -71,6 +71,75 @@ test.describe("Data Export", () => {
     await expect(firstDataRow.locator("td").nth(2)).toContainText("Test Account 1");
   });
 
+  test("Split a large quoted IN clause and merge batches", async ({page, context, extensionId}) => {
+    await context.addInitScript(() => {
+      localStorage.setItem("autoSplitLargeInClauses", "true");
+    });
+
+    const batchRequests = [];
+    let releaseFirstBatch;
+    let firstBatchStartedResolve;
+    const firstBatchReleased = new Promise(resolve => {
+      releaseFirstBatch = resolve;
+    });
+    const firstBatchStarted = new Promise(resolve => {
+      firstBatchStartedResolve = resolve;
+    });
+
+    await page.route(/\/services\/data\/v[\d.]+\/query\/\?q=/, async route => {
+      const requestUrl = new URL(route.request().url());
+      const query = requestUrl.searchParams.get("q");
+      if (!query || !/from\s+account/i.test(query) || !/name\s+in\s*\(/i.test(query)) {
+        await route.fallback();
+        return;
+      }
+
+      batchRequests.push({query, url: requestUrl.toString()});
+      if (batchRequests.length == 1) {
+        firstBatchStartedResolve();
+        await firstBatchReleased;
+      }
+
+      const batchNumber = batchRequests.length;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          totalSize: 1,
+          done: true,
+          records: [{
+            attributes: {type: "Account", url: `/services/data/v${apiVersion}/sobjects/Account/00100000000000${batchNumber}AAA`},
+            Id: `00100000000000${batchNumber}AAA`,
+            Name: `Batch ${batchNumber}`
+          }]
+        })
+      });
+    });
+
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const values = Array.from({length: 100}, (_, index) => {
+      return `'non-id-value-${String(index).padStart(3, "0")}-${"x".repeat(70)}'`;
+    });
+    await page.locator("textarea#query").fill(`SELECT Id, Name FROM Account WHERE Name IN (${values.join(", ")})`);
+    await page.click("button:has-text('Run Export')");
+
+    await firstBatchStarted;
+    await expect(page.locator(".result-status")).toContainText("Exporting...");
+    expect(batchRequests).toHaveLength(1);
+    releaseFirstBatch();
+
+    await expect(page.locator(".result-status")).toContainText("Exported", {timeout: 3000});
+    expect(batchRequests.length).toBeGreaterThan(1);
+    await expect(page.locator(".result-status")).toContainText(`Exported ${batchRequests.length} records`);
+    for (const request of batchRequests) {
+      expect(request.url.length).toBeLessThanOrEqual(6000);
+      expect(request.query).toMatch(/name\s+in\s*\(/i);
+    }
+    await expect(page.locator("#result-area table tr")).toHaveCount(batchRequests.length + 1);
+  });
+
   test("Autocomplete Suggestions", async ({page, context, extensionId}) => {
     await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
     await page.waitForSelector("textarea#query", {timeout: 2000});

@@ -16,6 +16,206 @@ function createQueryHistory(storageKey, max) {
   });
 }
 
+// Keep a margin below common browser, proxy, and Salesforce URL limits. The
+// request URL also receives a cache-busting query parameter in sfConn.rest().
+const SOQL_QUERY_URL_SAFE_LENGTH = 6000;
+const REST_CACHE_BUSTER_LENGTH = 32;
+const SOQL_QUERY_METHODS = new Set(["query", "queryAll", "tooling/query"]);
+
+function isSoqlIdentifierCharacter(character) {
+  return character != null && /[A-Za-z0-9_]/.test(character);
+}
+
+function skipWhitespace(value, index) {
+  while (index < value.length && /\s/.test(value[index])) {
+    index++;
+  }
+  return index;
+}
+
+function skipSoqlString(value, startIndex) {
+  for (let index = startIndex + 1; index < value.length; index++) {
+    if (value[index] == "\\") {
+      index++;
+    } else if (value[index] == "'") {
+      // Supporting doubled quotes as well as SOQL's backslash escaping keeps
+      // the scanner from mistaking a quoted value for the end of the clause.
+      if (value[index + 1] == "'") {
+        index++;
+      } else {
+        return index + 1;
+      }
+    }
+  }
+  return -1;
+}
+
+function findClosingSoqlParenthesis(value, openingIndex) {
+  let depth = 1;
+  for (let index = openingIndex + 1; index < value.length; index++) {
+    if (value[index] == "'") {
+      index = skipSoqlString(value, index);
+      if (index == -1) {
+        return -1;
+      }
+      index--;
+    } else if (value[index] == "(") {
+      depth++;
+    } else if (value[index] == ")") {
+      depth--;
+      if (depth == 0) {
+        return index;
+      }
+    }
+  }
+  return -1;
+}
+
+function previousSoqlKeyword(value, index) {
+  index--;
+  while (index >= 0 && /\s/.test(value[index])) {
+    index--;
+  }
+  let endIndex = index + 1;
+  while (index >= 0 && isSoqlIdentifierCharacter(value[index])) {
+    index--;
+  }
+  return value.slice(index + 1, endIndex).toUpperCase();
+}
+
+function isSoqlKeywordAt(value, index, keyword) {
+  return value.slice(index, index + keyword.length).toUpperCase() == keyword
+    && !isSoqlIdentifierCharacter(value[index - 1])
+    && !isSoqlIdentifierCharacter(value[index + keyword.length]);
+}
+
+function findSingleSoqlInClause(value) {
+  let clause = null;
+  for (let index = 0; index < value.length; index++) {
+    if (value[index] == "'") {
+      index = skipSoqlString(value, index);
+      if (index == -1) {
+        return null;
+      }
+      index--;
+      continue;
+    }
+
+    if (!isSoqlKeywordAt(value, index, "IN")) {
+      continue;
+    }
+
+    let openingIndex = skipWhitespace(value, index + 2);
+    if (value[openingIndex] != "(") {
+      continue;
+    }
+
+    // Splitting NOT IN changes the meaning of the query, so leave it on the
+    // existing export path.
+    if (previousSoqlKeyword(value, index) == "NOT") {
+      return null;
+    }
+
+    let closingIndex = findClosingSoqlParenthesis(value, openingIndex);
+    if (closingIndex == -1 || clause != null) {
+      return null;
+    }
+    clause = {openingIndex, closingIndex};
+    index = closingIndex;
+  }
+  return clause;
+}
+
+function parseQuotedSoqlInValues(value, openingIndex, closingIndex) {
+  let values = [];
+  let index = openingIndex + 1;
+  while (index < closingIndex) {
+    index = skipWhitespace(value, index);
+    if (value[index] != "'") {
+      return null;
+    }
+
+    let valueEnd = skipSoqlString(value, index);
+    if (valueEnd == -1 || valueEnd > closingIndex) {
+      return null;
+    }
+    values.push(value.slice(index, valueEnd));
+
+    index = skipWhitespace(value, valueEnd);
+    if (index == closingIndex) {
+      return values;
+    }
+    if (value[index] != ",") {
+      return null;
+    }
+    index++;
+  }
+  return null;
+}
+
+function getSoqlQueryEndpoint(query, queryMethod) {
+  return "/services/data/v" + apiVersion + "/" + queryMethod + "/?q=" + encodeURIComponent(query);
+}
+
+function getSoqlRequestUrlLength(query, queryMethod, sfHost) {
+  return ("https://" + sfHost + getSoqlQueryEndpoint(query, queryMethod)).length + REST_CACHE_BUSTER_LENGTH;
+}
+
+function splitLargeSoqlInClause(query, queryMethod, sfHost) {
+  if (!/^\s*select\b/i.test(query)
+    || !SOQL_QUERY_METHODS.has(queryMethod)
+    || getSoqlRequestUrlLength(query, queryMethod, sfHost) <= SOQL_QUERY_URL_SAFE_LENGTH) {
+    return null;
+  }
+
+  let clause = findSingleSoqlInClause(query);
+  if (clause == null) {
+    return null;
+  }
+
+  let values = parseQuotedSoqlInValues(query, clause.openingIndex, clause.closingIndex);
+  if (values == null || values.length < 2) {
+    return null;
+  }
+
+  // IN semantics ignore duplicate literals. Removing exact duplicates prevents
+  // a record from being returned twice when a duplicate crosses a batch edge.
+  let seenValues = new Set();
+  values = values.filter(value => {
+    if (seenValues.has(value)) {
+      return false;
+    }
+    seenValues.add(value);
+    return true;
+  });
+
+  let makeQuery = batchValues => query.slice(0, clause.openingIndex + 1)
+    + batchValues.join(", ") + query.slice(clause.closingIndex);
+  let batches = [];
+  let currentBatch = [];
+  for (let value of values) {
+    let candidateBatch = currentBatch.concat(value);
+    let candidateQuery = makeQuery(candidateBatch);
+    if (getSoqlRequestUrlLength(candidateQuery, queryMethod, sfHost) <= SOQL_QUERY_URL_SAFE_LENGTH) {
+      currentBatch = candidateBatch;
+      continue;
+    }
+
+    if (currentBatch.length == 0) {
+      // One value alone cannot fit safely, so splitting cannot help.
+      return null;
+    }
+    batches.push(makeQuery(currentBatch));
+    currentBatch = [value];
+    if (getSoqlRequestUrlLength(makeQuery(currentBatch), queryMethod, sfHost) > SOQL_QUERY_URL_SAFE_LENGTH) {
+      return null;
+    }
+  }
+  batches.push(makeQuery(currentBatch));
+
+  return batches.length > 1 ? batches : null;
+}
+
 class Model {
   static QUERY_TAB_PREFIX = "Query";
 
@@ -848,10 +1048,12 @@ class Model {
     vm.initPerf();
     let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
     vm.queryInput.value = query; // Update the input value with the cleaned query
-    function batchHandler(batch) {
+    let splitQueries = null;
+    let isSplitQueryExport = false;
+    function batchHandler(batch, batchNumber = 0, isFirstPage = true) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
-          return {records: [], done: true, totalSize: -1};
+          return {records: [], done: true, totalSize: -1, aborted: true};
         }
         throw err;
       }).then(data => {
@@ -881,11 +1083,30 @@ class Model {
         let recs = exportedData.records.length;
         let total = exportedData.totalSize;
         if (data.totalSize != -1) {
-          exportedData.totalSize = isSoql ? data.totalSize : recs;
+          if (isSplitQueryExport && isSoql) {
+            if (isFirstPage) {
+              exportedData.totalSize = (exportedData.totalSize == -1 ? 0 : exportedData.totalSize) + data.totalSize;
+            }
+          } else {
+            exportedData.totalSize = isSoql ? data.totalSize : recs;
+          }
           total = exportedData.totalSize;
         }
         if (!data.done && isSoql) {
-          let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
+          let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}), batchNumber, false);
+          vm.isWorking = true;
+          vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
+          vm.exportError = null;
+          vm.exportedData = exportedData;
+          vm.markPerf();
+          vm.updatedExportedData();
+          vm.didUpdate();
+          return pr;
+        }
+        if (isSplitQueryExport && !data.aborted && batchNumber < splitQueries.length - 1) {
+          let nextBatchNumber = batchNumber + 1;
+          let nextEndpoint = getSoqlQueryEndpoint(splitQueries[nextBatchNumber], exportedData.queryMethod);
+          let pr = batchHandler(sfConn.rest(nextEndpoint, exportedData.params), nextBatchNumber);
           vm.isWorking = true;
           vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
           vm.exportError = null;
@@ -944,6 +1165,13 @@ class Model {
       });
     }
     this.setQueryMethod(exportedData, query, vm);
+    if (localStorage.getItem(Constants.AUTO_SPLIT_LARGE_IN_CLAUSES) == "true") {
+      splitQueries = splitLargeSoqlInClause(query, exportedData.queryMethod, sfConn.instanceHostname || vm.sfHost);
+      isSplitQueryExport = splitQueries != null;
+    }
+    if (isSplitQueryExport) {
+      this.setQueryMethod(exportedData, splitQueries[0], vm);
+    }
     vm.spinFor(batchHandler(sfConn.rest(exportedData.endpoint, exportedData.params))
       .catch(error => {
         console.error(error);

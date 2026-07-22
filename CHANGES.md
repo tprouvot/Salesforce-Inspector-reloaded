@@ -5,6 +5,8 @@
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition
+- `Show All Data` Display Lookup Names on lookup title [feature #1130](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1130)
+- `Field Creator` Handle permission errors as warnings when the field is successfully created but permissions fail [#1140](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1140)
 
 ## Version 2.0
 

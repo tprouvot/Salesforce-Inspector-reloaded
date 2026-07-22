@@ -40,6 +40,12 @@ class Model {
     this.showHelp = false;
     this.orgName = this.sfHost.split(".")[0]?.toUpperCase() || "";
     this.dataError = "";
+    this.workbook = null;
+    this.availableSheets = null;
+    this.selectedSheet = null;
+    this.uploadSeq = 0;
+    this.uploadedFileName = null;
+    this.fileSizeWarning = "";
     this.apiType = "Enterprise";
     this.dataFormat = "excel";
     this.importActionSelected = false;
@@ -205,6 +211,77 @@ class Model {
     }
     this.refreshColumn();
     this.updateResult(this.importData.importTable);
+  }
+
+  // Called synchronously the moment a file is chosen or dropped, before any (possibly slow) reading
+  // happens. Immediately records the file name (so the UI can show it right away) and warns about
+  // large files. Returns a token; loadFile() uses it to detect being superseded by a newer upload.
+  beginFileUpload(file) {
+    this.uploadSeq = (this.uploadSeq || 0) + 1;
+    this.uploadedFileName = file.name;
+    this.dataError = "";
+    const FIVE_MB = 5 * 1024 * 1024;
+    this.fileSizeWarning = file.size > FIVE_MB
+      ? `File is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Large files may take a while to load or may not load successfully.`
+      : "";
+    return this.uploadSeq;
+  }
+
+  // Reads a File object (from a file input or drag-and-drop) and loads it as import data.
+  // Supports .csv/.txt (plain text), .json, and .xlsx/.xls (via SheetJS).
+  // For workbooks with more than one sheet, the first sheet is loaded immediately, and
+  // availableSheets/selectedSheet are populated so the UI can offer a picker to switch sheets.
+  // `seq` (from beginFileUpload) lets us detect that a newer file was chosen while this one was
+  // still being read, so the older file's result is discarded instead of possibly overwriting the newer one.
+  async loadFile(file, seq) {
+    if (this.isWorking()) {
+      return;
+    }
+    let name = file.name.toLowerCase();
+    try {
+      if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+        if (typeof XLSX === "undefined") {
+          if (seq !== this.uploadSeq) return;
+          this.dataError = "SheetJS (xlsx) library is not loaded.";
+          this.updateResult(null);
+          return;
+        }
+        let buffer = await file.arrayBuffer();
+        if (seq !== this.uploadSeq) return; // A newer file was selected while this one was reading.
+        // cellDates: parse date-formatted cells as JS Date objects instead of raw serial numbers,
+        // so we can control the output format below (Excel's display format is often locale-specific,
+        // e.g. "6/9/2026", which Salesforce would reject for Date fields expecting "yyyy-mm-dd").
+        let workbook = XLSX.read(buffer, {type: "array", cellDates: true});
+        if (seq !== this.uploadSeq) return;
+        this.workbook = workbook;
+        this.availableSheets = workbook.SheetNames.length > 1 ? workbook.SheetNames : null;
+        this.loadSheet(workbook.SheetNames[0]);
+      } else {
+        this.workbook = null;
+        this.availableSheets = null;
+        this.selectedSheet = null;
+        let text = await file.text();
+        if (seq !== this.uploadSeq) return;
+        this.setData(text);
+      }
+    } catch (e) {
+      if (seq !== this.uploadSeq) return;
+      this.dataError = "Could not read \"" + file.name + "\": " + e.message;
+      this.updateResult(null);
+    }
+  }
+
+  // Converts a specific sheet of the currently loaded workbook into import data.
+  loadSheet(sheetName) {
+    if (!this.workbook) {
+      return;
+    }
+    this.selectedSheet = sheetName;
+    let sheet = this.workbook.Sheets[sheetName];
+    // Use tab as the field separator so the existing "excel" (tab-separated) detection/parsing path is reused.
+    // dateNF forces a consistent ISO date format for any date-formatted cells.
+    let text = XLSX.utils.sheet_to_csv(sheet, {FS: "\t", blankrows: false, dateNF: "yyyy-mm-dd"});
+    this.setData(text);
   }
 
   getDataFromJson(json) {
@@ -441,7 +518,7 @@ class Model {
   canSkipAllUnknownFields() {
     if (this.importData.importTable && this.importData.importTable.header) {
       for (let column of this.importData.importTable.header) {
-        if (!column.columnIgnore() && column.columnUnknownField()) {
+        if (!column.columnIgnore() && column.columnError()) {
           return true;
         }
       }
@@ -959,6 +1036,10 @@ class App extends React.Component {
     this.onImportActionChange = this.onImportActionChange.bind(this);
     this.onImportTypeChange = this.onImportTypeChange.bind(this);
     this.onDataPaste = this.onDataPaste.bind(this);
+    this.onFileChange = this.onFileChange.bind(this);
+    this.onDataDrop = this.onDataDrop.bind(this);
+    this.onDataDragOver = this.onDataDragOver.bind(this);
+    this.onSheetChange = this.onSheetChange.bind(this);
     this.onExternalIdChange = this.onExternalIdChange.bind(this);
     this.onBatchSizeChange = this.onBatchSizeChange.bind(this);
     this.onCustomHeadersChange = this.onCustomHeadersChange.bind(this);
@@ -1005,8 +1086,45 @@ class App extends React.Component {
   onDataPaste(e) {
     let {model} = this.props;
     let text = e.clipboardData.getData("text/plain");
+    model.uploadSeq = (model.uploadSeq || 0) + 1; // Invalidate any file read still in flight.
+    model.workbook = null;
+    model.availableSheets = null;
+    model.selectedSheet = null;
+    model.uploadedFileName = null;
+    model.fileSizeWarning = "";
     model.setData(text);
     model.didUpdate();
+  }
+  onSheetChange(e) {
+    let {model} = this.props;
+    model.loadSheet(e.target.value);
+    model.didUpdate();
+  }
+  onFileChange(e) {
+    let {model} = this.props;
+    let file = e.target.files[0];
+    // Allow selecting the same file again later (e.g. after fixing its content).
+    e.target.value = null;
+    if (!file) {
+      return;
+    }
+    let seq = model.beginFileUpload(file);
+    model.didUpdate();
+    model.loadFile(file, seq).then(() => model.didUpdate());
+  }
+  onDataDragOver(e) {
+    e.preventDefault();
+  }
+  onDataDrop(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    let file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!file) {
+      return;
+    }
+    let seq = model.beginFileUpload(file);
+    model.didUpdate();
+    model.loadFile(file, seq).then(() => model.didUpdate());
   }
   onExternalIdChange(e) {
     let {model} = this.props;
@@ -1263,8 +1381,26 @@ class App extends React.Component {
                           h("div", {className: "slds-form-element"},
                             h("span", {className: "slds-form-element__label", htmlFor: "form-import-data"}, "Data"),
                             h("div", {className: "slds-form-element__control"},
-                              h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: "Paste data here", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2}),
-                              h("div", {id: "error-data-paste", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.dataError}, model.dataError)
+                              h("div", {className: "slds-grid slds-grid_vertical-align-center", style: {gap: "0.5rem"}},
+                                h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: model.uploadedFileName || "Paste data here, or\nDrop a file", onPaste: this.onDataPaste, onDrop: this.onDataDrop, onDragOver: this.onDataDragOver, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2, style: {flex: "1 1 auto", minWidth: 0, resize: "none", boxSizing: "border-box", padding: "0.5rem"}}),
+                                h("input", {type: "file", id: "data-file-input", accept: ".csv,.txt,.json,.xlsx,.xls", style: {display: "none"}, onChange: this.onFileChange, disabled: model.isWorking()}),
+                                h("label", {htmlFor: "data-file-input", className: "slds-button slds-button_neutral", style: {flex: "0 0 auto"}, title: "Choose a CSV, Excel (.xlsx/.xls), or JSON file"},
+                                  h("svg", {className: "slds-button__icon slds-button__icon_left"}, h("use", {xlinkHref: "symbols.svg#upload"})),
+                                  "Choose File"
+                                )
+                              ),
+                              model.fileSizeWarning ? h("div", {className: "slds-form-element__help slds-text-color_error slds-m-left_none slds-m-top_xx-small"}, model.fileSizeWarning) : null,
+                              model.availableSheets ? h("div", {className: "slds-m-top_x-small"},
+                                h("span", {className: "slds-form-element__label", htmlFor: "form-sheet-select"}, "Sheet"),
+                                h("div", {className: "slds-form-element__control"},
+                                  h("div", {className: "slds-select_container"},
+                                    h("select", {id: "form-sheet-select", className: "slds-select", value: model.selectedSheet, onChange: this.onSheetChange, disabled: model.isWorking()},
+                                      model.availableSheets.map(sheetName => h("option", {key: sheetName, value: sheetName}, sheetName))
+                                    )
+                                  )
+                                )
+                              ) : null,
+                              h("div", {id: "error-data-paste", className: "slds-form-element__help slds-text-color_error slds-m-left_none", hidden: !model.dataError}, model.dataError ? "Error: " + model.dataError : "")
                             )
                           )
                         ),

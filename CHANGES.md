@@ -5,6 +5,7 @@
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition
+- `Data Import` Add file upload support for data import #1234 (contribution by [Prem Kumar](https://github.com/prem-k-r))
 
 ## Version 2.0
 

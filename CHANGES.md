@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Add inline editing: double-click any cell to edit it, picklist fields show a dropdown, Save/Cancel buttons appear in the toolbar when changes are pending, saving sends a REST PATCH only for modified records, spinner during save and error badge on failure (contribution by [Samuel Krissi](https://github.com/samuelkrissi)) 
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition

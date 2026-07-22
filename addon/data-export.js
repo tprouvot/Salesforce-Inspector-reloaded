@@ -45,6 +45,8 @@ class Model {
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
+    this.isSaving = false;
+    this.saveError = null;
     this.exportStatus = "Ready";
     this.exportError = null;
     this.exportedData = null;
@@ -107,6 +109,7 @@ class Model {
   updatedExportedData() {
     if (this.exportedData) {
       this.exportedData.updateColumnsVisibility();
+      this.exportedData.onPendingEditsChanged = () => this.didUpdate();
     }
     this.resultTableCallback(this.exportedData);
   }
@@ -261,6 +264,55 @@ class Model {
   }
   canCopy() {
     return this.exportedData != null;
+  }
+  hasPendingEdits() {
+    return this.exportedData && this.exportedData.pendingEdits && Object.keys(this.exportedData.pendingEdits).length > 0;
+  }
+  async saveAllEdits() {
+    let rt = this.exportedData;
+    if (!rt || !rt.pendingEdits) return;
+    let rowIndices = Object.keys(rt.pendingEdits).map(Number);
+    if (rowIndices.length === 0) return;
+    this.isSaving = true;
+    this.saveError = null;
+    this.didUpdate();
+    let errors = [];
+    await Promise.all(rowIndices.map(async rowIdx => {
+      let {recordId, fields} = rt.pendingEdits[rowIdx];
+      try {
+        await sfConn.rest(`/services/data/v${apiVersion}/sobjects/${rt.sobject}/${recordId}`, {method: "PATCH", body: fields});
+        delete rt.pendingEdits[rowIdx];
+      } catch (e) {
+        errors.push(`${recordId}: ` + (e.detail?.message || e.message || String(e)));
+      }
+    }));
+    this.isSaving = false;
+    if (errors.length === 0) {
+      this.exportStatus = `${rowIndices.length} record(s) saved successfully.`;
+      this.saveError = null;
+    } else {
+      this.exportStatus = `Save completed with ${errors.length} error(s).`;
+      this.saveError = errors.join("\n");
+    }
+    this.updatedExportedData();
+    this.didUpdate();
+  }
+  cancelAllEdits() {
+    let rt = this.exportedData;
+    if (!rt || !rt.pendingEdits) return;
+    let header = rt.table[0];
+    for (let rowIdx of Object.keys(rt.pendingEdits).map(Number)) {
+      let record = rt.records[rowIdx - 1];
+      if (record && header) {
+        for (let fieldName of Object.keys(rt.pendingEdits[rowIdx].fields)) {
+          let colIndex = header.findIndex(h => h === fieldName);
+          if (colIndex !== -1) rt.table[rowIdx][colIndex] = record[fieldName] !== undefined ? record[fieldName] : null;
+        }
+      }
+    }
+    rt.pendingEdits = {};
+    this.updatedExportedData();
+    this.didUpdate();
   }
   canDelete() {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
@@ -1292,11 +1344,16 @@ function RecordTable(vm) {
     isTooling: false,
     totalSize: -1,
     preventLineWrap: vm.prefPreventLineWrap,
+    sobject: null,
+    pendingEdits: {},
     addToTable(expRecords) {
       rt.records = rt.records.concat(expRecords);
       if (rt.table.length == 0 && expRecords.length > 0) {
         rt.table.push(header);
         rt.rowVisibilities.push(true);
+      }
+      if (!rt.sobject && expRecords.length > 0 && expRecords[0].attributes) {
+        rt.sobject = expRecords[0].attributes.type;
       }
       let filter = vm.resultsFilter;
       for (let record of expRecords) {
@@ -1370,6 +1427,8 @@ class App extends React.Component {
     this.onDownloadAsCsv = this.onDownloadAsCsv.bind(this);
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
+    this.onSaveAllEdits = this.onSaveAllEdits.bind(this);
+    this.onCancelAllEdits = this.onCancelAllEdits.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
@@ -1565,6 +1624,17 @@ class App extends React.Component {
   onStopExport() {
     let {model} = this.props;
     model.stopExport();
+    model.didUpdate();
+  }
+  onSaveAllEdits(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.saveAllEdits();
+  }
+  onCancelAllEdits(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.cancelAllEdits();
     model.didUpdate();
   }
   onAddTab(e) {
@@ -2075,6 +2145,17 @@ class App extends React.Component {
                 ),
                 isOptionEnabled("delete", this.state.hideButtonsOption)
                   ? h("button", {className: "slds-button slds-button_destructive", disabled: !model.canDelete(), onClick: this.onDeleteRecords, title: "Open the 'Data Import' page with preloaded records to delete (< 20k records). 'Id' field needs to be queried"}, "Delete Records") : null,
+                (model.hasPendingEdits() || model.isSaving) ? h("button", {className: "slds-button slds-button_brand slds-m-left_x-small", disabled: model.isSaving, onClick: this.onSaveAllEdits, title: "Save all pending changes to Salesforce"},
+                  model.isSaving
+                    ? h("div", {className: "slds-spinner slds-spinner_x-small slds-spinner_inline", style: {position: "relative", width: "1em", height: "1em", display: "inline-block", verticalAlign: "middle", marginRight: "4px"}},
+                        h("div", {className: "slds-spinner__dot-a"}),
+                        h("div", {className: "slds-spinner__dot-b"})
+                      )
+                    : null,
+                  model.isSaving ? "Saving..." : "Save"
+                ) : null,
+                (model.hasPendingEdits() || model.isSaving) ? h("button", {className: "slds-button slds-button_neutral slds-m-left_xx-small", disabled: model.isSaving, onClick: this.onCancelAllEdits, title: "Cancel all pending changes"}, "Cancel") : null,
+                model.saveError ? h("span", {className: "slds-badge slds-theme_error slds-m-left_x-small", title: model.saveError}, "Save error — hover for details") : null,
               ),
               model.exportedData && model.exportedData.table[0]?.length > 0 && !model.exportError ? h("div", {className: "slds-form-element"},
                 h("div", {className: "slds-form-element__control slds-input-has-icon slds-input-has-icon_left slds-m-left_small slds-button-group"},

@@ -1113,9 +1113,14 @@ class App extends React.Component {
     model.loadFile(file, seq).then(() => model.didUpdate());
   }
   onDataDragOver(e) {
-    e.preventDefault();
+    if (e.dataTransfer.types && e.dataTransfer.types.includes("Files")) {
+      e.preventDefault();
+    }
   }
   onDataDrop(e) {
+    if (!(e.dataTransfer.types && e.dataTransfer.types.includes("Files"))) {
+      return;
+    }
     e.preventDefault();
     let {model} = this.props;
     let file = e.dataTransfer.files && e.dataTransfer.files[0];
@@ -1298,7 +1303,7 @@ class App extends React.Component {
       )
     ];
 
-    return h("div", {},
+    return h("div", {onDrop: this.onDataDrop, onDragOver: this.onDataDragOver},
       h(PageHeader, {
         pageTitle: "Data Import",
         orgName: model.orgName,
@@ -1382,7 +1387,7 @@ class App extends React.Component {
                             h("span", {className: "slds-form-element__label", htmlFor: "form-import-data"}, "Data"),
                             h("div", {className: "slds-form-element__control"},
                               h("div", {className: "slds-grid slds-grid_vertical-align-center", style: {gap: "0.5rem"}},
-                                h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: model.uploadedFileName || "Paste data here, or\nDrop a file", onPaste: this.onDataPaste, onDrop: this.onDataDrop, onDragOver: this.onDataDragOver, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2, style: {flex: "1 1 auto", minWidth: 0, resize: "none", boxSizing: "border-box", padding: "0.5rem"}}),
+                                h("textarea", {id: "data-paste", "aria-describedby": "error-data-paste", value: model.uploadedFileName || "Paste data here, or\nDrop a file", onPaste: this.onDataPaste, className: model.dataError ? "slds-textarea slds-has-error" : "slds-textarea", disabled: model.isWorking(), readOnly: true, rows: 2, style: {flex: "1 1 auto", minWidth: 0, resize: "none", boxSizing: "border-box", padding: "0.5rem"}}),
                                 h("input", {type: "file", id: "data-file-input", accept: ".csv,.txt,.json,.xlsx,.xls", style: {display: "none"}, onChange: this.onFileChange, disabled: model.isWorking()}),
                                 h("label", {htmlFor: "data-file-input", className: "slds-button slds-button_neutral", style: {flex: "0 0 auto"}, title: "Choose a CSV, Excel (.xlsx/.xls), or JSON file"},
                                   h("svg", {className: "slds-button__icon slds-button__icon_left"}, h("use", {xlinkHref: "symbols.svg#upload"})),

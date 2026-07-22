@@ -594,3 +594,53 @@ a.icon-url {
 a:hover:has(.sfir-copy-userid-icon:hover) {
   text-decoration: none;
 }
+
+/* ── Custom Subtab Fields & Buttons ─────────────────────────── */
+.custom-subtab-fields {
+  padding: 0 4px;
+  font-size: var(--sfir-font-lg);
+}
+
+.custom-subtab-field-row {
+  border-top: 1px solid var(--sfir-border-color);
+  padding: 1px 0;
+}
+
+.custom-subtab-field-label {
+  padding-right: 5px;
+  color: var(--sfir-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-subtab-field-value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Grayed-out inaccessible field rows — matches Show All Data page style */
+.custom-subtab-field-inaccessible {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.custom-subtab-field-inaccessible .custom-subtab-field-label {
+  font-style: italic;
+}
+
+.custom-subtab-field-inaccessible .custom-subtab-field-value {
+  color: var(--sfir-inactive-color);
+  letter-spacing: 0.02em;
+}
+
+.custom-subtab-buttons {
+  padding: 2px 4px;
+}
+
+.custom-subtab-button {
+  font-size: 11px !important;
+  min-height: 26px;
+  padding: 0 8px;
+}

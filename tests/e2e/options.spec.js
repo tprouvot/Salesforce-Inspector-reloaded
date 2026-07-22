@@ -500,6 +500,39 @@ test.describe("Options", () => {
     });
   });
 
+  test.describe("Subtabs Customization", () => {
+    test("Switch to Subtabs Customization Tab", async ({page, extensionId}) => {
+      await initOptionsPage(page, extensionId, null, "Subtabs Customization");
+
+      // Verify Subtabs Customization tab is active
+      await expect(page.locator(".options-tab:has-text('Subtabs Customization')")).toHaveClass(/slds-is-active/);
+
+      // Verify Add Customization button is visible
+      await expect(page.locator("button:has-text('Add Customization')")).toBeVisible();
+    });
+
+    test("Add Subtab Customization", async ({page, extensionId}) => {
+      await initOptionsPage(page, extensionId, null, "Subtabs Customization");
+
+      // Click Add button
+      await page.locator("button:has-text('Add Customization')").click();
+
+      // Wait for edit form
+      await page.waitForSelector("select.slds-select", {timeout: 1000});
+
+      // Fill in details
+      await page.locator("select.slds-select").selectOption("User");
+      await page.locator("input[placeholder*='Field1']").fill("Name, Email");
+
+      // Click Save
+      await page.locator("button:has-text('Save')").click();
+
+      // Verify it appears in the table
+      await expect(page.locator("table.slds-table text=User")).toBeVisible();
+      await expect(page.locator("table.slds-table text='Name, Email'")).toBeVisible();
+    });
+  });
+
   test.describe("General", () => {
     test("Export Options", async ({page, extensionId}) => {
       await page.goto(`chrome-extension://${extensionId}/options.html?host=${mockHost}`);

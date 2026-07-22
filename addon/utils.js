@@ -254,6 +254,42 @@ export const STANDARD_OBJECT_NAME_FIELDS = {
 };
 
 /**
+ * Returns the merged (global + org-specific) subtab customization config for a given context.
+ * @param {string} sfHost - The current org's host.
+ * @param {string} context - "User" | "Org" | "Object"
+ * @param {string} [objectName] - The SObject API name (only used when context is "Object")
+ * @returns {{fields: string[], buttons: Array<{label:string, link:string}>}}
+ */
+export function getSubtabConfig(sfHost, context, objectName) {
+  let globalConfs = [];
+  let orgConfs = [];
+  try {
+    globalConfs = JSON.parse(localStorage.getItem("_subtabCustomizations") || "[]");
+    orgConfs = JSON.parse(localStorage.getItem(sfHost + "_subtabCustomizations") || "[]");
+  } catch (e) {
+    console.error("Error reading subtab customizations", e);
+  }
+  const allConfs = [...globalConfs, ...orgConfs];
+
+  const match = allConfs.find(c => {
+    if (c.context !== context) return false;
+    if (context === "Object") {
+      return c.targetObject && c.targetObject.toLowerCase() === (objectName || "").toLowerCase();
+    }
+    return true;
+  });
+
+  if (!match) return {fields: [], buttons: []};
+
+  const fields = (match.fields || "")
+    .split(",")
+    .map(f => f.trim())
+    .filter(f => f.length > 0);
+  const buttons = match.buttons || [];
+  return {fields, buttons};
+}
+
+/**
  * Determines if the org should be treated as production (for styling/warnings).
  * Returns false for sandbox, trial orgs, and Developer Edition orgs.
  * @param {string} sfHost - Salesforce host (e.g. "myorg.lightning.force.com")

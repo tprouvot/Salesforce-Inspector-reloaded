@@ -652,3 +652,28 @@ When enabled, the **Reset Password** button appears while inspecting a User reco
 > **Note:** If the current session does not have sufficient permissions to access user information or perform a password reset, Salesforce returns an **INSUFFICIENT_ACCESS** error.
 
 <img width="278" height="161" alt="Reset password error" src="https://github.com/user-attachments/assets/5814e9d5-f037-41af-8f84-1997ab539292" />
+
+## Customize Subtabs (User, Org, Object)
+
+This feature allows you to add custom fields and buttons to the **User**, **Org**, and **Object** subtabs in the popup. You can configure these globally or for specific orgs.
+
+### How to configure
+
+1. Go to the **Options** page.
+2. Select the **Subtabs Customization** tab.
+3. Click **Add Customization**.
+4. Select the **Context**:
+   - **User**: Fields and buttons will appear when inspecting a user.
+   - **Org**: Fields and buttons will appear in the Org tab.
+   - **Object**: Fields and buttons will appear when inspecting a specific SObject. You must specify the **Object API Name** (e.g., `Account`).
+5. Configure your customization:
+   - **Fields**: Enter a comma-separated list of field API names (e.g., `Title, Department`). Relationship fields like `Manager.Name` are also supported.
+   - **Buttons**: Add buttons with a label and a link. Links can use placeholders:
+     - `{recordId}`: Replaced with the current record's ID.
+     - `{userId}`: Replaced with the current user's ID.
+   - **Global Toggle**: If enabled, the customization applies to all orgs. If disabled, it only applies to the current org.
+6. Click **Save**.
+
+### Error Handling
+
+If a configured field is invalid or the user lacks access, the field will be displayed as grayed-out with a "—" value, matching the "Show All Data" behavior. This ensures the tab remains functional even with incorrect configuration.

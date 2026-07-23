@@ -1755,7 +1755,7 @@ class App extends React.Component {
         if (isInsideListClause && isSmartPasteEnabled) {
             e.preventDefault();
             
-            const formattedList = pasteData
+            let formattedList = pasteData
                 .split(/[\r\n\t]+/)
                 .map(item => item.trim())
                 .map(item => item.replace(/^['"]|['"]$/g, ''))
@@ -1774,6 +1774,13 @@ class App extends React.Component {
             let end = queryInput.selectionEnd;
             if (queryInput.value.substring(start - 1, start).match(/['"]/)) start--;
             if (queryInput.value.substring(end, end + 1).match(/['"]/)) end++;
+
+            const textAfterCursor = queryInput.value.substring(end);
+            const hasClosingParen = /^[^(]*\)/.test(textAfterCursor);
+            if (!hasClosingParen) {
+                formattedList += ')';
+            }
+
             queryInput.setRangeText(formattedList, start, end, "end");
             
             model.updateCurrentTabQuery(queryInput.value);

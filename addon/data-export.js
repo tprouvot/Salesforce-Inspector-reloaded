@@ -1740,6 +1740,48 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
+
+    queryInput.addEventListener("paste", (e) => {
+        const pasteData = (e.clipboardData || window.clipboardData).getData("text");
+        
+        if (/^\s*SELECT\b/i.test(pasteData)) return;
+        if (/^['"\s]+$/.test(pasteData)) return;
+
+        const textBeforeCursor = queryInput.value.substring(0, queryInput.selectionStart);
+        const isInsideListClause = /\b(?:IN|EXCLUDES|INCLUDES)\s*\([^)]*$/i.test(textBeforeCursor);
+
+        const isSmartPasteEnabled = localStorage.getItem("enableSmartPaste") !== "false";
+
+        if (isInsideListClause && isSmartPasteEnabled) {
+            e.preventDefault();
+            
+            const formattedList = pasteData
+                .split(/[\r\n\t]+/)
+                .map(item => item.trim())
+                .map(item => item.replace(/^['"]|['"]$/g, ''))
+                .filter(item => item.length > 0)
+                .map(item => {
+                    const isNumOrBool = /^(true|false|-?\d+(\.\d+)?)$/i.test(item);
+                    return isNumOrBool ? item : `'${item.replace(/(?<!\\)'/g, "\\'")}'`;
+                })
+                .reduce((acc, item, index) => {
+                    if (index === 0) return item;
+                    const separator = (index % 100 === 0) ? ",\n" : ", ";
+                    return acc + separator + item;
+                }, "");
+                
+            let start = queryInput.selectionStart;
+            let end = queryInput.selectionEnd;
+            if (queryInput.value.substring(start - 1, start).match(/['"]/)) start--;
+            if (queryInput.value.substring(end, end + 1).match(/['"]/)) end++;
+            queryInput.setRangeText(formattedList, start, end, "end");
+            
+            model.updateCurrentTabQuery(queryInput.value);
+            model.queryAutocompleteHandler();
+            model.didUpdate();
+        }
+    });
+
     addEventListener("message", e => {
       if (e.data.command === "open-export-autocomplete") {
         model.queryAutocompleteHandler({ctrlSpace: true});

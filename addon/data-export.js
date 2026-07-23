@@ -1747,6 +1747,10 @@ class App extends React.Component {
         if (/^\s*SELECT\b/i.test(pasteData)) return;
         if (/^['"\s]+$/.test(pasteData)) return;
 
+        const isStringList = /['"]\s*,\s*['"]/.test(pasteData);
+        const isNumBoolList = /^(?:\s*(?:true|false|-?\d+(?:\.\d+)?)\s*(?:,\s*|$))+$/i.test(pasteData);
+        if (isStringList || isNumBoolList) return;
+
         const textBeforeCursor = queryInput.value.substring(0, queryInput.selectionStart);
         const isInsideListClause = /\b(?:IN|EXCLUDES|INCLUDES)\s*\([^)]*$/i.test(textBeforeCursor);
 
@@ -1764,11 +1768,7 @@ class App extends React.Component {
                     const isNumOrBool = /^(true|false|-?\d+(\.\d+)?)$/i.test(item);
                     return isNumOrBool ? item : `'${item.replace(/(?<!\\)'/g, "\\'")}'`;
                 })
-                .reduce((acc, item, index) => {
-                    if (index === 0) return item;
-                    const separator = (index % 100 === 0) ? ",\n" : ", ";
-                    return acc + separator + item;
-                }, "");
+                .join(", ");
                 
             let start = queryInput.selectionStart;
             let end = queryInput.selectionEnd;

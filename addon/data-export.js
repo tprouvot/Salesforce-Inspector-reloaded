@@ -1741,52 +1741,64 @@ class App extends React.Component {
       }
     });
 
+    function isSoqlLiteral(item) {
+      return (
+        /^'.*'$/.test(item) || // Single-quoted string literal
+        /^(true|false|null)$/i.test(item) || // Boolean/null
+        /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2}))?$/.test(item) || // ISO date/datetime
+        /^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(item) // STRICT Numeric literal (no commas, no leading zeros)
+      );
+    }
+
+    function toSoqlLiteral(item) {
+      if (/^(true|false|null)$/i.test(item)) return item; // Booleans and Null
+      if (/^-?(?:0|[1-9]\d*(?:,\d+)*)(?:\.\d+)?$/.test(item)) return item.replaceAll(",", ""); // Strict SOQL Numbers
+      if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2}))?$/.test(item)) return item; // ISO Dates
+      return `'${item.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`; // Default: Treat as string (safely escaping backslashes and single quotes)
+    }
+
     queryInput.addEventListener("paste", (e) => {
-        const pasteData = (e.clipboardData || window.clipboardData).getData("text");
-        
-        if (/^\s*SELECT\b/i.test(pasteData)) return;
-        if (/^['"\s]+$/.test(pasteData)) return;
+      const isSmartPasteEnabled = localStorage.getItem("enableSmartPaste") !== "false";
+      if (!isSmartPasteEnabled) return;
 
-        const isStringList = /['"]\s*,\s*['"]/.test(pasteData);
-        const isNumBoolList = /^(?:\s*(?:true|false|-?\d+(?:\.\d+)?)\s*(?:,\s*|$))+$/i.test(pasteData);
-        if (isStringList || isNumBoolList) return;
+      const textBeforeCursor = queryInput.value.substring(0, queryInput.selectionStart);
+      const isInsideListClause = /\b(?:IN|EXCLUDES|INCLUDES)\s*\([^)]*$/i.test(textBeforeCursor);
+      if (!isInsideListClause) return;
 
-        const textBeforeCursor = queryInput.value.substring(0, queryInput.selectionStart);
-        const isInsideListClause = /\b(?:IN|EXCLUDES|INCLUDES)\s*\([^)]*$/i.test(textBeforeCursor);
+      const pasteData = (e.clipboardData || window.clipboardData).getData("text");
+      if (/^['"\s]+$/.test(pasteData)) return;
+      if (/^\s*SELECT\b/i.test(pasteData)) return;
 
-        const isSmartPasteEnabled = localStorage.getItem("enableSmartPaste") !== "false";
+      const parsedTokens = (pasteData.match(/\s*'(?:\\'|[^'])*'\s*|[^,]+/g) || [])
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
+      const isAlreadyFormatted = parsedTokens.length > 0 && parsedTokens.every(isSoqlLiteral);
+      if (isAlreadyFormatted) return;
 
-        if (isInsideListClause && isSmartPasteEnabled) {
-            e.preventDefault();
-            
-            let formattedList = pasteData
-                .split(/[\r\n\t]+/)
-                .map(item => item.trim())
-                .map(item => item.replace(/^['"]|['"]$/g, ''))
-                .filter(item => item.length > 0)
-                .map(item => {
-                    const isNumOrBool = /^(true|false|-?\d+(\.\d+)?)$/i.test(item);
-                    return isNumOrBool ? item : `'${item.replace(/(?<!\\)'/g, "\\'")}'`;
-                })
-                .join(", ");
-                
-            let start = queryInput.selectionStart;
-            let end = queryInput.selectionEnd;
-            if (queryInput.value.substring(start - 1, start).match(/['"]/)) start--;
-            if (queryInput.value.substring(end, end + 1).match(/['"]/)) end++;
+      let rawItems = pasteData
+        .split(/[\r\n\t]+/)
+        .map(item => item.trim().replace(/^['"]|['"]$/g, ''))
+        .filter(item => item.length > 0);
 
-            const textAfterCursor = queryInput.value.substring(end);
-            const hasClosingParen = /^[^(]*\)/.test(textAfterCursor);
-            if (!hasClosingParen) {
-                formattedList += ')';
-            }
+      rawItems = [...new Set(rawItems)]; // De-duplicate
+      let formattedList = rawItems.map(toSoqlLiteral).join(", ");
 
-            queryInput.setRangeText(formattedList, start, end, "end");
-            
-            model.updateCurrentTabQuery(queryInput.value);
-            model.queryAutocompleteHandler();
-            model.didUpdate();
-        }
+      e.preventDefault();
+
+      let start = queryInput.selectionStart;
+      let end = queryInput.selectionEnd;
+      if (queryInput.value.substring(start - 1, start).match(/['"]/)) start--;
+      if (queryInput.value.substring(end, end + 1).match(/['"]/)) end++;
+      const textAfterCursor = queryInput.value.substring(end);
+      const hasClosingParen = /^[^(]*\)/.test(textAfterCursor);
+      if (!hasClosingParen) {
+        formattedList += ')';
+      }
+      queryInput.setRangeText(formattedList, start, end, "end");
+
+      model.updateCurrentTabQuery(queryInput.value);
+      model.queryAutocompleteHandler();
+      model.didUpdate();
     });
 
     addEventListener("message", e => {

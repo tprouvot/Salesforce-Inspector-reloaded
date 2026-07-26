@@ -1250,6 +1250,31 @@ export function isRecordId(recordId) {
        && /[0-9]/.test(recordId);
 }
 
+export function getSetupUrl(recordId, objectType) {
+  if (!recordId || recordId.length < 3) return null;
+  
+  const prefix = recordId.substring(0, 3);
+  const baseUrl = "/lightning/setup";
+  const safeObj = objectType || 'Unknown';
+
+  switch(prefix) {
+    case '00E': return `${baseUrl}/Roles/page?address=%2F${recordId}`;
+    case '012': return `${baseUrl}/ObjectManager/${safeObj}/RecordTypes/${recordId}/view`;
+    case '00h': return `${baseUrl}/ObjectManager/${safeObj}/PageLayouts/${recordId}/view`;
+    case '01I': return `${baseUrl}/ObjectManager/${safeObj}/BusinessProcesses/${recordId}/view`;
+    case '03s': return `${baseUrl}/ObjectManager/${safeObj}/CompactLayouts/${recordId}/view`;
+    case '01Q': return `${baseUrl}/ObjectManager/${safeObj}/FieldSets/${recordId}/view`;
+    case '01t': return `${baseUrl}/ObjectManager/${safeObj}/ButtonsLinksActions/${recordId}/view`;
+    case '01q': return `${baseUrl}/ObjectManager/${safeObj}/ValidationRules/${recordId}/view`;
+    case '01N': return `/lightning/o/${safeObj}/list?filterName=${recordId}`;
+    case '01p': return `${baseUrl}/ApexClasses/page?address=%2F${recordId}`;
+    case '0PS': return `${baseUrl}/PermSets/page?address=%2F${recordId}`;
+    case '00e': return `${baseUrl}/Profiles/page?address=%2F${recordId}`; // Todo: EnhancedProfiles
+    case '00G': return `${baseUrl}/Queues/page?address=%2F${recordId}`;
+    default: return null;
+  }
+}
+
 /**
  * Generates a package.xml string from grouped metadata components
  * @param {Map|Object} groupedComponents - Map or Object where keys are metadata types and values are Set or Array of member names

@@ -4,7 +4,7 @@ import {copyToClipboard, downloadCsvFile, applyProductionStyling} from "./utils.
 /* global initButton */
 import {getObjectSetupLinks, getFieldSetupLinks} from "./setup-links.js";
 import {PageHeader} from "./components/PageHeader.js";
-import {UserInfoModel, PromptTemplate, Constants} from "./utils.js";
+import {UserInfoModel, PromptTemplate, Constants, getSetupUrl} from "./utils.js";
 import AgentforceModal from "./components/AgentforceModal.js";
 
 // Constants
@@ -1394,25 +1394,40 @@ class FieldRow extends TableRow {
     }
     let recordId = this.dataTypedValue;
     let keyPrefix = recordId.substring(0, 3);
-    let links;
+    let links = [];
+    let objectType = "Unknown";
+
     if (this.rowList.model.globalDescribe) {
-      links = this.rowList.model.globalDescribe.sobjects
-        .filter(sobject => sobject.keyPrefix == keyPrefix)
-        .map(sobject => {
-          let args = new URLSearchParams();
-          args.set("host", this.rowList.model.sfHost);
-          args.set("objectType", sobject.name);
-          if (this.rowList.model.useToolingApi) {
-            args.set("useToolingApi", "1");
-          }
-          args.set("recordId", recordId);
-          return {href: "inspect.html?" + args, text: "Show all data (" + sobject.name + ")", className: "view-inspector"};
-        });
-    } else {
-      links = [];
+      let matchingObjects = this.rowList.model.globalDescribe.sobjects
+        .filter(sobject => sobject.keyPrefix == keyPrefix);
+
+      if (matchingObjects.length > 0) {
+        objectType = matchingObjects[0].name;
+      }
+
+      links = matchingObjects.map(sobject => {
+        let args = new URLSearchParams();
+        args.set("host", this.rowList.model.sfHost);
+        args.set("objectType", sobject.name);
+        if (this.rowList.model.useToolingApi) {
+          args.set("useToolingApi", "1");
+        }
+        args.set("recordId", recordId);
+        return {href: "inspect.html?" + args, text: "Show all data (" + sobject.name + ")", className: "view-inspector"};
+      });
     }
-    links.push({href: this.idLink(), text: "View in Salesforce", className: "view-salesforce"});
+
+    let setupUrl = getSetupUrl(recordId, objectType);
+    let viewText = setupUrl ? "View in Lightning" : "View in Salesforce";
+    
+    links.push({href: this.idLink(), text: viewText, className: "view-salesforce"});
+
+    if (setupUrl) {
+      links.push({href: "https://" + this.rowList.model.sfHost + setupUrl, text: "View in Setup", className: "view-setup"});
+    }
+
     links.push({href: "#", text: "Copy Id", className: "copy-id", id: this.dataTypedValue});
+
     this.recordIdPop = links;
     elem.props.onOpenPopup(elem);
   }

@@ -1,5 +1,5 @@
 import {sfConn, apiVersion} from "./inspector.js";
-import {isRecordId} from "./utils.js";
+import {isRecordId, getSetupUrl} from "./utils.js";
 
 const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true" && !window.location.href.includes("data-export");
 // Inspired by C# System.Linq.Enumerable
@@ -197,6 +197,7 @@ function renderCell(rt, cell, td) {
         }
 
         // View in Salesforce link
+        let setupUrl = getSetupUrl(recordId, objectType);
         if (linkOptions.isViewInSalesforce && recordId && isRecordId(recordId) && !recordId.endsWith("0000000000AAA")) {
           let liView = document.createElement("li");
           liView.className = "slds-dropdown__item sfir-justify-left";
@@ -208,13 +209,30 @@ function renderCell(rt, cell, td) {
             aView.href = "https://" + rt.sfHost + "/one/one.app#/alohaRedirect/p/setup/layout/ApexDebugLogDetailEdit/d?apex_log_id=" + recordId;
           }
           aView.target = "_blank";
-          aView.textContent = "View in Salesforce";
+          aView.textContent = setupUrl ? "View in Lightning" : "View in Salesforce";
           aView.className = "view-salesforce";
           let aViewIcon = document.createElement("div");
           aViewIcon.className = "icon";
           liView.appendChild(aView);
           aView.prepend(aViewIcon);
           ul.appendChild(liView);
+        }
+
+        // View in Setup link
+        if (setupUrl) {
+          let liSetup = document.createElement("li");
+          liSetup.className = "slds-dropdown__item sfir-justify-left";
+          ul.appendChild(liSetup);
+          let aSetup = document.createElement("a");
+          aSetup.href = "https://" + rt.sfHost + setupUrl;
+          aSetup.target = "_blank";
+          aSetup.textContent = "View in Setup";
+          aSetup.className = "view-setup";
+          let aSetupIcon = document.createElement("div");
+          aSetupIcon.className = "icon";
+          liSetup.appendChild(aSetup);
+          aSetup.prepend(aSetupIcon);
+          ul.appendChild(liSetup);
         }
 
         // Download Event Log or Copy Id

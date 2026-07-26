@@ -16,11 +16,13 @@ function createQueryHistory(storageKey, max) {
   });
 }
 
-// Keep a margin below common browser, proxy, and Salesforce URL limits. The
-// request URL also receives a cache-busting query parameter in sfConn.rest().
-const SOQL_QUERY_URL_SAFE_LENGTH = 6000;
+// Maximum safe length for the encoded REST query URI. This includes the
+// entire request path (e.g. /services/data/.../?q=...), not just the SOQL
+// IN clause. A small buffer is reserved for sfConn.rest() cache-busting.
+const SOQL_QUERY_URL_SAFE_LENGTH = 12000;
 const REST_CACHE_BUSTER_LENGTH = 32;
 const SOQL_QUERY_METHODS = new Set(["query", "queryAll", "tooling/query"]);
+const MAX_HISTORY_QUERY_LENGTH = 4000;
 
 function isSoqlIdentifierCharacter(character) {
   return character != null && /[A-Za-z0-9_]/.test(character);
@@ -1116,7 +1118,9 @@ class Model {
           vm.didUpdate();
           return pr;
         }
-        vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
+        if (query.length <= MAX_HISTORY_QUERY_LENGTH) {
+          vm.queryHistory.add({ query, useToolingApi: exportedData.isTooling });
+        }
         if (recs == 0) {
           vm.isWorking = false;
           vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");

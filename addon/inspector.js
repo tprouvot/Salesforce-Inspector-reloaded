@@ -235,12 +235,15 @@ export let sfConn = {
         errorMessage = err.detail.map(err => `${err.errorCode}: ${err.message}${err.fields && err.fields.length > 0 ? ` [${err.fields.join(", ")}]` : ""}`).join("\n");
         err.message = errorMessage;
       } catch (ex) {
-        errorMessage = JSON.stringify(xhr.response);
+        errorMessage = xhr.response ? JSON.stringify(xhr.response) : null;
         err.message = errorMessage;
       }
-      if (!err.message) {
-        errorMessage = `HTTP error ${xhr.status} ${xhr.statusText}`;
-        err.message = errorMessage;
+      if (!err.message || err.message === "null") {
+        if (xhr.status === 431) {
+          err.message = "Query too large (HTTP 431).\nThe query exceeds the maximum allowed number of characters. Reduce the number of values in the IN clause or enable \"Auto-split and merge large IN (...) clauses\" in the extension options.";
+        } else {
+          err.message = `HTTP ${xhr.status} ${xhr.statusText}`;
+        }
       }
       apiStatistics.trackApiCall("rest", url, method, duration, true, errorMessage);
       throw err;

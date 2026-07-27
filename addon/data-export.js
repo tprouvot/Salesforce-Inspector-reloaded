@@ -22,7 +22,7 @@ function createQueryHistory(storageKey, max) {
 const SOQL_QUERY_URL_SAFE_LENGTH = 12000;
 const REST_CACHE_BUSTER_LENGTH = 32;
 const SOQL_QUERY_METHODS = new Set(["query", "queryAll", "tooling/query"]);
-const MAX_HISTORY_QUERY_LENGTH = 4000;
+const MAX_HISTORY_QUERY_LENGTH = 8000;
 
 function isSoqlIdentifierCharacter(character) {
   return character != null && /[A-Za-z0-9_]/.test(character);
@@ -1118,8 +1118,28 @@ class Model {
           vm.didUpdate();
           return pr;
         }
-        if (query.length <= MAX_HISTORY_QUERY_LENGTH) {
-          vm.queryHistory.add({ query, useToolingApi: exportedData.isTooling });
+        try {
+          if (query.length <= MAX_HISTORY_QUERY_LENGTH) {
+            vm.queryHistory.add({ query, useToolingApi: exportedData.isTooling });
+          } else {
+            let historyQuery = query;
+            let clause = findSingleSoqlInClause(query);
+            if (clause != null) {
+              let values = parseQuotedSoqlInValues(query, clause.openingIndex, clause.closingIndex);
+              if (values != null && values.length > 1) {
+                historyQuery = query.slice(0, clause.openingIndex + 1)
+                  + values[0] + ", [+ " + (values.length - 1) + " more values]"
+                  + query.slice(clause.closingIndex);
+              }
+            }
+            if (historyQuery.length <= MAX_HISTORY_QUERY_LENGTH) {
+              vm.queryHistory.add({ query: historyQuery, useToolingApi: exportedData.isTooling });
+            }
+          }
+        } catch (e) {
+          if (e.name === "QuotaExceededError") {
+            console.warn("Query history is full. Skipping saving entry into history.");
+          }
         }
         if (recs == 0) {
           vm.isWorking = false;

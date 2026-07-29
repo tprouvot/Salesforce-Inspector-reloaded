@@ -107,14 +107,6 @@ a.download-salesforce .icon {
     background-color: #61fab8;
 }
 
-a.view-setup .icon {
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: 1rem;
-    -webkit-mask-image: url(../images/setup.svg);
-    -webkit-mask-position: center;
-    background-color: #54698D;
-}
-
 a.copy-id,
 a.download-salesforce {
     cursor: pointer;

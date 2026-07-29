@@ -579,6 +579,46 @@ export function getFlowCompareUrl(sfHost, recordId) {
 }
 
 /**
+ * Generates a Salesforce URL for viewing a record, using hardcoded setup-page
+ * routes for record types whose standard `/id` redirect is broken.
+ * Falls back to the standard record URL for anything not in the map.
+ * @param {string} sfHost - Salesforce host (e.g. "myorg.lightning.force.com").
+ * @param {string} recordId - The 15/18-char record Id.
+ * @param {string} [objectAPIOrId] - Parent object API name or DurableId
+ * @returns {string} Full URL to open the record/metadata in Salesforce.
+ */
+export function getSalesforceViewLink(sfHost, recordId, objectAPIOrId) {
+  const prefix = recordId.substring(0, 3);
+  const origin = "https://" + sfHost;
+  const baseUrl = origin + "/lightning/setup";
+
+  switch (prefix) {
+    // --- Global Setup ---
+    case "01p": return `${baseUrl}/ApexClasses/page?address=%2F${recordId}`; // Apex Class
+    case "07L": return `${origin}/one/one.app#/alohaRedirect/p/setup/layout/ApexDebugLogDetailEdit/d?apex_log_id=${recordId}`; // Apex Debug Log
+    case "00e": return `${baseUrl}/Profiles/page?address=%2F${recordId}`; // Profile
+    case "00E": return `${baseUrl}/Roles/page?address=%2F${recordId}`; // Role
+    case "0PS": return `${baseUrl}/PermSets/page?address=%2F${recordId}`; // Permission Set
+    case "0PG": return `${baseUrl}/PermSetGroups/page?address=%2F${recordId}`; // Permission Set Group
+    case "00G": return `${baseUrl}/PublicGroups/page?address=%2Fp%2Fown%2FQueue%2Fd%3Fid%3D${recordId}`; // Public Group / Queue
+    case "00X": return `${baseUrl}/CommunicationTemplatesEmail/page?address=%2F${recordId}%3Fsetupid%3DCommunicationTemplatesEmail`; // Email Template
+
+    // --- Object Manager ---
+    case "00N": return `${baseUrl}/ObjectManager/${objectAPIOrId}/FieldsAndRelationships/${recordId}/view`; // Field
+    case "00h": return `${baseUrl}/ObjectManager/${objectAPIOrId}/PageLayouts/${recordId}/view`; // Page Layout
+    case "0M0": return `${baseUrl}/ObjectManager/${objectAPIOrId}/LightningPages/${recordId}/view`; // Lightning Record Page
+    case "00b": return `${baseUrl}/ObjectManager/${objectAPIOrId}/ButtonsLinksActions/${recordId}/view`; // Button / Link / Action
+    case "0AH": return `${baseUrl}/ObjectManager/${objectAPIOrId}/CompactLayouts/${recordId}/view`; // Compact Layout
+    case "0IX": return `${baseUrl}/ObjectManager/${objectAPIOrId}/FieldSets/${recordId}/view`; // Field Set
+    case "012": return `${baseUrl}/ObjectManager/${objectAPIOrId}/RecordTypes/${recordId}/view`; // Record Type
+    case "01q": return `${baseUrl}/ObjectManager/${objectAPIOrId}/ApexTriggers/${recordId}/view`; // Apex Trigger
+    case "03d": return `${baseUrl}/ObjectManager/${objectAPIOrId}/ValidationRules/${recordId}/view`; // Validation Rule
+
+    default: return `${origin}/${recordId}`;
+  }
+}
+
+/**
  * Downloads a CSV file with optional UTF-8 BOM for Excel compatibility
  * @param {string} csvContent - The CSV content to download
  * @param {string} filename - The filename for the downloaded file
@@ -1248,31 +1288,6 @@ export function isRecordId(recordId) {
        && /^[a-zA-Z0-9]{15,18}$/.test(recordId)
        && !recordId.startsWith("000")
        && /[0-9]/.test(recordId);
-}
-
-export function getSetupUrl(recordId, objectType) {
-  if (!recordId || recordId.length < 3) return null;
-  
-  const prefix = recordId.substring(0, 3);
-  const baseUrl = "/lightning/setup";
-  const safeObj = objectType || 'Unknown';
-
-  switch(prefix) {
-    case '00E': return `${baseUrl}/Roles/page?address=%2F${recordId}`;
-    case '012': return `${baseUrl}/ObjectManager/${safeObj}/RecordTypes/${recordId}/view`;
-    case '00h': return `${baseUrl}/ObjectManager/${safeObj}/PageLayouts/${recordId}/view`;
-    case '01I': return `${baseUrl}/ObjectManager/${safeObj}/BusinessProcesses/${recordId}/view`;
-    case '03s': return `${baseUrl}/ObjectManager/${safeObj}/CompactLayouts/${recordId}/view`;
-    case '01Q': return `${baseUrl}/ObjectManager/${safeObj}/FieldSets/${recordId}/view`;
-    case '01t': return `${baseUrl}/ObjectManager/${safeObj}/ButtonsLinksActions/${recordId}/view`;
-    case '01q': return `${baseUrl}/ObjectManager/${safeObj}/ValidationRules/${recordId}/view`;
-    case '01N': return `/lightning/o/${safeObj}/list?filterName=${recordId}`;
-    case '01p': return `${baseUrl}/ApexClasses/page?address=%2F${recordId}`;
-    case '0PS': return `${baseUrl}/PermSets/page?address=%2F${recordId}`;
-    case '00e': return `${baseUrl}/Profiles/page?address=%2F${recordId}`; // Todo: EnhancedProfiles
-    case '00G': return `${baseUrl}/Queues/page?address=%2F${recordId}`;
-    default: return null;
-  }
 }
 
 /**

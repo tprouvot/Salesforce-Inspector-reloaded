@@ -4082,7 +4082,7 @@ class AllDataSelection extends React.PureComponent {
             "article",
             {
               className:
-                "slds-card slds-card_boundary slds-p-horizontal_small slds-p-vertical_xx-small sfir-background-grey",
+                "slds-card slds-card_boundary slds-p-horizontal_small slds-p-vertical_x-small sfir-background-grey",
             },
             h(
               "div",

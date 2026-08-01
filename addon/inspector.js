@@ -239,8 +239,8 @@ export let sfConn = {
         err.message = errorMessage;
       }
       if (!err.message || err.message === "null") {
-        if (xhr.status === 431) {
-          err.message = "Query too large (HTTP 431).\nThe query exceeds the maximum allowed number of characters. Reduce the number of values in the IN clause or enable \"Auto-split and merge large IN (...) clauses\" in the extension options.";
+        if (xhr.status === 431 || xhr.status === 414) {
+          err.message = "Query too large (HTTP " + xhr.status + ").\nThe query exceeds the maximum allowed number of characters. Reduce the number of values in the IN clause or enable \"Auto-split and merge large IN (...) clauses\" in the extension options.";
         } else {
           err.message = `HTTP ${xhr.status} ${xhr.statusText}`;
         }

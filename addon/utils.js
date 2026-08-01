@@ -584,10 +584,10 @@ export function getFlowCompareUrl(sfHost, recordId) {
  * Falls back to the standard record URL for anything not in the map.
  * @param {string} sfHost - Salesforce host (e.g. "myorg.lightning.force.com").
  * @param {string} recordId - The 15/18-char record Id.
- * @param {string} [objectAPIOrId] - Parent object API name or DurableId
+ * @param {string} [parentObjectIdentifier] - Parent object API name or DurableId
  * @returns {string} Full URL to open the record/metadata in Salesforce.
  */
-export function getSalesforceViewLink(sfHost, recordId, objectAPIOrId) {
+export function getSalesforceViewLink(sfHost, recordId, parentObjectIdentifier) {
   const prefix = recordId.substring(0, 3);
   const origin = "https://" + sfHost;
   const baseUrl = origin + "/lightning/setup";
@@ -604,17 +604,71 @@ export function getSalesforceViewLink(sfHost, recordId, objectAPIOrId) {
     case "00X": return `${baseUrl}/CommunicationTemplatesEmail/page?address=%2F${recordId}%3Fsetupid%3DCommunicationTemplatesEmail`; // Email Template
 
     // --- Object Manager ---
-    case "00N": return `${baseUrl}/ObjectManager/${objectAPIOrId}/FieldsAndRelationships/${recordId}/view`; // Field
-    case "00h": return `${baseUrl}/ObjectManager/${objectAPIOrId}/PageLayouts/${recordId}/view`; // Page Layout
-    case "0M0": return `${baseUrl}/ObjectManager/${objectAPIOrId}/LightningPages/${recordId}/view`; // Lightning Record Page
-    case "00b": return `${baseUrl}/ObjectManager/${objectAPIOrId}/ButtonsLinksActions/${recordId}/view`; // Button / Link / Action
-    case "0AH": return `${baseUrl}/ObjectManager/${objectAPIOrId}/CompactLayouts/${recordId}/view`; // Compact Layout
-    case "0IX": return `${baseUrl}/ObjectManager/${objectAPIOrId}/FieldSets/${recordId}/view`; // Field Set
-    case "012": return `${baseUrl}/ObjectManager/${objectAPIOrId}/RecordTypes/${recordId}/view`; // Record Type
-    case "01q": return `${baseUrl}/ObjectManager/${objectAPIOrId}/ApexTriggers/${recordId}/view`; // Apex Trigger
-    case "03d": return `${baseUrl}/ObjectManager/${objectAPIOrId}/ValidationRules/${recordId}/view`; // Validation Rule
+    case "00N": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/FieldsAndRelationships/${recordId}/view`; // Field
+    case "00h": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/PageLayouts/${recordId}/view`; // Page Layout
+    case "0M0": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/LightningPages/${recordId}/view`; // Lightning Record Page
+    case "00b": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/ButtonsLinksActions/${recordId}/view`; // Button / Link / Action
+    case "0AH": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/CompactLayouts/${recordId}/view`; // Compact Layout
+    case "0IX": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/FieldSets/${recordId}/view`; // Field Set
+    case "012": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/RecordTypes/${recordId}/view`; // Record Type
+    case "01q": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/ApexTriggers/${recordId}/view`; // Apex Trigger
+    case "03d": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/ValidationRules/${recordId}/view`; // Validation Rule
 
     default: return `${origin}/${recordId}`;
+  }
+}
+
+/**
+ * For each Object Manager-scoped metadata type (keyed by the 3-char Id prefix),
+ * the Tooling API sobject to query and the field on it that identifies the
+ * SObject it belongs to. That field's value is already in the exact format
+ * getSalesforceViewLink's parentObjectIdentifier needs: the API name for
+ * standard objects, or the owning custom object's EntityDefinition DurableId
+ * for custom objects - never the type of the metadata record itself.
+ */
+const OBJECT_MANAGER_PARENT_LOOKUP = {
+  "00N": {sobject: "CustomField", field: "TableEnumOrId"}, // Field
+  "00h": {sobject: "Layout", field: "TableEnumOrId"}, // Page Layout
+  "0M0": {sobject: "FlexiPage", field: "EntityDefinitionId"}, // Lightning Record Page
+  "00b": {sobject: "WebLink", field: "EntityDefinitionId"}, // Button / Link / Action
+  "0AH": {sobject: "CompactLayout", field: "SobjectType"}, // Compact Layout
+  "0IX": {sobject: "FieldSet", field: "EntityDefinitionId"}, // Field Set
+  "012": {sobject: "RecordType", field: "SobjectType"}, // Record Type
+  "01q": {sobject: "ApexTrigger", field: "TableEnumOrId"}, // Apex Trigger
+  "03d": {sobject: "ValidationRule", field: "EntityDefinitionId"}, // Validation Rule
+};
+
+// recordId -> resolved parent object (or null). Metadata doesn't change which
+// object it belongs to without changing Id, so this never needs to expire.
+const objectManagerParentCache = new Map();
+
+/**
+ * Resolves the SObject that owns an Object Manager-scoped metadata record,
+ * for use as getSalesforceViewLink's parentObjectIdentifier argument. Returns null
+ * (without any API call) for record Ids that aren't one of these metadata types,
+ * since getSalesforceViewLink ignores parentObjectIdentifier for everything else.
+ * @param {string} recordId - The 15/18-char record Id of the metadata record.
+ * @returns {Promise<string|null>} The parent object's API name (standard) or
+ *  EntityDefinition DurableId (custom), or null if not applicable/found.
+ */
+export async function getObjectManagerParent(recordId) {
+  const prefix = recordId.substring(0, 3);
+  const lookup = OBJECT_MANAGER_PARENT_LOOKUP[prefix];
+  if (!lookup) {
+    return null;
+  }
+  if (objectManagerParentCache.has(recordId)) {
+    return objectManagerParentCache.get(recordId);
+  }
+  try {
+    const query = `SELECT ${lookup.field} FROM ${lookup.sobject} WHERE Id = '${recordId}'`;
+    const res = await sfConn.rest(`/services/data/v${apiVersion}/tooling/query/?q=${encodeURIComponent(query)}`);
+    const parent = (res && res.records && res.records[0]) ? res.records[0][lookup.field] : null;
+    objectManagerParentCache.set(recordId, parent);
+    return parent;
+  } catch (err) {
+    console.error("getObjectManagerParent", err);
+    return null;
   }
 }
 

@@ -1,5 +1,5 @@
 import {sfConn, apiVersion} from "./inspector.js";
-import {isRecordId, getSalesforceViewLink} from "./utils.js";
+import {isRecordId, getSalesforceViewLink, getObjectManagerParent} from "./utils.js";
 
 const greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true" && !window.location.href.includes("data-export");
 // Inspired by C# System.Linq.Enumerable
@@ -211,6 +211,14 @@ function renderCell(rt, cell, td) {
           liView.appendChild(aView);
           aView.prepend(aViewIcon);
           ul.appendChild(liView);
+
+          // objectType above is whichever sobject matched recordId's keyPrefix (e.g. "CustomField", "Layout", "FlexiPage"...)
+          // for Object Manager metadata records that's the metadata's own type, not the object it belongs to.
+          getObjectManagerParent(recordId).then(parentObject => {
+            if (parentObject) {
+              aView.href = getSalesforceViewLink(rt.sfHost, recordId, parentObject);
+            }
+          });
         }
 
         // Download Event Log or Copy Id

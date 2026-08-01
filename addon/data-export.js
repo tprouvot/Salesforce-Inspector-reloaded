@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory, getFieldType} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -1741,6 +1741,21 @@ class App extends React.Component {
       }
     });
 
+    const STRING_FIELD_TYPES = new Set([
+      "string", "id", "reference", "textarea", "picklist", "multipicklist",
+      "email", "phone", "url", "combobox", "encryptedstring", "base64"
+    ]);
+    const NUMERIC_FIELD_TYPES = new Set(["int", "double", "currency", "percent", "long"]);
+    const DATE_FIELD_TYPES = new Set(["date", "datetime"]);
+    const DESCRIBE_TIMEOUT_MS = 2000; // never let a paste wait longer than this on a describe call
+
+    function withTimeout(promise, ms) {
+      return Promise.race([
+        promise,
+        new Promise(resolve => setTimeout(() => resolve(null), ms))
+      ]);
+    }
+
     function isSoqlLiteral(item) {
       return (
         /^'.*'$/.test(item) || // Single-quoted string literal
@@ -1750,52 +1765,106 @@ class App extends React.Component {
       );
     }
 
+    function toSoqlStringLiteral(item) {
+      return `'${item.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+    }
+
     function toSoqlLiteral(item) {
       if (/^(true|false|null)$/i.test(item)) return item; // Booleans and Null
       if (/^-?(?:0|[1-9]\d*(?:,\d+)*)(?:\.\d+)?$/.test(item)) return item.replaceAll(",", ""); // Strict SOQL Numbers
       if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2}))?$/.test(item)) return item; // ISO Dates
-      return `'${item.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`; // Default: Treat as string (safely escaping backslashes and single quotes)
+      return toSoqlStringLiteral(item); // Default: Treat as string (safely escaping backslashes and single quotes)
     }
 
-    queryInput.addEventListener("paste", (e) => {
+    // Type-aware formatting. Falls back to the shape-based toSoqlLiteral above whenever the
+    // type is unknown, or the value doesn't match what that type expects.
+    function toSoqlLiteralForType(item, fieldType) {
+      if (/^null$/i.test(item)) return "null"; // valid for any nullable field
+      if (fieldType && STRING_FIELD_TYPES.has(fieldType)) return toSoqlStringLiteral(item);
+      if (fieldType === "boolean") {
+        return /^(true|false)$/i.test(item) ? item.toLowerCase() : toSoqlLiteral(item);
+      }
+      if (fieldType && NUMERIC_FIELD_TYPES.has(fieldType)) {
+        return /^-?(?:0|[1-9]\d*(?:,\d+)*)(?:\.\d+)?$/.test(item) ? item.replaceAll(",", "") : toSoqlLiteral(item);
+      }
+      if (fieldType && DATE_FIELD_TYPES.has(fieldType)) {
+        return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2}))?$/.test(item) ? item : toSoqlLiteral(item);
+      }
+      return toSoqlLiteral(item); // unresolved/unrecognized type: old heuristic, unchanged
+    }
+
+    // Finds the sobject for the SELECT...FROM scope containing cursorPos. A "(" only opens a
+    // new scope if it's a subquery (followed by SELECT); grouping parens and the IN-list's own
+    // "(" just inherit the enclosing scope's sobject. This matters because a relationship
+    // subquery earlier in the SELECT clause has its own FROM that isn't the one we want.
+    function getCurrentSobject(queryText, cursorPos) {
+      const text = queryText.slice(0, cursorPos);
+      const tokens = [];
+      const tokenRegex = /\(|\)|\bFROM\s+([A-Za-z_]\w*)/gi;
+      let m;
+      while ((m = tokenRegex.exec(text)) !== null) {
+        tokens.push({index: m.index, text: m[0], sobject: m[1] || null});
+      }
+      const stack = [{sobject: null}];
+      for (const tok of tokens) {
+        if (tok.text === "(") {
+          const isSubquery = /^\s*SELECT\b/i.test(text.slice(tok.index + 1));
+          const top = stack[stack.length - 1];
+          stack.push(isSubquery ? {sobject: null} : {sobject: top.sobject, inherited: true});
+        } else if (tok.text === ")") {
+          if (stack.length > 1) stack.pop();
+        } else {
+          const top = stack[stack.length - 1];
+          if (!top.inherited && top.sobject === null) top.sobject = tok.sobject;
+        }
+      }
+      return stack[stack.length - 1].sobject;
+    }
+
+    queryInput.addEventListener("paste", async (e) => {
       const isSmartPasteEnabled = localStorage.getItem("enableSmartPaste") !== "false";
       if (!isSmartPasteEnabled) return;
-
       const textBeforeCursor = queryInput.value.substring(0, queryInput.selectionStart);
       const isInsideListClause = /\b(?:IN|EXCLUDES|INCLUDES)\s*\([^)]*$/i.test(textBeforeCursor);
       if (!isInsideListClause) return;
-
       const pasteData = (e.clipboardData || window.clipboardData).getData("text");
       if (/^['"\s]+$/.test(pasteData)) return;
       if (/^\s*SELECT\b/i.test(pasteData)) return;
-
       const parsedTokens = (pasteData.match(/\s*'(?:\\'|[^'])*'\s*|[^,]+/g) || [])
         .map(item => item.trim())
         .filter(item => item.length > 0);
       const isAlreadyFormatted = parsedTokens.length > 0 && parsedTokens.every(isSoqlLiteral);
       if (isAlreadyFormatted) return;
-
       let rawItems = pasteData
         .split(/[\r\n\t]+/)
         .map(item => item.trim().replace(/^['"]|['"]$/g, ''))
         .filter(item => item.length > 0);
-
       rawItems = [...new Set(rawItems)]; // De-duplicate
-      let formattedList = rawItems.map(toSoqlLiteral).join(", ");
+
+      // Best-effort: figure out the field/sobject we're pasting into so we can format by real
+      // type. If either can't be resolved, fieldType stays null and every item falls back to
+      // the exact old shape-based behavior.
+      const fieldMatch = textBeforeCursor.match(/([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s+(?:NOT\s+)?(?:IN|EXCLUDES|INCLUDES)\s*\([^)]*$/i);
+      const fieldName = fieldMatch ? fieldMatch[1] : null;
+      const sobjectName = getCurrentSobject(queryInput.value, queryInput.selectionStart);
 
       e.preventDefault();
-
       let start = queryInput.selectionStart;
       let end = queryInput.selectionEnd;
       if (queryInput.value.substring(start - 1, start).match(/['"]/)) start--;
       if (queryInput.value.substring(end, end + 1).match(/['"]/)) end++;
       const textAfterCursor = queryInput.value.substring(end);
       const hasClosingParen = /^[^(]*\)/.test(textAfterCursor);
+      const originalValue = queryInput.value;
+
+      const fieldType = (sobjectName && fieldName) ? await withTimeout(getFieldType(sobjectName, fieldName), DESCRIBE_TIMEOUT_MS) : null;
+      if (queryInput.value !== originalValue) return; // value changed while we awaited the describe call
+
+      let formattedList = rawItems.map(item => toSoqlLiteralForType(item, fieldType)).join(", ");
       if (!hasClosingParen) {
         formattedList += ')';
       }
       queryInput.setRangeText(formattedList, start, end, "end");
-
       model.updateCurrentTabQuery(queryInput.value);
       model.queryAutocompleteHandler();
       model.didUpdate();

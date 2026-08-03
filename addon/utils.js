@@ -1162,7 +1162,7 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
     /**
      * Fetch EntityDefinition records from Salesforce Tooling API
      * Uses parallel batching to fetch all records (2000 per batch)
-     * @returns {Promise<void>} Resolves when all batches are fetched
+     * @returns {Promise<void>} Resolves only once every batch has been fetched AND merged into entityMap
      */
     function fetchEntityDefinitions() {
       const batchSize = 2000;
@@ -1171,35 +1171,39 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
         .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent("SELECT COUNT() FROM EntityDefinition")}`)
         .then((res) => {
           const entityNb = res.totalSize;
+          const batchPromises = [];
           for (let bucket = 0; bucket < Math.ceil(entityNb / batchSize); bucket++) {
             const query = `SELECT QualifiedApiName, Label, KeyPrefix, DurableId, IsCustomSetting, RecordTypesSupported, NewUrl, IsEverCreatable FROM EntityDefinition ORDER BY QualifiedApiName LIMIT ${batchSize} OFFSET ${bucket * batchSize}`;
-            sfConn
-              .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent(query)}`)
-              .then((respEntity) => {
-                for (let record of respEntity.records) {
-                  addEntity(
-                    {
-                      name: record.QualifiedApiName,
-                      label: record.Label,
-                      keyPrefix: record.KeyPrefix,
-                      durableId: record.DurableId,
-                      isCustomSetting: record.IsCustomSetting,
-                      recordTypesSupported: record.RecordTypesSupported,
-                      newUrl: record.NewUrl,
-                      isEverCreatable: record.IsEverCreatable,
-                      // EntityDefinition does not expose createable/deletable/updateable; use isEverCreatable as createable hint
-                      createable: record.IsEverCreatable,
-                      deletable: false,
-                      updateable: false,
-                    },
-                    null
-                  );
-                }
-              })
-              .catch((err) => {
-                console.error("list entity definitions: ", err);
-              });
+            batchPromises.push(
+              sfConn
+                .rest(`/services/data/v${apiVersion}/tooling/query?q=${encodeURIComponent(query)}`)
+                .then((respEntity) => {
+                  for (let record of respEntity.records) {
+                    addEntity(
+                      {
+                        name: record.QualifiedApiName,
+                        label: record.Label,
+                        keyPrefix: record.KeyPrefix,
+                        durableId: record.DurableId,
+                        isCustomSetting: record.IsCustomSetting,
+                        recordTypesSupported: record.RecordTypesSupported,
+                        newUrl: record.NewUrl,
+                        isEverCreatable: record.IsEverCreatable,
+                        // EntityDefinition does not expose createable/deletable/updateable; use isEverCreatable as createable hint
+                        createable: record.IsEverCreatable,
+                        deletable: false,
+                        updateable: false,
+                      },
+                      null
+                    );
+                  }
+                })
+                .catch((err) => {
+                  console.error("list entity definitions: ", err);
+                })
+            );
           }
+          return Promise.all(batchPromises);
         })
         .catch((err) => {
           console.error("count entity definitions: ", err);

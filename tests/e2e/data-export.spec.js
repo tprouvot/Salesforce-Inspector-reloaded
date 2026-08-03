@@ -161,4 +161,63 @@ test.describe("Data Export", () => {
     expect(clipboardContent).toContain('"' + id + '","' + name + '"');
   });
 
+  test("Compare two fields in the WHERE clause", async ({page, extensionId}) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("enableFieldComparison", "true");
+    });
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    // Load the Account metadata, which the comparison needs to resolve both operands.
+    const queryInput = page.locator("textarea#query");
+    await queryInput.fill("SELECT Id, Name FROM Account WHERE Name like 'Test Account%'");
+    await page.click("button:has-text('Run Export')");
+    await expect(page.locator(".result-status")).toContainText("Exported 2 records", {timeout: 2000});
+
+    // Record the queries actually sent to Salesforce.
+    const sentQueries = [];
+    page.on("request", request => {
+      const url = request.url();
+      if (url.includes("/query")) {
+        sentQueries.push(decodeURIComponent(url));
+      }
+    });
+
+    // Both mocked accounts have a Name and no Description, so both match "Name != Description".
+    await queryInput.fill("SELECT Id, Name FROM Account WHERE Name != Description");
+    await page.click("button:has-text('Run Export')");
+
+    await expect(page.locator(".result-status")).toContainText("Matched 2 of 2 scanned records", {timeout: 2000});
+
+    // The comparison is removed from the query sent to Salesforce and both operands are selected.
+    expect(sentQueries.some(url => url.includes("SELECT Id, Name, Description FROM Account"))).toBe(true);
+    expect(sentQueries.some(url => url.includes("Name != Description"))).toBe(false);
+
+    const banner = page.locator("#result-area .slds-notify_alert");
+    await expect(banner).toContainText("Name != Description");
+    await expect(banner).toContainText("SELECT Id, Name, Description FROM Account");
+
+    // The query typed by the user is left untouched, so it can be run again.
+    await expect(queryInput).toHaveValue("SELECT Id, Name FROM Account WHERE Name != Description");
+  });
+
+  test("Reject a field comparison that is not a top level AND condition", async ({page, extensionId}) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("enableFieldComparison", "true");
+    });
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const queryInput = page.locator("textarea#query");
+    await queryInput.fill("SELECT Id, Name FROM Account WHERE Name like 'Test Account%'");
+    await page.click("button:has-text('Run Export')");
+    await expect(page.locator(".result-status")).toContainText("Exported 2 records", {timeout: 2000});
+
+    await queryInput.fill("SELECT Id, Name FROM Account WHERE Type = 'Customer' OR Name = Description");
+    await page.click("button:has-text('Run Export')");
+
+    await expect(page.locator(".result-status")).toContainText("Error", {timeout: 2000});
+    await expect(page.locator("textarea.slds-theme_error")).toHaveValue(/top level AND condition/);
+  });
+
 });

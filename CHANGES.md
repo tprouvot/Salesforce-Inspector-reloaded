@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Add field to field comparison in the WHERE clause (`WHERE Field1__c = Field2__c`, also `!=`). The condition is removed from the query sent to Salesforce, both fields are added to the SELECT clause and the records are compared in the browser. Disabled by default, enable it in Options -> Data Export
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition

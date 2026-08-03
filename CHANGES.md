@@ -2,10 +2,10 @@
 
 ## Version 2.1
 
+- `Metadata` Uploading or pasting a package.xml now correctly enables the "Retrieve Metadata" button, and the "Save status info" button now correctly downloads activity logs instead of opening a file picker. #1228 (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition
-- `Metadata` Fixed: Uploading or pasting a package.xml now correctly unlocks the "Retrieve Metadata" button, and the "Save status info" button now correctly downloads your activity logs instead of opening a file picker. #1228 (contribution by [Prem Kumar](https://github.com/prem-k-r))
 
 ## Version 2.0
 

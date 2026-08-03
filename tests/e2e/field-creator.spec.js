@@ -23,7 +23,7 @@ test.describe("Field Creator", () => {
     ]);
 
     //Wait some time to ensure that the responses are processed
-    await page.waitForTimeout(250);
+    await page.waitForTimeout(350);
 
     // Select an object first
     await page.locator("#object_select").focus();

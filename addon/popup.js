@@ -1712,7 +1712,7 @@ class AllDataBoxSObject extends React.PureComponent {
 
   componentDidUpdate(prevProps) {
     let {contextRecordId, sobjectsLoading, contextSobject} = this.props;
-    if (prevProps.contextRecordId !== contextRecordId) {
+    if (prevProps.contextRecordId !== contextRecordId || prevProps.contextSobject !== contextSobject) {
       this.updateSelection(contextRecordId, contextSobject);
     }
     if (prevProps.sobjectsLoading !== sobjectsLoading && !sobjectsLoading) {

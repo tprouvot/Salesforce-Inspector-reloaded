@@ -2,8 +2,7 @@
 
 ## Version 2.1
 
-- `Show All Data` Add **Refresh** button to re-fetch the latest field values from Salesforce for the currently displayed record without reloading the full page
-- `Show All Data` Persist the filter value in the URL so it survives page refreshes
+- `Show All Data` Add **Refresh** button to re-fetch the latest field values and persist the filter value in the URL [feature 1201](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1201)
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition

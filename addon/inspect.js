@@ -534,9 +534,13 @@ Structure your response clearly with appropriate headings.`;
     // We keep the existing fieldRows/childRows (and therefore the active row filter, column
     // filters and sort order), so the user's filter is still obeyed after the refresh.
     if (this.recordId) {
-      this.recordName = null; // Recompute the record heading in case the Name changed.
-      this.clearRecordData();
-      this.setRecordData(sfConn.rest("/services/data/v" + apiVersion + "/" + (this.useToolingApi ? "tooling/" : "") + "sobjects/" + this.sobjectName + "/" + this.recordId));
+      let recordDataPromise = sfConn.rest("/services/data/v" + apiVersion + "/" + (this.useToolingApi ? "tooling/" : "") + "sobjects/" + this.sobjectName + "/" + this.recordId)
+        .then(res => {
+          this.recordName = null; // Recompute the record heading in case the Name changed.
+          this.clearRecordData();
+          return res;
+        });
+      this.setRecordData(recordDataPromise);
     } else {
       // No specific record is loaded, so there are no values to refresh; reload the object metadata instead.
       this.reloadTables();

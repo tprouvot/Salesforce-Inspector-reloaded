@@ -2,12 +2,12 @@
 
 ## Version 2.1
 
+- `Data Export` Add keyboard shortcuts (/ and Ctrl/Cmd+Shift+F) to focus the result filter [feature #811](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/811) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Show All Data` Add **Refresh** button to re-fetch the latest field values and persist the filter value in the URL [feature 1201](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1201)
 - `Popup` Fix object not refreshing when switching between object list views [issue #1254](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1254) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition
-- `Data Export` Add keyboard shortcuts to focus result filter (/ and Ctrl/Cmd+Shift+F) [#1222](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1222) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 
 ## Version 2.0
 

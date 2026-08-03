@@ -2,7 +2,9 @@
 
 ## Version 2.1
 
-- `Data Export` Added support for horizontal scrolling in field suggestions using the mouse wheel [#1237](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1237) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Data Export` Added support for horizontal scrolling in field suggestions using the mouse wheel [feature #1237](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1237) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Show All Data` Add **Refresh** button to re-fetch the latest field values and persist the filter value in the URL [feature 1201](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1201)
+- `Popup` Fix object not refreshing when switching between object list views [issue #1254](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1254) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition

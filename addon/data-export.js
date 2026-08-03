@@ -4,6 +4,8 @@ import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Const
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
+import AlertBanner from "./components/AlertBanner.js";
+import {analyzeFieldComparisons, recordMatches, describeComparisons} from "./soql-field-compare.js";
 
 function createQueryHistory(storageKey, max) {
   const isSaved = storageKey === "insextSavedQueryHistory";
@@ -78,6 +80,10 @@ class Model {
     this.separator = getSeparator();
     this.soqlPrompt = "";
     this.enableQueryTypoFix = localStorage.getItem("enableQueryTypoFix") == "true";
+    this.enableFieldComparison = localStorage.getItem("enableFieldComparison") == "true";
+    this.fieldComparisonCaseSensitive = localStorage.getItem("fieldComparisonCaseSensitive") == "true";
+    // Analysis of the field-to-field conditions of the query currently exported, null when none.
+    this.fieldComparison = null;
 
     // Initialize user info model - handles all user-related properties
     this.userInfoModel = new UserInfoModel(this.spinFor.bind(this));
@@ -839,6 +845,47 @@ class Model {
 
     return query.trim();
   }
+  /**
+   * Analyses the field-to-field conditions ("WHERE Field1__c = Field2__c") of a query.
+   * Returns null when the feature does not apply, otherwise the analysis, which may
+   * carry errors that must abort the export.
+   */
+  prepareFieldComparison(query) {
+    if (!this.enableFieldComparison) {
+      return null;
+    }
+    let trimmedQuery = query.trim();
+    // SOSL and GraphQL queries are not SOQL, so they are left untouched.
+    if (trimmedQuery.toLowerCase().startsWith("find") || trimmedQuery.startsWith("{")) {
+      return null;
+    }
+    let analysis = analyzeFieldComparisons(query);
+    if (analysis.needsDescribe) {
+      let {sobjectDescribe} = this.describeInfo.describeSobject(this.queryTooling, analysis.sobjectName);
+      if (!sobjectDescribe) {
+        return {
+          applies: false,
+          comparisons: [],
+          warnings: [],
+          errors: [`The metadata of ${analysis.sobjectName} is still loading and is needed to compare two fields. Please run the query again in a moment.`]
+        };
+      }
+      analysis = analyzeFieldComparisons(query, sobjectDescribe);
+    }
+    return analysis;
+  }
+  /**
+   * Keeps only the records matching the field-to-field conditions, and counts how many
+   * records Salesforce actually returned.
+   */
+  applyFieldComparison(records, exportedData) {
+    if (!this.fieldComparison) {
+      return records;
+    }
+    exportedData.scannedSize += records.length;
+    let options = {caseSensitive: this.fieldComparisonCaseSensitive};
+    return records.filter(record => recordMatches(record, this.fieldComparison.comparisons, options));
+  }
   doExport() {
     let vm = this; // eslint-disable-line consistent-this
     let exportedData = new RecordTable(vm);
@@ -848,6 +895,20 @@ class Model {
     vm.initPerf();
     let query = vm.enableQueryTypoFix ? vm.removeTypo(vm.queryInput.value) : vm.queryInput.value;
     vm.queryInput.value = query; // Update the input value with the cleaned query
+
+    let fieldComparison = vm.prepareFieldComparison(query);
+    if (fieldComparison && fieldComparison.errors.length > 0) {
+      vm.fieldComparison = null;
+      vm.isWorking = false;
+      vm.exportStatus = "Error";
+      vm.exportError = fieldComparison.errors.join("\n");
+      vm.exportedData = null;
+      vm.updatedExportedData();
+      return;
+    }
+    vm.fieldComparison = fieldComparison && fieldComparison.applies ? fieldComparison : null;
+    // The user keeps their query, Salesforce receives the one without the field comparisons.
+    let serverQuery = vm.fieldComparison ? vm.fieldComparison.query : query;
     function batchHandler(batch) {
       return batch.catch(err => {
         if (err.name == "AbortError") {
@@ -875,11 +936,12 @@ class Model {
           });
           exportedData.addToTable(dataGraph);
         } else {
-          exportedData.addToTable(data[fieldsResponses[exportedData.queryMethod]]);
+          exportedData.addToTable(vm.applyFieldComparison(data[fieldsResponses[exportedData.queryMethod]], exportedData));
         }
 
         let recs = exportedData.records.length;
         let total = exportedData.totalSize;
+        let scanned = exportedData.scannedSize;
         if (data.totalSize != -1) {
           exportedData.totalSize = isSoql ? data.totalSize : recs;
           total = exportedData.totalSize;
@@ -887,7 +949,9 @@ class Model {
         if (!data.done && isSoql) {
           let pr = batchHandler(sfConn.rest(data.nextRecordsUrl, {progressHandler: vm.exportProgress}));
           vm.isWorking = true;
-          vm.exportStatus = `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
+          vm.exportStatus = vm.fieldComparison
+            ? `Exporting... Matched ${recs} of ${scanned} scanned record${s(scanned)}.`
+            : `Exporting... Completed ${recs} of ${total} record${s(total)}.`;
           vm.exportError = null;
           vm.exportedData = exportedData;
           vm.markPerf();
@@ -898,7 +962,9 @@ class Model {
         vm.queryHistory.add({query, useToolingApi: exportedData.isTooling});
         if (recs == 0) {
           vm.isWorking = false;
-          vm.exportStatus = "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
+          vm.exportStatus = vm.fieldComparison
+            ? `No record matched the field comparison. Scanned ${scanned} record${s(scanned)}.`
+            : "No data exported." + (total > 0 ? ` ${total} record${s(total)}.` : "");
           vm.exportError = null;
           vm.exportedData = exportedData;
           vm.markPerf();
@@ -908,7 +974,9 @@ class Model {
           vm.updateCurrentTabName(exportedData.records[0].attributes.type);
         }
         vm.isWorking = false;
-        vm.exportStatus = `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
+        vm.exportStatus = vm.fieldComparison
+          ? `Matched ${recs} of ${scanned} scanned record${s(scanned)}`
+          : `Exported ${recs}${recs !== total ? (" of " + total) : ""} record${s(recs)}`;
         vm.exportError = null;
         vm.exportedData = exportedData;
         vm.markPerf();
@@ -928,7 +996,9 @@ class Model {
         if (total != -1) {
           // We already got some data. Show it, and indicate that not all data was exported
           vm.isWorking = false;
-          vm.exportStatus = `Exported ${recs} of ${total} record${s(total)}. Stopped by error.`;
+          vm.exportStatus = vm.fieldComparison
+            ? `Matched ${recs} of ${exportedData.scannedSize} scanned record${s(exportedData.scannedSize)}. Stopped by error.`
+            : `Exported ${recs} of ${total} record${s(total)}. Stopped by error.`;
           vm.exportError = null;
           vm.exportedData = exportedData;
           vm.updatedExportedData();
@@ -943,7 +1013,7 @@ class Model {
         return null;
       });
     }
-    this.setQueryMethod(exportedData, query, vm);
+    this.setQueryMethod(exportedData, serverQuery, vm);
     vm.spinFor(batchHandler(sfConn.rest(exportedData.endpoint, exportedData.params))
       .catch(error => {
         console.error(error);
@@ -1291,6 +1361,8 @@ function RecordTable(vm) {
     countOfVisibleRecords: null,
     isTooling: false,
     totalSize: -1,
+    // Number of records returned by Salesforce, before the field comparisons filtered them.
+    scannedSize: 0,
     preventLineWrap: vm.prefPreventLineWrap,
     addToTable(expRecords) {
       rt.records = rt.records.concat(expRecords);
@@ -2057,6 +2129,16 @@ class App extends React.Component {
             }
           },
           h("div", {className: "slds-card__body slds-card__body_inner", style: {flex: "1 1 0", minHeight: 0, display: "flex", flexDirection: "column"}},
+            model.fieldComparison ? h("div", {className: "slds-m-bottom_x-small"},
+              h(AlertBanner, {
+                type: model.fieldComparison.warnings.length > 0 ? "warning" : "info",
+                iconName: model.fieldComparison.warnings.length > 0 ? "warning" : "info",
+                iconTitle: "Field comparison applied",
+                assistiveText: "Field comparison applied",
+                bannerText: `Compared in the browser: ${describeComparisons(model.fieldComparison.comparisons)}. Query sent to Salesforce: ${model.fieldComparison.query}.`
+                  + (model.fieldComparison.warnings.length > 0 ? ` ${model.fieldComparison.warnings.join(" ")}` : "")
+              })
+            ) : null,
             h("div", {className: "result-bar"},
               h("h3", {className: "slds-text-heading_small"}, "Export Result"),
               h("div", {className: "slds-button-group slds-m-left_small"},

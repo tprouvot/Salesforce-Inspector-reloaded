@@ -70,6 +70,53 @@ You can configure Data Export to convert times to local time. Navigate to Option
 
 <img width="898" alt="Show local time in data export checkbox option" src="../assets/images/how-to/show-local-time.png?raw=true">
 
+## Compare two fields in the WHERE clause
+
+SOQL cannot compare two fields of the same record, so a query like the one below is rejected by Salesforce:
+
+```sql
+SELECT Id, Field1__c, Field2__c FROM Contact WHERE Field1__c = Field2__c
+```
+
+Enable "Enable field to field comparison" in "Options" -> "Data Export" to write this kind of condition anyway.
+The extension then:
+
+1. removes the condition from the query it sends to Salesforce,
+2. adds both fields to the `SELECT` clause when they are missing,
+3. compares the two values of every returned record in your browser,
+4. displays only the records that match.
+
+A banner above the results shows the comparisons that were applied and the exact query that was sent to Salesforce.
+The status badge counts both sides of the operation, for example `Matched 12 of 2000 scanned records`.
+
+### Supported conditions
+
+- The operators `=` and `!=`.
+- Conditions combined with `AND` at the top level of the `WHERE` clause. A condition inside `OR`, `NOT` or parentheses
+  is rejected, because removing it would change the records Salesforce returns.
+- Fields of the queried object. Relationship fields such as `Account.Name` are not supported yet.
+- Both fields must have comparable types. A text field cannot be compared with a number, and a date cannot be compared
+  with a datetime.
+- Aggregate queries (`GROUP BY`, `HAVING`, `COUNT`, ...) and `OFFSET` are not supported.
+
+Anything else is left untouched and sent to Salesforce as usual, so `WHERE CreatedDate = TODAY` or
+`WHERE Name = 'Acme'` keep working exactly as before.
+
+### Null values and case
+
+Two empty values are considered equal, and an empty value is never equal to a filled one.
+Text fields are compared without case sensitivity, like SOQL does. Enable "Case sensitive field comparison" in the
+options to compare them exactly. Id and reference fields are always compared with case sensitivity.
+
+### Limits to keep in mind
+
+Salesforce applies `LIMIT` **before** the extension filters the records, so `LIMIT 200` means "scan up to 200 records",
+not "return 200 matching records". Increase the limit when too few records match.
+
+When the `WHERE` clause only contains field comparisons, it is removed entirely and the object is queried without any
+filter. On a large object this can be slow or time out, so keep another selective condition or a `LIMIT` in the query.
+The "Stop" button interrupts an export that takes too long.
+
 ## Display query performance in Data Export
 
 To enable performance metrics for queries on the data export page, open the Options screen and select the Data Export tab,

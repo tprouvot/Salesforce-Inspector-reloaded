@@ -52,6 +52,7 @@ class Model {
     this.activeBatches = 0;
     this.isProcessingQueue = false;
     this.importState = null;
+    this.previousImportDetected = false;
     this.greyOutSkippedColumns = localStorage.getItem("greyOutSkippedColumns") === "true";
     this.showStatus = {
       Queued: true,
@@ -205,6 +206,7 @@ class Model {
     }
     this.refreshColumn();
     this.updateResult(this.importData.importTable);
+    this.previousImportDetected = this.hasCompletedImportResults(header, data);
   }
 
   getDataFromJson(json) {
@@ -600,6 +602,36 @@ class Model {
     this.executeBatch();
   }
 
+  hasCompletedImportResults(header, data) {
+    let statusColumnIndex = header.findIndex(c => c.columnValue.toLowerCase() == "__status");
+    if (statusColumnIndex == -1) {
+      return false;
+    }
+    return data.some(row => {
+      let status = (row[statusColumnIndex] || "").toLowerCase();
+      return status == "succeeded" || status == "failed";
+    });
+  }
+
+  resetPreviousImportStatuses() {
+    if (!this.importData.importTable) {
+      return;
+    }
+    let {header, data} = this.importData.importTable;
+    let statusColumnIndex = header.findIndex(c => c.columnValue.toLowerCase() == "__status");
+    if (statusColumnIndex > -1) {
+      for (let row of data) {
+        row[statusColumnIndex] = "";
+      }
+    }
+    this.previousImportDetected = false;
+    this.updateResult(this.importData.importTable);
+  }
+
+  continuePreviousImport() {
+    this.previousImportDetected = false;
+  }
+
   updateResult(importTable) {
     let counts = {Queued: 0, Processing: 0, Succeeded: 0, Failed: 0};
     if (!importTable) {
@@ -974,6 +1006,8 @@ class App extends React.Component {
     this.onSkipAllUnknownFieldsClick = this.onSkipAllUnknownFieldsClick.bind(this);
     this.onConfirmPopupYesClick = this.onConfirmPopupYesClick.bind(this);
     this.onConfirmPopupNoClick = this.onConfirmPopupNoClick.bind(this);
+    this.onStartNewImportClick = this.onStartNewImportClick.bind(this);
+    this.onContinuePreviousImportClick = this.onContinuePreviousImportClick.bind(this);
     this.unloadListener = null;
     this.state = {templateValueIndex: -1};
   }
@@ -1104,6 +1138,18 @@ class App extends React.Component {
     e.preventDefault();
     let {model} = this.props;
     model.confirmPopupNo();
+    model.didUpdate();
+  }
+  onStartNewImportClick(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.resetPreviousImportStatuses();
+    model.didUpdate();
+  }
+  onContinuePreviousImportClick(e) {
+    e.preventDefault();
+    let {model} = this.props;
+    model.continuePreviousImport();
     model.didUpdate();
   }
   onImportUndelete(model){
@@ -1322,7 +1368,7 @@ class App extends React.Component {
         h("div", {className: "slds-card slds-m-horizontal_medium slds-p-around_small"},
           h("div", {className: "slds-grid slds-grid_align-spread slds-grid_vertical-align-center"},
             h("div", {className: "slds-col"},
-              h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.importCounts().Queued == 0, className: "slds-button slds-button_brand"}, "Run " + model.importActionName),
+              h("button", {onClick: this.onDoImportClick, disabled: model.invalidInput() || model.isWorking() || model.previousImportDetected || model.importCounts().Queued == 0, className: "slds-button slds-button_brand"}, "Run " + model.importActionName),
               h("button", {disabled: !model.isWorking(), onClick: this.onToggleProcessingClick, className: model.isWorking() && !model.isProcessingQueue ? "slds-button slds-button_neutral" : "slds-button slds-button_neutral"}, model.isWorking() && !model.isProcessingQueue ? "Resume Queued" : "Cancel Queued"),
               h("button", {disabled: !model.importCounts().Failed > 0, onClick: this.onRetryFailedClick, className: "slds-button slds-button_neutral"}, "Retry Failed"),
               h("div", {className: "slds-button-group"},
@@ -1355,7 +1401,7 @@ class App extends React.Component {
                   h("li", {}, "Number, date, time and checkbox values must conform to the relevant ",
                     h("a", {href: "http://www.w3.org/TR/xmlschema-2/#built-in-primitive-datatypes", target: "_blank"}, "XSD datatypes"), "."),
                   h("li", {}, "Columns starting with an underscore are ignored."),
-                  h("li", {}, "You can resume a previous import by including the \"__Status\" column in your input."),
+                  h("li", {}, "If your input includes a \"__Status\" column with completed results (e.g. copied from a previous import), you'll be asked whether to start a new import or continue the previous one."),
                   h("li", {}, "You can supply the other import options by clicking \"Copy options\" and pasting the options into Excel in the top left cell, just above the header row.")
                 )
               ),
@@ -1445,8 +1491,64 @@ class App extends React.Component {
             ),
             h("div", {className: "slds-backdrop slds-backdrop_open", role: "presentation"}))
           : null
-        )
-      ));
+        ),
+        model.previousImportDetected ? h("div", {},
+          h("section",
+            {
+              role: "dialog",
+              tabIndex: -1,
+              className: "slds-modal slds-fade-in-open slds-modal_small"
+            },
+            h("div", {className: "slds-modal__container"},
+              h(
+                "button",
+                {className: "slds-button slds-button_icon slds-modal__close", onClick: this.onStartNewImportClick},
+                h(
+                  "svg",
+                  {className: "slds-button__icon slds-button__icon_large", "aria-hidden": "true"},
+                  h("use", {xlinkHref: "symbols.svg#close"})
+                ),
+                h("span", {className: "slds-assistive-text"}, "Cancel and close")
+              ),
+              h(
+                "div",
+                {className: "slds-modal__content slds-p-around_medium slds-modal__content_headless slds-text-align_center", id: "modal-content-id-2"},
+                h("div", {className: "slds-notify_container slds-is-relative"},
+                  h("div", {className: "slds-notify slds-notify_toast slds-theme_info", role: "status"},
+                    h("span", {className: "slds-assistive-text"}, "info"),
+                    h("span", {className: "slds-icon_container slds-icon-utility-info slds-m-right_small slds-no-flex slds-align-top"},
+                      h("svg", {className: "slds-icon slds-icon_small", "aria-hidden": "true"},
+                        h("use", {xlinkHref: "/symbols.svg#info"})
+                      )
+                    ),
+                    h("div", {className: "slds-notify__content slds-text-align_center"},
+                      h("h2", {className: "slds-text-heading_small"}, "This data contains previous import results.")
+                    )
+                  )
+                ),
+                h("br", {}),
+                h("p", {className: "slds-text-heading_medium slds-p-horizontal_x-large slds-p-bottom_small", style: {fontSize: "1.15rem"}}, "Some rows already have a \"__Status\" of Succeeded or Failed. Start a new import to make every row eligible again, or continue processing where the previous run left off."),
+              ),
+              h(
+                "div",
+                {className: "slds-modal__footer"},
+                h(
+                  "button",
+                  {className: "slds-button slds-button_neutral", "aria-label": "Start New Import", onClick: this.onStartNewImportClick},
+                  "Start New Import"
+                ),
+                h(
+                  "button",
+                  {className: "slds-button slds-button_brand", onClick: this.onContinuePreviousImportClick},
+                  "Continue Previous Import"
+                )
+              )
+            ),
+          ),
+          h("div", {className: "slds-backdrop slds-backdrop_open", role: "presentation"}))
+        : null
+      )
+    );
   }
 }
 

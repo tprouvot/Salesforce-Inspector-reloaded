@@ -285,6 +285,20 @@ test.describe("Options", () => {
       // Verify value is set
       await expect(csvSeparatorInput).toHaveValue(";");
     });
+
+    test("Toggle automatic large IN clause splitting", async ({page, extensionId}) => {
+      await initOptionsPage(page, extensionId, null, "Data Export");
+
+      const checkbox = page.locator("input#autoSplitLargeInClauses");
+      await expect(checkbox).toBeVisible();
+      await expect(checkbox).not.toBeChecked();
+
+      const checkboxContainer = checkbox.locator("..").locator("..");
+      await checkboxContainer.locator("span.slds-checkbox_faux_container").click();
+
+      await expect(checkbox).toBeChecked();
+      await expect.poll(() => page.evaluate(() => localStorage.getItem("autoSplitLargeInClauses"))).toBe("true");
+    });
   });
 
   test.describe("Data Import", () => {
@@ -660,4 +674,3 @@ test.describe("Options", () => {
     });
   });
 });
-

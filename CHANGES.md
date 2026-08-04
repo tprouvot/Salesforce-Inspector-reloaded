@@ -3,6 +3,7 @@
 ## Version 2.1
 
 - `Shortcuts` Fixed broken links for some Setup shortcuts [#1223](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1223) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Metadata` Fix "Retrieve Metadata" button [issue #1256](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1256) and "Save status info" button [issue #1257](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1257) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Show All Data` Add **Refresh** button to re-fetch the latest field values and persist the filter value in the URL [feature 1201](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1201)
 - `Popup` Fix object not refreshing when switching between object list views [issue #1254](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1254) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key

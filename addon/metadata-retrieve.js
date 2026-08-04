@@ -177,7 +177,7 @@ class Model {
   parsePackageXml(packageXml) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(packageXml, "text/xml");
-    const retrieveRequest = { apiVersion, unpackaged: { types: [] } };
+    const retrieveRequest = {apiVersion, unpackaged: {types: []}};
 
     const types = xmlDoc.getElementsByTagName("types");
     for (let typeNode of types) {
@@ -185,7 +185,7 @@ class Model {
       if (!nameNode) continue;
       const name = nameNode.textContent;
       const members = [...typeNode.getElementsByTagName("members")].map(m => m.textContent).sort();
-      retrieveRequest.unpackaged.types.push({ name, members });
+      retrieveRequest.unpackaged.types.push({name, members});
     }
     retrieveRequest.unpackaged.types.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -1075,9 +1075,9 @@ class App extends React.Component {
                 },
                 title: "Save status info"
               },
-                h("svg", {className: "slds-button__icon"},
-                  h("use", {xlinkHref: "symbols.svg#info"})
-                )
+              h("svg", {className: "slds-button__icon"},
+                h("use", {xlinkHref: "symbols.svg#info"})
+              )
               ) : null,
               h("button", {className: "slds-button slds-button_icon slds-button_icon-border-filled slds-m-left_x-small", onClick: () => this.downloadXml(), title: "Download package.xml"},
                 h("svg", {className: "slds-button__icon"},

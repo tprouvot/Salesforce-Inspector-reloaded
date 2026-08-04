@@ -2,8 +2,7 @@
 
 ## Version 2.1
 
-- `Metadata` Fixed the "Retrieve Metadata" button remaining disabled after uploading a `package.xml` file [issue #1256](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1256) (contribution by [Prem Kumar](https://github.com/prem-k-r))
-- `Metadata` Fixed the "Save status info" button opening the file picker instead of downloading activity logs [issue #1257](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1257) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Metadata` Fix "Retrieve Metadata" button [issue #1256](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1256) and "Save status info" button [issue #1257](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1257) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Show All Data` Add **Refresh** button to re-fetch the latest field values and persist the filter value in the URL [feature 1201](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1201)
 - `Popup` Fix object not refreshing when switching between object list views [issue #1254](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1254) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key

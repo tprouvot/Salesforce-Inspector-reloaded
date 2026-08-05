@@ -224,6 +224,7 @@ class OptionsTabSelector extends React.Component {
         id: "data-export",
         tabTitle: "Data Export",
         content: [
+          {option: SectionHeader, props: {title: "General"}},
           {option: CSVSeparatorOption, props: {key: 1}},
           {option: Option, props: {type: "toggle", title: "Display Query Execution Time", key: "displayQueryPerformance", default: true}},
           {option: Option, props: {type: "toggle", title: "Show Local Time", key: "showLocalTime", default: false}},
@@ -676,6 +677,12 @@ class APIVersionOption extends React.Component {
         )
       )
     );
+  }
+}
+
+class SectionHeader extends React.Component {
+  render() {
+    return h("h3", {className: "slds-section-title--divider slds-m-top_medium slds-m-bottom_medium"}, this.props.title);
   }
 }
 

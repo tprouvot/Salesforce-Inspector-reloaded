@@ -421,6 +421,7 @@ svg.button-icon {
 .autocomplete-result,
 .autocomplete-results span {
   white-space: nowrap;
+  overflow: visible;
 }
 
 .sfir-autocomplete-icon {
@@ -430,7 +431,7 @@ svg.button-icon {
   -webkit-mask-size: 0.95rem;
   background-color: #706e6b;
   width: 16px;
-  height: 13px;
+  height: 16px;
 }
 
 .relationshipName {

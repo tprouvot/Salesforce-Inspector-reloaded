@@ -702,7 +702,6 @@ h1 {
     font-size: 16px;
     line-height: 1.3;
     letter-spacing: -0.02em;
-    padding-bottom: 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -758,6 +757,10 @@ h1 {
     --slds-c-badge-color-background: var(--slds-g-color-info-container-1);
     --slds-c-badge-text-color: var(--slds-g-color-on-info-1);
     --slds-c-badge-color-border: transparent;
+}
+
+.slds-theme_info, .slds-theme--info {
+    background-color: white;
 }
 
 /* ===== FOOTER ===== */

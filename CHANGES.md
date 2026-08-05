@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Disabled the Copy/Download buttons when the query output has no results [#1258](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1258) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Shortcuts` Fixed broken links for some Setup shortcuts [#1223](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1223) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Metadata` Fix "Retrieve Metadata" button [issue #1256](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1256) and "Save status info" button [issue #1257](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1257) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Show All Data` Add **Refresh** button to re-fetch the latest field values and persist the filter value in the URL [feature 1201](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1201)

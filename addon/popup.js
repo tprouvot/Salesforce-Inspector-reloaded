@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion, sessionError} from "./inspector.js";
-import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, isRecordId, getSobjectsList} from "./utils.js";
+import {getLinkTarget, isOptionEnabled, isSettingEnabled, getLatestApiVersionFromOrg, setOrgInfo, getPKCEParameters, getBrowserType, getExtensionId, getClientId, getRedirectUri, Constants, copyToClipboard, DataCache, getFlowCompareUrl, isRecordId, getSobjectsList, getStandardObjectNameField} from "./utils.js";
 import {setupLinks} from "./links.js";
 import AlertBanner from "./components/AlertBanner.js";
 
@@ -1729,10 +1729,10 @@ class AllDataBoxSObject extends React.PureComponent {
     }
 
     await this.setState({selectedValue: match});
-    this.loadRecordIdDetails();
+    await this.loadRecordIdDetails();
   }
 
-  loadRecordIdDetails() {
+  async loadRecordIdDetails() {
     let {selectedValue} = this.state;
     let {sfHost} = this.props;
     //If a recordId is selected and the object supports regularApi
@@ -1751,6 +1751,17 @@ class AllDataBoxSObject extends React.PureComponent {
         "LastModifiedDate",
         "Name",
       ];
+
+      let cachedNameField = null;
+      //check if the object is in the standard objects mapping
+      const standardNameField = getStandardObjectNameField(selectedValue.sobject.name);
+
+      //we have not hit from static standard objects mapping, so check if we have a cached name field
+      if (standardNameField === "N/A") {
+        // Check cache for nameField and include it in the initial query to avoid extra API call
+        const cacheKey = `nameField_${selectedValue.sobject.name}`;
+        cachedNameField = await DataCache.getCachedData(cacheKey, sfHost);
+      }
 
       if (selectedValue.sobject.recordTypesSupported && selectedValue.sobject.recordTypesSupported?.recordTypeInfos?.length > 1) {
         fields.push("RecordType.DeveloperName", "RecordType.Id");
@@ -1789,16 +1800,10 @@ class AllDataBoxSObject extends React.PureComponent {
               recordTypeName: record.RecordType
                 ? record.RecordType.DeveloperName
                 : "",
-              createdBy: record.CreatedBy.Alias,
-              lastModifiedBy: record.LastModifiedBy.Alias,
-              created:
-                createdDate.toLocaleDateString()
-                + " "
-                + createdDate.toLocaleTimeString(),
-              lastModified:
-                lastModifiedDate.toLocaleDateString()
-                + " "
-                + lastModifiedDate.toLocaleTimeString(),
+              createdBy: record.CreatedBy?.Alias,
+              lastModifiedBy: record.LastModifiedBy?.Alias,
+              created: new Date(record.CreatedDate).toLocaleString(),
+              lastModified: new Date(record.LastModifiedDate).toLocaleString(),
             },
           });
         }

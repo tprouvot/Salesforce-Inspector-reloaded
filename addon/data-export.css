@@ -430,7 +430,14 @@ svg.button-icon {
   -webkit-mask-size: 0.95rem;
   background-color: #706e6b;
   width: 16px;
-  height: 13px;
+  height: 16px;
+  scale: 0.9;
+}
+
+.field-suggestions-label {
+  line-height: normal;
+  overflow: visible;
+  padding-bottom: 2px;
 }
 
 .relationshipName {

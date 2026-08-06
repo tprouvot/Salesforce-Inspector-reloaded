@@ -2017,7 +2017,7 @@ class App extends React.Component {
                       h("span", {className: "sfir-autocomplete-icon"})
                     ),
                     h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: "slds-pill__action slds-p-right_x-small"},
-                      h("span", {className: "slds-pill__label"}, r.value)
+                      h("span", {className: "slds-pill__label field-suggestions-label"}, r.value)
                     )
                   )))
               ),

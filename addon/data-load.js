@@ -134,9 +134,42 @@ function renderCell(rt, cell, td) {
   function popLink(recordInfo, label) {
     let a = document.createElement("a");
     a.href = "about:blank";
-    a.title = "Show all data";
+    a.title = "Show all data (Ctrl+Click or Cmd+Click to open in a new tab)";
+    function getShowAllDataUrl() {
+      // Only when the object type is unambiguous, otherwise the pop-up menu is needed to resolve it
+      let {objectTypes, recordId} = recordInfo();
+      if (objectTypes.length !== 1 || objectTypes[0] === "Unknown") {
+        return null;
+      }
+      let args = new URLSearchParams();
+      args.set("host", rt.sfHost);
+      args.set("objectType", objectTypes[0]);
+      if (rt.isTooling) {
+        args.set("useToolingApi", "1");
+      }
+      if (recordId) {
+        args.set("recordId", recordId);
+      }
+      return "inspect.html?" + args;
+    }
+    a.addEventListener("auxclick", e => {
+      if (e.button === 1) {
+        let url = getShowAllDataUrl();
+        if (url) {
+          e.preventDefault();
+          window.open(url, "_blank");
+        }
+      }
+    });
     a.addEventListener("click", e => {
       e.preventDefault();
+      if (e.ctrlKey || e.metaKey) {
+        let url = getShowAllDataUrl();
+        if (url) {
+          window.open(url, "_blank");
+          return;
+        }
+      }
       let pop = document.createElement("div");
       pop.className = "slds-dropdown slds-dropdown_left slds-dropdown_actions";
       let ul = document.createElement("ul");

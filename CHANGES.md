@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Ctrl+Click (Cmd+Click on Mac) or middle-click a record Id in the results to open its Show All Data page directly in a new tab [feature 214](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/214)
 - `Data Export` Fixed Field Suggestions label visibility [issue #1255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1255) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Popup` Fixed search icon spacing on the Objects, Shortcuts, and Users tabs [#1227](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1227) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Export` Disabled the Copy/Download buttons when the query output has no results [#1258](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1258) (contribution by [Prem Kumar](https://github.com/prem-k-r))

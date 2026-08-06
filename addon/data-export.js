@@ -531,11 +531,11 @@ class Model {
     // If we are on the right hand side of a comparison operator, autocomplete field values
     let isFieldValue = query.substring(0, selStart).match(/\s*[<>=!]+\s*('?[^'\s]*)$/);
 
-    // In clause on picklist field
-    let isInWithValues = query.substring(0, selStart).match(/\s*in\s*\(\s*(?:(?:'[^']*'\s*,\s*)+|')('?[^'\s]*)$/i);
+    // IN clause on picklist field, or INCLUDES/EXCLUDES clause on multi-picklist field
+    let isInWithValues = query.substring(0, selStart).match(/\s*\b(?:in|includes|excludes)\s*\(\s*(?:(?:'[^']*'\s*,\s*)+|')('?[^'\s]*)$/i);
     let inValuesUtilized = "";
     if (isInWithValues){
-      if (isInWithValues[0] && isInWithValues[0].match(/\s*in\s*\(\s*(?:')$/i)){ // extra single quote
+      if (isInWithValues[0] && isInWithValues[0].match(/\s*\b(?:in|includes|excludes)\s*\(\s*(?:')$/i)){ // extra single quote
         selStart -= 1;
         isInWithValues[0] = isInWithValues[0].substring(0, isInWithValues[0].length - 1);
       }
@@ -820,6 +820,12 @@ class Model {
                   return {value: fn, title: fn + "()", suffix: "(", rank: 2, autocompleteType: "variable", dataType: ""};
                 }
               })
+          )
+          .concat(
+            // Multi-picklist operators, only relevant after the FROM clause (ie in WHERE filters)
+            new Enumerable(isAfterFrom ? ["INCLUDES", "EXCLUDES"] : [])
+              .filter(fn => fn.toLowerCase().startsWith(searchTerm.toLowerCase()))
+              .map(fn => ({value: fn, title: fn + "()", suffix: "(", rank: 2, autocompleteType: "variable", dataType: ""}))
           )
           .toArray()
           .sort(resultsSort)

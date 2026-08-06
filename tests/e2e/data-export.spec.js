@@ -127,6 +127,30 @@ test.describe("Data Export", () => {
     await expect(queryInput).toHaveValue("SELECT Id, Name FROM Account");
   });
 
+  test("Autocomplete INCLUDES/EXCLUDES on multi-picklist fields", async ({page, extensionId}) => {
+    await page.goto(`chrome-extension://${extensionId}/data-export.html?host=${mockHost}`);
+    await page.waitForSelector("textarea#query", {timeout: 2000});
+
+    const queryInput = page.locator("textarea#query");
+
+    // 1. INCLUDES keyword suggestion after a field in the WHERE clause
+    await queryInput.fill("SELECT Id FROM Account WHERE Interests__c INC");
+    await expect(page.locator(".autocomplete-results")).toContainText("INCLUDES");
+    await page.locator(".autocomplete-results a").filter({hasText: "INCLUDES"}).first().click();
+    await expect(queryInput).toHaveValue("SELECT Id FROM Account WHERE Interests__c INCLUDES(");
+
+    // 2. EXCLUDES keyword suggestion
+    await queryInput.fill("SELECT Id FROM Account WHERE Interests__c EXC");
+    await expect(page.locator(".autocomplete-results")).toContainText("EXCLUDES");
+
+    // 3. Picklist value suggestions inside INCLUDES(...)
+    await queryInput.fill("SELECT Id FROM Account WHERE Interests__c INCLUDES ('");
+    await expect(page.locator(".autocomplete-header")).toContainText("Account.Interests__c values");
+    await expect(page.locator(".autocomplete-results")).toContainText("Running");
+    await page.locator(".autocomplete-results a").filter({hasText: "Running"}).first().click();
+    await expect(queryInput).toHaveValue("SELECT Id FROM Account WHERE Interests__c INCLUDES ('Running' ");
+  });
+
   test("Copy as CSV", async ({page, context, extensionId}) => {
     // Grant clipboard permissions to browser context
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);

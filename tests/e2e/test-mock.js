@@ -177,6 +177,18 @@ export async function routeMock(route, host) {
               {value: "Partner", label: "Partner", active: true}
             ],
             referenceTo: []},
+          {name: "Interests__c",
+            label: "Interests",
+            type: "multipicklist",
+            createable: true,
+            updateable: true,
+            nillable: true,
+            picklistValues: [
+              {value: "Running", label: "Running", active: true},
+              {value: "Cycling", label: "Cycling", active: true},
+              {value: "Swimming", label: "Swimming", active: true}
+            ],
+            referenceTo: []},
           {name: "Description", label: "Description", type: "textarea", createable: true, updateable: true, nillable: true, referenceTo: []}
         ],
         childRelationships: [

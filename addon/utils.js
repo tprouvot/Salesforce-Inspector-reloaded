@@ -1117,6 +1117,9 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
           isEverCreatable,
           newUrl,
           layoutable: layoutable || false,
+          createable: createable || false,
+          deletable: deletable || false,
+          updateable: updateable || false,
         };
         entityMap.set(name, entity);
       }

@@ -112,7 +112,7 @@ export let setupLinks = [
   {label: "Einstein Conversation Insights Assessor", link: "/lightning/setup/EinsteinCIReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   {label: "Revenue Intelligence Assessor", link: "/lightning/setup/EinsteinRevIntlReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   {label: "Sales Cloud Einstein Assessor", link: "/lightning/setup/SalesCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
-  {label: "Service Cloud Einstein Assessor", link: "lightning/setup/ServiceCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
+  {label: "Service Cloud Einstein Assessor", link: "/lightning/setup/ServiceCloudEinsteinReadinessCheck/home", section: "Platform Tools > Einstein > Einstein Assessors", prod: false},
   //Platform Tools > Einstein > Einstein Generative AI
   {label: "Agentforce Analytics", link: "/lightning/setup/AgentAnalyticsLibrary/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
   {label: "Agentforce Agents", link: "/lightning/setup/EinsteinCopilot/home", section: "Platform Tools > Einstein > Einstein Generative AI > Agentforce Studio", prod: false},
@@ -175,7 +175,7 @@ export let setupLinks = [
   //Platform Tools > Feature Settings > Service > Field Service
   {label: "Field Service Settings", link: "/lightning/setup/FieldServiceSettings/home", section: "Platform Tools > Feature Settings > Service > Field Service", prod: false},
   {label: "Field Service Mobile App Builder", link: "/lightning/setup/FieldServiceAppBuilder/home", section: "Platform Tools > Feature Settings > Service > Field Service", prod: false},
-  {label: "Inbound Social Post Errors", link: "/lightning/setup/InboundSocialPostErrors/homee", section: "Platform Tools > Feature Settings > Service > Field Service", prod: false},
+  {label: "Inbound Social Post Errors", link: "/lightning/setup/InboundSocialPostErrors/home", section: "Platform Tools > Feature Settings > Service > Field Service", prod: false},
 
   //Platform Tools > Feature Settings > Service > Knowledge
   {label: "Data Category Assignments", link: "/lightning/setup/KnowledgeDataCategorySetup/home", section: "Platform Tools > Feature Settings > Service > Knowledge", prod: false},
@@ -389,7 +389,7 @@ export let setupLinks = [
   {label: "Network Access", link: "/lightning/setup/NetworkAccess/home", section: "Settings > Security", prod: false},
   {label: "Password Policies", link: "/lightning/setup/SecurityPolicies/home", section: "Settings > Security", prod: false},
   //Settings > Security > Platform Encryption
-  {label: "Advanced Settings", link: "/lightning/setup/SecurityRemoteProxy/home", section: "Settings > Security > Platform Encryption", prod: false},
+  {label: "Encryption Settings", link: "/lightning/setup/EncryptionAdvancedSettings/home", section: "Settings > Security > Platform Encryption", prod: false},
   {label: "Encryption Policy", link: "/lightning/setup/EncryptionPolicy/home", section: "Settings > Security > Platform Encryption", prod: false},
   {label: "Encryption Statistics", link: "/lightning/setup/EncryptionStatistics/home", section: "Settings > Security > Platform Encryption", prod: false},
   {label: "Key Management", link: "/lightning/setup/PlatformEncryptionKeyManagement/home", section: "Settings > Security > Platform Encryption", prod: false},

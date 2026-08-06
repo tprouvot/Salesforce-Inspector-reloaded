@@ -535,11 +535,17 @@ a.icon-url {
 /* end of TAB CONTAINER */
 
 .slds-dropdown__item a,
+.slds-dropdown__item > span,
 .slds-dropdown__item .dropdown-item {
   display: block !important;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* <span> lacks default pointer cursor; explicit cursor needed for clickable behavior */
+.slds-dropdown__item > span {
+  cursor: pointer;
 }
 
 /* OBJECTS INFO */

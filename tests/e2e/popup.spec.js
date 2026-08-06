@@ -518,6 +518,49 @@ test.describe("Popup", () => {
     });
   });
 
+  test.describe("Autocomplete Accessibility (ARIA combobox)", () => {
+    // Guards the WAI-ARIA combobox contract on the AllDataSearch inputs (see #1108).
+    // The Objects tab is the vehicle here; the same pattern backs the Users and Shortcuts tabs.
+    test("Combobox exposes correct ARIA roles and a resolvable active option", async ({page, extensionId}) => {
+      await initPopupPage(page, extensionId);
+      await waitForObjectsTabToLoad(page);
+
+      const frame = page.frameLocator(".insext-popup");
+      const input = frame.locator("input[placeholder*='Record id']");
+
+      // Static combobox wiring is present regardless of expanded state
+      await expect(input).toHaveAttribute("role", "combobox");
+      await expect(input).toHaveAttribute("aria-autocomplete", "list");
+      await expect(input).toHaveAttribute("aria-haspopup", "listbox");
+      await expect(input).toHaveAttribute("aria-controls", "objects-ac-listbox");
+
+      // Typing opens the listbox: aria-expanded flips to true
+      await input.pressSequentially("Account", {delay: 50});
+      await page.waitForTimeout(500);
+      await frame.locator("#objects-ac-listbox .slds-dropdown__item").first().waitFor({state: "visible", timeout: 1000});
+      await expect(input).toHaveAttribute("aria-expanded", "true");
+
+      // The element the input points at is a real listbox with option children
+      const listbox = frame.locator("#objects-ac-listbox");
+      await expect(listbox).toHaveAttribute("role", "listbox");
+      await expect(listbox.locator("[role='option']").first()).toBeVisible();
+
+      // aria-activedescendant must reference an option that actually exists in the DOM.
+      // Regression guard: a virtualised list can leave it pointing at an unrendered node,
+      // which silently breaks screen-reader announcement even though the markup looks correct.
+      const activeId = await input.getAttribute("aria-activedescendant");
+      expect(activeId).toBeTruthy();
+      const activeOption = frame.locator("#" + activeId);
+      await expect(activeOption).toBeVisible();
+      await expect(activeOption).toHaveAttribute("role", "option");
+      await expect(activeOption).toHaveAttribute("aria-selected", "true");
+
+      // Escape collapses the listbox and clears the expanded state
+      await input.press("Escape");
+      await expect(input).toHaveAttribute("aria-expanded", "false");
+    });
+  });
+
   test.describe("Users Tab", () => {
     test("Switch to Users Tab", async ({page, extensionId}) => {
       await initPopupPage(page, extensionId);

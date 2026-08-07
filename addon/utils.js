@@ -593,7 +593,7 @@ export function getSalesforceViewLink(sfHost, recordId, parentObjectIdentifier) 
   const baseUrl = origin + "/lightning/setup";
 
   switch (prefix) {
-    // --- Global Setup ---
+    // --- Setup ---
     case "01p": return `${baseUrl}/ApexClasses/page?address=%2F${recordId}`; // Apex Class
     case "07L": return `${origin}/one/one.app#/alohaRedirect/p/setup/layout/ApexDebugLogDetailEdit/d?apex_log_id=${recordId}`; // Apex Debug Log
     case "00e": return `${baseUrl}/Profiles/page?address=%2F${recordId}`; // Profile
@@ -601,7 +601,23 @@ export function getSalesforceViewLink(sfHost, recordId, parentObjectIdentifier) 
     case "0PS": return `${baseUrl}/PermSets/page?address=%2F${recordId}`; // Permission Set
     case "0PG": return `${baseUrl}/PermSetGroups/page?address=%2F${recordId}`; // Permission Set Group
     case "00G": return `${baseUrl}/PublicGroups/page?address=%2Fp%2Fown%2FQueue%2Fd%3Fid%3D${recordId}`; // Public Group / Queue
-    case "00X": return `${baseUrl}/CommunicationTemplatesEmail/page?address=%2F${recordId}%3Fsetupid%3DCommunicationTemplatesEmail`; // Email Template
+    case "0MI": return `${baseUrl}/Territory2Models/page?address=%2F${recordId}`; // Territory2
+    case "0MA": return `${baseUrl}/Territory2Models/page?address=%2F${recordId}`; // Territory2 Model
+    case "300": return `${baseUrl}/Flows/page?address=%2F${recordId}`; // Flow Details & Versions
+    case "301": return `${baseUrl}/Flows/page?address=%2F${recordId}`; // Flow Details
+    case "01Q": return `${baseUrl}/WorkflowRules/page?address=%2F${recordId}`; // Workflow Rule
+    case "01W": return `${baseUrl}/WorkflowAlerts/page?address=%2F${recordId}`; // Workflow Email Alert
+    case "04Y": return `${baseUrl}/WorkflowFieldUpdates/page?address=%2F${recordId}`; // Workflow Field Update
+    case "04a": return `${baseUrl}/ApprovalProcesses/page?address=%2F${recordId}`; // Approval Process
+    case "0Nt": return `${baseUrl}/Picklists/page?address=%2F${recordId}`; // Global Value Set
+    case "101": return `${baseUrl}/CustomLabels/page?address=%2F${recordId}`; // Custom Label
+    case "081": return `${baseUrl}/StaticResources/page?address=%2F${recordId}`; // Static Resource
+    case "00X": return `${baseUrl}/CommunicationTemplatesEmail/page?address=%2F${recordId}`; // Email Template
+    case "066": return `${baseUrl}/ApexPages/page?address=%2F${recordId}`; // Visualforce Page
+    case "099": return `${baseUrl}/ApexComponents/page?address=%2F${recordId}`; // Visualforce Component
+    case "0Ab": return `${baseUrl}/LightningComponentBundles/page?address=%2F${recordId}`; // Aura Component
+    case "0Rb": return `${baseUrl}/LightningComponentBundles/page?address=%2F${recordId}`; // Lightning Web Component (LWC)
+    case "01r": return `${baseUrl}/CustomTabs/page?address=%2F${recordId}`; // Custom Tab
 
     // --- Object Manager ---
     case "00N": return `${baseUrl}/ObjectManager/${parentObjectIdentifier}/FieldsAndRelationships/${recordId}/view`; // Field

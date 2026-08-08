@@ -175,6 +175,13 @@
     },
     "api-statistics": {
       "description": "API Statistics"
+    },
+    "focus-search": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+F",
+        "mac": "Command+Shift+F"
+      },
+      "description": "Focus Search/Filter Input"
     }
   }
 }

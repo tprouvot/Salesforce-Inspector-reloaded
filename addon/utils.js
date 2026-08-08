@@ -1369,9 +1369,8 @@ export function formatDuration(minutes) {
 /**
  * Reusable "Focus Search" Shortcut System
  * 
- * Provides a centralized manager to handle both page-level keyboard shortcuts (e.g., "/") 
- * and global Chrome extension commands (e.g., "Ctrl+Shift+F") to automatically focus 
- * a specific search or filter input field. 
+ * Provides a centralized manager to handle both page-level keyboard shortcut (i.e., "/") and global Chrome
+ * extension commands (e.g., "Ctrl+Shift+F") to automatically focus a specific search or filter input field. 
  * 
  * - isEditableElement: Prevents shortcuts from triggering while the user is actively typing in a form field.
  * - isVisibleElement: Ensures the target input is actually visible on the screen before attempting to focus it.

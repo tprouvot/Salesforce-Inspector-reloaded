@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+- `Data Export` Add keyboard shortcuts (/ and Ctrl/Cmd+Shift+F (customizable)) to focus the search/result filter feature [feature #811](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/811) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Data Export` Add keyboard shortcuts (/ and Ctrl/Cmd+Shift+F) to focus the result filter [feature #811](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/811) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Show All Data` Add **Refresh** button to re-fetch the latest field values and persist the filter value in the URL [feature 1201](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1201)
 - `Popup` Fix object not refreshing when switching between object list views [issue #1254](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1254) (contribution by [Prem Kumar](https://github.com/prem-k-r))

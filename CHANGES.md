@@ -3,12 +3,17 @@
 ## Version 2.1
 
 - `Data Export` Add keyboard shortcuts (/ and Ctrl/Cmd+Shift+F (customizable)) to focus the search/result filter feature [feature #811](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/811) (contribution by [Prem Kumar](https://github.com/prem-k-r))
-- `Data Export` Add keyboard shortcuts (/ and Ctrl/Cmd+Shift+F) to focus the result filter [feature #811](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/811) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Data Export` Fixed Field Suggestions label visibility [issue #1255](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1255) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Popup` Fixed search icon spacing on the Objects, Shortcuts, and Users tabs [#1227](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1227) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Data Export` Disabled the Copy/Download buttons when the query output has no results [#1258](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1258) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Shortcuts` Fixed broken links for some Setup shortcuts [#1223](https://github.com/tprouvot/Salesforce-Inspector-reloaded/pull/1223) (contribution by [Prem Kumar](https://github.com/prem-k-r))
+- `Metadata` Fix "Retrieve Metadata" button [issue #1256](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1256) and "Save status info" button [issue #1257](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1257) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Show All Data` Add **Refresh** button to re-fetch the latest field values and persist the filter value in the URL [feature 1201](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1201)
 - `Popup` Fix object not refreshing when switching between object list views [issue #1254](https://github.com/tprouvot/Salesforce-Inspector-reloaded/issues/1254) (contribution by [Prem Kumar](https://github.com/prem-k-r))
 - `Metadata Retrieve` Fix sort preference (`Sort metadata by`) not persisting due to misspelled localStorage key
 - `Popup` Add filter icon and menu on User tab search input [discussion #1147](https://github.com/tprouvot/Salesforce-Inspector-reloaded/discussions/1147)
 - `Event Monitor` Allow users to generate, publish and save Platform Events based on their definition
+- `Cache` Resolve "Unknown object" error for standard objects in Data Import and Field Explorer #1231 (contribution by [Prem Kumar](https://github.com/prem-k-r))
 
 ## Version 2.0
 

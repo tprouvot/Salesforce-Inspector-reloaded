@@ -1,6 +1,6 @@
 /* global React ReactDOM */
 import {sfConn, apiVersion} from "./inspector.js";
-import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory} from "./utils.js";
+import {getLinkTarget, nullToEmptyString, isOptionEnabled, PromptTemplate, Constants, UserInfoModel, createSpinForMethod, copyToClipboard, downloadCsvFile, StorageHistory, SearchFocusManager} from "./utils.js";
 /* global initButton */
 import {Enumerable, DescribeInfo, initScrollTable, s} from "./data-load.js";
 import {PageHeader} from "./components/PageHeader.js";
@@ -14,24 +14,6 @@ function createQueryHistory(storageKey, max) {
     sortComparator: isSaved ? (a, b) => (a.query > b.query ? 1 : b.query > a.query ? -1 : 0) : null,
     addToFront: true
   });
-}
-
-function isEditableElement(element) {
-  if (!element || element.nodeType !== 1) {
-    return false;
-  }
-  const tagName = element.tagName;
-  return tagName === "INPUT"
-    || tagName === "TEXTAREA"
-    || tagName === "SELECT"
-    || element.isContentEditable
-    || element.closest("[contenteditable]") !== null;
-}
-
-function isVisibleElement(element) {
-  return element
-    && element.getClientRects().length > 0
-    && getComputedStyle(element).visibility !== "hidden";
 }
 
 class Model {
@@ -278,7 +260,7 @@ class Model {
     this.describeInfo.reloadAll();
   }
   canCopy() {
-    return this.exportedData != null;
+    return this.exportedData != null && this.exportedData.table.length > 0;
   }
   canDelete() {
     //In order to allow deletion, we should have at least 1 element and the Id field should have been included in the query
@@ -297,7 +279,7 @@ class Model {
   }
   downloadAsCsv(){
     const csvContent = this.exportedData.csvSerialize(this.separator);
-    const filename = `${this.exportedData.records[0].attributes.type}-${new Date().toLocaleDateString()}.csv`;
+    const filename = `${this.exportedData.records[0]?.attributes.type}-${new Date().toLocaleDateString()}.csv`;
     downloadCsvFile(csvContent, filename);
   }
   deleteRecords(e) {
@@ -1389,7 +1371,6 @@ class App extends React.Component {
     this.onCopyAsJson = this.onCopyAsJson.bind(this);
     this.onDeleteRecords = this.onDeleteRecords.bind(this);
     this.onResultsFilterInput = this.onResultsFilterInput.bind(this);
-    this.onFilterShortcutKeyDown = this.onFilterShortcutKeyDown.bind(this);
     this.onSetQueryName = this.onSetQueryName.bind(this);
     this.onStopExport = this.onStopExport.bind(this);
     this.state = {hideButtonsOption: JSON.parse(localStorage.getItem("hideExportButtonsOption")), isDropdownOpen: false};// Tracks whether the dropdown is open
@@ -1575,30 +1556,6 @@ class App extends React.Component {
       this.setState({isDropdownOpen: false});
     }
     model.didUpdate();
-  }
-  onFilterShortcutKeyDown(e) {
-    if (e.defaultPrevented) {
-      return;
-    }
-    const filterInput = this.refs.resultsFilter;
-    if (!isVisibleElement(filterInput) || document.activeElement === filterInput) {
-      return;
-    }
-
-    const isExplicitShortcut = (e.ctrlKey || e.metaKey)
-      && e.shiftKey
-      && !e.altKey
-      && (e.key || "").toLowerCase() === "f";
-    const isSlashShortcut = e.key === "/"
-      && !e.ctrlKey
-      && !e.altKey
-      && !e.metaKey
-      && !isEditableElement(e.target);
-
-    if (isExplicitShortcut || isSlashShortcut) {
-      e.preventDefault();
-      filterInput.focus();
-    }
   }
   onSetQueryName(e) {
     let {model} = this.props;
@@ -1800,7 +1757,6 @@ class App extends React.Component {
         model.didUpdate();
       }
     });
-    addEventListener("keydown", this.onFilterShortcutKeyDown);
 
     this.scrollTable = initScrollTable(this.refs.scroller);
     model.resultTableCallback = this.scrollTable.dataChange;
@@ -1824,9 +1780,22 @@ class App extends React.Component {
     }
     addEventListener("resize", resize);
     resize();
+
+    this.searchFocusManager = new SearchFocusManager(() => this.refs.resultsFilter);
+    this.searchFocusManager.register();
+    if (chrome.commands && chrome.commands.getAll) {
+      chrome.commands.getAll((commands) => {
+        const focusCmd = commands.find(c => c.name === "focus-search");
+        if (focusCmd && focusCmd.shortcut) {
+          this.setState({ focusShortcut: focusCmd.shortcut });
+        }
+      });
+    }
   }
   componentWillUnmount() {
-    removeEventListener("keydown", this.onFilterShortcutKeyDown);
+    if (this.searchFocusManager) {
+      this.searchFocusManager.unregister();
+    }
   }
   componentDidUpdate() {
     this.recalculateSize();
@@ -1842,11 +1811,6 @@ class App extends React.Component {
   render() {
     let {model} = this.props;
     const perf = model.perfStatus();
-
-    const isMac = navigator.userAgentData?.platform === "macOS" || /Mac/.test(navigator.platform);
-    const filterShortcutTitle = isMac
-      ? "Filter export results (/ or ⌘⇧F)"
-      : "Filter export results (/ or Ctrl+Shift+F)";
 
     // Define utility items for this page (injected as "slots")
     const utilityItems = [
@@ -2069,7 +2033,7 @@ class App extends React.Component {
                       h("span", {className: "sfir-autocomplete-icon"})
                     ),
                     h("a", {tabIndex: 0, title: r.title, onClick: e => { e.preventDefault(); model.autocompleteClick(r); model.didUpdate(); }, href: "#", className: "slds-pill__action slds-p-right_x-small"},
-                      h("span", {className: "slds-pill__label"}, r.value)
+                      h("span", {className: "slds-pill__label field-suggestions-label"}, r.value)
                     )
                   )))
               ),
@@ -2133,8 +2097,9 @@ class App extends React.Component {
                   h("input", {
                     ref: "resultsFilter",
                     className: "slds-input slds-button slds-m-around_none",
-                    "aria-label": "Filter Result",
-                    title: filterShortcutTitle,
+                    title: this.state.focusShortcut 
+                      ? `Filter export results (/ or ${this.state.focusShortcut})` 
+                      : "Filter export results (/)",
                     placeholder: model.filterColumns?.length > 0
                       ? `Filter by (${model.filterColumns.length})`
                       : "Filter",

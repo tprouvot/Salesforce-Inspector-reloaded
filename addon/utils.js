@@ -1117,6 +1117,9 @@ async function fetchSobjectsList(sfHost, currentFetch, cacheEnabled, cachedSobje
           isEverCreatable,
           newUrl,
           layoutable: layoutable || false,
+          createable: createable || false,
+          deletable: deletable || false,
+          updateable: updateable || false,
         };
         entityMap.set(name, entity);
       }
@@ -1361,4 +1364,81 @@ export function formatDuration(minutes) {
   }
 
   return parts.length > 0 ? parts.join(" ") : "Less than a minute";
+}
+
+/**
+ * Reusable "Focus Search" Shortcut System
+ * 
+ * Provides a centralized manager to handle both page-level keyboard shortcuts (e.g., "/") 
+ * and global Chrome extension commands (e.g., "Ctrl+Shift+F") to automatically focus 
+ * a specific search or filter input field. 
+ * 
+ * - isEditableElement: Prevents shortcuts from triggering while the user is actively typing in a form field.
+ * - isVisibleElement: Ensures the target input is actually visible on the screen before attempting to focus it.
+ * - SearchFocusManager: The core class that registers event listeners and executes the focus logic.
+ */
+export function isEditableElement(element) {
+  if (!element || element.nodeType !== 1) {
+    return false;
+  }
+  const tagName = element.tagName;
+  return tagName === "INPUT"
+    || tagName === "TEXTAREA"
+    || tagName === "SELECT"
+    || element.isContentEditable
+    || element.closest("[contenteditable]") !== null;
+}
+
+export function isVisibleElement(element) {
+  return element
+    && element.getClientRects().length > 0
+    && getComputedStyle(element).visibility !== "hidden";
+}
+
+export class SearchFocusManager {
+  constructor(inputElementProvider) {
+    this.inputElementProvider = inputElementProvider;
+    this.onKeyDown = this.onKeyDown.bind(this);
+    this.onMessage = this.onMessage.bind(this);
+  }
+
+  register() {
+    window.addEventListener("keydown", this.onKeyDown);
+    chrome.runtime.onMessage.addListener(this.onMessage);
+  }
+
+  unregister() {
+    window.removeEventListener("keydown", this.onKeyDown);
+    chrome.runtime.onMessage.removeListener(this.onMessage);
+  }
+
+  focusInput() {
+    const input = this.inputElementProvider();
+    if (input && isVisibleElement(input) && document.activeElement !== input) {
+      input.focus();
+    }
+  }
+
+  onKeyDown(e) {
+    if (e.defaultPrevented) {
+      return;
+    }
+    
+    const isSlashShortcut = e.key === "/"
+      && !e.ctrlKey
+      && !e.altKey
+      && !e.metaKey
+      && !isEditableElement(e.target);
+
+    if (isSlashShortcut) {
+      e.preventDefault();
+      this.focusInput();
+    }
+  }
+
+  onMessage(request) {
+    if (request && request.command === "focus-search") {
+      this.focusInput();
+    }
+  }
 }

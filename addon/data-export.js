@@ -42,6 +42,7 @@ class Model {
     this.queryTooling = false;
     this.prefHideRelations = localStorage.getItem("hideObjectNameColumnsDataExport") == "true"; // default to false
     this.prefPreventLineWrap = localStorage.getItem("preventLineWrapDataExport") !== "false"; // default to true (matches v1.27 behavior)
+    this.showListViewDropdown = localStorage.getItem("showListViewDropdown") !== "false"; // default to true
     this.autocompleteResults = {sobjectName: "", title: "\u00A0", results: []};
     this.autocompleteClick = null;
     this.isWorking = false;
@@ -56,6 +57,10 @@ class Model {
     this.selectedSavedEntry = null;
     this.expandAutocomplete = false;
     this.expandSavedOptions = false;
+    this.listViews = [];
+    this.listViewsBySobject = {};
+    this.listViewQueries = {};
+    this.lastFetchedListViewSobjectName = null;
     this.resultsFilter = "";
     this.displayPerformance = localStorage.getItem("displayQueryPerformance") !== "false"; // default to true
     this.performancePoints = [];
@@ -226,6 +231,55 @@ class Model {
   }
   clearHistory() {
     this.queryHistory.clear();
+  }
+  fetchListViews(sobjectName) {
+    this.listViews = [];
+    if (!sobjectName) {
+      return;
+    }
+    if (this.listViewsBySobject[sobjectName]) {
+      this.listViews = this.listViewsBySobject[sobjectName];
+      this.didUpdate();
+      return;
+    }
+    sfConn.rest("/services/data/v" + apiVersion + "/sobjects/" + sobjectName + "/listviews").then(res => {
+      if (res && res.listviews) {
+        this.listViews = res.listviews;
+        this.listViewsBySobject[sobjectName] = res.listviews;
+        this.didUpdate();
+      }
+    }).catch(err => {
+      console.error("Error fetching list views for " + sobjectName, err);
+    });
+  }
+
+  selectListViewEntry(listViewId) {
+    if (!this.lastFetchedListViewSobjectName || !listViewId) {
+      return;
+    }
+    
+    if (this.listViewQueries[listViewId]) {
+      this.queryInput.value = this.listViewQueries[listViewId];
+      this.updateCurrentTabQuery(this.queryInput.value);
+      this.queryAutocompleteHandler();
+      return;
+    }
+
+    this.spinFor(
+      sfConn.rest("/services/data/v" + apiVersion + "/sobjects/" + this.lastFetchedListViewSobjectName + "/listviews/" + listViewId + "/describe")
+        .then(res => {
+          if (res && res.query) {
+            this.listViewQueries[listViewId] = res.query;
+            this.queryInput.value = res.query;
+            this.updateCurrentTabQuery(this.queryInput.value);
+            this.queryAutocompleteHandler();
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching list view query", err);
+          alert("Failed to fetch query for the selected list view.");
+        })
+    );
   }
   selectSavedEntry() {
     let delimiter = ":";
@@ -406,6 +460,11 @@ class Model {
 
     // If we are just after the "from" keyword, autocomplete the sobject name
     if (query.substring(0, selStart).match(/(^|\s)from\s*$/i)) {
+      if (vm.lastFetchedListViewSobjectName) {
+        vm.lastFetchedListViewSobjectName = null;
+        vm.listViews = [];
+        vm.didUpdate();
+      }
       let {globalStatus, globalDescribe} = vm.describeInfo.describeGlobal(useToolingApi);
       if (!globalDescribe) {
         switch (globalStatus) {
@@ -461,6 +520,11 @@ class Model {
         sobjectName = fromKeywordMatch[1];
         isAfterFrom = false;
       } else {
+        if (vm.lastFetchedListViewSobjectName) {
+          vm.lastFetchedListViewSobjectName = null;
+          vm.listViews = [];
+          vm.didUpdate();
+        }
         let title = findKeywordMatch || graphKeywordMatch ? "" : "\"from\" keyword not found";
         vm.autocompleteResults = {
           sobjectName: "",
@@ -483,6 +547,11 @@ class Model {
     vm.updateCurrentTabName(sobjectName);
     let {sobjectStatus, sobjectDescribe} = vm.describeInfo.describeSobject(useToolingApi, sobjectName);
     if (!sobjectDescribe) {
+      if (vm.lastFetchedListViewSobjectName) {
+        vm.lastFetchedListViewSobjectName = null;
+        vm.listViews = [];
+        vm.didUpdate();
+      }
       switch (sobjectStatus) {
         case "loading":
           vm.autocompleteResults = {
@@ -514,6 +583,10 @@ class Model {
           };
           return;
       }
+    }    
+    if (vm.showListViewDropdown && sobjectName && sobjectName !== vm.lastFetchedListViewSobjectName) {
+      vm.lastFetchedListViewSobjectName = sobjectName;
+      vm.fetchListViews(sobjectName);
     }
 
     /*
@@ -1353,6 +1426,7 @@ class App extends React.Component {
     this.onSelectHistoryEntry = this.onSelectHistoryEntry.bind(this);
     this.onSelectQueryTemplate = this.onSelectQueryTemplate.bind(this);
     this.onClearHistory = this.onClearHistory.bind(this);
+    this.onSelectListView = this.onSelectListView.bind(this);
     this.onSelectSavedEntry = this.onSelectSavedEntry.bind(this);
     this.onAddToHistory = this.onAddToHistory.bind(this);
     this.onRemoveFromHistory = this.onRemoveFromHistory.bind(this);
@@ -1442,6 +1516,11 @@ class App extends React.Component {
       model.clearHistory();
       model.didUpdate();
     }
+  }
+  onSelectListView(e) {
+    let {model} = this.props;
+    model.selectListViewEntry(e.target.value);
+    model.didUpdate();
   }
   onSelectSavedEntry(e) {
     let {model} = this.props;
@@ -1861,6 +1940,10 @@ class App extends React.Component {
                   h("button", {className: "slds-button slds-button_neutral", onClick: this.onClearHistory, title: "Clear Query History"}, "Clear")
                 ),
                 h("div", {className: "slds-button-group slds-m-left_small"},
+                  model.showListViewDropdown ? h("select", {value: "", onChange: this.onSelectListView, className: "query-history", title: "Select "+(model.lastFetchedListViewSobjectName?? "")+" List View"},
+                    h("option", {value: null, disabled: true, defaultValue: true, hidden: true}, "List Views"),
+                    model.listViews.map(v => h("option", {key: v.id, value: v.id}, v.label))
+                  ) : null,
                   h("select", {value: JSON.stringify(model.selectedSavedEntry), onChange: this.onSelectSavedEntry, className: "query-history"},
                     h("option", {value: JSON.stringify(null), disabled: true}, "Saved Queries"),
                     model.savedHistory.list.map(q => h("option", {key: JSON.stringify(q), value: JSON.stringify(q)}, q.query.substring(0, 300)))

@@ -159,6 +159,7 @@ class OptionsTabSelector extends React.Component {
           {option: Option, props: {type: "text", title: "Rest Header", placeholder: "Rest Header", key: "createUpdateRestCalloutHeaders", inputSize: "6"}},
           {option: Option, props: {type: "toggle", title: "Enable API Stats Debug Mode", key: Constants.API_DEBUG_STATISTICS_MODE, default: false, tooltip: "When enabled, tracks API call statistics (REST and SOAP) to help monitor API usage. Statistics can be viewed on the API Debug Statistics page."}},
           {option: Option, props: {type: "toggle", title: "Preload SObjects before popup opens", key: Constants.PRELOAD_SOBJECTS_BEFORE_POPUP, default: true, tooltip: "When enabled, loads the SObjects list from cache before the popup is opened for faster context detection. Disable to reduce initial load time and only load when the Objects tab is accessed."}},
+          {option: Option, props: {type: "toggle", title: "QA Internal", key: Constants.QA_INTERNAL_MODE, default: false, tooltip: "When enabled, prefixes the API client id sent with internal QA."}},
         ]
       },
       {

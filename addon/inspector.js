@@ -1,4 +1,4 @@
-import {getRedirectUri, getClientId, Constants} from "./utils.js";
+import {getRedirectUri, getClientId, isSettingEnabled, Constants} from "./utils.js";
 import {apiStatistics} from "./api-statistics.js";
 
 export let defaultApiVersion = "66.0";
@@ -6,6 +6,12 @@ export let apiVersion = localStorage.getItem("apiVersion") == null ? defaultApiV
 
 export let sessionError;
 const clientId = "Salesforce Inspector Reloaded";
+const qaInternalClientIdPrefix = "SfdcInternalQA/";
+
+// Resolved on each call so toggling the option applies without reloading open pages
+function getCallOptionsClientId() {
+  return isSettingEnabled(Constants.QA_INTERNAL_MODE) ? qaInternalClientIdPrefix + clientId : clientId;
+}
 
 export let sfConn = {
 
@@ -164,7 +170,7 @@ export let sfConn = {
     }
 
     // Always set this header last to ensure it cannot be overridden
-    xhr.setRequestHeader("Sforce-Call-Options", `client=${clientId}`);
+    xhr.setRequestHeader("Sforce-Call-Options", `client=${getCallOptionsClientId()}`);
 
     xhr.responseType = responseType;
     await new Promise((resolve, reject) => {
@@ -293,7 +299,7 @@ export let sfConn = {
     xhr.open("POST", "https://" + this.instanceHostname + wsdl.servicePortAddress + "?cache=" + Math.random(), true);
     xhr.setRequestHeader("Content-Type", "text/xml");
     xhr.setRequestHeader("SOAPAction", '""');
-    xhr.setRequestHeader("CallOptions", `client:${clientId}`);
+    xhr.setRequestHeader("CallOptions", `client:${getCallOptionsClientId()}`);
 
     let sessionHeaderKey = wsdl.apiName == "Metadata" ? "met:SessionHeader" : "SessionHeader";
     let sessionIdKey = wsdl.apiName == "Metadata" ? "met:sessionId" : "sessionId";
